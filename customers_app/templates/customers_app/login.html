@@ -1,0 +1,10 @@
+{% extends 'customers_app/base.html' %}
+{% load static %}
+{% block content %}
+    <form class="form-horizontal" action="{% url 'customers_app:login' %}" method="post">
+        {% csrf_token %}
+        {{ login_form.as_p }}
+        <br>
+        <input class="form-control" type="submit" value="войти">
+    </form>
+{% endblock %}
