@@ -114,12 +114,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = (
+    pathlib.Path.joinpath(BASE_DIR, 'static'),
+)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
+#STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
 MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'customers_app.DataBaseUser'
