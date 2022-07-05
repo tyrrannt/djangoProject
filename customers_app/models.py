@@ -74,6 +74,7 @@ class Job(models.Model):
     def __str__(self):
         return f'{self.name}'
 
+
 class Category(models.Model):
     """Класс Category является родительским классом для таких классов как MainMenu,
 
@@ -146,15 +147,49 @@ class DataBaseUser(AbstractUser):
     surname = models.CharField(verbose_name='отчество', max_length=40, blank=True, null=True, help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='день рождения', blank=True, null=True, help_text='')
-    access_right = models.ManyToManyField(AccessLevel, verbose_name='права доступа', default=0, help_text='')
-    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, help_text='')
-    type_users = models.CharField(verbose_name='тип пользователя', max_length=40, choices=type_of, help_text='', blank=True, null=True,)
-    phone = models.OneToOneField(PhoneNumber, verbose_name='номер телефона', on_delete=models.SET_NULL, null=True,
+    access_right = models.ManyToManyField(AccessLevel, verbose_name='права доступа', default=0, help_text='',
+                                          blank=True)
+    address = models.ForeignKey(Address, on_delete=models.SET_NULL, blank=True, null=True, help_text='')
+    type_users = models.CharField(verbose_name='тип пользователя', max_length=40, choices=type_of, help_text='',
+                                  blank=True, null=True, )
+    phone = models.OneToOneField(PhoneNumber, verbose_name='номер телефона', on_delete=models.SET_NULL, blank=True,
+                                 null=True,
                                  related_name='cell')
     corp_phone = models.OneToOneField(PhoneNumber, verbose_name='корпоративный номер', on_delete=models.SET_NULL,
-                                      null=True, related_name='corp')
+                                      blank=True, null=True, related_name='corp')
     works = models.ForeignKey(Work, verbose_name='занятость', on_delete=models.SET_NULL, blank=True, null=True)
-    gender = models.CharField(verbose_name='пол', max_length=7, blank=True, choices=type_of_gender, help_text='')
+    gender = models.CharField(verbose_name='пол', max_length=7, blank=True, null=True, choices=type_of_gender,
+                              help_text='', default='')
 
     def __str__(self):
         return f'{self.last_name} {self.first_name} {self.surname}'
+
+
+class Counteragent(models.Model):
+    short_name = models.CharField(verbose_name='Наименование', max_length=150, default='', help_text='')
+    full_name = models.CharField(verbose_name='Полное наименование', max_length=250, default='', help_text='')
+    inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, null=True, help_text='')
+    kpp = models.CharField(verbose_name='КПП', max_length=9, blank=True, null=True, help_text='')
+    type_of = [
+        ('juridical_person', 'юридическое лицо'),
+        ('physical_person', 'физическое лицо'),
+        ('separate_subdivision', 'обособленное подразделение'),
+        ('government_agency', 'государственный орган'),
+    ]
+    type_counteragent = models.CharField(verbose_name='Тип контрагента', max_length=40, choices=type_of, help_text='')
+    juridical_address = models.ForeignKey(Address, verbose_name='Юридический адрес', on_delete=models.SET_NULL,
+                                          null=True, related_name='juridical')
+    physical_address = models.ForeignKey(Address, verbose_name='Физический адрес', on_delete=models.SET_NULL, null=True,
+                                         related_name='physical')
+    email = models.EmailField(verbose_name='Email', null=True)
+    phone = models.ForeignKey(PhoneNumber, verbose_name='Номер телефона', on_delete=models.SET_NULL, null=True)
+    base_counteragent = models.BooleanField(verbose_name='Основная организация', default=False)
+    director = models.ForeignKey(DataBaseUser, verbose_name='Директор', on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='direct')
+    accountant = models.ForeignKey(DataBaseUser, verbose_name='Бухгалтер', on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='account')
+    contact_person = models.ForeignKey(DataBaseUser, verbose_name='Контактное лицо', on_delete=models.SET_NULL, null=True,
+                                       blank=True, related_name='contact')
+
+    def __str__(self):
+        return f'{self.short_name}, {self.inn}/{self.kpp}'

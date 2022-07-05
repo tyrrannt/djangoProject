@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0004_alter_databaseuser_age'),
     ]
@@ -34,8 +33,11 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=128, unique=True, verbose_name='Название категории')),
                 ('description', models.TextField(blank=True, verbose_name='Описание категории')),
                 ('hash_view', models.CharField(blank=True, max_length=256)),
-                ('access', models.ForeignKey(default=0, on_delete=django.db.models.deletion.SET_DEFAULT, to='customers_app.accesslevel', verbose_name='Категория доступа')),
-                ('parent_category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='customers_app.division')),
+                ('access', models.ForeignKey(default=0, on_delete=django.db.models.deletion.SET_DEFAULT,
+                                             to='customers_app.accesslevel', verbose_name='Категория доступа')),
+                ('parent_category',
+                 models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                   to='customers_app.division')),
             ],
             options={
                 'abstract': False,
@@ -68,7 +70,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='databaseuser',
             name='gender',
-            field=models.CharField(blank=True, choices=[('male', 'мужской'), ('female', 'женский')], max_length=7, verbose_name='пол'),
+            field=models.CharField(blank=True, choices=[('male', 'мужской'), ('female', 'женский')], max_length=7,
+                                   verbose_name='пол'),
         ),
         migrations.AddField(
             model_name='databaseuser',
@@ -78,14 +81,21 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='databaseuser',
             name='type_users',
-            field=models.CharField(choices=[('natural_person', 'физическое лицо'), ('staff_member', 'штатный сотрудник'), ('freelancer', 'внештатный сотрудник')], max_length=40, null=True, verbose_name='тип пользователя'),
+            field=models.CharField(
+                choices=[('natural_person', 'физическое лицо'), ('staff_member', 'штатный сотрудник'),
+                         ('freelancer', 'внештатный сотрудник')], max_length=40, null=True,
+                verbose_name='тип пользователя'),
         ),
         migrations.CreateModel(
             name='Work',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('divisions', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.division', verbose_name='подразделение')),
-                ('job', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.job', verbose_name='должность')),
+                ('divisions',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.division',
+                                   verbose_name='подразделение')),
+                ('job',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.job',
+                                   verbose_name='должность')),
             ],
         ),
         migrations.CreateModel(
@@ -94,7 +104,8 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('city_id', models.IntegerField(verbose_name='')),
                 ('city_name', models.CharField(blank=True, max_length=30, null=True, verbose_name='город')),
-                ('country', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.country')),
+                ('country', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                              to='customers_app.country')),
             ],
         ),
         migrations.CreateModel(
@@ -108,8 +119,12 @@ class Migration(migrations.Migration):
                 ('street', models.CharField(blank=True, max_length=60, null=True, verbose_name='улица')),
                 ('house', models.CharField(blank=True, max_length=6, null=True, verbose_name='дом')),
                 ('apartment', models.CharField(blank=True, max_length=3, null=True, verbose_name='квартира')),
-                ('city', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.city', verbose_name='город')),
-                ('country', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.country', verbose_name='страна')),
+                ('city',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.city',
+                                   verbose_name='город')),
+                ('country',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.country',
+                                   verbose_name='страна')),
             ],
         ),
         migrations.AddField(
@@ -120,21 +135,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='databaseuser',
             name='address',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.address'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='customers_app.address'),
         ),
         migrations.AddField(
             model_name='databaseuser',
             name='corp_phone',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='corp', to='customers_app.phonenumber', verbose_name='корпоративный номер'),
+            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='corp',
+                                       to='customers_app.phonenumber', verbose_name='корпоративный номер'),
         ),
         migrations.AddField(
             model_name='databaseuser',
             name='phone',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='cell', to='customers_app.phonenumber', verbose_name='номер телефона'),
+            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='cell',
+                                       to='customers_app.phonenumber', verbose_name='номер телефона'),
         ),
         migrations.AddField(
             model_name='databaseuser',
             name='works',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.work', verbose_name='занятость'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='customers_app.work', verbose_name='занятость'),
         ),
     ]

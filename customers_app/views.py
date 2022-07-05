@@ -1,8 +1,11 @@
 from django.shortcuts import render, HttpResponseRedirect
-from customers_app.forms import DataBaseUserLoginForm
+from django.utils.decorators import method_decorator
+from django.views.generic import DetailView
+from customers_app.models import DataBaseUser
+from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, UserEditForm
 from django.contrib import auth, messages
-from django.urls import reverse
-from django.contrib.auth.decorators import login_required
+from django.urls import reverse, reverse_lazy
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 
 # Create your views here.
@@ -11,30 +14,53 @@ def index(request):
     return render(request, 'customers_app/base.html')
 
 
+class DataBaseUserProfile(DetailView):
+    context = {}
+    model = DataBaseUser
+    template_name = 'customers_app/user_profile.html'
+    success_url = reverse_lazy('customers_app:profile')
+    form_class = UserEditForm
+
+    @method_decorator(user_passes_test(lambda u: u.is_active))
+    def dispatch(self, request, *args, **kwargs):
+        return super(DataBaseUserProfile, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
+        context['title'] = title = 'редактирование'
+        #context.update(groups())
+        return context
+
+
+
+
 def login(request):
     title = 'вход'
     login_form = DataBaseUserLoginForm(data=request.POST)
-    print(request.POST)
     if request.method == 'POST' and login_form.is_valid():
         username = request.POST['username']
         password = request.POST['password']
         user = auth.authenticate(username=username, password=password)
         if user and user.is_active:
             auth.login(request, user)
-            return HttpResponseRedirect(reverse('customers_app:index'))
+            print(user.pk)
+            return HttpResponseRedirect(reverse('customers_app:profile', args=(user.pk,)))
     content = {'title': title, 'login_form': login_form}
     return render(request, 'customers_app/login.html', content)
 
 
 def logout(request):
     auth.logout(request)
-    return HttpResponseRedirect(reverse('main'))
+    return HttpResponseRedirect(reverse('customers_app:login'))
+
 
 def register(request):
     title = 'регистрация'
     if request.method == 'POST':
-        register_form = DataBaseUserLoginForm(request.POST, request.FILES)
+        print(request.POST)
+        register_form = DataBaseUserRegisterForm(request.POST, request.FILES)
         if register_form.is_valid():
+
             user = register_form.save()
             messages.success(request, 'Вы успешно зарегистрировались!')
             # if send_verify_mail(user):
@@ -44,6 +70,6 @@ def register(request):
             #     print('ошибка отправки сообщения')
             #     return HttpResponseRedirect(reverse('auth:login'))
     else:
-        register_form = DataBaseUserLoginForm()
+        register_form = DataBaseUserRegisterForm()
     content = {'title': title, 'register_form': register_form}
-    return render(request, 'customers_app/', content)
+    return render(request, 'customers_app/register.html', content)
