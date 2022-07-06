@@ -1,8 +1,8 @@
 from django.shortcuts import render, HttpResponseRedirect
 from django.utils.decorators import method_decorator
-from django.views.generic import DetailView
+from django.views.generic import DetailView, UpdateView
 from customers_app.models import DataBaseUser
-from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, UserEditForm
+from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, UserEditForm, DataBaseUserUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -28,10 +28,30 @@ class DataBaseUserProfile(DetailView):
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
         context['title'] = title = 'редактирование'
-        #context.update(groups())
+        # context.update(groups())
         return context
 
 
+class DataBaseUserUpdate(UpdateView):
+    model = DataBaseUser
+    template_name = 'customers_app/user_profile.html'
+    success_url = reverse_lazy('customers_app:index')
+    # form_class = DataBaseUserUpdateForm
+    fields = ['first_name', 'last_name', 'email', 'birthday', 'phone', 'surname']
+
+    @method_decorator(user_passes_test(lambda u: u.is_superuser))
+    def dispatch(self, request, *args, **kwargs):
+        return super(DataBaseUserUpdate, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
+        context['title'] = title = 'Профиль пользователя'
+        return context
+
+    # def get_success_url(self):
+    #     print(self.object)
+    #     pk = self.kwargs["pk"]
+    #     return reverse("customers_app:profile_update", kwargs={"pk": pk})
 
 
 def login(request):
@@ -60,7 +80,6 @@ def register(request):
         print(request.POST)
         register_form = DataBaseUserRegisterForm(request.POST, request.FILES)
         if register_form.is_valid():
-
             user = register_form.save()
             messages.success(request, 'Вы успешно зарегистрировались!')
             # if send_verify_mail(user):

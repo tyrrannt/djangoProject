@@ -103,28 +103,32 @@
                             <ul class="simple-user-list">
                                 <li>
                                     <figure class="image rounded">
-                                        <img src="img/!sample-user.jpg" alt="Joseph Doe Junior" class="rounded-circle">
+                                        <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
+                                             alt="Joseph Doe Junior" class="rounded-circle">
                                     </figure>
                                     <span class="title">Joseph Doe Junior</span>
                                     <span class="message truncate">Lorem ipsum dolor sit.</span>
                                 </li>
                                 <li>
                                     <figure class="image rounded">
-                                        <img src="img/!sample-user.jpg" alt="Joseph Junior" class="rounded-circle">
+                                        <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
+                                             alt="Joseph Junior" class="rounded-circle">
                                     </figure>
                                     <span class="title">Joseph Junior</span>
                                     <span class="message truncate">Lorem ipsum dolor sit.</span>
                                 </li>
                                 <li>
                                     <figure class="image rounded">
-                                        <img src="img/!sample-user.jpg" alt="Joe Junior" class="rounded-circle">
+                                        <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joe Junior"
+                                             class="rounded-circle">
                                     </figure>
                                     <span class="title">Joe Junior</span>
                                     <span class="message truncate">Lorem ipsum dolor sit.</span>
                                 </li>
                                 <li>
                                     <figure class="image rounded">
-                                        <img src="img/!sample-user.jpg" alt="Joseph Doe Junior" class="rounded-circle">
+                                        <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
+                                             alt="Joseph Doe Junior" class="rounded-circle">
                                     </figure>
                                     <span class="title">Joseph Doe Junior</span>
                                     <span class="message truncate">Lorem ipsum dolor sit.</span>
@@ -138,7 +142,7 @@
                     </div>
                     <div class="card-footer">
                         <div class="input-group">
-                            <input type="text" class="form-control" name="s" id="s" placeholder="Search...">
+                            <input type="text" class="form-control" name="s" id="s" placeholder="Поиск...">
                             <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>
                         </div>
                     </div>
@@ -159,7 +163,7 @@
                                 <div class="post-image">
                                     <div class="img-thumbnail">
                                         <a href="#">
-                                            <img src="img/post-thumb-1.jpg" alt="">
+                                            <img src="{% static 'admin_templates/img/post-thumb-1.jpg' %}" alt="">
                                         </a>
                                     </div>
                                 </div>
@@ -174,7 +178,7 @@
                                 <div class="post-image">
                                     <div class="img-thumbnail">
                                         <a href="#">
-                                            <img src="img/post-thumb-2.jpg" alt="">
+                                            <img src="{% static 'admin_templates/img/post-thumb-2.jpg' %}" alt="">
                                         </a>
                                     </div>
                                 </div>
@@ -189,7 +193,7 @@
                                 <div class="post-image">
                                     <div class="img-thumbnail">
                                         <a href="#">
-                                            <img src="img/post-thumb-3.jpg" alt="">
+                                            <img src="{% static 'admin_templates/img/post-thumb-3.jpg' %}" alt="">
                                         </a>
                                     </div>
                                 </div>
@@ -245,13 +249,13 @@
                                     </div>
                                 </section>
 
-                                <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Timeline</h4>
+                                <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
 
                                 <div class="timeline timeline-simple mt-3 mb-3">
                                     <div class="tm-body">
                                         <div class="tm-title">
                                             <h5 class="m-0 pt-2 pb-2 text-dark font-weight-semibold text-uppercase">
-                                                November 2021</h5>
+                                                {% now "d - m - Y г." %}</h5>
                                         </div>
                                         <ol class="tm-items">
                                             <li>
@@ -279,10 +283,10 @@
                                                     </p>
                                                     <div class="thumbnail-gallery">
                                                         <a class="img-thumbnail lightbox"
-                                                           href="img/projects/project-4.jpg"
+                                                           href="{% static 'admin_templates/img/projects/project-4.jpg' %}"
                                                            data-plugin-options='{ "type":"image" }'>
                                                             <img class="img-fluid" width="215"
-                                                                 src="img/projects/project-4.jpg">
+                                                                 src="{% static 'admin_templates/img/projects/project-4.jpg' %}">
                                                             <span class="zoom">
 																			<i class="bx bx-search"></i>
 																		</span>
@@ -297,81 +301,70 @@
 
                         </div>
                         <div id="edit" class="tab-pane">
-
-                            <form class="p-3">
+                            <form action="{% url 'customers_app:profile_update' object.pk %}" method="post">
+                                {% csrf_token %}
                                 <h4 class="mb-3 font-weight-semibold text-dark">Личная информация</h4>
-                                <div class="form-group col-md-2 border-top-0 pt-0">
-                                        <label for="inputZip">Индекс</label>
-                                        <input type="text" class="form-control" id="inputZip" value="{{ user.address.postal_code }}">
-                                    </div>
-                                <div class="row">
-                                    <div class="form-group col-md-6">
-                                        <label for="inputAddress">Страна</label>
-                                        <input type="text" class="form-control" id="inputAddress"
-                                               placeholder="Страна..." value="{{ user.address.country }}">
-                                    </div>
-                                    <div class="form-group col-md-6  border-top-0 pt-0">
-                                        <label for="inputAddress2">Область</label>
-                                        <input type="text" class="form-control" id="inputAddress2"
-                                               placeholder="Область..." value="{{ user.address.region }}">
-                                    </div>
-                                </div>
 
                                 <div class="row">
                                     <div class="form-group col-md-4">
-                                        <label for="inputDistrict">Район</label>
-                                        <input type="text" class="form-control" id="inputDistrict" value="{{ user.address.district }}">
+                                        <label for="last_name">Фамилия</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name"
+                                               value="{{ object.last_name }}">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
-                                        <label for="inputMicrodistrict">Микрорайон</label>
-                                        <input type="text" class="form-control" id="inputMicrodistrict" value="{{ user.address.microdistrict }}">
+                                        <label for="first_name">Имя</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name"
+                                               value="{{ object.first_name }}">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
-                                        <label for="inputCity">Город</label>
-                                        <input type="text" class="form-control" id="inputCity" value="{{ user.address.city }}">
+                                        <label for="surname">Отчество</label>
+                                        <input type="text" class="form-control" id="surname" name="surname" value="{{ object.surname }}">
                                     </div>
-{#                                    <div class="form-group col-md-4 border-top-0 pt-0">#}
-{#                                        <label for="inputState">State</label>#}
-{#                                        <select id="inputState" class="form-control">#}
-{#                                            <option selected>Choose...</option>#}
-{#                                            <option>...</option>#}
-{#                                        </select>#}
-{#                                    </div>#}
+                                    {#                                    <div class="form-group col-md-4 border-top-0 pt-0">#}
+                                    {#                                        <label for="inputState">State</label>#}
+                                    {#                                        <select id="inputState" class="form-control">#}
+                                    {#                                            <option selected>Choose...</option>#}
+                                    {#                                            <option>...</option>#}
+                                    {#                                        </select>#}
+                                    {#                                    </div>#}
                                 </div>
+                                <hr class="dotted tall">
                                 <div class="row">
                                     <div class="form-group col-md-4">
-                                        <label for="inputStreet">Улица</label>
-                                        <input type="text" class="form-control" id="inputStreet" value="{{ user.address.street }}">
+                                        <label for="birthday">Дата рождения</label>
+                                        <input type="date" class="form-control" id="birthday" name="birthday"
+                                               value="{{ object.birthday }}">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
-                                        <label for="inputHouse">Дом</label>
-                                        <input type="text" class="form-control" id="inputHouse" value="{{ user.address.house }}">
+                                        <label for="email">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ object.email }}">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
-                                        <label for="inputApartment">Квартира</label>
-                                        <input type="text" class="form-control" id="inputApartment" value="{{ user.address.apartment }}">
+                                        <label for="phone">Телефон</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ object.phone }}">
                                     </div>
                                 </div>
 
                                 <hr class="dotted tall">
 
-                                <h4 class="mb-3 font-weight-semibold text-dark">Смена пароля</h4>
-                                <div class="row">
-                                    <div class="form-group col-md-6">
-                                        <label for="inputPassword4">Новый пароль</label>
-                                        <input type="password" class="form-control" id="inputPassword4"
-                                               placeholder="Password">
-                                    </div>
-                                    <div class="form-group col-md-6 border-top-0 pt-0">
-                                        <label for="inputPassword5">Повтор пароля</label>
-                                        <input type="password" class="form-control" id="inputPassword5"
-                                               placeholder="Password">
-                                    </div>
-                                </div>
+                                {#                                <h4 class="mb-3 font-weight-semibold text-dark">Смена пароля</h4>#}
+                                {#                                <div class="row">#}
+                                {#                                    <div class="form-group col-md-6">#}
+                                {#                                        <label for="inputPassword4">Новый пароль</label>#}
+                                {#                                        <input type="password" class="form-control" id="inputPassword4"#}
+                                {#                                               placeholder="Password">#}
+                                {#                                    </div>#}
+                                {#                                    <div class="form-group col-md-6 border-top-0 pt-0">#}
+                                {#                                        <label for="inputPassword5">Повтор пароля</label>#}
+                                {#                                        <input type="password" class="form-control" id="inputPassword5"#}
+                                {#                                               placeholder="Password">#}
+                                {#                                    </div>#}
+                                {#                                </div>#}
 
                                 <div class="row">
                                     <div class="col-md-12 text-end mt-3">
-                                        <button class="btn btn-primary modal-confirm">Сохранить</button>
+{#                                        <button class="btn btn-primary modal-confirm">Сохранить</button>#}
+                                        <input class="btn btn-primary mt-2 form-control" type="submit" value="Отправить">
                                     </div>
                                 </div>
 
@@ -423,28 +416,32 @@
                 <ul class="simple-user-list mb-3">
                     <li>
                         <figure class="image rounded">
-                            <img src="img/!sample-user.jpg" alt="Joseph Doe Junior" class="rounded-circle">
+                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Doe Junior"
+                                 class="rounded-circle">
                         </figure>
                         <span class="title">Joseph Doe Junior</span>
                         <span class="message">Lorem ipsum dolor sit.</span>
                     </li>
                     <li>
                         <figure class="image rounded">
-                            <img src="img/!sample-user.jpg" alt="Joseph Junior" class="rounded-circle">
+                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Junior"
+                                 class="rounded-circle">
                         </figure>
                         <span class="title">Joseph Junior</span>
                         <span class="message">Lorem ipsum dolor sit.</span>
                     </li>
                     <li>
                         <figure class="image rounded">
-                            <img src="img/!sample-user.jpg" alt="Joe Junior" class="rounded-circle">
+                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joe Junior"
+                                 class="rounded-circle">
                         </figure>
                         <span class="title">Joe Junior</span>
                         <span class="message">Lorem ipsum dolor sit.</span>
                     </li>
                     <li>
                         <figure class="image rounded">
-                            <img src="img/!sample-user.jpg" alt="Joseph Doe Junior" class="rounded-circle">
+                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Doe Junior"
+                                 class="rounded-circle">
                         </figure>
                         <span class="title">Joseph Doe Junior</span>
                         <span class="message">Lorem ipsum dolor sit.</span>
