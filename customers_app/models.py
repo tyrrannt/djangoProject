@@ -46,7 +46,7 @@ class Address(models.Model):
     street = models.CharField(verbose_name='улица', max_length=60, blank=True, null=True, help_text='')
     house = models.CharField(verbose_name='дом', max_length=6, blank=True, null=True, help_text='')
     apartment = models.CharField(verbose_name='квартира', max_length=3, blank=True, null=True, help_text='')
-
+    history = models.DateField(verbose_name="Дата создания", auto_created=True, null=True)
     def __str__(self):
         result = ''
         if self.postal_code:
@@ -106,6 +106,7 @@ class Category(models.Model):
     description = models.TextField(verbose_name='Описание категории', blank=True)
     access = models.ForeignKey(AccessLevel, default=0, on_delete=models.SET_DEFAULT, verbose_name='Категория доступа')
     hash_view = models.CharField(max_length=256, blank=True)
+    history = models.DateField(verbose_name="Дата создания", auto_created=True, null=True)
 
     def __str__(self):
         if self.parent_category:
@@ -120,18 +121,11 @@ class Category(models.Model):
 
 
 class Division(Category):
-
+    """
+    Класс Division - содержит подразделения компании
+    """
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)
-
-
-class Work(models.Model):
-    job = models.ForeignKey(Job, verbose_name='должность', on_delete=models.SET_NULL, null=True, help_text='')
-    divisions = models.ForeignKey(Division, verbose_name='подразделение', on_delete=models.SET_NULL, null=True,
-                                  help_text='')
-
-    def __str__(self):
-        return f'{self.job} / {self.divisions}'
 
 
 class DataBaseUser(AbstractUser):
@@ -157,7 +151,9 @@ class DataBaseUser(AbstractUser):
                                  related_name='cell')
     corp_phone = models.OneToOneField(PhoneNumber, verbose_name='корпоративный номер', on_delete=models.SET_NULL,
                                       blank=True, null=True, related_name='corp')
-    works = models.ForeignKey(Work, verbose_name='занятость', on_delete=models.SET_NULL, blank=True, null=True)
+    job = models.ForeignKey(Job, verbose_name='должность', on_delete=models.SET_NULL, null=True, help_text='')
+    divisions = models.ForeignKey(Division, verbose_name='подразделение', on_delete=models.SET_NULL, null=True,
+                                  help_text='')
     gender = models.CharField(verbose_name='пол', max_length=7, blank=True, null=True, choices=type_of_gender,
                               help_text='', default='')
 

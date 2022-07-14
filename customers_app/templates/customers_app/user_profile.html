@@ -35,7 +35,7 @@
                                  alt="{{ user.username }}">
                             <div class="thumb-info-title">
                                 <span class="thumb-info-inner">{{ user.last_name }} {{ user.first_name }}</span>
-                                <span class="thumb-info-type">{{ user.works.job }}</span>
+                                <span class="thumb-info-type">{{ user.job }}</span>
                             </div>
                         </div>
 
@@ -214,10 +214,10 @@
                 <div class="tabs">
                     <ul class="nav nav-tabs tabs-primary">
                         <li class="nav-item active">
-                            <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Обзор</button>
+                            <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Лента событий</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#edit" data-bs-toggle="tab">Редактировать</button>
+                            <button class="nav-link" data-bs-target="#edit" data-bs-toggle="tab">Профиль</button>
                         </li>
                     </ul>
                     <div class="tab-content">
@@ -301,75 +301,54 @@
 
                         </div>
                         <div id="edit" class="tab-pane">
-                            <div>
-
+                            <form action="{% url 'customers_app:profile_update' object.pk %}">
                                 <h4 class="mb-3 font-weight-semibold text-dark">Личная информация</h4>
-
                                 <div class="row">
                                     <div class="form-group col-md-4">
                                         <label for="last_name">Фамилия</label>
                                         <input type="text" class="form-control" id="last_name" name="last_name"
-                                               value="{{ object.last_name }}">
+                                               value="{{ object.last_name }}" readonly="readonly">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
                                         <label for="first_name">Имя</label>
                                         <input type="text" class="form-control" id="first_name" name="first_name"
-                                               value="{{ object.first_name }}">
+                                               value="{{ object.first_name }}" readonly="readonly">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
                                         <label for="surname">Отчество</label>
-                                        <input type="text" class="form-control" id="surname" name="surname" value="{{ object.surname }}">
+                                        <input type="text" class="form-control" id="surname" name="surname"
+                                               value="{{ object.surname }}" readonly="readonly">
                                     </div>
-                                    {#                                    <div class="form-group col-md-4 border-top-0 pt-0">#}
-                                    {#                                        <label for="inputState">State</label>#}
-                                    {#                                        <select id="inputState" class="form-control">#}
-                                    {#                                            <option selected>Choose...</option>#}
-                                    {#                                            <option>...</option>#}
-                                    {#                                        </select>#}
-                                    {#                                    </div>#}
                                 </div>
                                 <hr class="dotted tall">
                                 <div class="row">
                                     <div class="form-group col-md-4">
                                         <label for="birthday">Дата рождения</label>
-                                        <input type="date" class="form-control" id="birthday" name="birthday"
-                                               value="{{ object.birthday }}">
+                                        <input type="text" class="form-control" id="birthday" name="birthday"
+                                               value="{{ object.birthday }}" readonly="readonly">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
                                         <label for="email">Email</label>
-                                        <input type="email" class="form-control" id="email" name="email" value="{{ object.email }}">
+                                        <input type="email" class="form-control" id="email" name="email"
+                                               value="{{ object.email }}" readonly="readonly">
                                     </div>
                                     <div class="form-group col-md-4 border-top-0 pt-0">
                                         <label for="phone">Телефон</label>
-                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ object.phone }}">
+                                        <input type="tel" class="form-control" id="phone" name="phone"
+                                               value="{{ object.phone }}" readonly="readonly">
                                     </div>
                                 </div>
 
                                 <hr class="dotted tall">
 
-                                {#                                <h4 class="mb-3 font-weight-semibold text-dark">Смена пароля</h4>#}
-                                {#                                <div class="row">#}
-                                {#                                    <div class="form-group col-md-6">#}
-                                {#                                        <label for="inputPassword4">Новый пароль</label>#}
-                                {#                                        <input type="password" class="form-control" id="inputPassword4"#}
-                                {#                                               placeholder="Password">#}
-                                {#                                    </div>#}
-                                {#                                    <div class="form-group col-md-6 border-top-0 pt-0">#}
-                                {#                                        <label for="inputPassword5">Повтор пароля</label>#}
-                                {#                                        <input type="password" class="form-control" id="inputPassword5"#}
-                                {#                                               placeholder="Password">#}
-                                {#                                    </div>#}
-                                {#                                </div>#}
 
-                                <div class="row">
+
                                     <div class="col-md-12 text-end mt-3">
-{#                                        <button class="btn btn-primary modal-confirm">Сохранить</button>#}
-{#                                        <input class="btn btn-primary mt-2 form-control" type="submit" value="Отправить">#}
-                                        <a href='{% url 'customers_app:profile_update' object.pk %}'>Изменить</a>
+<button class="btn btn-primary" type="submit">Изменить</button>
                                     </div>
-                                </div>
 
-                            </div>
+
+                            </form>
 
                         </div>
                     </div>

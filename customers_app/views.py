@@ -44,12 +44,9 @@ class DataBaseUserUpdate(UpdateView):
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
         context['title'] = title = 'Профиль пользователя'
-        print(self.request.POST)
-        print(self.success_url)
         return context
 
     def get_success_url(self):
-        print(self.object)
         pk = self.kwargs["pk"]
         return reverse("customers_app:profile", kwargs={"pk": pk})
 
@@ -63,7 +60,6 @@ def login(request):
         user = auth.authenticate(username=username, password=password)
         if user and user.is_active:
             auth.login(request, user)
-            print(user.pk)
             return HttpResponseRedirect(reverse('customers_app:profile', args=(user.pk,)))
     content = {'title': title, 'login_form': login_form}
     return render(request, 'customers_app/login.html', content)
@@ -77,7 +73,6 @@ def logout(request):
 def register(request):
     title = 'регистрация'
     if request.method == 'POST':
-        print(request.POST)
         register_form = DataBaseUserRegisterForm(request.POST, request.FILES)
         if register_form.is_valid():
             user = register_form.save()
