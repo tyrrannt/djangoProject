@@ -33,9 +33,10 @@ class DataBaseUserUpdateForm(UserChangeForm):
     class Meta:
         model = DataBaseUser
         fields = (
-            #'username', 'first_name', 'last_name', 'email', 'birthday', 'password', 'avatar', 'access_right', 'address',
-            #'type_users', 'phone', 'corp_phone', 'works', 'gender', 'surname'
-            'last_name', 'first_name', 'surname', 'email', 'birthday', 'phone',
+            #'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right', 'address',
+            #'type_users', 'phone', 'works', 'gender', 'surname'
+            'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
+                    'personal_phone', 'avatar',
         )
 
     def __init__(self, *args, **kwargs):

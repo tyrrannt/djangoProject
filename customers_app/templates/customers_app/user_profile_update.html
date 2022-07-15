@@ -31,8 +31,12 @@
                 <section class="card">
                     <div class="card-body">
                         <div class="thumb-info mb-3">
-                            <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
-                                 alt="{{ user.username }}">
+                          {% if databaseuser.avatar %}
+                                <img src="{{ databaseuser.avatar.url }}" class="rounded img-fluid" alt="{{ databaseuser.username }}">
+                            {% else %}
+                                <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
+                                     alt="{{ databaseuser.username }}">
+                            {% endif %}
                             <div class="thumb-info-title">
                                 <span class="thumb-info-inner">{{ user.last_name }} {{ user.first_name }}</span>
                                 <span class="thumb-info-type">{{ user.works.job }}</span>
@@ -214,7 +218,8 @@
                 <div class="tabs">
                     <ul class="nav nav-tabs tabs-primary">
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Лента событий</button>
+                            <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Лента событий
+                            </button>
                         </li>
                         <li class="nav-item active">
                             <button class="nav-link" data-bs-target="#edit" data-bs-toggle="tab">Профиль</button>
@@ -258,42 +263,16 @@
                                                 {% now "d - m - Y г." %}</h5>
                                         </div>
                                         <ol class="tm-items">
-                                            <li>
-                                                <div class="tm-box">
-                                                    <p class="text-muted mb-0">7 months ago.</p>
-                                                    <p>
-                                                        It's awesome when we find a good solution for our projects,
-                                                        Porto Admin is <span class="text-primary">#awesome</span>
-                                                    </p>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="tm-box">
-                                                    <p class="text-muted mb-0">7 months ago.</p>
-                                                    <p>
-                                                        What is your biggest developer pain point?
-                                                    </p>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div class="tm-box">
-                                                    <p class="text-muted mb-0">7 months ago.</p>
-                                                    <p>
-                                                        Checkout! How cool is that!
-                                                    </p>
-                                                    <div class="thumbnail-gallery">
-                                                        <a class="img-thumbnail lightbox"
-                                                           href="{% static 'admin_templates/img/projects/project-4.jpg' %}"
-                                                           data-plugin-options='{ "type":"image" }'>
-                                                            <img class="img-fluid" width="215"
-                                                                 src="{% static 'admin_templates/img/projects/project-4.jpg' %}">
-                                                            <span class="zoom">
-																			<i class="bx bx-search"></i>
-																		</span>
-                                                        </a>
+                                            {% for item in posts %}
+                                                <li>
+                                                    <div class="tm-box">
+                                                        <p class="text-muted mb-0">{{ item.creation_date }}</p>
+                                                        <p>
+                                                            {{ item.post_description }}
+                                                        </p>
                                                     </div>
-                                                </div>
-                                            </li>
+                                                </li>
+                                            {% endfor %}
                                         </ol>
                                     </div>
                                 </div>
@@ -301,13 +280,14 @@
 
                         </div>
                         <div id="edit" class="tab-pane active">
-                            <form action="{% url 'customers_app:profile_update' user.pk %}" method="post">
+                            <form action="{% url 'customers_app:profile_update' user.pk %}" method="post" enctype="multipart/form-data">
                                 {% csrf_token %}
                                 <h4 class="mb-3 font-weight-semibold text-dark">Личная информация</h4>
                                 {{ form.as_p }}
                                 <div class="row">
                                     <div class="col-md-12 text-end mt-3">
-                                        <input class="btn btn-primary mt-2 form-control" type="submit" value="Отправить">
+                                        <input class="btn btn-primary mt-2 form-control" type="submit"
+                                               value="Отправить">
                                     </div>
                                 </div>
 

@@ -1,7 +1,7 @@
 from django.shortcuts import render, HttpResponseRedirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Posts
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
@@ -24,8 +24,10 @@ class DataBaseUserProfile(DetailView):
         return super(DataBaseUserProfile, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        post = Posts.objects.all()
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
         context['title'] = title = 'редактирование'
+        context['posts'] = post
         #context.update(groups())
         return context
 
@@ -42,8 +44,10 @@ class DataBaseUserUpdate(UpdateView):
         return super(DataBaseUserUpdate, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+        post = Posts.objects.all()
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
         context['title'] = title = 'Профиль пользователя'
+        context['posts'] = post
         return context
 
     def get_success_url(self):
