@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'library_app.apps.LibraryAppConfig',
     'administration_app.apps.AdministrationAppConfig',
     'customers_app.apps.CustomersAppConfig',
+    'contracts_app.apps.ContractsAppConfig',
 ]
 
 MIDDLEWARE = [
@@ -104,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ru-RU'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 

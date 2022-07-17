@@ -5,14 +5,22 @@ from django.contrib.auth.hashers import make_password
 
 # Create your models here.
 class Country(models.Model):
-    code = models.CharField(verbose_name='код', max_length=3, blank=True, null=True, help_text='')
-    name = models.CharField(verbose_name='страна', max_length=30, blank=True, null=True, help_text='')
+    class Meta:
+        verbose_name = 'Страна'
+        verbose_name_plural = 'Страны'
+
+    code = models.CharField(verbose_name='Код', max_length=3, blank=True, null=True, help_text='')
+    name = models.CharField(verbose_name='Страна', max_length=30, blank=True, null=True, help_text='')
 
     def __str__(self):
         return self.name
 
 
 class City(models.Model):
+    class Meta:
+        verbose_name = 'Город'
+        verbose_name_plural = 'Города'
+
     city_id = models.IntegerField(verbose_name='')
     country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, help_text='')
     city_name = models.CharField(verbose_name='город', max_length=30, blank=True, null=True, help_text='')
@@ -22,6 +30,10 @@ class City(models.Model):
 
 
 class AccessLevel(models.Model):
+    class Meta:
+        verbose_name = 'Уровень доступа'
+        verbose_name_plural = 'Уровни доступа'
+
     level = models.PositiveIntegerField(verbose_name='Уровень доступа', default=0)
     description = models.TextField(verbose_name='Описание категории', blank=True)
 
@@ -30,6 +42,10 @@ class AccessLevel(models.Model):
 
 
 class Address(models.Model):
+    class Meta:
+        verbose_name = 'Адрес'
+        verbose_name_plural = 'Адреса'
+
     postal_code = models.CharField(verbose_name='индекс', max_length=6, blank=True, null=True, help_text='')
     country = models.ForeignKey(Country, verbose_name='страна', on_delete=models.SET_NULL, null=True, help_text='')
     region = models.CharField(verbose_name='область', max_length=30, blank=True, null=True, help_text='')
@@ -62,6 +78,10 @@ class Address(models.Model):
 
 
 class Job(models.Model):
+    class Meta:
+        verbose_name = 'Должность'
+        verbose_name_plural = 'Должности'
+
     code = models.CharField(verbose_name='код должности', max_length=100, help_text='', default='000')
     name = models.CharField(verbose_name='должность', max_length=100, help_text='')
 
@@ -118,12 +138,20 @@ class Division(Category):
     """
     Класс Division - содержит подразделения компании
     """
+    class Meta:
+        verbose_name = 'Подразделение'
+        verbose_name_plural = 'Подразделения организации'
+
 
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)
 
 
 class DataBaseUser(AbstractUser):
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
     type_of = [
         ('natural_person', 'физическое лицо'),
         ('staff_member', 'штатный сотрудник'),
@@ -158,6 +186,10 @@ class DataBaseUser(AbstractUser):
 
 
 class Counteragent(models.Model):
+    class Meta:
+        verbose_name = 'Контрагент'
+        verbose_name_plural = 'Контрагенты'
+
     short_name = models.CharField(verbose_name='Наименование', max_length=150, default='', help_text='')
     full_name = models.CharField(verbose_name='Полное наименование', max_length=250, default='', help_text='')
     inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, null=True, help_text='')
@@ -188,9 +220,14 @@ class Counteragent(models.Model):
                                        blank=True, related_name='contact')
 
     def __str__(self):
-        return f'{self.short_name}, {self.inn}/{self.kpp}'
+        return f'{self.short_name}'
+
 
 class Posts(models.Model):
+    class Meta:
+        verbose_name = 'Новость'
+        verbose_name_plural = 'Сообщения'
+
     creation_date = models.DateField(verbose_name='Дата создания', auto_created=True)
     post_description = models.TextField(verbose_name='Текст поста', blank=True)
     post_divisions = models.ManyToManyField(Division, verbose_name='Подразделения поста', )

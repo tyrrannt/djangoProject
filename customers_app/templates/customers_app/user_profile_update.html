@@ -263,15 +263,20 @@
                                                 {% now "d - m - Y г." %}</h5>
                                         </div>
                                         <ol class="tm-items">
+{#                                            ToDo: Доработать вывод постов#}
                                             {% for item in posts %}
-                                                <li>
-                                                    <div class="tm-box">
-                                                        <p class="text-muted mb-0">{{ item.creation_date }}</p>
-                                                        <p>
-                                                            {{ item.post_description }}
-                                                        </p>
-                                                    </div>
-                                                </li>
+                                                {% for items in item.post_divisions.iterator %}
+                                                    {% if items == databaseuser.divisions %}
+                                                        <li>
+                                                            <div class="tm-box">
+                                                                <p class="text-muted mb-0">{{ item.creation_date }}</p>
+                                                                <p>
+                                                                    {{ item.post_description }}
+                                                                </p>
+                                                            </div>
+                                                        </li>
+                                                    {% endif %}
+                                                {% endfor %}
                                             {% endfor %}
                                         </ol>
                                     </div>

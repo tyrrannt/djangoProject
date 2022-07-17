@@ -43,3 +43,4 @@ admin.site.register(Posts)
 admin.site.register(Job, )
 admin.site.register(Division, )
 admin.site.register(Counteragent)
+
