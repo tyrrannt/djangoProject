@@ -57,7 +57,7 @@ class ContractModel(models.Model):
     cost = models.FloatField(verbose_name='Стоимость', default=0)
     type_of_contract = models.ForeignKey(TypeContract, verbose_name='Тип договора', on_delete=models.SET_NULL,
                                          null=True)
-    divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True)
+    divisions = models.ManyToManyField(Division, verbose_name='Подразделение')
     type_property = models.ForeignKey(TypeProperty, verbose_name='Тип имущества', on_delete=models.SET_NULL, null=True)
     employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True)
     closing_date = models.DateField(verbose_name='Дата закрытия договора', null=True, blank=True)
@@ -66,6 +66,7 @@ class ContractModel(models.Model):
                                     blank=True, null=True, )
     comment = models.TextField(verbose_name='Примечание', blank=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
+    executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True, related_name='contract_executor')
     doc_file = models.FileField(verbose_name='Файл документа', upload_to='library', blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
                                null=True)
