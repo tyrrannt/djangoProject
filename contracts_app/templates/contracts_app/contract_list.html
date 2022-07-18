@@ -1,0 +1,159 @@
+{% extends 'contracts_app/main.html' %}
+{% load static %}
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+        <header class="page-header page-header-left-inline-breadcrumb">
+            <h2 class="font-weight-bold text-6">Договора</h2>
+            <div class="right-wrapper">
+                <ol class="breadcrumbs">
+
+                    <li><span>Home</span></li>
+
+                    <li><span>eCommerce</span></li>
+
+                    <li><span>Coupons</span></li>
+
+                </ol>
+
+                <a class="sidebar-right-toggle" data-open="sidebar-right"><i class="fas fa-chevron-left"></i></a>
+            </div>
+        </header>
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="ecommerce-coupons-form.html"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+ Добавить договор </a>
+                                    </div>
+                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
+                                            <label class="ws-nowrap me-3 mb-0">Фильтр:</label>
+                                            <select class="form-control select-style-1 filter-by" name="filter-by">
+                                                <option value="all" selected>Все</option>
+                                                <option value="1">Код</option>
+                                                <option value="2">Контрагент</option>
+                                                <option value="3">Номер договора</option>
+                                                <option value="4">Дата договора</option>
+                                                <option value="5">Тип договора</option>
+                                                <option value="5">Подразделение</option>
+                                                <option value="5">Статус</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
+                                            <label class="ws-nowrap me-3 mb-0">Количество:</label>
+                                            <select class="form-control select-style-1 results-per-page"
+                                                    name="results-per-page">
+                                                <option value="12" selected>12</option>
+                                                <option value="24">24</option>
+                                                <option value="36">36</option>
+                                                <option value="100">100</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-lg-auto ps-lg-1">
+                                        <div class="search search-style-1 search-style-1-lg mx-lg-auto">
+                                            <div class="input-group">
+                                                <input type="text" class="search-term form-control" name="search-term"
+                                                       id="search-term" placeholder="Поиск договора">
+                                                <button class="btn btn-default" type="submit"><i
+                                                        class="bx bx-search"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+
+                                <thead>
+                                <tr>
+                                    <th width="3%"><input type="checkbox" name="select-all"
+                                                          class="select-all checkbox-style-1 p-relative top-2"
+                                                          value=""/></th>
+                                    <th width="8%">Код</th>
+                                    <th width="25%">Контрагент</th>
+                                    <th width="18%">Номер договора</th>
+                                    <th width="12%">Дата договора</th>
+                                    <th width="12%">Тип договора</th>
+                                    <th width="12%">Подразделение</th>
+                                    <th width="12%">Статус</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for item in object_list %}
+                                    <tr>
+                                        <td width="30"><input type="checkbox" name="checkboxRow1"
+                                                              class="checkbox-style-1 p-relative top-2" value=""/></td>
+                                        <td><a href="ecommerce-coupons-form.html"><strong>{{ item.pk }}</strong></a>
+                                        </td>
+                                        <td>
+                                            <a href="ecommerce-coupons-form.html"><strong>{{ item.contract_counteragent }}</strong></a>
+                                        </td>
+                                        <td>{{ item.contract_number }}</td>
+                                        <td>{{ item.date_conclusion }}</td>
+                                        <td>{{ item.type_of_contract }}</td>
+                                        <td>{{ item.divisions }}</td>
+                                        <td>
+                                            {% if item.closing_date == null or item.closing_date < now %}
+                                                <span class="ecommerce-status active">Действующий</span>
+                                            {% else %}
+                                                <span class="ecommerce-status deactive">Не действующий</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                            <hr class="solid mt-5 opacity-4">
+                            <div class="datatable-footer">
+                                <div class="row align-items-center justify-content-between mt-3">
+                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-stretch">
+                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">
+                                                <select class="form-control select-style-1 bulk-action"
+                                                        name="bulk-action" style="min-width: 170px;">
+                                                    <option value="" selected>Редактировать</option>
+                                                    <option value="delete">Удалить</option>
+                                                </select>
+                                                <a href="ecommerce-coupons-form.html"
+                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-auto text-center order-3 order-lg-2">
+                                        <div class="results-info-wrapper"></div>
+                                    </div>
+                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                        <div class="pagination-wrapper"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+{% endblock %}
+
+{% block SpecificPageVendor %}
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+    <!-- Examples -->
+    <script src="{% static 'admin_templates/js/examples/examples.header.menu.js' %}"></script>
+    <script src="{% static 'admin_templates/js/examples/examples.ecommerce.datatables.list.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% load static %}
+<aside id="sidebar-right" class="sidebar-right">
+    <div class="nano">
+        <div class="nano-content">
+            <a href="#" class="mobile-close d-md-none">
+                Collapse <i class="fas fa-chevron-right"></i>
+            </a>
+            <div class="sidebar-right-wrapper">
+                <div class="sidebar-widget widget-calendar">
+                    <h6>ПРЕДСТОЯЩИЕ ЗАДАЧИ</h6>
+                    <div data-plugin-datepicker data-plugin-skin="dark"></div>
+                    <ul>
+                        <li>
+                            <time datetime="2021-04-19T00:00+00:00">04/19/2021</time>
+                            <span>Собрание компании</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-widget widget-friends">
+                    <h6>Друзья</h6>
+                    <ul>
+                        <li class="status-online">
+                            <figure class="profile-picture">
+                                <img src="{{ databaseuser.avatar.url }}"
+                                     alt="{{ databaseuser.last_name }} {{ databaseuser.first_name }}"
+                                     class="rounded-circle">
+                            </figure>
+                            <div class="profile-info">
+                                <span class="name">{{ databaseuser.last_name }} {{ databaseuser.first_name }}</span>
+                                <span class="title">Привет, как дела?</span>
+                            </div>
+                        </li>
+                        {#                    ToDo: Обработать блок выдачи#}
+                        <li class="status-offline">
+                            <figure class="profile-picture">
+                                <img src="{{ databaseuser.avatar.url }}"
+                                     alt="{{ databaseuser.last_name }} {{ databaseuser.first_name }}"
+                                     class="rounded-circle">
+                            </figure>
+                            <div class="profile-info">
+                                <span class="name">{{ databaseuser.last_name }} {{ databaseuser.first_name }}</span>
+                                <span class="title">Привет, как дела?</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>

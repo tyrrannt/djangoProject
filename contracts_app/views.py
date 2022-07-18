@@ -1,6 +1,8 @@
 from django.shortcuts import render, HttpResponseRedirect
 from django.utils.decorators import method_decorator
-from django.views.generic import DetailView, UpdateView
+from django.views.generic import DetailView, UpdateView, ListView
+
+from contracts_app.models import Contract
 from customers_app.models import DataBaseUser, Posts
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm
 from django.contrib import auth, messages
@@ -12,3 +14,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 def index(request):
     return render(request, 'contracts_app/main.html')
+
+class ContractList(ListView):
+    model = Contract

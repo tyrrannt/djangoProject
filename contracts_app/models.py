@@ -36,16 +36,16 @@ class Estate(models.Model):
     release_date = models.DateField(verbose_name='дата выпуска')
 
 
-class Contract(models.Model):
+class ContractModel(models.Model):
     class Meta:
-        verbose_name = 'Договор'
-        verbose_name_plural = 'Договора'
+        abstract = True
+
 
     type_of_prolongation = [
         ('auto', 'Автоматическая пролонгация'),
         ('ag', 'Оформление ДС')
     ]
-
+    parent_category = models.ForeignKey('self', verbose_name='Главный документ', on_delete=models.CASCADE, null=True, blank=True)
     contract_counteragent = models.ForeignKey(Counteragent, verbose_name='Сторона договора', on_delete=models.SET_NULL,
                                               null=True)
     internal_number = models.CharField(verbose_name='Номер в папке', max_length=50, blank=True, null=True,
@@ -71,3 +71,18 @@ class Contract(models.Model):
 
     def __str__(self):
         return f'{self.contract_counteragent}-{self.contract_number}'
+
+    def __str__(self):
+        if self.parent_category:
+            return f'{self.parent_category}/{self.contract_counteragent}-{self.contract_number}'
+        else:
+            return f'{self.contract_counteragent}-{self.contract_number}'
+
+
+class Contract(ContractModel):
+    class Meta:
+        verbose_name = 'Договор'
+        verbose_name_plural = 'Договора'
+
+    def __init__(self, *args, **kwargs):
+        super(Contract, self).__init__(*args, **kwargs)
