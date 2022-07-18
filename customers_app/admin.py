@@ -26,7 +26,8 @@ class CustomUserAdmin(UserAdmin):
             'Профиль',
             {
                 'fields': (
-                    'surname', 'avatar', 'birthday', 'access_right', 'address', 'type_users', 'internal_phone', 'work_phone',
+                    'surname', 'avatar', 'birthday', 'access_right', 'address', 'type_users', 'internal_phone',
+                    'work_phone',
                     'personal_phone', 'gender', 'divisions', 'job',
                 ),
             },
@@ -43,4 +44,3 @@ admin.site.register(Posts)
 admin.site.register(Job, )
 admin.site.register(Division, )
 admin.site.register(Counteragent)
-

@@ -4,20 +4,20 @@ Written by: 	Okler Themes - (http://www.okler.net)
 Theme Version: 	4.0.0
 */
 
-(function ($) {
+(function($) {
 
-    'use strict';
+	'use strict';
 
-    var datatableInit = function () {
+	var datatableInit = function() {
 
-        $('#datatable-default').dataTable({
-            dom: '<"row"<"col-lg-6"l><"col-lg-6"f>><"table-responsive"t>p'
-        });
+		$('#datatable-default').dataTable({
+			dom: '<"row"<"col-lg-6"l><"col-lg-6"f>><"table-responsive"t>p'
+		});
 
-    };
+	};
 
-    $(function () {
-        datatableInit();
-    });
+	$(function() {
+		datatableInit();
+	});
 
 }).apply(this, [jQuery]);

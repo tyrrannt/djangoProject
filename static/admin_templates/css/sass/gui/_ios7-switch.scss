@@ -1,58 +1,58 @@
 /* IOs Switch */
 .switch {
-  display: inline-block;
-  vertical-align: middle;
-  cursor: pointer;
-  margin: 3px 0;
+	display: inline-block;
+	vertical-align: middle;
+	cursor: pointer;
+	margin: 3px 0;
 
-  .ios-switch {
-    height: 35px;
-    width: 65px;
+	.ios-switch {
+		height: 35px;
+		width: 65px;
 
-    .handle {
-      height: 31px;
-      width: 31px;
-    }
-  }
+		.handle {
+			height: 31px;
+			width: 31px;
+		}
+	}
 
-  @each $state in $states {
+	@each $state in $states {
 
-    &.switch-#{nth($state,1)} {
-      .ios-switch .on-background {
-        background: #{nth($state,2)};
-      }
-    }
+		&.switch-#{nth($state,1)} {
+			.ios-switch .on-background {
+				background: #{nth($state,2)};
+			}
+		}
 
-  }
+	}
 
-  &.switch-lg {
+	&.switch-lg {
 
-    .ios-switch {
-      height: 45px;
-      width: 75px;
+		.ios-switch {
+			height: 45px;
+			width: 75px;
 
-      .handle {
-        height: 41px;
-        width: 41px;
-      }
+			.handle {
+				height: 41px;
+				width: 41px;
+			}
 
-    }
+		}
 
-  }
+	}
 
-  &.switch-sm {
+	&.switch-sm {
 
-    .ios-switch {
-      height: 25px;
-      width: 55px;
+		.ios-switch {
+			height: 25px;
+			width: 55px;
 
-      .handle {
-        height: 21px;
-        width: 21px;
-      }
+			.handle {
+				height: 21px;
+				width: 21px;
+			}
 
-    }
-  }
+		}
+	}
 }
 
 .ios-switch {

@@ -4,39 +4,39 @@ Written by: 	Okler Themes - (http://www.okler.net)
 Theme Version: 	4.0.0
 */
 
-(function ($) {
+(function($) {
 
-    'use strict';
+	'use strict';
 
-    var $window = $(window);
+	var $window = $(window);
 
-    /* Fix Map size on Mobile */
-    function fixMapListener() {
+	/* Fix Map size on Mobile */
+	function fixMapListener() {
 
-        fixMapSize();
+		fixMapSize();
 
-        $(window).on('load resize orientationchange', function () {
-            fixMapSize();
-        });
+		$(window).on('load resize orientationchange', function() {
+			fixMapSize();
+		});
 
-    }
+	}
 
-    function fixMapSize() {
-        if ($window.width() <= 767) {
+	function fixMapSize() {
+		if ( $window.width() <= 767 ) {
 
-            var windowHeight = $(window).height(),
-                offsetTop = $('#gmap').offset().top,
-                contentPadding = parseInt($('.content-body').css('padding-bottom'), 10);
+			var windowHeight = $(window).height(),
+				offsetTop = $('#gmap').offset().top,
+				contentPadding = parseInt($('.content-body').css('padding-bottom'), 10);
 
-            $('#gmap').height(windowHeight - offsetTop - contentPadding);
-        }
-    }
+			$('#gmap').height( windowHeight - offsetTop - contentPadding );
+		}
+	}
 
-    // auto initialize
-    $(function () {
+	// auto initialize
+	$(function() {
 
-        fixMapListener();
+		fixMapListener();
 
-    });
+	});
 
 }).apply(this, [jQuery]);

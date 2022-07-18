@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0014_delete_tasks'),
         ('contracts_app', '0002_alter_contract_options_alter_estate_options_and_more'),
@@ -15,11 +14,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contract',
             name='divisions',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.division', verbose_name='Подразделение'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='customers_app.division', verbose_name='Подразделение'),
         ),
         migrations.AlterField(
             model_name='contract',
             name='type_property',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='contracts_app.typeproperty', verbose_name='Тип имущества'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='contracts_app.typeproperty', verbose_name='Тип имущества'),
         ),
     ]

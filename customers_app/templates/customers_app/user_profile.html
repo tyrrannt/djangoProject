@@ -57,10 +57,11 @@
                                     </div>
                                 </div>
                             </div>
-{#                            ToDo: Доработать блок#}
+                            {#                            ToDo: Доработать блок#}
                             <div class="widget-content-expanded">
                                 <ul class="simple-todo-list mt-3">
-                                    <li {% if databaseuser.avatar %} class="completed" {% endif %}>Изображение профиля</li>
+                                    <li {% if databaseuser.avatar %} class="completed" {% endif %}>Изображение профиля
+                                    </li>
                                     <li class="completed">Личная информация</li>
                                     <li>Профиль в соцсетях</li>
                                 </ul>
@@ -78,15 +79,15 @@
 
                         <hr class="dotted short">
 
-{#                        <div class="social-icons-list">#}
-{#                            <a rel="tooltip" data-bs-placement="bottom" target="_blank" href="https://www.facebook.com"#}
-{#                               data-original-title="Facebook"><i class="fab fa-facebook-f"></i><span>Facebook</span></a>#}
-{#                            <a rel="tooltip" data-bs-placement="bottom" href="https://www.twitter.com"#}
-{#                               data-original-title="Twitter"><i class="fab fa-twitter"></i><span>Twitter</span></a>#}
-{#                            <a rel="tooltip" data-bs-placement="bottom" href="http://www.linkedin.com"#}
-{#                               data-original-title="Linkedin"><i#}
-{#                                    class="fab fa-linkedin-in"></i><span>Linkedin</span></a>#}
-{#                        </div>#}
+                        {#                        <div class="social-icons-list">#}
+                        {#                            <a rel="tooltip" data-bs-placement="bottom" target="_blank" href="https://www.facebook.com"#}
+                        {#                               data-original-title="Facebook"><i class="fab fa-facebook-f"></i><span>Facebook</span></a>#}
+                        {#                            <a rel="tooltip" data-bs-placement="bottom" href="https://www.twitter.com"#}
+                        {#                               data-original-title="Twitter"><i class="fab fa-twitter"></i><span>Twitter</span></a>#}
+                        {#                            <a rel="tooltip" data-bs-placement="bottom" href="http://www.linkedin.com"#}
+                        {#                               data-original-title="Linkedin"><i#}
+                        {#                                    class="fab fa-linkedin-in"></i><span>Linkedin</span></a>#}
+                        {#                        </div>#}
 
                     </div>
                 </section>
@@ -240,7 +241,7 @@
                                                 {% now "d - m - Y г." %}</h5>
                                         </div>
                                         <ol class="tm-items">
-{#                                            ToDo: Доработать вывод постов#}
+                                            {#                                            ToDo: Доработать вывод постов#}
                                             {% for item in posts %}
                                                 {% for items in item.post_divisions.iterator %}
                                                     {% if items == databaseuser.divisions %}

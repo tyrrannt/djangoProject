@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0010_tasks'),
     ]
@@ -19,11 +18,15 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tasks',
             name='creator',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='creator_person', to=settings.AUTH_USER_MODEL, verbose_name='Создатель задачи'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='creator_person', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Создатель задачи'),
         ),
         migrations.AddField(
             model_name='tasks',
             name='executor',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='executor_person', to=settings.AUTH_USER_MODEL, verbose_name='Исполнитель задачи'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='executor_person', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Исполнитель задачи'),
         ),
     ]

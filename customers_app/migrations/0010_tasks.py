@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0009_remove_databaseuser_works_databaseuser_divisions_and_more'),
     ]
@@ -18,10 +17,13 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('creation_date', models.DateTimeField(auto_created=True, verbose_name='Дата и время создания')),
                 ('execution_time', models.DateTimeField(null=True, verbose_name='Дата и время создания')),
-                ('task_title', models.CharField(default='', max_length=100, null=True, verbose_name='Заголовок задачи')),
+                (
+                'task_title', models.CharField(default='', max_length=100, null=True, verbose_name='Заголовок задачи')),
                 ('description', models.TextField(blank=True, verbose_name='Описание задачи')),
                 ('completed', models.BooleanField(default=False, verbose_name='Выполнена')),
-                ('owner', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='Владелец задачи')),
+                ('owner',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL,
+                                   verbose_name='Владелец задачи')),
             ],
         ),
     ]

@@ -2,22 +2,8 @@
 {% load static %}
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-        <header class="page-header page-header-left-inline-breadcrumb">
-            <h2 class="font-weight-bold text-6">Договора</h2>
-            <div class="right-wrapper">
-                <ol class="breadcrumbs">
 
-                    <li><span>Home</span></li>
-
-                    <li><span>eCommerce</span></li>
-
-                    <li><span>Coupons</span></li>
-
-                </ol>
-
-                <a class="sidebar-right-toggle" data-open="sidebar-right"><i class="fas fa-chevron-left"></i></a>
-            </div>
-        </header>
+        {% include 'library_app/breadcrumb.html' %}
 
         <!-- start: page -->
         <div class="row">
@@ -29,8 +15,9 @@
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
                                     <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                        <a href="ecommerce-coupons-form.html"
-                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+ Добавить договор </a>
+                                        <a href="{% url 'contracts_app:create' %}"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+ Добавить
+                                            договор </a>
                                     </div>
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
@@ -94,10 +81,11 @@
                                     <tr>
                                         <td width="30"><input type="checkbox" name="checkboxRow1"
                                                               class="checkbox-style-1 p-relative top-2" value=""/></td>
-                                        <td><a href="ecommerce-coupons-form.html"><strong>{{ item.pk }}</strong></a>
+                                        <td>
+                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="ecommerce-coupons-form.html"><strong>{{ item.contract_counteragent }}</strong></a>
+                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
                                         </td>
                                         <td>{{ item.contract_number }}</td>
                                         <td>{{ item.date_conclusion }}</td>

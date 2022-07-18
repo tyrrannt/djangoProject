@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0011_remove_tasks_owner_tasks_creator_tasks_executor'),
         ('customers_app', '0012_posts_post_divisions'),

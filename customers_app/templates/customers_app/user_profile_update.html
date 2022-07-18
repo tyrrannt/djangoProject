@@ -31,8 +31,9 @@
                 <section class="card">
                     <div class="card-body">
                         <div class="thumb-info mb-3">
-                          {% if databaseuser.avatar %}
-                                <img src="{{ databaseuser.avatar.url }}" class="rounded img-fluid" alt="{{ databaseuser.username }}">
+                            {% if databaseuser.avatar %}
+                                <img src="{{ databaseuser.avatar.url }}" class="rounded img-fluid"
+                                     alt="{{ databaseuser.username }}">
                             {% else %}
                                 <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
                                      alt="{{ databaseuser.username }}">
@@ -263,7 +264,7 @@
                                                 {% now "d - m - Y г." %}</h5>
                                         </div>
                                         <ol class="tm-items">
-{#                                            ToDo: Доработать вывод постов#}
+                                            {#                                            ToDo: Доработать вывод постов#}
                                             {% for item in posts %}
                                                 {% for items in item.post_divisions.iterator %}
                                                     {% if items == databaseuser.divisions %}
@@ -285,7 +286,8 @@
 
                         </div>
                         <div id="edit" class="tab-pane active">
-                            <form action="{% url 'customers_app:profile_update' user.pk %}" method="post" enctype="multipart/form-data">
+                            <form action="{% url 'customers_app:profile_update' user.pk %}" method="post"
+                                  enctype="multipart/form-data">
                                 {% csrf_token %}
                                 <h4 class="mb-3 font-weight-semibold text-dark">Личная информация</h4>
                                 {{ form.as_p }}

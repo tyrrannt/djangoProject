@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0009_remove_databaseuser_works_databaseuser_divisions_and_more'),
     ]

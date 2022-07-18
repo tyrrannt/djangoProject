@@ -4,23 +4,23 @@ Written by: 	Okler Themes - (http://www.okler.net)
 Theme Version: 	4.0.0
 */
 
-(function ($) {
+(function($) {
 
-    'use strict';
+	'use strict';
 
-    // Toggle Mega Sub Menu Expand Button
-    var megaSubMenuToggleButton = function () {
+	// Toggle Mega Sub Menu Expand Button
+	var megaSubMenuToggleButton = function() {
 
-        var $button = $('.mega-sub-nav-toggle');
+		var $button = $('.mega-sub-nav-toggle');
 
-        $button.on('click', function () {
-            $(this).toggleClass('toggled');
-        });
+		$button.on('click', function(){
+			$(this).toggleClass('toggled');
+		});
 
-    };
+	};
 
-    $(function () {
-        megaSubMenuToggleButton();
-    });
+	$(function() {
+		megaSubMenuToggleButton();
+	});
 
 }).apply(this, [jQuery]);

@@ -89,9 +89,9 @@ No Bootstrap CSS is required for the plugin to work.
       <h1>Bootstrap Colorpicker Demo (with Bootstrap)</h1>
       <input id="demo-input" type="text" value="rgb(255, 128, 0)" />
   </div>
-  <script src="{% static 'admin_templates///code.jquery.com/jquery-3.4.1.js"></script>
-  <script src="{% static 'admin_templates///unpkg.com/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{% static 'admin_templates/dist/js/bootstrap-colorpicker.js"></script>
+  <script src="//code.jquery.com/jquery-3.4.1.js"></script>
+  <script src="//unpkg.com/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="dist/js/bootstrap-colorpicker.js"></script>
   <script>
     $(function () {
       // Basic instantiation:
@@ -123,8 +123,8 @@ you will usually need to set inline to `true` and a `container` selector option.
       <h1>Bootstrap Colorpicker Demo (without Bootstrap)</h1>
     <input type="text" value="rgb(255, 128, 0)" />
   </div>
-  <script src="{% static 'admin_templates///code.jquery.com/jquery-3.4.1.js"></script>
-  <script src="{% static 'admin_templates/dist/js/bootstrap-colorpicker.js"></script>
+  <script src="//code.jquery.com/jquery-3.4.1.js"></script>
+  <script src="dist/js/bootstrap-colorpicker.js"></script>
   <script>
     $(function() {
       $('#demo').colorpicker({

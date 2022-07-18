@@ -1692,7 +1692,7 @@
 		format: 'mm/dd/yyyy',
 		keepEmptyValues: false,
 		keyboardNavigation: true,
-		language: 'ru',
+		language: 'en',
 		minViewMode: 0,
 		maxViewMode: 4,
 		multidate: false,

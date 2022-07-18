@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0008_division_history'),
     ]
@@ -18,12 +17,14 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='databaseuser',
             name='divisions',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.division', verbose_name='подразделение'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='customers_app.division', verbose_name='подразделение'),
         ),
         migrations.AddField(
             model_name='databaseuser',
             name='job',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.job', verbose_name='должность'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.job',
+                                    verbose_name='должность'),
         ),
         migrations.DeleteModel(
             name='Work',

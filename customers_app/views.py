@@ -28,16 +28,17 @@ class DataBaseUserProfile(DetailView):
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
         context['title'] = title = 'редактирование'
         context['posts'] = post
-        #context.update(groups())
+        # context.update(groups())
         return context
 
 
 class DataBaseUserUpdate(UpdateView):
     model = DataBaseUser
     template_name = 'customers_app/user_profile_update.html'
-    #success_url = reverse_lazy('library_app:index')
+    # success_url = reverse_lazy('library_app:index')
     form_class = DataBaseUserUpdateForm
-    #fields = ['first_name', 'last_name', 'email', 'birthday', 'phone', 'surname']
+
+    # fields = ['first_name', 'last_name', 'email', 'birthday', 'phone', 'surname']
 
     @method_decorator(user_passes_test(lambda u: u.is_superuser))
     def dispatch(self, request, *args, **kwargs):

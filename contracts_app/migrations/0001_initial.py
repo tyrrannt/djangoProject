@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -34,27 +33,36 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('release_date', models.DateField(verbose_name='дата выпуска')),
-                ('type_property', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='contracts_app.typeproperty')),
+                ('type_property', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                    to='contracts_app.typeproperty')),
             ],
         ),
         migrations.CreateModel(
             name='Contract',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('internal_number', models.CharField(blank=True, max_length=50, null=True, verbose_name='Номер в папке')),
-                ('contract_number', models.CharField(blank=True, max_length=50, null=True, verbose_name='Номер договора')),
+                ('internal_number',
+                 models.CharField(blank=True, max_length=50, null=True, verbose_name='Номер в папке')),
+                ('contract_number',
+                 models.CharField(blank=True, max_length=50, null=True, verbose_name='Номер договора')),
                 ('date_conclusion', models.DateField(verbose_name='Дата заключения договора')),
                 ('subject_contract', models.TextField(blank=True, verbose_name='Предмет договора')),
                 ('cost', models.FloatField(default=0, verbose_name='Стоимость')),
                 ('closing_date', models.DateField(verbose_name='Дата закрытия договора')),
-                ('prolongation', models.CharField(blank=True, choices=[('auto', 'Автоматическая пролонгация'), ('ag', 'Оформление ДС')], max_length=40, null=True, verbose_name='Пролонгация')),
+                ('prolongation',
+                 models.CharField(blank=True, choices=[('auto', 'Автоматическая пролонгация'), ('ag', 'Оформление ДС')],
+                                  max_length=40, null=True, verbose_name='Пролонгация')),
                 ('comment', models.TextField(blank=True, verbose_name='Примечание')),
                 ('date_entry', models.DateField(auto_now_add=True, verbose_name='Дата ввода информации')),
                 ('doc_file', models.FileField(blank=True, upload_to='library', verbose_name='Файл документа')),
-                ('contract_counteragent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.counteragent', verbose_name='Сторона договора')),
+                ('contract_counteragent', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                            to='customers_app.counteragent',
+                                                            verbose_name='Сторона договора')),
                 ('employee', models.ManyToManyField(to=settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо')),
-                ('type_of_contract', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='contracts_app.typecontract', verbose_name='Тип договора')),
-                ('type_property', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='contracts_app.typeproperty')),
+                ('type_of_contract', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                       to='contracts_app.typecontract', verbose_name='Тип договора')),
+                ('type_property', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                    to='contracts_app.typeproperty')),
             ],
         ),
     ]

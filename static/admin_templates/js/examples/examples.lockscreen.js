@@ -4,23 +4,23 @@ Written by: 	Okler Themes - (http://www.okler.net)
 Theme Version: 	4.0.0
 */
 
-(function ($) {
+(function($) {
 
-    'use strict';
+	'use strict';
 
-    var $document,
-        idleTime;
+	var $document,
+		idleTime;
 
-    $document = $(document);
+	$document = $(document);
 
-    $(function () {
-        $.idleTimer(10000); // ms
+	$(function() {
+		$.idleTimer( 10000 ); // ms
 
-        $document.on('idle.idleTimer', function () {
-            // if you don't want the modal
-            // you can make a redirect here
-            LockScreen.show();
-        });
-    });
+		$document.on( 'idle.idleTimer', function() {
+			// if you don't want the modal
+			// you can make a redirect here
+			LockScreen.show();
+		});
+	});
 
 }).apply(this, [jQuery]);

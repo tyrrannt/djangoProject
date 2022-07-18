@@ -58,13 +58,13 @@ Put the required stylesheet at the [top](https://developer.yahoo.com/performance
 Put the script at the [bottom](https://developer.yahoo.com/performance/rules.html#js_bottom) of your markup right after jQuery:
 
 ```html
-<script src="{% static 'admin_templates//node_modules/jquery/dist/jquery.js"></script>
-<script src="{% static 'admin_templates//node_modules/owl.carousel/dist/owl.carousel.min.js"></script>
+<script src="/node_modules/jquery/dist/jquery.js"></script>
+<script src="/node_modules/owl.carousel/dist/owl.carousel.min.js"></script>
 ```
 
 ```html
-<script src="{% static 'admin_templates//bower_components/jquery/dist/jquery.js"></script>
-<script src="{% static 'admin_templates//bower_components/owl.carousel/dist/owl.carousel.min.js"></script>
+<script src="/bower_components/jquery/dist/jquery.js"></script>
+<script src="/bower_components/owl.carousel/dist/owl.carousel.min.js"></script>
 ```
 
 ### Usage

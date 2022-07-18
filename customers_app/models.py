@@ -138,10 +138,10 @@ class Division(Category):
     """
     Класс Division - содержит подразделения компании
     """
+
     class Meta:
         verbose_name = 'Подразделение'
         verbose_name_plural = 'Подразделения организации'
-
 
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)
@@ -207,7 +207,7 @@ class Counteragent(models.Model):
                                          related_name='physical')
     email = models.EmailField(verbose_name='Email', null=True)
     phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
-                                  null=True, )
+                             null=True, )
     base_counteragent = models.BooleanField(verbose_name='Основная организация', default=False)
     director = models.ForeignKey(DataBaseUser, verbose_name='Директор', on_delete=models.SET_NULL, null=True,
                                  blank=True,
@@ -234,6 +234,3 @@ class Posts(models.Model):
 
     def __str__(self):
         return f'{self.creation_date} / {self.pk}'
-
-
-

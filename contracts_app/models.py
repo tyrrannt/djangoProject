@@ -40,12 +40,12 @@ class ContractModel(models.Model):
     class Meta:
         abstract = True
 
-
     type_of_prolongation = [
         ('auto', 'Автоматическая пролонгация'),
         ('ag', 'Оформление ДС')
     ]
-    parent_category = models.ForeignKey('self', verbose_name='Главный документ', on_delete=models.CASCADE, null=True, blank=True)
+    parent_category = models.ForeignKey('self', verbose_name='Главный документ', on_delete=models.CASCADE, null=True,
+                                        blank=True)
     contract_counteragent = models.ForeignKey(Counteragent, verbose_name='Сторона договора', on_delete=models.SET_NULL,
                                               null=True)
     internal_number = models.CharField(verbose_name='Номер в папке', max_length=50, blank=True, null=True,
@@ -59,7 +59,7 @@ class ContractModel(models.Model):
                                          null=True)
     divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True)
     type_property = models.ForeignKey(TypeProperty, verbose_name='Тип имущества', on_delete=models.SET_NULL, null=True)
-    employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True )
+    employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True)
     closing_date = models.DateField(verbose_name='Дата закрытия договора', null=True, blank=True)
     prolongation = models.CharField(verbose_name='Пролонгация', max_length=40, choices=type_of_prolongation,
                                     help_text='',
@@ -67,7 +67,8 @@ class ContractModel(models.Model):
     comment = models.TextField(verbose_name='Примечание', blank=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
     doc_file = models.FileField(verbose_name='Файл документа', upload_to='library', blank=True)
-    access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL, null=True)
+    access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
+                               null=True)
 
     def __str__(self):
         return f'{self.contract_counteragent}-{self.contract_number}'
@@ -86,3 +87,18 @@ class Contract(ContractModel):
 
     def __init__(self, *args, **kwargs):
         super(Contract, self).__init__(*args, **kwargs)
+
+
+class Posts(models.Model):
+    class Meta:
+        verbose_name = 'Заметка'
+        verbose_name_plural = 'Заметки'
+
+    contract_number = models.ForeignKey(Contract, verbose_name='Номер контракта', on_delete=models.CASCADE)
+    creation_date = models.DateField(verbose_name='Дата создания', auto_created=True)
+    post_description = models.TextField(verbose_name='Текст заметки', blank=True)
+    responsible_person = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо', on_delete=models.SET_NULL,
+                                           null=True)
+
+    def __str__(self):
+        return f'{self.contract_number} / {self.pk}'
