@@ -37,6 +37,11 @@ class Estate(models.Model):
 
 
 class ContractModel(models.Model):
+    """
+    Абстрактная модель договоров. Введена для возможности реализации иерархической вложенности. Элемент модели
+    может выступать в качестве родителя и дочернего объекта.
+    """
+
     class Meta:
         abstract = True
 
@@ -66,13 +71,11 @@ class ContractModel(models.Model):
                                     blank=True, null=True, )
     comment = models.TextField(verbose_name='Примечание', blank=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
-    executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True, related_name='contract_executor')
+    executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True,
+                                 related_name='contract_executor')
     doc_file = models.FileField(verbose_name='Файл документа', upload_to='library', blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
                                null=True)
-
-    def __str__(self):
-        return f'{self.contract_counteragent}-{self.contract_number}'
 
     def __str__(self):
         if self.parent_category:
@@ -82,6 +85,10 @@ class ContractModel(models.Model):
 
 
 class Contract(ContractModel):
+    """
+    Модель договора
+    """
+
     class Meta:
         verbose_name = 'Договор'
         verbose_name_plural = 'Договора'
@@ -91,15 +98,18 @@ class Contract(ContractModel):
 
 
 class Posts(models.Model):
+    """
+    Модель Posts - введена для возможности ведения заметок к договорам.
+    """
+
     class Meta:
         verbose_name = 'Заметка'
         verbose_name_plural = 'Заметки'
 
-    contract_number = models.ForeignKey(Contract, verbose_name='Номер контракта', on_delete=models.CASCADE)
-    creation_date = models.DateField(verbose_name='Дата создания', auto_created=True)
+    contract_number = models.ForeignKey(Contract, verbose_name='Номер договора', on_delete=models.CASCADE)
+    creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
     responsible_person = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо', on_delete=models.SET_NULL,
                                            null=True)
 
-    def __str__(self):
-        return f'{self.contract_number} / {self.pk}'
+

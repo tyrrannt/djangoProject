@@ -5,8 +5,8 @@
 
     <!-- Basic -->
     <meta charset="UTF-8">
-
-    <title>Coupons | Porto Admin - Responsive HTML5 Template</title>
+    {% block title %}
+    {% endblock %}
     <meta name="keywords" content="HTML5 Admin Template"/>
     <meta name="description" content="Porto Admin - Responsive HTML5 Template">
     <meta name="author" content="okler.net">
@@ -27,7 +27,8 @@
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
-
+    {% block custome_css %}
+    {% endblock %}
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
 
@@ -112,8 +113,11 @@
 <script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
 
 <!-- Specific Page Vendor -->
-<script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{#<script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>#}
+{#<script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>#}
+
+{% block custome_script %}
+{% endblock %}
 
 <!-- Theme Base, Components and Settings -->
 <script src="{% static 'admin_templates/js/theme.js' %}"></script>

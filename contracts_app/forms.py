@@ -1,4 +1,4 @@
-from .models import Contract
+from .models import Contract, Posts
 from django import forms
 
 
@@ -14,3 +14,14 @@ class ContractsAddForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control mb-4'
+
+
+class ContractsPostAddForm(forms.ModelForm):
+    class Meta:
+        model = Posts
+        fields = ('contract_number', 'post_description', 'responsible_person')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'

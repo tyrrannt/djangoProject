@@ -1,11 +1,16 @@
 {% extends 'contracts_app/main.html' %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0" xmlns="http://www.w3.org/1999/html">
 
         {% include 'library_app/breadcrumb.html' %}
 
         <!-- start: page -->
-        <form class="order-details action-buttons-fixed" method="post">
+        <div class="order-details action-buttons-fixed" method="post">
             <div class="row">
                 <div class="col-xl-4 mb-4 mb-xl-0">
 
@@ -143,50 +148,24 @@
                                     <thead>
                                     <tr>
                                         <th width="8%" class="ps-4">ID</th>
-                                        <th width="65%">Name</th>
-                                        <th width="5%" class="text-end">Cost</th>
-                                        <th width="7%" class="text-end">Qty</th>
-                                        <th width="5%" class="text-end">Total</th>
+                                        <th width="65%">Контрагент</th>
+                                        <th width="5%" class="text-end">Номер документа</th>
+                                        <th width="7%" class="text-end">Дата документа</th>
+                                        <th width="5%" class="text-end">Статус</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <tr>
-                                        <td class="ps-4"><a href="ecommerce-products-form.html"><strong>191</strong></a>
+                                        <td class="ps-4"><a href="#"><strong>191</strong></a>
                                         </td>
-                                        <td><a href="ecommerce-products-form.html"><strong>Product Name Example</strong></a>
+                                        <td><a href="#"><strong>Example</strong></a>
                                         </td>
-                                        <td class="text-end">$99</td>
-                                        <td class="text-end">1</td>
-                                        <td class="text-end">$99</td>
+                                        <td class="text-end">99</td>
+                                        <td class="text-end">01/01/2001</td>
+                                        <td class="text-end">Активный</td>
                                     </tr>
-
                                     </tbody>
                                 </table>
-                            </div>
-
-                            <div class="row justify-content-end flex-column flex-lg-row my-3">
-                                <div class="col-auto me-5">
-                                    <h3 class="font-weight-bold text-color-dark text-4 mb-3">Items Subtotal</h3>
-                                    <span class="d-flex align-items-center">
-													3 Items
-													<i class="fas fa-chevron-right text-color-primary px-3"></i>
-													<b class="text-color-dark text-xxs">$298.00</b>
-												</span>
-                                </div>
-                                <div class="col-auto me-5">
-                                    <h3 class="font-weight-bold text-color-dark text-4 mb-3">Shipping</h3>
-                                    <span class="d-flex align-items-center">
-													Flat Rate
-													<i class="fas fa-chevron-right text-color-primary px-3"></i>
-													<b class="text-color-dark text-xxs">$20.00</b>
-												</span>
-                                </div>
-                                <div class="col-auto">
-                                    <h3 class="font-weight-bold text-color-dark text-4 mb-3">Order Total</h3>
-                                    <span class="d-flex align-items-center justify-content-lg-end">
-													<strong class="text-color-dark text-5">$318.00</strong>
-												</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -195,7 +174,6 @@
             </div>
             <div class="row">
                 <div class="col">
-
                     <div class="card card-modern">
                         <div class="card-header">
                             <h2 class="card-title">Заметки к договору</h2>
@@ -203,31 +181,38 @@
                         <div class="card-body">
                             <div class="ecommerce-timeline mb-3">
                                 <div class="ecommerce-timeline-items-wrapper">
-                                    <div class="ecommerce-timeline-item">
-                                        <small>added on June 26, 2020 at 4:01 pm by admin - <a href="#"
-                                                                                               class="text-color-danger">Delete
-                                            note</a></small>
-                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas hendrerit
-                                            augue at leo viverra, aliquam egestas lectus laoreet. Donec vehicula
-                                            vestibulum ipsum, tincidunt ultrices elit suscipit ac. Sed eget risus
-                                            laoreet, varius nibh id, luctus ligula. Nulla facilisi</p>
+                                    {% for item in posts %}
+                                        <div class="ecommerce-timeline-item">
+                                            <small>Добавлено: {{ item.creation_date }}.
+                                                Автор: {{ item.responsible_person }}
+                                            </small>
+                                            <p>{{ item.post_description }}</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <form action="{% url 'contracts_app:post_add' object.pk %}" method="post">
+                                {% csrf_token %}
+                                <input name="contract_number" value="{{ object.pk }}" hidden>
+                                <input name="responsible_person" value="{{ user.pk }}" hidden>
+                                <div class="form-row">
+                                    <div class="form-group col pb-1 mb-3">
+                                        <h4>Добавление заметки</h4>
+                                        <textarea class="form-control form-control-modern" name="post_description"
+                                                  rows="6"></textarea>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col pb-1 mb-3">
-                                    <label>Добавление заметки</label>
-                                    <textarea class="form-control form-control-modern" name="post_description"
-                                              rows="6"></textarea>
+                                <div class="form-row">
+                                    <div class="form-group col">
+                                        <input type="submit"
+                                           class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"/>
+                                        <a class="btn btn-warning btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                           href="{% url 'contracts_app:post_list' pk=object.pk %}?cn={{ object.pk }}">Удалить записи</a>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col">
-                                    <a href="#"
-                                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Добавить</a>
-                                </div>
-                            </div>
+                            </form>
                         </div>
+
                     </div>
 
                 </div>
@@ -246,13 +231,15 @@
                         документ</a>
                 </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить договор
-                    </a>
+                    {% if user.is_superuser %}
+                        <a href="#"
+                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить договор
+                        </a>
+                    {% endif %}
                 </div>
             </div>
-        </form>
+        </div>
         <!-- end: page -->
     </section>
 {% endblock %}

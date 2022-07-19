@@ -3,31 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
 
 
-# Create your models here.
-class Country(models.Model):
-    class Meta:
-        verbose_name = 'Страна'
-        verbose_name_plural = 'Страны'
-
-    code = models.CharField(verbose_name='Код', max_length=3, blank=True, null=True, help_text='')
-    name = models.CharField(verbose_name='Страна', max_length=30, blank=True, null=True, help_text='')
-
-    def __str__(self):
-        return self.name
-
-
-class City(models.Model):
-    class Meta:
-        verbose_name = 'Город'
-        verbose_name_plural = 'Города'
-
-    city_id = models.IntegerField(verbose_name='')
-    country = models.ForeignKey(Country, on_delete=models.SET_NULL, null=True, help_text='')
-    city_name = models.CharField(verbose_name='город', max_length=30, blank=True, null=True, help_text='')
-
-    def __str__(self):
-        return self.city_name
-
 
 class AccessLevel(models.Model):
     class Meta:
@@ -39,42 +14,6 @@ class AccessLevel(models.Model):
 
     def __str__(self):
         return self.description
-
-
-class Address(models.Model):
-    class Meta:
-        verbose_name = 'Адрес'
-        verbose_name_plural = 'Адреса'
-
-    postal_code = models.CharField(verbose_name='индекс', max_length=6, blank=True, null=True, help_text='')
-    country = models.ForeignKey(Country, verbose_name='страна', on_delete=models.SET_NULL, null=True, help_text='')
-    region = models.CharField(verbose_name='область', max_length=30, blank=True, null=True, help_text='')
-    district = models.CharField(verbose_name='район', max_length=30, blank=True, null=True, help_text='')
-    microdistrict = models.CharField(verbose_name='микрорайон', max_length=30, blank=True, null=True, help_text='')
-    city = models.ForeignKey(City, verbose_name='город', on_delete=models.SET_NULL, null=True, help_text='')
-    street = models.CharField(verbose_name='улица', max_length=60, blank=True, null=True, help_text='')
-    house = models.CharField(verbose_name='дом', max_length=6, blank=True, null=True, help_text='')
-    apartment = models.CharField(verbose_name='квартира', max_length=3, blank=True, null=True, help_text='')
-    history = models.DateField(verbose_name="Дата создания", auto_created=True, null=True)
-
-    def __str__(self):
-        result = ''
-        if self.postal_code:
-            result += f'{self.postal_code}'
-        if self.country:
-            result += f', {self.country}'
-        if self.region:
-            result += f', {self.region}'
-        if self.city:
-            result += f', г. {self.city}'
-        if self.street:
-            result += f', ул. {self.street}'
-        if self.house:
-            result += f', д. {self.house}'
-        if self.apartment:
-            result += f', кв. {self.apartment}'
-
-        return result
 
 
 class Job(models.Model):
@@ -166,7 +105,7 @@ class DataBaseUser(AbstractUser):
     birthday = models.DateField(verbose_name='день рождения', blank=True, null=True, help_text='')
     access_right = models.ManyToManyField(AccessLevel, verbose_name='права доступа', default=0, help_text='',
                                           blank=True)
-    address = models.ForeignKey(Address, on_delete=models.SET_NULL, blank=True, null=True, help_text='')
+    address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='тип пользователя', max_length=40, choices=type_of, help_text='',
                                   blank=True, null=True, )
     internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
@@ -201,10 +140,8 @@ class Counteragent(models.Model):
         ('government_agency', 'государственный орган'),
     ]
     type_counteragent = models.CharField(verbose_name='Тип контрагента', max_length=40, choices=type_of, help_text='')
-    juridical_address = models.ForeignKey(Address, verbose_name='Юридический адрес', on_delete=models.SET_NULL,
-                                          null=True, related_name='juridical')
-    physical_address = models.ForeignKey(Address, verbose_name='Физический адрес', on_delete=models.SET_NULL, null=True,
-                                         related_name='physical')
+    juridical_address = models.TextField(verbose_name='Юридический адрес', null=True, blank=True)
+    physical_address = models.TextField(verbose_name='Физический адрес', null=True, blank=True)
     email = models.EmailField(verbose_name='Email', null=True)
     phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
                              null=True, )

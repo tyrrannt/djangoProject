@@ -1,0 +1,28 @@
+{% extends 'contracts_app/main.html' %}
+{% load static %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+        <div class="row">
+            {% for item in object_list %}
+            <div class="col-md-12">
+                <section class="card card-featured card-featured-primary mb-4">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            <a href="{% url 'contracts_app:post_del' item.contract_number.pk %}" class="card-action card-action-dismiss" data-card-dismiss></a>
+                        </div>
+
+                        <h2 class="card-title">{{ item.responsible_person }}</h2>
+                        <p class="card-subtitle">{{ item.creation_date }}</p>
+                    </header>
+                    <div class="card-body">
+                        <p>{{ item.post_description }}</p>
+                        <code>{{ item.pk }}</code>
+                    </div>
+                </section>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

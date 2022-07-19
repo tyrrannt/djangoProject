@@ -7,4 +7,7 @@ urlpatterns = [
     path('', views.ContractList.as_view(), name='index'),
     path('create/', views.ContractAdd.as_view(), name='create'),
     path('<int:pk>/', views.ContractDetail.as_view(), name='detail'),
+    path('<int:pk>/postadd/', views.ContractPostAdd.as_view(), name='post_add'),
+    path('<int:pk>/posts/', views.ContractPostList.as_view(), name='post_list'),
+    path('<int:pk>/posts/del/', views.ContractPostDelete.as_view(), name='post_del'),
 ]

@@ -1,5 +1,10 @@
 {% extends 'customers_app/base.html' %}
 {% load static %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
 {% block content %}
     <!--
     <form class="form-horizontal" action="{% url 'customers_app:login' %}" method="post">

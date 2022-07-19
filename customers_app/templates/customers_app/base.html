@@ -5,7 +5,8 @@
 
     <!-- Basic -->
     <meta charset="UTF-8">
-
+    {% block title %}
+    {% endblock %}
     <meta name="keywords" content="HTML5 Admin Template"/>
     <meta name="description" content="Porto Admin - Responsive HTML5 Template">
     <meta name="author" content="okler.net">
@@ -41,11 +42,6 @@
         <script src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
     {% endblock %}
 
-    <title>
-        {% block title %}
-            {{ title|title }}
-        {% endblock %}
-    </title>
 </head>
 <body>
 <!-- start: page -->
