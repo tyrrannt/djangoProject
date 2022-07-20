@@ -46,24 +46,37 @@ class ContractDetail(DetailView):
         context['posts'] = post
         return context
 
+
 class ContractPostAdd(CreateView):
+    """
+    Добавление записи к договору
+    """
     model = Posts
     form_class = ContractsPostAddForm
     success_url = reverse_lazy('contracts_app:index')
 
+
 class ContractPostList(ListView):
+    """
+    Вывод списка записей, относящихся к конкретному договору
+    """
     model = Posts
-    #queryset = Posts.objects.filter(contract_number=)
 
     def get_queryset(self):
+        """
+        Переопределен метод получения QuerySet. Записи фильтруются исходя из GET запроса, в котором передается
+        параметр contract_number.
+        :return: Отфильтрованный QuerySet если задан параметр GET, иначе выводит полный список записей  модели Post
+        """
         qs = self.model.objects.all()
         search = self.request.GET.get('cn')
         if search:
             qs = qs.filter(contract_number=search)
-        print(search)
         return qs
 
 
 class ContractPostDelete(DeleteView):
+    """
+    Удаление записи
+    """
     model = Posts
-

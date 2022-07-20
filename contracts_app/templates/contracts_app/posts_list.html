@@ -10,7 +10,7 @@
                     <header class="card-header">
                         <div class="card-actions">
                             <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            <a href="{% url 'contracts_app:post_del' item.contract_number.pk %}" class="card-action card-action-dismiss"></a>
+                            <a href="{% url 'contracts_app:post_del' item.contract_number.pk %}?pk={{ item.pk }}" class="card-action card-action-dismiss"></a>
                         </div>
 
                         <h2 class="card-title">{{ item.creation_date }}</h2>
