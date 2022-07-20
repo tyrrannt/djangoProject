@@ -10,15 +10,15 @@
                     <header class="card-header">
                         <div class="card-actions">
                             <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            <a href="{% url 'contracts_app:post_del' item.contract_number.pk %}" class="card-action card-action-dismiss" data-card-dismiss></a>
+                            <a href="{% url 'contracts_app:post_del' item.contract_number.pk %}" class="card-action card-action-dismiss"></a>
                         </div>
 
-                        <h2 class="card-title">{{ item.responsible_person }}</h2>
-                        <p class="card-subtitle">{{ item.creation_date }}</p>
+                        <h2 class="card-title">{{ item.creation_date }}</h2>
+                        <p class="card-subtitle">Автор: {{ item.responsible_person }}</p>
                     </header>
                     <div class="card-body">
                         <p>{{ item.post_description }}</p>
-                        <code>{{ item.pk }}</code>
+                        <code>ID: {{ item.pk }}</code>
                     </div>
                 </section>
             </div>
