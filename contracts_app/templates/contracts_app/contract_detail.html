@@ -11,13 +11,16 @@
 
         <!-- start: page -->
         <div class="order-details action-buttons-fixed" method="post">
-            <div class="row">
-                <div class="col-xl-4 mb-4 mb-xl-0">
 
-                    <div class="card card-modern">
-                        <div class="card-header">
+            <div class="row mt-2">
+                <div class="col-md-12">
+                    <section class="card card-featured card-featured-primary mb-4">
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
                             <h2 class="card-title">Основное</h2>
-                        </div>
+                        </header>
                         <div class="card-body">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
@@ -30,117 +33,142 @@
                                                    id="contract_counteragent"/>
                                         </div>
                                     </div>
-                                    <div class="col text">
-                                        <div class="text-black-50">
+                                    <div class="row text">
+                                        <div class="col-md-6 text-black-50">
                                             <label for="type_of_contract">Тип договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="type_of_contract"
                                                    value="{{ object.type_of_contract }}" id="type_of_contract"/>
                                         </div>
-                                        <label for="closing_date">Дата закрытия договора</label>
-                                        <input type="text" class="form-control form-control-modern"
-                                               name="closing_date"
-                                               value="{{ object.closing_date }}" id="closing_date"/>
+                                        <div class="col-md-6 text-black-50">
+                                            <label>Ответственные лица</label>
+                                            <select class="form-control form-control-modern" name="employee" required
+                                                    data-plugin-selectTwo multiple>
+                                                {% for item in object.employee.iterator %}
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group col mb-3">
-                                    <div class="date-time-field">
-                                        <div class="text">
+                                    <div class="row">
+                                        <div class="col-md-4 text">
                                             <label for="contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number"
                                                    value="{{ object.contract_number }}" id="contract_number"/>
                                         </div>
-                                        <div><span> &nbsp; </span></div>
-                                        <div class="date">
+                                        <div class="col-md-4 date">
                                             <label for="date_conclusion">Дата заключения</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="date_conclusion"
-                                                   value="{{ object.date_conclusion }}" required data-plugin-datepicker
+                                                   value="{{ object.date_conclusion }}" required
+                                                   data-plugin-datepicker
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
                                                    id="date_conclusion"/>
+                                        </div>
+                                        <div class="col-md-4 date">
+                                            <label for="closing_date">Дата закрытия договора</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="closing_date"
+                                                   value="{{ object.closing_date }}" id="closing_date"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <code>{{ object.access }}</code>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <section class="card card-featured card-featured-success mb-4">
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
+                            <h2 class="card-title">Дополнительные данные</h2>
+                        </header>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-md-6 text-black-50">
+                                            <label for="divisions">Подразделение</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="divisions"
+                                                   value="{{ object.divisions }}" id="divisions"/>
+                                        </div>
+                                        <div class="col-md-6 text-black-50">
+                                            <label for="type_property">Тип имущества</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="type_property"
+                                                   value="{{ object.type_property }}" id="type_property"/>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group col mb-3">
-                                    <label>Ответственные лица</label>
-                                    <select class="form-control form-control-modern" name="employee" required
-                                            data-plugin-selectTwo multiple>
-                                        {% for item in object.employee.iterator %}
-                                            <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <div class="row">
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="subject_contract">Предмет договора</label>
+                                            <textarea class="form-control form-control-modern" name="subject_contract"
+                                                      rows="6"
+                                                      id="subject_contract">{{ object.subject_contract }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="cost">Стоимость</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="cost"
+                                                   value="{{ object.cost }}" id="cost"/>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="date_entry">Дата ввода информации</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="date_entry"
+                                                   value="{{ object.date_entry }}" id="date_entry"/>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="internal_number">Внутренний номер</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="internal_number"
+                                                   value="{{ object.internal_number }}" id="internal_number"/>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="prolongation">Пролонгация</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="prolongation"
+                                                   value="{{ object.prolongation }}" id="prolongation"/>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                </div>
-                <div class="col-xl-8">
-
-                    <div class="card card-modern">
-                        <div class="card-header">
-                            <h2 class="card-title">Дополнительные данные</h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-xl-auto">
-                                    <label for="divisions">Подразделение</label>
-                                    <input type="text" class="form-control form-control-modern"
-                                           name="divisions"
-                                           value="{{ object.divisions }}" id="divisions"/>
-                                    <label for="subject_contract">Предмет договора</label>
-                                    <textarea class="form-control form-control-modern" name="subject_contract" rows="6"
-                                              id="subject_contract">{{ object.subject_contract }}</textarea>
-
-                                    <label for="cost">Стоимость</label>
-                                    <input type="text" class="form-control form-control-modern"
-                                           name="cost"
-                                           value="{{ object.cost }}" id="cost"/>
-
-
-                                </div>
-                                <div class="col-xl-auto ps-xl-5">
-                                    <label for="date_entry">Дата ввода информации</label>
-                                    <input type="text" class="form-control form-control-modern"
-                                           name="date_entry"
-                                           value="{{ object.date_entry }}" id="date_entry"/>
-                                    <label for="type_property">Тип имущества</label>
-                                    <input type="text" class="form-control form-control-modern"
-                                           name="type_property"
-                                           value="{{ object.type_property }}" id="type_property"/>
-                                    <label for="internal_number">Внутренний номер</label>
-                                    <input type="text" class="form-control form-control-modern"
-                                           name="internal_number"
-                                           value="{{ object.internal_number }}" id="internal_number"/>
-                                    <label for="prolongation">Пролонгация</label>
-                                    <input type="text" class="form-control form-control-modern"
-                                           name="prolongation"
-                                           value="{{ object.prolongation }}" id="prolongation"/>
-                                    <label for="access">Уровень доступа</label>
-                                    <input type="text" class="form-control form-control-modern"
-                                           name="access"
-                                           value="{{ object.access }}" id="access"/>
-
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
+                    </section>
                 </div>
             </div>
+            {% if slaves %}
             <div class="row">
-                <div class="col">
+                <div class="col-md-12">
+                    <section class="card card-featured card-featured-dark mb-4">
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
 
-                    <div class="card card-modern">
-                        <div class="card-header">
                             <h2 class="card-title">Дополнительные документы</h2>
-                        </div>
+                        </header>
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
@@ -155,29 +183,42 @@
                                     </tr>
                                     </thead>
                                     <tbody>
+                                    {% for item in slaves %}
                                     <tr>
-                                        <td class="ps-4"><a href="#"><strong>191</strong></a>
+                                        <td class="ps-4"><a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
-                                        <td><a href="#"><strong>Example</strong></a>
+                                        <td><a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
                                         </td>
-                                        <td class="text-end">99</td>
-                                        <td class="text-end">01/01/2001</td>
-                                        <td class="text-end">Активный</td>
+                                        <td class="text-end">{{ item.contract_number }}</td>
+                                        <td class="text-end">{{ item.date_conclusion }}</td>
+                                        <td class="text-end">
+                                            {% if item.closing_date < now %}
+                                                Действующий
+                                            {% else %}
+                                                Закрыт
+                                            {% endif %}
+                                        </td>
                                     </tr>
+                                    {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
-                    </div>
 
+                        </div>
+                    </section>
                 </div>
             </div>
+            {% endif %}
             <div class="row">
-                <div class="col">
-                    <div class="card card-modern">
-                        <div class="card-header">
+                <div class="col-md-12">
+                    <section class="card card-featured card-featured-danger mb-4">
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
+
                             <h2 class="card-title">Заметки к договору</h2>
-                        </div>
+                        </header>
                         <div class="card-body">
                             <div class="ecommerce-timeline mb-3">
                                 <div class="ecommerce-timeline-items-wrapper">
@@ -205,17 +246,17 @@
                                 <div class="form-row">
                                     <div class="form-group col">
                                         <input type="submit"
-                                           class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"/>
-{#                                        ToDo: Решить вопрос с удалением записи.#}
-{#                                        <a class="btn btn-warning btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"#}
-{#                                           href="{% url 'contracts_app:post_list' pk=object.pk %}?cn={{ object.pk }}">Удалить записи</a>#}
+                                               class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                               value="Добавить"/>
+                                        {#                                        ToDo: Решить вопрос с удалением записи.#}
+                                        {#                                        <a class="btn btn-warning btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"#}
+                                        {#                                           href="{% url 'contracts_app:post_list' pk=object.pk %}?cn={{ object.pk }}">Удалить записи</a>#}
                                     </div>
                                 </div>
                             </form>
+
                         </div>
-
-                    </div>
-
+                    </section>
                 </div>
             </div>
             <div class="row action-buttons">

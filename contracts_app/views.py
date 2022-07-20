@@ -40,20 +40,31 @@ class ContractDetail(DetailView):
         context = super(ContractDetail, self).get_context_data(**kwargs)
         # Выбираем из таблицы Posts все записи относящиеся к текущему договору
         post = Posts.objects.filter(contract_number=self.object.pk)
+        slaves = Contract.objects.filter(parent_category=self.object.pk)
         # Формируем заголовок страницы и передаем в контекст
         context['title'] = title = 'Договор №' + self.object.contract_number + ' от ' + str(self.object.date_conclusion)
         # Передаем найденные записи в контекст
         context['posts'] = post
+        context['slaves'] = slaves
         return context
 
 
 class ContractPostAdd(CreateView):
     """
-    Добавление записи к договору
+    Добавление записи к договору.
     """
     model = Posts
     form_class = ContractsPostAddForm
-    success_url = reverse_lazy('contracts_app:index')
+
+    def get_success_url(self):
+        """
+        Переопределяется метод 'get_success_url', для получения номера договора 'pk',
+        к которому добавляется запись, для того чтоб вернуться на страницу договора
+        :return: Возвращается URL на договор
+        """
+        pk = self.object.contract_number.pk
+        return reverse("contracts_app:detail", kwargs={"pk": pk})
+
 
 
 class ContractPostList(ListView):
