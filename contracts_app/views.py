@@ -19,6 +19,13 @@ class ContractList(ListView):
     Отображение списка договоров
     """
     model = Contract
+    template_name = 'contracts_app/contract_list.html'
+
+    def post(self, request, *args, **kwargs):
+        stuff = request.POST.get('division')
+        print(stuff)
+        stuff = self.get_queryset().filter(divisions=stuff)
+        return render(request, self.template_name, {'object_list': stuff})
 
 
 class ContractAdd(CreateView):

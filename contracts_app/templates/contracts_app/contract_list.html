@@ -63,7 +63,23 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <form action="{% url 'contracts_app:index' %}" method="post">
+                                {% csrf_token %}
+                                <div class="form-row toggle toggle-primary" data-plugin-toggle
+                                     data-plugin-options="{ 'isAccordion': true }">
+                                    <section class="toggle">
+                                        <label>Поиск по реквизитам и дополнительным полям</label>
+                                        <div class="toggle-content">
+                                            <input name="division"/>
+                                            <div class="form-row">
+                                                <input type="submit"
+                                               class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                               value="Поиск"/>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </form>
                             <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
 
@@ -95,7 +111,16 @@
                                         <td>{{ item.contract_number }}</td>
                                         <td>{{ item.date_conclusion }}</td>
                                         <td>{{ item.type_of_contract }}</td>
-                                        <td>{{ item.divisions }}</td>
+                                        <td>
+                                            {% for unit in item.divisions.iterator %}
+
+                                                {% if forloop.last %}
+                                                    {{ unit.name }}
+                                                {% else %}
+                                                    {{ unit.name }},&nbsp;
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
                                         <td>
                                             {% if item.closing_date == null or item.closing_date < now %}
                                                 <span class="ecommerce-status active">Действующий</span>
