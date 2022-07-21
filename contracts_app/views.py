@@ -24,7 +24,10 @@ class ContractList(ListView):
     def post(self, request, *args, **kwargs):
         stuff = request.POST.get('division')
         print(stuff)
-        stuff = self.get_queryset().filter(divisions=stuff)
+        if stuff:
+            stuff = self.get_queryset().filter(divisions=stuff)
+        else:
+            stuff = self.get_queryset().all()
         return render(request, self.template_name, {'object_list': stuff})
 
 

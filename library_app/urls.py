@@ -5,4 +5,5 @@ app_name = 'library_app'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('bstr/', views.bootstrap, name='bootstrap'),
 ]

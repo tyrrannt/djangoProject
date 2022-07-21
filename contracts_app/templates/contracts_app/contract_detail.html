@@ -12,16 +12,11 @@
         <!-- start: page -->
         <div class="order-details action-buttons-fixed" method="post">
 
-            <div class="row mt-2">
-                <div class="col-md-12">
-                    <section class="card card-featured card-featured-primary mb-4">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            </div>
-                            <h2 class="card-title">Основное</h2>
-                        </header>
-                        <div class="card-body">
+            <div class="col-md-12">
+                <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
+                    <section class="toggle active">
+                        <label>Основное</label>
+                        <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="col text">
@@ -82,18 +77,9 @@
                             <code>{{ object.access }}</code>
                         </div>
                     </section>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <section class="card card-featured card-featured-success mb-4">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            </div>
-                            <h2 class="card-title">Дополнительные данные</h2>
-                        </header>
-                        <div class="card-body">
+                    <section class="toggle">
+                        <label>Дополнительные данные</label>
+                        <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
@@ -156,70 +142,51 @@
                             </div>
                         </div>
                     </section>
-                </div>
-            </div>
-            {% if slaves %}
-            <div class="row">
-                <div class="col-md-12">
-                    <section class="card card-featured card-featured-dark mb-4">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                    {% if slaves %}
+                        <section class="toggle">
+                            <label>Дополнительные документы</label>
+                            <div class="toggle-content">
+                                <div class="table-responsive">
+                                    <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
+                                           style="min-width: 380px;">
+                                        <thead>
+                                        <tr>
+                                            <th width="8%" class="ps-4">ID</th>
+                                            <th width="65%">Контрагент</th>
+                                            <th width="5%" class="text-end">Номер документа</th>
+                                            <th width="7%" class="text-end">Дата документа</th>
+                                            <th width="5%" class="text-end">Статус</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for item in slaves %}
+                                            <tr>
+                                                <td class="ps-4"><a
+                                                        href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
+                                                </td>
+                                                <td class="text-end">{{ item.contract_number }}</td>
+                                                <td class="text-end">{{ item.date_conclusion }}</td>
+                                                <td class="text-end">
+                                                    {% if item.closing_date < now %}
+                                                        Действующий
+                                                    {% else %}
+                                                        Закрыт
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-
-                            <h2 class="card-title">Дополнительные документы</h2>
-                        </header>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
-                                       style="min-width: 380px;">
-                                    <thead>
-                                    <tr>
-                                        <th width="8%" class="ps-4">ID</th>
-                                        <th width="65%">Контрагент</th>
-                                        <th width="5%" class="text-end">Номер документа</th>
-                                        <th width="7%" class="text-end">Дата документа</th>
-                                        <th width="5%" class="text-end">Статус</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for item in slaves %}
-                                    <tr>
-                                        <td class="ps-4"><a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                        </td>
-                                        <td><a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
-                                        </td>
-                                        <td class="text-end">{{ item.contract_number }}</td>
-                                        <td class="text-end">{{ item.date_conclusion }}</td>
-                                        <td class="text-end">
-                                            {% if item.closing_date < now %}
-                                                Действующий
-                                            {% else %}
-                                                Закрыт
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                        </div>
-                    </section>
-                </div>
-            </div>
-            {% endif %}
-            <div class="row">
-                <div class="col-md-12">
-                    <section class="card card-featured card-featured-danger mb-4">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            </div>
-
-                            <h2 class="card-title">Заметки к договору</h2>
-                        </header>
-                        <div class="card-body">
+                        </section>
+                    {% endif %}
+                    <section class="toggle">
+                        <label>Заметки к договору</label>
+                        <div class="toggle-content">
                             <div class="ecommerce-timeline mb-3">
                                 <div class="ecommerce-timeline-items-wrapper">
                                     {% for item in posts %}
@@ -254,7 +221,6 @@
                                     </div>
                                 </div>
                             </form>
-
                         </div>
                     </section>
                 </div>

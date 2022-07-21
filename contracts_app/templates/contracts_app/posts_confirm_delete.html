@@ -22,7 +22,7 @@
     {% csrf_token %}
         <section  role="main" class="content-body content-body-modern mt-0">
             <header class="card-header">
-                <h2 class="card-title">Are you sure?</h2>
+                <h2 class="card-title">Вы уверены?</h2>
             </header>
             <div class="card-body">
                 <div class="modal-wrapper">
@@ -30,16 +30,15 @@
                         <i class="fas fa-question-circle"></i>
                     </div>
                     <div class="modal-text">
-                        <h4 class="font-weight-bold text-dark">Primary</h4>
-                        <p>Are you sure that you want to delete this image?</p>
+                        <p>Вы уверены, что хотите удалить эту запись?</p>
                     </div>
                 </div>
             </div>
             <footer class="card-footer">
                 <div class="row">
                     <div class="col-md-12 text-center">
-                        <button class="btn btn-primary modal-confirm">Confirm</button>
-                        <button class="btn btn-default modal-dismiss">Cancel</button>
+                        <button class="btn btn-primary modal-confirm">Да</button>
+                        <button class="btn btn-default modal-dismiss">Нет</button>
                     </div>
                 </div>
             </footer>
