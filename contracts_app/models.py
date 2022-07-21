@@ -80,9 +80,15 @@ class ContractModel(models.Model):
 
     def __str__(self):
         if self.parent_category:
-            return f'{self.parent_category}/{self.contract_counteragent}-{self.contract_number}'
+            if self.contract_number:
+                return f'{self.parent_category}/{self.contract_counteragent}-{self.contract_number}'
+            else:
+                return f'{self.parent_category}/{self.contract_counteragent}-(без номера)'
         else:
-            return f'{self.contract_counteragent}-{self.contract_number}'
+            if self.contract_number:
+                return f'{self.contract_counteragent}-{self.contract_number}'
+            else:
+                return f'{self.contract_counteragent}-(без номера)'
 
 
 class Contract(ContractModel):

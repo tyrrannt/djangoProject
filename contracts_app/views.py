@@ -52,7 +52,11 @@ class ContractDetail(DetailView):
         post = Posts.objects.filter(contract_number=self.object.pk)
         slaves = Contract.objects.filter(parent_category=self.object.pk)
         # Формируем заголовок страницы и передаем в контекст
-        context['title'] = title = 'Договор №' + self.object.contract_number + ' от ' + str(self.object.date_conclusion)
+        if self.object.contract_number:
+            cn = self.object.contract_number
+        else:
+            cn = '(без номера)'
+        context['title'] = title = 'Договор №' + cn + ' от ' + str(self.object.date_conclusion)
         # Передаем найденные записи в контекст
         context['posts'] = post
         context['slaves'] = slaves
