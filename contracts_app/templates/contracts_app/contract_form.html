@@ -1,8 +1,27 @@
 {% extends 'contracts_app/main.html' %}
 
+{% load static %}
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{% endblock %}
+
 {% block title %}
     <title>{{ title }}</title>
 {% endblock %}
+
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
@@ -11,219 +30,159 @@
 
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {#            ToDo: Отредактировать форму#}
-            {#            <div class="row">#}
-            {#                <div class="col">#}
-            {#                    <section class="card card-modern card-big-info">#}
-            {#                        <div class="card-body">#}
-            {#                            <div class="tabs-modern row" style="min-height: 490px;">#}
-            {#                                <div class="col-lg-2-5 col-xl-1-5">#}
-            {#                                    <div class="nav flex-column" id="tab" role="tablist" aria-orientation="vertical">#}
-            {#                                        <a class="nav-link active" id="general-tab" data-bs-toggle="pill"#}
-            {#                                           data-bs-target="#general" role="tab" aria-controls="general"#}
-            {#                                           aria-selected="true"><i class="bx bx-cog me-2"></i> Основные параметры</a>#}
-            {#                                        <a class="nav-link" id="usage-restriction-tab" data-bs-toggle="pill"#}
-            {#                                           data-bs-target="#usage-restriction" role="tab"#}
-            {#                                           aria-controls="usage-restriction" aria-selected="false"><i#}
-            {#                                                class="bx bx-block me-2"></i> Usage Restriction</a>#}
-            {#                                        <a class="nav-link" id="usage-limits-tab" data-bs-toggle="pill"#}
-            {#                                           data-bs-target="#usage-limits" role="tab" aria-controls="usage-limits"#}
-            {#                                           aria-selected="false"><i class="bx bx-timer me-2"></i> Usage Limits</a>#}
-            {#                                    </div>#}
-            {#                                </div>#}
-            {#                                <div class="col-lg-3-5 col-xl-4-5">#}
-            {#                                    <div class="tab-content" id="tabContent">#}
-            {#                                        <div class="tab-pane fade show active" id="general" role="tabpanel"#}
-            {#                                             aria-labelledby="general-tab">#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Coupon#}
-            {#                                                    Name</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponName" value="" required/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Discount#}
-            {#                                                    Type</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <select class="form-control form-control-modern" name="stockStatus">#}
-            {#                                                        <option value="percentage" selected>Percentage Discount</option>#}
-            {#                                                        <option value="fixed-cart">Fixed Cart Discount</option>#}
-            {#                                                        <option value="fixed-product">Fixed Product Discount</option>#}
-            {#                                                    </select>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Coupon#}
-            {#                                                    Amount</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponAmount" value="" required/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end pt-2 mt-1 mb-0">Description</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <textarea class="form-control form-control-modern"#}
-            {#                                                              name="couponDescription" rows="6"></textarea>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                        </div>#}
-            {#                                        <div class="tab-pane fade" id="usage-restriction" role="tabpanel"#}
-            {#                                             aria-labelledby="usage-restriction-tab">#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Minimum#}
-            {#                                                    Spend</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponMinimumSpend" value="" placeholder="No minimum"/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Maximum#}
-            {#                                                    Spend</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponMaximumSpend" value="" placeholder="No maximum"/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Individual#}
-            {#                                                    Use Only?</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <div class="checkbox">#}
-            {#                                                        <label class="my-2">#}
-            {#                                                            <input type="checkbox" value="">#}
-            {#                                                            Check this box if the coupon cannot be used in conjunction#}
-            {#                                                            with other coupons.#}
-            {#                                                        </label>#}
-            {#                                                    </div>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Exclude#}
-            {#                                                    Sale Items?</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <div class="checkbox">#}
-            {#                                                        <label class="my-2">#}
-            {#                                                            <input type="checkbox" value="">#}
-            {#                                                            Check this box if the coupon should not apply to items on#}
-            {#                                                            sale. Per-item coupons will only work if the item is not on#}
-            {#                                                            sale. Per-cart coupons will only work if there are items in#}
-            {#                                                            the cart that are not on sale.#}
-            {#                                                        </label>#}
-            {#                                                    </div>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Products</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <select multiple data-plugin-selectTwo#}
-            {#                                                            class="form-control form-control-modern"#}
-            {#                                                            name="couponProducts"#}
-            {#                                                            data-plugin-options='{ "placeholder": "Search for a product..." }'>#}
-            {#                                                        <option value=""></option>#}
-            {#                                                        <option value="product1">Porto Bag</option>#}
-            {#                                                        <option value="product2">Porto Shoes</option>#}
-            {#                                                        <option value="product3">Porto Jacket</option>#}
-            {#                                                    </select>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Exclude#}
-            {#                                                    Products</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <select multiple data-plugin-selectTwo#}
-            {#                                                            class="form-control form-control-modern"#}
-            {#                                                            name="couponExcludeProducts"#}
-            {#                                                            data-plugin-options='{ "placeholder": "Search for a product..." }'>#}
-            {#                                                        <option value=""></option>#}
-            {#                                                        <option value="product1">Porto Bag</option>#}
-            {#                                                        <option value="product2">Porto Shoes</option>#}
-            {#                                                        <option value="product3">Porto Jacket</option>#}
-            {#                                                    </select>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Product#}
-            {#                                                    Categories</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <select multiple data-plugin-selectTwo#}
-            {#                                                            class="form-control form-control-modern"#}
-            {#                                                            name="couponProductCategories"#}
-            {#                                                            data-plugin-options='{ "placeholder": "Search for a product category..." }'>#}
-            {#                                                        <option value="any">Any Category</option>#}
-            {#                                                        <option value="product1">Bags</option>#}
-            {#                                                        <option value="product2">Shoes</option>#}
-            {#                                                        <option value="product3">Jackets</option>#}
-            {#                                                    </select>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Exclude#}
-            {#                                                    Categories</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <select multiple data-plugin-selectTwo#}
-            {#                                                            class="form-control form-control-modern"#}
-            {#                                                            name="couponExcludeCategories"#}
-            {#                                                            data-plugin-options='{ "placeholder": "Search for a product category..." }'>#}
-            {#                                                        <option value="none">None</option>#}
-            {#                                                        <option value="product1">Bags</option>#}
-            {#                                                        <option value="product2">Shoes</option>#}
-            {#                                                        <option value="product3">Jackets</option>#}
-            {#                                                    </select>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Allowed#}
-            {#                                                    E-mails</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponAllowedEmails" value=""/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                        </div>#}
-            {#                                        <div class="tab-pane fade" id="usage-limits" role="tabpanel"#}
-            {#                                             aria-labelledby="usage-limits-tab">#}
-            {#                                            <div class="form-group row align-items-center  pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Usage#}
-            {#                                                    Limit Per Coupon</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponUsageLimitPerCoupon" value=""#}
-            {#                                                           placeholder="Unlimited Usage"/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center  pb-3">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Limit#}
-            {#                                                    Usage to X Items</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponLimitUsageXItems" value=""#}
-            {#                                                           placeholder="Apply to all qualifying items in cart"/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                            <div class="form-group row align-items-center">#}
-            {#                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Usage#}
-            {#                                                    Limit Per User</label>#}
-            {#                                                <div class="col-lg-7 col-xl-6">#}
-            {#                                                    <input type="text" class="form-control form-control-modern"#}
-            {#                                                           name="couponUsageLimitPerUser" value=""#}
-            {#                                                           placeholder="Unlimited Usage"/>#}
-            {#                                                </div>#}
-            {#                                            </div>#}
-            {#                                        </div>#}
-            {#                                    </div>#}
-            {#                                </div>#}
-            {#                            </div>#}
-            {#                        </div>#}
-            {#                    </section>#}
-            {#                </div>#}
-            {#            </div>#}
             {% csrf_token %}
+            <div class="col-md-12">
+                <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
+                    <section class="toggle active">
+                        <label>Основное</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="col text">
+                                        <div class="text-black-50">
+                                            <label for="contract_counteragent">Контрагент</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="contract_counteragent"
+                                                   value="{{ object.contract_counteragent }}"
+                                                   id="contract_counteragent"/>
+                                        </div>
+                                    </div>
+                                    <div class="row text">
+                                        <div class="col-md-6 text-black-50">
+                                            <label for="type_of_contract">Тип договора</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="type_of_contract"
+                                                   value="{{ object.type_of_contract }}" id="type_of_contract"/>
+                                        </div>
+                                        <div class="col-md-6 text-black-50">
+                                            <label>Ответственные лица</label>
+                                            <select class="form-control form-control-modern" name="employee" required
+                                                    data-plugin-selectTwo multiple>
+                                                {% for item in object.employee.iterator %}
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                {% endfor %}
+                                                {% for item in employee.iterator %}
+                                                    <option value="{{ item.pk }}" >{{ item }}</option>
+                                                {% endfor %}
 
-            {{ form.as_p }}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-md-4 text">
+                                            <label for="contract_number">Номер договора</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="contract_number"
+                                                   value="{% if object.contract_number %}
+                                                        {{ object.contract_number }}
+                                                    {% else %}
+                                                        без номера
+                                                    {% endif %}" id="contract_number"/>
+                                        </div>
+                                        <div class="col-md-4 date">
+                                            <label for="date_conclusion">Дата заключения</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="date_conclusion"
+                                                   value="{{ object.date_conclusion }}" required
+                                                   data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                   id="date_conclusion"/>
+                                        </div>
+                                        <div class="col-md-4 date">
+                                            <label for="closing_date">Дата закрытия договора</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="closing_date"
+                                                   value="{{ object.closing_date }}" required
+                                                   data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                   id="closing_date"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <code>{{ object.access }}</code>
+                        </div>
+                    </section>
+                    <section class="toggle">
+                        <label>Дополнительные данные</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-md-6 text-black-50">
+                                            <label for="divisions">Подразделение</label>
+                                            <select class="form-control form-control-modern" id="divisions"
+                                                    name="divisions" required
+                                                    data-plugin-selectTwo multiple>
+                                                {% if object.divisions %}
+                                                    {% for item in object.divisions.values %}
+                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <option value="1" selected>Отсутствуют</option>
+                                                {% endif %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 text-black-50">
+                                            <label for="type_property">Тип имущества</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="type_property"
+                                                   value="{{ object.type_property }}" id="type_property"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="subject_contract">Предмет договора</label>
+                                            <textarea class="form-control form-control-modern" name="subject_contract"
+                                                      rows="6"
+                                                      id="subject_contract">{{ object.subject_contract }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="cost">Стоимость</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="cost"
+                                                   value="{{ object.cost }}" id="cost"/>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="date_entry">Дата ввода информации</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="date_entry"
+                                                   value="{{ object.date_entry }}" id="date_entry"/>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="internal_number">Внутренний номер</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="internal_number"
+                                                   value="{{ object.internal_number }}" id="internal_number"/>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="prolongation">Пролонгация</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="prolongation"
+                                                   value="{{ object.prolongation }}" id="prolongation"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
                     <button type="submit"

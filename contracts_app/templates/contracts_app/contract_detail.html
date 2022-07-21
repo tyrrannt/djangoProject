@@ -1,4 +1,21 @@
 {% extends 'contracts_app/main.html' %}
+{% load static %}
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{% endblock %}
 
 {% block title %}
     <title>{{ title }}</title>
@@ -54,7 +71,11 @@
                                             <label for="contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number"
-                                                   value="{{ object.contract_number }}" id="contract_number"/>
+                                                   value="{% if object.contract_number %}
+                                                        {{ object.contract_number }}
+                                                    {% else %}
+                                                        без номера
+                                                    {% endif %}" id="contract_number"/>
                                         </div>
                                         <div class="col-md-4 date">
                                             <label for="date_conclusion">Дата заключения</label>
@@ -69,7 +90,10 @@
                                             <label for="closing_date">Дата закрытия договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="closing_date"
-                                                   value="{{ object.closing_date }}" id="closing_date"/>
+                                                   value="{{ object.closing_date }}" required
+                                                   data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                   id="closing_date"/>
                                         </div>
                                     </div>
                                 </div>
@@ -85,9 +109,17 @@
                                     <div class="row">
                                         <div class="col-md-6 text-black-50">
                                             <label for="divisions">Подразделение</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="divisions"
-                                                   value="{{ object.divisions }}" id="divisions"/>
+                                            <select class="form-control form-control-modern" id="divisions"
+                                                    name="divisions" required
+                                                    data-plugin-selectTwo multiple>
+                                                {% if object.divisions %}
+                                                    {% for item in object.divisions.values %}
+                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <option value="1" selected>Отсутствуют</option>
+                                                {% endif %}
+                                            </select>
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="type_property">Тип имущества</label>
@@ -167,7 +199,13 @@
                                                 <td>
                                                     <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
                                                 </td>
-                                                <td class="text-end">{{ item.contract_number }}</td>
+                                                <td class="text-end">
+                                                    {% if item.contract_number %}
+                                                        {{ item.contract_number }}
+                                                    {% else %}
+                                                        (без номера)
+                                                    {% endif %}
+                                                </td>
                                                 <td class="text-end">{{ item.date_conclusion }}</td>
                                                 <td class="text-end">
                                                     {% if item.closing_date < now %}
@@ -227,11 +265,9 @@
             </div>
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Изменить
-                    </button>
+                    <a href="{% url 'contracts_app:update' object.pk %}"
+                       class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-save text-4 me-2"></i> Изменить документ</a>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'contracts_app:index' %}"

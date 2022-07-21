@@ -3,10 +3,11 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
 from contracts_app.models import Contract, Posts
-from contracts_app.forms import ContractsAddForm, ContractsPostAddForm
+from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
+from customers_app.models import DataBaseUser
 
 
 # Create your views here.
@@ -61,6 +62,18 @@ class ContractDetail(DetailView):
         context['posts'] = post
         context['slaves'] = slaves
         return context
+
+
+class ContractUpdate(UpdateView):
+    model = Contract
+    form_class = ContractsUpdateForm
+
+    def get_context_data(self, **kwargs):
+        context = super(ContractUpdate, self).get_context_data(**kwargs)
+        all_users = DataBaseUser.objects.all()
+        context['employee'] = all_users
+        return context
+
 
 
 class ContractPostAdd(CreateView):
