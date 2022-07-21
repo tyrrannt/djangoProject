@@ -112,5 +112,3 @@ class Posts(models.Model):
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
     responsible_person = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо', on_delete=models.SET_NULL,
                                            null=True)
-
-

@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
 
 
-
 class AccessLevel(models.Model):
     class Meta:
         verbose_name = 'Уровень доступа'

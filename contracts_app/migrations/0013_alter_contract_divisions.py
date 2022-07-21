@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0015_alter_accesslevel_options_alter_address_options_and_more'),
         ('contracts_app', '0012_remove_contract_divisions_contract_divisions'),

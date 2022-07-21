@@ -76,7 +76,6 @@ class ContractPostAdd(CreateView):
         return reverse("contracts_app:detail", kwargs={"pk": pk})
 
 
-
 class ContractPostList(ListView):
     """
     Вывод списка записей, относящихся к конкретному договору

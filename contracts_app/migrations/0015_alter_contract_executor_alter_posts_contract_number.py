@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('contracts_app', '0014_contract_executor'),
@@ -16,11 +15,14 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='contract',
             name='executor',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='contract_executor', to=settings.AUTH_USER_MODEL, verbose_name='Исполнитель'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='contract_executor', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Исполнитель'),
         ),
         migrations.AlterField(
             model_name='posts',
             name='contract_number',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contracts_app.contract', verbose_name='Номер договора'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contracts_app.contract',
+                                    verbose_name='Номер договора'),
         ),
     ]

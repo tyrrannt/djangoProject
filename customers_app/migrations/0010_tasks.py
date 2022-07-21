@@ -18,7 +18,8 @@ class Migration(migrations.Migration):
                 ('creation_date', models.DateTimeField(auto_created=True, verbose_name='Дата и время создания')),
                 ('execution_time', models.DateTimeField(null=True, verbose_name='Дата и время создания')),
                 (
-                'task_title', models.CharField(default='', max_length=100, null=True, verbose_name='Заголовок задачи')),
+                    'task_title',
+                    models.CharField(default='', max_length=100, null=True, verbose_name='Заголовок задачи')),
                 ('description', models.TextField(blank=True, verbose_name='Описание задачи')),
                 ('completed', models.BooleanField(default=False, verbose_name='Выполнена')),
                 ('owner',
