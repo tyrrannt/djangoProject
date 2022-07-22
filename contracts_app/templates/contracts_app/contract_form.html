@@ -27,9 +27,9 @@
     <section role="main" class="content-body content-body-modern mt-0">
 
         {% include 'library_app/breadcrumb.html' %}
-
+        <div><p></p></div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        <form action="#" method="post">
             {% csrf_token %}
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
@@ -41,18 +41,26 @@
                                     <div class="col text">
                                         <div class="text-black-50">
                                             <label for="contract_counteragent">Контрагент</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="contract_counteragent"
-                                                   value="{{ object.contract_counteragent }}"
-                                                   id="contract_counteragent"/>
+                                            <select class="form-control form-control-modern"
+                                                    name="contract_counteragent"
+                                                    id="contract_counteragent" required
+                                                    data-plugin-selectTwo>
+                                                {% for item in counteragent.iterator %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="row text">
                                         <div class="col-md-6 text-black-50">
                                             <label for="type_of_contract">Тип договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="type_of_contract"
-                                                   value="{{ object.type_of_contract }}" id="type_of_contract"/>
+                                            <select class="form-control form-control-modern" name="type_of_contract"
+                                                    id="type_of_contract" required
+                                                    data-plugin-selectTwo multiple>
+                                                {% for item in type_contract.iterator %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label>Ответственные лица</label>
@@ -62,9 +70,8 @@
                                                     <option value="{{ item.pk }}" selected>{{ item }}</option>
                                                 {% endfor %}
                                                 {% for item in employee.iterator %}
-                                                    <option value="{{ item.pk }}" >{{ item }}</option>
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
                                                 {% endfor %}
-
                                             </select>
                                         </div>
                                     </div>
@@ -77,11 +84,9 @@
                                             <label for="contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number"
-                                                   value="{% if object.contract_number %}
-                                                        {{ object.contract_number }}
-                                                    {% else %}
-                                                        без номера
-                                                    {% endif %}" id="contract_number"/>
+                                                   value="
+                                                           {% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
+                                                   id="contract_number"/>
                                         </div>
                                         <div class="col-md-4 date">
                                             <label for="date_conclusion">Дата заключения</label>
@@ -118,20 +123,20 @@
                                             <select class="form-control form-control-modern" id="divisions"
                                                     name="divisions" required
                                                     data-plugin-selectTwo multiple>
-                                                {% if object.divisions %}
-                                                    {% for item in object.divisions.values %}
-                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <option value="1" selected>Отсутствуют</option>
-                                                {% endif %}
+                                                {% for item in division.iterator %}
+                                                    <option value="{{ item.pk }}">{{ item.name }}</option>
+                                                {% endfor %}
                                             </select>
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="type_property">Тип имущества</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="type_property"
-                                                   value="{{ object.type_property }}" id="type_property"/>
+                                            <select class="form-control form-control-modern" id="type_property"
+                                                    name="type_property" required
+                                                    data-plugin-selectTwo>
+                                                {% for item in type_property.iterator %}
+                                                    <option value="{{ item.pk }}">{{ item.type_property }}</option>
+                                                {% endfor %}
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -157,12 +162,12 @@
                                                    name="cost"
                                                    value="{{ object.cost }}" id="cost"/>
                                         </div>
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="date_entry">Дата ввода информации</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="date_entry"
-                                                   value="{{ object.date_entry }}" id="date_entry"/>
-                                        </div>
+                                        {#                                        <div class="col-md-3 text-black-50">#}
+                                        {#                                            <label for="date_entry">Дата ввода информации</label>#}
+                                        {#                                            <input type="text" class="form-control form-control-modern"#}
+                                        {#                                                   name="date_entry"#}
+                                        {#                                                   value="{{ object.date_entry }}" id="date_entry"/>#}
+                                        {#                                        </div>#}
                                         <div class="col-md-3 text-black-50">
                                             <label for="internal_number">Внутренний номер</label>
                                             <input type="text" class="form-control form-control-modern"
@@ -171,9 +176,23 @@
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="prolongation">Пролонгация</label>
+                                            <select class="form-control form-control-modern" id="prolongation"
+                                                    name="prolongation" required
+                                                    data-plugin-selectTwo>
+                                                {% for item in prolongation.values %}
+                                                    <option value="{{ item }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="prolongation"
-                                                   value="{{ object.prolongation }}" id="prolongation"/>
+                                                   name="access"
+                                                   value="{{ object.access }}" id="access" hidden/>
+                                        </div>
+                                        <div class="col-md-3 text-black-50">
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="executor"
+                                                   value="{{ object.executor }}" id="executor" hidden/>
                                         </div>
                                     </div>
                                 </div>

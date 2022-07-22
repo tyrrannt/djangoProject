@@ -1,13 +1,13 @@
-from django.shortcuts import render, HttpResponseRedirect
+from django.shortcuts import render, HttpResponseRedirect, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
-from contracts_app.models import Contract, Posts
+from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, Estate
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, AccessLevel, Counteragent, Division
 
 
 # Create your views here.
@@ -40,6 +40,22 @@ class ContractAdd(CreateView):
     form_class = ContractsAddForm
     success_url = reverse_lazy('contracts_app:index')
 
+    def get_context_data(self, **kwargs):
+        context = super(ContractAdd, self).get_context_data(**kwargs)
+        all_users = DataBaseUser.objects.all()
+        all_type_of_contract = TypeContract.objects.all()
+        all_type_property = TypeProperty.objects.all()
+        all_counteragent = Counteragent.objects.all()
+        all_prolongation = Contract.type_of_prolongation
+        all_divisions = Division.objects.all()
+        context['employee'] = all_users
+        context['type_property'] = all_type_property
+        context['counteragent'] = all_counteragent
+        context['prolongation'] = dict(all_prolongation)
+        context['division'] = all_divisions
+        context['type_contract'] = all_type_of_contract
+        return context
+
 
 class ContractDetail(DetailView):
     """
@@ -68,12 +84,27 @@ class ContractUpdate(UpdateView):
     model = Contract
     form_class = ContractsUpdateForm
 
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        print('1')
+        if form.is_valid():
+            response = form.save(commit=False)
+            response.save()
+            return HttpResponseRedirect(reverse('contracts_app:detail', args=[self.object.pk]))
+        else:
+            print(f'Что то не то')
+
     def get_context_data(self, **kwargs):
         context = super(ContractUpdate, self).get_context_data(**kwargs)
         all_users = DataBaseUser.objects.all()
         context['employee'] = all_users
         return context
 
+    def get_success_url(self):
+        return reverse_lazy('contracts_app:detail', {'pk': self.object.pk})
 
 
 class ContractPostAdd(CreateView):
