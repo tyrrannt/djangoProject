@@ -29,7 +29,7 @@
         {% include 'library_app/breadcrumb.html' %}
         <div><p></p></div>
         <!-- start: page -->
-        <form action="{% url 'contracts_app:create' %}" method="post">
+        <form action="{% url 'contracts_app:update' object.pk %}" method="post">
             {% csrf_token %}
             {% if form.errors %}
       {% for field in form %}
@@ -56,7 +56,11 @@
                                                     id="id_contract_counteragent" required
                                                     data-plugin-selectTwo>
                                                 {% for item in counteragent.iterator %}
+                                                    {% if item.pk == object.contract_counteragent.pk %}
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                    {% else %}
                                                     <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% endif %}
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -67,8 +71,13 @@
                                             <select class="form-control form-control-modern" name="type_of_contract"
                                                     id="id_type_of_contract" required
                                                     data-plugin-selectTwo multiple>
+
                                                 {% for item in type_contract.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% if item.pk == object.type_of_contract.pk %}
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                    {% else %}
+                                                        <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% endif %}
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -77,7 +86,13 @@
                                             <select class="form-control form-control-modern" name="employee"
                                                     data-plugin-selectTwo multiple id="id_employee">
                                                 {% for item in employee.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
+
+                                                        {% if item in object.employee.iterator %}
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                        {% else %}
+                                                            <option value="{{ item.pk }}">{{ item }}</option>
+                                                        {% endif %}
+
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -98,16 +113,16 @@
                                             <label for="id_date_conclusion">Дата заключения</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="date_conclusion"
-                                                   value="{{ object.date_conclusion }}" required
+                                                   value="{{ object.date_conclusion|date:"c" }}" required
                                                    data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-MM-dd"}'
                                                    id="id_date_conclusion"/>
                                         </div>
                                         <div class="col-md-4 date">
                                             <label for="id_closing_date">Дата закрытия договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="closing_date"
-                                                   value="{{ object.closing_date }}"
+                                                   value="{{ object.closing_date|date:"c" }}"
                                                    data-plugin-datepicker
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
                                                    id="id_closing_date"/>
@@ -130,9 +145,14 @@
                                                     name="divisions" required
                                                     data-plugin-selectTwo multiple>
                                                 {% for item in division.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item.name }}</option>
+                                                        {% if item in object.divisions.iterator %}
+                                                    <option value="{{ item.pk }}" selected>{{ item.name }}</option>
+                                                        {% else %}
+                                                            <option value="{{ item.pk }}">{{ item.name }}</option>
+                                                        {% endif %}
                                                 {% endfor %}
                                             </select>
+{#                                            {{ form.divisions }}#}
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_type_property">Тип имущества</label>
@@ -140,7 +160,11 @@
                                                     name="type_property" required
                                                     data-plugin-selectTwo>
                                                 {% for item in type_property.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item.type_property }}</option>
+                                                    {% if item.pk == object.type_property.pk %}
+                                                    <option value="{{ item.pk }}" selected>{{ item.type_property }}</option>
+                                                    {% else %}
+                                                        <option value="{{ item.pk }}">{{ item.type_property }}</option>
+                                                    {% endif %}
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -172,7 +196,7 @@
                                             <label for="date_entry">Дата ввода информации</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="date_entry"
-                                                   value="{{ object.date_entry }}" id="date_entry"/>
+                                                   value="{{ object.date_entry }}" id="date_entry" disabled/>
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="id_internal_number">Внутренний номер</label>
@@ -186,7 +210,11 @@
                                                     name="prolongation"
                                                     data-plugin-selectTwo>
                                                 {% for key, value in prolongation %}
-                                                    <option value="{{ key }}">{{ value }}</option>
+                                                    {% if value == object.prolongation %}
+                                                    <option value="{{ key }}" selected>{{ value }}</option>
+                                                    {% else %}
+                                                        <option value="{{ key }}">{{ value }}</option>
+                                                    {% endif %}
                                                 {% endfor %}
                                             </select>
                                         </div>

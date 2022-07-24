@@ -1,19 +1,22 @@
+from django.core.paginator import Paginator
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
-from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, Estate
+from contracts_app.models import Contract, Posts, TypeContract, TypeProperty
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
-from customers_app.models import DataBaseUser, AccessLevel, Counteragent, Division
 
+from contracts_app.utils import GetAllObject
 
 # Create your views here.
 
 # def index(request):
 #     return render(request, 'contracts_app/main.html')
+from customers_app.models import DataBaseUser, Counteragent, Division
+
 
 class ContractList(ListView):
     """
@@ -21,15 +24,66 @@ class ContractList(ListView):
     """
     model = Contract
     template_name = 'contracts_app/contract_list.html'
+    paginate_by = 3
 
-    def post(self, request, *args, **kwargs):
-        stuff = request.POST.get('division')
-        print(stuff)
-        if stuff:
-            stuff = self.get_queryset().filter(divisions=stuff)
-        else:
-            stuff = self.get_queryset().all()
-        return render(request, self.template_name, {'object_list': stuff})
+    def get_context_data(self, **kwargs):
+        context = super(ContractList, self).get_context_data(**kwargs)
+        all_users = DataBaseUser.objects.all()
+        all_type_of_contract = TypeContract.objects.all()
+        all_type_property = TypeProperty.objects.all()
+        all_counteragent = Counteragent.objects.all()
+        all_prolongation = Contract.type_of_prolongation
+        all_divisions = Division.objects.all()
+        context['employee'] = all_users
+        context['type_property'] = all_type_property
+        context['counteragent'] = all_counteragent
+        context['prolongation'] = all_prolongation
+        context['division'] = all_divisions
+        context['type_contract'] = all_type_of_contract
+        return context
+
+
+class ContractSearch(ListView):
+    template_name_suffix = '_search'
+    context_object_name = 'object'
+    object_list = None
+    paginate_by = 3
+
+    def post(self, request):  # ***** this method required! ******
+        self.object_list = self.get_queryset()
+        return HttpResponseRedirect(reverse('contracts_app:search'))
+
+    #Работает с GET запросом
+    def get_queryset(self):
+        qs = Contract.objects.all()
+        if self.request.GET:
+            return Contract.objects.filter(divisions=int(self.request.GET.get('division')))
+        return qs
+
+    # # Работает с POST запросом
+    # def get_queryset(self):
+    #     qs = Contract.objects.all()
+    #     if self.request.POST:
+    #         print(self.request.POST)
+    #         return Contract.objects.filter(divisions=int(self.request.POST.get('division')))
+    #     return qs
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        all_users = DataBaseUser.objects.all()
+        all_type_of_contract = TypeContract.objects.all()
+        all_type_property = TypeProperty.objects.all()
+        all_counteragent = Counteragent.objects.all()
+        all_prolongation = Contract.type_of_prolongation
+        all_divisions = Division.objects.all()
+        context['employee'] = all_users
+        context['type_property'] = all_type_property
+        context['counteragent'] = all_counteragent
+        context['prolongation'] = all_prolongation
+        context['division'] = all_divisions
+        context['type_contract'] = all_type_of_contract
+        context['s'] = f"division={self.request.GET.get('division')}&"
+        return context
 
 
 class ContractAdd(CreateView):
@@ -51,10 +105,14 @@ class ContractAdd(CreateView):
         context['employee'] = all_users
         context['type_property'] = all_type_property
         context['counteragent'] = all_counteragent
-        context['prolongation'] = dict(all_prolongation)
+        context['prolongation'] = all_prolongation
         context['division'] = all_divisions
         context['type_contract'] = all_type_of_contract
         return context
+
+    def post(self, request, *args, **kwargs):
+        print(self.get_form(ContractsAddForm))
+        return super().post(request, *args, **kwargs)
 
 
 class ContractDetail(DetailView):
@@ -67,6 +125,7 @@ class ContractDetail(DetailView):
         context = super(ContractDetail, self).get_context_data(**kwargs)
         # Выбираем из таблицы Posts все записи относящиеся к текущему договору
         post = Posts.objects.filter(contract_number=self.object.pk)
+        all_prolongation = Contract.type_of_prolongation
         slaves = Contract.objects.filter(parent_category=self.object.pk)
         # Формируем заголовок страницы и передаем в контекст
         if self.object.contract_number:
@@ -77,21 +136,24 @@ class ContractDetail(DetailView):
         # Передаем найденные записи в контекст
         context['posts'] = post
         context['slaves'] = slaves
+        context['prolongation'] = all_prolongation
         return context
 
 
 class ContractUpdate(UpdateView):
     model = Contract
     form_class = ContractsUpdateForm
+    template_name_suffix = '_form_update'
 
     def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
+
+        # print(self.get_form(ContractsAddForm))
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-        print('1')
         if form.is_valid():
             response = form.save(commit=False)
+            # print(form)
             response.save()
             return HttpResponseRedirect(reverse('contracts_app:detail', args=[self.object.pk]))
         else:
@@ -100,7 +162,17 @@ class ContractUpdate(UpdateView):
     def get_context_data(self, **kwargs):
         context = super(ContractUpdate, self).get_context_data(**kwargs)
         all_users = DataBaseUser.objects.all()
+        all_type_of_contract = TypeContract.objects.all()
+        all_type_property = TypeProperty.objects.all()
+        all_counteragent = Counteragent.objects.all()
+        all_prolongation = Contract.type_of_prolongation
+        all_divisions = Division.objects.all()
         context['employee'] = all_users
+        context['type_property'] = all_type_property
+        context['counteragent'] = all_counteragent
+        context['prolongation'] = all_prolongation
+        context['division'] = all_divisions
+        context['type_contract'] = all_type_of_contract
         return context
 
     def get_success_url(self):

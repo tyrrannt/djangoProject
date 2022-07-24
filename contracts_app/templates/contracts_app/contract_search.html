@@ -17,53 +17,78 @@
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                        <a href="{% url 'contracts_app:create' %}"
-                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+ Добавить
-                                            договор </a>
-                                    </div>
-                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label class="ws-nowrap me-3 mb-0">Фильтр:</label>
-                                            <select class="form-control select-style-1 filter-by" name="filter-by">
-                                                <option value="all" selected>Все</option>
-                                                <option value="1">Код</option>
-                                                <option value="2">Контрагент</option>
-                                                <option value="3">Номер договора</option>
-                                                <option value="4">Дата договора</option>
-                                                <option value="5">Тип договора</option>
-                                                <option value="5">Подразделение</option>
-                                                <option value="5">Статус</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label class="ws-nowrap me-3 mb-0">Количество:</label>
-                                            <select class="form-control select-style-1 results-per-page"
-                                                    name="results-per-page">
-                                                <option value="12" selected>12</option>
-                                                <option value="24">24</option>
-                                                <option value="36">36</option>
-                                                <option value="100">100</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-lg-auto ps-lg-1">
-                                        <div class="search search-style-1 search-style-1-lg mx-lg-auto">
-                                            <div class="input-group">
-                                                <input type="text" class="search-term form-control" name="search-term"
-                                                       id="search-term" placeholder="Поиск договора">
-                                                <button class="btn btn-default" type="submit"><i
-                                                        class="bx bx-search"></i></button>
+{#                        ToDo: Пересмотреть закоментированный заголовок#}
+{#                            <div class="datatable-header">#}
+{#                                <div class="row align-items-center mb-3">#}
+{#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                        <a href="{% url 'contracts_app:create' %}"#}
+{#                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+ Добавить#}
+{#                                            договор </a>#}
+{#                                    </div>#}
+{#                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">#}
+{#                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">#}
+{#                                            <label class="ws-nowrap me-3 mb-0">Фильтр:</label>#}
+{#                                            <select class="form-control select-style-1 filter-by" name="filter-by">#}
+{#                                                <option value="all" selected>Все</option>#}
+{#                                                <option value="1">Код</option>#}
+{#                                                <option value="2">Контрагент</option>#}
+{#                                                <option value="3">Номер договора</option>#}
+{#                                                <option value="4">Дата договора</option>#}
+{#                                                <option value="5">Тип договора</option>#}
+{#                                                <option value="5">Подразделение</option>#}
+{#                                                <option value="5">Статус</option>#}
+{#                                            </select>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">#}
+{#                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">#}
+{#                                            <label class="ws-nowrap me-3 mb-0">Количество:</label>#}
+{#                                            <select class="form-control select-style-1 results-per-page"#}
+{#                                                    name="results-per-page">#}
+{#                                                <option value="12" selected>12</option>#}
+{#                                                <option value="24">24</option>#}
+{#                                                <option value="36">36</option>#}
+{#                                                <option value="100">100</option>#}
+{#                                            </select>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="col-12 col-lg-auto ps-lg-1">#}
+{#                                        <div class="search search-style-1 search-style-1-lg mx-lg-auto">#}
+{#                                            <div class="input-group">#}
+{#                                                <input type="text" class="search-term form-control" name="search-term"#}
+{#                                                       id="search-term" placeholder="Поиск договора">#}
+{#                                                <button class="btn btn-default" type="submit"><i#}
+{#                                                        class="bx bx-search"></i></button>#}
+{#                                            </div>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+                            <form action="{% url 'contracts_app:search' %}" method="get">
+{#                                {% csrf_token %}#}
+                                <div class="form-row toggle toggle-primary" data-plugin-toggle
+                                     data-plugin-options="{ 'isAccordion': true }">
+                                    <section class="toggle">
+                                        <label>Поиск по реквизитам и дополнительным полям</label>
+                                        <div class="toggle-content">
+                                            <div class="row mx-2">
+                                                <label for="id_division">Подразделение</label>
+                                                <select class="form-control form-control-modern" name="division"
+                                                        id="id_division">
+                                                    {% for item in division %}
+                                                        <option value="{{ item.pk }}">{{ item.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <div class="form-row">
+                                                    <input type="submit"
+                                                           class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                                           value="Поиск"/>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </section>
                                 </div>
-                            </div>
-
+                            </form>
                             <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
 
@@ -129,7 +154,7 @@
                                                     <option value="" selected>Редактировать</option>
                                                     <option value="delete">Удалить</option>
                                                 </select>
-                                                <a href="ecommerce-coupons-form.html"
+                                                <a href="#"
                                                    class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
                                             </div>
 

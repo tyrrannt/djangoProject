@@ -1,4 +1,6 @@
 from django.db import models
+from django.urls import reverse
+
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
 
 
@@ -59,7 +61,7 @@ class ContractModel(models.Model):
                                        help_text='')
     date_conclusion = models.DateField(verbose_name='Дата заключения договора')
     subject_contract = models.TextField(verbose_name='Предмет договора', blank=True)
-    cost = models.FloatField(verbose_name='Стоимость', default=0)
+    cost = models.FloatField(verbose_name='Стоимость', default=0, null=True, blank=True)
     type_of_contract = models.ForeignKey(TypeContract, verbose_name='Тип договора', on_delete=models.SET_NULL,
                                          null=True)
     divisions = models.ManyToManyField(Division, verbose_name='Подразделение')
@@ -89,6 +91,9 @@ class ContractModel(models.Model):
                 return f'{self.contract_counteragent}-{self.contract_number}'
             else:
                 return f'{self.contract_counteragent}-(без номера)'
+
+    def get_absolute_url(self):
+        return reverse('contracts_app:detail', kwargs={'pk': self.pk})
 
 
 class Contract(ContractModel):
