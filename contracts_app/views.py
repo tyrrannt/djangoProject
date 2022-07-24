@@ -1,8 +1,10 @@
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
+from administration_app.models import PortalProperty
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm
 from django.contrib import auth, messages
@@ -53,11 +55,36 @@ class ContractSearch(ListView):
         self.object_list = self.get_queryset()
         return HttpResponseRedirect(reverse('contracts_app:search'))
 
-    #Работает с GET запросом
+    # Работает с GET запросом
     def get_queryset(self):
         qs = Contract.objects.all()
         if self.request.GET:
-            return Contract.objects.filter(divisions=int(self.request.GET.get('division')))
+            #ToDo: Вставить валидацию параметров запроса
+            dv = int(self.request.GET.get('dv'))
+            ca = int(self.request.GET.get('ca'))
+            tc = int(self.request.GET.get('tc'))
+            tp = int(self.request.GET.get('tp'))
+            cn = self.request.GET.get('cn')
+            sn = self.request.GET.get('sn')
+            print(cn, sn)
+            """Формируем запрос на лету, в зависимости от полученных параметров, создаем Q объект,
+               и добавляем к нему запросы, в зависимости от значений передаваемых параметров.
+            """
+            query = Q()
+            if dv != 0:
+                query &= Q(divisions=dv)
+            if ca != 0:
+                query &= Q(contract_counteragent=ca)
+            if tc != 0:
+                query &= Q(type_of_contract=tc)
+            if tp != 0:
+                query &= Q(type_property=tp)
+            if cn:
+                query &= Q(contract_number__contains=cn)
+            if sn:
+                query &= Q(subject_contract__contains=sn)
+            print(query)
+            return Contract.objects.filter(query)
         return qs
 
     # # Работает с POST запросом
@@ -82,7 +109,10 @@ class ContractSearch(ListView):
         context['prolongation'] = all_prolongation
         context['division'] = all_divisions
         context['type_contract'] = all_type_of_contract
-        context['s'] = f"division={self.request.GET.get('division')}&"
+        context['s'] = f"dv={self.request.GET.get('dv')}&ca={self.request.GET.get('ca')}" \
+                       f"&tc={self.request.GET.get('tc')}&tp={self.request.GET.get('tp')}" \
+                       f"&cn={self.request.GET.get('cn')}&sn={self.request.GET.get('sn')}&"
+        context['title'] = 'Поиск по базе договоров'
         return context
 
 

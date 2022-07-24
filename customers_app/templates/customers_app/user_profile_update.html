@@ -269,7 +269,7 @@
                                                 {% now "d - m - Y г." %}</h5>
                                         </div>
                                         <ol class="tm-items">
-                                            {#                                            ToDo: Доработать вывод постов#}
+                                            {#ToDo: Доработать вывод постов#}
                                             {% for item in posts %}
                                                 {% for items in item.post_divisions.iterator %}
                                                     {% if items == databaseuser.divisions %}

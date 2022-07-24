@@ -1,6 +1,23 @@
 {% extends 'contracts_app/main.html' %}
 {% load static %}
 
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{% endblock %}
+
 {% block title %}
     <title>{{ title }}</title>
 {% endblock %}
@@ -72,13 +89,66 @@
                                         <label>Поиск по реквизитам и дополнительным полям</label>
                                         <div class="toggle-content">
                                             <div class="row mx-2">
+                                                <div class="row form-row">
+                                                <div class="col-md-6">
                                                 <label for="id_division">Подразделение</label>
-                                                <select class="form-control form-control-modern" name="division"
-                                                        id="id_division">
+                                                <select class="form-control form-control-modern" name="dv"
+                                                        id="id_division" data-plugin-selectTwo>
+                                                    <option value="0" selected>Выберите значение...</option>
                                                     {% for item in division %}
                                                         <option value="{{ item.pk }}">{{ item.name }}</option>
                                                     {% endfor %}
                                                 </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                <label for="id_contract_counteragent">Контрагент</label>
+                                                <select class="form-control form-control-modern" name="ca"
+                                                        id="id_contract_counteragent" data-plugin-selectTwo>
+                                                    <option value="0" selected>Выберите значение...</option>
+                                                    {% for item in counteragent %}
+                                                        <option value="{{ item.pk }}">{{ item.short_name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                </div>
+                                                </div>
+                                                <div class="row form-row">
+                                                <div class="col-md-6">
+                                                <label for="id_type_of_contract">Тип договора</label>
+                                                <select class="form-control form-control-modern" name="tc"
+                                                        id="id_type_of_contract" data-plugin-selectTwo>
+                                                    <option value="0" selected>Выберите значение...</option>
+                                                    {% for item in type_contract %}
+                                                        <option value="{{ item.pk }}">{{ item.type_contract }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                <label for="id_type_property">Тип имущества</label>
+                                                <select class="form-control form-control-modern" name="tp"
+                                                        id="id_type_property" data-plugin-selectTwo>
+                                                    <option value="0" selected>Выберите значение...</option>
+                                                    {% for item in type_property %}
+                                                        <option value="{{ item.pk }}">{{ item.type_property }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                </div>
+                                                </div>
+                                                <div class="row form-row">
+                                                <div class="col-md-6">
+                                                <label for="id_contract_number">Номер договора</label>
+                                                <input type="text" class="form-control form-control-modern"
+                                                   name="cn"
+                                                   value="" placeholder="Введите значение..."
+                                                   id="id_contract_number"/>
+                                                </div>
+                                                <div class="col-md-6">
+                                                <label for="id_subject_contract">Предмет договора</label>
+                                                <input type="text" class="form-control form-control-modern"
+                                                   name="sn"
+                                                   value="" placeholder="Введите значение..."
+                                                   id="id_subject_contract"/>
+                                                </div>
+                                                </div>
                                                 <div class="form-row">
                                                     <input type="submit"
                                                            class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
