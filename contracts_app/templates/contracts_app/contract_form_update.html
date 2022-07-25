@@ -47,8 +47,24 @@
                         <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
-                                    <div class="col text">
-                                        <div class="text-black-50">
+                                    <div class="row text">
+                                        <div class="col-md-6 text-black-50">
+{#                                            {{ form.contract_counteragent }}#}
+                                            <label for="id_parent_category">Основной документ</label>
+                                            <select class="form-control mb-4 form-control-modern"
+                                                    name="parent_category"
+                                                    id="id_parent_category" required
+                                                    data-plugin-selectTwo>
+                                                {% for item in all_contract.iterator %}
+                                                    {% if item.pk == object.pk %}
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                    {% else %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 text-black-50">
 {#                                            {{ form.contract_counteragent }}#}
                                             <label for="id_contract_counteragent">Контрагент</label>
                                             <select class="form-control mb-4 form-control-modern"

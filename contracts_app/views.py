@@ -11,13 +11,8 @@ from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from contracts_app.utils import GetAllObject
 
 # Create your views here.
-
-# def index(request):
-#     return render(request, 'contracts_app/main.html')
-from customers_app.models import DataBaseUser, Counteragent, Division
 
 
 class ContractList(ListView):
@@ -47,7 +42,7 @@ class ContractSearch(ListView):
     def get_queryset(self):
         qs = Contract.objects.all()
         if self.request.GET:
-            #ToDo: Вставить валидацию параметров запроса
+            # ToDo: Вставить валидацию параметров запроса
             dv = int(self.request.GET.get('dv'))
             ca = int(self.request.GET.get('ca'))
             tc = int(self.request.GET.get('tc'))
@@ -75,7 +70,8 @@ class ContractSearch(ListView):
             return Contract.objects.filter(query).order_by('pk')
         return qs
 
-    # # Работает с POST запросом
+    ##ToDo: Доработать передачу поискового запроса через POST
+    ## Работает с POST запросом
     # def get_queryset(self):
     #     qs = Contract.objects.all()
     #     if self.request.POST:
@@ -106,7 +102,6 @@ class ContractAdd(CreateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        print(self.get_form(ContractsAddForm))
         return super().post(request, *args, **kwargs)
 
 
@@ -139,14 +134,16 @@ class ContractUpdate(UpdateView):
     template_name_suffix = '_form_update'
 
     def post(self, request, *args, **kwargs):
-
-        # print(self.get_form(ContractsAddForm))
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
+        """
+        Проверяем корректность переданной формы
+        :param form: Передаваемая форма с сайта
+        :return: Редирект обратно на страницу с обновленными данными
+        """
         if form.is_valid():
             response = form.save(commit=False)
-            # print(form)
             response.save()
             return HttpResponseRedirect(reverse('contracts_app:detail', args=[self.object.pk]))
         else:
