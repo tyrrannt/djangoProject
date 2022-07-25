@@ -12,6 +12,7 @@ from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 import hashlib
 
+
 # Create your views here.
 
 
@@ -20,13 +21,15 @@ class ContractList(ListView):
     Отображение списка договоров
     """
     model = Contract
-    template_name = 'contracts_app/contract_list.html'
     paginate_by = 5
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
         context['title'] = 'База договоров'
         return context
+
+    def get_queryset(self):
+        return Contract.objects.filter(allowed_placed=True)
 
 
 class ContractSearch(ListView):
@@ -145,8 +148,10 @@ class ContractUpdate(UpdateView):
         :param form: Передаваемая форма с сайта
         :return: Редирект обратно на страницу с обновленными данными
         """
+        print(self.request.POST.get('parent_category'))
         if form.is_valid():
             response = form.save(commit=False)
+
             response.save()
             return HttpResponseRedirect(reverse('contracts_app:detail', args=[self.object.pk]))
         else:

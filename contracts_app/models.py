@@ -5,6 +5,11 @@ from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Divisi
 
 
 # Create your models here.
+def contract_directory_path(instance, filename):
+    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
+    return f'contracts/{instance.contract_counteragent.inn}/{instance.contract_counteragent.kpp}/{filename}'
+
+
 class TypeContract(models.Model):
     class Meta:
         verbose_name = 'Тип договора'
@@ -75,7 +80,7 @@ class ContractModel(models.Model):
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
     executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True,
                                  related_name='contract_executor')
-    doc_file = models.FileField(verbose_name='Файл документа', upload_to='library', blank=True)
+    doc_file = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
                                null=True)
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)

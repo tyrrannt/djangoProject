@@ -29,7 +29,7 @@
         {% include 'library_app/breadcrumb.html' %}
         <div><p></p></div>
         <!-- start: page -->
-        <form action="{% url 'contracts_app:update' object.pk %}" method="post">
+        <form action="{% url 'contracts_app:update' object.pk %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% if form.errors %}
       {% for field in form %}
@@ -53,11 +53,11 @@
                                             <label for="id_parent_category">Основной документ</label>
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="parent_category"
-                                                    id="id_parent_category" required
+                                                    id="id_parent_category"
                                                     data-plugin-selectTwo>
                                                 {% for item in all_contract.iterator %}
                                                     {% if forloop.first %}
-                                                    <option value="0" selected>Выберите значение...</option>
+                                                    <option value="" selected>Выберите значение...</option>
                                                     {% endif %}
                                                     {% if item.pk != object.pk %}
                                                         {% if object.parent_category.pk == item.pk %}
