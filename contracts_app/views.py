@@ -30,18 +30,6 @@ class ContractList(ListView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
-        all_users = DataBaseUser.objects.all()
-        all_type_of_contract = TypeContract.objects.all()
-        all_type_property = TypeProperty.objects.all()
-        all_counteragent = Counteragent.objects.all()
-        all_prolongation = Contract.type_of_prolongation
-        all_divisions = Division.objects.all()
-        context['employee'] = all_users
-        context['type_property'] = all_type_property
-        context['counteragent'] = all_counteragent
-        context['prolongation'] = all_prolongation
-        context['division'] = all_divisions
-        context['type_contract'] = all_type_of_contract
         return context
 
 
@@ -66,7 +54,7 @@ class ContractSearch(ListView):
             tp = int(self.request.GET.get('tp'))
             cn = self.request.GET.get('cn')
             sn = self.request.GET.get('sn')
-            print(cn, sn)
+
             """Формируем запрос на лету, в зависимости от полученных параметров, создаем Q объект,
                и добавляем к нему запросы, в зависимости от значений передаваемых параметров.
             """
@@ -83,8 +71,8 @@ class ContractSearch(ListView):
                 query &= Q(contract_number__contains=cn)
             if sn:
                 query &= Q(subject_contract__contains=sn)
-            print(query)
-            return Contract.objects.filter(query)
+
+            return Contract.objects.filter(query).order_by('pk')
         return qs
 
     # # Работает с POST запросом
@@ -97,18 +85,7 @@ class ContractSearch(ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        all_users = DataBaseUser.objects.all()
-        all_type_of_contract = TypeContract.objects.all()
-        all_type_property = TypeProperty.objects.all()
-        all_counteragent = Counteragent.objects.all()
-        all_prolongation = Contract.type_of_prolongation
-        all_divisions = Division.objects.all()
-        context['employee'] = all_users
-        context['type_property'] = all_type_property
-        context['counteragent'] = all_counteragent
-        context['prolongation'] = all_prolongation
-        context['division'] = all_divisions
-        context['type_contract'] = all_type_of_contract
+
         context['s'] = f"dv={self.request.GET.get('dv')}&ca={self.request.GET.get('ca')}" \
                        f"&tc={self.request.GET.get('tc')}&tp={self.request.GET.get('tp')}" \
                        f"&cn={self.request.GET.get('cn')}&sn={self.request.GET.get('sn')}&"
@@ -126,18 +103,6 @@ class ContractAdd(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
-        all_users = DataBaseUser.objects.all()
-        all_type_of_contract = TypeContract.objects.all()
-        all_type_property = TypeProperty.objects.all()
-        all_counteragent = Counteragent.objects.all()
-        all_prolongation = Contract.type_of_prolongation
-        all_divisions = Division.objects.all()
-        context['employee'] = all_users
-        context['type_property'] = all_type_property
-        context['counteragent'] = all_counteragent
-        context['prolongation'] = all_prolongation
-        context['division'] = all_divisions
-        context['type_contract'] = all_type_of_contract
         return context
 
     def post(self, request, *args, **kwargs):
@@ -155,7 +120,6 @@ class ContractDetail(DetailView):
         context = super(ContractDetail, self).get_context_data(**kwargs)
         # Выбираем из таблицы Posts все записи относящиеся к текущему договору
         post = Posts.objects.filter(contract_number=self.object.pk)
-        all_prolongation = Contract.type_of_prolongation
         slaves = Contract.objects.filter(parent_category=self.object.pk)
         # Формируем заголовок страницы и передаем в контекст
         if self.object.contract_number:
@@ -166,7 +130,6 @@ class ContractDetail(DetailView):
         # Передаем найденные записи в контекст
         context['posts'] = post
         context['slaves'] = slaves
-        context['prolongation'] = all_prolongation
         return context
 
 
@@ -191,18 +154,6 @@ class ContractUpdate(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractUpdate, self).get_context_data(**kwargs)
-        all_users = DataBaseUser.objects.all()
-        all_type_of_contract = TypeContract.objects.all()
-        all_type_property = TypeProperty.objects.all()
-        all_counteragent = Counteragent.objects.all()
-        all_prolongation = Contract.type_of_prolongation
-        all_divisions = Division.objects.all()
-        context['employee'] = all_users
-        context['type_property'] = all_type_property
-        context['counteragent'] = all_counteragent
-        context['prolongation'] = all_prolongation
-        context['division'] = all_divisions
-        context['type_contract'] = all_type_of_contract
         return context
 
     def get_success_url(self):
