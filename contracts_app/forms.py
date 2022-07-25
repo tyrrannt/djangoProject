@@ -27,7 +27,7 @@ class ContractsUpdateForm(forms.ModelForm):
         #           'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
         #           'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
         #           'comment', 'date_entry', 'executor', 'doc_file', 'access', 'allowed_placed')
-        fields = ('contract_counteragent', 'type_of_contract', 'employee', 'contract_number',
+        fields = ('parent_category', 'contract_counteragent', 'type_of_contract', 'employee', 'contract_number',
                   'date_conclusion', 'closing_date', 'divisions', 'type_property',
                   'subject_contract', 'cost', 'internal_number', 'prolongation', 'allowed_placed')
 

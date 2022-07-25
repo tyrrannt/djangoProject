@@ -56,10 +56,15 @@
                                                     id="id_parent_category" required
                                                     data-plugin-selectTwo>
                                                 {% for item in all_contract.iterator %}
-                                                    {% if item.pk == object.pk %}
-                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                    {% else %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% if forloop.first %}
+                                                    <option value="0" selected>Выберите значение...</option>
+                                                    {% endif %}
+                                                    {% if item.pk != object.pk %}
+                                                        {% if object.parent_category.pk == item.pk %}
+                                                            <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                        {% else %}
+                                                            <option value="{{ item.pk }}">{{ item }}</option>
+                                                        {% endif %}
                                                     {% endif %}
                                                 {% endfor %}
                                             </select>

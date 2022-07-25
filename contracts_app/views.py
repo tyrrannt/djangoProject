@@ -10,7 +10,7 @@ from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, Contract
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
-
+import hashlib
 
 # Create your views here.
 
@@ -21,10 +21,11 @@ class ContractList(ListView):
     """
     model = Contract
     template_name = 'contracts_app/contract_list.html'
-    paginate_by = 3
+    paginate_by = 5
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
+        context['title'] = 'База договоров'
         return context
 
 
@@ -32,7 +33,7 @@ class ContractSearch(ListView):
     template_name_suffix = '_search'
     context_object_name = 'object'
     object_list = None
-    paginate_by = 3
+    paginate_by = 5
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()
@@ -99,6 +100,7 @@ class ContractAdd(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
+        context['title'] = 'Создание нового договора'
         return context
 
     def post(self, request, *args, **kwargs):
@@ -125,6 +127,7 @@ class ContractDetail(DetailView):
         # Передаем найденные записи в контекст
         context['posts'] = post
         context['slaves'] = slaves
+        print(hashlib.sha512(str(self.object.contract_number).encode('utf-8')).hexdigest())
         return context
 
 
@@ -151,6 +154,12 @@ class ContractUpdate(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractUpdate, self).get_context_data(**kwargs)
+        # Формируем заголовок страницы и передаем в контекст
+        if self.object.contract_number:
+            cn = self.object.contract_number
+        else:
+            cn = '(без номера)'
+        context['title'] = title = 'Редактирование договора №' + cn + ' от ' + str(self.object.date_conclusion)
         return context
 
     def get_success_url(self):
