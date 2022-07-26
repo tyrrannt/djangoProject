@@ -240,7 +240,10 @@
                                             <small>Добавлено: {{ item.creation_date }}.
                                                 Автор: {{ item.responsible_person }}
                                             </small>
-                                            <p>{{ item.post_description }}</p>
+                                            <p>{% autoescape off %}
+                                                    {{ item.post_description }}
+                                                {% endautoescape %}
+                                            </p>
                                         </div>
                                     {% endfor %}
                                 </div>

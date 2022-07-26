@@ -10,6 +10,19 @@ def contract_directory_path(instance, filename):
     return f'contracts/{instance.contract_counteragent.inn}/{instance.contract_counteragent.kpp}/{filename}'
 
 
+class TypeDocuments(models.Model):
+    class Meta:
+        verbose_name = 'Тип документа'
+        verbose_name_plural = 'Тип документов'
+
+    type_document = models.CharField(verbose_name='Тип документа', max_length=50, blank=True, null=True,
+                                     help_text='')
+    file_name_prefix = models.CharField(verbose_name='', max_length=3)
+
+    def __str__(self):
+        return f'{self.type_document}'
+
+
 class TypeContract(models.Model):
     class Meta:
         verbose_name = 'Тип договора'
@@ -68,6 +81,8 @@ class ContractModel(models.Model):
     subject_contract = models.TextField(verbose_name='Предмет договора', blank=True)
     cost = models.FloatField(verbose_name='Стоимость', default=0, null=True, blank=True)
     type_of_contract = models.ForeignKey(TypeContract, verbose_name='Тип договора', on_delete=models.SET_NULL,
+                                         null=True)
+    type_of_document = models.ForeignKey(TypeDocuments, verbose_name='Тип документа', on_delete=models.SET_NULL,
                                          null=True)
     divisions = models.ManyToManyField(Division, verbose_name='Подразделение')
     type_property = models.ForeignKey(TypeProperty, verbose_name='Тип имущества', on_delete=models.SET_NULL, null=True)

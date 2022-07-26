@@ -23,7 +23,15 @@
                     <label>Адрес электронной почты</label>
                     <input name="email" type="email" class="form-control form-control-lg"/>
                 </div>
+                <div class="form-group mb-3">
+                    <label>Фамилия</label>
+                    <input name="last_name" type="text" class="form-control form-control-lg"/>
+                </div>
 
+                <div class="form-group mb-3">
+                    <label>Имя</label>
+                    <input name="first_name" type="text" class="form-control form-control-lg"/>
+                </div>
                 <div class="form-group mb-0">
                     <div class="row">
                         <div class="col-sm-6 mb-3">
@@ -52,7 +60,7 @@
 
                 <span class="mt-3 mb-3 line-thru text-center text-uppercase"><span>{% now "Y" %}</span></span><br>
 
-                <p class="text-center">У вас еще нет учетной записи? <a href="#">Зарегистрируйтесь!</a>
+                <p class="text-center">У вас уже есть учетная запись? <a href="{% url 'customers_app:login' %}">Войти</a>
                 </p>
 
             </form>

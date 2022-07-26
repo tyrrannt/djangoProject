@@ -17,12 +17,12 @@ class DataBaseUserLoginForm(AuthenticationForm):
 class DataBaseUserRegisterForm(UserCreationForm):
     class Meta:
         model = DataBaseUser
-        fields = ('username', 'password1', 'password2', 'email')
+        fields = ('username', 'password1', 'password2', 'email', 'first_name', 'last_name',)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.fields['first_name'].required = True
-        # self.fields['last_name'].required = True
+        self.fields['first_name'].required = True
+        self.fields['last_name'].required = True
         self.fields['email'].required = True
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control mb-4'

@@ -268,7 +268,7 @@
 
                         </div>
                         <div id="edit" class="tab-pane">
-                            <form action="{% url 'customers_app:profile_update' object.pk %}">
+                            <div>
                                 <h4 class="mb-3 font-weight-semibold text-dark">Личная информация</h4>
                                 <div class="row">
                                     <div class="form-group col-md-4">
@@ -308,13 +308,13 @@
 
                                 <hr class="dotted tall">
 
-
+                                <a href="{% url 'customers_app:profile_update' object.pk %}">
                                 <div class="col-md-12 text-end mt-3">
                                     <button class="btn btn-primary" type="submit">Изменить</button>
                                 </div>
+                                </a>
 
-
-                            </form>
+                            </div>
 
                         </div>
                     </div>

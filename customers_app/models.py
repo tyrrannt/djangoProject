@@ -9,10 +9,11 @@ class AccessLevel(models.Model):
         verbose_name_plural = 'Уровни доступа'
 
     level = models.PositiveIntegerField(verbose_name='Уровень доступа', default=0)
+    name = models.CharField(verbose_name='', max_length=26, blank=True)
     description = models.TextField(verbose_name='Описание категории', blank=True)
 
     def __str__(self):
-        return self.description
+        return self.name
 
 
 class Job(models.Model):
@@ -102,8 +103,8 @@ class DataBaseUser(AbstractUser):
     surname = models.CharField(verbose_name='отчество', max_length=40, blank=True, null=True, help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='день рождения', blank=True, null=True, help_text='')
-    access_right = models.ManyToManyField(AccessLevel, verbose_name='права доступа', default=0, help_text='',
-                                          blank=True)
+    access_right = models.ForeignKey(AccessLevel, verbose_name='права доступа', help_text='',
+                                          blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='тип пользователя', max_length=40, choices=type_of, help_text='',
                                   blank=True, null=True, )
