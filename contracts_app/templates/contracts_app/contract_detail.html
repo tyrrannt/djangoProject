@@ -175,15 +175,12 @@
                         </div>
                     </section>
                     <section class="toggle">
-                        <label>Файл: {{ object.doc_file.url }}</label>
+                        <label>Файл</label>
                         <div class="toggle-content">
-
                             <div class="form-row">
-
+                                <a href="{{ object.doc_file.url }}">Договор</a>
                             </div>
-
                         </div>
-
                     </section>
                     {% if slaves %}
                         <section class="toggle">
