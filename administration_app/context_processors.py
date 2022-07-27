@@ -1,10 +1,11 @@
 from django.db.models import Q
-
+import psutil
 from contracts_app.models import Contract, TypeContract, TypeProperty
 from customers_app.models import DataBaseUser, Counteragent, Division
 
 
 def get_all_contracts(request):
+    print(psutil.cpu_count())
     all_contract = Contract.objects.all()
     contracts_count = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True)).count()
     all_users = DataBaseUser.objects.all()

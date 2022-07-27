@@ -1,5 +1,6 @@
 {% extends 'contracts_app/main.html' %}
 {% load static %}
+{% load custom %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -14,6 +15,7 @@
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
@@ -178,7 +180,10 @@
                         <label>Файл</label>
                         <div class="toggle-content">
                             <div class="form-row">
-{#                                <a href="{{ object.doc_file.url }}">Договор</a>#}
+                                {% if object.doc_file %}
+                                    {{ object.doc_file.url|media_folder_products }}
+                                    <iframe src="{{ object.doc_file.url|media_folder_products }}" id = "pdf" style="width:1500px; height:1500px;" frameborder="0"></iframe>
+                               {% endif %}
                             </div>
                         </div>
                     </section>

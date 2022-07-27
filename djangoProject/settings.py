@@ -130,5 +130,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
 MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
+#MEDIA_URL = pathlib.Path.joinpath(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'customers_app.DataBaseUser'
 LOGIN_URL = '/users/login/'

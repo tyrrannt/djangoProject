@@ -1,17 +1,28 @@
 {% load static %}
 <header class="page-header page-header-left-inline-breadcrumb">
-    <h2 class="font-weight-bold text-6"><a href="{% url 'library_app:index' %}">Главная</a></h2>
-    <div class="right-wrapper">
-        <ol class="breadcrumbs">
+    {#    <div class="right-wrapper">#}
+    {#        <ol class="breadcrumbs">#}
+    {#            <li><span> Договора</span></li>#}
+    {#            <li><span>eCommerce</span></li>#}
+    {#            <li><span>Coupons</span></li>#}
+    {#        </ol>#}
+    {#        <a class="sidebar-right-toggle" data-open="sidebar-right"><i class="fas fa-chevron-left"></i></a>#}
+    {#    </div>#}
+    {% if self.get_ancestors|length > 1 %}
+        <div class="right-wrapper">
+            <ol class="breadcrumbs">
+                {% for page in self.get_ancestors %}
+                    {% if page.is_root == False %}
+                        <a href='{{ page.url }}'>
+                            <li><span>{{ page.title }}</span></li>
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+            <a class="sidebar-right-toggle" data-open="sidebar-right"><i
+                    class="fas fa-chevron-left"></i>{{ self.title }}</a>
+        </div>
+        {% else %}
 
-            <li><span> Договора</span></li>
-
-            <li><span>eCommerce</span></li>
-
-            <li><span>Coupons</span></li>
-
-        </ol>
-
-        <a class="sidebar-right-toggle" data-open="sidebar-right"><i class="fas fa-chevron-left"></i></a>
-    </div>
+    {% endif %}>
 </header>
