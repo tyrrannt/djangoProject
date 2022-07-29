@@ -151,7 +151,8 @@
                                             <label for="cost">Стоимость</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="cost" disabled
-                                                   value="{% if object.cost %}{{ object.cost }}{% else %}0{% endif %}" id="cost"/>
+                                                   value="{% if object.cost %}{{ object.cost }}{% else %}0{% endif %}"
+                                                   id="cost"/>
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="date_entry">Дата ввода информации</label>
@@ -169,7 +170,9 @@
                                             <label for="prolongation">Пролонгация</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="prolongation" disabled
-           value="{% for key, value in prolongation %}{% if key == object.prolongation %}{{ value }}{% endif %}{% endfor %}" id="prolongation"/>
+                                                   value="
+                                                           {% for key, value in prolongation %}{% if key == object.prolongation %}{{ value }}{% endif %}{% endfor %}"
+                                                   id="prolongation"/>
                                         </div>
                                     </div>
                                 </div>
@@ -181,9 +184,8 @@
                         <div class="toggle-content">
                             <div class="form-row">
                                 {% if object.doc_file %}
-                                    {{ object.doc_file.url|media_folder_products }}
-                                    <iframe src="{{ object.doc_file.url|media_folder_products }}" id = "pdf" style="width:1500px; height:1500px;" frameborder="0"></iframe>
-                               {% endif %}
+                                    <object data="{{ object.doc_file.url }}"></object>
+                                {% endif %}
                             </div>
                         </div>
                     </section>
@@ -246,8 +248,8 @@
                                                 Автор: {{ item.responsible_person }}
                                             </small>
                                             <p>{% autoescape off %}
-                                                    {{ item.post_description }}
-                                                {% endautoescape %}
+                                                {{ item.post_description }}
+                                            {% endautoescape %}
                                             </p>
                                         </div>
                                     {% endfor %}
