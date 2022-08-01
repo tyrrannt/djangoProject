@@ -1,5 +1,5 @@
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
-from .models import DataBaseUser
+from .models import DataBaseUser, Posts
 from django import forms
 
 
@@ -46,3 +46,15 @@ class DataBaseUserUpdateForm(UserChangeForm):
             field.help_text = ''
             if field_name == 'password':
                 field.widget = forms.HiddenInput()
+
+
+class PostsAddForm(forms.ModelForm):
+    class Meta:
+        model = Posts
+        fields = ('post_description', 'post_divisions', 'creation_date')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control mb-4'
+            field.help_text = ''

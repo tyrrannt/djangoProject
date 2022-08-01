@@ -97,7 +97,7 @@ class ContractModel(models.Model):
                                  related_name='contract_executor')
     doc_file = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
-                               null=True)
+                               null=True, default=5)
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
 
     def __str__(self):

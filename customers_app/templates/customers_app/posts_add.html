@@ -36,12 +36,12 @@
                 <section class="card">
                     <div class="card-body">
                         <div class="thumb-info mb-3">
-                            {% if databaseuser.avatar %}
-                                <img src="{{ databaseuser.avatar.url }}" class="rounded img-fluid"
-                                     alt="{{ databaseuser.username }}">
+                            {% if user.avatar %}
+                                <img src="{{ user.avatar.url }}" class="rounded img-fluid"
+                                     alt="{{ user.username }}">
                             {% else %}
                                 <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
-                                     alt="{{ databaseuser.username }}">
+                                     alt="{{ user.username }}">
                             {% endif %}
                             <div class="thumb-info-title">
                                 <span class="thumb-info-inner">{{ user.last_name }} {{ user.first_name }}</span>
@@ -65,7 +65,7 @@
                             {#ToDo: Доработать блок#}
                             <div class="widget-content-expanded">
                                 <ul class="simple-todo-list mt-3">
-                                    <li {% if databaseuser.avatar %} class="completed" {% endif %}>Изображение профиля
+                                    <li {% if user.avatar %} class="completed" {% endif %}>Изображение профиля
                                     </li>
                                     <li class="completed">Личная информация</li>
                                     <li>Профиль в соцсетях</li>
@@ -215,10 +215,31 @@
 
                                 <h4 class="mb-3 font-weight-semibold text-dark">Статус обновления</h4>
 
+                                <section class="simple-compose-box mb-3">
+                                    <form method="post" action="{% url 'customers_app:post_add' user.pk %}">
+                                        {% csrf_token %}
+                                        <textarea name="post_description" data-plugin-textarea-autosize
+                                                  placeholder="Добавить событие ..." rows="1"></textarea>
 
+                                    <div class="compose-box-footer">
+                                        <ul class="compose-toolbar">
+                                            <li>
+                                                <a href="#"><i class="fas fa-camera"></i></a>
+                                            </li>
+                                            <li>
+                                                <a href="#"><i class="fas fa-map-marker-alt"></i></a>
+                                            </li>
+                                        </ul>
+                                        <input type="text" name="post_divisions" value="{{ user.divisions.pk }}"/>
+                                        <input type="date" name="creation_date" value=""/>
+
+                                        <button type="submit" class="compose-btn btn btn-primary btn-xs  form-control" >Добавить</button>
+                                    </div>
+                                    </form>
+                                </section>
 
                                 <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
-                                <a href="{% url 'customers_app:post_add' user.pk %}" class="btn btn-primary btn-xs">Добавить</a>
+
                                 <div class="timeline timeline-simple mt-3 mb-3">
                                     <div class="tm-body">
                                         <div class="tm-title">
@@ -288,11 +309,11 @@
 
                                 <hr class="dotted tall">
 
-                                <a href="{% url 'customers_app:profile_update' object.pk %}">
-                                <div class="col-md-12 text-end mt-3">
-                                    <button class="btn btn-primary" type="submit">Изменить</button>
-                                </div>
-                                </a>
+{#                                <a href="{% url 'customers_app:profile' object.pk %}">#}
+{#                                <div class="col-md-12 text-end mt-3">#}
+{#                                    <button class="btn btn-primary" type="submit">Изменить</button>#}
+{#                                </div>#}
+{#                                </a>#}
 
                             </div>
 

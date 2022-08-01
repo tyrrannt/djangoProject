@@ -5,7 +5,7 @@ from django.shortcuts import render, HttpResponseRedirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView
 from customers_app.models import DataBaseUser, Posts
-from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm
+from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -115,3 +115,19 @@ def validate_username(request):
         'is_taken': DataBaseUser.objects.filter(username__iexact=username).exists()
     }
     return JsonResponse(response)
+
+
+class PostsAddView(CreateView):
+    template_name = 'customers_app/posts_add.html'
+    form_class = PostsAddForm
+    model = Posts
+
+    def get_context_data(self, **kwargs):
+        context = super(PostsAddView, self).get_context_data()
+        context['users'] = DataBaseUser.objects.get(pk=self.request.user.pk)
+        return context
+
+    #ToDo: Разобраться с возвратом
+    def get_success_url(self):
+        print('1111')
+        return reverse_lazy('customers_app:index')
