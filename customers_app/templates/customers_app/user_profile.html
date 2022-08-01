@@ -212,13 +212,8 @@
                         <div id="overview" class="tab-pane active">
 
                             <div class="p-3">
-
-                                <h4 class="mb-3 font-weight-semibold text-dark">Статус обновления</h4>
-
-
-
-                                <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
                                 <a href="{% url 'customers_app:post_add' user.pk %}" class="btn btn-primary btn-xs">Добавить</a>
+                                <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
                                 <div class="timeline timeline-simple mt-3 mb-3">
                                     <div class="tm-body">
                                         <div class="tm-title">
@@ -229,7 +224,7 @@
                                             {# ToDo: Доработать вывод постов#}
                                             {% for item in posts %}
                                                 {% for items in item.post_divisions.iterator %}
-                                                    {% if items == databaseuser.divisions %}
+                                                    {% if items == databaseuser.divisions and item.allowed_placed %}
                                                         <li>
                                                             <div class="tm-box">
                                                                 <p class="text-muted mb-0">{{ item.creation_date }}</p>
@@ -289,9 +284,9 @@
                                 <hr class="dotted tall">
 
                                 <a href="{% url 'customers_app:profile_update' object.pk %}">
-                                <div class="col-md-12 text-end mt-3">
-                                    <button class="btn btn-primary" type="submit">Изменить</button>
-                                </div>
+                                    <div class="col-md-12 text-end mt-3">
+                                        <button class="btn btn-primary" type="submit">Изменить</button>
+                                    </div>
                                 </a>
 
                             </div>

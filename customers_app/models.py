@@ -165,9 +165,10 @@ class Posts(models.Model):
         verbose_name = 'Новость'
         verbose_name_plural = 'Сообщения'
 
-    creation_date = models.DateField(verbose_name='Дата создания', auto_created=True)
+    creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
     post_description = models.TextField(verbose_name='Текст поста', blank=True)
     post_divisions = models.ManyToManyField(Division, verbose_name='Подразделения поста', )
+    allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
 
     def __str__(self):
         return f'{self.creation_date} / {self.pk}'

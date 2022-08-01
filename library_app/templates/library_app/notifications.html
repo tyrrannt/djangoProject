@@ -2,98 +2,76 @@
 <ul class="notifications">
     <li>
         {% if contracts_not_published_count != 0 %}
-        <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
 
-            <i class="bx bx-list-ol"></i>
-            <span class="badge">{{ contracts_not_published_count }}</span>
+                <i class="bx bx-list-ol"></i>
+                <span class="badge">{{ contracts_not_published_count }}</span>
 
-        </a>
+            </a>
         {% endif %}
         <div class="dropdown-menu notification-menu large">
             <div class="notification-title">
                 <span class="float-end badge badge-default">{{ contracts_not_published_count }}</span>
-                Задачи
+                Договора к публикации
             </div>
             <div class="content">
                 <ul>
                     {% for item in contracts_not_published %}
-                    <li>
+                        <li>
                             <a class="clearfix" href="{% url 'contracts_app:detail' item.pk %}">
                                 <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="" data-bs-original-title="Контрагент: {{ item.contract_counteragent }}, ввел {{ item.executor }}">
+                                     title=""
+                                     data-bs-original-title="Контрагент: {{ item.contract_counteragent }}, ввел {{ item.executor }}">
                                     <code style="font-size: small">
                                         № {{ item.contract_number }} от {{ item.date_conclusion| date:'d-m-Y' }} г.
                                     </code>
                                 </div>
                             </a>
-                    <hr />
-                    </li>
+                            <hr/>
+                        </li>
                     {% endfor %}
                 </ul>
+                <hr/>
+
+                <div class="text-end">
+                    <a href="#" class="view-more">Просмотреть все</a>
+                </div>
             </div>
         </div>
     </li>
     <li>
-        <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-            <i class="bx bx-envelope"></i>
-            <span class="badge">4</span>
-        </a>
-
-        <div class="dropdown-menu notification-menu">
+        {% if posts_not_published_count != 0 %}
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <i class="bx bx-envelope"></i>
+                <span class="badge">{{ posts_not_published_count }}</span>
+            </a>
+        {% endif %}
+        <div class="dropdown-menu notification-menu large">
             <div class="notification-title">
-                <span class="float-end badge badge-default">230</span>
-                Сообщения
+                <span class="float-end badge badge-default">{{ posts_not_published_count }}</span>
+                Сообщения к публикации
             </div>
 
             <div class="content">
                 <ul>
-                    <li>
-                        <a href="#" class="clearfix">
-                            <figure class="image">
-                                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
-                                     alt="Joseph Doe Junior"
-                                     class="rounded-circle"/>
-                            </figure>
-                            <span class="title">Joseph Doe</span>
-                            <span class="message">Lorem ipsum dolor sit.</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="clearfix">
-                            <figure class="image">
-                                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
-                                     alt="Joseph Junior" class="rounded-circle"/>
-                            </figure>
-                            <span class="title">Joseph Junior</span>
-                            <span class="message truncate">Truncated message. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sit amet lacinia orci. Proin vestibulum eget risus non luctus. Nunc cursus lacinia lacinia. Nulla molestie malesuada est ac tincidunt. Quisque eget convallis diam, nec venenatis risus. Vestibulum blandit faucibus est et malesuada. Sed interdum cursus dui nec venenatis. Pellentesque non nisi lobortis, rutrum eros ut, convallis nisi. Sed tellus turpis, dignissim sit amet tristique quis, pretium id est. Sed aliquam diam diam, sit amet faucibus tellus ultricies eu. Aliquam lacinia nibh a metus bibendum, eu commodo eros commodo. Sed commodo molestie elit, a molestie lacus porttitor id. Donec facilisis varius sapien, ac fringilla velit porttitor et. Nam tincidunt gravida dui, sed pharetra odio pharetra nec. Duis consectetur venenatis pharetra. Vestibulum egestas nisi quis elementum elementum.</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="clearfix">
-                            <figure class="image">
-                                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
-                                     alt="Joe Junior" class="rounded-circle"/>
-                            </figure>
-                            <span class="title">Joe Junior</span>
-                            <span class="message">Lorem ipsum dolor sit.</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="clearfix">
-                            <figure class="image">
-                                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
-                                     alt="Joseph Junior" class="rounded-circle"/>
-                            </figure>
-                            <span class="title">Joseph Junior</span>
-                            <span class="message">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sit amet lacinia orci. Proin vestibulum eget risus non luctus. Nunc cursus lacinia lacinia. Nulla molestie malesuada est ac tincidunt. Quisque eget convallis diam.</span>
-                        </a>
-                    </li>
+                    {% for item in posts_not_published %}
+                        <li>
+                            <a href="#" class="clearfix">
+                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="" data-bs-original-title="Создано: {{ item.creation_date| date:'d-m-Y' }}">
+                                    <code style="font-size: small">
+                                        {{ item.post_description }}
+                                    </code>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
                 </ul>
 
                 <hr/>
 
                 <div class="text-end">
-                    <a href="#" class="view-more">View All</a>
+                    <a href="#" class="view-more">Просмотреть все</a>
                 </div>
             </div>
         </div>
@@ -118,7 +96,7 @@
                                 <i class="fas fa-thumbs-down bg-danger text-light"></i>
                             </div>
                             <span class="title">Server is Down!</span>
-                            <span class="message">Just now</span>
+                            <span class="message">{{ total_time }}</span>
                         </a>
                     </li>
                     <li>

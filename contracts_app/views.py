@@ -2,6 +2,7 @@ from os import path
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
@@ -185,7 +186,8 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
             for k in diffkeys:
                 if k != '_state':
                     message += f'{Contract._meta.get_field(k).verbose_name}: <strike>{old_instance[k]}</strike> -> {new_instance[k]}\n'
-            post_record = Posts(contract_number=Contract.objects.get(pk=self.object.pk), post_description=message, responsible_person=DataBaseUser.objects.get(pk=self.request.user.pk))
+            post_record = Posts(contract_number=Contract.objects.get(pk=self.object.pk), post_description=message,
+                                responsible_person=DataBaseUser.objects.get(pk=self.request.user.pk))
             post_record.save()
             return HttpResponseRedirect(reverse('contracts_app:detail', args=[self.object.pk]))
         else:
@@ -246,3 +248,11 @@ class ContractPostDelete(LoginRequiredMixin, DeleteView):
     Удаление записи
     """
     model = Posts
+
+
+# def pdf(request):
+#     try:
+#         file_path = request.GET.get('file_path')
+#         return FileResponse(open(f'{file_path}', 'rb'), content_type='application/pdf')
+#     except FileNotFoundError:
+#         raise Http404('not found')

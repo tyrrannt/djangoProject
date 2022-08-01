@@ -1,0 +1,237 @@
+Django - Урок 001. Развёртывание сайта на Django + PostgreSQL + Gunicorn + Nginx
+Ubuntu, Gunicorn, Django, PostgreSQL, Nginx
+
+После того, как доступ к серверу с Ubuntu 16.04 был настроен в одной из предыдущих статей ,
+настало время развернуть на нём всё необходимое для работы сайта, а именно:
+
+Django - фреймворк для разработки web-приложений на языке Python;
+PostgreSQL - базу данных SQL ;
+Gunicorn - WSGI HTTP сервер на Python для UNIX систем;
+Ngnix - HTTP-сервер и обратный прокси-сервер, почтовый прокси-сервер, а также TCP/UDP прокси-сервер общего назначения;
+Supervisor - это менеджер процессов, который существенно упрощает управление долго работающими программами,
+в частности сайтами, которые необходимо автоматически перезапускать после падений.
+
+Шаг 1 - обновление системы
+Сделаем обновление существующих пакетов. Мало ли, система имеет устаревшие пакеты.
+
+sudo apt-get update
+sudo apt-get upgrade
+
+Шаг 2 - Установка всех необходимых пакетов без установки виртуального окружения
+Установим пачкой все необходимые пакеты, которые не будут использоваться через virtualenv, а именно Python 3,
+PostgreSQL, Nginx.
+
+sudo apt-get install python3-dev python3-setuptools libpq-dev postgresql postgresql-contrib nginx
+
+Pip я в итоге устанавливал отдельно через утилиту easy_install3 , которая идёт в комплекте python3-setuptools ,
+во-первых потому, что тогда ставится последняя версия, а вторых в случае установки через apt-get были ошибки при
+установке пакетов в virtualenv.
+
+sudo easy_install3 pip
+
+Шаг 3 - Создание базы данных и пользователя базы данных
+А теперь создадим базу данных и пользователя, дав расширенные права пользователю postgres через утилиту sudo,
+который создаётся при установке PostgreSQL.
+
+sudo -u postgres psql
+Выполнив данную команду, мы попадём в консоль PostgreSQL, где и создадим необходимую базу данных и пользователя,
+от имени которого будет подключаться Django приложение к этой базе данных.
+
+Создадим базу данных:
+
+CREATE DATABASE myproject;
+Создадим пользователя:
+
+CREATE USER myprojectuser WITH PASSWORD 'password';
+
+Далее настройка пользователя проекта. Кодировку он будет использовать UTF8, поскольку данная кодировка используется
+и Django, а Python файлы рекомендует хардкодить с кодировкой UTF8, особенно, если в них присутствует текст, который
+будет отображаться на страницах сайта. Также устанавливается уровень изоляции в базе данных. То есть когда будут
+доступны данные для чтения. В данном случае после подтверждения транзакции в общем случае. Конечно, имеются случаи,
+когда данные доступны до подтверждения, но это отдельная тема для разговора. А также устанавливается тип временных
+зон, который для Django по умолчанию UTC.
+
+ALTER ROLE myprojectuser SET client_encoding TO 'utf8';
+ALTER ROLE myprojectuser SET default_transaction_isolation TO 'read committed';
+ALTER ROLE myprojectuser SET timezone TO 'UTC';
+Далее дадим права доступа к базе данных для этого пользователя:
+
+GRANT ALL PRIVILEGES ON DATABASE myproject TO myprojectuser;
+Ну и выйдем из консоли PostgreSQL.
+
+\q
+
+Если возникнут проблемы с кодировками на сервере, когда сервер будет иметь кодировку LATIN1, а базу данных нужно
+создать в UTF8, то обратитесь к следующей статье , где эта задача решается.
+
+Шаг 4 - Установка виртуального окружения
+Установим и активируем виртуальное окружение:
+
+pip3 install virtualenv
+virtualenv ~/myprojectenv
+source myprojectenv/bin/activate
+Шаг 5 - Установка драйвера PostgreSQL
+Произведём установку следующей командой
+
+sudo pip install django psycopg2
+Внутри виртуального окружения необходимо пользоваться командой pip , а не pip3
+Шаг 6 - Создание проекта
+Перейдём в папку с виртуальным окружением, мы по-прежнему должны находиться в режиме работы в виртуальном окружении.
+И создадим проект.
+
+cd ~/myprojectenv
+django-admin.py startproject myproject
+Шаг 7 - Настройка подключения к базе данных
+А теперь отредактируем конфигурационный файл Django, чтобы он подключался к базе данных PostgreSQL, а не создавал и
+в дальнейшем подключался к базе данных SQLite.
+
+nano ~/myproject/myproject/settings.py
+Для этого найдите в файле следующий кусок кода:
+
+...
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+   }
+}
+
+...
+И замените его следующим, с учётом ваших данных для подключения к базе данных:
+
+...
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'myproject',
+        'USER': 'myprojectuser',
+        'PASSWORD': 'password',
+        'HOST': 'localhost',
+        'PORT': '',
+    }
+}
+
+...
+Шаг 8 - Выполнение миграций базы данных
+Django обладает одним очень большим преимуществом - он имеет встроенную админку, что очень облегчает жизнь. Но
+чтобы она заработала, необходимо выполнить миграцию базы данных, то есть подготовить из моделей данных SQL запросы,
+которые сформируют структуру базу данных.
+
+cd ~/myproject
+python manage.py makemigrations
+python manage.py migrate
+А ещё создадим суперпользователя, который будет администратором с максимальными правами доступа к вашему сайту.
+Выполните следующую команду и следуйте инструкциям.
+
+python manage.py createsuperuser
+Шаг 9 - Установка Gunicorn
+Установим Gunicorn, который будет выступать в качестве HTTP сервера для нашего сайта. Устанавливаем его внутри
+виртуального окружения.
+
+sudo pip install django gunicorn
+Можете проверить, что сайт уже работает:
+
+gunicorn myproject.wsgi:application --bind 111.222.333.44:8000  # Укажите ваш IP-адрес
+Шаг 10 - Настройка статических файлов
+Django по умолчанию отдаёт статические файлы только в Debug режиме, который не используется на боевом сервере.
+Для боевого сервера все статические файлы из всех проектов собираются в отдельную специальную папку с помощью
+команды collectstatic , а саму папку необходимо указывать в файл settings.py.
+
+Отредактируем его:
+
+nano ~/myproject/settings.py
+И добавим строку, которая будет указывать, куда собирать статические файлы.
+
+STATIC_ROOT = '/home/user/myprojectenv/myproject/myproject/static/'
+А теперь соберём всю статику в данный каталог:
+
+python manage.py collectstatic
+Шаг 11 - Настройка Nginx
+Отредактируем конфигурационный файл Nginx.
+
+sudo nano /etc/nginx/sites-available/default
+Удалим всё его содержимое и замени следующим.
+
+server {
+    listen 80;
+    server_name 111.222.333.44; # здесь прописать или IP-адрес или доменное имя сервера
+    access_log  /var/log/nginx/example.log;
+
+    location /static/ {
+        root /home/user/myprojectenv/myproject/myproject/;
+        expires 30d;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $server_name;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+Перезапустим Nginx.
+
+sudo service nginx restart
+И запустим gunicorn
+
+gunicorn myproject.wsgi:application
+После этого вы обнаружите, что сайт доступен уже на порту 80.
+
+Шаг 12 - Настройка supervisor
+Для того, чтобы сайт был доступен в любое время суток, необходимо настроить supervisor, который висит в памяти
+как служба и будет следить, чтобы сайта всегда работал.
+
+sudo apt-get install supervisor
+Для стабильной работы Gunicorn необходимо создать его конфигурационный файл. Он будет располагаться рядом с файлом,
+который будет запускаемым для нашего web-приложения.
+
+cd /home/user/myprojectenv/myproject/myproject
+touch gunicorn.conf.py
+nano gunicorn.conf.py
+Добавим следующую конфигурационную информацию:
+
+bind = '127.0.0.1:8000'
+workers = 3
+user = "nobody"
+То есть мы указали, к какому порту привязываемся, и какой пользователь запускает процесс. А также количество рабочих
+процессов. В данном случае их три. Рассчитывается по следующей формуле:
+
+workers =  N cpu + 1
+
+После чего создадим конфигурацию самого supervisor
+
+cd /etc/supervisor/conf.d/
+touch myproject.conf
+nano myproject.conf
+Пропишем в него следующие настройки
+
+[program:myproject]
+command=/home/user/myprojectenv/bin/gunicorn myproject.wsgi:application -c /home/user/myprojectenv/myproject/myproject/gunicorn.conf.py
+directory=/home/user/myprojectenv/myproject
+user=nobody
+autorestart=true
+redirect_stderr=true
+А теперь запустим supervisor. Есть один нюанс при установке supervisor. Он не стартанул в качестве службы после того,
+как был установлен. Поэтому нужно принудительно добавить его в автозагрузку и запустить вручную, если не хотите
+перезагружать сервер.
+
+sudo update-rc.d supervisor enable
+sudo service supervisor start
+Ну а дальше можно обновлять конфиги, проверять статус приложения сайта и его перезапуска.
+
+supervisorctl reread
+supervisorctl update
+supervisorctl status myproject
+supervisor restart myproject
+При перезагрузке сервера всё будет стартовать автоматически
+
+Примечание
+Если вы изменили файлы проекта, то необходимо перезапускать gunicorn. Для этого достаточно активировать виртуальное
+окружение и воспользоваться командой killall
+
+source ~/myprojectenv/bin/activate
+sudo killall gunicorn
+Supervisor автоматически запустит Gunicorn после этой команды, так что можете не беспокоиться, что сервер ляжет
+надолго. Не более секундного сбоя.

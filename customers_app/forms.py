@@ -51,7 +51,7 @@ class DataBaseUserUpdateForm(UserChangeForm):
 class PostsAddForm(forms.ModelForm):
     class Meta:
         model = Posts
-        fields = ('post_description', 'post_divisions', 'creation_date')
+        fields = ('post_description', 'post_divisions', 'allowed_placed')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

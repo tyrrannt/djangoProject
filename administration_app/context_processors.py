@@ -1,6 +1,6 @@
 from django.db.models import Q
 from contracts_app.models import Contract, TypeContract, TypeProperty
-from customers_app.models import DataBaseUser, Counteragent, Division
+from customers_app.models import DataBaseUser, Counteragent, Division, Posts
 
 
 def get_all_contracts(request):
@@ -14,9 +14,12 @@ def get_all_contracts(request):
     all_divisions = Division.objects.all()
     contracts_not_published = Contract.objects.filter(allowed_placed=False)
     contracts_not_published_count = Contract.objects.filter(allowed_placed=False).count()
+    posts_not_published = Posts.objects.filter(allowed_placed=False)
+    posts_not_published_count = Posts.objects.filter(allowed_placed=False).count()
 
     return {'all_contract': all_contract, 'employee': all_users, 'type_property': all_type_property,
             'counteragent': all_counteragent, 'prolongation': all_prolongation, 'division': all_divisions,
             'type_contract': all_type_of_contract, 'contracts_count': contracts_count,
-            'contracts_not_published': contracts_not_published,
-            'contracts_not_published_count': contracts_not_published_count}
+            'contracts_not_published': contracts_not_published, 'posts_not_published': posts_not_published,
+            'contracts_not_published_count': contracts_not_published_count,
+            'posts_not_published_count': posts_not_published_count, }

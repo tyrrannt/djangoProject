@@ -27,7 +27,7 @@ class DataBaseUserProfile(DetailView):
         return super(DataBaseUserProfile, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        post = Posts.objects.all()
+        post = Posts.objects.all().order_by('creation_date').reverse()
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
         context['title'] = title = 'редактирование'
         context['posts'] = post
@@ -127,7 +127,7 @@ class PostsAddView(CreateView):
         context['users'] = DataBaseUser.objects.get(pk=self.request.user.pk)
         return context
 
-    #ToDo: Разобраться с возвратом
+    # ToDo: Разобраться с возвратом
     def get_success_url(self):
-        print('1111')
-        return reverse_lazy('customers_app:index')
+        pk = self.request.user.pk
+        return reverse("customers_app:profile", kwargs={"pk": pk})
