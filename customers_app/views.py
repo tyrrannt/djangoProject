@@ -38,10 +38,7 @@ class DataBaseUserProfile(DetailView):
 class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
     model = DataBaseUser
     template_name = 'customers_app/user_profile_update.html'
-    success_url = reverse_lazy('library_app:index')
     form_class = DataBaseUserUpdateForm
-
-    # fields = ['first_name', 'last_name', 'email', 'birthday', 'phone', 'surname']
 
     def dispatch(self, request, *args, **kwargs):
         return super(DataBaseUserUpdate, self).dispatch(request, *args, **kwargs)
@@ -53,9 +50,9 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
         context['posts'] = post
         return context
 
-    # def get_success_url(self):
-    #     pk = self.kwargs["pk"]
-    #     return reverse("customers_app:profile", kwargs={"pk": pk})
+    def get_success_url(self):
+        pk = self.request.user.pk
+        return reverse("customers_app:profile", kwargs={"pk": pk})
 
 
 def login(request):
@@ -75,25 +72,6 @@ def login(request):
 def logout(request):
     auth.logout(request)
     return HttpResponseRedirect(reverse('customers_app:login'))
-
-
-# def register(request):
-#     title = 'регистрация'
-#     if request.method == 'POST':
-#         register_form = DataBaseUserRegisterForm(request.POST, request.FILES)
-#         if register_form.is_valid():
-#             user = register_form.save()
-#             messages.success(request, 'Вы успешно зарегистрировались!')
-#             # if send_verify_mail(user):
-#             #     print('сообщение подтверждения отправлено')
-#             #     return HttpResponseRedirect(reverse('auth:login'))
-#             # else:
-#             #     print('ошибка отправки сообщения')
-#             #     return HttpResponseRedirect(reverse('auth:login'))
-#     else:
-#         register_form = DataBaseUserRegisterForm()
-#     content = {'title': title, 'register_form': register_form}
-#     return render(request, 'customers_app/register.html', content)
 
 
 class SignUpView(CreateView):
@@ -127,7 +105,11 @@ class PostsAddView(CreateView):
         context['users'] = DataBaseUser.objects.get(pk=self.request.user.pk)
         return context
 
-    # ToDo: Разобраться с возвратом
     def get_success_url(self):
+        """
+        Получение URL при удачном добавлении нового сообщения. Получаем ID пользователя из request, и передача его
+        в качестве параметра
+        :return: Возвращает URL адрес страницы, с которой создавалось сообщение.
+        """
         pk = self.request.user.pk
         return reverse("customers_app:profile", kwargs={"pk": pk})
