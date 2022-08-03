@@ -263,12 +263,14 @@
                                             <input type="file" name="doc_file" class="form-control mb-4"
                                                    id="id_doc_file">
                                         </p>
+                                    {% if user.access_level.contracts_access_agreement %}
                                     <p>
                                             <label for="id_allowed_placed">Разрешение на публикацию:</label>
                                             <input type="checkbox" id="id_allowed_placed" name="allowed_placed"
                                                    {% if object.allowed_placed %}checked{% endif %}/>
 
                                         </p>
+                                    {% endif %}
                                     </div>
                                 </div>
                             </div>
