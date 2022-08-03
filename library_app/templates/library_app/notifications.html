@@ -1,5 +1,6 @@
 {% load static %}
 <ul class="notifications">
+    {% if user.access_level.contracts_access_agreement %}
     <li>
         {% if contracts_not_published_count != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -39,6 +40,8 @@
             </div>
         </div>
     </li>
+    {% endif %}
+    {% if user.access_level.posts_access_agreement %}
     <li>
         {% if posts_not_published_count != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -76,6 +79,7 @@
             </div>
         </div>
     </li>
+    {% endif %}
     <li>
         <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
             <i class="bx bx-bell"></i>

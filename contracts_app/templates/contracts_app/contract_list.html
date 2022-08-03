@@ -19,11 +19,13 @@
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
+                                    {% if user.access_level.contracts_access_add %}
                                     <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                         <a href="{% url 'contracts_app:create' %}"
                                            class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+ Добавить
                                             договор </a>
                                     </div>
+                                    {% endif %}
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
                                             <label class="ws-nowrap me-3 mb-0">Фильтр:</label>
@@ -158,7 +160,4 @@
 {% block SpecificPageVendor %}
     <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
-    <!-- Examples -->
-    <script src="{% static 'admin_templates/js/examples/examples.header.menu.js' %}"></script>
-    <script src="{% static 'admin_templates/js/examples/examples.ecommerce.datatables.list.js' %}"></script>
 {% endblock %}

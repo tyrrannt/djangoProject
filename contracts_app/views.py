@@ -1,9 +1,11 @@
+import functools
 from os import path
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import FileResponse, Http404
-from django.shortcuts import render, HttpResponseRedirect, get_object_or_404
+from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
@@ -133,8 +135,16 @@ class ContractAdd(LoginRequiredMixin, CreateView):
         context['title'] = 'Создание нового договора'
         return context
 
-    def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа к созданию записи в таблице. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_add:
+            return super(ContractAdd, self).get(request, *args, **kwargs)
+        else:
+            url_match = reverse_lazy('contracts_app:index')
+            return redirect(url_match)
 
 
 class ContractDetail(LoginRequiredMixin, DetailView):
@@ -193,7 +203,19 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
         else:
             print(f'Что то не то')
 
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_edit:
+            return super(ContractUpdate, self).get(request, *args, **kwargs)
+        else:
+            url_match = reverse_lazy('contracts_app:index')
+            return redirect(url_match)
+
     def get_context_data(self, **kwargs):
+
         context = super(ContractUpdate, self).get_context_data(**kwargs)
         # Формируем заголовок страницы и передаем в контекст
         if self.object.contract_number:
@@ -248,7 +270,6 @@ class ContractPostDelete(LoginRequiredMixin, DeleteView):
     Удаление записи
     """
     model = Posts
-
 
 # def pdf(request):
 #     try:

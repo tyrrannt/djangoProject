@@ -52,15 +52,15 @@
     <!-- start: header -->
     <header class="header header-nav-menu header-nav-links">
         <div class="logo-container">
-            <a href="../" class="logo">
+            <a href="/admin/" class="logo">
                 <img src="{% static 'admin_templates/img/logo.png' %}" class="logo-image" width="90" height="24"
                      alt=""/><img src="{% static 'admin_templates/img/logo.png' %}"
-                                             class="logo-image-mobile" width="90" height="41" alt=""/>
+                                  class="logo-image-mobile" width="90" height="41" alt=""/>
             </a>
-            <button class="btn header-btn-collapse-nav d-lg-none" data-bs-toggle="collapse"
-                    data-bs-target=".header-nav">
-                <i class="fas fa-bars"></i>
-            </button>
+            <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"
+                 data-fire-event="sidebar-left-opened">
+                <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
+            </div>
 
         </div>
 
@@ -91,14 +91,20 @@
 
     <div class="inner-wrapper">
         <!-- start: sidebar -->
-        {% include 'library_app/left_menu.html' %}
+        <aside id="sidebar-left" class="sidebar-left">
+            <!-- Левое меню -->
+            {% include 'library_app/left_menu.html' %}
+        </aside>
         <!-- end: sidebar -->
+        <!-- БЛОК КОНТЕНТА -->
         {% block content %}
         {% endblock %}
-
     </div>
 
-    {% include 'library_app/right_menu.html' %}
+    <aside id="sidebar-right" class="sidebar-right">
+        <!-- Правое меню -->
+        {% include 'library_app/right_menu.html' %}
+    </aside>
 
 </section>
 
@@ -114,8 +120,7 @@
 <script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
 
 <!-- Specific Page Vendor -->
-{#<script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>#}
-{#<script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>#}
+<script src="{% static 'admin_templates/vendor/autosize/autosize.js' %}"></script>
 
 {% block custome_script %}
 {% endblock %}
