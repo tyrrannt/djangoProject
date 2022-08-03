@@ -36,7 +36,7 @@ class DataBaseUserUpdateForm(UserChangeForm):
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
             # 'type_users', 'phone', 'works', 'gender', 'surname'
             'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
-            'personal_phone', 'avatar', 'address',
+            'personal_phone', 'avatar', 'address', 'access_level',
         )
 
     def __init__(self, *args, **kwargs):

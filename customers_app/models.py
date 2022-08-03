@@ -16,6 +16,48 @@ class AccessLevel(models.Model):
         return self.name
 
 
+class UserAccessMode(models.Model):
+    class Meta:
+        verbose_name = 'Уровень доступа пользователя'
+        verbose_name_plural = 'Уровни доступа пользователей'
+
+    access_level = [
+        ('0', 'Административный доступ'),
+        ('1', 'Особой важности'),
+        ('2', 'Совершенно секретные'),
+        ('3', 'Секретные'),
+        ('4', 'Для служебного пользования')
+    ]
+    # Права доступа к договорам
+    contracts_access_view = models.CharField(verbose_name='Уровень доступа к договорам', choices=access_level,
+                                             help_text='', blank=True, null=True, max_length=1, default='4')
+    contracts_access_add = models.BooleanField(verbose_name='Разрешение на создание договора', default=False)
+    contracts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование договора', default=False)
+    contracts_access_agreement = models.BooleanField(verbose_name='Право на публикацию договора', default=False)
+    # Права доступа к сообщениям
+    posts_access_view = models.CharField(verbose_name='Уровень доступа к сообщениям', choices=access_level,
+                                             help_text='', blank=True, null=True, max_length=1, default='4')
+    posts_access_add = models.BooleanField(verbose_name='Разрешение на создание сообщения', default=False)
+    posts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование сообщения', default=False)
+    posts_access_agreement = models.BooleanField(verbose_name='Право на публикацию сообщения', default=False)
+
+    def __str__(self):
+        name = ''
+        name += self.contracts_access_view
+        if self.contracts_access_add:
+            name += '1'
+        else:
+            name += '0'
+        if self.contracts_access_edit:
+            name += '1'
+        else:
+            name += '0'
+        if self.contracts_access_agreement:
+            name += '1'
+        else:
+            name += '0'
+        return f'{name}'
+
 class Job(models.Model):
     class Meta:
         verbose_name = 'Должность'
@@ -104,7 +146,9 @@ class DataBaseUser(AbstractUser):
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='день рождения', blank=True, null=True, help_text='')
     access_right = models.ForeignKey(AccessLevel, verbose_name='права доступа', help_text='',
-                                          blank=True, on_delete=models.SET_NULL, null=True)
+                                     blank=True, on_delete=models.SET_NULL, null=True)
+    access_level = models.OneToOneField(UserAccessMode, verbose_name='права доступа', help_text='',
+                                     blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='тип пользователя', max_length=40, choices=type_of, help_text='',
                                   blank=True, null=True, )
