@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, HttpResponseRedirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView
+
+from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, Posts
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm
 from django.contrib import auth, messages
@@ -64,6 +66,8 @@ def login(request):
         user = auth.authenticate(username=username, password=password)
         if user and user.is_active:
             auth.login(request, user)
+            request.session.set_expiry(PortalProperty.objects.get(pk=1).portal_session)
+            request.session['portal_paginator'] = PortalProperty.objects.get(pk=1).portal_paginator
             return HttpResponseRedirect(reverse('customers_app:profile', args=(user.pk,)))
     content = {'title': title, 'login_form': login_form}
     return render(request, 'customers_app/login.html', content)

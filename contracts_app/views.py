@@ -51,14 +51,47 @@ class ContractList(LoginRequiredMixin, ListView):
     """
     model = Contract
     paginate_by = 5
+    item_sorted = 'pk'
+    sorted_list = ['pk', 'contract_counteragent', 'contract_number', 'date_conclusion',
+                   'type_of_contract', 'divisions']
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
         context['title'] = 'База договоров'
+        try:
+            context['portal_paginator'] = int(self.request.session['portal_paginator'])
+            context['sort_item'] = int(self.request.session['sort_item'])
+        except Exception as _ex:
+            context['portal_paginator'] = self.paginate_by
+            context['sort_item'] = 0
         return context
 
     def get_queryset(self):
-        return Contract.objects.filter(Q(allowed_placed=True), Q(access__pk__gte=self.request.user.access_right.pk))
+        user_access = DataBaseUser.objects.get(pk=self.request.user.pk)
+        try:
+            if self.request.session['portal_paginator']:
+                self.paginate_by = int(self.request.session['portal_paginator'])
+            else:
+                self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+            if self.request.session['sort_item']:
+                self.item_sorted = self.sorted_list[int(self.request.session['sort_item'])]
+            else:
+                self.item_sorted = 'pk'
+            print(a, b)
+        except Exception as _ex:
+            self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+        return Contract.objects.filter(Q(allowed_placed=True),
+                                       Q(access__pk__gte=user_access.access_right.pk)).order_by(self.item_sorted)
+
+    def get(self, request, *args, **kwargs):
+        result = request.GET.get('result', None)
+        sort_item = request.GET.get('sort_item', None)
+        if sort_item:
+            self.request.session['sort_item'] = sort_item
+        if result:
+            self.request.session['portal_paginator'] = result
+        print(self.request.session['sort_item'], self.request.session['portal_paginator'])
+        return super(ContractList, self).get(self, request, *args, **kwargs)
 
 
 class ContractSearch(LoginRequiredMixin, ListView):

@@ -20,24 +20,26 @@
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.contracts_access_add %}
-                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                        <a href="{% url 'contracts_app:create' %}"
-                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+ Добавить
-                                            договор </a>
-                                    </div>
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'contracts_app:create' %}"
+                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Добавить
+                                                договор </a>
+                                        </div>
                                     {% endif %}
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label class="ws-nowrap me-3 mb-0">Фильтр:</label>
-                                            <select class="form-control select-style-1 filter-by" name="filter-by">
-                                                <option value="all" selected>Все</option>
-                                                <option value="1">Код</option>
-                                                <option value="2">Контрагент</option>
-                                                <option value="3">Номер договора</option>
-                                                <option value="4">Дата договора</option>
-                                                <option value="5">Тип договора</option>
-                                                <option value="5">Подразделение</option>
-                                                <option value="5">Статус</option>
+                                            <label class="ws-nowrap me-3 mb-0">Сортировка:</label>
+                                            <select class="form-control select-style-1 filter-by" name="filter-by"
+                                                onchange="field_sorted()" id="field_sorted">
+
+                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
+                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
+                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер договора</option>
+                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата договора</option>
+                                                <option value="4" {% if sort_item == 4 %}selected{% endif %}>Тип договора</option>
+                                                <option value="5" {% if sort_item == 5 %}selected{% endif %}>Подразделение</option>
+
                                             </select>
                                         </div>
                                     </div>
@@ -45,11 +47,13 @@
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
                                             <label class="ws-nowrap me-3 mb-0">Количество:</label>
                                             <select class="form-control select-style-1 results-per-page"
-                                                    name="results-per-page">
-                                                <option value="12" selected>12</option>
-                                                <option value="24">24</option>
-                                                <option value="36">36</option>
-                                                <option value="100">100</option>
+                                                    name="results-per-page" onchange="portal_paginator()"
+                                                    id="portal_paginator">
+                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6</option>
+                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>12</option>
+                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>24</option>
+                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>48</option>
+                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>96</option>
                                             </select>
                                         </div>
                                     </div>
@@ -131,7 +135,7 @@
                                                     <option value="" selected>Редактировать</option>
                                                     <option value="delete">Удалить</option>
                                                 </select>
-                                                <a href="ecommerce-coupons-form.html"
+                                                <a href="#"
                                                    class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
                                             </div>
 
@@ -155,6 +159,46 @@
         </div>
         <!-- end: page -->
     </section>
+    <script type="text/javascript">
+        function portal_paginator() {
+            paginator_by = document.getElementById("portal_paginator").value;
+            $.ajax({
+                type: "GET",
+                url: '/contracts/',
+                data: {
+                    "result": paginator_by,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    location.reload();
+                },
+                failure: function () {
+                    alert("failure");
+                }
+            });
+            window.location.reload();
+        };
+        function field_sorted() {
+            item_sorted = document.getElementById("field_sorted").value;
+            $.ajax({
+                type: "GET",
+                url: '/contracts/',
+                data: {
+                    "sort_item": item_sorted,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    location.reload();
+                },
+                failure: function () {
+                    alert("failure");
+                }
+            });
+            window.location.reload();
+        };
+    </script>
 {% endblock %}
 
 {% block SpecificPageVendor %}
