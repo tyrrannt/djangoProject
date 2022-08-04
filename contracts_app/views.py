@@ -73,13 +73,16 @@ class ContractList(LoginRequiredMixin, ListView):
                 self.paginate_by = int(self.request.session['portal_paginator'])
             else:
                 self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+
+        except Exception as _ex:
+            self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+        try:
             if self.request.session['sort_item']:
                 self.item_sorted = self.sorted_list[int(self.request.session['sort_item'])]
             else:
                 self.item_sorted = 'pk'
-            print(a, b)
         except Exception as _ex:
-            self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+            self.item_sorted = 'pk'
         return Contract.objects.filter(Q(allowed_placed=True),
                                        Q(access__pk__gte=user_access.access_right.pk)).order_by(self.item_sorted)
 
@@ -90,7 +93,7 @@ class ContractList(LoginRequiredMixin, ListView):
             self.request.session['sort_item'] = sort_item
         if result:
             self.request.session['portal_paginator'] = result
-        print(self.request.session['sort_item'], self.request.session['portal_paginator'])
+
         return super(ContractList, self).get(self, request, *args, **kwargs)
 
 
