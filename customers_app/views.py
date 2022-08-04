@@ -1,7 +1,7 @@
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
-from django.shortcuts import render, HttpResponseRedirect
+from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView
 
@@ -16,10 +16,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 # Create your views here.
 
 def index(request):
-    return render(request, 'customers_app/base.html')
+    return render(request, 'customers_app/main.html')
 
 
-class DataBaseUserProfile(DetailView):
+class DataBaseUserProfile(LoginRequiredMixin, DetailView):
     context = {}
     model = DataBaseUser
     template_name = 'customers_app/user_profile.html'
@@ -42,11 +42,8 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
     template_name = 'customers_app/user_profile_update.html'
     form_class = DataBaseUserUpdateForm
 
-    def dispatch(self, request, *args, **kwargs):
-        return super(DataBaseUserUpdate, self).dispatch(request, *args, **kwargs)
-
     def get_context_data(self, **kwargs):
-        post = Posts.objects.all()
+        post = Posts.objects.all().order_by('creation_date').reverse()
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
         context['title'] = title = 'Профиль пользователя'
         context['posts'] = post
@@ -55,6 +52,19 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         pk = self.request.user.pk
         return reverse("customers_app:profile", kwargs={"pk": pk})
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка пользователя, при попытке отредактировать профиль другого пользователя путем подстановки в адресной
+        строке чужого ID, будет произведено перенаправление пользователя на свою страницу с профилем.
+        :param request: Передаваемый запрос
+        :param kwargs: Получаем передаваемый ID пользователя из строки в браузере
+        :return: В случае подмены ID выполняет редирект 302
+        """
+        if self.request.user.pk != self.kwargs['pk']:
+            url_match = reverse('customers_app:profile', kwargs={"pk": self.request.user.pk})
+            return redirect(url_match)
+        return super(DataBaseUserUpdate, self).get(request, *args, **kwargs)
 
 
 def login(request):
@@ -99,7 +109,7 @@ def validate_username(request):
     return JsonResponse(response)
 
 
-class PostsAddView(CreateView):
+class PostsAddView(LoginRequiredMixin, CreateView):
     template_name = 'customers_app/posts_add.html'
     form_class = PostsAddForm
     model = Posts
