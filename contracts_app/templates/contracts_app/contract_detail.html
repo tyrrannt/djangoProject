@@ -171,6 +171,7 @@
                                             <input type="text" class="form-control form-control-modern"
                                                    name="prolongation" disabled
                                                    value="
+
                                                            {% for key, value in prolongation %}{% if key == object.prolongation %}{{ value }}{% endif %}{% endfor %}"
                                                    id="prolongation"/>
                                         </div>
@@ -184,8 +185,14 @@
                         <div class="toggle-content">
                             <div class="form-row">
                                 {% if object.doc_file %}
-                                    <object data="{{ object.doc_file.url }}"></object>
                                     <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
+                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"
+                                            height="750px">
+                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">
+                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы просмотреть его: <a
+                                                href="{{ object.doc_file.url }}">Скачать PDF</a>.</p>
+                                        </embed>
+                                    </object>
                                 {% endif %}
                             </div>
                         </div>
@@ -284,11 +291,11 @@
             </div>
             <div class="row action-buttons">
                 {% if user.access_level.contracts_access_edit %}
-                <div class="col-12 col-md-auto">
-                    <a href="{% url 'contracts_app:update' object.pk %}"
-                       class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-save text-4 me-2"></i> Изменить документ</a>
-                </div>
+                    <div class="col-12 col-md-auto">
+                        <a href="{% url 'contracts_app:update' object.pk %}"
+                           class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-save text-4 me-2"></i> Изменить документ</a>
+                    </div>
                 {% endif %}
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'contracts_app:index' %}"
@@ -296,12 +303,12 @@
                         документ</a>
                 </div>
                 {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
                            class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-trash text-4 me-2"></i> Удалить договор
                         </a>
-                </div>
+                    </div>
                 {% endif %}
             </div>
         </div>

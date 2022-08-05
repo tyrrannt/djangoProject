@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-wp=6-v6_hp%wl9dog_#px=+94qnl+drr5o_cd!h_qerp(#l4h)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.10.12', 'localhost']
 
 # Application definition
 
@@ -119,10 +119,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = (
-    pathlib.Path.joinpath(BASE_DIR, 'static'),
-)
+# STATIC_URL = 'static/'
+# STATICFILES_DIRS = (
+#     pathlib.Path.joinpath(BASE_DIR, 'static'),
+# )
+
+STATIC_URL = '/static/'
+STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
+
+STATICFILES_DIRS = [pathlib.Path.joinpath(BASE_DIR, 'static_dev'), ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -130,7 +139,7 @@ STATICFILES_DIRS = (
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
-MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
+#MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
 #MEDIA_URL = pathlib.Path.joinpath(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'customers_app.DataBaseUser'
 LOGIN_URL = '/users/login/'
