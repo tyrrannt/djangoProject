@@ -9,9 +9,9 @@
     <meta charset="UTF-8">
     {% block title %}
     {% endblock %}
-    <meta name="keywords" content="HTML5 Admin Template"/>
-    <meta name="description" content="Porto Admin - Responsive HTML5 Template">
-    <meta name="author" content="okler.net">
+    <meta name="keywords" content="BARKOL"/>
+    <meta name="description" content="Corporate">
+    <meta name="author" content="tyrrannt">
 
     <!-- Mobile Metas -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -48,7 +48,7 @@
     <!-- start: header -->
     <header class="header">
         <div class="logo-container">
-            <a href="/admin/" class="logo">
+            <a href="{% if user.is_superuser %}/admin/{% else %}/users/{% endif %}" class="logo">
                 <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Панель администрирования"/>
             </a>
 
