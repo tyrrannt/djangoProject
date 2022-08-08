@@ -223,10 +223,16 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
         """
 
         if form.is_valid():
+            if self.request.POST:
+                form = ContractsUpdateForm(self.request.POST, self.request.FILES)
+                print('1')
             response = form.save(commit=False)
+            #в old_instance сохраняем старые значения записи
             old_instance = Contract.objects.get(pk=self.object.pk).__dict__
             response.save()
+            #в new_instance сохраняем новые значения записи
             new_instance = Contract.objects.get(pk=self.object.pk).__dict__
+            #создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
             for k in diffkeys:

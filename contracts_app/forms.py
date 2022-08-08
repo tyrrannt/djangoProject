@@ -11,7 +11,7 @@ class ContractsAddForm(forms.ModelForm):
         fields = ['parent_category', 'contract_counteragent', 'internal_number', 'contract_number',
                   'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
                   'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
-                  'comment', 'doc_file', 'access', 'executor']
+                  'comment', 'doc_file', 'access', 'executor', 'type_of_document']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,7 +28,7 @@ class ContractsUpdateForm(forms.ModelForm):
         #           'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
         #           'comment', 'date_entry', 'executor', 'doc_file', 'access', 'allowed_placed')
         fields = ('parent_category', 'contract_counteragent', 'type_of_contract', 'employee', 'contract_number',
-                  'date_conclusion', 'closing_date', 'divisions', 'type_property',
+                  'date_conclusion', 'closing_date', 'divisions', 'type_property', 'type_of_document',
                   'subject_contract', 'cost', 'internal_number', 'prolongation', 'allowed_placed')
 
     divisions = forms.ModelMultipleChoiceField(
