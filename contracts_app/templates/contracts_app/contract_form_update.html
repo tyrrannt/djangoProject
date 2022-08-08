@@ -87,7 +87,22 @@
                                         </div>
                                     </div>
                                     <div class="row text">
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-4 text">
+                                            <label for="id_type_of_document">Тип документа</label>
+                                            <select class="form-control form-control-modern" name="type_of_document"
+                                                    id="id_type_of_document" required
+                                                    data-plugin-selectTwo>
+
+                                                {% for item in type_of_document.iterator %}
+                                                    {% if item.pk == contract.type_of_document.pk %}
+                                                        <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                    {% else %}
+                                                        <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
                                             <label for="id_type_of_contract">Тип договора</label>
                                             <select class="form-control form-control-modern" name="type_of_contract"
                                                     id="id_type_of_contract" required
@@ -102,7 +117,7 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-4 text-black-50">
                                             <label for="id_employee">Ответственные лица</label>
                                             <select class="form-control form-control-modern" name="employee"
                                                     data-plugin-selectTwo multiple id="id_employee">
@@ -264,15 +279,6 @@
                                             <label for="id_doc_file">Файл документа:</label>
                                             <input type="file" name="doc_file" class="form-control mb-4"
                                                    id="id_doc_file">
-                                        </p>
-
-                                        <p>
-                                            <label for="id_type_of_document">Тип документа:</label>
-                                            <select name="type_of_document" class="form-control mb-4" required="" id="id_type_of_document">
-                                                {% for item in type_of_document %}
-                                                <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
                                         </p>
                                         {% if user.access_level.contracts_access_agreement %}
                                             <p>

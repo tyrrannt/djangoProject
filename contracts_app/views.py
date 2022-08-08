@@ -98,6 +98,9 @@ class ContractList(LoginRequiredMixin, ListView):
 
 
 class ContractSearch(LoginRequiredMixin, ListView):
+    """
+    Поиск договоров в базе
+    """
     template_name_suffix = '_search'
     context_object_name = 'object'
     object_list = None
@@ -213,6 +216,7 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
     template_name_suffix = '_form_update'
 
     def post(self, request, *args, **kwargs):
+        print(self.request.POST)
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):

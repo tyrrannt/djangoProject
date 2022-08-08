@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.utils.decorators import method_decorator
-from django.views.generic import DetailView, UpdateView, CreateView
+from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, Posts
@@ -128,3 +128,8 @@ class PostsAddView(LoginRequiredMixin, CreateView):
         """
         pk = self.request.user.pk
         return reverse("customers_app:profile", kwargs={"pk": pk})
+
+class PostsListView(LoginRequiredMixin, ListView):
+    template_name = 'customers_app/posts_list.html'
+    model = Posts
+    paginate_by = 5
