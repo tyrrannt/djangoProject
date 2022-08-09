@@ -48,8 +48,7 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-                                        <div class="col-md-6 text-black-50">
-                                            {#                                            {{ form.contract_counteragent }}#}
+                                        <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_parent_category">Основной документ</label>
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="parent_category"
@@ -69,8 +68,7 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                        <div class="col-md-6 text-black-50">
-                                            {#                                            {{ form.contract_counteragent }}#}
+                                        <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_contract_counteragent">Контрагент</label>
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="contract_counteragent"
@@ -87,7 +85,7 @@
                                         </div>
                                     </div>
                                     <div class="row text">
-                                        <div class="col-md-4 text">
+                                        <div class="col-md-4 col-sm-6 text">
                                             <label for="id_type_of_document">Тип документа</label>
                                             <select class="form-control form-control-modern" name="type_of_document"
                                                     id="id_type_of_document" required
@@ -101,7 +99,7 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                        <div class="col-md-4 text-black-50">
+                                        <div class="col-md-4 col-sm-6 text-black-50">
                                             <label for="id_type_of_contract">Тип договора</label>
                                             <select class="form-control form-control-modern" name="type_of_contract"
                                                     id="id_type_of_contract" required
@@ -115,7 +113,7 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                        <div class="col-md-4 text-black-50">
+                                        <div class="col-md-4 col-sm-6 text-black-50">
                                             <label for="id_employee">Ответственные лица</label>
                                             <select class="form-control form-control-modern" name="employee"
                                                     data-plugin-selectTwo multiple id="id_employee">
@@ -136,14 +134,14 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-4 text">
+                                        <div class="col-md-4 col-sm-6 text">
                                             <label for="id_contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number"
                                                    value="{% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
                                                    id="id_contract_number"/>
                                         </div>
-                                        <div class="col-md-4 date">
+                                        <div class="col-md-4 col-sm-6 date">
                                             <label for="id_date_conclusion">Дата заключения</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="date_conclusion"
@@ -152,7 +150,7 @@
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-MM-dd"}'
                                                    id="id_date_conclusion"/>
                                         </div>
-                                        <div class="col-md-4 date">
+                                        <div class="col-md-4 col-sm-6 date">
                                             <label for="id_closing_date">Дата закрытия договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="closing_date"
@@ -173,7 +171,7 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_divisions">Подразделение</label>
                                             <select class="form-control form-control-modern" id="id_divisions"
                                                     name="divisions" required
@@ -188,7 +186,7 @@
                                             </select>
                                             {#                                            {{ form.divisions }}#}
                                         </div>
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_type_property">Тип имущества</label>
                                             <select class="form-control form-control-modern" id="id_type_property"
                                                     name="type_property" required
@@ -209,11 +207,16 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-12 text-black-50">
+                                        <div class="col-md-6 text-black-50">
                                             <label for="id_subject_contract">Предмет договора</label>
                                             <textarea class="form-control form-control-modern" name="subject_contract"
-                                                      rows="6"
+                                                      rows="4"
                                                       id="id_subject_contract">{{ object.subject_contract }}</textarea>
+                                        </div>
+                                        <div class="col-md-6 text-black-50">
+                                            <label for="id_comment">Примечание:</label>
+                                            <textarea class="form-control form-control-modern" name="comment" rows="4"
+                                                      id="id_comment"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -221,25 +224,25 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-3 text-black-50">
+                                        <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_cost">Стоимость</label>
                                             <input type="number" class="form-control form-control-modern"
                                                    name="cost"
                                                    value="{{ object.cost }}" id="id_cost"/>
                                         </div>
-                                        <div class="col-md-3 text-black-50">
+                                        <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="date_entry">Дата ввода информации</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="date_entry"
                                                    value="{{ object.date_entry }}" id="date_entry" disabled/>
                                         </div>
-                                        <div class="col-md-3 text-black-50">
+                                        <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_internal_number">Внутренний номер</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="internal_number"
                                                    value="{{ object.internal_number }}" id="id_internal_number"/>
                                         </div>
-                                        <div class="col-md-3 text-black-50">
+                                        <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_prolongation">Пролонгация</label>
                                             <select class="form-control form-control-modern" id="id_prolongation"
                                                     name="prolongation"
@@ -254,24 +257,21 @@
                                             </select>
                                         </div>
 
-                                        <p>
+                                        <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_access">Уровень доступа к документу:</label>
-                                            <select name="access" class="form-control mb-4" required="" id="id_access">
+                                            <select name="access" class="form-control form-control-modern" required=""
+                                                    id="id_access" data-plugin-selectTwo>
                                                 <option value="1" selected="">Административный доступ</option>
                                             </select>
-                                        </p>
-                                        <p>
+                                        </div>
+                                        <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_executor">Исполнитель:</label>
-                                            <select name="executor" class="form-control mb-4" required=""
-                                                    id="id_executor">
+                                            <select name="executor" class="form-control  form-control-modern" required=""
+                                                    id="id_executor" data-plugin-selectTwo>
                                                 <option value="{{ user.pk }}">{{ user }}</option>
                                             </select>
-                                        </p>
-                                        <p>
-                                            <label for="id_comment">Примечание:</label>
-                                            <textarea name="comment" cols="40" rows="10" class="form-control mb-4"
-                                                      id="id_comment"></textarea>
-                                        </p>
+                                        </div>
+
                                         <p>
                                             <label for="id_doc_file">Файл документа:</label>
                                             <input type="file" name="doc_file" class="form-control mb-4"

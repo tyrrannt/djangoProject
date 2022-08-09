@@ -38,29 +38,27 @@
                         <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
-                                    <div class="col text">
-                                        <div class="text-black-50">
+                                    <div class="row">
+                                        <div class="col-lg-3 col-md-6 text-black-50">
                                             <label for="contract_counteragent">Контрагент</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_counteragent" disabled
                                                    value="{{ object.contract_counteragent }}"
                                                    id="contract_counteragent"/>
                                         </div>
-                                        <div class="text-black-50">
+                                        <div class="col-lg-3 col-md-6 text-black-50">
                                             <label for="id_type_of_document">Тип документа:</label>
                                             <input name="type_of_document" type="text"
-                                                   class="form-control form-control-modern"
+                                                   class="form-control form-control-modern" disabled
                                                    value="{{ contract.type_of_document }}" id="id_type_of_document"/>
                                         </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-lg-3 col-md-6 text-black-50">
                                             <label for="type_of_contract">Тип договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="type_of_contract" disabled
                                                    value="{{ object.type_of_contract }}" id="type_of_contract"/>
                                         </div>
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-lg-3 col-md-6 text-black-50">
                                             <label>Ответственные лица</label>
                                             <select class="form-control form-control-modern" name="employee" disabled
                                                     data-plugin-selectTwo multiple>
@@ -69,19 +67,14 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-4 text">
+
+                                        <div class="col-lg-3 col-md-4 text">
                                             <label for="contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number" disabled
                                                    value="{% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}" id="contract_number"/>
                                         </div>
-                                        <div class="col-md-4 date">
+                                        <div class="col-lg-3 col-md-4 date">
                                             <label for="date_conclusion">Дата заключения</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="date_conclusion"
@@ -90,7 +83,7 @@
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
                                                    id="date_conclusion"/>
                                         </div>
-                                        <div class="col-md-4 date">
+                                        <div class="col-lg-3 col-md-4 date">
                                             <label for="closing_date">Дата закрытия договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="closing_date"
@@ -137,11 +130,16 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-12 text-black-50">
+                                        <div class="col-md-6 text-black-50">
                                             <label for="subject_contract">Предмет договора</label>
                                             <textarea class="form-control form-control-modern" name="subject_contract"
-                                                      rows="6" disabled
+                                                      rows="4" disabled
                                                       id="subject_contract">{{ object.subject_contract }}</textarea>
+                                        </div>
+                                        <div class="col-md-6 text-black-50">
+                                            <label for="id_comment">Примечание:</label>
+                                            <textarea class="form-control form-control-modern" name="comment" rows="4"
+                                                      id="id_comment" disabled>{{ object.comment }}</textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -172,9 +170,7 @@
                                             <label for="prolongation">Пролонгация</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="prolongation" disabled
-                                                   value="
-
-                                                           {% for key, value in prolongation %}{% if key == object.prolongation %}{{ value }}{% endif %}{% endfor %}"
+                                                   value="{% for key, value in prolongation %}{% if key == object.prolongation %}{{ value }}{% endif %}{% endfor %}"
                                                    id="prolongation"/>
                                         </div>
                                     </div>
