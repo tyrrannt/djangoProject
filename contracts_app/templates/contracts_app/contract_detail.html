@@ -79,11 +79,7 @@
                                             <label for="contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number" disabled
-                                                   value="{% if object.contract_number %}
-                                                        {{ object.contract_number }}
-                                                    {% else %}
-                                                        без номера
-                                                    {% endif %}" id="contract_number"/>
+                                                   value="{% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}" id="contract_number"/>
                                         </div>
                                         <div class="col-md-4 date">
                                             <label for="date_conclusion">Дата заключения</label>

@@ -4,7 +4,7 @@ from os import path
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
@@ -19,30 +19,6 @@ import hashlib
 
 # Create your views here.
 from customers_app.models import DataBaseUser
-
-
-def hash_string(filename):
-    """
-    Функция приводит к общему виду имена файлов загружаемых пользователями, переименовывает и приводит их к шаблону:
-    IMG_<hash сумма>.<расширение>
-    :param filename: строка содержащая имя файла
-    :return: Возвращает hash сумму строки
-    """
-    byte_input = filename.encode()
-    hash_object = hashlib.sha256(byte_input)
-    return 'IMG_' + hash_object.hexdigest()
-
-
-def get_file_path(instance, filename):
-    """
-    Функция приводит к общему виду имена файлов загружаемых пользователями, переименовывает и приводит их к шаблону:
-    :param instance: Экземпляр класса
-    :param filename: Имя файла
-    :return: Переименовывает файл переданный в models.ImageField(upload_to= ... )
-    """
-    ext = filename.split('.')[-1]
-    filename = "%s.%s" % (hash_string(filename), ext)
-    return path.join('products_images', filename)
 
 
 class ContractList(LoginRequiredMixin, ListView):
@@ -169,6 +145,19 @@ class ContractAdd(LoginRequiredMixin, CreateView):
     form_class = ContractsAddForm
     success_url = reverse_lazy('contracts_app:index')
 
+    def post(self, request, *args, **kwargs):
+        # Сохраняем QueryDict в переменную content для возможности его редактирования
+        content = QueryDict.copy(self.request.POST)
+        # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
+        if content['parent_category'] == '0':
+            content.setlist('parent_category', '')
+        # Проверяем подразделения, если пришел список с 0 значением, то удаляем его из списка, генерируя новый список
+        division = list(k for k in content.getlist('divisions') if k != '0')
+        content.setlist('divisions', division)
+        # Возвращаем измененный QueryDict обратно в запрос
+        self.request.POST = content
+        return super(ContractAdd, self).post(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
         context['title'] = 'Создание нового договора'
@@ -216,7 +205,6 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
     template_name_suffix = '_form_update'
 
     def post(self, request, *args, **kwargs):
-        print(self.request.POST)
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -227,16 +215,12 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
         """
 
         if form.is_valid():
-            if self.request.POST:
-                form = ContractsUpdateForm(self.request.POST, self.request.FILES)
-                print('1')
-            response = form.save(commit=False)
-            #в old_instance сохраняем старые значения записи
+            # в old_instance сохраняем старые значения записи
             old_instance = Contract.objects.get(pk=self.object.pk).__dict__
-            response.save()
-            #в new_instance сохраняем новые значения записи
+            form.save()
+            # в new_instance сохраняем новые значения записи
             new_instance = Contract.objects.get(pk=self.object.pk).__dict__
-            #создаем генератор списка
+            # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
             for k in diffkeys:
@@ -316,10 +300,3 @@ class ContractPostDelete(LoginRequiredMixin, DeleteView):
     Удаление записи
     """
     model = Posts
-
-# def pdf(request):
-#     try:
-#         file_path = request.GET.get('file_path')
-#         return FileResponse(open(f'{file_path}', 'rb'), content_type='application/pdf')
-#     except FileNotFoundError:
-#         raise Http404('not found')

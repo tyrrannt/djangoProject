@@ -29,7 +29,7 @@ class ContractsUpdateForm(forms.ModelForm):
         #           'comment', 'date_entry', 'executor', 'doc_file', 'access', 'allowed_placed')
         fields = ('parent_category', 'contract_counteragent', 'type_of_contract', 'employee', 'contract_number',
                   'date_conclusion', 'closing_date', 'divisions', 'type_property', 'type_of_document',
-                  'subject_contract', 'cost', 'internal_number', 'prolongation', 'allowed_placed')
+                  'subject_contract', 'cost', 'internal_number', 'prolongation', 'allowed_placed', 'doc_file')
 
     divisions = forms.ModelMultipleChoiceField(
         label='Подразделения',

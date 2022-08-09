@@ -1,5 +1,6 @@
 from django.db import models
 from django.urls import reverse
+from uuid import uuid1
 
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
 
@@ -115,6 +116,17 @@ class ContractModel(models.Model):
     def get_absolute_url(self):
         return reverse('contracts_app:detail', kwargs={'pk': self.pk})
 
+    def save(
+            self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        ext = self.doc_file.name.split('.')[-1]
+        uid = '0' * (7 - len(str(self.pk))) + str(self.pk)
+
+        filename = f'{self.type_of_document.file_name_prefix}-{self.contract_counteragent.inn}-' \
+                   f'{self.contract_counteragent.kpp}-{self.date_conclusion}-{uid}.{ext}'
+        self.doc_file.name = filename
+        return super(ContractModel, self).save(force_insert=False, force_update=False, using=None, update_fields=None)
+
 
 class Contract(ContractModel):
     """
@@ -143,3 +155,7 @@ class Posts(models.Model):
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
     responsible_person = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо', on_delete=models.SET_NULL,
                                            null=True)
+
+
+def sdf(instance, filename):
+    pass

@@ -23,4 +23,4 @@ def get_all_contracts(request):
             'type_contract': all_type_of_contract, 'contracts_count': contracts_count,
             'contracts_not_published': contracts_not_published, 'posts_not_published': posts_not_published,
             'contracts_not_published_count': contracts_not_published_count,
-            'posts_not_published_count': posts_not_published_count, 'type_of_document': all_type_of_document }
+            'posts_not_published_count': posts_not_published_count, 'type_of_document': all_type_of_document, }

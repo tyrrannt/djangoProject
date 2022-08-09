@@ -92,7 +92,6 @@
                                             <select class="form-control form-control-modern" name="type_of_document"
                                                     id="id_type_of_document" required
                                                     data-plugin-selectTwo>
-
                                                 {% for item in type_of_document.iterator %}
                                                     {% if item.pk == contract.type_of_document.pk %}
                                                         <option value="{{ item.pk }}" selected>{{ item }}</option>
@@ -106,8 +105,7 @@
                                             <label for="id_type_of_contract">Тип договора</label>
                                             <select class="form-control form-control-modern" name="type_of_contract"
                                                     id="id_type_of_contract" required
-                                                    data-plugin-selectTwo multiple>
-
+                                                    data-plugin-selectTwo>
                                                 {% for item in type_contract.iterator %}
                                                     {% if item.pk == object.type_of_contract.pk %}
                                                         <option value="{{ item.pk }}" selected>{{ item }}</option>
@@ -142,8 +140,7 @@
                                             <label for="id_contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number"
-                                                   value="
-                                                           {% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
+                                                   value="{% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
                                                    id="id_contract_number"/>
                                         </div>
                                         <div class="col-md-4 date">

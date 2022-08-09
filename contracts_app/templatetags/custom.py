@@ -11,7 +11,6 @@ def media_folder_products(string):
     """
     if not string:
         string = ''
-
     return f'{settings.MEDIA_URL}{string}'
 
 

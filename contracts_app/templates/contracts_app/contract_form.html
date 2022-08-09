@@ -48,29 +48,23 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-4 text-black-50">
 {#                                            {{ form.contract_counteragent }}#}
                                             <label for="id_parent_category">Основной документ</label>
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="parent_category"
-                                                    id="id_parent_category" required
+                                                    id="id_parent_category"
                                                     data-plugin-selectTwo>
                                                 {% for item in all_contract.iterator %}
                                                     {% if forloop.first %}
                                                     <option value="0" selected>Выберите значение...</option>
                                                     {% endif %}
-                                                    {% if item.pk != object.pk %}
-                                                        {% if object.parent_category.pk == item.pk %}
-                                                            <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                        {% else %}
-                                                            <option value="{{ item.pk }}">{{ item }}</option>
-                                                        {% endif %}
-                                                    {% endif %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
                                                 {% endfor %}
                                             </select>
 
                                         </div>
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-4 text-black-50">
 {#                                            {{ form.contract_counteragent }}#}
                                             <label for="id_contract_counteragent">Контрагент</label>
                                             <select class="form-control mb-4 form-control-modern"
@@ -78,6 +72,21 @@
                                                     id="id_contract_counteragent" required
                                                     data-plugin-selectTwo>
                                                 {% for item in counteragent.iterator %}
+                                                    {% if forloop.first %}
+                                                    <option value="0" selected>Выберите значение...</option>
+                                                    {% endif %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    <div class="col-md-4 text-black-50">
+{#                                            {{ form.contract_counteragent }}#}
+                                            <label for="id_type_of_document">Тип документа</label>
+                                            <select class="form-control mb-4 form-control-modern"
+                                                    name="type_of_document"
+                                                    id="id_type_of_document" required
+                                                    data-plugin-selectTwo>
+                                                {% for item in type_of_document %}
                                                     {% if forloop.first %}
                                                     <option value="0" selected>Выберите значение...</option>
                                                     {% endif %}
@@ -245,12 +254,7 @@
                                             <input type="file" name="doc_file" class="form-control mb-4"
                                                    id="id_doc_file">
                                         </p>
-                                    <p>
-                                            <label for="id_allowed_placed">Разрешение на публикацию:</label>
-                                            <input type="checkbox" id="id_allowed_placed" name="allowed_placed"
-                                                   {% if object.allowed_placed %}checked{% endif %}/>
 
-                                        </p>
                                     </div>
                                 </div>
                             </div>
