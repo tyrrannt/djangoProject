@@ -129,7 +129,13 @@ class PostsAddView(LoginRequiredMixin, CreateView):
         pk = self.request.user.pk
         return reverse("customers_app:profile", kwargs={"pk": pk})
 
+
 class PostsListView(LoginRequiredMixin, ListView):
     template_name = 'customers_app/posts_list.html'
     model = Posts
     paginate_by = 5
+
+
+class PostsDetailView(LoginRequiredMixin, DetailView):
+    template_name = ''
+    model = Posts
