@@ -23,20 +23,17 @@
                                    style="min-width: 750px;">
                                 <thead>
                                 <tr>
-                                    <th width="3%"><input type="checkbox" name="select-all"
-                                                          class="select-all checkbox-style-1 p-relative top-2"
-                                                          value=""/></th>
-                                    <th width="8%">Код</th>
-                                    <th width="25%">Дата создания</th>
-                                    <th width="54%">Текст поста</th>
+
+                                    <th width="11%">Код</th>
+                                    <th width="20%">Дата создания</th>
+                                    <th width="59%">Текст поста</th>
                                     <th width="12%">Публикация</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {% for item in object_list %}
                                     <tr>
-                                        <td width="30"><input type="checkbox" name="checkboxRow1"
-                                                              class="checkbox-style-1 p-relative top-2" value=""/></td>
+
                                         <td>
                                             <a href="#"><strong>{{ item.pk }}</strong></a>
                                         </td>
