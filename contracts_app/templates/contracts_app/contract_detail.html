@@ -246,9 +246,9 @@
                     <section class="toggle">
                         <label>Заметки к договору</label>
                         <div class="toggle-content">
+                            {% for item in posts %}
                             <div class="ecommerce-timeline mb-3">
                                 <div class="ecommerce-timeline-items-wrapper">
-                                    {% for item in posts %}
                                         <div class="ecommerce-timeline-item">
                                             <small>Добавлено: {{ item.creation_date }}.
                                                 Автор: {{ item.responsible_person }}
@@ -258,9 +258,9 @@
                                             {% endautoescape %}
                                             </p>
                                         </div>
-                                    {% endfor %}
                                 </div>
                             </div>
+                            {% endfor %}
                             <form action="{% url 'contracts_app:post_add' object.pk %}" method="post">
                                 {% csrf_token %}
                                 <input name="contract_number" value="{{ object.pk }}" hidden>

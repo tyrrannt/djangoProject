@@ -29,6 +29,7 @@
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
+
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
 
@@ -37,7 +38,8 @@
 
     <!-- Theme Custom CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/css/custom.css' %}"/>
-
+    {% block custome_css %}
+    {% endblock %}
     <!-- Head Libs -->
     <script src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
 

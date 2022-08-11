@@ -17,7 +17,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 @login_required
 def index(request):
-    return render(request, 'customers_app/main.html')
+    return render(request, 'customers_app/customers.html')
 
 
 class DataBaseUserProfile(LoginRequiredMixin, DetailView):
