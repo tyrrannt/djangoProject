@@ -54,8 +54,21 @@ class Estate(models.Model):
         verbose_name_plural = 'Имущество'
 
     type_property = models.ForeignKey(TypeProperty, on_delete=models.SET_NULL, null=True)
-    registration_number = models.CharField(verbose_name='Номер машины', max_length=100, default='')
+    registration_number = models.CharField(verbose_name='Номер машины', max_length=100, default='', blank=True)
     release_date = models.DateField(verbose_name='Дата выпуска')
+    factory_number = models.CharField(verbose_name='Заводской номер', max_length=100, default='', blank=True)
+    exploits = models.CharField(verbose_name='Баркол эксплуатирует', max_length=100, default='', blank=True)
+    gtd = models.CharField(verbose_name='GTD', max_length=100, default='', blank=True)
+    passport = models.CharField(verbose_name='Паспорт', max_length=100, default='', blank=True)
+    ownership_right = models.CharField(verbose_name='Право владения', max_length=100, default='', blank=True)
+    year_of_manufacture= models.CharField(verbose_name='Год выпуска авто', max_length=100, default='', blank=True)
+    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
+    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
+    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
+    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
+    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
+    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
+    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
 
 
 class ContractModel(models.Model):
@@ -87,7 +100,7 @@ class ContractModel(models.Model):
     type_of_document = models.ForeignKey(TypeDocuments, verbose_name='Тип документа', on_delete=models.SET_NULL,
                                          null=True)
     divisions = models.ManyToManyField(Division, verbose_name='Подразделение')
-    type_property = models.ForeignKey(TypeProperty, verbose_name='Тип имущества', on_delete=models.SET_NULL, null=True)
+    type_property = models.ManyToManyField(TypeProperty, verbose_name='Тип имущества', blank=True)
     employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True)
     closing_date = models.DateField(verbose_name='Дата закрытия договора', null=True, blank=True)
     prolongation = models.CharField(verbose_name='Пролонгация', max_length=40, choices=type_of_prolongation,

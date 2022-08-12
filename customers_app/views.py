@@ -89,7 +89,7 @@ def login(request):
             auth.login(request, user)
             request.session.set_expiry(PortalProperty.objects.get(pk=1).portal_session)
             request.session['portal_paginator'] = PortalProperty.objects.get(pk=1).portal_paginator
-            return HttpResponseRedirect(reverse('customers_app:profile', args=(user.pk,)))
+            return HttpResponseRedirect(reverse('customers_app:index'))#, args=(user.pk,)))
     content = {'title': title, 'login_form': login_form}
     return render(request, 'customers_app/login.html', content)
 

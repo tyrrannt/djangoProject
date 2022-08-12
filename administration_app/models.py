@@ -15,3 +15,34 @@ class PortalProperty(models.Model):
 
     def __str__(self):
         return str(self.pk)
+
+
+class MetaMainMenu(models.Model):
+    class Meta:
+        abstract = True
+
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(verbose_name='Название пункта меню', max_length=128, unique=True)
+    url_address = models.CharField(verbose_name='URL адрес пункта', max_length=100)
+    description = models.TextField(verbose_name='Описание пункта меню', blank=True)
+
+    def __str__(self):
+        if self.parent:
+            return f'{self.parent}/{self.name}'
+        else:
+            return self.name
+
+
+class MainMenu(MetaMainMenu):
+    class Meta:
+        verbose_name = 'Меню'
+        verbose_name_plural = 'Меню'
+
+    def __init__(self, *args, **kwargs):
+        super(MainMenu, self).__init__(*args, **kwargs)
+
+#ToDo: Доработать генератор меню
+def make_menu():
+    items = MainMenu.objects.all()
+    for item in items:
+        urls = f'<li class="nav-parent"> <a class="nav-link" href="#"><i class="bx bx-file" aria-hidden="true"></i><span>{item}</span></a></li>'

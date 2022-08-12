@@ -175,7 +175,7 @@
                                             <label for="id_type_property">Тип имущества</label>
                                             <select class="form-control form-control-modern" id="id_type_property"
                                                     name="type_property" required
-                                                    data-plugin-selectTwo>
+                                                    data-plugin-selectTwo multiple>
                                                 {% for item in type_property.iterator %}
                                                     {% if forloop.first %}
                                                     <option value="0" selected>Выберите значение...</option>

@@ -1,9 +1,12 @@
 from django.db.models import Q
+
+from administration_app.models import make_menu
 from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocuments
 from customers_app.models import DataBaseUser, Counteragent, Division, Posts
 
 
 def get_all_contracts(request):
+    make_menu()
     all_contract = Contract.objects.all()
     contracts_count = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True)).count()
     all_users = DataBaseUser.objects.all()
