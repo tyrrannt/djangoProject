@@ -52,11 +52,11 @@
 									<header class="card-header">
 										<div class="card-actions">
 											<a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-											<a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>
+
 										</div>
 
-										<h2 class="card-title">Donut Chart</h2>
-										<p class="card-subtitle">Donut Chart are functionally identical to pie charts.</p>
+										<h2 class="card-title">База договоров</h2>
+										<p class="card-subtitle">Общая статистика по типам документов</p>
 									</header>
 									<div class="card-body">
 
@@ -64,16 +64,10 @@
 										<div class="chart chart-md" id="morrisDonut"></div>
 										<script type="text/javascript">
 
-											var morrisDonutData = [{
-												label: "Porto Template",
-												value: 32
-											}, {
-												label: "Tucson Template",
-												value: 18
-											}, {
-												label: "Porto Admin",
-												value: 20
-											}];
+											var morrisDonutData = [{% for key, value in types_count.items %}{
+												label: "{{ key }}",
+												value: {{ value }}
+											},{% endfor %}];
 
 											// See: js/examples/examples.charts.js for more settings.
 

@@ -54,7 +54,8 @@ class Estate(models.Model):
         verbose_name_plural = 'Имущество'
 
     type_property = models.ForeignKey(TypeProperty, on_delete=models.SET_NULL, null=True)
-    release_date = models.DateField(verbose_name='дата выпуска')
+    registration_number = models.CharField(verbose_name='Номер машины', max_length=100, default='')
+    release_date = models.DateField(verbose_name='Дата выпуска')
 
 
 class ContractModel(models.Model):

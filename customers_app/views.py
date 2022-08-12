@@ -6,6 +6,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
+from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm
 from django.contrib import auth, messages
@@ -17,7 +18,16 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 @login_required
 def index(request):
-    return render(request, 'customers_app/customers.html')
+    document_types = TypeDocuments.objects.all()
+    category = list()
+    for item in document_types:
+        category.append(item.type_document)
+    values = list()
+    for item in document_types:
+        values.append(Contract.objects.filter(type_of_document=item).count())
+    types_count = dict(zip(category, values))
+    print(types_count)
+    return render(request, 'customers_app/customers.html', context={'types_count': types_count})
 
 
 class DataBaseUserProfile(LoginRequiredMixin, DetailView):
