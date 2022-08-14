@@ -1,7 +1,7 @@
-from django.forms import CheckboxSelectMultiple, SelectMultiple
+from django.forms import CheckboxSelectMultiple, SelectMultiple, ClearableFileInput
 
 from customers_app.models import Division
-from .models import Contract, Posts
+from .models import Contract, Posts, TypeProperty
 from django import forms
 
 
@@ -11,7 +11,10 @@ class ContractsAddForm(forms.ModelForm):
         fields = ['parent_category', 'contract_counteragent', 'internal_number', 'contract_number',
                   'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
                   'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
-                  'comment', 'doc_file', 'access', 'executor', 'type_of_document',]
+                  'comment', 'doc_file', 'access', 'executor', 'type_of_document']
+        # widgets = {
+        #     'doc_file': ClearableFileInput(attrs={'multiple': True})
+        # }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,13 +31,17 @@ class ContractsUpdateForm(forms.ModelForm):
         #           'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
         #           'comment', 'date_entry', 'executor', 'doc_file', 'access', 'allowed_placed')
         fields = ('parent_category', 'contract_counteragent', 'type_of_contract', 'employee', 'contract_number',
-                  'date_conclusion', 'closing_date', 'divisions', 'type_property', 'type_of_document',
+                  'date_conclusion', 'closing_date', 'divisions', 'type_property', 'type_of_document', 'access',
                   'subject_contract', 'cost', 'internal_number', 'prolongation', 'allowed_placed', 'doc_file')
 
     divisions = forms.ModelMultipleChoiceField(
         label='Подразделения',
         widget=SelectMultiple(),
         queryset=Division.objects.all())
+    type_property = forms.ModelMultipleChoiceField(
+        label='Тип имущества',
+        widget=SelectMultiple(),
+        queryset=TypeProperty.objects.all())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

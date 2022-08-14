@@ -27,7 +27,18 @@
     <section role="main" class="content-body content-body-modern mt-0">
 
         {% include 'library_app/breadcrumb.html' %}
-        <div><p></p></div>
+        <div>
+            {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li class="{{ message.tags }}">
+                {{ message|safe }}
+                <a href="#" class="close">✖</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+        </div>
         <!-- start: page -->
         <form action="{% url 'contracts_app:update' object.pk %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -174,8 +185,7 @@
                                         <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_divisions">Подразделение</label>
                                             <select class="form-control form-control-modern" id="id_divisions"
-                                                    name="divisions" required
-                                                    data-plugin-selectTwo multiple>
+                                                    name="divisions" data-plugin-selectTwo multiple>
                                                 {% for item in division.iterator %}
                                                     {% if item in object.divisions.iterator %}
                                                         <option value="{{ item.pk }}" selected>{{ item.name }}</option>
@@ -184,17 +194,15 @@
                                                     {% endif %}
                                                 {% endfor %}
                                             </select>
-                                            {#                                            {{ form.divisions }}#}
+
                                         </div>
                                         <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_type_property">Тип имущества</label>
                                             <select class="form-control form-control-modern" id="id_type_property"
-                                                    name="type_property" required
-                                                    data-plugin-selectTwo multiple>
+                                                    name="type_property" data-plugin-selectTwo multiple>
                                                 {% for item in type_property.iterator %}
-                                                    {% if item.pk == object.type_property.pk %}
-                                                        <option value="{{ item.pk }}"
-                                                                selected>{{ item.type_property }}</option>
+                                                    {% if item in object.type_property.iterator %}
+                                                        <option value="{{ item.pk }}" selected>{{ item.type_property }}</option>
                                                     {% else %}
                                                         <option value="{{ item.pk }}">{{ item.type_property }}</option>
                                                     {% endif %}
@@ -259,9 +267,14 @@
 
                                         <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_access">Уровень доступа к документу:</label>
-                                            <select name="access" class="form-control form-control-modern" required=""
-                                                    id="id_access" data-plugin-selectTwo>
-                                                <option value="1" selected="">Административный доступ</option>
+                                            <select name="access" class="form-control form-control-modern" required="" id="id_access">
+                                                {% for item in access.iterator %}
+                                                    {% if item.pk == object.access %}
+                                                <option value="{{ item.pk }}" selected>{{ item.name }}</option>
+                                                    {% else %}
+                                                        <option value="{{ item.pk }}">{{ item.name }}</option>
+                                                    {% endif %}
+                                                {% endfor %}
                                             </select>
                                         </div>
                                         <div class="col-md-3 col-sm-4 text-black-50">

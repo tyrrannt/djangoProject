@@ -120,9 +120,18 @@
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="type_property">Тип имущества</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="type_property" disabled
-                                                   value="{{ object.type_property }}" id="type_property"/>
+                                            <select class="form-control form-control-modern" id="type_property"
+                                                    name="type_property" disabled
+                                                    data-plugin-selectTwo multiple>
+                                                {% if object.type_property %}
+                                                    {% for item in object.type_property.values %}
+                                                        <option value="{{ item.pk }}" selected>{{ item.type_property }}</option>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <option value="1" selected>Отсутствуют</option>
+                                                {% endif %}
+                                            </select>
+
                                         </div>
                                     </div>
                                 </div>

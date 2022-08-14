@@ -1,11 +1,14 @@
+import pathlib
+
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
-from uuid import uuid1
 
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
+from djangoProject.settings import BASE_DIR
 
 
-# Create your models here.
 def contract_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     return f'contracts/{instance.contract_counteragent.inn}/{instance.contract_counteragent.kpp}/{filename}'
@@ -61,7 +64,7 @@ class Estate(models.Model):
     gtd = models.CharField(verbose_name='GTD', max_length=100, default='', blank=True)
     passport = models.CharField(verbose_name='Паспорт', max_length=100, default='', blank=True)
     ownership_right = models.CharField(verbose_name='Право владения', max_length=100, default='', blank=True)
-    year_of_manufacture= models.CharField(verbose_name='Год выпуска авто', max_length=100, default='', blank=True)
+    year_of_manufacture = models.CharField(verbose_name='Год выпуска авто', max_length=100, default='', blank=True)
     # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
     # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
     # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
@@ -99,13 +102,12 @@ class ContractModel(models.Model):
                                          null=True)
     type_of_document = models.ForeignKey(TypeDocuments, verbose_name='Тип документа', on_delete=models.SET_NULL,
                                          null=True)
-    divisions = models.ManyToManyField(Division, verbose_name='Подразделение')
+    divisions = models.ManyToManyField(Division, verbose_name='Подразделение', blank=True)
     type_property = models.ManyToManyField(TypeProperty, verbose_name='Тип имущества', blank=True)
     employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True)
     closing_date = models.DateField(verbose_name='Дата закрытия договора', null=True, blank=True)
     prolongation = models.CharField(verbose_name='Пролонгация', max_length=40, choices=type_of_prolongation,
-                                    help_text='',
-                                    blank=True, null=True, )
+                                    help_text='', blank=True, null=True, )
     comment = models.TextField(verbose_name='Примечание', blank=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
     executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True,
@@ -130,16 +132,16 @@ class ContractModel(models.Model):
     def get_absolute_url(self):
         return reverse('contracts_app:detail', kwargs={'pk': self.pk})
 
-    def save(
-            self, force_insert=False, force_update=False, using=None, update_fields=None
-    ):
-        ext = self.doc_file.name.split('.')[-1]
-        uid = '0' * (7 - len(str(self.pk))) + str(self.pk)
-
-        filename = f'{self.type_of_document.file_name_prefix}-{self.contract_counteragent.inn}-' \
-                   f'{self.contract_counteragent.kpp}-{self.date_conclusion}-{uid}.{ext}'
-        self.doc_file.name = filename
-        return super(ContractModel, self).save(force_insert=False, force_update=False, using=None, update_fields=None)
+    # def save(
+    #         self, force_insert=False, force_update=False, using=None, update_fields=None
+    # ):
+    #     ext = self.doc_file.name.split('.')[-1]
+    #     uid = '0' * (7 - len(str(self.pk))) + str(self.pk)
+    #
+    #     filename = f'{self.type_of_document.file_name_prefix}-{self.contract_counteragent.inn}-' \
+    #                f'{self.contract_counteragent.kpp}-{self.date_conclusion}-{uid}.{ext}'
+    #     self.doc_file.name = filename
+    #     return super(ContractModel, self).save(force_insert=False, force_update=False, using=None, update_fields=None)
 
 
 class Contract(ContractModel):
@@ -171,5 +173,21 @@ class Posts(models.Model):
                                            null=True)
 
 
-def sdf(instance, filename):
-    pass
+@receiver(post_save, sender=Contract)
+def rename_file_name(sender, instance, **kwargs):
+    try:
+        file_name = pathlib.Path(instance.doc_file.name).name
+        path_name = pathlib.Path(instance.doc_file.name).parent
+        ext = file_name.split('.')[-1]
+        uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
+        filename = f'{instance.type_of_document.file_name_prefix}-{instance.contract_counteragent.inn}-' \
+                   f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
+        if file_name:
+            pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
+                                pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
+
+        instance.doc_file = f'contracts/{instance.contract_counteragent.inn}/{instance.contract_counteragent.kpp}/{filename}'
+        if file_name != filename:
+            instance.save()
+    except Exception as _ex:
+        print(_ex)

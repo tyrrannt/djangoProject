@@ -29,7 +29,7 @@
         {% include 'library_app/breadcrumb.html' %}
         <div><p></p></div>
         <!-- start: page -->
-        <form action="{% url 'contracts_app:create' %}" method="post">
+        <form action="{% url 'contracts_app:create' %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% if form.errors %}
       {% for field in form %}
@@ -234,7 +234,9 @@
                                         <p>
                                             <label for="id_access">Уровень доступа к документу:</label>
                                             <select name="access" class="form-control mb-4" required="" id="id_access">
-                                                <option value="1" selected="">Административный доступ</option>
+                                                {% for item in access.iterator %}
+                                                <option value="{{ item.pk }}" selected="">{{ item.name }}</option>
+                                                {% endfor %}
                                             </select>
                                         </p>
                                         <p>

@@ -153,7 +153,9 @@ class ContractAdd(LoginRequiredMixin, CreateView):
             content.setlist('parent_category', '')
         # Проверяем подразделения, если пришел список с 0 значением, то удаляем его из списка, генерируя новый список
         division = list(k for k in content.getlist('divisions') if k != '0')
+        type_propertyes = list(k for k in content.getlist('type_property') if k != '0')
         content.setlist('divisions', division)
+        content.setlist('type_property', type_propertyes)
         # Возвращаем измененный QueryDict обратно в запрос
         self.request.POST = content
         return super(ContractAdd, self).post(request, *args, **kwargs)
