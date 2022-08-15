@@ -149,6 +149,7 @@ class ContractAdd(LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
         content = QueryDict.copy(self.request.POST)
+        print(content)
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
         if content['parent_category'] == '0':
             content.setlist('parent_category', '')
@@ -172,10 +173,19 @@ class ContractAdd(LoginRequiredMixin, CreateView):
         """
         pk = int(self.request.user.pk)
         if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_add:
+            get_parameters = self.request.GET.get('parent')
+            if get_parameters:
+                object_item = Contract.objects.get(pk=get_parameters)
+                context = {'parameter1': object_item.contract_counteragent,
+                           'parameter2': object_item}
+                return render(request, 'contracts_app/contract_form.html', context)
+
             return super(ContractAdd, self).get(request, *args, **kwargs)
+
         else:
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
+
 
 
 class ContractDetail(LoginRequiredMixin, DetailView):

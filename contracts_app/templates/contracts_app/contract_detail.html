@@ -298,17 +298,25 @@
             </div>
             <div class="row action-buttons">
                 {% if user.access_level.contracts_access_edit %}
-                    <div class="col-12 col-md-auto">
+                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                         <a href="{% url 'contracts_app:update' object.pk %}"
-                           class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                           class="submit-button btn btn-primary btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-save text-4 me-2"></i> Изменить документ</a>
                     </div>
                 {% endif %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                     <a href="{% url 'contracts_app:index' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть
-                        документ</a>
+                       class="cancel-button btn btn-light btn-px-4 py-3 border
+                       font-weight-semibold text-color-dark text-3">Закрыть документ</a>
                 </div>
+                {% if user.access_level.contracts_access_add %}
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                    <a href="{% url 'contracts_app:create'  %}?parent={{ object.pk }}"
+                       class="cancel-button btn btn-light btn-px-4 py-3 border
+                       font-weight-semibold text-color-dark text-3">Добавить документ</a>
+                </div>
+                {% endif %}
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
