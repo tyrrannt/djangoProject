@@ -17,8 +17,13 @@ def get_all_contracts(request):
     all_divisions = Division.objects.all()
     all_access = AccessLevel.objects.all()
     all_type_of_document = TypeDocuments.objects.all()
-    contracts_not_published = Contract.objects.filter(allowed_placed=False)
-    contracts_not_published_count = Contract.objects.filter(allowed_placed=False).count()
+    if not request.user.is_anonymous:
+        contracts_not_published = Contract.objects.filter(Q(allowed_placed=False),
+                                                          Q(access__level__gte=request.user.access_level.contracts_access_view))
+        contracts_not_published_count = contracts_not_published.count()
+    else:
+        contracts_not_published = ''
+        contracts_not_published_count = 0
     posts_not_published = Posts.objects.filter(allowed_placed=False)
     posts_not_published_count = Posts.objects.filter(allowed_placed=False).count()
 

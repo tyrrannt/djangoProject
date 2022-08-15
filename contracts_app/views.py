@@ -8,6 +8,7 @@ from django.http import FileResponse, Http404, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
+from django.views.generic.detail import SingleObjectMixin
 
 from administration_app.models import PortalProperty
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty
@@ -183,8 +184,19 @@ class ContractDetail(LoginRequiredMixin, DetailView):
     """
     model = Contract
 
+    def dispatch(self, request, *args, **kwargs):
+        detail_obj = int(self.get_object().access.level)
+        user_obj = int(self.request.user.access_level.contracts_access_view)
+
+        if detail_obj < user_obj:
+            url_match = reverse_lazy('contracts_app:index')
+            return redirect(url_match)
+        return super(ContractDetail, self).dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super(ContractDetail, self).get_context_data(**kwargs)
+        # if context.get('contract').access.level < int(self.request.user.access_level.contracts_access_view):
+        # print(context.get('contract').pk)
         # Выбираем из таблицы Posts все записи относящиеся к текущему договору
         post = Posts.objects.filter(contract_number=self.object.pk)
         slaves = Contract.objects.filter(Q(parent_category=self.object.pk),
