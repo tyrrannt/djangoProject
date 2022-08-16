@@ -40,6 +40,12 @@ class UserAccessMode(models.Model):
     posts_access_add = models.BooleanField(verbose_name='Разрешение на создание сообщения', default=False)
     posts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование сообщения', default=False)
     posts_access_agreement = models.BooleanField(verbose_name='Право на публикацию сообщения', default=False)
+    # Права доступа к справочникам
+    guide_access_view = models.CharField(verbose_name='Уровень доступа к справочникам', choices=access_level,
+                                         help_text='', blank=True, null=True, max_length=1, default='4')
+    guide_access_add = models.BooleanField(verbose_name='Разрешение на создание записи в справочнике', default=False)
+    guide_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование записи в справочнике', default=False)
+    guide_access_agreement = models.BooleanField(verbose_name='Право на публикацию записи в справочнике', default=False)
 
     def __str__(self):
         name = ''

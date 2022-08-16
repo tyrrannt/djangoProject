@@ -12,4 +12,5 @@ urlpatterns = [
     path('profile/<int:pk>/post/', views.PostsAddView.as_view(), name='post_add'),
     path('profile/<int:pk>/postslist/', views.PostsListView.as_view(), name='post_list'),
     path('profile/<int:pk>/update/', views.DataBaseUserUpdate.as_view(), name='profile_update'),
+    path('counteragent/', views.CounteragentListView.as_view(), name='counteragent_list'),
 ]

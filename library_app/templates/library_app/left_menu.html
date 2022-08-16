@@ -16,7 +16,24 @@
             <nav id="menu" class="nav-main" role="navigation">
 
                 <ul class="nav nav-main">
-
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-book-content" aria-hidden="true"></i>
+                            <span>Справочники</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="#">
+                                    Сотрудники
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
+                                    Контрагенты
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class="bx bx-file" aria-hidden="true"></i>
@@ -118,25 +135,25 @@
                 </div>
                 <div class="widget-content">
                     <div class="card-body">
-										<div class="widget-summary">
-											<div class="widget-summary-col widget-summary-col-icon">
-												<div class="summary-icon bg-tertiary">
-													<i class="bx bx-book-bookmark"></i>
-												</div>
-											</div>
-											<div class="widget-summary-col">
-												<div class="summary">
-													<h5 class="title">Всего договоров</h5>
-													<div class="info">
-														<strong class="amount">{{ contracts_count }}</strong>
-													</div>
-												</div>
-												<div class="summary-footer">
-													<a href="{% url 'contracts_app:index' %}" class="text-uppercase">Открыть базу</a>
-												</div>
-											</div>
-										</div>
-									</div>
+                        <div class="widget-summary">
+                            <div class="widget-summary-col widget-summary-col-icon">
+                                <div class="summary-icon bg-tertiary">
+                                    <i class="bx bx-book-bookmark"></i>
+                                </div>
+                            </div>
+                            <div class="widget-summary-col">
+                                <div class="summary">
+                                    <h5 class="title">Всего договоров</h5>
+                                    <div class="info">
+                                        <strong class="amount">{{ contracts_count }}</strong>
+                                    </div>
+                                </div>
+                                <div class="summary-footer">
+                                    <a href="{% url 'contracts_app:index' %}" class="text-uppercase">Открыть базу</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

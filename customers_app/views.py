@@ -1,4 +1,3 @@
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect
@@ -7,7 +6,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.models import DataBaseUser, Posts
+from customers_app.models import DataBaseUser, Posts, Counteragent
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
@@ -149,3 +148,9 @@ class PostsListView(LoginRequiredMixin, ListView):
 class PostsDetailView(LoginRequiredMixin, DetailView):
     template_name = ''
     model = Posts
+
+
+class CounteragentListView(LoginRequiredMixin, ListView):
+    template_name = 'customers_app/counteragent_list.html'
+    model = Counteragent
+    paginate_by = 5
