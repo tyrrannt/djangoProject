@@ -77,11 +77,7 @@
                                                           class="select-all checkbox-style-1 p-relative top-2"
                                                           value=""/></th>
                                     <th width="8%">Код</th>
-                                    <th width="25%">Контрагент</th>
-                                    <th width="18%">Номер договора</th>
-                                    <th width="12%">Дата договора</th>
-                                    <th width="12%">Тип договора</th>
-                                    <th width="12%">Подразделение</th>
+                                    <th width="79%">Контрагент</th>
                                     <th width="12%">Статус</th>
                                 </tr>
                                 </thead>
@@ -94,20 +90,7 @@
                                             <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
-                                        </td>
-                                        <td>{{ item.contract_number }}</td>
-                                        <td>{{ item.date_conclusion }}</td>
-                                        <td>{{ item.type_of_contract }}</td>
-                                        <td>
-                                            {% for unit in item.divisions.iterator %}
-
-                                                {% if forloop.last %}
-                                                    {{ unit.name }}
-                                                {% else %}
-                                                    {{ unit.name }},&nbsp;
-                                                {% endif %}
-                                            {% endfor %}
+                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.short_name }}</strong></a>
                                         </td>
                                         <td>
                                             {% if item.closing_date == null or item.closing_date < now %}
