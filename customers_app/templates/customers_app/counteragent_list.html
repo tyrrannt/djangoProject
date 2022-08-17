@@ -87,10 +87,10 @@
                                         <td width="30"><input type="checkbox" name="checkboxRow1"
                                                               class="checkbox-style-1 p-relative top-2" value=""/></td>
                                         <td>
-                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'customers_app:counteragent' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.short_name }}</strong></a>
+                                            <a href="{% url 'customers_app:counteragent' item.pk %}"><strong>{{ item.short_name }}</strong></a>
                                         </td>
                                         <td>
                                             {% if item.closing_date == null or item.closing_date < now %}

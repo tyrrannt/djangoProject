@@ -1,5 +1,5 @@
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
-from .models import DataBaseUser, Posts
+from .models import DataBaseUser, Posts, Counteragent
 from django import forms
 
 
@@ -58,3 +58,8 @@ class PostsAddForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control mb-4'
             field.help_text = ''
+
+class CounteragentUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Counteragent
+        fields = '__all__'

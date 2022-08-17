@@ -7,7 +7,8 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent
-from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm
+from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
+    CounteragentUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -88,7 +89,7 @@ def login(request):
             auth.login(request, user)
             request.session.set_expiry(PortalProperty.objects.get(pk=1).portal_session)
             request.session['portal_paginator'] = PortalProperty.objects.get(pk=1).portal_paginator
-            return HttpResponseRedirect(reverse('customers_app:index'))#, args=(user.pk,)))
+            return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user.pk,)))
     content = {'title': title, 'login_form': login_form}
     return render(request, 'customers_app/login.html', content)
 
@@ -151,6 +152,17 @@ class PostsDetailView(LoginRequiredMixin, DetailView):
 
 
 class CounteragentListView(LoginRequiredMixin, ListView):
-    template_name = 'customers_app/counteragent_list.html'
+    #template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
     model = Counteragent
     paginate_by = 5
+
+
+class CounteragentDetail(LoginRequiredMixin, DetailView):
+    #template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
+    model = Counteragent
+
+
+class CounteragentUpdate(LoginRequiredMixin, UpdateView):
+    #template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
+    model = Counteragent
+    form_class = CounteragentUpdateForm
