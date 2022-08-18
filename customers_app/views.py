@@ -6,7 +6,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.models import DataBaseUser, Posts, Counteragent
+from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm
 from django.contrib import auth, messages
@@ -152,13 +152,13 @@ class PostsDetailView(LoginRequiredMixin, DetailView):
 
 
 class CounteragentListView(LoginRequiredMixin, ListView):
-    #template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
+    # template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
     model = Counteragent
     paginate_by = 5
 
 
 class StaffListView(LoginRequiredMixin, ListView):
-    template_name = 'customers_app/staff_list.html'  # Совпадает с именем по умолчании
+    template_name = 'customers_app/staff_list.html'
     model = DataBaseUser
     paginate_by = 5
 
@@ -168,12 +168,17 @@ class StaffListView(LoginRequiredMixin, ListView):
 
 
 class CounteragentDetail(LoginRequiredMixin, DetailView):
-    #template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
+    # template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
     model = Counteragent
 
 
+class StaffDetail(LoginRequiredMixin, DetailView):
+    template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
+    model = DataBaseUser
+
+
 class CounteragentUpdate(LoginRequiredMixin, UpdateView):
-    #template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
+    # template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
     model = Counteragent
     form_class = CounteragentUpdateForm
 
@@ -195,10 +200,5 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         if form.is_valid():
-
             form.save()
         return HttpResponseRedirect(reverse('customers_app:counteragent', args=[self.object.pk]))
-
-    def form_invalid(self, form):
-        print(form)
-        return super(CounteragentUpdate, self).form_invalid(form)

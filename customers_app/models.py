@@ -148,15 +148,15 @@ class DataBaseUser(AbstractUser):
         ('male', 'мужской'),
         ('female', 'женский')
     ]
-    surname = models.CharField(verbose_name='отчество', max_length=40, blank=True, null=True, help_text='')
+    surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, null=True, help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
-    birthday = models.DateField(verbose_name='день рождения', blank=True, null=True, help_text='')
-    access_right = models.ForeignKey(AccessLevel, verbose_name='права доступа', help_text='',
+    birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')
+    access_right = models.ForeignKey(AccessLevel, verbose_name='Права доступа', help_text='',
                                      blank=True, on_delete=models.SET_NULL, null=True)
-    access_level = models.OneToOneField(UserAccessMode, verbose_name='права доступа', help_text='',
+    access_level = models.OneToOneField(UserAccessMode, verbose_name='Права доступа', help_text='',
                                      blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
-    type_users = models.CharField(verbose_name='тип пользователя', max_length=40, choices=type_of, help_text='',
+    type_users = models.CharField(verbose_name='Тип пользователя', max_length=40, choices=type_of, help_text='',
                                   blank=True, null=True, )
     internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
                                       null=True, )
@@ -164,10 +164,10 @@ class DataBaseUser(AbstractUser):
                                   null=True, )
     personal_phone = models.CharField(verbose_name='Личный номер телефона', max_length=15, help_text='', blank=True,
                                       null=True, )
-    job = models.ForeignKey(Job, verbose_name='должность', on_delete=models.SET_NULL, null=True, help_text='')
-    divisions = models.ForeignKey(Division, verbose_name='подразделение', on_delete=models.SET_NULL, null=True,
+    job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='')
+    divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
                                   help_text='')
-    gender = models.CharField(verbose_name='пол', max_length=7, blank=True, null=True, choices=type_of_gender,
+    gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, null=True, choices=type_of_gender,
                               help_text='', default='')
 
     def __str__(self):

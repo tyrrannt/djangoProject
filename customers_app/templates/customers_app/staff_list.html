@@ -90,10 +90,10 @@
                                         <td width="30"><input type="checkbox" name="checkboxRow1"
                                                               class="checkbox-style-1 p-relative top-2" value=""/></td>
                                         <td>
-                                            <a href="{% url 'customers_app:counteragent' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'customers_app:staff' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'customers_app:counteragent' item.pk %}"><strong>{{ item|empty_item }}</strong></a>
+                                            <a href="{% url 'customers_app:staff' item.pk %}"><strong>{{ item|empty_item }}</strong></a>
                                         </td>
                                         <td>
                                             {{ item.divisions|empty_item }}
