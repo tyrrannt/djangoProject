@@ -14,4 +14,11 @@ def media_folder_products(string):
     return f'{settings.MEDIA_URL}{string}'
 
 
+def empty_item(string):
+    if not string:
+        string = ''
+    return string
+
+
+register.filter('empty_item', empty_item)
 register.filter('media_folder_products', media_folder_products)

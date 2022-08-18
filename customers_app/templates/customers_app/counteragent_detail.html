@@ -57,16 +57,18 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Полное
                                                     наименование</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponName" value="{{ object.full_name }}" required/>
+                                                    <textarea class="form-control form-control-modern" disabled
+                                                              name="couponName" rows="2"
+                                                              placeholder="Данные отсутствуют...">{{ object.full_name|empty_item }}</textarea>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Краткое
                                                     наименование</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponName" value="{{ object.short_name }}" required/>
+                                                    <textarea class="form-control form-control-modern" disabled
+                                                              name="couponName" rows="2"
+                                                              placeholder="Данные отсутствуют...">{{ object.short_name|empty_item }}</textarea>
                                                 </div>
                                             </div>
 
@@ -74,39 +76,50 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">ИНН</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponAmount" value="{{ object.inn }}" required/>
+                                                           name="couponAmount" placeholder="Данные отсутствуют..."
+                                                           value="{{ object.inn|empty_item }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">КПП</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponAmount" value="{{ object.kpp }}" required/>
+                                                           name="couponAmount" value="{{ object.kpp|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="tab-pane fade" id="usage-restriction" role="tabpanel"
                                              aria-labelledby="usage-restriction-tab">
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Тип контрагента</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Тип
+                                                    контрагента</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponMinimumSpend" value="{{ object.get_type_counteragent_display }}" placeholder="No minimum"/>
+                                                           name="couponMinimumSpend"
+                                                           value="{{ object.get_type_counteragent_display|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Юридический адрес</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Юридический
+                                                    адрес</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <textarea type="text" class="form-control form-control-modern" disabled
-                                                           name="couponMaximumSpend" rows="3">{{ object.juridical_address }}
+                                                    <textarea type="text" class="form-control form-control-modern"
+                                                              disabled
+                                                              name="couponMaximumSpend"
+                                                              rows="3">{{ object.juridical_address|empty_item }}
                                                     </textarea>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Физический адрес</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Физический
+                                                    адрес</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <textarea type="text" class="form-control form-control-modern" disabled
-                                                           name="couponAllowedEmails" rows="3">{{ object.physical_address }}
+                                                    <textarea type="text" class="form-control form-control-modern"
+                                                              disabled
+                                                              name="couponAllowedEmails"
+                                                              rows="3">{{ object.physical_address|empty_item }}
                                                     </textarea>
                                                 </div>
                                             </div>
@@ -114,14 +127,17 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponAllowedEmails" value="{{ object.email }}"/>
+                                                           name="couponAllowedEmails"
+                                                           value="{{ object.email|empty_item }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Корпоративный номер телефона</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Корпоративный
+                                                    номер телефона</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponAllowedEmails" value="{{ object.phone }}"/>
+                                                           name="couponAllowedEmails"
+                                                           value="{{ object.phone|empty_item }}"/>
                                                 </div>
                                             </div>
                                         </div>
@@ -131,24 +147,29 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Директор</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponUsageLimitPerCoupon" value="{{ object.director }}"
-                                                           placeholder="Unlimited Usage"/>
+                                                           name="couponUsageLimitPerCoupon"
+                                                           value="{{ object.director|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Главный бухгалтер</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Главный
+                                                    бухгалтер</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponLimitUsageXItems" value="{{ object.accountant }}"
-                                                           placeholder="Apply to all qualifying items in cart"/>
+                                                           name="couponLimitUsageXItems"
+                                                           value="{{ object.accountant|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Контактное лицо</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Контактное
+                                                    лицо</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="couponUsageLimitPerUser" value="{{ object.contact_person }}"
-                                                           placeholder="Unlimited Usage"/>
+                                                           name="couponUsageLimitPerUser"
+                                                           value="{{ object.contact_person|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
                                         </div>

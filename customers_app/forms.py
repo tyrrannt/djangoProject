@@ -59,7 +59,16 @@ class PostsAddForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control mb-4'
             field.help_text = ''
 
+
 class CounteragentUpdateForm(forms.ModelForm):
     class Meta:
         model = Counteragent
-        fields = '__all__'
+        fields = ('short_name', 'full_name', 'inn', 'kpp', 'type_counteragent',
+                  'juridical_address', 'physical_address', 'email', 'phone',
+                  'director', 'accountant', 'contact_person')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control form-control-modern'
+            field.help_text = ''

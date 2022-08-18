@@ -15,4 +15,5 @@ urlpatterns = [
     path('counteragent/', views.CounteragentListView.as_view(), name='counteragent_list'),
     path('counteragent/<int:pk>/', views.CounteragentDetail.as_view(), name='counteragent'),
     path('counteragent/<int:pk>/update/', views.CounteragentUpdate.as_view(), name='counteragent_update'),
+    path('staff/', views.StaffListView.as_view(), name='staff_list'),
 ]

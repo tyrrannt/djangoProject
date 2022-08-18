@@ -27,9 +27,21 @@
 
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
-
+        <div>
+            {% if form.errors %}
+                <ul class="messages">
+                    {% for message in form.errors %}
+                        <li class="{{ message.tags }}">
+                            {{ message|safe }}
+                            <a href="#" class="close">✖</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:counteragent_update' object.pk %}" method="post">
+        <form class="ecommerce-form action-buttons-fixed"
+              action="{% url 'customers_app:counteragent_update' object.pk %}" method="post">
             {% csrf_token %}
             <div class="row">
                 <div class="col">
@@ -59,7 +71,8 @@
                                                     наименование</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           name="id_full_name" value="{{ object.full_name }}" required/>
+                                                           id="id_full_name" name="full_name"
+                                                           value="{{ object.full_name }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -67,8 +80,8 @@
                                                     наименование</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           name="id_short_name" value="{{ object.short_name }}"
-                                                           required/>
+                                                           id="id_short_name" name="short_name"
+                                                           value="{{ object.short_name }}"/>
                                                 </div>
                                             </div>
 
@@ -76,14 +89,14 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">ИНН</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           name="id_inn" value="{{ object.inn }}" required/>
+                                                           id="id_inn" name="inn" value="{{ object.inn }}" required/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">КПП</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           name="id_kpp" value="{{ object.kpp }}" required/>
+                                                           id="id_kpp" name="kpp" value="{{ object.kpp }}" required/>
                                                 </div>
                                             </div>
                                         </div>
@@ -94,7 +107,7 @@
                                                     контрагента</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <select class="form-control form-control-modern"
-                                                            name="id_type_counteragent">
+                                                            id="id_type_counteragent" name="type_counteragent">
                                                         {% for key, value in object.type_of %}
                                                             <option value="{{ key }}">{{ value }}</option>
                                                         {% endfor %}
@@ -106,7 +119,7 @@
                                                     адрес</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <textarea type="text" class="form-control form-control-modern"
-                                                              name="id_juridical_address"
+                                                              id="id_juridical_address" name="juridical_address"
                                                               rows="3">{{ object.juridical_address }}
                                                     </textarea>
                                                 </div>
@@ -116,7 +129,7 @@
                                                     адрес</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <textarea type="text" class="form-control form-control-modern"
-                                                              name="id_physical_address"
+                                                              id="id_physical_address" name="physical_address"
                                                               rows="3">{{ object.physical_address }}
                                                     </textarea>
                                                 </div>
@@ -125,7 +138,7 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           name="id_email" value="{{ object.email }}"/>
+                                                           id="id_email" name="email" value="{{ object.email }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -133,7 +146,7 @@
                                                     номер телефона</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           name="id_phone" value="{{ object.phone }}"/>
+                                                           id="id_phone" name="phone" value="{{ object.phone }}"/>
                                                 </div>
                                             </div>
                                         </div>
@@ -142,9 +155,16 @@
                                             <div class="form-group row align-items-center  pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Директор</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <select class="form-control form-control-modern" name="id_director">
-                                                        {% for item in object.director__set %}
-                                                            <option value="{{ item.pk }}">{{ item.name }}</option>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_director" name="director">
+                                                        <option value="none" selected>-------</option>
+                                                        {% for item in counteragent_users %}
+                                                            {% if item == object.director %}
+                                                                <option value="{{ item.pk }}"
+                                                                        selected>{{ item }}</option>
+                                                            {% else %}
+                                                                <option value="{{ item.pk }}">{{ item }}</option>
+                                                            {% endif %}
                                                         {% endfor %}
                                                     </select>
                                                 </div>
@@ -153,18 +173,36 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Главный
                                                     бухгалтер</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern"
-                                                           name="id_accountant" value="{{ object.accountant }}"
-                                                           placeholder="Apply to all qualifying items in cart"/>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_accountant" name="accountant">
+                                                        <option value="none" selected>-------</option>
+                                                        {% for item in counteragent_users %}
+                                                            {% if item == object.accountant %}
+                                                                <option value="{{ item.pk }}"
+                                                                        selected>{{ item }}</option>
+                                                            {% else %}
+                                                                <option value="{{ item.pk }}">{{ item }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Контактное
                                                     лицо</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern"
-                                                           name="id_contact_person" value="{{ object.contact_person }}"
-                                                           placeholder="Unlimited Usage"/>
+                                                    <select class="form-control form-control-modern"
+                                                            name="contact_person" id="id_contact_person">
+                                                        <option value="none" selected>-------</option>
+                                                        {% for item in counteragent_users %}
+                                                            {% if item == object.contact_person %}
+                                                                <option value="{{ item.pk }}"
+                                                                        selected>{{ item }}</option>
+                                                            {% else %}
+                                                                <option value="{{ item.pk }}">{{ item }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
                                                 </div>
                                             </div>
                                         </div>
@@ -184,7 +222,7 @@
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="ecommerce-coupons-list.html"
+                    <a href="{% url 'customers_app:counteragent_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Отменить</a>
                 </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">

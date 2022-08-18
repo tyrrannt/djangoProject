@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from django.http import JsonResponse, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
@@ -157,6 +157,16 @@ class CounteragentListView(LoginRequiredMixin, ListView):
     paginate_by = 5
 
 
+class StaffListView(LoginRequiredMixin, ListView):
+    template_name = 'customers_app/staff_list.html'  # Совпадает с именем по умолчании
+    model = DataBaseUser
+    paginate_by = 5
+
+    def get_queryset(self):
+        qs = DataBaseUser.objects.filter(type_users='staff_member')
+        return qs
+
+
 class CounteragentDetail(LoginRequiredMixin, DetailView):
     #template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
     model = Counteragent
@@ -166,3 +176,29 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
     #template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
     model = Counteragent
     form_class = CounteragentUpdateForm
+
+    def get_context_data(self, **kwargs):
+        context = super(CounteragentUpdate, self).get_context_data(**kwargs)
+        context['counteragent_users'] = DataBaseUser.objects.all()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        content = QueryDict.copy(self.request.POST)
+        if content['director'] == 'none':
+            content.setlist('director', '')
+        if content['accountant'] == 'none':
+            content.setlist('accountant', '')
+        if content['contact_person'] == 'none':
+            content.setlist('contact_person', '')
+        self.request.POST = content
+        return super(CounteragentUpdate, self).post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        if form.is_valid():
+
+            form.save()
+        return HttpResponseRedirect(reverse('customers_app:counteragent', args=[self.object.pk]))
+
+    def form_invalid(self, form):
+        print(form)
+        return super(CounteragentUpdate, self).form_invalid(form)

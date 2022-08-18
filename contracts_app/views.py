@@ -149,7 +149,6 @@ class ContractAdd(LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
         content = QueryDict.copy(self.request.POST)
-        print(content)
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
         if content['parent_category'] == '0':
             content.setlist('parent_category', '')

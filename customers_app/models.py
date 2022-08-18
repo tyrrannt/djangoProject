@@ -192,7 +192,7 @@ class Counteragent(models.Model):
     type_counteragent = models.CharField(verbose_name='Тип контрагента', max_length=40, choices=type_of, help_text='')
     juridical_address = models.TextField(verbose_name='Юридический адрес', null=True, blank=True)
     physical_address = models.TextField(verbose_name='Физический адрес', null=True, blank=True)
-    email = models.EmailField(verbose_name='Email', null=True)
+    email = models.EmailField(verbose_name='Email', null=True, blank=True)
     phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
                              null=True, )
     base_counteragent = models.BooleanField(verbose_name='Основная организация', default=False)
