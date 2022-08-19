@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
 
+from contracts_app.templatetags.custom import empty_item
+
 
 class AccessLevel(models.Model):
     class Meta:
@@ -164,14 +166,14 @@ class DataBaseUser(AbstractUser):
                                   null=True, )
     personal_phone = models.CharField(verbose_name='Личный номер телефона', max_length=15, help_text='', blank=True,
                                       null=True, )
-    job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='')
+    job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='', blank=True)
     divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
-                                  help_text='')
+                                  help_text='', blank=True)
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, null=True, choices=type_of_gender,
                               help_text='', default='')
 
     def __str__(self):
-        return f'{self.last_name} {self.first_name} {self.surname}'
+        return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
 
 
 class Counteragent(models.Model):

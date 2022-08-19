@@ -6,9 +6,9 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode
+from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
-    CounteragentUpdateForm
+    CounteragentUpdateForm, StaffUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -156,25 +156,18 @@ class CounteragentListView(LoginRequiredMixin, ListView):
     model = Counteragent
     paginate_by = 5
 
+    def get_queryset(self):
+        qs = Counteragent.objects.all().order_by('pk')
+        return qs
 
-class StaffListView(LoginRequiredMixin, ListView):
-    template_name = 'customers_app/staff_list.html'
-    model = DataBaseUser
-    paginate_by = 5
 
-    # def get_queryset(self):
-    #     qs = DataBaseUser.objects.filter(type_users='staff_member')
-    #     return qs
+
 
 
 class CounteragentDetail(LoginRequiredMixin, DetailView):
     # template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
     model = Counteragent
 
-
-class StaffDetail(LoginRequiredMixin, DetailView):
-    template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
-    model = DataBaseUser
 
 
 class CounteragentUpdate(LoginRequiredMixin, UpdateView):
@@ -203,6 +196,47 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
             form.save()
         return HttpResponseRedirect(reverse('customers_app:counteragent', args=[self.object.pk]))
 
+class StaffListView(LoginRequiredMixin, ListView):
+    template_name = 'customers_app/staff_list.html'
+    model = DataBaseUser
+    paginate_by = 5
+
+    def get_queryset(self):
+        qs = DataBaseUser.objects.all().order_by('pk')
+        return qs
+
+class StaffDetail(LoginRequiredMixin, DetailView):
+    template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
+    model = DataBaseUser
+
 
 class StaffUpdate(LoginRequiredMixin, UpdateView):
+    template_name = 'customers_app/staff_form.html'
     model = DataBaseUser
+    form_class = StaffUpdateForm
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('customers_app:staff', args=[self.object.pk]))
+
+    def get_context_data(self, **kwargs):
+        context = super(StaffUpdate, self).get_context_data(**kwargs)
+        context['all_gender'] = DataBaseUser.type_of_gender
+        context['all_type_user'] = DataBaseUser.type_of
+        context['all_division'] = Division.objects.all()
+        context['all_job'] = Job.objects.all()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        content = QueryDict.copy(self.request.POST)
+        if content['type_users'] == 'none':
+            content.setlist('type_users', '')
+        if content['gender'] == 'none':
+            content.setlist('gender', '')
+        if content['divisions'] == 'none':
+            content.setlist('divisions', '')
+        if content['job'] == 'none':
+            content.setlist('job', '')
+        self.request.POST = content
+        return super(StaffUpdate, self).post(request, *args, **kwargs)

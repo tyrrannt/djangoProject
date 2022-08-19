@@ -19,3 +19,4 @@ class GetAllObject:
         context['division'] = all_divisions
         context['type_contract'] = all_type_of_contract
         return context
+

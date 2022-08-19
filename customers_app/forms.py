@@ -77,7 +77,12 @@ class CounteragentUpdateForm(forms.ModelForm):
 class StaffUpdateForm(forms.ModelForm):
     class Meta:
         model = DataBaseUser
-        fields = '__all__'
+        fields = (
+            # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
+            #  'phone', 'works', 'access_level', 'avatar', 'surname'
+            'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
+            'personal_phone', 'address', 'gender', 'type_users', 'divisions', 'job',
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
