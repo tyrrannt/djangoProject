@@ -24,6 +24,8 @@ def get_all_contracts(request):
     else:
         contracts_not_published = ''
         contracts_not_published_count = 0
+    # contracts_not_published = ''
+    # contracts_not_published_count = 0
     posts_not_published = Posts.objects.filter(allowed_placed=False)
     posts_not_published_count = Posts.objects.filter(allowed_placed=False).count()
 
