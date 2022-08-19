@@ -72,3 +72,15 @@ class CounteragentUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
+
+
+class StaffUpdateForm(forms.ModelForm):
+    class Meta:
+        model = DataBaseUser
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control form-control-modern'
+            field.help_text = ''

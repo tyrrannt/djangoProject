@@ -162,9 +162,9 @@ class StaffListView(LoginRequiredMixin, ListView):
     model = DataBaseUser
     paginate_by = 5
 
-    def get_queryset(self):
-        qs = DataBaseUser.objects.filter(type_users='staff_member')
-        return qs
+    # def get_queryset(self):
+    #     qs = DataBaseUser.objects.filter(type_users='staff_member')
+    #     return qs
 
 
 class CounteragentDetail(LoginRequiredMixin, DetailView):
@@ -202,3 +202,7 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
         if form.is_valid():
             form.save()
         return HttpResponseRedirect(reverse('customers_app:counteragent', args=[self.object.pk]))
+
+
+class StaffUpdate(LoginRequiredMixin, UpdateView):
+    model = DataBaseUser
