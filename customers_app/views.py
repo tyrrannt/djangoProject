@@ -5,10 +5,11 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
+from administration_app.utils import ChangeAccess
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
-    CounteragentUpdateForm, StaffUpdateForm
+    CounteragentUpdateForm, StaffUpdateForm, UserAccessModeUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -196,6 +197,10 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
             form.save()
         return HttpResponseRedirect(reverse('customers_app:counteragent', args=[self.object.pk]))
 
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
 class StaffListView(LoginRequiredMixin, ListView):
     template_name = 'customers_app/staff_list.html'
     model = DataBaseUser
@@ -217,6 +222,7 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         if form.is_valid():
+
             form.save()
         return HttpResponseRedirect(reverse('customers_app:staff', args=[self.object.pk]))
 
@@ -240,3 +246,30 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
             content.setlist('job', '')
         self.request.POST = content
         return super(StaffUpdate, self).post(request, *args, **kwargs)
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class UserAccessModeUpdate(LoginRequiredMixin, UpdateView):
+    model = UserAccessMode
+    #template_name = 'customers_app/staff_form.html'
+    form_class = UserAccessModeUpdateForm
+
+    def form_valid(self, form):
+        print(form)
+        if form.is_valid():
+            form.save()
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_context_data(self, **kwargs):
+        context = super(UserAccessModeUpdate, self).get_context_data(**kwargs)
+        context['all_access'] = UserAccessMode.access_level
+        return context
+
+    def post(self, request, *args, **kwargs):
+
+        return super(UserAccessModeUpdate, self).post(request, *args, **kwargs)

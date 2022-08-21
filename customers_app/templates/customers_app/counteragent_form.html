@@ -29,14 +29,18 @@
         {% include 'library_app/breadcrumb.html' %}
         <div>
             {% if form.errors %}
-                <ul class="messages">
-                    {% for message in form.errors %}
-                        <li class="{{ message.tags }}">
-                            {{ message|safe }}
-                            <a href="#" class="close">✖</a>
-                        </li>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
                     {% endfor %}
-                </ul>
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
             {% endif %}
         </div>
         <!-- start: page -->

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
+from django.urls import reverse
 
 from contracts_app.templatetags.custom import empty_item
 
@@ -11,7 +12,7 @@ class AccessLevel(models.Model):
         verbose_name_plural = 'Уровни доступа'
 
     level = models.PositiveIntegerField(verbose_name='Уровень доступа', default=0)
-    name = models.CharField(verbose_name='', max_length=26, blank=True)
+    name = models.CharField(verbose_name='', max_length=26, blank=True, default='')
     description = models.TextField(verbose_name='Описание категории', blank=True)
 
     def __str__(self):
@@ -66,13 +67,16 @@ class UserAccessMode(models.Model):
             name += '0'
         return f'{name}'
 
+    def get_absolute_url(self):
+        return reverse('customers_app:staff', kwargs={'pk': self.databaseuser.pk})
+
 class Job(models.Model):
     class Meta:
         verbose_name = 'Должность'
         verbose_name_plural = 'Должности'
 
-    code = models.CharField(verbose_name='код должности', max_length=100, help_text='', default='000')
-    name = models.CharField(verbose_name='должность', max_length=100, help_text='')
+    code = models.CharField(verbose_name='код должности', max_length=5, help_text='', default='')
+    name = models.CharField(verbose_name='должность', max_length=200, help_text='')
 
     def __str__(self):
         return f'{self.name}'
@@ -150,7 +154,7 @@ class DataBaseUser(AbstractUser):
         ('male', 'мужской'),
         ('female', 'женский')
     ]
-    surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, null=True, help_text='')
+    surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, default='', help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')
     access_right = models.ForeignKey(AccessLevel, verbose_name='Права доступа', help_text='',
@@ -159,17 +163,17 @@ class DataBaseUser(AbstractUser):
                                      blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='Тип пользователя', max_length=40, choices=type_of, help_text='',
-                                  blank=True, null=True, )
+                                  blank=True, default='')
     internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
-                                      null=True, )
+                                      default='', )
     work_phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
-                                  null=True, )
+                                  default='', )
     personal_phone = models.CharField(verbose_name='Личный номер телефона', max_length=15, help_text='', blank=True,
-                                      null=True, )
+                                      default='', )
     job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='', blank=True)
     divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
                                   help_text='', blank=True)
-    gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, null=True, choices=type_of_gender,
+    gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
                               help_text='', default='')
 
     def __str__(self):
@@ -183,20 +187,21 @@ class Counteragent(models.Model):
 
     short_name = models.CharField(verbose_name='Наименование', max_length=150, default='', help_text='')
     full_name = models.CharField(verbose_name='Полное наименование', max_length=250, default='', help_text='')
-    inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, null=True, help_text='')
-    kpp = models.CharField(verbose_name='КПП', max_length=9, blank=True, null=True, help_text='')
+    inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='', help_text='')
+    kpp = models.CharField(verbose_name='КПП', max_length=9, blank=True, default='', help_text='')
     type_of = [
         ('juridical_person', 'юридическое лицо'),
         ('physical_person', 'физическое лицо'),
         ('separate_subdivision', 'обособленное подразделение'),
         ('government_agency', 'государственный орган'),
     ]
-    type_counteragent = models.CharField(verbose_name='Тип контрагента', max_length=40, choices=type_of, help_text='')
-    juridical_address = models.TextField(verbose_name='Юридический адрес', null=True, blank=True)
-    physical_address = models.TextField(verbose_name='Физический адрес', null=True, blank=True)
-    email = models.EmailField(verbose_name='Email', null=True, blank=True)
+    type_counteragent = models.CharField(verbose_name='Тип контрагента', max_length=40, choices=type_of, help_text='',
+                                         default='')
+    juridical_address = models.TextField(verbose_name='Юридический адрес', default='', blank=True)
+    physical_address = models.TextField(verbose_name='Физический адрес', default='', blank=True)
+    email = models.EmailField(verbose_name='Email', default='', blank=True)
     phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
-                             null=True, )
+                             default='', )
     base_counteragent = models.BooleanField(verbose_name='Основная организация', default=False)
     director = models.ForeignKey(DataBaseUser, verbose_name='Директор', on_delete=models.SET_NULL, null=True,
                                  blank=True,
@@ -218,7 +223,7 @@ class Posts(models.Model):
         verbose_name_plural = 'Сообщения'
 
     creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
-    post_description = models.TextField(verbose_name='Текст поста', blank=True)
+    post_description = models.TextField(verbose_name='Текст поста', blank=True, default='')
     post_divisions = models.ManyToManyField(Division, verbose_name='Подразделения поста', )
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
 

@@ -185,6 +185,8 @@ class ContractAdd(LoginRequiredMixin, CreateView):
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
 
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 class ContractDetail(LoginRequiredMixin, DetailView):
@@ -280,6 +282,9 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('contracts_app:detail', {'pk': self.object.pk})
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 class ContractPostAdd(LoginRequiredMixin, CreateView):

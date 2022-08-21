@@ -1,5 +1,5 @@
 from contracts_app.models import TypeContract, TypeProperty, Contract
-from customers_app.models import DataBaseUser, Counteragent, Division
+from customers_app.models import DataBaseUser, Counteragent, Division, UserAccessMode
 
 
 class GetAllObject:
@@ -45,3 +45,10 @@ def transliterate(name):
     for key in slovar:
         name = name.replace(key, slovar[key])
     return name
+
+
+def ChangeAccess(obj):
+    # for key, value in kwargs:
+    #     obj[key] = True
+    print(9)
+

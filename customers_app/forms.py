@@ -1,5 +1,5 @@
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
-from .models import DataBaseUser, Posts, Counteragent
+from .models import DataBaseUser, Posts, Counteragent, UserAccessMode
 from django import forms
 
 
@@ -48,6 +48,17 @@ class DataBaseUserUpdateForm(UserChangeForm):
                 field.widget = forms.HiddenInput()
 
 
+class DataBaseUserAddForm(UserChangeForm):
+    class Meta:
+        model = DataBaseUser
+        fields = (
+            #  'first_name', 'last_name', 'email', 'birthday',  'access_right',
+            'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
+            'personal_phone', 'avatar', 'address', 'access_level', 'username',  'type_users',
+            'password', 'job', 'divisions'
+        )
+
+
 class PostsAddForm(forms.ModelForm):
     class Meta:
         model = Posts
@@ -74,6 +85,15 @@ class CounteragentUpdateForm(forms.ModelForm):
             field.help_text = ''
 
 
+class CounteragentAddForm(forms.ModelForm):
+    class Meta:
+        model = Counteragent
+        fields = ('short_name', 'full_name', 'inn', 'kpp', 'type_counteragent',
+                  'juridical_address', 'physical_address', 'email', 'phone',
+                  'director', 'accountant', 'contact_person')
+
+
+
 class StaffUpdateForm(forms.ModelForm):
     class Meta:
         model = DataBaseUser
@@ -89,3 +109,11 @@ class StaffUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
+
+class UserAccessModeUpdateForm(forms.ModelForm):
+    class Meta:
+        model = UserAccessMode
+        fields = ('contracts_access_view', 'contracts_access_add', 'contracts_access_edit',
+                  'contracts_access_agreement', 'posts_access_view', 'posts_access_add',
+                  'posts_access_edit', 'posts_access_agreement', 'guide_access_view',
+                  'guide_access_add', 'guide_access_edit', 'guide_access_agreement')

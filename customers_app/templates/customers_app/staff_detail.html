@@ -15,7 +15,7 @@
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
+
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
@@ -232,6 +232,14 @@
                         <i class="bx bx-pencil text-4 me-2"></i> Изменить
                     </a>
                 </div>
+                {% if object.access_level %}
+                <div class="col-12 col-md-auto">
+                    <a href="{% url 'customers_app:useraccessmode_update' object.access_level.pk %}"
+                       class="btn btn-secondary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-pencil text-4 me-2"></i> Изменить права
+                    </a>
+                </div>
+                {% endif %}
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'customers_app:staff_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>

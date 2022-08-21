@@ -28,12 +28,24 @@
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
         <div>
-
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
         </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:staff_update' object.pk %}"
-              method="post">
-        {% csrf_token %}
+        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:staff_update' object.pk %}" method="post" prefix="main">
+            {% csrf_token %}
             <div class="row">
                 <div class="col">
                     <section class="card card-modern card-big-info">
@@ -61,8 +73,7 @@
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="tab-content" id="tabContent">
-                                        <div class="tab-pane fade show active" id="general" role="tabpanel"
-                                             aria-labelledby="general-tab">
+                                        <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Фамилия</label>
                                                 <div class="col-lg-7 col-xl-6">
@@ -95,14 +106,15 @@
                                                            name="birthday" id="id_birthday"
                                                            placeholder="Данные отсутствуют..."
                                                            value="{{ object.birthday|date:"c" }}"
-                                                    data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                                           data-plugin-datepicker
+                                                           data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Пол</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <select name="gender" id="id_gender" class="form-control form-control-modern">
+                                                    <select name="gender" id="id_gender"
+                                                            class="form-control form-control-modern">
                                                         <option value="none" selected>-------</option>
                                                         {% for key, value in all_gender %}
                                                             {% if key == object.gender %}
@@ -121,7 +133,8 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Тип
                                                     пользователя</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <select name="type_users" id="id_type_users" class="form-control form-control-modern">
+                                                    <select name="type_users" id="id_type_users"
+                                                            class="form-control form-control-modern">
                                                         <option value="none" selected>-------</option>
                                                         {% for key, value in all_type_user %}
                                                             {% if key == object.type_users %}
@@ -156,7 +169,7 @@
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
                                                            name="personal_phone" id="id_personal_phone"
-                                                            value="{{ object.personal_phone|empty_item }}"/>
+                                                           value="{{ object.personal_phone|empty_item }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -183,11 +196,13 @@
                                             <div class="form-group row align-items-center  pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Подразделение</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <select name="divisions" id="id_divisions" class="form-control form-control-modern">
+                                                    <select name="divisions" id="id_divisions"
+                                                            class="form-control form-control-modern">
                                                         <option value="none" selected>-------</option>
                                                         {% for item in all_division %}
                                                             {% if item == object.divisions %}
-                                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                                <option value="{{ item.pk }}"
+                                                                        selected>{{ item }}</option>
                                                             {% else %}
                                                                 <option value="{{ item.pk }}">{{ item }}</option>
                                                             {% endif %}
@@ -198,11 +213,13 @@
                                             <div class="form-group row align-items-center  pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Должность</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <select name="job" id="id_job" class="form-control form-control-modern">
+                                                    <select name="job" id="id_job"
+                                                            class="form-control form-control-modern">
                                                         <option value="none" selected>-------</option>
                                                         {% for item in all_job %}
                                                             {% if item == object.job %}
-                                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                                <option value="{{ item.pk }}"
+                                                                        selected>{{ item }}</option>
                                                             {% else %}
                                                                 <option value="{{ item.pk }}">{{ item }}</option>
                                                             {% endif %}
@@ -215,59 +232,40 @@
                                         <div class="tab-pane fade" id="access" role="tabpanel"
                                              aria-labelledby="access-tab">
                                             <div class="form-group row align-items-center  pb-1">
-                                                <table class="table table-ecommerce-simple table-striped mb-0"
-                                                       id="datatable-ecommerce-list" style="min-width: 550px;">
-                                                    <thead>
-                                                    <tr>
-                                                        <th width="24%">Наименование</th>
-                                                        <th width="40%">Уровень доступа</th>
-                                                        <th width="12%">Добавление</th>
-                                                        <th width="12%">Редактирование</th>
-                                                        <th width="12%">Публикация</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    <tr>
-                                                        <td>Договора</td>
-                                                        <td>{{ object.access_level.get_contracts_access_view_display }}</td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.contracts_access_add %}checked{% endif %}
-                                                                   ></td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.contracts_access_edit %}checked{% endif %}
-                                                                   ></td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.contracts_access_agreement %}checked{% endif %}
-                                                                   ></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Записи</td>
-                                                        <td>{{ object.access_level.get_posts_access_view_display }}</td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.posts_access_add %}checked{% endif %}
-                                                                   ></td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.posts_access_edit %}checked{% endif %}
-                                                                   ></td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.posts_access_agreement %}checked{% endif %}
-                                                                   ></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Физические лица</td>
-                                                        <td>{{ object.access_level.get_guide_access_view_display }}</td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.guide_access_add %}checked{% endif %}
-                                                                   ></td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.guide_access_edit %}checked{% endif %}
-                                                                   ></td>
-                                                        <td><input type="checkbox"
-                                                                   {% if object.access_level.guide_access_agreement %}checked{% endif %}
-                                                                   ></td>
-                                                    </tr>
-                                                    </tbody>
-                                                </table>
+                                                <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list" style="min-width: 550px;">
+											<thead>
+												<tr>
+													<th width="24%">Наименование</th>
+													<th width="40%">Уровень доступа</th>
+													<th width="12%">Добавление</th>
+													<th width="12%">Редактирование</th>
+                                                    <th width="12%">Публикация</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr>
+													<td>Договора</td>
+													<td>{{ object.access_level.get_contracts_access_view_display }}</td>
+													<td><input type="checkbox" {% if object.access_level.contracts_access_add  %}checked{% endif %} disabled></td>
+													<td><input type="checkbox" {% if object.access_level.contracts_access_edit  %}checked{% endif %} disabled></td>
+                                                    <td><input type="checkbox" {% if object.access_level.contracts_access_agreement %}checked{% endif %} disabled></td>
+												</tr>
+                                                <tr>
+													<td>Записи</td>
+													<td>{{ object.access_level.get_posts_access_view_display }}</td>
+													<td><input type="checkbox" {% if object.access_level.posts_access_add  %}checked{% endif %} disabled></td>
+													<td><input type="checkbox" {% if object.access_level.posts_access_edit  %}checked{% endif %} disabled></td>
+                                                    <td><input type="checkbox" {% if object.access_level.posts_access_agreement %}checked{% endif %} disabled></td>
+												</tr>
+                                                <tr>
+													<td>Физические лица</td>
+													<td>{{ object.access_level.get_guide_access_view_display }}</td>
+													<td><input type="checkbox" {% if object.access_level.guide_access_add  %}checked{% endif %} disabled></td>
+													<td><input type="checkbox" {% if object.access_level.guide_access_edit  %}checked{% endif %} disabled></td>
+                                                    <td><input type="checkbox" {% if object.access_level.guide_access_agreement %}checked{% endif %} disabled></td>
+												</tr>
+                                            </tbody>
+                                            </table>
                                             </div>
                                         </div>
                                     </div>
@@ -279,7 +277,7 @@
             </div>
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
-                    <button type="submit"
+                    <button type="submit" prefix="main"
                             class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить

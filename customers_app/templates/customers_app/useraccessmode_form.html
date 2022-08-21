@@ -1,0 +1,168 @@
+{% extends 'contracts_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0">
+        {% include 'library_app/breadcrumb.html' %}
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <!-- start: page -->
+        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:useraccessmode_update' object.pk %}"
+              method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col">
+                    <section class="card card-modern card-big-info">
+                        <div class="card-body">
+                            <div class="tabs-modern row" style="min-height: 490px;">
+                                <div class="col-lg-2-5 col-xl-1-5">
+                                    <div class="nav flex-column" id="tab" role="tablist" aria-orientation="vertical">
+                                            <a class="nav-link active" id="access-tab" data-bs-toggle="pill"
+                                               data-bs-target="#access" role="tab" aria-controls="access"
+                                               aria-selected="true"><i class="bx bx-upside-down me-2"></i> Уровни
+                                                доступа</a>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3-5 col-xl-4-5">
+                                    <div class="tab-content" id="tabContent">
+                                        <div class="tab-pane fade show active" id="access" role="tabpanel"
+                                             aria-labelledby="access-tab">
+                                            <div class="form-group row align-items-center  pb-1">
+                                                <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list" style="min-width: 550px;">
+											<thead>
+												<tr>
+													<th width="24%">Наименование</th>
+													<th width="40%">Уровень доступа</th>
+													<th width="12%">Добавление</th>
+													<th width="12%">Редактирование</th>
+                                                    <th width="12%">Публикация</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr>
+													<td>Договора</td>
+													<td>
+                                                        <select name="contracts_access_view" id="id_contracts_access_view"
+                                                            class="form-control form-control-modern">
+                                                        {% for key, value in all_access %}
+                                                            {% if key == object.contracts_access_view %}
+                                                                <option value="{{ key }}" selected>{{ value }}</option>
+                                                            {% else %}
+                                                                <option value="{{ key }}">{{ value }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        </select>
+                                                    </td>
+													<td><input type="checkbox" name="contracts_access_add" id="id_contracts_access_add" {% if object.contracts_access_add  %}checked{% endif %}></td>
+													<td><input type="checkbox" name="contracts_access_edit" id="id_contracts_access_edit" {% if object.contracts_access_edit  %}checked{% endif %}></td>
+                                                    <td><input type="checkbox" name="contracts_access_agreement" id="id_contracts_access_agreement" {% if object.contracts_access_agreement %}checked{% endif %}></td>
+												</tr>
+                                                <tr>
+													<td>Записи</td>
+													<td>
+                                                        <select name="posts_access_view" id="id_posts_access_view"
+                                                            class="form-control form-control-modern">
+                                                        {% for key, value in all_access %}
+                                                            {% if key == object.posts_access_view %}
+                                                                <option value="{{ key }}" selected>{{ value }}</option>
+                                                            {% else %}
+                                                                <option value="{{ key }}">{{ value }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        </select>
+                                                    </td>
+													<td><input type="checkbox" name="posts_access_add" id="id_posts_access_add" {% if object.posts_access_add  %}checked{% endif %}></td>
+													<td><input type="checkbox" name="posts_access_edit" id="id_posts_access_edit" {% if object.posts_access_edit  %}checked{% endif %}></td>
+                                                    <td><input type="checkbox" name="posts_access_agreement" id="id_posts_access_agreement" {% if object.posts_access_agreement %}checked{% endif %}></td>
+												</tr>
+                                                <tr>
+													<td>Физические лица</td>
+													<td>
+                                                        <select name="guide_access_view" id="id_guide_access_view"
+                                                            class="form-control form-control-modern">
+                                                        {% for key, value in all_access %}
+                                                            {% if key == object.guide_access_view %}
+                                                                <option value="{{ key }}" selected>{{ value }}</option>
+                                                            {% else %}
+                                                                <option value="{{ key }}">{{ value }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        </select>
+                                                    </td>
+													<td><input type="checkbox" name="guide_access_add" id="id_guide_access_add" {% if object.guide_access_add  %}checked{% endif %}></td>
+													<td><input type="checkbox" name="guide_access_edit" id="id_guide_access_edit" {% if object.guide_access_edit  %}checked{% endif %}></td>
+                                                    <td><input type="checkbox" name="guide_access_agreement" id="id_guide_access_agreement" {% if object.guide_access_agreement %}checked{% endif %}></td>
+												</tr>
+                                            </tbody>
+                                            </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="row action-buttons">
+                <div class="col-12 col-md-auto">
+                    <button type="submit" prefix="main"
+                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            data-loading-text="Loading...">
+                        <i class="bx bx-save text-4 me-2"></i> Сохранить
+                    </button>
+
+                </div>
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                    <a href="{% url 'customers_app:staff' object.databaseuser.pk %}"
+                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                </div>
+            </div>
+        </form>
+        <!-- end: page -->
+    </section>
+    <!-- end: page -->
+
+{% endblock %}
