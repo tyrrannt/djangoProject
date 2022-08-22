@@ -21,9 +21,9 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'contracts_app:create' %}"
+                                            <a href="#"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить договор </a>
+                                                Добавить контрагента </a>
                                         </div>
                                     {% endif %}
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
@@ -34,11 +34,8 @@
 
                                                 <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
                                                 <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер договора</option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата договора</option>
-                                                <option value="4" {% if sort_item == 4 %}selected{% endif %}>Тип договора</option>
-                                                <option value="5" {% if sort_item == 5 %}selected{% endif %}>Подразделение</option>
-
+                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>ИНН</option>
+                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>КПП</option>
                                             </select>
                                         </div>
                                     </div>
@@ -77,8 +74,9 @@
                                                           class="select-all checkbox-style-1 p-relative top-2"
                                                           value=""/></th>
                                     <th width="8%">Код</th>
-                                    <th width="79%">Контрагент</th>
-                                    <th width="12%">Статус</th>
+                                    <th width="67%">Контрагент</th>
+                                    <th width="12%">ИНН</th>
+                                    <th width="12%">КПП</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -92,13 +90,8 @@
                                         <td>
                                             <a href="{% url 'customers_app:counteragent' item.pk %}"><strong>{{ item.short_name }}</strong></a>
                                         </td>
-                                        <td>
-                                            {% if item.closing_date == null or item.closing_date < now %}
-                                                <span class="ecommerce-status active">Действующий</span>
-                                            {% else %}
-                                                <span class="ecommerce-status deactive">Не действующий</span>
-                                            {% endif %}
-                                        </td>
+                                        <td>{{ item.inn }}</td>
+                                        <td>{{ item.kpp }}</td>
                                     </tr>
                                 {% endfor %}
                                 </tbody>

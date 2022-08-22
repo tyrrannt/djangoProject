@@ -27,7 +27,6 @@ def index(request):
     for item in document_types:
         values.append(Contract.objects.filter(type_of_document=item).count())
     types_count = dict(zip(category, values))
-    print(types_count)
     return render(request, 'customers_app/customers.html', context={'types_count': types_count})
 
 
@@ -257,7 +256,6 @@ class UserAccessModeUpdate(LoginRequiredMixin, UpdateView):
     form_class = UserAccessModeUpdateForm
 
     def form_valid(self, form):
-        print(form)
         if form.is_valid():
             form.save()
         return super().form_valid(form)
@@ -271,5 +269,4 @@ class UserAccessModeUpdate(LoginRequiredMixin, UpdateView):
         return context
 
     def post(self, request, *args, **kwargs):
-
         return super(UserAccessModeUpdate, self).post(request, *args, **kwargs)
