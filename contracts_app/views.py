@@ -60,8 +60,7 @@ class ContractList(LoginRequiredMixin, ListView):
                 self.item_sorted = 'pk'
         except Exception as _ex:
             self.item_sorted = 'pk'
-        return Contract.objects.filter(Q(allowed_placed=True),
-                                       Q(access__pk__gte=user_access.access_right.pk)).order_by(self.item_sorted)
+        return Contract.objects.filter(allowed_placed=True).order_by(self.item_sorted)
 
     def get(self, request, *args, **kwargs):
         result = request.GET.get('result', None)
@@ -115,7 +114,7 @@ class ContractSearch(LoginRequiredMixin, ListView):
                 query &= Q(contract_number__contains=cn)
             if sn:
                 query &= Q(subject_contract__contains=sn)
-            query &= Q(access__pk__gte=self.request.user.access_right.pk)
+            # query &= Q(access__pk__gte=self.request.user.access_right.pk)
             return Contract.objects.filter(query).order_by('pk')
         return qs
 
@@ -171,17 +170,21 @@ class ContractAdd(LoginRequiredMixin, CreateView):
         Проверка прав доступа к созданию записи в таблице. Если прав нет, то пользователь перенаправляется в общую базу.
         """
         pk = int(self.request.user.pk)
-        if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_add:
-            get_parameters = self.request.GET.get('parent')
-            if get_parameters:
-                object_item = Contract.objects.get(pk=get_parameters)
-                context = {'parameter1': object_item.contract_counteragent,
-                           'parameter2': object_item}
-                return render(request, 'contracts_app/contract_form.html', context)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_add:
+                get_parameters = self.request.GET.get('parent')
+                if get_parameters:
+                    object_item = Contract.objects.get(pk=get_parameters)
+                    context = {'parameter1': object_item.contract_counteragent,
+                               'parameter2': object_item}
+                    return render(request, 'contracts_app/contract_form.html', context)
 
-            return super(ContractAdd, self).get(request, *args, **kwargs)
+                return super(ContractAdd, self).get(request, *args, **kwargs)
 
-        else:
+            else:
+                url_match = reverse_lazy('contracts_app:index')
+                return redirect(url_match)
+        except Exception as _ex:
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
 
@@ -196,10 +199,14 @@ class ContractDetail(LoginRequiredMixin, DetailView):
     model = Contract
 
     def dispatch(self, request, *args, **kwargs):
-        detail_obj = int(self.get_object().access.level)
-        user_obj = int(self.request.user.access_level.contracts_access_view)
+        try:
+            detail_obj = int(self.get_object().access.level)
+            user_obj = int(self.request.user.access_level.contracts_access_view)
 
-        if detail_obj < user_obj:
+            if detail_obj < user_obj:
+                url_match = reverse_lazy('contracts_app:index')
+                return redirect(url_match)
+        except Exception as _ex:
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
         return super(ContractDetail, self).dispatch(request, *args, **kwargs)
@@ -263,9 +270,13 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
         Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
         """
         pk = int(self.request.user.pk)
-        if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_edit:
-            return super(ContractUpdate, self).get(request, *args, **kwargs)
-        else:
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_edit:
+                return super(ContractUpdate, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('contracts_app:index')
+                return redirect(url_match)
+        except Exception as _ex:
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
 

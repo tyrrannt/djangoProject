@@ -109,11 +109,3 @@ class StaffUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
-
-class UserAccessModeUpdateForm(forms.ModelForm):
-    class Meta:
-        model = UserAccessMode
-        fields = ('contracts_access_view', 'contracts_access_add', 'contracts_access_edit',
-                  'contracts_access_agreement', 'posts_access_view', 'posts_access_add',
-                  'posts_access_edit', 'posts_access_agreement', 'guide_access_view',
-                  'guide_access_add', 'guide_access_edit', 'guide_access_agreement')

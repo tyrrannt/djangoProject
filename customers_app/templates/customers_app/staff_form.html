@@ -245,24 +245,57 @@
 											<tbody>
 												<tr>
 													<td>Договора</td>
-													<td>{{ object.access_level.get_contracts_access_view_display }}</td>
-													<td><input type="checkbox" {% if object.access_level.contracts_access_add  %}checked{% endif %} disabled></td>
-													<td><input type="checkbox" {% if object.access_level.contracts_access_edit  %}checked{% endif %} disabled></td>
-                                                    <td><input type="checkbox" {% if object.access_level.contracts_access_agreement %}checked{% endif %} disabled></td>
+													<td>
+                                                        <select name="contracts_access_view" id="id_contracts_access_view"
+                                                            class="form-control form-control-modern">
+                                                        {% for item in all_access %}
+                                                            {% if item == object.access_level.contracts_access_view %}
+                                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                            {% else %}
+                                                                <option value="{{ item.pk }}">{{ item }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        </select>
+                                                    </td>
+													<td><input type="checkbox" name="contracts_access_add" id="id_contracts_access_add" {% if object.access_level.contracts_access_add  %}checked{% endif %}></td>
+													<td><input type="checkbox" name="contracts_access_edit" id="id_contracts_access_edit" {% if object.access_level.contracts_access_edit  %}checked{% endif %}></td>
+                                                    <td><input type="checkbox" name="contracts_access_agreement" id="id_contracts_access_agreement" {% if object.access_level.contracts_access_agreement %}checked{% endif %}></td>
 												</tr>
                                                 <tr>
 													<td>Записи</td>
-													<td>{{ object.access_level.get_posts_access_view_display }}</td>
-													<td><input type="checkbox" {% if object.access_level.posts_access_add  %}checked{% endif %} disabled></td>
-													<td><input type="checkbox" {% if object.access_level.posts_access_edit  %}checked{% endif %} disabled></td>
-                                                    <td><input type="checkbox" {% if object.access_level.posts_access_agreement %}checked{% endif %} disabled></td>
+													<td>
+                                                        <select name="posts_access_view" id="id_posts_access_view"
+                                                            class="form-control form-control-modern">
+                                                        {% for item in all_access %}
+                                                            {% if item == object.access_level.posts_access_view %}
+                                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                            {% else %}
+                                                                <option value="{{ item.pk }}">{{ item }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        </select>
+                                                    </td>
+													<td><input type="checkbox" name="posts_access_add" id="id_posts_access_add" {% if object.access_level.posts_access_add  %}checked{% endif %}></td>
+													<td><input type="checkbox" name="posts_access_edit" id="id_posts_access_edit" {% if object.access_level.posts_access_edit  %}checked{% endif %}></td>
+                                                    <td><input type="checkbox" name="posts_access_agreement" id="id_posts_access_agreement" {% if object.access_level.posts_access_agreement %}checked{% endif %}></td>
 												</tr>
                                                 <tr>
 													<td>Физические лица</td>
-													<td>{{ object.access_level.get_guide_access_view_display }}</td>
-													<td><input type="checkbox" {% if object.access_level.guide_access_add  %}checked{% endif %} disabled></td>
-													<td><input type="checkbox" {% if object.access_level.guide_access_edit  %}checked{% endif %} disabled></td>
-                                                    <td><input type="checkbox" {% if object.access_level.guide_access_agreement %}checked{% endif %} disabled></td>
+													<td>
+                                                        <select name="guide_access_view" id="id_guide_access_view"
+                                                            class="form-control form-control-modern">
+                                                        {% for item in all_access %}
+                                                            {% if item == object.access_level.guide_access_view %}
+                                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                            {% else %}
+                                                                <option value="{{ item.pk }}">{{ item }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        </select>
+                                                    </td>
+													<td><input type="checkbox" name="guide_access_add" id="id_guide_access_add" {% if object.access_level.guide_access_add  %}checked{% endif %}></td>
+													<td><input type="checkbox" name="guide_access_edit" id="id_guide_access_edit" {% if object.access_level.guide_access_edit  %}checked{% endif %}></td>
+                                                    <td><input type="checkbox" name="guide_access_agreement" id="id_guide_access_agreement" {% if object.access_level.guide_access_agreement %}checked{% endif %}></td>
 												</tr>
                                             </tbody>
                                             </table>

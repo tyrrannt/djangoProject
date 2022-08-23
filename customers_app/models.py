@@ -135,8 +135,6 @@ class DataBaseUser(AbstractUser):
     surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, default='', help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')
-    access_right = models.ForeignKey(AccessLevel, verbose_name='Права доступа', help_text='',
-                                     blank=True, on_delete=models.SET_NULL, null=True)
     access_level = models.OneToOneField(UserAccessMode, verbose_name='Права доступа', help_text='',
                                         blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)

@@ -5,11 +5,11 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import ChangeAccess, Med
+from administration_app.utils import ChangeAccess, Med, boolean_return
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job
+from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
-    CounteragentUpdateForm, StaffUpdateForm, UserAccessModeUpdateForm
+    CounteragentUpdateForm, StaffUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -161,13 +161,9 @@ class CounteragentListView(LoginRequiredMixin, ListView):
         return qs
 
 
-
-
-
 class CounteragentDetail(LoginRequiredMixin, DetailView):
     # template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
     model = Counteragent
-
 
 
 class CounteragentUpdate(LoginRequiredMixin, UpdateView):
@@ -210,6 +206,7 @@ class StaffListView(LoginRequiredMixin, ListView):
         qs = DataBaseUser.objects.all().order_by('pk')
         return qs
 
+
 class StaffDetail(LoginRequiredMixin, DetailView):
     template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
     model = DataBaseUser
@@ -222,7 +219,6 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         if form.is_valid():
-
             form.save()
         return HttpResponseRedirect(reverse('customers_app:staff', args=[self.object.pk]))
 
@@ -232,10 +228,12 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
         context['all_type_user'] = DataBaseUser.type_of
         context['all_division'] = Division.objects.all()
         context['all_job'] = Job.objects.all()
+        context['all_access'] = AccessLevel.objects.all().reverse()
         return context
 
     def post(self, request, *args, **kwargs):
         content = QueryDict.copy(self.request.POST)
+
         if content['type_users'] == 'none':
             content.setlist('type_users', '')
         if content['gender'] == 'none':
@@ -245,29 +243,44 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
         if content['job'] == 'none':
             content.setlist('job', '')
         self.request.POST = content
+        if self.form_valid:
+            obj_user = DataBaseUser.objects.get(pk=kwargs['pk'])
+            contracts_access_view = AccessLevel.objects.get(pk=int(content['contracts_access_view']))
+            posts_access_view = AccessLevel.objects.get(pk=int(content['posts_access_view']))
+            guide_access_view = AccessLevel.objects.get(pk=int(content['guide_access_view']))
+            obj_access = UserAccessMode(
+                contracts_access_view=contracts_access_view,
+                contracts_access_add=boolean_return(request, 'contracts_access_add'),
+                contracts_access_edit=boolean_return(request, 'contracts_access_edit'),
+                contracts_access_agreement=boolean_return(request, 'contracts_access_agreement'),
+                posts_access_view=posts_access_view,
+                posts_access_add=boolean_return(request, 'posts_access_add'),
+                posts_access_edit=boolean_return(request, 'posts_access_edit'),
+                posts_access_agreement=boolean_return(request, 'posts_access_agreement'),
+                guide_access_view=guide_access_view,
+                guide_access_add=boolean_return(request, 'guide_access_add'),
+                guide_access_edit=boolean_return(request, 'guide_access_edit'),
+                guide_access_agreement=boolean_return(request, 'guide_access_agreement')
+            )
+            if not obj_user.access_level:
+                obj_access.save()
+                obj_user.access_level = obj_access
+                obj_user.save()
+            else:
+                obj_access = UserAccessMode.objects.filter(pk=obj_user.access_level.pk)
+                obj_access.update(contracts_access_view=contracts_access_view,
+                                  contracts_access_add=boolean_return(request, 'contracts_access_add'),
+                                  contracts_access_edit=boolean_return(request, 'contracts_access_edit'),
+                                  contracts_access_agreement=boolean_return(request, 'contracts_access_agreement'),
+                                  posts_access_view=posts_access_view,
+                                  posts_access_add=boolean_return(request, 'posts_access_add'),
+                                  posts_access_edit=boolean_return(request, 'posts_access_edit'),
+                                  posts_access_agreement=boolean_return(request, 'posts_access_agreement'),
+                                  guide_access_view=guide_access_view,
+                                  guide_access_add=boolean_return(request, 'guide_access_add'),
+                                  guide_access_edit=boolean_return(request, 'guide_access_edit'),
+                                  guide_access_agreement=boolean_return(request, 'guide_access_agreement'))
         return super(StaffUpdate, self).post(request, *args, **kwargs)
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
-
-
-class UserAccessModeUpdate(LoginRequiredMixin, UpdateView):
-    model = UserAccessMode
-    #template_name = 'customers_app/staff_form.html'
-    form_class = UserAccessModeUpdateForm
-
-    def form_valid(self, form):
-        if form.is_valid():
-            form.save()
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form))
-
-    def get_context_data(self, **kwargs):
-        context = super(UserAccessModeUpdate, self).get_context_data(**kwargs)
-        context['all_access'] = UserAccessMode.access_level
-        return context
-
-    def post(self, request, *args, **kwargs):
-        return super(UserAccessModeUpdate, self).post(request, *args, **kwargs)

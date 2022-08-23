@@ -1,5 +1,7 @@
 import pathlib
 
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
 from docxtpl import DocxTemplate
 
 from contracts_app.models import TypeContract, TypeProperty, Contract
@@ -57,6 +59,7 @@ def ChangeAccess(obj):
     #     obj[key] = True
     print(9)
 
+
 def Med(request):
     doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
     context = {'gender': request.get_gender_display(),
@@ -66,3 +69,10 @@ def Med(request):
                'FIO': request}
     doc.render(context)
     doc.save(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/generated_doc.docx'))
+
+
+def boolean_return(request, check_string):
+    is_checked = request.POST.get(check_string, False)
+    if is_checked == 'on':
+        return True
+    return False
