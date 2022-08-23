@@ -18,8 +18,11 @@ def get_all_contracts(request):
     all_access = AccessLevel.objects.all()
     all_type_of_document = TypeDocuments.objects.all()
     if not request.user.is_anonymous:
-        contracts_not_published = Contract.objects.filter(Q(allowed_placed=False),
+        try:
+            contracts_not_published = Contract.objects.filter(Q(allowed_placed=False),
                                                           Q(access__level__gte=request.user.access_level.contracts_access_view))
+        except Exception as _ex:
+            contracts_not_published = Contract.objects.filter(allowed_placed=False)
         contracts_not_published_count = contracts_not_published.count()
     else:
         contracts_not_published = ''

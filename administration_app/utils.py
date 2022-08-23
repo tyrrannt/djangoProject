@@ -1,5 +1,10 @@
+import pathlib
+
+from docxtpl import DocxTemplate
+
 from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division, UserAccessMode
+from djangoProject.settings import BASE_DIR
 
 
 class GetAllObject:
@@ -52,3 +57,12 @@ def ChangeAccess(obj):
     #     obj[key] = True
     print(9)
 
+def Med(request):
+    doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
+    context = {'gender': request.get_gender_display(),
+               'birthday': request.birthday,
+               'division': request.divisions,
+               'job': request.job,
+               'FIO': request}
+    doc.render(context)
+    doc.save(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/generated_doc.docx'))

@@ -24,51 +24,29 @@ class UserAccessMode(models.Model):
         verbose_name = 'Уровень доступа пользователя'
         verbose_name_plural = 'Уровни доступа пользователей'
 
-    access_level = [
-        ('0', 'Административный доступ'),
-        ('1', 'Особой важности'),
-        ('2', 'Совершенно секретные'),
-        ('3', 'Секретные'),
-        ('4', 'Для служебного пользования')
-    ]
     # Права доступа к договорам
-    contracts_access_view = models.CharField(verbose_name='Уровень доступа к договорам', choices=access_level,
-                                             help_text='', blank=True, null=True, max_length=1, default='4')
+    contracts_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к договорам', blank=True,
+                                              null=True, on_delete=models.CASCADE, related_name='contracts_view')
     contracts_access_add = models.BooleanField(verbose_name='Разрешение на создание договора', default=False)
     contracts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование договора', default=False)
     contracts_access_agreement = models.BooleanField(verbose_name='Право на публикацию договора', default=False)
     # Права доступа к сообщениям
-    posts_access_view = models.CharField(verbose_name='Уровень доступа к сообщениям', choices=access_level,
-                                             help_text='', blank=True, null=True, max_length=1, default='4')
+    posts_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к сообщениям', blank=True,
+                                          null=True, on_delete=models.CASCADE, related_name='posts_view')
     posts_access_add = models.BooleanField(verbose_name='Разрешение на создание сообщения', default=False)
     posts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование сообщения', default=False)
     posts_access_agreement = models.BooleanField(verbose_name='Право на публикацию сообщения', default=False)
     # Права доступа к справочникам
-    guide_access_view = models.CharField(verbose_name='Уровень доступа к справочникам', choices=access_level,
-                                         help_text='', blank=True, null=True, max_length=1, default='4')
+    guide_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к справочникам', blank=True,
+                                          null=True, on_delete=models.CASCADE, related_name='guide_view')
     guide_access_add = models.BooleanField(verbose_name='Разрешение на создание записи в справочнике', default=False)
-    guide_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование записи в справочнике', default=False)
+    guide_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование записи в справочнике',
+                                            default=False)
     guide_access_agreement = models.BooleanField(verbose_name='Право на публикацию записи в справочнике', default=False)
-
-    def __str__(self):
-        name = ''
-        name += self.contracts_access_view
-        if self.contracts_access_add:
-            name += '1'
-        else:
-            name += '0'
-        if self.contracts_access_edit:
-            name += '1'
-        else:
-            name += '0'
-        if self.contracts_access_agreement:
-            name += '1'
-        else:
-            name += '0'
-        return f'{name}'
 
     def get_absolute_url(self):
         return reverse('customers_app:staff', kwargs={'pk': self.databaseuser.pk})
+
 
 class Job(models.Model):
     class Meta:
@@ -160,7 +138,7 @@ class DataBaseUser(AbstractUser):
     access_right = models.ForeignKey(AccessLevel, verbose_name='Права доступа', help_text='',
                                      blank=True, on_delete=models.SET_NULL, null=True)
     access_level = models.OneToOneField(UserAccessMode, verbose_name='Права доступа', help_text='',
-                                     blank=True, on_delete=models.SET_NULL, null=True)
+                                        blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='Тип пользователя', max_length=40, choices=type_of, help_text='',
                                   blank=True, default='')
@@ -170,7 +148,8 @@ class DataBaseUser(AbstractUser):
                                   default='', )
     personal_phone = models.CharField(verbose_name='Личный номер телефона', max_length=15, help_text='', blank=True,
                                       default='', )
-    job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='', blank=True)
+    job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='',
+                            blank=True)
     divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
                                   help_text='', blank=True)
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,

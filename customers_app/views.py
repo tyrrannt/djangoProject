@@ -5,7 +5,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import ChangeAccess
+from administration_app.utils import ChangeAccess, Med
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
@@ -206,6 +206,7 @@ class StaffListView(LoginRequiredMixin, ListView):
     paginate_by = 5
 
     def get_queryset(self):
+        Med(self.request.user)
         qs = DataBaseUser.objects.all().order_by('pk')
         return qs
 
