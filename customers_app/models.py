@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
 from django.urls import reverse
-
 from contracts_app.templatetags.custom import empty_item
 
 
@@ -117,6 +116,35 @@ class Division(Category):
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)
 
+class Citizenships(models.Model):
+    class Meta:
+        verbose_name = 'Гражданство пользователя'
+        verbose_name_plural = 'Гражданства пользователей'
+
+    city = models.CharField(verbose_name='Страна', max_length=50)
+
+class IdentityDocuments(models.Model):
+    class Meta:
+        verbose_name = 'Паспорт пользователя'
+        verbose_name_plural = 'Паспорта пользователей'
+
+    series = models.CharField(verbose_name='Серия', max_length=4, default='')
+    number = models.CharField(verbose_name='Номер', max_length=6, default='')
+    issued_by_whom = models.CharField(verbose_name='Кем выдан', max_length=250, default='')
+    date_of_issue = models.DateField(verbose_name='Дата выдачи')
+    division_code = models.CharField(verbose_name='Код подразделения', max_length=7, default='')
+
+class DataBaseUserProfile(models.Model):
+    class Meta:
+        verbose_name = 'Профиль пользователя'
+        verbose_name_plural = 'Профили пользователей'
+
+    citizenship = models.ForeignKey(Citizenships, verbose_name='Гражданство', blank=True, on_delete=models.CASCADE)
+    passport = models.OneToOneField(IdentityDocuments, verbose_name='Паспорт', blank=True, on_delete=models.CASCADE)
+    snils = models.CharField(verbose_name='СНИЛС', max_length=14, blank=True, default='')
+    oms = models.CharField(verbose_name='Полис ОМС', max_length=24, blank=True, default='')
+    inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='')
+
 
 class DataBaseUser(AbstractUser):
     class Meta:
@@ -152,6 +180,8 @@ class DataBaseUser(AbstractUser):
                                   help_text='', blank=True)
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
                               help_text='', default='')
+    user_profile = models.OneToOneField(DataBaseUserProfile, verbose_name='Личный профиль пользователя',
+                                        on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
