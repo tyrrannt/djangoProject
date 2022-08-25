@@ -1,5 +1,5 @@
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
-from .models import DataBaseUser, Posts, Counteragent, UserAccessMode
+from .models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division
 from django import forms
 
 
@@ -92,6 +92,23 @@ class CounteragentAddForm(forms.ModelForm):
                   'juridical_address', 'physical_address', 'email', 'phone',
                   'director', 'accountant', 'contact_person')
 
+
+class DivisionsAddForm(forms.ModelForm):
+    class Meta:
+        model = Division
+        fields = ('parent_category', 'name', 'description', 'history')
+
+
+class DivisionsUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Division
+        fields = ('parent_category', 'name', 'description', 'active')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control form-control-modern'
+            field.help_text = ''
 
 
 class StaffUpdateForm(forms.ModelForm):

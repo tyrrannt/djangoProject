@@ -1,0 +1,184 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+                                    {% if user.access_level.guide_access_add %}
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'customers_app:divisions_add' %}"
+                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Добавить подразделение </a>
+                                        </div>
+                                    {% endif %}
+                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
+                                            <label class="ws-nowrap me-3 mb-0">Сортировка:</label>
+                                            <select class="form-control select-style-1 filter-by" name="filter-by"
+                                                onchange="field_sorted()" id="field_sorted">
+
+                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
+                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
+                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер договора</option>
+                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата договора</option>
+                                                <option value="4" {% if sort_item == 4 %}selected{% endif %}>Тип договора</option>
+                                                <option value="5" {% if sort_item == 5 %}selected{% endif %}>Подразделение</option>
+
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
+                                            <label class="ws-nowrap me-3 mb-0">Количество:</label>
+                                            <select class="form-control select-style-1 results-per-page"
+                                                    name="results-per-page" onchange="portal_paginator()"
+                                                    id="portal_paginator">
+                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6</option>
+                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>12</option>
+                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>24</option>
+                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>48</option>
+                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>96</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-lg-auto ps-lg-1">
+                                        <div class="mx-lg-auto">
+                                            <div class="input-group">
+                                                <a href="{% url 'customers_app:divisions_list' %}" class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
+                                                    Применить настройки
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+
+                                <thead>
+                                <tr>
+                                    <th width="3%"><input type="checkbox" name="select-all"
+                                                          class="select-all checkbox-style-1 p-relative top-2"
+                                                          value=""/></th>
+                                    <th width="10%">Код</th>
+                                    <th width="45%">Головное подразделение</th>
+                                    <th width="45%">Подразделение</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for item in object_list %}
+                                    <tr>
+                                        <td width="30"><input type="checkbox" name="checkboxRow1"
+                                                              class="checkbox-style-1 p-relative top-2" value=""/></td>
+                                        <td>
+                                            <a href="{% url 'customers_app:divisions' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'customers_app:divisions' item.pk %}"><strong>{{ item|empty_item }}</strong></a>
+                                        </td>
+                                        <td>
+                                            {{ item.divisions|empty_item }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+
+                            <hr class="solid mt-5 opacity-4">
+                            {% include 'library_app/paginator.html' %}
+                            <div class="datatable-footer">
+                                <div class="row align-items-center justify-content-between mt-3">
+                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-stretch">
+                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">
+                                                <select class="form-control select-style-1 bulk-action"
+                                                        name="bulk-action" style="min-width: 170px;">
+                                                    <option value="" selected>Редактировать</option>
+                                                    <option value="delete">Удалить</option>
+                                                </select>
+                                                <a href="#"
+                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-auto text-center order-3 order-lg-2">
+                                        <div class="results-info-wrapper"></div>
+                                    </div>
+                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                        <div class="pagination-wrapper"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+    <script type="text/javascript">
+        function portal_paginator() {
+            paginator_by = document.getElementById("portal_paginator").value;
+            $.ajax({
+                type: "GET",
+                url: '/contracts/',
+                data: {
+                    "result": paginator_by,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    alert("success");
+                },
+                failure: function () {
+                    alert("failure");
+                }
+            });
+        };
+        function field_sorted() {
+            item_sorted = document.getElementById("field_sorted").value;
+            $.ajax({
+                type: "GET",
+                url: '/contracts/',
+                data: {
+                    "sort_item": item_sorted,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    alert("success");
+                },
+                failure: function () {
+                    alert("failure");
+                }
+            });
+
+        };
+    </script>
+{% endblock %}
+
+{% block SpecificPageVendor %}
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{% endblock %}

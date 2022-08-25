@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, redirect
@@ -9,7 +11,7 @@ from administration_app.utils import ChangeAccess, Med, boolean_return
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
-    CounteragentUpdateForm, StaffUpdateForm
+    CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -284,3 +286,63 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+
+class DivisionsList(LoginRequiredMixin, ListView):
+    model = Division
+    template_name = 'customers_app/divisions_list.html'
+
+
+class DivisionsAdd(LoginRequiredMixin, CreateView):
+    model = Division
+    form_class = DivisionsAddForm
+    template_name = 'customers_app/divisions_add.html'
+
+    def get_context_data(self, **kwargs):
+        content = super(DivisionsAdd, self).get_context_data(**kwargs)
+        content['all_divisions'] = Division.objects.all()
+        return content
+
+    def post(self, request, *args, **kwargs):
+        if request.method == 'POST':
+            content = QueryDict.copy(self.request.POST)
+            content['history'] = datetime.datetime.now()
+            if content['parent_category'] == 'none':
+                content.setlist('parent_category', '')
+            self.request.POST = content
+        return super(DivisionsAdd, self).post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('customers_app:divisions_list'))
+
+
+class DivisionsDetail(LoginRequiredMixin, DetailView):
+    model = Division
+    template_name = 'customers_app/divisions_detail.html'
+
+
+class DivisionsUpdate(LoginRequiredMixin, UpdateView):
+    model = Division
+    template_name = 'customers_app/divisions_update.html'
+    form_class = DivisionsUpdateForm
+
+    def post(self, request, *args, **kwargs):
+        if request.method == 'POST':
+            content = QueryDict.copy(self.request.POST)
+            content['active'] = boolean_return(request, 'active')
+            if content['parent_category'] == 'none':
+                content.setlist('parent_category', '')
+            self.request.POST = content
+        return super(DivisionsUpdate, self).post(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        content = super(DivisionsUpdate, self).get_context_data(**kwargs)
+        content['all_divisions'] = Division.objects.all()
+        return content
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('customers_app:divisions', args=[self.object.pk]))

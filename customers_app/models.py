@@ -88,20 +88,14 @@ class Category(models.Model):
     parent_category = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(verbose_name='Название категории', max_length=128, unique=True)
     description = models.TextField(verbose_name='Описание категории', blank=True)
-    access = models.ForeignKey(AccessLevel, default=0, on_delete=models.SET_DEFAULT, verbose_name='Категория доступа')
-    hash_view = models.CharField(max_length=256, blank=True)
     history = models.DateField(verbose_name="Дата создания", auto_created=True, null=True)
+    active = models.BooleanField(verbose_name='Активность', default=True)
 
     def __str__(self):
         if self.parent_category:
             return f'{self.parent_category}/{self.name}'
         else:
             return self.name
-
-    def save(self, **kwargs):
-        some_salt = 'some_salt'
-        self.hash_view = make_password(self.name, some_salt)
-        super().save(**kwargs)
 
 
 class Division(Category):
@@ -116,12 +110,14 @@ class Division(Category):
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)
 
+
 class Citizenships(models.Model):
     class Meta:
         verbose_name = 'Гражданство пользователя'
         verbose_name_plural = 'Гражданства пользователей'
 
     city = models.CharField(verbose_name='Страна', max_length=50)
+
 
 class IdentityDocuments(models.Model):
     class Meta:
@@ -133,6 +129,7 @@ class IdentityDocuments(models.Model):
     issued_by_whom = models.CharField(verbose_name='Кем выдан', max_length=250, default='')
     date_of_issue = models.DateField(verbose_name='Дата выдачи')
     division_code = models.CharField(verbose_name='Код подразделения', max_length=7, default='')
+
 
 class DataBaseUserProfile(models.Model):
     class Meta:
