@@ -287,6 +287,7 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
         else:
             cn = '(без номера)'
         context['title'] = title = 'Редактирование договора №' + cn + ' от ' + str(self.object.date_conclusion)
+
         return context
 
     def get_success_url(self):
