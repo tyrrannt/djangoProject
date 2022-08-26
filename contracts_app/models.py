@@ -19,9 +19,8 @@ class TypeDocuments(models.Model):
         verbose_name = 'Тип документа'
         verbose_name_plural = 'Тип документов'
 
-    type_document = models.CharField(verbose_name='Тип документа', max_length=50, blank=True, default='',
-                                     help_text='')
-    file_name_prefix = models.CharField(verbose_name='', max_length=3)
+    type_document = models.CharField(verbose_name='Тип документа', max_length=50)
+    file_name_prefix = models.CharField(verbose_name='Префикс файла', max_length=3)
 
     def __str__(self):
         return f'{self.type_document}'
@@ -32,8 +31,7 @@ class TypeContract(models.Model):
         verbose_name = 'Тип договора'
         verbose_name_plural = 'Тип договоров'
 
-    type_contract = models.CharField(verbose_name='Тип договора', max_length=50, blank=True, default='',
-                                     help_text='')
+    type_contract = models.CharField(verbose_name='Тип договора', max_length=50)
 
     def __str__(self):
         return f'{self.type_contract}'

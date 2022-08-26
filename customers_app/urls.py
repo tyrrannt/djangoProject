@@ -21,5 +21,9 @@ urlpatterns = [
     path('divisions/', views.DivisionsList.as_view(), name='divisions_list'),
     path('divisions/add/', views.DivisionsAdd.as_view(), name='divisions_add'),
     path('divisions/<int:pk>/', views.DivisionsDetail.as_view(), name='divisions'),
-    path('divisions/<int:pk>/update', views.DivisionsUpdate.as_view(), name='divisions_update'),
+    path('divisions/<int:pk>/update/', views.DivisionsUpdate.as_view(), name='divisions_update'),
+    path('jobs/', views.JobsList.as_view(), name='jobs_list'),
+    path('jobs/add/', views.JobsAdd.as_view(), name='jobs_add'),
+    path('jobs/<int:pk>/', views.JobsDetail.as_view(), name='jobs'),
+    path('jobs/<int:pk>/update/', views.JobsUpdate.as_view(), name='jobs_update'),
 ]

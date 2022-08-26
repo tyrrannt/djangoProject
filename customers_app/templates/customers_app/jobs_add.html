@@ -27,72 +27,50 @@
 
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
-
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:divisions_update' object.pk %}" method="post">
-            {% csrf_token %}
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
             <div class="row">
                 <div class="col">
                     <section class="card card-modern card-big-info">
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxs-buildings"></i>
-                                    <p class="card-big-info-desc"><strong>{{ object.name }}</strong></p>
+                                    <i class="card-big-info-icon bx bxl-netlify"></i>
+                                    <p class="card-big-info-desc">Форма создания должностей компании.</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
-
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_parent_category">Головное подразделение</label>
+                                               for="id_code">Номер по ОК</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select name="parent_category" id="id_parent_category"
-                                                    class="form-control form-control-modern">
-                                                <option value="none" selected>-------</option>
-                                                {% for item in all_divisions %}
-                                                    {% if item == object.parent_fields %}
-                                                        <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            <input type="text" id="id_code" class="form-control form-control-modern"
+                                                   name="code" value="" />
                                         </div>
                                     </div>
-
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_name">Наименование</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_name" class="form-control form-control-modern"
-                                                   name="name" value="{{ object.name }}" />
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="">Описание</label>
-                                        <div class="col-lg-7 col-xl-6">
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="description" id="id_description"
-                                                   value="{{ object.description }}" />
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_history">Дата создания</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="history" id="id_history"
-                                                   value="{{ object.history }}" disabled/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_active">Действующее</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="checkbox"
-                                                   name="active" id="id_active"
-                                                   {% if object.active %} checked {% endif %}/>
+                                                   name="name" id="id_name"
+                                                   value="" />
                                         </div>
                                     </div>
                                 </div>
@@ -102,6 +80,7 @@
                 </div>
             </div>
             <div class="row action-buttons">
+
                 <div class="col-12 col-md-auto">
                     <button type="submit"
                             class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
@@ -110,7 +89,7 @@
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:divisions_list' %}"
+                    <a href="{% url 'customers_app:jobs_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
                 {% if user.is_superuser %}

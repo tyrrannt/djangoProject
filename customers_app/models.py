@@ -92,10 +92,7 @@ class Category(models.Model):
     active = models.BooleanField(verbose_name='Активность', default=True)
 
     def __str__(self):
-        if self.parent_category:
-            return f'{self.parent_category}/{self.name}'
-        else:
-            return self.name
+        return self.name
 
 
 class Division(Category):

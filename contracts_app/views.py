@@ -11,8 +11,9 @@ from django.views.generic import DetailView, UpdateView, ListView, CreateView, D
 from django.views.generic.detail import SingleObjectMixin
 
 from administration_app.models import PortalProperty
-from contracts_app.models import Contract, Posts, TypeContract, TypeProperty
-from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm
+from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
+from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
+    TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -339,3 +340,216 @@ class ContractPostDelete(LoginRequiredMixin, DeleteView):
     Удаление записи
     """
     model = Posts
+
+
+"""
+Типы документов: Список, Добавление, Детализация, Обновление
+"""
+class TypeDocumentsList(LoginRequiredMixin, ListView):
+    model = TypeDocuments
+    template_name = 'contracts_app/typedocuments_list.html'
+
+
+class TypeDocumentsAdd(LoginRequiredMixin, CreateView):
+    model = TypeDocuments
+    form_class = TypeDocumentsAddForm
+    template_name = 'contracts_app/typedocuments_add.html'
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
+                return super(TypeDocumentsAdd, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('contracts_app:typedocuments_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('contracts_app:typedocuments_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:typedocuments_list'))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class TypeDocumentsDetail(LoginRequiredMixin, DetailView):
+    model = TypeDocuments
+    template_name = 'contracts_app/typedocuments_detail.html'
+
+
+class TypeDocumentsUpdate(LoginRequiredMixin, UpdateView):
+    model = TypeDocuments
+    template_name = 'contracts_app/typedocuments_update.html'
+    form_class = TypeDocumentsUpdateForm
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
+                return super(TypeDocumentsUpdate, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('contracts_app:typedocuments_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('contracts_app:typedocuments_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:typedocuments', args=[self.object.pk]))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+"""
+Типы договоров: Список, Добавление, Детализация, Обновление
+"""
+class TypeContractsList(LoginRequiredMixin, ListView):
+    model = TypeContract
+    template_name = 'contracts_app/typecontracts_list.html'
+
+
+class TypeContractsAdd(LoginRequiredMixin, CreateView):
+    model = TypeContract
+    form_class = TypeContractsAddForm
+    template_name = 'contracts_app/typecontracts_add.html'
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
+                return super(TypeContractsAdd, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('contracts_app:typecontracts_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('contracts_app:typecontracts_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:typecontracts_list'))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class TypeContractsDetail(LoginRequiredMixin, DetailView):
+    model = TypeContract
+    template_name = 'contracts_app/typecontracts_detail.html'
+
+
+class TypeContractsUpdate(LoginRequiredMixin, UpdateView):
+    model = TypeContract
+    template_name = 'contracts_app/typecontracts_update.html'
+    form_class = TypeContractsUpdateForm
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
+                return super(TypeContractsUpdate, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('contracts_app:typecontracts_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('contracts_app:typecontracts_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:typecontracts', args=[self.object.pk]))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+"""
+Типы имущества: Список, Добавление, Детализация, Обновление
+"""
+class TypePropertysList(LoginRequiredMixin, ListView):
+    model = TypeProperty
+    template_name = 'contracts_app/typepropertys_list.html'
+
+
+class TypePropertysAdd(LoginRequiredMixin, CreateView):
+    model = TypeProperty
+    form_class = TypePropertysAddForm
+    template_name = 'contracts_app/typepropertys_add.html'
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
+                return super(TypePropertysAdd, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('contracts_app:typepropertys_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('contracts_app:typepropertys_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:typepropertys_list'))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class TypePropertysDetail(LoginRequiredMixin, DetailView):
+    model = TypeProperty
+    template_name = 'contracts_app/typepropertys_detail.html'
+
+
+class TypePropertysUpdate(LoginRequiredMixin, UpdateView):
+    model = TypeProperty
+    template_name = 'contracts_app/typepropertys_update.html'
+    form_class = TypePropertysUpdateForm
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
+                return super(TypePropertysUpdate, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('contracts_app:typepropertys_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('contracts_app:typepropertys_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:typepropertys', args=[self.object.pk]))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))

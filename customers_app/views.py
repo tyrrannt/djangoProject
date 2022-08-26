@@ -11,7 +11,7 @@ from administration_app.utils import ChangeAccess, Med, boolean_return
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
-    CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm
+    CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -287,7 +287,9 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
 
-
+"""
+Подразделения: Список, Добавление, Детализация, Обновление
+"""
 class DivisionsList(LoginRequiredMixin, ListView):
     model = Division
     template_name = 'customers_app/divisions_list.html'
@@ -303,6 +305,21 @@ class DivisionsAdd(LoginRequiredMixin, CreateView):
         content['all_divisions'] = Division.objects.all()
         return content
 
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
+                return super(DivisionsAdd, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('customers_app:divisions_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('customers_app:divisions_list')
+            return redirect(url_match)
+
     def post(self, request, *args, **kwargs):
         if request.method == 'POST':
             content = QueryDict.copy(self.request.POST)
@@ -317,6 +334,9 @@ class DivisionsAdd(LoginRequiredMixin, CreateView):
             form.save()
         return HttpResponseRedirect(reverse('customers_app:divisions_list'))
 
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
 
 class DivisionsDetail(LoginRequiredMixin, DetailView):
     model = Division
@@ -327,6 +347,21 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
     model = Division
     template_name = 'customers_app/divisions_update.html'
     form_class = DivisionsUpdateForm
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
+                return super(DivisionsUpdate, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('customers_app:divisions_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('customers_app:divisions_list')
+            return redirect(url_match)
 
     def post(self, request, *args, **kwargs):
         if request.method == 'POST':
@@ -346,3 +381,76 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
         if form.is_valid():
             form.save()
         return HttpResponseRedirect(reverse('customers_app:divisions', args=[self.object.pk]))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+"""
+Должности: Список, Добавление, Детализация, Обновление
+"""
+class JobsList(LoginRequiredMixin, ListView):
+    model = Job
+    template_name = 'customers_app/jobs_list.html'
+
+
+class JobsAdd(LoginRequiredMixin, CreateView):
+    model = Job
+    form_class = JobsAddForm
+    template_name = 'customers_app/jobs_add.html'
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
+                return super(JobsAdd, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('customers_app:jobs_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('customers_app:jobs_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('customers_app:jobs_list'))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class JobsDetail(LoginRequiredMixin, DetailView):
+    model = Job
+    template_name = 'customers_app/jobs_detail.html'
+
+
+class JobsUpdate(LoginRequiredMixin, UpdateView):
+    model = Job
+    template_name = 'customers_app/jobs_update.html'
+    form_class = JobsUpdateForm
+
+    def get(self, request, *args, **kwargs):
+        """
+        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        """
+        pk = int(self.request.user.pk)
+        try:
+            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
+                return super(JobsUpdate, self).get(request, *args, **kwargs)
+            else:
+                url_match = reverse_lazy('customers_app:jobs_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            url_match = reverse_lazy('customers_app:jobs_list')
+            return redirect(url_match)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('customers_app:jobs', args=[self.object.pk]))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))

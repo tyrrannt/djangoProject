@@ -1,5 +1,5 @@
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
-from .models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division
+from .models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job
 from django import forms
 
 
@@ -109,6 +109,26 @@ class DivisionsUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
+
+
+
+class JobsAddForm(forms.ModelForm):
+    class Meta:
+        model = Job
+        fields = ('code', 'name')
+
+
+class JobsUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Job
+        fields = ('code', 'name')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control form-control-modern'
+            field.help_text = ''
+
 
 
 class StaffUpdateForm(forms.ModelForm):

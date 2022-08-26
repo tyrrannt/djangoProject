@@ -22,9 +22,9 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:divisions_add' %}"
+                                            <a href="{% url 'customers_app:jobs_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить подразделение </a>
+                                                Добавить должность </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -35,27 +35,22 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="3%"><input type="checkbox" name="select-all"
-                                                          class="select-all checkbox-style-1 p-relative top-2"
-                                                          value=""/></th>
-                                    <th width="10%">Код</th>
-                                    <th width="45%">Головное подразделение</th>
-                                    <th width="45%">Подразделение</th>
+                                    <th width="10%">Код в БД</th>
+                                    <th width="20%">Номер по ОК</th>
+                                    <th width="70%">Наименование</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {% for item in object_list %}
                                     <tr>
-                                        <td width="30"><input type="checkbox" name="checkboxRow1"
-                                                              class="checkbox-style-1 p-relative top-2" value=""/></td>
                                         <td>
-                                            <a href="{% url 'customers_app:divisions' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'customers_app:divisions' item.pk %}"><strong>{{ item.name }}</strong></a>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.code }}</strong></a>
                                         </td>
                                         <td>
-                                            <strong>{{ item.parent_category|empty_item }}</strong>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.name }}</strong></a>
                                         </td>
 
                                     </tr>
@@ -90,45 +85,6 @@
         </div>
         <!-- end: page -->
     </section>
-    <script type="text/javascript">
-        function portal_paginator() {
-            paginator_by = document.getElementById("portal_paginator").value;
-            $.ajax({
-                type: "GET",
-                url: '/contracts/',
-                data: {
-                    "result": paginator_by,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-        };
-        function field_sorted() {
-            item_sorted = document.getElementById("field_sorted").value;
-            $.ajax({
-                type: "GET",
-                url: '/contracts/',
-                data: {
-                    "sort_item": item_sorted,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-
-        };
-    </script>
 {% endblock %}
 
 {% block SpecificPageVendor %}

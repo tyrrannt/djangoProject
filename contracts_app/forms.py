@@ -1,7 +1,7 @@
 from django.forms import CheckboxSelectMultiple, SelectMultiple, ClearableFileInput
 
 from customers_app.models import Division
-from .models import Contract, Posts, TypeProperty
+from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract
 from django import forms
 
 
@@ -61,3 +61,56 @@ class ContractsPostAddForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
+
+class TypeDocumentsAddForm(forms.ModelForm):
+    class Meta:
+        model = TypeDocuments
+        fields = ('type_document', 'file_name_prefix')
+
+
+class TypeDocumentsUpdateForm(forms.ModelForm):
+    class Meta:
+        model = TypeDocuments
+        fields = ('type_document', 'file_name_prefix')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control form-control-modern'
+            field.help_text = ''
+
+
+class TypeContractsAddForm(forms.ModelForm):
+    class Meta:
+        model = TypeContract
+        fields = ('type_contract',)
+
+
+class TypeContractsUpdateForm(forms.ModelForm):
+    class Meta:
+        model = TypeContract
+        fields = ('type_contract',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control form-control-modern'
+            field.help_text = ''
+
+
+class TypePropertysAddForm(forms.ModelForm):
+    class Meta:
+        model = TypeProperty
+        fields = ('type_property',)
+
+
+class TypePropertysUpdateForm(forms.ModelForm):
+    class Meta:
+        model = TypeProperty
+        fields = ('type_property',)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control form-control-modern'
+            field.help_text = ''

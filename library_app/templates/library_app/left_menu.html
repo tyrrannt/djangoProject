@@ -16,6 +16,7 @@
             <nav id="menu" class="nav-main" role="navigation">
 
                 <ul class="nav nav-main">
+                    {% if user.access_level.guide_access_view %}
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class="bx bx-book-content" aria-hidden="true"></i>
@@ -25,6 +26,26 @@
                             <li>
                                 <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
                                     Физические лица
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
+                                    Должности
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
+                                    Типы документов
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
+                                    Типы договоров
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
+                                    Типы имущества
                                 </a>
                             </li>
                             <li>
@@ -39,6 +60,8 @@
                             </li>
                         </ul>
                     </li>
+                    {% endif %}
+                    {% if user.access_level.contracts_access_view %}
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class="bx bx-file" aria-hidden="true"></i>
@@ -57,6 +80,7 @@
                             </li>
                         </ul>
                     </li>
+                    {% endif %}
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class="bx bx-briefcase-alt-2" aria-hidden="true"></i>
