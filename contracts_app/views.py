@@ -20,7 +20,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 import hashlib
 
 # Create your views here.
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Counteragent
 
 
 class ContractList(LoginRequiredMixin, ListView):
@@ -149,8 +149,10 @@ class ContractAdd(LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
         content = QueryDict.copy(self.request.POST)
+        if content['parent_category'] == content['contract_counteragent']:
+            self.form_invalid()
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
-        if content['parent_category'] == '0':
+        if content['parent_category'] == 'none':
             content.setlist('parent_category', '')
         # Проверяем подразделения, если пришел список с 0 значением, то удаляем его из списка, генерируя новый список
         division = list(k for k in content.getlist('divisions') if k != '0')
@@ -164,6 +166,8 @@ class ContractAdd(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
         context['title'] = 'Создание нового договора'
+        context['all_contract'] = Contract.objects.all()
+        context['all_counteragent'] = Counteragent.objects.all()
         return context
 
     def get(self, request, *args, **kwargs):
@@ -173,15 +177,7 @@ class ContractAdd(LoginRequiredMixin, CreateView):
         pk = int(self.request.user.pk)
         try:
             if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_add:
-                get_parameters = self.request.GET.get('parent')
-                if get_parameters:
-                    object_item = Contract.objects.get(pk=get_parameters)
-                    context = {'parameter1': object_item.contract_counteragent,
-                               'parameter2': object_item}
-                    return render(request, 'contracts_app/contract_form.html', context)
-
                 return super(ContractAdd, self).get(request, *args, **kwargs)
-
             else:
                 url_match = reverse_lazy('contracts_app:index')
                 return redirect(url_match)
@@ -202,7 +198,7 @@ class ContractDetail(LoginRequiredMixin, DetailView):
     def dispatch(self, request, *args, **kwargs):
         try:
             detail_obj = int(self.get_object().access.level)
-            user_obj = int(self.request.user.access_level.contracts_access_view)
+            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.contracts_access_view.level
 
             if detail_obj < user_obj:
                 url_match = reverse_lazy('contracts_app:index')
@@ -219,7 +215,8 @@ class ContractDetail(LoginRequiredMixin, DetailView):
         # Выбираем из таблицы Posts все записи относящиеся к текущему договору
         post = Posts.objects.filter(contract_number=self.object.pk)
         slaves = Contract.objects.filter(Q(parent_category=self.object.pk),
-                                         Q(access__pk__gte=self.request.user.access_right.pk))
+                                         Q(access__pk__gte=DataBaseUser.objects.get(pk=self.request.user.pk).
+                                           access_level.contracts_access_view.level))
         # Формируем заголовок страницы и передаем в контекст
         if self.object.contract_number:
             cn = self.object.contract_number

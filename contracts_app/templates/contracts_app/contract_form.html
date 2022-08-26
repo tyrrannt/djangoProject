@@ -61,17 +61,12 @@
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="parent_category"
                                                     id="id_parent_category"
-                                                    data-plugin-selectTwo {% if parameter2 %}hidden{% endif %}>
-                                                 {% if parameter2 %}
-                                                    <option value="{{ parameter2.pk }}" selected>{{ parameter2 }}</option>
-                                                {% else %}
+                                                    data-plugin-selectTwo>
+                                                 <option value="none" selected>Выберите значение...</option>
                                                 {% for item in all_contract.iterator %}
-                                                    {% if forloop.first %}
-                                                    <option value="0" selected>Выберите значение...</option>
-                                                    {% endif %}
                                                     <option value="{{ item.pk }}">{{ item }}</option>
                                                 {% endfor %}
-                                            {% endif %}
+
                                             </select>
 
                                         </div>
@@ -81,18 +76,11 @@
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="contract_counteragent"
                                                     id="id_contract_counteragent" required
-                                                    data-plugin-selectTwo
-                                                    {% if parameter1 %} hidden {% endif %}>
-                                                {% if parameter1 %}
-                                                    <option value="{{ parameter1.pk }}" selected>{{ parameter1 }}</option>
-                                                {% else %}
-                                                {% for item in counteragent.iterator %}
-                                                    {% if forloop.first %}
-                                                    <option value="0" selected>Выберите значение...</option>
-                                                    {% endif %}
+                                                    data-plugin-selectTwo>
+                                                <option value="none" selected>Выберите значение...</option>
+                                                {% for item in all_counteragent.iterator %}
                                                     <option value="{{ item.pk }}">{{ item }}</option>
                                                 {% endfor %}
-                                                {% endif %}
                                             </select>
                                         </div>
                                     <div class="col-md-4 text-black-50">

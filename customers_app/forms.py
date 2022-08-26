@@ -54,7 +54,7 @@ class DataBaseUserAddForm(UserChangeForm):
         fields = (
             #  'first_name', 'last_name', 'email', 'birthday',  'access_right',
             'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
-            'personal_phone', 'avatar', 'address', 'access_level', 'username',  'type_users',
+            'personal_phone', 'avatar', 'address', 'access_level', 'username', 'type_users',
             'password', 'job', 'divisions'
         )
 
@@ -111,7 +111,6 @@ class DivisionsUpdateForm(forms.ModelForm):
             field.help_text = ''
 
 
-
 class JobsAddForm(forms.ModelForm):
     class Meta:
         model = Job
@@ -128,7 +127,6 @@ class JobsUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
-
 
 
 class StaffUpdateForm(forms.ModelForm):

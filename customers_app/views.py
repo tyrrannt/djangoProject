@@ -11,7 +11,8 @@ from administration_app.utils import ChangeAccess, Med, boolean_return
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
-    CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm
+    CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
+    CounteragentAddForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -161,6 +162,37 @@ class CounteragentListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         qs = Counteragent.objects.all().order_by('pk')
         return qs
+
+
+class CounteragentAdd(LoginRequiredMixin, CreateView):
+    model = Counteragent
+    form_class = CounteragentAddForm
+    template_name = 'customers_app/counteragent_add.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(CounteragentAdd, self).get_context_data(**kwargs)
+        context['counteragent_users'] = DataBaseUser.objects.all()
+        context['type_counteragent'] = Counteragent.type_of
+        return context
+
+    def post(self, request, *args, **kwargs):
+        content = QueryDict.copy(self.request.POST)
+        if content['director'] == 'none':
+            content.setlist('director', '')
+        if content['accountant'] == 'none':
+            content.setlist('accountant', '')
+        if content['contact_person'] == 'none':
+            content.setlist('contact_person', '')
+        self.request.POST = content
+        return super(CounteragentAdd, self).post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('customers_app:counteragent_list'))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 class CounteragentDetail(LoginRequiredMixin, DetailView):

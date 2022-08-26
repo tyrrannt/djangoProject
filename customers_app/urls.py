@@ -13,6 +13,7 @@ urlpatterns = [
     path('profile/<int:pk>/postslist/', views.PostsListView.as_view(), name='post_list'),
     path('profile/<int:pk>/update/', views.DataBaseUserUpdate.as_view(), name='profile_update'),
     path('counteragent/', views.CounteragentListView.as_view(), name='counteragent_list'),
+    path('counteragent/add/', views.CounteragentAdd.as_view(), name='counteragent_add'),
     path('counteragent/<int:pk>/', views.CounteragentDetail.as_view(), name='counteragent'),
     path('counteragent/<int:pk>/update/', views.CounteragentUpdate.as_view(), name='counteragent_update'),
     path('staff/', views.StaffListView.as_view(), name='staff_list'),
