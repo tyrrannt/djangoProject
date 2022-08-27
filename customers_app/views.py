@@ -10,7 +10,7 @@ from administration_app.models import PortalProperty
 from administration_app.utils import ChangeAccess, Med, boolean_return
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
-    DataBaseUserWorkProfile, Citizenships, IdentityDocuments
+    DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
@@ -485,6 +485,11 @@ class JobsAdd(LoginRequiredMixin, CreateView):
     form_class = JobsAddForm
     template_name = 'customers_app/jobs_add.html'
 
+    def get_context_data(self, **kwargs):
+        content = super(JobsAdd, self).get_context_data(**kwargs)
+        content['harmful'] = HarmfulWorkingConditions.objects.all()
+        return content
+
     def get(self, request, *args, **kwargs):
         """
         Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
@@ -518,6 +523,11 @@ class JobsUpdate(LoginRequiredMixin, UpdateView):
     model = Job
     template_name = 'customers_app/jobs_update.html'
     form_class = JobsUpdateForm
+
+    def get_context_data(self, **kwargs):
+        content = super(JobsUpdate, self).get_context_data(**kwargs)
+        content['harmful'] = HarmfulWorkingConditions.objects.all()
+        return content
 
     def get(self, request, *args, **kwargs):
         """

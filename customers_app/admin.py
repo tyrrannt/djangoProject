@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .models import DataBaseUser, Job, Division, Counteragent, Posts, UserAccessMode, AccessLevel, DataBaseUserProfile, \
-    Citizenships, IdentityDocuments, DataBaseUserWorkProfile
+    Citizenships, IdentityDocuments, DataBaseUserWorkProfile, HarmfulWorkingConditions
 
 
 class CustomUserAdmin(UserAdmin):
@@ -46,3 +46,4 @@ admin.site.register(DataBaseUserProfile)
 admin.site.register(Citizenships)
 admin.site.register(IdentityDocuments)
 admin.site.register(DataBaseUserWorkProfile)
+admin.site.register(HarmfulWorkingConditions)

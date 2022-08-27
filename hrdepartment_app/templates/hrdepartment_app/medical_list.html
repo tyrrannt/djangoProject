@@ -24,7 +24,7 @@
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'customers_app:jobs_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить должность </a>
+                                                Добавить направление </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -36,9 +36,10 @@
                                 <thead>
                                 <tr>
                                     <th width="10%">Код в БД</th>
-                                    <th width="20%">Номер по ОК</th>
-                                    <th width="50%">Наименование</th>
-                                    <th width="20%">Вредные условия труда</th>
+                                    <th width="20%">Номер</th>
+                                    <th width="30%">Сотрудник</th>
+                                    <th width="20%">Медицинская организация</th>
+                                    <th width="20%">Статус</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -48,15 +49,16 @@
                                             <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.code }}</strong></a>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.number }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.name }}</strong></a>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.person }}</strong></a>
                                         </td>
                                         <td>
-                                            {% for parts in item.harmful.iterator %}
-                                                <strong>{{ parts }}</strong>&nbsp;
-                                            {% endfor %}
+                                            <strong>{{ item.organisation }}</strong>&nbsp;
+                                        </td>
+                                        <td>
+                                            <strong>{{ item.working_status }}</strong>&nbsp;
                                         </td>
                                     </tr>
                                 {% endfor %}

@@ -56,6 +56,9 @@ class HarmfulWorkingConditions(models.Model):
     name = models.TextField(verbose_name='Наименование')
     frequency = models.PositiveSmallIntegerField(verbose_name='Периодичность осмотров')
 
+    def __str__(self):
+        return self.code
+
 
 class Job(models.Model):
     class Meta:
