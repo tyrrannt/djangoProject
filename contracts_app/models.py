@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
+from djangoProject import settings
 from djangoProject.settings import BASE_DIR
 
 
@@ -102,13 +103,13 @@ class ContractModel(models.Model):
                                          null=True)
     divisions = models.ManyToManyField(Division, verbose_name='Подразделение', blank=True)
     type_property = models.ManyToManyField(TypeProperty, verbose_name='Тип имущества', blank=True)
-    employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True)
+    employee = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо', blank=True)
     closing_date = models.DateField(verbose_name='Дата закрытия договора', null=True, blank=True)
     prolongation = models.CharField(verbose_name='Пролонгация', max_length=40, choices=type_of_prolongation,
                                     help_text='', blank=True, default='', )
     comment = models.TextField(verbose_name='Примечание', blank=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
-    executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True,
+    executor = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True,
                                  related_name='contract_executor')
     doc_file = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
@@ -167,7 +168,7 @@ class Posts(models.Model):
     contract_number = models.ForeignKey(Contract, verbose_name='Номер договора', on_delete=models.CASCADE)
     creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
-    responsible_person = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо', on_delete=models.SET_NULL,
+    responsible_person = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо', on_delete=models.SET_NULL,
                                            null=True)
 
 

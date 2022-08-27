@@ -47,13 +47,24 @@ class UserAccessMode(models.Model):
         return reverse('customers_app:staff', kwargs={'pk': self.databaseuser.pk})
 
 
+class HarmfulWorkingConditions(models.Model):
+    class Meta:
+        verbose_name = 'Вредные условия труда'
+        verbose_name_plural = 'Вредные условия труда'
+
+    code = models.CharField(verbose_name='Код', max_length=5, default='')
+    name = models.TextField(verbose_name='Наименование')
+    frequency = models.PositiveSmallIntegerField(verbose_name='Периодичность осмотров')
+
+
 class Job(models.Model):
     class Meta:
         verbose_name = 'Должность'
         verbose_name_plural = 'Должности'
 
-    code = models.CharField(verbose_name='код должности', max_length=5, help_text='', default='')
-    name = models.CharField(verbose_name='должность', max_length=200, help_text='')
+    code = models.CharField(verbose_name='Код должности', max_length=5, help_text='', default='')
+    name = models.CharField(verbose_name='Должность', max_length=200, help_text='')
+    harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда', blank=True)
 
     def __str__(self):
         return f'{self.name}'
@@ -115,6 +126,9 @@ class Citizenships(models.Model):
 
     city = models.CharField(verbose_name='Страна', max_length=50)
 
+    def __str__(self):
+        return self.city
+
 
 class IdentityDocuments(models.Model):
     class Meta:
@@ -127,17 +141,39 @@ class IdentityDocuments(models.Model):
     date_of_issue = models.DateField(verbose_name='Дата выдачи')
     division_code = models.CharField(verbose_name='Код подразделения', max_length=7, default='')
 
+    def __str__(self):
+        return f'{self.series} {self.number}, {self.issued_by_whom}, {self.date_of_issue}, {self.division_code}'
+
 
 class DataBaseUserProfile(models.Model):
     class Meta:
         verbose_name = 'Профиль пользователя'
         verbose_name_plural = 'Профили пользователей'
 
-    citizenship = models.ForeignKey(Citizenships, verbose_name='Гражданство', blank=True, on_delete=models.CASCADE)
-    passport = models.OneToOneField(IdentityDocuments, verbose_name='Паспорт', blank=True, on_delete=models.CASCADE)
+    citizenship = models.ForeignKey(Citizenships, verbose_name='Гражданство', blank=True, on_delete=models.CASCADE,
+                                    null=True)
+    passport = models.OneToOneField(IdentityDocuments, verbose_name='Паспорт', blank=True, on_delete=models.CASCADE,
+                                    null=True)
     snils = models.CharField(verbose_name='СНИЛС', max_length=14, blank=True, default='')
     oms = models.CharField(verbose_name='Полис ОМС', max_length=24, blank=True, default='')
     inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='')
+
+
+class DataBaseUserWorkProfile(models.Model):
+    class Meta:
+        verbose_name = 'Рабочий профиль пользователя'
+        verbose_name_plural = 'Рабочие профили пользователей'
+
+    date_of_employment = models.DateField(verbose_name='Дата приема на работу', blank=True)
+    internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
+                                      default='', )
+    work_phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
+                                  default='', )
+    job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='',
+                            blank=True)
+    divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
+                                  help_text='', blank=True)
+    work_email = models.EmailField(verbose_name='Рабочий email', default='')
 
 
 class DataBaseUser(AbstractUser):
@@ -162,19 +198,13 @@ class DataBaseUser(AbstractUser):
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='Тип пользователя', max_length=40, choices=type_of, help_text='',
                                   blank=True, default='')
-    internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
-                                      default='', )
-    work_phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
-                                  default='', )
     personal_phone = models.CharField(verbose_name='Личный номер телефона', max_length=15, help_text='', blank=True,
                                       default='', )
-    job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='',
-                            blank=True)
-    divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
-                                  help_text='', blank=True)
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
                               help_text='', default='')
     user_profile = models.OneToOneField(DataBaseUserProfile, verbose_name='Личный профиль пользователя',
+                                        on_delete=models.SET_NULL, null=True, blank=True)
+    user_work_profile = models.OneToOneField(DataBaseUserWorkProfile, verbose_name='Рабочий профиль пользователя',
                                         on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
@@ -186,16 +216,18 @@ class Counteragent(models.Model):
         verbose_name = 'Контрагент'
         verbose_name_plural = 'Контрагенты'
 
-    short_name = models.CharField(verbose_name='Наименование', max_length=150, default='', help_text='')
-    full_name = models.CharField(verbose_name='Полное наименование', max_length=250, default='', help_text='')
-    inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='', help_text='')
-    kpp = models.CharField(verbose_name='КПП', max_length=9, blank=True, default='', help_text='')
     type_of = [
         ('juridical_person', 'юридическое лицо'),
         ('physical_person', 'физическое лицо'),
         ('separate_subdivision', 'обособленное подразделение'),
         ('government_agency', 'государственный орган'),
     ]
+
+    short_name = models.CharField(verbose_name='Наименование', max_length=150, default='', help_text='')
+    full_name = models.CharField(verbose_name='Полное наименование', max_length=250, default='', help_text='')
+    inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='', help_text='')
+    kpp = models.CharField(verbose_name='КПП', max_length=9, blank=True, default='', help_text='')
+    ogrn = models.CharField(verbose_name='ОГРН', max_length=13, blank=True, default='', help_text='')
     type_counteragent = models.CharField(verbose_name='Тип контрагента', max_length=40, choices=type_of, help_text='',
                                          default='')
     juridical_address = models.TextField(verbose_name='Юридический адрес', default='', blank=True)
@@ -205,14 +237,11 @@ class Counteragent(models.Model):
                              default='', )
     base_counteragent = models.BooleanField(verbose_name='Основная организация', default=False)
     director = models.ForeignKey(DataBaseUser, verbose_name='Директор', on_delete=models.SET_NULL, null=True,
-                                 blank=True,
-                                 related_name='direct')
+                                 blank=True, related_name='direct')
     accountant = models.ForeignKey(DataBaseUser, verbose_name='Бухгалтер', on_delete=models.SET_NULL, null=True,
-                                   blank=True,
-                                   related_name='account')
+                                   blank=True, related_name='account')
     contact_person = models.ForeignKey(DataBaseUser, verbose_name='Контактное лицо', on_delete=models.SET_NULL,
-                                       null=True,
-                                       blank=True, related_name='contact')
+                                       null=True, blank=True, related_name='contact')
 
     def __str__(self):
         return f'{self.short_name}'

@@ -37,8 +37,7 @@
                                                 <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
                                                 <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер договора</option>
                                                 <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата договора</option>
-                                                <option value="4" {% if sort_item == 4 %}selected{% endif %}>Тип договора</option>
-                                                <option value="5" {% if sort_item == 5 %}selected{% endif %}>Подразделение</option>
+
 
                                             </select>
                                         </div>
@@ -96,13 +95,13 @@
                                             <a href="{% url 'customers_app:staff' item.pk %}"><strong>{{ item|empty_item }}</strong></a>
                                         </td>
                                         <td>
-                                            {{ item.divisions|empty_item }}
+                                            {{ item.user_work_profile.divisions|empty_item }}
                                         </td>
                                         <td>
-                                            {{ item.job|empty_item }}
+                                            {{ item.user_work_profile.job|empty_item }}
                                         </td>
                                         <td>
-                                            {{ item.work_phone|empty_item }}
+                                            {{ item.user_work_profile.work_phone|empty_item }}
                                         </td>
                                     </tr>
                                 {% endfor %}

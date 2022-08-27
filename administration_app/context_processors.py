@@ -8,7 +8,7 @@ from customers_app.models import DataBaseUser, Counteragent, Division, Posts, Ac
 def get_all_contracts(request):
     make_menu()
     all_contract = Contract.objects.all()
-    contracts_count = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True)).count()
+    contracts_count = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True), Q(type_of_document__type_document='Договор')).count()
     all_users = DataBaseUser.objects.all()
     all_type_of_contract = TypeContract.objects.all()
     all_type_property = TypeProperty.objects.all()

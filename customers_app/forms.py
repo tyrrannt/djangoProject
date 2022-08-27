@@ -35,8 +35,8 @@ class DataBaseUserUpdateForm(UserChangeForm):
         fields = (
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
             # 'type_users', 'phone', 'works', 'gender', 'surname'
-            'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
-            'personal_phone', 'avatar', 'address', 'access_level',
+            'last_name', 'first_name', 'surname', 'email', 'birthday',
+            'personal_phone', 'avatar', 'address', 'access_level', 'user_profile', 'user_work_profile',
         )
 
     def __init__(self, *args, **kwargs):
@@ -53,9 +53,9 @@ class DataBaseUserAddForm(UserChangeForm):
         model = DataBaseUser
         fields = (
             #  'first_name', 'last_name', 'email', 'birthday',  'access_right',
-            'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
+            'last_name', 'first_name', 'surname', 'email', 'birthday',
             'personal_phone', 'avatar', 'address', 'access_level', 'username', 'type_users',
-            'password', 'job', 'divisions'
+            'password', 'user_profile', 'user_work_profile',
         )
 
 
@@ -76,7 +76,7 @@ class CounteragentUpdateForm(forms.ModelForm):
         model = Counteragent
         fields = ('short_name', 'full_name', 'inn', 'kpp', 'type_counteragent',
                   'juridical_address', 'physical_address', 'email', 'phone',
-                  'director', 'accountant', 'contact_person')
+                  'director', 'accountant', 'contact_person', 'ogrn')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -90,7 +90,7 @@ class CounteragentAddForm(forms.ModelForm):
         model = Counteragent
         fields = ('short_name', 'full_name', 'inn', 'kpp', 'type_counteragent',
                   'juridical_address', 'physical_address', 'email', 'phone',
-                  'director', 'accountant', 'contact_person')
+                  'director', 'accountant', 'contact_person', 'ogrn')
 
 
 class DivisionsAddForm(forms.ModelForm):
@@ -114,13 +114,13 @@ class DivisionsUpdateForm(forms.ModelForm):
 class JobsAddForm(forms.ModelForm):
     class Meta:
         model = Job
-        fields = ('code', 'name')
+        fields = ('code', 'name', 'harmful')
 
 
 class JobsUpdateForm(forms.ModelForm):
     class Meta:
         model = Job
-        fields = ('code', 'name')
+        fields = ('code', 'name', 'harmful')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -135,8 +135,8 @@ class StaffUpdateForm(forms.ModelForm):
         fields = (
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
             #  'phone', 'works', 'access_level', 'avatar', 'surname'
-            'last_name', 'first_name', 'surname', 'email', 'birthday', 'internal_phone', 'work_phone',
-            'personal_phone', 'address', 'gender', 'type_users', 'divisions', 'job',
+            'last_name', 'first_name', 'surname', 'email', 'birthday',
+            'personal_phone', 'address', 'gender', 'type_users',
         )
 
     def __init__(self, *args, **kwargs):

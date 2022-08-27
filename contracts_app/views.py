@@ -45,7 +45,7 @@ class ContractList(LoginRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        user_access = DataBaseUser.objects.get(pk=self.request.user.pk)
+        user_access = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.contracts_access_view.level
         try:
             if self.request.session['portal_paginator']:
                 self.paginate_by = int(self.request.session['portal_paginator'])
@@ -61,7 +61,8 @@ class ContractList(LoginRequiredMixin, ListView):
                 self.item_sorted = 'pk'
         except Exception as _ex:
             self.item_sorted = 'pk'
-        return Contract.objects.filter(allowed_placed=True).order_by(self.item_sorted)
+        return Contract.objects.filter(Q(allowed_placed=True),
+                                       Q(access__level__gte=user_access)).order_by(self.item_sorted)
 
     def get(self, request, *args, **kwargs):
         result = request.GET.get('result', None)

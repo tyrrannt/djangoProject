@@ -9,7 +9,9 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 from administration_app.models import PortalProperty
 from administration_app.utils import ChangeAccess, Med, boolean_return
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel
+from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
+    DataBaseUserWorkProfile, Citizenships, IdentityDocuments
+from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
     CounteragentAddForm
@@ -263,6 +265,7 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
         context['all_division'] = Division.objects.all()
         context['all_job'] = Job.objects.all()
         context['all_access'] = AccessLevel.objects.all().reverse()
+        context['all_citizenship'] = Citizenships.objects.all()
         return context
 
     def post(self, request, *args, **kwargs):
@@ -272,56 +275,105 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
             content.setlist('type_users', '')
         if content['gender'] == 'none':
             content.setlist('gender', '')
-        if content['divisions'] == 'none':
-            content.setlist('divisions', '')
-        if content['job'] == 'none':
-            content.setlist('job', '')
+
         self.request.POST = content
         if self.form_valid:
             obj_user = DataBaseUser.objects.get(pk=kwargs['pk'])
             contracts_access_view = AccessLevel.objects.get(pk=int(content['contracts_access_view']))
             posts_access_view = AccessLevel.objects.get(pk=int(content['posts_access_view']))
             guide_access_view = AccessLevel.objects.get(pk=int(content['guide_access_view']))
-            obj_access = UserAccessMode(
-                contracts_access_view=contracts_access_view,
-                contracts_access_add=boolean_return(request, 'contracts_access_add'),
-                contracts_access_edit=boolean_return(request, 'contracts_access_edit'),
-                contracts_access_agreement=boolean_return(request, 'contracts_access_agreement'),
-                posts_access_view=posts_access_view,
-                posts_access_add=boolean_return(request, 'posts_access_add'),
-                posts_access_edit=boolean_return(request, 'posts_access_edit'),
-                posts_access_agreement=boolean_return(request, 'posts_access_agreement'),
-                guide_access_view=guide_access_view,
-                guide_access_add=boolean_return(request, 'guide_access_add'),
-                guide_access_edit=boolean_return(request, 'guide_access_edit'),
-                guide_access_agreement=boolean_return(request, 'guide_access_agreement')
-            )
+            # Формируем словарь записей, которые будем записывать, поля job и division обрабатываем отдельно
+            work_kwargs = {
+                'date_of_employment': content['date_of_employment'],
+                'internal_phone': content['internal_phone'],
+                'work_phone': content['work_phone'],
+                'work_email': content['work_email']
+            }
+            # Формируем словарь записей, которые будем записывать, поля citizenship и passport обрабатываем отдельно
+            personal_kwargs = {
+                'snils': content['snils'],
+                'oms': content['oms'],
+                'inn': content['inn'],
+            }
+            identity_documents_kwargs = {
+                'series': content['series'],
+                'number': content['number'],
+                'issued_by_whom': content['issued_by_whom'],
+                'date_of_issue': content['date_of_issue'],
+                'division_code': content['division_code'],
+            }
+            # Если поле job не является пустым, расширяем словарь. То же самое делем с division
+            if content['job'] != 'none':
+                work_kwargs['job'] = Job.objects.get(pk=content['job'])
+            if content['divisions'] != 'none':
+                work_kwargs['divisions'] = Division.objects.get(pk=content['divisions'])
+            if content['citizenship'] != 'none':
+                personal_kwargs['citizenship'] = Citizenships.objects.get(pk=content['citizenship'])
+            if not obj_user.user_work_profile:
+                obj_work_profile = DataBaseUserWorkProfile(**work_kwargs)
+                obj_work_profile.save()
+                obj_user.user_work_profile = obj_work_profile
+            else:
+                obj_work_profile = DataBaseUserWorkProfile.objects.get(pk=obj_user.user_work_profile.pk)
+                # Если поле job или division пришли пустыми, присваиваем None значению поля и сохраняем
+                if content['job'] == 'none':
+                    obj_work_profile.job = None
+                    obj_work_profile.save()
+                if content['divisions'] == 'none':
+                    obj_work_profile.divisions = None
+                    obj_work_profile.save()
+                obj_work_profile = DataBaseUserWorkProfile.objects.filter(pk=obj_user.user_work_profile.pk)
+                obj_work_profile.update(**work_kwargs)
+
+            if not obj_user.user_profile:
+                obj_personal_profile_identity_documents = IdentityDocuments(**identity_documents_kwargs)
+                obj_personal_profile_identity_documents.save()
+                personal_kwargs['passport'] = obj_personal_profile_identity_documents
+                obj_personal_profile = UserProfile(**personal_kwargs)
+                obj_personal_profile.save()
+                obj_user.user_profile = obj_personal_profile
+            else:
+                obj_personal_profile = UserProfile.objects.get(pk=obj_user.user_profile.pk)
+                obj_personal_profile_identity_documents = IdentityDocuments.objects.filter(pk=obj_personal_profile.passport.pk)
+                obj_personal_profile_identity_documents.update(**identity_documents_kwargs)
+                if content['citizenship'] == 'none':
+                    obj_personal_profile.citizenship = None
+                    obj_personal_profile.save()
+                obj_personal_profile = UserProfile.objects.filter(pk=obj_user.user_profile.pk)
+                obj_personal_profile.update(**personal_kwargs)
+            access_kwargs = {
+                'contracts_access_view': contracts_access_view,
+                'contracts_access_add': boolean_return(request, 'contracts_access_add'),
+                'contracts_access_edit': boolean_return(request, 'contracts_access_edit'),
+                'contracts_access_agreement': boolean_return(request, 'contracts_access_agreement'),
+                'posts_access_view': posts_access_view,
+                'posts_access_add': boolean_return(request, 'posts_access_add'),
+                'posts_access_edit': boolean_return(request, 'posts_access_edit'),
+                'posts_access_agreement': boolean_return(request, 'posts_access_agreement'),
+                'guide_access_view': guide_access_view,
+                'guide_access_add': boolean_return(request, 'guide_access_add'),
+                'guide_access_edit': boolean_return(request, 'guide_access_edit'),
+                'guide_access_agreement': boolean_return(request, 'guide_access_agreement')
+            }
             if not obj_user.access_level:
+                obj_access = UserAccessMode(**access_kwargs)
                 obj_access.save()
                 obj_user.access_level = obj_access
-                obj_user.save()
             else:
                 obj_access = UserAccessMode.objects.filter(pk=obj_user.access_level.pk)
-                obj_access.update(contracts_access_view=contracts_access_view,
-                                  contracts_access_add=boolean_return(request, 'contracts_access_add'),
-                                  contracts_access_edit=boolean_return(request, 'contracts_access_edit'),
-                                  contracts_access_agreement=boolean_return(request, 'contracts_access_agreement'),
-                                  posts_access_view=posts_access_view,
-                                  posts_access_add=boolean_return(request, 'posts_access_add'),
-                                  posts_access_edit=boolean_return(request, 'posts_access_edit'),
-                                  posts_access_agreement=boolean_return(request, 'posts_access_agreement'),
-                                  guide_access_view=guide_access_view,
-                                  guide_access_add=boolean_return(request, 'guide_access_add'),
-                                  guide_access_edit=boolean_return(request, 'guide_access_edit'),
-                                  guide_access_agreement=boolean_return(request, 'guide_access_agreement'))
+                obj_access.update(**access_kwargs)
+            obj_user.save()
         return super(StaffUpdate, self).post(request, *args, **kwargs)
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
 
+
 """
 Подразделения: Список, Добавление, Детализация, Обновление
 """
+
+
 class DivisionsList(LoginRequiredMixin, ListView):
     model = Division
     template_name = 'customers_app/divisions_list.html'
@@ -417,9 +469,12 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
 
+
 """
 Должности: Список, Добавление, Детализация, Обновление
 """
+
+
 class JobsList(LoginRequiredMixin, ListView):
     model = Job
     template_name = 'customers_app/jobs_list.html'

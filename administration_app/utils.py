@@ -62,11 +62,16 @@ def ChangeAccess(obj):
 
 def Med(request):
     doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
-    context = {'gender': request.get_gender_display(),
+    try:
+        context = {'gender': request.get_gender_display(),
                'birthday': request.birthday,
-               'division': request.divisions,
-               'job': request.job,
+               'division': request.user_work_profile.divisions,
+               'job': request.user_work_profile.job,
                'FIO': request}
+    except Exception as _ex:
+        context = {'gender': request.get_gender_display(),
+                   'birthday': request.birthday,
+                   'FIO': request}
     doc.render(context)
     doc.save(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/generated_doc.docx'))
 
@@ -76,3 +81,4 @@ def boolean_return(request, check_string):
     if is_checked == 'on':
         return True
     return False
+

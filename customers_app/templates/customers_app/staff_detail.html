@@ -44,13 +44,16 @@
                                            data-bs-target="#usage-restriction" role="tab"
                                            aria-controls="usage-restriction" aria-selected="false"><i
                                                 class="bx bx-block me-2"></i> Контактные данные</a>
+                                        <a class="nav-link" id="personal-profile-tab" data-bs-toggle="pill"
+                                           data-bs-target="#personal-profile" role="tab" aria-controls="personal-profile"
+                                           aria-selected="false"><i class="bx bxs-user-check me-2"></i> Личный профиль</a>
                                         <a class="nav-link" id="usage-limits-tab" data-bs-toggle="pill"
                                            data-bs-target="#usage-limits" role="tab" aria-controls="usage-limits"
-                                           aria-selected="false"><i class="bx bx-timer me-2"></i> Дополнительно</a>
+                                           aria-selected="false"><i class="bx bxs-buildings me-2"></i> Рабочий профиль</a>
                                         {% if object.is_active %}
                                         <a class="nav-link" id="access-tab" data-bs-toggle="pill"
                                            data-bs-target="#access" role="tab" aria-controls="access"
-                                           aria-selected="false"><i class="bx bx-upside-down me-2"></i> Уровни доступа</a>
+                                           aria-selected="false"><i class="bx bxs-traffic me-2"></i> Уровни доступа</a>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -122,7 +125,7 @@
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                    <input type="email" class="form-control form-control-modern" disabled
                                                             name="email" id="id_email"
                                                            value="{{ object.email|empty_item }}"/>
                                                 </div>
@@ -137,33 +140,70 @@
                                                             value="{{ object.personal_phone|empty_item }}"/>
                                                 </div>
                                             </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Корпоративный
-                                                    номер телефона</label>
+                                        </div>
+                                        <div class="tab-pane fade" id="personal-profile" role="tabpanel"
+                                             aria-labelledby="personal-profile-tab">
+                                            <div class="form-group row align-items-center  pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Гражданство</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="work_phone" id="id_work_phone"
-                                                           value="{{ object.work_phone|empty_item }}"/>
+                                                            name="citizenship" id="id_citizenship"
+                                                           value="{{ object.user_profile.citizenship|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center  pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Паспорт</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <textarea type="text" class="form-control form-control-modern" disabled
+                                                              name="passport" rows="4"
+                                                              id="id_passport">{{ object.user_profile.passport|empty_item }}</textarea>
+
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center  pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">СНИЛС</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                            name="snils" id="id_snils"
+                                                           value="{{ object.user_profile.snils|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Внутренний
-                                                    номер телефона</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Полис ОМС</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="internal_phone" id="id_internal_phone"
-                                                           value="{{ object.internal_phone|empty_item }}"/>
+                                                            name="oms" id="id_oms"
+                                                           value="{{ object.user_profile.oms|empty_item }}"/>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">ИНН</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                            name="inn" id="id_inn"
+                                                           value="{{ object.user_profile.inn|empty_item }}"/>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="tab-pane fade" id="usage-limits" role="tabpanel"
                                              aria-labelledby="usage-limits-tab">
                                             <div class="form-group row align-items-center  pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Дата приема на работу</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                            name="date_of_employment" id="id_date_of_employment"
+                                                           value="{{ object.user_work_profile.date_of_employment|empty_item }}"
+                                                           placeholder="Данные отсутствуют..."/>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center  pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Подразделение</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
                                                             name="divisions" id="id_divisions"
-                                                           value="{{ object.divisions|empty_item }}"
+                                                           value="{{ object.user_work_profile.divisions|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
@@ -172,11 +212,36 @@
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
                                                             name="job" id="id_job"
-                                                           value="{{ object.job|empty_item }}"
+                                                           value="{{ object.user_work_profile.job|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
-
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Корпоративный
+                                                    номер телефона</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                            name="work_phone" id="id_work_phone"
+                                                           value="{{ object.user_work_profile.work_phone|empty_item }}"/>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Внутренний
+                                                    номер телефона</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                            name="internal_phone" id="id_internal_phone"
+                                                           value="{{ object.user_work_profile.internal_phone|empty_item }}"/>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="email" class="form-control form-control-modern" disabled
+                                                            name="email" id="id_email"
+                                                           value="{{ object.user_work_profile.work_email|empty_item }}"/>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade" id="access" role="tabpanel"
                                              aria-labelledby="access-tab">
