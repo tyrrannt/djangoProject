@@ -60,20 +60,37 @@ def ChangeAccess(obj):
     print(9)
 
 
-def Med(request):
+def Med(obj_model, filepath, filename):
     doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
+    print(obj_model.person.user_work_profile.job.pk)
+    if obj_model.person.gender == 'male':
+        gender = 'муж.'
+    else:
+        gender = 'жен.'
     try:
-        context = {'gender': request.get_gender_display(),
-               'birthday': request.birthday,
-               'division': request.user_work_profile.divisions,
-               'job': request.user_work_profile.job,
-               'FIO': request}
+        context = {'gender': gender,
+                   'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
+                   'division': obj_model.person.user_work_profile.divisions,
+                   'job': obj_model.person.user_work_profile.job,
+                   'FIO': obj_model.person,
+                   'snils': obj_model.person.user_profile.snils,
+                   'oms': obj_model.person.user_profile.oms,
+                   'status': obj_model.get_working_status_display(),
+                   'harmful_name': obj_model.harmful.name,
+                   'harmful_code': obj_model.harmful.code,
+                   'organisation': obj_model.organisation,
+                   'ogrn': obj_model.organisation.ogrn,
+                   'email': obj_model.organisation.email,
+                   'tel': obj_model.organisation.phone,
+                   'address': obj_model.organisation.juridical_address,
+                   }
     except Exception as _ex:
-        context = {'gender': request.get_gender_display(),
-                   'birthday': request.birthday,
-                   'FIO': request}
+        context = {}
     doc.render(context)
-    doc.save(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/generated_doc.docx'))
+    path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
+    if not path_obj.exists():
+        path_obj.mkdir(parents=True)
+    doc.save(pathlib.Path.joinpath(path_obj, filename))
 
 
 def boolean_return(request, check_string):
@@ -81,4 +98,3 @@ def boolean_return(request, check_string):
     if is_checked == 'on':
         return True
     return False
-

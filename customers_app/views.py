@@ -238,7 +238,6 @@ class StaffListView(LoginRequiredMixin, ListView):
     paginate_by = 5
 
     def get_queryset(self):
-        Med(self.request.user)
         qs = DataBaseUser.objects.all().order_by('pk')
         return qs
 

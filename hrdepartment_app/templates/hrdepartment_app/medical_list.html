@@ -22,7 +22,7 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:jobs_add' %}"
+                                            <a href="{% url 'hrdepartment_app:medical_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
                                                 Добавить направление </a>
                                         </div>
@@ -46,13 +46,13 @@
                                 {% for item in object_list %}
                                     <tr>
                                         <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.number }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.number }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.person }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.person }}</strong></a>
                                         </td>
                                         <td>
                                             <strong>{{ item.organisation }}</strong>&nbsp;

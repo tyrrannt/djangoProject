@@ -175,9 +175,13 @@ class Posts(models.Model):
 @receiver(post_save, sender=Contract)
 def rename_file_name(sender, instance, **kwargs):
     try:
+        # Получаем имя сохраненного файла
         file_name = pathlib.Path(instance.doc_file.name).name
+        # Получаем путь к файлу
         path_name = pathlib.Path(instance.doc_file.name).parent
+        # Получаем расширение файла
         ext = file_name.split('.')[-1]
+        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
         uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
         filename = f'{instance.type_of_document.file_name_prefix}-{instance.contract_counteragent.inn}-' \
                    f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
@@ -185,7 +189,8 @@ def rename_file_name(sender, instance, **kwargs):
             pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
                                 pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
 
-        instance.doc_file = f'contracts/{instance.contract_counteragent.inn}/{instance.contract_counteragent.kpp}/{filename}'
+        instance.doc_file = f'contracts/{instance.contract_counteragent.inn}/' \
+                            f'{instance.contract_counteragent.kpp}/{filename}'
         if file_name != filename:
             instance.save()
     except Exception as _ex:
