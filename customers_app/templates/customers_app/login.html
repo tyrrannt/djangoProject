@@ -6,14 +6,6 @@
 {% endblock %}
 
 {% block content %}
-    <!--
-    <form class="form-horizontal" action="{% url 'customers_app:login' %}" method="post">
-        {% csrf_token %}
-        {{ login_form.as_p }}
-        <br>
-        <input class="form-control" type="submit" value="войти">
-    </form>
-     -->
     <div class="panel card-sign">
         <div class="card-title-sign mt-3 text-end">
             <h2 class="title text-uppercase font-weight-bold m-0"><i
@@ -26,12 +18,9 @@
                     <label>Имя пользователя</label>
                     <div class="input-group">
                         <input name="username" type="text" class="form-control form-control-lg"/>
-                        <span class="input-group-text">
-										<i class="bx bx-user text-4"></i>
-									</span>
+                        <span class="input-group-text"><i class="bx bx-user text-4"></i></span>
                     </div>
                 </div>
-
                 <div class="form-group mb-3">
                     <div class="clearfix">
                         <label class="float-left">Пароль</label>
@@ -39,12 +28,9 @@
                     </div>
                     <div class="input-group">
                         <input name="password" type="password" class="form-control form-control-lg"/>
-                        <span class="input-group-text">
-										<i class="bx bx-lock text-4"></i>
-									</span>
+                        <span class="input-group-text"><i class="bx bx-lock text-4"></i></span>
                     </div>
                 </div>
-
                 <div class="row">
                     <div class="col-sm-8">
                         <div class="checkbox-custom checkbox-default">
@@ -53,16 +39,14 @@
                         </div>
                     </div>
                     <div class="col-sm-4 text-end">
-                        {#                            <button type="submit" class="form-control">Вход</button>#}
                         <input class="btn btn-primary mt-2 form-control" type="submit" value="войти">
                     </div>
                 </div>
-
                 <span class="mt-3 mb-3 line-thru text-center text-uppercase"><span>{% now "Y" %}</span></span><br>
-                <p class="text-center">Тестовый доступ для ознакомления с функционалом: <br> <strong>Логин: barkol</strong>, <strong>Пароль: Bkl7731246570</strong></p>
+                <p class="text-center">Тестовый доступ для ознакомления с функционалом: <br> <strong>Логин:
+                    barkol</strong>, <strong>Пароль: Bkl7731246570</strong></p>
                 <p class="text-center">У вас еще нет учетной записи? <a href="{% url 'customers_app:register' %}">Зарегистрируйтесь!</a>
                 </p>
-
             </form>
         </div>
     </div>
