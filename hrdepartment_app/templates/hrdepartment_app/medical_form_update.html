@@ -100,6 +100,13 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_medical_direction">Файл направления</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                             <a href="{{ object.medical_direction.url }}" target="_blank">Открыть документ</a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -116,7 +123,7 @@
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:jobs_list' %}"
+                    <a href="{% url 'hrdepartment_app:medical_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
                 {% if user.is_superuser %}

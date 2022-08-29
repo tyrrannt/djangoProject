@@ -33,7 +33,7 @@ class Medical(models.Model):
     working_status = models.CharField(verbose_name='Статус', max_length=40, choices=type_of,
                                       help_text='', blank=True, default='')
     medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
-    harmful = models.OneToOneField(HarmfulWorkingConditions, on_delete=models.SET_NULL, null=True)
+    harmful = models.ForeignKey(HarmfulWorkingConditions, verbose_name='Вредные условия труда', on_delete=models.SET_NULL, null=True)
 
 @receiver(post_save, sender=Medical)
 def rename_file_name(sender, instance, **kwargs):

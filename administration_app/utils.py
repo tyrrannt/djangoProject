@@ -3,6 +3,7 @@ import pathlib
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from docxtpl import DocxTemplate
+from docx2pdf import convert
 
 from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division, UserAccessMode
@@ -91,6 +92,9 @@ def Med(obj_model, filepath, filename):
     if not path_obj.exists():
         path_obj.mkdir(parents=True)
     doc.save(pathlib.Path.joinpath(path_obj, filename))
+    #ToDo: Попытка конвертации docx в pdf в Linux. Не работает
+    # convert(filename, (filename[:-4]+'pdf'))
+    # convert(filepath)
 
 
 def boolean_return(request, check_string):
