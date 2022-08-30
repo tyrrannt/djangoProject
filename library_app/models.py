@@ -1,4 +1,5 @@
 import pathlib
+import uuid
 
 from django.db import models
 from django.urls import reverse
@@ -23,13 +24,14 @@ class Documents(models.Model):
         verbose_name = 'Документ'
         verbose_name_plural = 'Документы'
 
-    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
+    ref_key = models.UUIDField(verbose_name='Уникальный номер', default=uuid.uuid4, unique=True)
     type_of_document = models.ForeignKey(TypeDocuments, verbose_name='Тип документа', on_delete=models.SET_NULL,
                                          null=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
     executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                  null=True, related_name='document_executor')
     document_date = models.DateField(verbose_name='Дата документа', default='')
+    document_name = models.CharField(verbose_name='Наименование документа', max_length=200, default='')
     document_number = models.CharField(verbose_name='Номер документа', max_length=10, default='')
     doc_file = models.FileField(verbose_name='Файл документа', upload_to=document_directory_path, blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
@@ -41,7 +43,7 @@ class Documents(models.Model):
     validity_period_start = models.DateField(verbose_name='Документ действует с', default='')
     validity_period_end = models.DateField(verbose_name='Документ действует по', default='')
     actuality = models.BooleanField(verbose_name='Актуальность', default=False)
-    previous_document = models.URLField(verbose_name='Предшествующий документ')
+    previous_document = models.URLField(verbose_name='Предшествующий документ', blank=True)
 
 
     def get_absolute_url(self):

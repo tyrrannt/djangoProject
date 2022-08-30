@@ -100,11 +100,33 @@ class Category(models.Model):
     class Meta:
         abstract = True
 
-    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
-    parent_category = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+    """
+        Соответствие полей со справочником из 1С:
+
+        ref_key = Ref_Key
+        parent_category = Parent_Key; если = "00000000-0000-0000-0000-000000000000" значит нет родительской категории
+        code = Code
+        name = Description
+        history = ДатаСоздания
+        okved = КодОКВЭД2
+        active = Расформировано
+
+        URL API:
+        http://192.168.10.11/hrmnew/odata/standard.odata/Catalog_ПодразделенияОрганизаций?$format=application/json;odata=nometadata
+
+        Десериализация:
+        for item in range(0, len(data['value'])):
+            if data['value'][item]['DeletionMark'] == False:
+                print(data['value'][item])
+        """
+
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='', help_text='')
+    parent_category = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+    code = models.CharField(verbose_name='Код подразделения', max_length=8, default='', help_text='')
     name = models.CharField(verbose_name='Название категории', max_length=128, unique=True)
     description = models.TextField(verbose_name='Описание категории', blank=True)
     history = models.DateField(verbose_name="Дата создания", auto_created=True, null=True)
+    okved = models.CharField(verbose_name='Код ОКВЭД2', max_length=8, default='', help_text='')
     active = models.BooleanField(verbose_name='Активность', default=True)
 
     def __str__(self):
