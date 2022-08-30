@@ -65,6 +65,7 @@ class Job(models.Model):
         verbose_name = 'Должность'
         verbose_name_plural = 'Должности'
 
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     code = models.CharField(verbose_name='Код должности', max_length=5, help_text='', default='')
     name = models.CharField(verbose_name='Должность', max_length=200, help_text='')
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда', blank=True)
@@ -99,6 +100,7 @@ class Category(models.Model):
     class Meta:
         abstract = True
 
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     parent_category = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(verbose_name='Название категории', max_length=128, unique=True)
     description = models.TextField(verbose_name='Описание категории', blank=True)
@@ -138,6 +140,7 @@ class IdentityDocuments(models.Model):
         verbose_name = 'Паспорт пользователя'
         verbose_name_plural = 'Паспорта пользователей'
 
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     series = models.CharField(verbose_name='Серия', max_length=4, default='')
     number = models.CharField(verbose_name='Номер', max_length=6, default='')
     issued_by_whom = models.CharField(verbose_name='Кем выдан', max_length=250, default='')
@@ -193,6 +196,7 @@ class DataBaseUser(AbstractUser):
         ('male', 'мужской'),
         ('female', 'женский')
     ]
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, default='', help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')
@@ -226,6 +230,7 @@ class Counteragent(models.Model):
         ('government_agency', 'государственный орган'),
     ]
 
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     short_name = models.CharField(verbose_name='Наименование', max_length=150, default='', help_text='')
     full_name = models.CharField(verbose_name='Полное наименование', max_length=250, default='', help_text='')
     inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='', help_text='')
