@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 
 from django.db import models
@@ -115,6 +116,11 @@ class ContractModel(models.Model):
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
                                null=True, default=5)
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
+
+    @property
+    def is_past_due(self):
+        today = datetime.datetime.today()
+        return today > self.closing_date
 
     def __str__(self):
         if self.parent_category:

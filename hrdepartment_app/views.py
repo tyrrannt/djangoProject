@@ -20,7 +20,7 @@ class MedicalExaminationAdd(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(MedicalExaminationAdd, self).get_context_data(**kwargs)
-        content['all_person'] = DataBaseUser.objects.all()
+        content['all_person'] = DataBaseUser.objects.filter(type_users='staff_member')
         content['all_contragent'] = Counteragent.objects.all()
         content['all_status'] = Medical.type_of
         content['all_harmful'] = ''

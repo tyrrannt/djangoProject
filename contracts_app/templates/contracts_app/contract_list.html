@@ -110,11 +110,7 @@
                                             {% endfor %}
                                         </td>
                                         <td>
-                                            {% if item.closing_date == null or item.closing_date < now %}
-                                                <span class="ecommerce-status active">Действующий</span>
-                                            {% else %}
-                                                <span class="ecommerce-status deactive">Не действующий</span>
-                                            {% endif %}
+                                        {% if item.closing_date == null or item.closing_date < now %}<i class='bx bx-check bx-md' style='color:#087902'  ></i>{% else %}<i class='bx bx-x bx-md' style='color:#f90202'  ></i>{% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}
