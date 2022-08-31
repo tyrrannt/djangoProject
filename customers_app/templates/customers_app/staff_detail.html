@@ -257,12 +257,19 @@
 												</tr>
 											</thead>
 											<tbody>
-												<tr>
+                                                <tr>
 													<td>Договора</td>
 													<td>{{ object.access_level.contracts_access_view|empty_item }}</td>
 													<td><input type="checkbox" {% if object.access_level.contracts_access_add  %}checked{% endif %} disabled></td>
 													<td><input type="checkbox" {% if object.access_level.contracts_access_edit  %}checked{% endif %} disabled></td>
                                                     <td><input type="checkbox" {% if object.access_level.contracts_access_agreement %}checked{% endif %} disabled></td>
+												</tr>
+                                                <tr>
+													<td>Документы</td>
+													<td>{{ object.access_level.documents_access_view|empty_item }}</td>
+													<td><input type="checkbox" {% if object.access_level.documents_access_add  %}checked{% endif %} disabled></td>
+													<td><input type="checkbox" {% if object.access_level.documents_access_edit  %}checked{% endif %} disabled></td>
+                                                    <td><input type="checkbox" {% if object.access_level.documents_access_agreement %}checked{% endif %} disabled></td>
 												</tr>
                                                 <tr>
 													<td>Записи</td>

@@ -45,6 +45,8 @@ class Documents(models.Model):
     actuality = models.BooleanField(verbose_name='Актуальность', default=False)
     previous_document = models.URLField(verbose_name='Предшествующий документ', blank=True)
 
+    def __str__(self):
+        return f'{self.type_of_document} № {self.document_number} от {self.document_date}'
 
     def get_absolute_url(self):
         return reverse('library_app:documents', kwargs={'pk': self.pk})

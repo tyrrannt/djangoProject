@@ -224,7 +224,7 @@
                                             {# ToDo: Доработать вывод постов#}
                                             {% for item in posts %}
                                                 {% for items in item.post_divisions.iterator %}
-                                                    {% if items == databaseuser.divisions and item.allowed_placed %}
+                                                    {% if items == databaseuser.user_work_profile.divisions and item.allowed_placed %}
                                                         <li>
                                                             <div class="tm-box">
                                                                 <p class="text-muted mb-0">{{ item.creation_date }}</p>

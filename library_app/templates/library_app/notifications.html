@@ -59,11 +59,11 @@
                 <ul>
                     {% for item in posts_not_published %}
                         <li>
-                            <a href="#" class="clearfix">
+                            <a href="{% url 'customers_app:post' user.pk item.pk %}" class="clearfix">
                                 <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
                                      title="" data-bs-original-title="Создано: {{ item.creation_date| date:'d-m-Y' }}">
                                     <code style="font-size: small">
-                                        {{ item.post_description }}
+                                        {{ item }}
                                     </code>
                                 </div>
                             </a>
@@ -81,52 +81,38 @@
     </li>
 
     <li>
-        <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-            <i class="bx bx-bell"></i>
-            <span class="badge">3</span>
-        </a>
-
+        {% if documents_not_published_count != 0 %}
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <i class="bx bx-bell"></i>
+                <span class="badge">{{ documents_not_published_count }}</span>
+            </a>
+        {% endif %}
         <div class="dropdown-menu notification-menu">
             <div class="notification-title">
-                <span class="float-end badge badge-default">3</span>
-                Оповещения
+                <span class="float-end badge badge-default">{{ documents_not_published_count }}</span>
+                Документы
             </div>
 
             <div class="content">
                 <ul>
-                    <li>
-                        <a href="#" class="clearfix">
-                            <div class="image">
-                                <i class="fas fa-thumbs-down bg-danger text-light"></i>
-                            </div>
-                            <span class="title">Server is Down!</span>
-                            <span class="message">{{ total_time }}</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="clearfix">
-                            <div class="image">
-                                <i class="bx bx-lock bg-warning text-light"></i>
-                            </div>
-                            <span class="title">User Locked</span>
-                            <span class="message">15 minutes ago</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="clearfix">
-                            <div class="image">
-                                <i class="fas fa-signal bg-success text-light"></i>
-                            </div>
-                            <span class="title">Connection Restaured</span>
-                            <span class="message">10/10/2021</span>
-                        </a>
-                    </li>
+                    {% for item in documents_not_published %}
+                        <li>
+                            <a href="{% url 'library_app:documents_update' item.pk %}" class="clearfix">
+                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="" data-bs-original-title="Создано: {{ item.document_date| date:'d-m-Y' }}">
+                                    <code style="font-size: small">
+                                        {{ item }}
+                                    </code>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
                 </ul>
 
                 <hr/>
 
                 <div class="text-end">
-                    <a href="#" class="view-more">View All</a>
+                    <a href="{% url 'library_app:documents_list' %}" class="view-more">Просмотреть все</a>
                 </div>
             </div>
         </div>

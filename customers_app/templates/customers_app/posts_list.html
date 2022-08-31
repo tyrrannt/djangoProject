@@ -35,10 +35,10 @@
                                     <tr>
 
                                         <td>
-                                            <a href="#"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'customers_app:post' user.pk item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="#"><strong>{{ item.creation_date }}</strong></a>
+                                            <a href="{% url 'customers_app:post' user.pk item.pk %}"><strong>{{ item.creation_date }}</strong></a>
                                         </td>
                                         <td>{{ item.post_description }}</td>
                                         <td>{{ item.allowed_placed }}</td>

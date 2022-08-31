@@ -24,11 +24,17 @@ class UserAccessMode(models.Model):
         verbose_name_plural = 'Уровни доступа пользователей'
 
     # Права доступа к договорам
-    contracts_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к договорам', blank=True,
+    documents_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к договорам', blank=True,
+                                              null=True, on_delete=models.CASCADE, related_name='documents_view')
+    documents_access_add = models.BooleanField(verbose_name='Разрешение на создание договора', default=False)
+    documents_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование договора', default=False)
+    documents_access_agreement = models.BooleanField(verbose_name='Право на публикацию договора', default=False)
+    # Права доступа к документам
+    contracts_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документам', blank=True,
                                               null=True, on_delete=models.CASCADE, related_name='contracts_view')
-    contracts_access_add = models.BooleanField(verbose_name='Разрешение на создание договора', default=False)
-    contracts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование договора', default=False)
-    contracts_access_agreement = models.BooleanField(verbose_name='Право на публикацию договора', default=False)
+    contracts_access_add = models.BooleanField(verbose_name='Разрешение на создание документа', default=False)
+    contracts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование документа', default=False)
+    contracts_access_agreement = models.BooleanField(verbose_name='Право на публикацию документа', default=False)
     # Права доступа к сообщениям
     posts_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к сообщениям', blank=True,
                                           null=True, on_delete=models.CASCADE, related_name='posts_view')

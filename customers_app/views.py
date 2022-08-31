@@ -14,7 +14,7 @@ from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMo
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
-    CounteragentAddForm
+    CounteragentAddForm, PostsUpdateForm
 from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -152,9 +152,23 @@ class PostsListView(LoginRequiredMixin, ListView):
 
 
 class PostsDetailView(LoginRequiredMixin, DetailView):
-    template_name = ''
+    template_name = 'customers_app/posts_detail.html'
     model = Posts
 
+
+class PostsUpdateView(LoginRequiredMixin, UpdateView):
+    template_name = 'customers_app/posts_detail_update.html'
+    model = Posts
+    form_class = PostsUpdateForm
+
+    def get_success_url(self):
+        """
+               Получение URL при удачном добавлении нового сообщения. Получаем ID пользователя из request, и передача его
+               в качестве параметра
+               :return: Возвращает URL адрес страницы, с которой создавалось сообщение.
+               """
+        pk = self.request.user.pk
+        return reverse("customers_app:post_list", kwargs={"pk": pk})
 
 class CounteragentListView(LoginRequiredMixin, ListView):
     # template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
@@ -281,6 +295,7 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
             contracts_access_view = AccessLevel.objects.get(pk=int(content['contracts_access_view']))
             posts_access_view = AccessLevel.objects.get(pk=int(content['posts_access_view']))
             guide_access_view = AccessLevel.objects.get(pk=int(content['guide_access_view']))
+            documents_access_view = AccessLevel.objects.get(pk=int(content['documents_access_view']))
             # Формируем словарь записей, которые будем записывать, поля job и division обрабатываем отдельно
             work_kwargs = {
                 'date_of_employment': content['date_of_employment'],
@@ -345,6 +360,10 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
                 'contracts_access_add': boolean_return(request, 'contracts_access_add'),
                 'contracts_access_edit': boolean_return(request, 'contracts_access_edit'),
                 'contracts_access_agreement': boolean_return(request, 'contracts_access_agreement'),
+                'documents_access_view': documents_access_view,
+                'documents_access_add': boolean_return(request, 'documents_access_add'),
+                'documents_access_edit': boolean_return(request, 'documents_access_edit'),
+                'documents_access_agreement': boolean_return(request, 'documents_access_agreement'),
                 'posts_access_view': posts_access_view,
                 'posts_access_add': boolean_return(request, 'posts_access_add'),
                 'posts_access_edit': boolean_return(request, 'posts_access_edit'),

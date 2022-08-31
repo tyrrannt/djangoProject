@@ -370,6 +370,24 @@
                                                     <td><input type="checkbox" name="contracts_access_agreement" id="id_contracts_access_agreement" {% if object.access_level.contracts_access_agreement %}checked{% endif %}></td>
 												</tr>
                                                 <tr>
+													<td>Документы</td>
+													<td>
+                                                        <select name="documents_access_view" id="id_documents_access_view"
+                                                            class="form-control form-control-modern">
+                                                        {% for item in all_access %}
+                                                            {% if item == object.access_level.documents_access_view %}
+                                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                            {% else %}
+                                                                <option value="{{ item.pk }}">{{ item }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        </select>
+                                                    </td>
+													<td><input type="checkbox" name="documents_access_add" id="id_documents_access_add" {% if object.access_level.documents_access_add  %}checked{% endif %}></td>
+													<td><input type="checkbox" name="documents_access_edit" id="id_documents_access_edit" {% if object.access_level.documents_access_edit  %}checked{% endif %}></td>
+                                                    <td><input type="checkbox" name="documents_access_agreement" id="id_documents_access_agreement" {% if object.access_level.documents_access_agreement %}checked{% endif %}></td>
+												</tr>
+                                                <tr>
 													<td>Записи</td>
 													<td>
                                                         <select name="posts_access_view" id="id_posts_access_view"
