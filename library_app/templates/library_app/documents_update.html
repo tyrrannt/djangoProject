@@ -45,7 +45,7 @@
         </div>
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="{% url 'library_app:documents_update' object.pk %}"
-              method="post">
+              method="post"  enctype="multipart/form-data">
             {% csrf_token %}
             <div class="col-lg-12">
                 <h4 class="font-weight-bold text-dark">Изменение документа: {{ object }}</h4>
