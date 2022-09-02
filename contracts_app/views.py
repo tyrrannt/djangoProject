@@ -198,13 +198,18 @@ class ContractDetail(LoginRequiredMixin, DetailView):
 
     def dispatch(self, request, *args, **kwargs):
         try:
+            # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
             user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.contracts_access_view.level
-
+            # Сравниваем права доступа
             if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
                 url_match = reverse_lazy('contracts_app:index')
                 return redirect(url_match)
         except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
         return super(ContractDetail, self).dispatch(request, *args, **kwargs)

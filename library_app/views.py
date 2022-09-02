@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import QueryDict
-from django.shortcuts import render, HttpResponseRedirect
+from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, ListView, CreateView
 
@@ -48,6 +48,24 @@ class DocumentsAdd(LoginRequiredMixin, CreateView):
 class DocumentsDetail(LoginRequiredMixin, DetailView):
     #template_name = ''
     model = Documents
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.documents_access_view.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('library_app:documents_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy('library_app:documents_list')
+            return redirect(url_match)
+        return super(DocumentsDetail, self).dispatch(request, *args, **kwargs)
 
 
 class DocumentsUpdate(LoginRequiredMixin, UpdateView):
