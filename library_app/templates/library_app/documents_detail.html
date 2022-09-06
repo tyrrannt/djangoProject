@@ -1,4 +1,4 @@
-{% extends 'contracts_app/main.html' %}
+{% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
 {% block custome_css %}
@@ -32,7 +32,8 @@
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
             {% csrf_token %}
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }} от {{ object.document_date }} г.</h4>
+                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
+                    от {{ object.document_date }} г.</h4>
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
                         <label>Основные реквизиты</label>
@@ -43,24 +44,28 @@
                                         <div class="col-lg-12 text-black-50">
                                             <label for="id_document_name">Наименование документа</label>
                                             <input type="text" class="form-control form-control-modern" disabled
-                                                   name="document_name" value="{{ object.document_name }}" id="id_document_name"/>
+                                                   name="document_name" value="{{ object.document_name }}"
+                                                   id="id_document_name"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_type_of_document">Тип документа</label>
                                             <input type="text" class="form-control form-control-modern" disabled
-                                                   name="type_of_document" value="{{ object.type_of_document }}" id="id_type_of_document"/>
+                                                   name="type_of_document" value="{{ object.type_of_document }}"
+                                                   id="id_type_of_document"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_date">Дата документа</label>
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="document_date" value="{{ object.document_date }}" id="id_document_date"
+                                                   name="document_date" value="{{ object.document_date }}"
+                                                   id="id_document_date"
                                                    disabled data-plugin-datepicker
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_number">Номер документа</label>
                                             <input type="text" class="form-control form-control-modern" disabled
-                                                   name="document_number" value="{{ object.document_number }}" id="id_document_number"/>
+                                                   name="document_number" value="{{ object.document_number }}"
+                                                   id="id_document_number"/>
                                         </div>
                                     </div>
                                     <div class="row text">
@@ -74,7 +79,8 @@
                                             <label for="id_validity_period_start">Действителен с:</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="validity_period_start" id="id_validity_period_start"
-                                                   disabled data-plugin-datepicker value="{{ object.validity_period_start }}"
+                                                   disabled data-plugin-datepicker
+                                                   value="{{ object.validity_period_start }}"
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
 
                                         </div>
@@ -82,7 +88,8 @@
                                             <label for="id_validity_period_end">Действителен по:</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="validity_period_end" id="id_validity_period_end"
-                                                   disabled data-plugin-datepicker value="{{ object.validity_period_end }}"
+                                                   disabled data-plugin-datepicker
+                                                   value="{{ object.validity_period_end }}"
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
 
                                         </div>
@@ -99,31 +106,22 @@
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_division">Принадлежность к подразделению</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="document_division" id="id_document_division"
-                                                    data-plugin-selectTwo multiple disabled>
-
-                                                {% for item in object.document_division.iterator %}
-                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <!--@formatter:off-->
+                                            <textarea name="document_division" id="id_document_division" disabled rows="3"
+                                                class="form-control mb-4 form-control-modern">{% for item in object.document_division.iterator %}{% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;{% endif %}{% endfor %}</textarea>
+                                            <!--@formatter:on-->
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_executor">Исполнитель</label>
                                             <input type="text" class="form-control form-control-modern" disabled
                                                    name="executor" value="{{ object.executor }}" id="id_executor"/>
-
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_employee">Ответственное лицо</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="employee" id="id_employee"
-                                                    data-plugin-selectTwo multiple disabled>
-
-                                                {% for item in object.employee.iterator %}
-                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <!--@formatter:off-->
+                                            <textarea name="employee" id="id_employee" disabled rows="3"
+                                                class="form-control mb-4 form-control-modern">{% for item in object.employee.iterator %}{% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;{% endif %}{% endfor %}</textarea>
+                                            <!--@formatter:on-->
                                         </div>
                                     </div>
                                     <div class="row text">
@@ -135,7 +133,7 @@
                                         <div class="col-md-4 text-black-50 mt-3">
                                             <label for="id_actuality">Актуальность:</label>
                                             <input type="checkbox" name="actuality" id="id_actuality"
-                                                    {% if object.actuality %}checked{% endif %}>
+                                                   {% if object.actuality %}checked{% endif %}>
                                         </div>
                                     </div>
                                 </div>
@@ -151,15 +149,14 @@
                                         <div class="col-lg-12 text-black-50">
                                             <label for="id_doc_file">Файл документа:</label>
                                             {% if object.doc_file %}
-                                    <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
-                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"
-                                            height="750px">
-                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">
-                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы просмотреть его: <a
-                                                href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>
-                                        </embed>
-                                    </object>
-                                {% endif %}
+                                                <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
+                                                <!--@formatter:off-->
+                                                <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px" height="750px">
+                                                    <embed src="{{ object.doc_file.url }}" type="application/pdf">
+                                                    <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы просмотреть его: <a href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p></embed>
+                                                </object>
+                                                <!--@formatter:on-->
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -170,23 +167,23 @@
             </div>
             <div class="row action-buttons">
                 {% if user.access_level.guide_access_edit %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                    <a href="{% url 'library_app:documents_update' object.pk %}"
-                       class="submit-button btn btn-primary btn-px-4 py-3 d-flex
+                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                        <a href="{% url 'library_app:documents_update' object.pk %}"
+                           class="submit-button btn btn-primary btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-save text-4 me-2"></i> Изменить</a>
-                </div>
+                            <i class="bx bx-save text-4 me-2"></i> Изменить</a>
+                    </div>
                 {% endif %}
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'library_app:documents_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
                 {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                </div>
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="#"
+                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    </div>
                 {% endif %}
             </div>
         </form>

@@ -7,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import ChangeAccess, Med, boolean_return
+from administration_app.utils import boolean_return
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
@@ -15,7 +15,7 @@ from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
     CounteragentAddForm, PostsUpdateForm
-from django.contrib import auth, messages
+from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
@@ -47,7 +47,7 @@ class DataBaseUserProfile(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         post = Posts.objects.all().order_by('creation_date').reverse()
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
-        context['title'] = title = 'редактирование'
+        context['title'] = 'редактирование'
         context['posts'] = post
         # context.update(groups())
         return context
@@ -61,7 +61,7 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         post = Posts.objects.all().order_by('creation_date').reverse()
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
-        context['title'] = title = 'Профиль пользователя'
+        context['title'] = 'Профиль пользователя'
         context['posts'] = post
         return context
 
@@ -163,12 +163,13 @@ class PostsUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         """
-               Получение URL при удачном добавлении нового сообщения. Получаем ID пользователя из request, и передача его
-               в качестве параметра
+               Получение URL при удачном добавлении нового сообщения. Получаем ID пользователя из request, и передача
+               его в качестве параметра
                :return: Возвращает URL адрес страницы, с которой создавалось сообщение.
                """
         pk = self.request.user.pk
         return reverse("customers_app:post_list", kwargs={"pk": pk})
+
 
 class CounteragentListView(LoginRequiredMixin, ListView):
     # template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
@@ -221,6 +222,20 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
     model = Counteragent
     form_class = CounteragentUpdateForm
 
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа у пользователя к редактированию
+            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
+                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('customers_app:counteragent_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
+            url_match = reverse_lazy('customers_app:counteragent_list')
+            return redirect(url_match)
+        return super(CounteragentUpdate, self).dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super(CounteragentUpdate, self).get_context_data(**kwargs)
         context['counteragent_users'] = DataBaseUser.objects.all()
@@ -265,6 +280,20 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
     template_name = 'customers_app/staff_form.html'
     model = DataBaseUser
     form_class = StaffUpdateForm
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа у пользователя к редактированию
+            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
+                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('customers_app:staff_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
+            url_match = reverse_lazy('customers_app:staff_list')
+            return redirect(url_match)
+        return super(StaffUpdate, self).dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
@@ -348,7 +377,8 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
                 obj_user.user_profile = obj_personal_profile
             else:
                 obj_personal_profile = UserProfile.objects.get(pk=obj_user.user_profile.pk)
-                obj_personal_profile_identity_documents = IdentityDocuments.objects.filter(pk=obj_personal_profile.passport.pk)
+                obj_personal_profile_identity_documents = IdentityDocuments.objects.filter(
+                    pk=obj_personal_profile.passport.pk)
                 obj_personal_profile_identity_documents.update(**identity_documents_kwargs)
                 if content['citizenship'] == 'none':
                     obj_personal_profile.citizenship = None
@@ -450,6 +480,20 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
     template_name = 'customers_app/divisions_update.html'
     form_class = DivisionsUpdateForm
 
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа у пользователя к редактированию
+            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
+                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('customers_app:divisions_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
+            url_match = reverse_lazy('customers_app:divisions_list')
+            return redirect(url_match)
+        return super(DivisionsUpdate, self).dispatch(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
         """
         Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
@@ -541,6 +585,20 @@ class JobsUpdate(LoginRequiredMixin, UpdateView):
     model = Job
     template_name = 'customers_app/jobs_update.html'
     form_class = JobsUpdateForm
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа у пользователя к редактированию
+            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
+                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('customers_app:jobs_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
+            url_match = reverse_lazy('customers_app:jobs_list')
+            return redirect(url_match)
+        return super(JobsUpdate, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         content = super(JobsUpdate, self).get_context_data(**kwargs)

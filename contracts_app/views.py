@@ -1,8 +1,11 @@
 import functools
+import pathlib
 from os import path
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db.models import Q
 from django.http import FileResponse, Http404, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, redirect
@@ -21,6 +24,7 @@ import hashlib
 
 # Create your views here.
 from customers_app.models import DataBaseUser, Counteragent
+from djangoProject import settings
 
 
 class ContractList(LoginRequiredMixin, ListView):
@@ -185,6 +189,14 @@ class ContractAdd(LoginRequiredMixin, CreateView):
         except Exception as _ex:
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
+    
+    def form_valid(self, form):
+        files = self.request.FILES.getlist('doc_file')
+        for item in files:
+            paths = default_storage.save(pathlib.Path.joinpath(settings.MEDIA_URL, 'hr'), ContentFile(item.read()))
+            print("images path are", paths)
+        form.clean()
+        return super(ContractAdd, self).form_valid(form)
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))

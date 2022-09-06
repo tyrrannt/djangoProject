@@ -29,22 +29,19 @@
                                     {% endif %}
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label class="ws-nowrap me-3 mb-0">Сортировка:</label>
+                                            <label for="field_sorted" class="ws-nowrap me-3 mb-0">Сортировка:</label>
                                             <select class="form-control select-style-1 filter-by" name="filter-by"
                                                 onchange="field_sorted()" id="field_sorted">
-
                                                 <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
                                                 <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
                                                 <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер договора</option>
                                                 <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата договора</option>
-
-
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label class="ws-nowrap me-3 mb-0">Количество:</label>
+                                            <label for="portal_paginator" class="ws-nowrap me-3 mb-0">Количество:</label>
                                             <select class="form-control select-style-1 results-per-page"
                                                     name="results-per-page" onchange="portal_paginator()"
                                                     id="portal_paginator">
