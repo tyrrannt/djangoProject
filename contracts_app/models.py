@@ -22,6 +22,7 @@ class TypeDocuments(models.Model):
         verbose_name_plural = 'Тип документов'
 
     type_document = models.CharField(verbose_name='Тип документа', max_length=50)
+    short_name = models.CharField(verbose_name='Краткое наименование', max_length=3, default='')
     file_name_prefix = models.CharField(verbose_name='Префикс файла', max_length=3)
 
     def __str__(self):

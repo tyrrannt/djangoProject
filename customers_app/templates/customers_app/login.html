@@ -5,8 +5,42 @@
     <title>{{ title }}</title>
 {% endblock %}
 
+{% block custome %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $(function () {
+                $("#errors").dialog({
+                    modal: true,
+                    closeOnEscape: false,
+                    dialogClass: "no-close",
+                    resizable: false,
+                    draggable: false,
+                    width: 600,
+                    buttons: [
+                        {
+                            text: "OK",
+                            click: function () {
+                                $(this).dialog("close");
+                            }
+                        }
+                    ]
+                });
+            });
+        });
+    </script>
+{% endblock %}
+
 {% block content %}
+
     <div class="panel card-sign">
+        <div>
+            {% if errors %}
+                <div id="errors" class="alert alert-danger">
+                    <strong>{{ errors }}</strong>
+                </div>
+            {% endif %}
+
+        </div>
         <div class="card-title-sign mt-3 text-end">
             <h2 class="title text-uppercase font-weight-bold m-0"><i
                     class="bx bx-user-circle me-1 text-6 position-relative top-5"></i> Вход в систему</h2>

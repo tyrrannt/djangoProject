@@ -15,7 +15,7 @@ from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
     CounteragentAddForm, PostsUpdateForm
-from django.contrib import auth
+from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
@@ -84,8 +84,9 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
 
 
 def login(request):
-    title = 'вход'
+    content = {'title': 'вход'}
     login_form = DataBaseUserLoginForm(data=request.POST)
+    content['login_form'] = login_form
     if request.method == 'POST' and login_form.is_valid():
         username = request.POST['username']
         password = request.POST['password']
@@ -94,8 +95,9 @@ def login(request):
             auth.login(request, user)
             request.session.set_expiry(PortalProperty.objects.get(pk=1).portal_session)
             request.session['portal_paginator'] = PortalProperty.objects.get(pk=1).portal_paginator
-            return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user.pk,)))
-    content = {'title': title, 'login_form': login_form}
+            return HttpResponseRedirect(reverse('customers_app:profile'), args=(user,))
+    # else:
+    #     content['errors'] = login_form.get_invalid_login_error()
     return render(request, 'customers_app/login.html', content)
 
 
