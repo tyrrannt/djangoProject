@@ -172,7 +172,7 @@ class IdentityDocuments(models.Model):
     series = models.CharField(verbose_name='Серия', max_length=4, default='')
     number = models.CharField(verbose_name='Номер', max_length=6, default='')
     issued_by_whom = models.CharField(verbose_name='Кем выдан', max_length=250, default='')
-    date_of_issue = models.DateField(verbose_name='Дата выдачи')
+    date_of_issue = models.DateField(verbose_name='Дата выдачи', null=True)
     division_code = models.CharField(verbose_name='Код подразделения', max_length=7, default='')
 
     def __str__(self):
@@ -184,9 +184,9 @@ class DataBaseUserProfile(models.Model):
         verbose_name = 'Профиль пользователя'
         verbose_name_plural = 'Профили пользователей'
 
-    citizenship = models.ForeignKey(Citizenships, verbose_name='Гражданство', blank=True, on_delete=models.CASCADE,
+    citizenship = models.ForeignKey(Citizenships, verbose_name='Гражданство', blank=True, on_delete=models.SET_NULL,
                                     null=True)
-    passport = models.OneToOneField(IdentityDocuments, verbose_name='Паспорт', blank=True, on_delete=models.CASCADE,
+    passport = models.OneToOneField(IdentityDocuments, verbose_name='Паспорт', blank=True, on_delete=models.SET_NULL,
                                     null=True)
     snils = models.CharField(verbose_name='СНИЛС', max_length=14, blank=True, default='')
     oms = models.CharField(verbose_name='Полис ОМС', max_length=24, blank=True, default='')
@@ -198,7 +198,7 @@ class DataBaseUserWorkProfile(models.Model):
         verbose_name = 'Рабочий профиль пользователя'
         verbose_name_plural = 'Рабочие профили пользователей'
 
-    date_of_employment = models.DateField(verbose_name='Дата приема на работу', blank=True)
+    date_of_employment = models.DateField(verbose_name='Дата приема на работу', blank=True, null=True)
     internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
                                       default='', )
     work_phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,

@@ -66,13 +66,13 @@ class ContractsPostAddForm(forms.ModelForm):
 class TypeDocumentsAddForm(forms.ModelForm):
     class Meta:
         model = TypeDocuments
-        fields = ('type_document', 'file_name_prefix')
+        fields = ('type_document', 'short_name', 'file_name_prefix')
 
 
 class TypeDocumentsUpdateForm(forms.ModelForm):
     class Meta:
         model = TypeDocuments
-        fields = ('type_document', 'file_name_prefix')
+        fields = ('type_document', 'short_name', 'file_name_prefix')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

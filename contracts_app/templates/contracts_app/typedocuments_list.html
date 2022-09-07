@@ -36,8 +36,9 @@
                                 <thead>
                                 <tr>
                                     <th width="10%">Код в БД</th>
-                                    <th width="20%">Тип документа</th>
-                                    <th width="70%">Префикс файла</th>
+                                    <th width="40%">Тип документа</th>
+                                    <th width="25%">Краткое наименование</th>
+                                    <th width="25%">Префикс файла</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -48,6 +49,9 @@
                                         </td>
                                         <td>
                                             <a href="{% url 'contracts_app:typedocuments' item.pk %}"><strong>{{ item.type_document }}</strong></a>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'contracts_app:typedocuments' item.pk %}"><strong>{{ item.short_name }}</strong></a>
                                         </td>
                                         <td>
                                             <a href="{% url 'contracts_app:typedocuments' item.pk %}"><strong>{{ item.file_name_prefix }}</strong></a>

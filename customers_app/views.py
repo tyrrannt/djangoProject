@@ -95,7 +95,7 @@ def login(request):
             auth.login(request, user)
             request.session.set_expiry(PortalProperty.objects.get(pk=1).portal_session)
             request.session['portal_paginator'] = PortalProperty.objects.get(pk=1).portal_paginator
-            return HttpResponseRedirect(reverse('customers_app:profile'), args=(user,))
+            return HttpResponseRedirect(reverse('customers_app:index'))#, args=(user,))
     # else:
     #     content['errors'] = login_form.get_invalid_login_error()
     return render(request, 'customers_app/login.html', content)
@@ -329,7 +329,7 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
             documents_access_view = AccessLevel.objects.get(pk=int(content['documents_access_view']))
             # Формируем словарь записей, которые будем записывать, поля job и division обрабатываем отдельно
             work_kwargs = {
-                'date_of_employment': content['date_of_employment'],
+                'date_of_employment': content['date_of_employment'] if content['date_of_employment'] != '' else None,
                 'internal_phone': content['internal_phone'],
                 'work_phone': content['work_phone'],
                 'work_email': content['work_email']
@@ -344,7 +344,7 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
                 'series': content['series'],
                 'number': content['number'],
                 'issued_by_whom': content['issued_by_whom'],
-                'date_of_issue': content['date_of_issue'],
+                'date_of_issue': content['date_of_issue'] if content['date_of_issue'] != '' else None,
                 'division_code': content['division_code'],
             }
             # Если поле job не является пустым, расширяем словарь. То же самое делем с division
