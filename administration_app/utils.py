@@ -102,3 +102,17 @@ def boolean_return(request, check_string):
     if is_checked == 'on':
         return True
     return False
+
+def int_validate(check_string):
+    """
+    Перевод строки в число
+    :param check_string: Строка
+    :return: Число, в случае если строка не число, возвращается 0
+    """
+    try:
+        return int(check_string)
+    except ValueError:
+        #ToDo: Тут надо обработать запись в журнал ошибки при необходимости
+        return 0
+    except TypeError:
+        return 0

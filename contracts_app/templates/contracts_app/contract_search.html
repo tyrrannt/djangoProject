@@ -202,7 +202,7 @@
                                             {% endfor %}
                                         </td>
                                         <td>
-                                            {% if item.is_past_due > now or item.closing_date not null %}<i class='bx bx-check bx-md' style='color:#087902'  ></i>{% else %}<i class='bx bx-x bx-md' style='color:#f90202'  ></i>{% endif %}
+                                            {% if item.is_past_due %}<i class='bx bx-check bx-md' style='color:#087902'  ></i>{% else %}<i class='bx bx-x bx-md' style='color:#f90202'  ></i>{% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -211,35 +211,32 @@
 
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">
-                                                <select class="form-control select-style-1 bulk-action"
-                                                        name="bulk-action" style="min-width: 170px;">
-                                                    <option value="" selected>Редактировать</option>
-                                                    <option value="delete">Удалить</option>
-                                                </select>
-                                                <a href="#"
-                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-
+{#                            <div class="datatable-footer">#}
+{#                                <div class="row align-items-center justify-content-between mt-3">#}
+{#                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">#}
+{#                                        <div class="d-flex align-items-stretch">#}
+{#                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">#}
+{#                                                <select class="form-control select-style-1 bulk-action"#}
+{#                                                        name="bulk-action" style="min-width: 170px;">#}
+{#                                                    <option value="" selected>Редактировать</option>#}
+{#                                                    <option value="delete">Удалить</option>#}
+{#                                                </select>#}
+{#                                                <a href="#"#}
+{#                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>#}
+{#                                            </div>#}
+{##}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="col-lg-auto text-center order-3 order-lg-2">#}
+{#                                        <div class="results-info-wrapper"></div>#}
+{#                                    </div>#}
+{#                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">#}
+{#                                        <div class="pagination-wrapper"></div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>

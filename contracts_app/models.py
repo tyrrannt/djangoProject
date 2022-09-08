@@ -121,7 +121,7 @@ class ContractModel(models.Model):
     @property
     def is_past_due(self):
         today = datetime.datetime.today()
-        return today > self.closing_date
+        return today.date() < self.closing_date
 
     def __str__(self):
         if self.parent_category:

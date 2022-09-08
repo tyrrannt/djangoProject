@@ -20,24 +20,35 @@
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
 
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'contracts_app:create' %}"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить договор </a>
-                                        </div>
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="{% url 'contracts_app:create' %}"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                            Добавить договор </a>
+                                    </div>
 
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
                                             <label class="ws-nowrap me-3 mb-0">Сортировка:</label>
                                             <select class="form-control select-style-1 filter-by" name="filter-by"
-                                                onchange="field_sorted()" id="field_sorted">
+                                                    onchange="field_sorted()" id="field_sorted">
 
-                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
-                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер договора</option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата договора</option>
-                                                <option value="4" {% if sort_item == 4 %}selected{% endif %}>Тип договора</option>
-                                                <option value="5" {% if sort_item == 5 %}selected{% endif %}>Подразделение</option>
+                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код
+                                                </option>
+                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>
+                                                    Контрагент
+                                                </option>
+                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер
+                                                    договора
+                                                </option>
+                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата
+                                                    договора
+                                                </option>
+                                                <option value="4" {% if sort_item == 4 %}selected{% endif %}>Тип
+                                                    договора
+                                                </option>
+                                                <option value="5" {% if sort_item == 5 %}selected{% endif %}>
+                                                    Подразделение
+                                                </option>
 
                                             </select>
                                         </div>
@@ -48,18 +59,28 @@
                                             <select class="form-control select-style-1 results-per-page"
                                                     name="results-per-page" onchange="portal_paginator()"
                                                     id="portal_paginator">
-                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6</option>
-                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>12</option>
-                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>24</option>
-                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>48</option>
-                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>96</option>
+                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6
+                                                </option>
+                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>
+                                                    12
+                                                </option>
+                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>
+                                                    24
+                                                </option>
+                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>
+                                                    48
+                                                </option>
+                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>
+                                                    96
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-12 col-lg-auto ps-lg-1">
                                         <div class="mx-lg-auto">
                                             <div class="input-group">
-                                                <a href="{% url 'contracts_app:index' %}" class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
+                                                <a href="{% url 'contracts_app:index' %}"
+                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
                                                     Применить настройки
                                                 </a>
                                             </div>
@@ -70,7 +91,6 @@
 
                             <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
-
                                 <thead>
                                 <tr>
                                     <th width="3%"><input type="checkbox" name="select-all"
@@ -101,7 +121,6 @@
                                         <td>{{ item.type_of_contract }}</td>
                                         <td>
                                             {% for unit in item.divisions.iterator %}
-
                                                 {% if forloop.last %}
                                                     {{ unit.name }}
                                                 {% else %}
@@ -110,7 +129,9 @@
                                             {% endfor %}
                                         </td>
                                         <td>
-                                        {% if item.closing_date == null or item.closing_date < now %}<i class='bx bx-check bx-md' style='color:#087902'  ></i>{% else %}<i class='bx bx-x bx-md' style='color:#f90202'  ></i>{% endif %}
+                                            {% if item.is_past_due %}
+                                                <i class='bx bx-check bx-md' style='color:#087902'></i>{% else %}
+                                                <i class='bx bx-x bx-md' style='color:#f90202'></i>{% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -119,35 +140,32 @@
 
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">
-                                                <select class="form-control select-style-1 bulk-action"
-                                                        name="bulk-action" style="min-width: 170px;">
-                                                    <option value="" selected>Редактировать</option>
-                                                    <option value="delete">Удалить</option>
-                                                </select>
-                                                <a href="#"
-                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-
+                            {#                            <div class="datatable-footer">#}
+                            {#                                <div class="row align-items-center justify-content-between mt-3">#}
+                            {#                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">#}
+                            {#                                        <div class="d-flex align-items-stretch">#}
+                            {#                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">#}
+                            {#                                                <select class="form-control select-style-1 bulk-action"#}
+                            {#                                                        name="bulk-action" style="min-width: 170px;">#}
+                            {#                                                    <option value="" selected>Редактировать</option>#}
+                            {#                                                    <option value="delete">Удалить</option>#}
+                            {#                                                </select>#}
+                            {#                                                <a href="#"#}
+                            {#                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>#}
+                            {#                                            </div>#}
+                            {##}
+                            {#                                        </div>#}
+                            {#                                    </div>#}
+                            {#                                    <div class="col-lg-auto text-center order-3 order-lg-2">#}
+                            {#                                        <div class="results-info-wrapper"></div>#}
+                            {#                                    </div>#}
+                            {#                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">#}
+                            {#                                        <div class="pagination-wrapper"></div>#}
+                            {#                                    </div>#}
+                            {#                                </div>#}
+                            {#                            </div>#}
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -172,6 +190,7 @@
                 }
             });
         };
+
         function field_sorted() {
             item_sorted = document.getElementById("field_sorted").value;
             $.ajax({

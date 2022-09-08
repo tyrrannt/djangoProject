@@ -14,6 +14,7 @@ from django.views.generic import DetailView, UpdateView, ListView, CreateView, D
 from django.views.generic.detail import SingleObjectMixin
 
 from administration_app.models import PortalProperty
+from administration_app.utils import int_validate
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm
@@ -94,34 +95,34 @@ class ContractSearch(LoginRequiredMixin, ListView):
 
     # Работает с GET запросом
     def get_queryset(self):
-        qs = Contract.objects.all()
+        query = Q()
+        query &= Q(allowed_placed=True)
+        query &= Q(access__pk__gte=DataBaseUser.objects.get(
+            pk=self.request.user.pk).access_level.contracts_access_view.level)
+        qs = Contract.objects.filter(query).order_by('pk')
         if self.request.GET:
-            # ToDo: Вставить валидацию параметров запроса
-            dv = int(self.request.GET.get('dv'))
-            ca = int(self.request.GET.get('ca'))
-            tc = int(self.request.GET.get('tc'))
-            tp = int(self.request.GET.get('tp'))
+            dv = self.request.GET.get('dv')
+            ca = self.request.GET.get('ca')
+            tc = self.request.GET.get('tc')
+            tp = self.request.GET.get('tp')
             cn = self.request.GET.get('cn')
             sn = self.request.GET.get('sn')
-
             """Формируем запрос на лету, в зависимости от полученных параметров, создаем Q объект,
                и добавляем к нему запросы, в зависимости от значений передаваемых параметров.
             """
-            query = Q()
-            if dv != 0:
-                query &= Q(divisions=dv)
-            if ca != 0:
-                query &= Q(contract_counteragent=ca)
-            if tc != 0:
-                query &= Q(type_of_contract=tc)
-            if tp != 0:
-                query &= Q(type_property=tp)
+            if dv != '0':
+                query &= Q(divisions=int_validate(dv))
+            if ca != '0':
+                query &= Q(contract_counteragent=int_validate(ca))
+            if tc != '0':
+                query &= Q(type_of_contract=int_validate(tc))
+            if tp != '0':
+                query &= Q(type_property=int_validate(tp))
             if cn:
                 query &= Q(contract_number__contains=cn)
             if sn:
                 query &= Q(subject_contract__contains=sn)
-            # query &= Q(access__pk__gte=self.request.user.access_right.pk)
-            return Contract.objects.filter(query).order_by('pk')
+            qs = Contract.objects.filter(query).order_by('pk')
         return qs
 
     ##ToDo: Доработать передачу поискового запроса через POST
@@ -135,10 +136,14 @@ class ContractSearch(LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context['s'] = f"dv={self.request.GET.get('dv')}&ca={self.request.GET.get('ca')}" \
-                       f"&tc={self.request.GET.get('tc')}&tp={self.request.GET.get('tp')}" \
-                       f"&cn={self.request.GET.get('cn')}&sn={self.request.GET.get('sn')}&"
+        # Формируем строку GET запроса при пагинации
+        get_request_string = f"dv={self.request.GET.get('dv')}&ca={self.request.GET.get('ca')}" \
+                             f"&tc={self.request.GET.get('tc')}&tp={self.request.GET.get('tp')}" \
+                             f"&cn={self.request.GET.get('cn')}&sn={self.request.GET.get('sn')}&"
+        if get_request_string == 'dv=None&ca=None&tc=None&tp=None&cn=None&sn=None&':
+            context['s'] = ''
+        else:
+            context['s'] = get_request_string
         context['title'] = 'Поиск по базе договоров'
         return context
 
@@ -189,7 +194,7 @@ class ContractAdd(LoginRequiredMixin, CreateView):
         except Exception as _ex:
             url_match = reverse_lazy('contracts_app:index')
             return redirect(url_match)
-    
+
     def form_valid(self, form):
         files = self.request.FILES.getlist('doc_file')
         for item in files:
@@ -361,6 +366,8 @@ class ContractPostDelete(LoginRequiredMixin, DeleteView):
 """
 Типы документов: Список, Добавление, Детализация, Обновление
 """
+
+
 class TypeDocumentsList(LoginRequiredMixin, ListView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_list.html'
@@ -432,6 +439,8 @@ class TypeDocumentsUpdate(LoginRequiredMixin, UpdateView):
 """
 Типы договоров: Список, Добавление, Детализация, Обновление
 """
+
+
 class TypeContractsList(LoginRequiredMixin, ListView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_list.html'
@@ -503,6 +512,8 @@ class TypeContractsUpdate(LoginRequiredMixin, UpdateView):
 """
 Типы имущества: Список, Добавление, Детализация, Обновление
 """
+
+
 class TypePropertysList(LoginRequiredMixin, ListView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_list.html'
