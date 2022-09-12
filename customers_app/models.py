@@ -5,6 +5,17 @@ from django.urls import reverse
 from contracts_app.templatetags.custom import empty_item
 
 
+class ViewDocumentsPhysical(models.Model):
+    class Meta:
+        verbose_name = 'Вид документа физического лица'
+        verbose_name_plural = 'Виды документов физических лиц'
+
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
+    codeMVD = models.CharField(verbose_name='Код МВД', max_length=5, default='')
+    codePFR = models.CharField(verbose_name='Код ПФР', max_length=5, default='')
+    name = models.TextField(verbose_name='Наименование')
+
+
 class AccessLevel(models.Model):
     class Meta:
         verbose_name = 'Уровень доступа'
@@ -58,6 +69,7 @@ class HarmfulWorkingConditions(models.Model):
         verbose_name = 'Вредные условия труда'
         verbose_name_plural = 'Вредные условия труда'
 
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     code = models.CharField(verbose_name='Код', max_length=5, default='')
     name = models.TextField(verbose_name='Наименование')
     frequency = models.PositiveSmallIntegerField(verbose_name='Периодичность осмотров')
