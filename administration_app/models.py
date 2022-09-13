@@ -1,5 +1,7 @@
 from django.db import models
 
+from customers_app.models import DataBaseUser
+
 
 # Create your models here.
 

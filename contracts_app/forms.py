@@ -8,7 +8,7 @@ from django import forms
 class ContractsAddForm(forms.ModelForm):
     class Meta:
         model = Contract
-        fields = ['parent_category', 'contract_counteragent', 'internal_number', 'contract_number',
+        fields = ['parent_category', 'contract_counteragent', 'contract_number',
                   'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
                   'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
                   'comment', 'doc_file', 'access', 'executor', 'type_of_document']
@@ -33,7 +33,7 @@ class ContractsUpdateForm(forms.ModelForm):
         #           'comment', 'date_entry', 'executor', 'doc_file', 'access', 'allowed_placed')
         fields = ('parent_category', 'contract_counteragent', 'type_of_contract', 'employee', 'contract_number',
                   'date_conclusion', 'closing_date', 'divisions', 'type_property', 'type_of_document', 'access',
-                  'subject_contract', 'cost', 'internal_number', 'prolongation', 'allowed_placed', 'doc_file')
+                  'subject_contract', 'cost', 'prolongation', 'allowed_placed', 'doc_file')
 
     divisions = forms.ModelMultipleChoiceField(
         label='Подразделения',

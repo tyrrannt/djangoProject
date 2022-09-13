@@ -1,4 +1,6 @@
 import datetime
+import json
+import requests
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, QueryDict
@@ -423,10 +425,19 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
 Подразделения: Список, Добавление, Детализация, Обновление
 """
 
-
 class DivisionsList(LoginRequiredMixin, ListView):
     model = Division
     template_name = 'customers_app/divisions_list.html'
+
+    def get(self, request, *args, **kwargs):
+        #ToDo: Обновление списка подразделений с 1С
+        if self.request.GET:
+            source_url = "http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Catalog_ПодразделенияОрганизаций?$format=application/json;odata=nometadata"
+            response = requests.get(source_url)
+            todos = json.loads(response.text)
+            print(todos)
+        return super(DivisionsList, self).get(request, *args, **kwargs)
+
 
 
 class DivisionsAdd(LoginRequiredMixin, CreateView):

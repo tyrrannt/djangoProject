@@ -35,6 +35,7 @@ class TypeContract(models.Model):
         verbose_name_plural = 'Тип договоров'
 
     type_contract = models.CharField(verbose_name='Тип договора', max_length=50)
+    authorized_person = models.ManyToManyField(DataBaseUser, verbose_name='Авторизованное лицо')
 
     def __str__(self):
         return f'{self.type_contract}'
@@ -92,8 +93,6 @@ class ContractModel(models.Model):
                                         blank=True)
     contract_counteragent = models.ForeignKey(Counteragent, verbose_name='Контрагент', on_delete=models.SET_NULL,
                                               null=True)
-    internal_number = models.CharField(verbose_name='Номер в папке', max_length=50, blank=True, default='',
-                                       help_text='')
     contract_number = models.CharField(verbose_name='Номер договора', max_length=50, blank=True, default='',
                                        help_text='')
     date_conclusion = models.DateField(verbose_name='Дата заключения договора')

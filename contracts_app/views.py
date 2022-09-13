@@ -7,21 +7,16 @@ from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db.models import Q
-from django.http import FileResponse, Http404, QueryDict
-from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, redirect
-from django.utils.decorators import method_decorator
+from django.http import QueryDict
+from django.shortcuts import HttpResponseRedirect, redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
-from django.views.generic.detail import SingleObjectMixin
 
 from administration_app.models import PortalProperty
 from administration_app.utils import int_validate
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm
-from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required, user_passes_test
-import hashlib
 
 # Create your views here.
 from customers_app.models import DataBaseUser, Counteragent
@@ -83,6 +78,7 @@ class ContractList(LoginRequiredMixin, ListView):
 class ContractSearch(LoginRequiredMixin, ListView):
     """
     Поиск договоров в базе
+    ToDo: Не работает пагинация при прямом открытии списка. Разобраться почему!!! После нажатия кнопки поиска, все норм.
     """
     template_name_suffix = '_search'
     context_object_name = 'object'
@@ -135,7 +131,7 @@ class ContractSearch(LoginRequiredMixin, ListView):
     #     return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = super().get_context_data(object_list=None, **kwargs)
         # Формируем строку GET запроса при пагинации
         get_request_string = f"dv={self.request.GET.get('dv')}&ca={self.request.GET.get('ca')}" \
                              f"&tc={self.request.GET.get('tc')}&tp={self.request.GET.get('tp')}" \
@@ -144,6 +140,7 @@ class ContractSearch(LoginRequiredMixin, ListView):
             context['s'] = ''
         else:
             context['s'] = get_request_string
+
         context['title'] = 'Поиск по базе договоров'
         return context
 
