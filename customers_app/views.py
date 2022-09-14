@@ -430,14 +430,52 @@ class DivisionsList(LoginRequiredMixin, ListView):
     template_name = 'customers_app/divisions_list.html'
 
     def get(self, request, *args, **kwargs):
-        #ToDo: Обновление списка подразделений с 1С
+        count = 0
         if self.request.GET:
             source_url = "http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Catalog_ПодразделенияОрганизаций?$format=application/json;odata=nometadata"
             response = requests.get(source_url)
             todos = json.loads(response.text)
-            print(todos)
+            # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
+
+
+            for item in todos['value']:
+                if item['Description'] != "":
+                    parent_category = True if Division.objects.filter(ref_key=item['Parent_Key']).count() == 1 else False
+                    divisions_kwargs = {
+                        'ref_key': item['Ref_Key'],
+                        'parent_category': Division.objects.get(ref_key=item['Parent_Key']) if parent_category else None,
+                        'code': item['Code'],
+                        'name': item['Description'],
+                        'description': item['Description'],
+                        'history': datetime.datetime.strptime(item['ДатаСоздания'][:10], "%Y-%m-%d"),
+                        'okved': item['КодОКВЭД2'],
+                        'active': False if item['Расформировано'] else True,
+                    }
+                    if Division.objects.filter(ref_key=item['Ref_Key']).count() != 1:
+                        db_instance = Division(**divisions_kwargs)
+                        db_instance.save()
+                        count += 1
+            all_divisions = Division.objects.filter(parent_category=None)
+            for item in todos['value']:
+                if item['Description'] != "" and item['Parent_Key'] != "00000000-0000-0000-0000-000000000000":
+                    if all_divisions.filter(ref_key=item['Ref_Key']).count() == 1:
+                        division = Division.objects.get(ref_key=item['Ref_Key'])
+                        division.parent_category = Division.objects.get(ref_key=item['Parent_Key'])
+                        division.save()
+            # self.get_context_data(object_list=None, kwargs={'added': count})
+            url_match = reverse_lazy('customers_app:divisions_list')
+            return redirect(url_match)
+
         return super(DivisionsList, self).get(request, *args, **kwargs)
 
+    def get_queryset(self):
+        qs = Division.objects.filter(active=True).order_by('code')
+        return qs
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        print(kwargs)
+        context = super().get_context_data(object_list=None, **kwargs)
+        return context
 
 
 class DivisionsAdd(LoginRequiredMixin, CreateView):

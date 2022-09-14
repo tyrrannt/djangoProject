@@ -15,7 +15,7 @@ def get_all_contracts(request):
     all_type_property = TypeProperty.objects.all()
     all_counteragent = Counteragent.objects.all()
     all_prolongation = Contract.type_of_prolongation
-    all_divisions = Division.objects.all()
+    all_divisions = Division.objects.filter(active=True).order_by('code')
     all_access = AccessLevel.objects.all()
     all_type_of_document = TypeDocuments.objects.all()
     if not request.user.is_anonymous:

@@ -140,11 +140,11 @@ class Category(models.Model):
 
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='', help_text='')
     parent_category = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
-    code = models.CharField(verbose_name='Код подразделения', max_length=8, default='', help_text='')
-    name = models.CharField(verbose_name='Название категории', max_length=128, unique=True)
+    code = models.CharField(verbose_name='Код подразделения', max_length=10, default='', help_text='')
+    name = models.CharField(verbose_name='Название категории', max_length=128, default='')
     description = models.TextField(verbose_name='Описание категории', blank=True)
     history = models.DateField(verbose_name="Дата создания", auto_created=True, null=True)
-    okved = models.CharField(verbose_name='Код ОКВЭД2', max_length=8, default='', help_text='')
+    okved = models.CharField(verbose_name='Код ОКВЭД2', max_length=8, default='', help_text='', blank=True)
     active = models.BooleanField(verbose_name='Активность', default=True)
 
     def __str__(self):
