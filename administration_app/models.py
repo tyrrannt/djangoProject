@@ -48,3 +48,13 @@ def make_menu():
     items = MainMenu.objects.all()
     for item in items:
         urls = f'<li class="nav-parent"> <a class="nav-link" href="#"><i class="bx bx-file" aria-hidden="true"></i><span>{item}</span></a></li>'
+
+
+class BaseItems(models.Model):
+    class Meta:
+        abstract = True
+
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='', help_text='')
+    code = models.CharField(verbose_name='Код', max_length=10, default='', help_text='')
+    name = models.CharField(verbose_name='Название', max_length=128, default='')
+    active = models.BooleanField(verbose_name='Активность', default=True)

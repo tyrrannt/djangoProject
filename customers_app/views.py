@@ -1,6 +1,4 @@
 import datetime
-import json
-import requests
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, QueryDict
@@ -9,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import boolean_return
+from administration_app.utils import boolean_return, get_jsons_data
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
@@ -17,7 +15,7 @@ from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
     CounteragentAddForm, PostsUpdateForm
-from django.contrib import auth, messages
+from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
@@ -97,7 +95,7 @@ def login(request):
             auth.login(request, user)
             request.session.set_expiry(PortalProperty.objects.get(pk=1).portal_session)
             request.session['portal_paginator'] = PortalProperty.objects.get(pk=1).portal_paginator
-            return HttpResponseRedirect(reverse('customers_app:index'))#, args=(user,))
+            return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
     # else:
     #     content['errors'] = login_form.get_invalid_login_error()
     return render(request, 'customers_app/login.html', content)
@@ -425,6 +423,7 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
 Подразделения: Список, Добавление, Детализация, Обновление
 """
 
+
 class DivisionsList(LoginRequiredMixin, ListView):
     model = Division
     template_name = 'customers_app/divisions_list.html'
@@ -432,18 +431,16 @@ class DivisionsList(LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         count = 0
         if self.request.GET:
-            source_url = "http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Catalog_ПодразделенияОрганизаций?$format=application/json;odata=nometadata"
-            response = requests.get(source_url)
-            todos = json.loads(response.text)
+            todos = get_jsons_data("Catalog", "ПодразделенияОрганизаций")
             # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
-
-
             for item in todos['value']:
                 if item['Description'] != "":
-                    parent_category = True if Division.objects.filter(ref_key=item['Parent_Key']).count() == 1 else False
+                    parent_category = True if Division.objects.filter(
+                        ref_key=item['Parent_Key']).count() == 1 else False
                     divisions_kwargs = {
                         'ref_key': item['Ref_Key'],
-                        'parent_category': Division.objects.get(ref_key=item['Parent_Key']) if parent_category else None,
+                        'parent_category': Division.objects.get(
+                            ref_key=item['Parent_Key']) if parent_category else None,
                         'code': item['Code'],
                         'name': item['Description'],
                         'description': item['Description'],
@@ -591,6 +588,40 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
 class JobsList(LoginRequiredMixin, ListView):
     model = Job
     template_name = 'customers_app/jobs_list.html'
+
+    def get(self, request, *args, **kwargs):
+        count = 0
+        if self.request.GET:
+            todos = get_jsons_data("Catalog", "Должности")
+            todos2 = get_jsons_data("Catalog", "ТрудовыеФункции")
+            # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
+            for item in todos['value']:
+                if item['Description'] != "" and item['ВведенаВШтатноеРасписание'] == True:
+                    jobs_kwargs = {
+                        'ref_key': item['Ref_Key'],
+                        'code': item['ОКПДТРКод'],
+                        'name': item['Description'],
+                        'date_entry': datetime.datetime.strptime(item['ДатаСоздания'][:10], "%Y-%m-%d"),
+                        'date_exclusions': datetime.datetime.strptime(item['ДатаИсключения'][:10], "%Y-%m-%d"),
+                        'excluded_standard_spelling': False if item['ИсключенаИзШтатногоРасписания'] else True,
+                        'active': False if item['ИсключенаИзШтатногоРасписания'] else True,
+                    }
+                    if Division.objects.filter(ref_key=item['Ref_Key']).count() != 1:
+                        db_instance = Job(**jobs_kwargs)
+                        db_instance.save()
+                        count += 1
+            all_divisions = Division.objects.filter(parent_category=None)
+            for item in todos['value']:
+                if item['Description'] != "" and item['Parent_Key'] != "00000000-0000-0000-0000-000000000000":
+                    if all_divisions.filter(ref_key=item['Ref_Key']).count() == 1:
+                        division = Division.objects.get(ref_key=item['Ref_Key'])
+                        division.parent_category = Division.objects.get(ref_key=item['Parent_Key'])
+                        division.save()
+            # self.get_context_data(object_list=None, kwargs={'added': count})
+            url_match = reverse_lazy('customers_app:divisions_list')
+            return redirect(url_match)
+
+        return super(DivisionsList, self).get(request, *args, **kwargs)
 
 
 class JobsAdd(LoginRequiredMixin, CreateView):

@@ -1,5 +1,7 @@
+import json
 import pathlib
 
+import requests
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from docxtpl import DocxTemplate
@@ -92,7 +94,7 @@ def Med(obj_model, filepath, filename):
     if not path_obj.exists():
         path_obj.mkdir(parents=True)
     doc.save(pathlib.Path.joinpath(path_obj, filename))
-    #ToDo: Попытка конвертации docx в pdf в Linux. Не работает
+    # ToDo: Попытка конвертации docx в pdf в Linux. Не работает
     # convert(filename, (filename[:-4]+'pdf'))
     # convert(filepath)
 
@@ -103,6 +105,7 @@ def boolean_return(request, check_string):
         return True
     return False
 
+
 def int_validate(check_string):
     """
     Перевод строки в число
@@ -112,7 +115,26 @@ def int_validate(check_string):
     try:
         return int(check_string)
     except ValueError:
-        #ToDo: Тут надо обработать запись в журнал ошибки при необходимости
+        # ToDo: Тут надо обработать запись в журнал ошибки при необходимости
         return 0
     except TypeError:
         return 0
+
+
+def get_jsons_data(object_type: str, object_name: str) -> dict:
+    """
+    Получение JSON объекта из таблицы 1С
+    :param object_type: Тип объекта: Справочник — Catalog; Документ — Document; Журнал документов — DocumentJournal;
+    Константа — Constant; План обмена — ExchangePlan; План счетов — ChartOfAccounts;
+    План видов расчета — ChartOfCalculationTypes; План видов характеристик — ChartOfCharacteristicTypes;
+    Регистр сведений — InformationRegister; Регистр накопления — AccumulationRegister;
+    Регистр расчета — CalculationRegister; Регистр бухгалтерии — AccountingRegister;
+    Бизнес-процесс — BusinessProcess; Задача — Task.
+    :param object_name: Название объекта. Список можно посмотреть в конфигурации
+    :return: Возвращает JSON объект, в виде словаря.
+    """
+    url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/" \
+          f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
+    source_url = url
+    response = requests.get(source_url)
+    return json.loads(response.text)
