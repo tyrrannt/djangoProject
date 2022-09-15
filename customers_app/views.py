@@ -606,22 +606,15 @@ class JobsList(LoginRequiredMixin, ListView):
                         'excluded_standard_spelling': False if item['ИсключенаИзШтатногоРасписания'] else True,
                         'active': False if item['ИсключенаИзШтатногоРасписания'] else True,
                     }
-                    if Division.objects.filter(ref_key=item['Ref_Key']).count() != 1:
+                    if Job.objects.filter(ref_key=item['Ref_Key']).count() != 1:
                         db_instance = Job(**jobs_kwargs)
                         db_instance.save()
                         count += 1
-            all_divisions = Division.objects.filter(parent_category=None)
-            for item in todos['value']:
-                if item['Description'] != "" and item['Parent_Key'] != "00000000-0000-0000-0000-000000000000":
-                    if all_divisions.filter(ref_key=item['Ref_Key']).count() == 1:
-                        division = Division.objects.get(ref_key=item['Ref_Key'])
-                        division.parent_category = Division.objects.get(ref_key=item['Parent_Key'])
-                        division.save()
-            # self.get_context_data(object_list=None, kwargs={'added': count})
-            url_match = reverse_lazy('customers_app:divisions_list')
+
+            url_match = reverse_lazy('customers_app:jobs_list')
             return redirect(url_match)
 
-        return super(DivisionsList, self).get(request, *args, **kwargs)
+        return super(JobsList, self).get(request, *args, **kwargs)
 
 
 class JobsAdd(LoginRequiredMixin, CreateView):
