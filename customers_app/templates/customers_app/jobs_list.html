@@ -26,6 +26,11 @@
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
                                                 Добавить должность </a>
                                         </div>
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'customers_app:jobs_list' %}?update=0"
+                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Синхронизация с 1С </a>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>

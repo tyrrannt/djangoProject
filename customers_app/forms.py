@@ -126,13 +126,13 @@ class DivisionsUpdateForm(forms.ModelForm):
 class JobsAddForm(forms.ModelForm):
     class Meta:
         model = Job
-        fields = ('code', 'name', 'harmful')
+        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling')
 
 
 class JobsUpdateForm(forms.ModelForm):
     class Meta:
         model = Job
-        fields = ('code', 'name', 'harmful')
+        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

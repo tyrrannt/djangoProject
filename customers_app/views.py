@@ -596,25 +596,30 @@ class JobsList(LoginRequiredMixin, ListView):
             todos2 = get_jsons_data("Catalog", "ТрудовыеФункции")
             # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
             for item in todos['value']:
-                if item['Description'] != "" and item['ВведенаВШтатноеРасписание'] == True:
+                if item['Description'] != "" and item['ВведенаВШтатноеРасписание']:
                     jobs_kwargs = {
                         'ref_key': item['Ref_Key'],
-                        'code': item['ОКПДТРКод'],
+                        'code': todos2['value'][1]['ОКПДТРКод'],
                         'name': item['Description'],
-                        'date_entry': datetime.datetime.strptime(item['ДатаСоздания'][:10], "%Y-%m-%d"),
+                        'date_entry': datetime.datetime.strptime(item['ДатаВвода'][:10], "%Y-%m-%d"),
+                        'employment_function': item['ТрудоваяФункция_Key'],
                         'date_exclusions': datetime.datetime.strptime(item['ДатаИсключения'][:10], "%Y-%m-%d"),
-                        'excluded_standard_spelling': False if item['ИсключенаИзШтатногоРасписания'] else True,
-                        'active': False if item['ИсключенаИзШтатногоРасписания'] else True,
+                        'excluded_standard_spelling': item['ИсключенаИзШтатногоРасписания']
                     }
                     if Job.objects.filter(ref_key=item['Ref_Key']).count() != 1:
                         db_instance = Job(**jobs_kwargs)
                         db_instance.save()
                         count += 1
-
+            # for item in todos2['value']:
+            #     if
             url_match = reverse_lazy('customers_app:jobs_list')
             return redirect(url_match)
 
         return super(JobsList, self).get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = Job.objects.filter(excluded_standard_spelling=False)
+        return qs
 
 
 class JobsAdd(LoginRequiredMixin, CreateView):

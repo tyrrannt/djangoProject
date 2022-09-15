@@ -86,11 +86,11 @@ class Job(models.Model):
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     code = models.CharField(verbose_name='Код должности', max_length=5, help_text='', default='')
     name = models.CharField(verbose_name='Должность', max_length=200, help_text='')
-    date_entry = models.DateField(verbose_name='Дата ввода', auto_now_add=True)
-    date_exclusions = models.DateField(verbose_name='Дата исключения', auto_now_add=True)
+    date_entry = models.DateField(verbose_name='Дата ввода', auto_now_add=True, null=True)
+    date_exclusions = models.DateField(verbose_name='Дата исключения', auto_now_add=True, null=True)
     excluded_standard_spelling = models.BooleanField(verbose_name='Исключена из штатного расписания', default=True)
+    employment_function = models.CharField(verbose_name='Трудовая функция', max_length=37, default='')
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда', blank=True)
-    active = models.BooleanField(verbose_name='Активность', default=True)
 
     def __str__(self):
         return f'{self.name}'
