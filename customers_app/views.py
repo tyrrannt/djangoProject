@@ -599,7 +599,7 @@ class JobsList(LoginRequiredMixin, ListView):
                 if item['Description'] != "" and item['ВведенаВШтатноеРасписание']:
                     jobs_kwargs = {
                         'ref_key': item['Ref_Key'],
-                        'code': todos2['value'][1]['ОКПДТРКод'],
+                        'code': '',
                         'name': item['Description'],
                         'date_entry': datetime.datetime.strptime(item['ДатаВвода'][:10], "%Y-%m-%d"),
                         'employment_function': item['ТрудоваяФункция_Key'],
@@ -610,8 +610,12 @@ class JobsList(LoginRequiredMixin, ListView):
                         db_instance = Job(**jobs_kwargs)
                         db_instance.save()
                         count += 1
-            # for item in todos2['value']:
-            #     if
+            for item in todos2['value']:
+                object_list = Job.objects.filter(employment_function=item['Ref_Key'])
+                for unit in object_list:
+                    unit.code = item['ОКПДТРКод']
+                    unit.save()
+
             url_match = reverse_lazy('customers_app:jobs_list')
             return redirect(url_match)
 
