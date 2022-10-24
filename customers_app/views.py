@@ -431,7 +431,7 @@ class DivisionsList(LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         count = 0
         if self.request.GET:
-            todos = get_jsons_data("Catalog", "ПодразделенияОрганизаций")
+            todos = get_jsons_data("Catalog", "ПодразделенияОрганизаций", 1)
             # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
             for item in todos['value']:
                 if item['Description'] != "":
@@ -592,8 +592,8 @@ class JobsList(LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         count = 0
         if self.request.GET:
-            todos = get_jsons_data("Catalog", "Должности")
-            todos2 = get_jsons_data("Catalog", "ТрудовыеФункции")
+            todos = get_jsons_data("Catalog", "Должности", 1)
+            todos2 = get_jsons_data("Catalog", "ТрудовыеФункции", 1)
             # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
             for item in todos['value']:
                 if item['Description'] != "" and item['ВведенаВШтатноеРасписание']:

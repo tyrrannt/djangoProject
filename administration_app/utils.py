@@ -121,7 +121,7 @@ def int_validate(check_string):
         return 0
 
 
-def get_jsons_data(object_type: str, object_name: str) -> dict:
+def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
     """
     Получение JSON объекта из таблицы 1С
     :param object_type: Тип объекта: Справочник — Catalog; Документ — Document; Журнал документов — DocumentJournal;
@@ -131,9 +131,11 @@ def get_jsons_data(object_type: str, object_name: str) -> dict:
     Регистр расчета — CalculationRegister; Регистр бухгалтерии — AccountingRegister;
     Бизнес-процесс — BusinessProcess; Задача — Task.
     :param object_name: Название объекта. Список можно посмотреть в конфигурации
+    :param base_index: Индекс базы 1С. 0 - Зарплата, 1 - Бухгалтерия
     :return: Возвращает JSON объект, в виде словаря.
     """
-    url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/" \
+    base = ['72095052-970f-11e3-84fb-00e05301b4e4', '59e20093-970f-11e3-84fb-00e05301b4e4']
+    url = f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/" \
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
     source_url = url
     response = requests.get(source_url)
