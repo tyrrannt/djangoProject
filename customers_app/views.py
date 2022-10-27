@@ -182,6 +182,31 @@ class CounteragentListView(LoginRequiredMixin, ListView):
         qs = Counteragent.objects.all().order_by('pk')
         return qs
 
+    def get(self, request, *args, **kwargs):
+        count = 0
+        if self.request.GET.get('update') == '0':
+            todos = get_jsons_data("Catalog", "Контрагенты", 1)
+            # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
+            for item in todos['value']:
+                if not item['IsFolder']:
+                    divisions_kwargs = {
+                        'ref_key': item['Ref_Key'],
+                        'short_name': item['Description'],
+                        'full_name': item['НаименованиеПолное'],
+                        'inn': item['ИНН'],
+                        'kpp': item['КПП'],
+                        'ogrn': item['РегистрационныйНомер'],
+                        'base_counteragent': False,
+                    }
+                    if Counteragent.objects.filter(ref_key=item['Ref_Key']).count() != 1:
+                        db_instance = Counteragent(**divisions_kwargs)
+                        db_instance.save()
+                        count += 1
+            url_match = reverse_lazy('customers_app:counteragent_list')
+            return redirect(url_match)
+
+        return super(CounteragentListView, self).get(request, *args, **kwargs)
+
 
 class CounteragentAdd(LoginRequiredMixin, CreateView):
     model = Counteragent
