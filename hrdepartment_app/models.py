@@ -5,7 +5,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from administration_app.utils import Med
-from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions
+from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division
 from djangoProject.settings import BASE_DIR
 
 
@@ -13,6 +13,14 @@ from djangoProject.settings import BASE_DIR
 def contract_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     return f'hr/medical/{filename}'
+
+
+class Purpose(models.Model):
+    class Meta:
+        verbose_name = "Цель служебной записки"
+        verbose_name_plural = "Цели служебной записки"
+
+    title = models.CharField(verbose_name='Наименование', max_length=300)
 
 
 class Medical(models.Model):
@@ -48,3 +56,22 @@ def rename_file_name(sender, instance, **kwargs):
             instance.save()
     except Exception as _ex:
         print(_ex)
+
+
+class OfficialMemo(models.Model):
+    class Meta:
+        verbose_name = 'Служебная записка'
+        verbose_name_plural = 'Служебные записки'
+
+    type_of = [
+        ('1', 'Квартира'),
+        ('2', 'Гостиница')
+    ]
+
+    person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True)
+    purpose = models.CharField(verbose_name='Цель', max_length=500, default='')
+    period_from = models.DateField(verbose_name='Дата начала', auto_now_add=True, null=True)
+    period_for = models.DateField(verbose_name='Дата окончания', auto_now_add=True, null=True)
+    place_production_activity = models.ForeignKey(Division, verbose_name='МПД', on_delete=models.SET_NULL, null=True)
+    accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
+                                      help_text='', blank=True, default='')
