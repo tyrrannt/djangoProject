@@ -48,7 +48,83 @@
             {% csrf_token %}
             <div class="row">
                 <div class="col">
-                    {{ form.as_p }}
+
+                    <section class="card card-modern card-big-info">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-2-5 col-xl-1-5">
+                                    <i class="card-big-info-icon bx bxl-netlify"></i>
+                                    <p class="card-big-info-desc">Служебная записка на служебную поездку</p>
+                                </div>
+                                <div class="col-lg-3-5 col-xl-4-5">
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_period_from">Дата начала</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <input type="text" id="id_period_from" class="form-control form-control-modern"
+                                                   name="period_from" value=""/>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_period_for">Дата окончания</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <input type="text" id="id_period_for" class="form-control form-control-modern "
+                                                   name="period_for" value=""/>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_person">Сотрудник</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="person"
+                                                    id="id_person" data-plugin-selectTwo>
+                                                {% for item in form.person %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_place_production_activity">Место назначения</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="place_production_activity"
+                                                    data-plugin-selectTwo id="id_place_production_activity">
+                                                {% for item in form.place_production_activity %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_purpose_trip">Цель</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="purpose_trip"
+                                                    data-plugin-selectTwo id="id_purpose_trip">
+                                                {% for item in form.purpose_trip %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_accommodation">Проживание</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <select class="form-control form-control-modern" name="accommodation"#}
+{#                                                    data-plugin-selectTwo id="id_accommodation">#}
+{#                                                {% for key, value in all_status %}#}
+{#                                                    <option value="{{ key }}">{{ value }}</option>#}
+{#                                                {% endfor %}#}
+{#                                            </select>#}
+{#                                        </div>#}
+{#                                    </div>#}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
             <div class="row action-buttons">

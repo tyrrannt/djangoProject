@@ -44,7 +44,9 @@ class Medical(models.Model):
     working_status = models.CharField(verbose_name='Статус', max_length=40, choices=type_of,
                                       help_text='', blank=True, default='')
     medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
-    harmful = models.ForeignKey(HarmfulWorkingConditions, verbose_name='Вредные условия труда', on_delete=models.SET_NULL, null=True)
+    harmful = models.ForeignKey(HarmfulWorkingConditions, verbose_name='Вредные условия труда',
+                                on_delete=models.SET_NULL, null=True)
+
 
 @receiver(post_save, sender=Medical)
 def rename_file_name(sender, instance, **kwargs):
@@ -73,22 +75,43 @@ class OfficialMemo(models.Model):
 
     person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
                                related_name='employee')
-    purpose_trip = models.ForeignKey(Purpose, verbose_name='Цель', on_delete=models.SET_NULL, null=True,)
+    purpose_trip = models.ForeignKey(Purpose, verbose_name='Цель', on_delete=models.SET_NULL, null=True, )
     period_from = models.DateField(verbose_name='Дата начала', null=True)
     period_for = models.DateField(verbose_name='Дата окончания', null=True)
     place_production_activity = models.ForeignKey(Division, verbose_name='МПД', on_delete=models.SET_NULL, null=True)
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
-                                      help_text='', blank=True, default='')
+                                     help_text='', blank=True, default='')
     order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True)
     order_date = models.DateField(verbose_name='Дата приказа', null=True)
+    comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
+    document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
+    document_not_agreed = models.BooleanField(verbose_name='Документ согласован', default=False)
+    document_agreed = models.BooleanField(verbose_name='Документ не согласован', default=False)
+    reason_for_approval = models.CharField(verbose_name='Примечание к согласованию', max_length=200, help_text='',
+                                           blank=True, default='')
 
 
+class ApprovalProcess(models.Model):
+    class Meta:
+        abstract = True
 
-    class ApprovalProcess(models.Model):
-        class Meta:
-            abstract = True
+    person_executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
+                                        null=True, related_name='person_executor')
+    person_agreement = models.ForeignKey(DataBaseUser, verbose_name='Согласующее лицо', on_delete=models.SET_NULL,
+                                         null=True, related_name='person_agreement')
+    person_distributor = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОНО', on_delete=models.SET_NULL,
+                                           null=True, related_name='person_distributor')
+    person_department_staff = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
+                                                null=True, related_name='person_department_staff')
+    process_accepted = models.BooleanField(verbose_name='Активность', default=False)
 
-        person_agreement = models.ForeignKey(DataBaseUser, verbose_name='Согласующее лицо', on_delete=models.SET_NULL,
-                                             null=True, related_name='person_agreement')
-        person_executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
-                                            null=True, related_name='person_executor')
+
+class ApprovalOficialMemoProcess(ApprovalProcess):
+    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'Служебная записка по служебной поездке'
+        verbose_name_plural = 'Служебные записки по служебным поездкам'
+
+    def __init__(self, *args, **kwargs):
+        super(ApprovalOficialMemoProcess, self).__init__(*args, **kwargs)

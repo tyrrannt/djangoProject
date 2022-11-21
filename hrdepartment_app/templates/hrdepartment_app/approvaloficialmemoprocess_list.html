@@ -62,29 +62,29 @@
                                             <strong>{{ item.pk }}</strong>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><strong>{{ item.person }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.document.person }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><strong>{{ item.person.user_work_profile.job }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.document.person.user_work_profile.job }}</strong></a>
                                         </td>
                                         <td>
-                                            <span>{{ item.place_production_activity }}</span>&nbsp;
+                                            <span>{{ item.document.place_production_activity }}</span>&nbsp;
                                         </td>
                                         <td>
-                                            <strong>{{ item.purpose_trip }}</strong>
+                                            <strong>{{ item.document.purpose_trip }}</strong>
                                         </td>
                                         <td>
-                                            <strong>С: {{ item.period_from | date:'d-m-Y'}}<br>По: {{ item.period_for | date:'d-m-Y'}}</strong>&nbsp;
+                                            <strong>С: {{ item.document.period_from | date:'d-m-Y'}}<br>По: {{ item.document.period_for | date:'d-m-Y'}}</strong>&nbsp;
                                         </td>
                                         <td>
-                                            <strong>{{ item.get_accommodation_display }}</strong>&nbsp;
+                                            <strong>{{ item.document.get_accommodation_display }}</strong>&nbsp;
                                         </td>
 
                                         <td>
-                                            <strong>№: {{ item.order_number }} <br> от: {{ item.order_date | date:'d-m-Y'}}</strong>&nbsp;
+                                            <strong>№: {{ item.document.order_number }} <br> от: {{ item.document.order_date | date:'d-m-Y'}}</strong>&nbsp;
                                         </td>
                                         <td>
-                                            <strong>{{ item.comments }}</strong>&nbsp;
+                                            <strong>{{ item.document.comments }}</strong>&nbsp;
                                         </td>
                                     </tr>
 
