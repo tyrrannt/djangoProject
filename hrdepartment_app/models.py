@@ -22,6 +22,9 @@ class Purpose(models.Model):
 
     title = models.CharField(verbose_name='Наименование', max_length=300)
 
+    def __str__(self):
+        return self.title
+
 
 class Medical(models.Model):
     class Meta:
@@ -68,10 +71,24 @@ class OfficialMemo(models.Model):
         ('2', 'Гостиница')
     ]
 
-    person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True)
-    purpose = models.CharField(verbose_name='Цель', max_length=500, default='')
-    period_from = models.DateField(verbose_name='Дата начала', auto_now_add=True, null=True)
-    period_for = models.DateField(verbose_name='Дата окончания', auto_now_add=True, null=True)
+    person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
+                               related_name='employee')
+    purpose_trip = models.ForeignKey(Purpose, verbose_name='Цель', on_delete=models.SET_NULL, null=True,)
+    period_from = models.DateField(verbose_name='Дата начала', null=True)
+    period_for = models.DateField(verbose_name='Дата окончания', null=True)
     place_production_activity = models.ForeignKey(Division, verbose_name='МПД', on_delete=models.SET_NULL, null=True)
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
                                       help_text='', blank=True, default='')
+    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True)
+    order_date = models.DateField(verbose_name='Дата приказа', null=True)
+
+
+
+    class ApprovalProcess(models.Model):
+        class Meta:
+            abstract = True
+
+        person_agreement = models.ForeignKey(DataBaseUser, verbose_name='Согласующее лицо', on_delete=models.SET_NULL,
+                                             null=True, related_name='person_agreement')
+        person_executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
+                                            null=True, related_name='person_executor')
