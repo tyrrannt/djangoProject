@@ -99,6 +99,11 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
 
+    def form_invalid(self, form):
+        print(form)
+        return super(ApprovalOficialMemoProcessAdd, self).form_invalid(form)
+
+
 
 class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
     model = ApprovalOficialMemoProcess

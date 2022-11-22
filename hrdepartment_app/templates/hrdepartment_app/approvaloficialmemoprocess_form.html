@@ -110,8 +110,8 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_document">Сотрудник</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="document" id="id_document" data-plugin-selectTwo>
-                                                {% for item in form.document %}<option value="{{ item.pk }}">{{ item.pk }}{{ item }}</option>{% endfor %}
+                                            <select name="document" id="id_document" >
+                                                {% for item in form.document %}<option value="">{{ item }}</option>{% endfor %}
                                             </select>
                                         </div>
                                     </div>
