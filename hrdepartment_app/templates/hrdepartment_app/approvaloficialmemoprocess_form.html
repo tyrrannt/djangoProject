@@ -49,7 +49,78 @@
             <div class="row">
                 <div class="col">
 
-                   {{ form.as_p }}
+                    <section class="card card-modern card-big-info">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-2-5 col-xl-1-5">
+                                    <i class="card-big-info-icon bx bxl-netlify"></i>
+                                    <p class="card-big-info-desc">Служебная записка на служебную поездку</p>
+                                </div>
+                                <div class="col-lg-3-5 col-xl-4-5">
+
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_person_executor">Сотрудник</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="person_executor"
+                                                    id="id_person_executor" data-plugin-selectTwo>
+                                                {% for item in form.person_executor %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_person_agreement">Сотрудник</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="person_agreement"
+                                                    id="id_person_agreement" data-plugin-selectTwo>
+                                                {% for item in form.person_agreement %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_person_distributor">Сотрудник</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="person_distributor"
+                                                    id="id_person_distributor" data-plugin-selectTwo>
+                                                {% for item in form.person_distributor %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_person_department_staff">Сотрудник</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="person_department_staff"
+                                                    id="id_person_department_staff" data-plugin-selectTwo>
+                                                {% for item in form.person_department_staff %}
+                                                    <option value="{{ item.pk }}">{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_document">Сотрудник</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="document" id="id_document" data-plugin-selectTwo>
+                                                {% for item in form.document %}<option value="{{ item.pk }}">{{ item.pk }}{{ item }}</option>{% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                 </div>
             </div>
             <div class="row action-buttons">

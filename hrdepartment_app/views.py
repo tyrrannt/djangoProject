@@ -94,7 +94,6 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
-        #content['all_status'] = OfficialMemo.type_of
         return content
 
     def get_success_url(self):

@@ -38,8 +38,11 @@ class OfficialMemoUpdateForm(forms.ModelForm):
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
 
-
     person_executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    document = forms.ModelChoiceField(queryset=OfficialMemo.objects.all())
 
     class Meta:
         model = ApprovalOficialMemoProcess

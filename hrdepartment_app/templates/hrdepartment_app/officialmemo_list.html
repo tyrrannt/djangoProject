@@ -31,7 +31,7 @@
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'hrdepartment_app:bpmemo_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить служебную записку </a>
+                                                Запустить процесс </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -62,29 +62,29 @@
                                             <strong>{{ item.pk }}</strong>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><strong>{{ item.person }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span>{{ item.person }}</span></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><strong>{{ item.person.user_work_profile.job }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span>{{ item.person.user_work_profile.job }}</span></a>
                                         </td>
                                         <td>
                                             <span>{{ item.place_production_activity }}</span>&nbsp;
                                         </td>
                                         <td>
-                                            <strong>{{ item.purpose_trip }}</strong>
+                                            <span>{{ item.purpose_trip }}</span>
                                         </td>
                                         <td>
-                                            <strong>С: {{ item.period_from | date:'d-m-Y'}}<br>По: {{ item.period_for | date:'d-m-Y'}}</strong>&nbsp;
+                                            <span>С: {{ item.period_from | date:'d-m-Y'}}<br>По: {{ item.period_for | date:'d-m-Y'}}</span>&nbsp;
                                         </td>
                                         <td>
-                                            <strong>{{ item.get_accommodation_display }}</strong>&nbsp;
+                                            <span>{{ item.get_accommodation_display }}</span>&nbsp;
                                         </td>
 
                                         <td>
-                                            <strong>№: {{ item.order_number }} <br> от: {{ item.order_date | date:'d-m-Y'}}</strong>&nbsp;
+                                            <span>№: {{ item.order_number }} <br> от: {{ item.order_date | date:'d-m-Y'}}</span>&nbsp;
                                         </td>
                                         <td>
-                                            <strong>{{ item.comments }}</strong>&nbsp;
+                                            <span>{{ item.comments }}</span>&nbsp;
                                         </td>
                                     </tr>
 
