@@ -62,7 +62,10 @@
                                                for="id_period_from">Дата начала</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="text" id="id_period_from" class="form-control form-control-modern"
-                                                   name="period_from" value=""/>
+                                                   name="period_from" value="{{ object.period_from | date:'d-m-Y' }}"
+                                                   data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd-mm-yyyy"}'
+                                            pi/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -70,7 +73,9 @@
                                                for="id_period_for">Дата окончания</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="text" id="id_period_for" class="form-control form-control-modern "
-                                                   name="period_for" value=""/>
+                                                   name="period_for" value="{{ object.period_from | date:'d-m-Y' }}"
+                                            data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd-mm-yyyy"}'/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">

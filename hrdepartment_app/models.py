@@ -85,10 +85,7 @@ class OfficialMemo(models.Model):
     order_date = models.DateField(verbose_name='Дата приказа', null=True)
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
-    document_not_agreed = models.BooleanField(verbose_name='Документ согласован', default=False)
-    document_agreed = models.BooleanField(verbose_name='Документ не согласован', default=False)
-    reason_for_approval = models.CharField(verbose_name='Примечание к согласованию', max_length=200, help_text='',
-                                           blank=True, default='')
+
 
 
 class ApprovalProcess(models.Model):
@@ -97,17 +94,25 @@ class ApprovalProcess(models.Model):
 
     person_executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                         null=True, related_name='person_executor')
+    submit_for_approval = models.BooleanField(verbose_name='Передан на согласование', default=False)
+    comments_for_approval = models.CharField(verbose_name='Комментарий для согласования', max_length=200, help_text='',
+                                           blank=True, default='')
     person_agreement = models.ForeignKey(DataBaseUser, verbose_name='Согласующее лицо', on_delete=models.SET_NULL,
                                          null=True, related_name='person_agreement')
+    document_not_agreed = models.BooleanField(verbose_name='Документ согласован', default=False)
+    document_agreed = models.BooleanField(verbose_name='Документ не согласован', default=False)
+    reason_for_approval = models.CharField(verbose_name='Примечание к согласованию', max_length=200, help_text='',
+                                           blank=True, default='')
     person_distributor = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОНО', on_delete=models.SET_NULL,
                                            null=True, related_name='person_distributor')
+    location_selected = models.BooleanField(verbose_name='Выбрано место проживания', default=False)
     person_department_staff = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
                                                 null=True, related_name='person_department_staff')
     process_accepted = models.BooleanField(verbose_name='Активность', default=False)
 
 
 class ApprovalOficialMemoProcess(ApprovalProcess):
-    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE)
+    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE, parent_link=True)
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'

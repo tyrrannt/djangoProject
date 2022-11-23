@@ -100,7 +100,8 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
 
     def form_invalid(self, form):
-        print(form)
+        #print(form)
+        print(OfficialMemo._meta.parents)
         return super(ApprovalOficialMemoProcessAdd, self).form_invalid(form)
 
 
