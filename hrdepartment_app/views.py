@@ -101,7 +101,8 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
 
     def form_invalid(self, form):
         #print(form)
-        print(OfficialMemo._meta.parents)
+        for item in OfficialMemo.objects.all():
+            print(item._meta.get_parent_list())
         return super(ApprovalOficialMemoProcessAdd, self).form_invalid(form)
 
 

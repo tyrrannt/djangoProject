@@ -112,7 +112,7 @@ class ApprovalProcess(models.Model):
 
 
 class ApprovalOficialMemoProcess(ApprovalProcess):
-    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE, parent_link=True)
+    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
