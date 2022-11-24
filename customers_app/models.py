@@ -72,8 +72,8 @@ class HarmfulWorkingConditions(models.Model):
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     code = models.CharField(verbose_name='Код', max_length=5, default='')
     name = models.TextField(verbose_name='Наименование')
-    frequency = models.PositiveSmallIntegerField(verbose_name='Периодичность осмотров')
-
+    frequency_inspection = models.PositiveSmallIntegerField(verbose_name='Периодичность осмотров', default=0)
+    frequency_multiplicity = models.PositiveSmallIntegerField(verbose_name='Кратность осмотров', default=0)
     def __str__(self):
         return self.code
 

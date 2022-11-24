@@ -62,9 +62,9 @@
                                                for="id_period_from">Дата начала</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="text" id="id_period_from" class="form-control form-control-modern"
-                                                   name="period_from" value="{{ object.period_from | date:'d-m-Y' }}"
+                                                   name="period_from" value="{{ object.period_from | date:'d.m.Y' }}"
                                                    data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "dd-mm-yyyy"}'
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'
                                             pi/>
                                         </div>
                                     </div>
@@ -73,45 +73,30 @@
                                                for="id_period_for">Дата окончания</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="text" id="id_period_for" class="form-control form-control-modern "
-                                                   name="period_for" value="{{ object.period_from | date:'d-m-Y' }}"
+                                                   name="period_for" value="{{ object.period_from | date:'d.m.Y' }}"
                                             data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "dd-mm-yyyy"}'/>
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person">Сотрудник</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="person"
-                                                    id="id_person" data-plugin-selectTwo>
-                                                {% for item in form.person %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <span>{{ form.person }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_place_production_activity">Место назначения</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="place_production_activity"
-                                                    data-plugin-selectTwo id="id_place_production_activity">
-                                                {% for item in form.place_production_activity %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <span>{{ form.place_production_activity }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_purpose_trip">Цель</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="purpose_trip"
-                                                    data-plugin-selectTwo id="id_purpose_trip">
-                                                {% for item in form.purpose_trip %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <span>{{ form.purpose_trip }}</span>
                                         </div>
                                     </div>
 {#                                    <div class="form-group row align-items-center pb-3">#}

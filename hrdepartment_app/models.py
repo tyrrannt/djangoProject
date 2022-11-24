@@ -86,6 +86,9 @@ class OfficialMemo(models.Model):
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
 
+    def __str__(self):
+        return f'{self.person} с {self.period_from} по {self.period_for}'
+
 
 
 class ApprovalProcess(models.Model):
@@ -112,7 +115,7 @@ class ApprovalProcess(models.Model):
 
 
 class ApprovalOficialMemoProcess(ApprovalProcess):
-    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE)
+    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE, null=True, related_name='docs')
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'

@@ -22,16 +22,14 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:memo_add' %}"
+                                            <a href="{% url 'customers_app:jobs_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить служебную записку </a>
+                                                Добавить должность </a>
                                         </div>
-                                    {% endif %}
-                                    {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:bpmemo_add' %}"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить служебную записку </a>
+                                            <a href="{% url 'customers_app:harmfuls_list' %}?update=0"
+                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Синхронизация с 1С </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -42,56 +40,32 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="4%">№</th>
-                                    <th width="15%">Сотрудник</th>
-                                    <th width="10%">Должность</th>
-                                    <th width="10%">Куда</th>
-                                    <th width="15%">Цель</th>
-                                    <th width="10%">Период</th>
-                                    <th width="8%">Проживание</th>
-
-                                    <th width="10%">Приказ</th>
-                                    <th width="18%">Примечание</th>
+                                    <th width="10%">Код в БД</th>
+                                    <th width="20%">Код</th>
+                                    <th width="50%">Наименование</th>
+                                    <th width="20%">Периодичность осмотров</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {% for item in object_list %}
-
-                                    <tr style="color: {% if item.document_accepted %} green  {% else %} {% if item.comments %} blue {% else %} {% if item.order_number %} black {% else %} red {% endif %} {% endif %} {% endif %}" >
+                                    <tr>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.document.person }}</strong></a>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.code }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.document.person.user_work_profile.job }}</strong></a>
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.name }}</strong></a>
                                         </td>
                                         <td>
-                                            <span>{{ item.document.place_production_activity }}</span>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.document.purpose_trip }}</strong>
-                                        </td>
-                                        <td>
-                                            <strong>С: {{ item.document.period_from | date:'d-m-Y'}}<br>По: {{ item.document.period_for | date:'d-m-Y'}}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.document.get_accommodation_display }}</strong>&nbsp;
-                                        </td>
-
-                                        <td>
-                                            <strong>№: {{ item.document.order_number }} <br> от: {{ item.document.order_date | date:'d-m-Y'}}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.document.comments }}</strong>&nbsp;
+                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.frequency_multiplicity }} раз в {{ item.frequency_inspection }} года</strong></a>
                                         </td>
                                     </tr>
-
-
                                 {% endfor %}
                                 </tbody>
                             </table>
+
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}
                             <div class="datatable-footer">

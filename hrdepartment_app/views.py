@@ -1,6 +1,8 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import render
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
 
 from customers_app.models import DataBaseUser, Counteragent
@@ -82,6 +84,9 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:memo_list')
 
+    def form_invalid(self, form):
+        print(form)
+        return super(OfficialMemoUpdate, self).form_invalid(form)
 
 
 class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
@@ -94,16 +99,11 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
+
         return content
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
-
-    def form_invalid(self, form):
-        #print(form)
-        for item in OfficialMemo.objects.all():
-            print(item._meta.get_parent_list())
-        return super(ApprovalOficialMemoProcessAdd, self).form_invalid(form)
 
 
 
@@ -122,4 +122,3 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
-

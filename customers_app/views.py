@@ -736,3 +736,39 @@ class JobsUpdate(LoginRequiredMixin, UpdateView):
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+"""
+Вредные условия труда: Список, Добавление, Детализация, Обновление
+"""
+
+class HarmfulWorkingConditionsList(LoginRequiredMixin, ListView):
+    model = HarmfulWorkingConditions
+
+    def get(self, request, *args, **kwargs):
+        count = 0
+        if self.request.GET:
+            todos = get_jsons_data("Catalog", "ВредныеОпасныеПроизводственныеФакторыИВыполняемыеРаботы", 0)
+            # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
+            for item in todos['value']:
+                if item['IsFolder'] != True:
+                    harmful_kwargs = {
+                        'ref_key': item['Ref_Key'],
+                        'code': item['Code'],
+                        'name': item['Description'],
+                        'frequency_inspection': item['ПериодичностьОсмотра'],
+                        'frequency_multiplicity': item['КратностьОсмотра'],
+                    }
+                    if HarmfulWorkingConditions.objects.filter(ref_key=item['Ref_Key']).count() != 1:
+                        db_instance = HarmfulWorkingConditions(**harmful_kwargs)
+                        db_instance.save()
+                        count += 1
+
+            # self.get_context_data(object_list=None, kwargs={'added': count})
+            url_match = reverse_lazy('customers_app:harmfuls_list')
+            return redirect(url_match)
+        return super(HarmfulWorkingConditionsList, self).get(request, *args, **kwargs)
+
+    # def get_queryset(self):
+    #     qs = Job.objects.filter(excluded_standard_spelling=False)
+    #     return qs
+

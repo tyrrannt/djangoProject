@@ -29,4 +29,5 @@ urlpatterns = [
     path('jobs/add/', views.JobsAdd.as_view(), name='jobs_add'),
     path('jobs/<int:pk>/', views.JobsDetail.as_view(), name='jobs'),
     path('jobs/<int:pk>/update/', views.JobsUpdate.as_view(), name='jobs_update'),
+    path('harmful/', views.HarmfulWorkingConditionsList.as_view(), name='harmfuls_list'),
 ]

@@ -62,57 +62,35 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person_executor">Исполнитель</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="person_executor"
-                                                    id="id_person_executor" data-plugin-selectTwo>
-                                                {% for item in form.person_executor %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <span>{{ form.person_executor }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person_agreement">Руководитель</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="person_agreement"
-                                                    id="id_person_agreement" data-plugin-selectTwo>
-                                                {% for item in form.person_agreement %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <span>{{ form.person_agreement }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person_distributor">Служба ГСМ</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="person_distributor"
-                                                    id="id_person_distributor" data-plugin-selectTwo>
-                                                {% for item in form.person_distributor %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <span>{{ form.person_distributor }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person_department_staff">Отдел кадров</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="person_department_staff"
-                                                    id="id_person_department_staff" data-plugin-selectTwo>
-                                                {% for item in form.person_department_staff %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <span>{{ form.person_department_staff }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_document">Служебная записка</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select name="document" id="id_document" >
-                                                {% for item in form.document %}<option value="">{{ item }}</option>{% endfor %}
-                                            </select>
+                                            <span>{{ form.document }}</span>
                                         </div>
                                     </div>
 
@@ -133,7 +111,7 @@
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:memo_list' %}"
+                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
                 {% if user.is_superuser %}
