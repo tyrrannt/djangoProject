@@ -41,11 +41,15 @@ class OfficialMemoUpdateForm(forms.ModelForm):
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-
+    order_date = forms.DateField(required=False)
+    order_number = forms.CharField(required=False)
+    accommodation = forms.MultipleChoiceField(choices=OfficialMemo.type_of)
+    accommodation.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     class Meta:
         model = OfficialMemo
         fields = ('person', 'purpose_trip', 'period_from', 'period_for', 'place_production_activity', 'accommodation',
                   'order_number', 'order_date', 'comments')
+
 
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):

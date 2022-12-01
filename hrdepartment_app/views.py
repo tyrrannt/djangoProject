@@ -1,5 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import View
@@ -71,26 +72,27 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
 class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
-    #template_name = 'hrdepartment_app/oficialmemo_form.html'
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
-        # content['all_person'] = DataBaseUser.objects.all()
-        # content['all_contragent'] = Counteragent.objects.all()
-        # content['all_status'] = Medical.type_of
-        # content['all_harmful'] = DataBaseUser.objects.get(pk=self.object.person.pk).user_work_profile.job.harmful.iterator()
         return content
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:memo_list')
 
     def form_invalid(self, form):
-        print(form)
         return super(OfficialMemoUpdate, self).form_invalid(form)
 
 
 class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
+
+    def get_queryset(self):
+        qs = ApprovalOficialMemoProcess.objects.filter(Q(person_agreement=self.request.user) |
+                                                       Q(person_distributor=self.request.user) |
+                                                       Q(person_executor=self.request.user) |
+                                                       Q(person_department_staff=self.request.user))
+        return qs
 
 
 class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
