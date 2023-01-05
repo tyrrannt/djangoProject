@@ -70,7 +70,7 @@ class HarmfulWorkingConditions(models.Model):
         verbose_name_plural = 'Вредные условия труда'
 
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
-    code = models.CharField(verbose_name='Код', max_length=5, default='')
+    code = models.CharField(verbose_name='Код', max_length=9, default='')
     name = models.TextField(verbose_name='Наименование')
     frequency_inspection = models.PositiveSmallIntegerField(verbose_name='Периодичность осмотров', default=0)
     frequency_multiplicity = models.PositiveSmallIntegerField(verbose_name='Кратность осмотров', default=0)

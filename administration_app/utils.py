@@ -88,6 +88,7 @@ def Med(obj_model, filepath, filename):
                    'address': obj_model.organisation.juridical_address,
                    }
     except Exception as _ex:
+
         context = {}
     doc.render(context)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
