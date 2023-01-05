@@ -279,7 +279,7 @@ class Counteragent(models.Model):
     full_name = models.CharField(verbose_name='Полное наименование', max_length=250, default='', help_text='')
     inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='', help_text='')
     kpp = models.CharField(verbose_name='КПП', max_length=9, blank=True, default='', help_text='')
-    ogrn = models.CharField(verbose_name='ОГРН', max_length=13, blank=True, default='', help_text='')
+    ogrn = models.CharField(verbose_name='ОГРН', max_length=15, blank=True, default='', help_text='')
     type_counteragent = models.CharField(verbose_name='Тип контрагента', max_length=40, choices=type_of, help_text='',
                                          default='')
     juridical_address = models.TextField(verbose_name='Юридический адрес', default='', blank=True)

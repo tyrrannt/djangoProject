@@ -198,6 +198,7 @@ class CounteragentListView(LoginRequiredMixin, ListView):
                         'ogrn': item['РегистрационныйНомер'],
                         'base_counteragent': False,
                     }
+
                     if Counteragent.objects.filter(ref_key=item['Ref_Key']).count() != 1:
                         db_instance = Counteragent(**divisions_kwargs)
                         db_instance.save()
@@ -758,7 +759,6 @@ class HarmfulWorkingConditionsList(LoginRequiredMixin, ListView):
                         'frequency_inspection': item['ПериодичностьОсмотра'],
                         'frequency_multiplicity': item['КратностьОсмотра'],
                     }
-                    print(item['Code'])
                     if HarmfulWorkingConditions.objects.filter(ref_key=item['Ref_Key']).count() != 1:
                         db_instance = HarmfulWorkingConditions(**harmful_kwargs)
                         db_instance.save()
