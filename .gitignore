@@ -1,2 +1,8 @@
 # Project exclude paths
+*.log
+*.pot
+*.pyc
+__pycache__
+db.sqlite3
+media
 /static/admin_templates/vendor/simple-line-icons/node_modules/

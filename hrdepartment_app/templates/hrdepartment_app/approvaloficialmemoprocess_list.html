@@ -31,7 +31,7 @@
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'hrdepartment_app:bpmemo_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить служебную записку </a>
+                                                Запустить процесс </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -62,13 +62,13 @@
                                             <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.document.person }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{% if item.document.person %}{{ item.document.person }}{% else %}Отсутствует документ{% endif %}</strong></a>
                                         </td>
                                         <td>
                                             <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.document.person.user_work_profile.job }}</strong></a>
                                         </td>
                                         <td>
-                                            <span>{{ item.document.place_production_activity }}</span>&nbsp;
+                                            <span>{% for items in item.document.place_production_activity.all %}{{ items }} {% endfor %}</span>&nbsp;
                                         </td>
                                         <td>
                                             <strong>{{ item.document.purpose_trip }}</strong>

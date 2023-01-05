@@ -241,6 +241,7 @@ class DataBaseUser(AbstractUser):
         ('female', 'женский')
     ]
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
+    person_ref_key = models.CharField(verbose_name='Уникальный номер физ лица', max_length=37, default='')
     surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, default='', help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')

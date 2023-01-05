@@ -1,6 +1,7 @@
 {% extends 'contracts_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -59,6 +60,13 @@
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_period_from">Тип служебной поездки</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            {{ form.official_memo_type | add_class:"form-control form-control-modern" }}
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_period_from">Дата начала</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="text" id="id_period_from" class="form-control form-control-modern"
@@ -89,7 +97,7 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_place_production_activity">Место назначения</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.place_production_activity }}</span>
+                                            <span>{{ form.place_production_activity | attr:"multiple" }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">

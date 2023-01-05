@@ -1,6 +1,7 @@
 {% extends 'contracts_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -54,36 +55,189 @@
                             <div class="row">
                                 <div class="col-lg-2-5 col-xl-1-5">
                                     <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc">Служебная записка на служебную поездку</p>
+                                    <p class="card-big-info-desc">Служебная записка на служебную
+                                        поездку: {{ document }}</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
 
                                     <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person_executor">Исполнитель</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person_executor }}</span>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_person_executor">Исполнитель</label>
+                                            <div class="col">
+                                                <span>{{ form.person_executor }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_submit_for_approval">Передан на согласование</label>
+                                            {% if object.document_not_agreed %}
+                                                <input type="text" hidden
+                                                       class="form-control form-control-modern"
+                                                       name="submit_for_approval"
+                                                       value="Передан"
+                                                       id="id_submit_for_approval"/>
+                                                <input type="text" disabled
+                                                       class="form-control form-control-modern"
+                                                       value="Передан"/>
+                                            {% else %}
+                                                <div class="col">
+                                                    <span>{{ form.submit_for_approval }}</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_comments_for_approval">Комментарий для согласования</label>
+                                            <div class="col">
+                                                {% if object.submit_for_approval %}
+                                                    <span>{{ form.comments_for_approval | attr:"disabled" }}</span>
+                                                {% else %}
+                                                    <span>{{ form.comments_for_approval }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_person_agreement">Руководитель</label>
+                                            <div class="col">
+                                                <span>{{ form.person_agreement }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_document_not_agreed">Документ согласован</label>
+                                            {% if object.location_selected %}
+                                                <input type="text" hidden
+                                                       class="form-control form-control-modern"
+                                                       name="document_not_agreed"
+                                                       value="Согласован"
+                                                       id="id_document_not_agreed"/>
+                                                <input type="text" disabled
+                                                       class="form-control form-control-modern"
+                                                       value="Согласован"/>
+                                            {% else %}
+                                                <div class="col">
+                                                    <span>{{ form.document_not_agreed }}</span>
+                                                </div>
+                                            {% endif %}
+
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_reason_for_approval">Примечание к согласованию</label>
+                                            <div class="col">
+                                                {% if object.document_not_agreed %}
+                                                    <span>{{ form.reason_for_approval | attr:"disabled" }}</span>
+                                                {% else %}
+                                                    <span>{{ form.reason_for_approval }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_person_distributor">Служба ГСМ и НТ</label>
+                                            <div class="col">
+                                                <span>{{ form.person_distributor }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_location_selected">Место проживания: </label>
+                                            {% if object.process_accepted %}
+                                                <input type="text" hidden
+                                                       class="form-control form-control-modern"
+                                                       name="location_selected"
+                                                       value="Выбрано"
+                                                       id="id_location_selected"/>
+                                                <input type="text" disabled
+                                                       class="form-control form-control-modern"
+                                                       value="Выбрано"/>
+                                            {% else %}
+                                                <div class="col">
+                                                    <span>{{ form.location_selected }}</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_accommodation">Место проживания</label>
+                                            <div class="col">
+                                                {% if object.location_selected %}
+                                                    <span>{{ form.accommodation | attr:"disabled" }}</span>
+                                                {% else %}
+                                                    <span>{{ form.accommodation }}</span>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person_agreement">Руководитель</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person_agreement }}</span>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_person_department_staff">Отдел кадров</label>
+                                            <div class="col">
+                                                <span>{{ form.person_department_staff }}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person_distributor">Служба ГСМ</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person_distributor }}</span>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_process_accepted">Документ принят в ОК</label>
+                                            {% if object.location_selected %}
+                                                <div class="col">
+                                                    <span>{{ form.process_accepted }}</span>
+                                                </div>
+                                            {% else %}
+                                                <div class="col">
+                                                    <input type="text" hidden
+                                                           class="form-control form-control-modern"
+                                                           name="process_accepted"
+                                                           value=""
+                                                           id="id_process_accepted"/>
+                                                    <input type="text" disabled
+                                                           class="form-control form-control-modern"
+                                                           value="Не выбрано место размещения"/>
+                                                </div>
+                                            {% endif %}
+
                                         </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person_department_staff">Отдел кадров</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person_department_staff }}</span>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_order_number">Номер приказа</label>
+                                            <div class="col">
+                                                {% if object.process_accepted %}
+                                                    <span>{{ form.order_number | attr:"disabled" }}</span>
+                                                {% else %}
+                                                    <span>{{ form.order_number }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_order_date">Дата приказа</label>
+                                            <div class="col">
+                                                {% if object.process_accepted %}
+                                                    <input type="date" readonly
+                                                       class="form-control form-control-modern"
+                                                        value="{{ object.order_date | date:'c' }}"/>
+                                                    <input type="date" hidden=""
+                                                       class="form-control form-control-modern"
+                                                       name="order_date"
+                                                       value="{{ object.order_date | date:'c' }}"
+                                                       id="id_order_date"/>
+                                                {% else %}
+                                                    <input type="date"
+                                                       class="form-control form-control-modern"
+                                                       name="order_date"
+                                                       value="{{ object.order_date | date:'c' }}"
+                                                       id="id_order_date"/>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -124,6 +278,7 @@
             </div>
 
         </form>
+
         <!-- end: page -->
     </section>
     <!-- end: page -->

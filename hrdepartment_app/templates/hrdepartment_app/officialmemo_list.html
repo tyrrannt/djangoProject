@@ -68,7 +68,7 @@
                                             <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span>{{ item.person.user_work_profile.job }}</span></a>
                                         </td>
                                         <td>
-                                            <span>{{ item.place_production_activity }}</span>&nbsp;
+                                            <span>{% for items in item.place_production_activity.all %}{{ items }} {% endfor %}</span>&nbsp;
                                         </td>
                                         <td>
                                             <span>{{ item.purpose_trip }}</span>

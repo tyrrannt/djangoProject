@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'customers_app.apps.CustomersAppConfig',
     'contracts_app.apps.ContractsAppConfig',
     'hrdepartment_app.apps.HrdepartmentAppConfig',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -144,3 +145,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #MEDIA_URL = pathlib.Path.joinpath(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'customers_app.DataBaseUser'
 LOGIN_URL = '/users/login/'
+

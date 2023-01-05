@@ -7,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import boolean_return, get_jsons_data
+from administration_app.utils import boolean_return, get_jsons_data, transliterate, get_jsons_data_filter, get_jsons
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
@@ -297,6 +297,93 @@ class StaffListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         qs = DataBaseUser.objects.all().order_by('pk')
         return qs
+
+    def get(self, request, *args, **kwargs):
+        Ref_Key, username, first_name, last_name, surname, birthday, gender, email, telephone, address, = '', '', '', '', '', '1900-01-01', '', '', '', '',
+        job_code, division_code, date_of_employment = '', '', '1900-01-01'
+        count = 0
+        count2 = 0
+        count3 = DataBaseUser.objects.all().count() + 1
+        if self.request.GET.get('update') == '1':
+            users_list = DataBaseUser.objects.all()
+            for units in users_list:
+                todo_str = get_jsons(
+                    f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_КадроваяИсторияСотрудников?$format=application/json;odata=nometadata&$filter=RecordSet/any(d:%20d/Сотрудник_Key%20eq%20guid%27{units.ref_key}%27)")
+                period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
+                if units.ref_key != "":
+                    for items in todo_str['value']:
+                        for items2 in items['RecordSet']:
+                            if items2['Active'] == True and items2['ВидСобытия'] == 'Перемещение':
+                                if period < datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d"):
+                                    period = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
+                                    division_code = items2['Подразделение_Key']
+                                    job_code = items2['Должность_Key']
+
+                            if items2['Active'] == True and items2['ВидСобытия'] == 'Прием':
+                                date_of_employment = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
+                    user_work_profile = {
+                        'date_of_employment': date_of_employment,
+                        'job': Job.objects.get(ref_key=job_code) if job_code != "00000000-0000-0000-0000-000000000000" else None,
+                        'divisions': Division.objects.get(ref_key=division_code) if division_code != "00000000-0000-0000-0000-000000000000" else None,
+                    }
+                    if not units.user_work_profile:
+                        obj_work_profile = DataBaseUserWorkProfile(**user_work_profile)
+                        obj_work_profile.save()
+                        units.user_work_profile = obj_work_profile
+                        units.save()
+
+
+
+        if self.request.GET.get('update') == '0':
+            todos = get_jsons_data("Catalog", "Сотрудники", 0)
+            # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
+            for item in todos['value']:
+                if item['Description'] != "" and item['ВАрхиве'] == False:
+                    todos2 = get_jsons_data_filter("Catalog", "ФизическиеЛица", "Ref_Key", item['ФизическоеЛицо_Key'],
+                                                   0, 0)
+                    for item2 in todos2['value']:
+                        Ref_Key = item2['Ref_Key']
+                        username = '0' * (4 - len(str(count3))) + str(count3) + '_' + transliterate(
+                            item2['Фамилия']).lower() + '_' + \
+                                   transliterate(item2['Имя']).lower()[:1] + \
+                                   transliterate(item2['Отчество']).lower()[:1]
+                        first_name = item2['Имя']
+                        last_name = item2['Фамилия']
+                        surname = item2['Отчество']
+                        gender = 'male' if item2['Пол'] == 'Мужской' else 'female'
+                        birthday = datetime.datetime.strptime(item2['ДатаРождения'][:10], "%Y-%m-%d")
+                        for item3 in item2['КонтактнаяИнформация']:
+                            if item3['Тип'] == 'АдресЭлектроннойПочты':
+                                email = item3['АдресЭП']
+                            if item3['Тип'] == 'Телефон':
+                                telephone = '+' + item3['НомерТелефона']
+                            if item3['Тип'] == 'Адрес':
+                                address = item3['Представление']
+                    divisions_kwargs = {
+                        'ref_key': item['Ref_Key'],
+                        'person_ref_key': Ref_Key,
+                        'username': username,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'surname': surname,
+                        'birthday': birthday,
+                        'type_users': 'staff_member',
+                        'gender': gender,
+                        'email': email,
+                        'personal_phone': telephone,
+                        'address': address,
+                    }
+                    count2 += 1
+                    count3 += 1
+                    if DataBaseUser.objects.filter(ref_key=item['Ref_Key']).count() < 1:
+                        db_instance = DataBaseUser(**divisions_kwargs)
+                        db_instance.save()
+                        count += 1
+            # self.get_context_data(object_list=None, kwargs={'added': count})
+            url_match = reverse_lazy('customers_app:staff_list')
+            return redirect(url_match)
+
+        return super(StaffListView, self).get(request, *args, **kwargs)
 
 
 class StaffDetail(LoginRequiredMixin, DetailView):
@@ -738,9 +825,11 @@ class JobsUpdate(LoginRequiredMixin, UpdateView):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
 
+
 """
 Вредные условия труда: Список, Добавление, Детализация, Обновление
 """
+
 
 class HarmfulWorkingConditionsList(LoginRequiredMixin, ListView):
     model = HarmfulWorkingConditions
@@ -772,4 +861,3 @@ class HarmfulWorkingConditionsList(LoginRequiredMixin, ListView):
     # def get_queryset(self):
     #     qs = Job.objects.filter(excluded_standard_spelling=False)
     #     return qs
-

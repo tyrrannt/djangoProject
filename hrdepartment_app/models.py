@@ -73,12 +73,19 @@ class OfficialMemo(models.Model):
         ('2', 'Гостиница')
     ]
 
+    memo_type = [
+        ('1', 'Направление'),
+        ('2', 'Продление')
+    ]
+
+    official_memo_type = models.CharField(verbose_name='Тип СП', max_length=9, choices=memo_type,
+                                     help_text='', default='1')
     person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
                                related_name='employee')
     purpose_trip = models.ForeignKey(Purpose, verbose_name='Цель', on_delete=models.SET_NULL, null=True, )
     period_from = models.DateField(verbose_name='Дата начала', null=True)
     period_for = models.DateField(verbose_name='Дата окончания', null=True)
-    place_production_activity = models.ForeignKey(Division, verbose_name='МПД', on_delete=models.SET_NULL, null=True)
+    place_production_activity = models.ManyToManyField(Division, verbose_name='МПД')
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
                                      help_text='', blank=True, default='')
     order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True)
@@ -103,7 +110,6 @@ class ApprovalProcess(models.Model):
     person_agreement = models.ForeignKey(DataBaseUser, verbose_name='Согласующее лицо', on_delete=models.SET_NULL,
                                          null=True, related_name='person_agreement')
     document_not_agreed = models.BooleanField(verbose_name='Документ согласован', default=False)
-    document_agreed = models.BooleanField(verbose_name='Документ не согласован', default=False)
     reason_for_approval = models.CharField(verbose_name='Примечание к согласованию', max_length=200, help_text='',
                                            blank=True, default='')
     person_distributor = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОНО', on_delete=models.SET_NULL,
@@ -115,8 +121,15 @@ class ApprovalProcess(models.Model):
 
 
 class ApprovalOficialMemoProcess(ApprovalProcess):
+    type_of = [
+        ('1', 'Квартира'),
+        ('2', 'Гостиница')
+    ]
     document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE, null=True, related_name='docs')
-
+    accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
+                                     help_text='', blank=True, default='')
+    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
+    order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
         verbose_name_plural = 'Служебные записки по служебным поездкам'
