@@ -370,7 +370,7 @@ class StaffListView(LoginRequiredMixin, ListView):
                         'type_users': 'staff_member',
                         'gender': gender,
                         'email': email,
-                        'personal_phone': telephone,
+                        'personal_phone': telephone[:12],
                         'address': address,
                     }
                     count2 += 1
