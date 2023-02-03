@@ -41,17 +41,18 @@
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
                                             <label for="field_sorted" class="ws-nowrap me-3 mb-0">Сортировка:</label>
                                             <select class="form-control select-style-1 filter-by" name="filter-by"
-                                                onchange="field_sorted()" id="field_sorted">
+                                                    onchange="field_sorted()" id="field_sorted">
                                                 <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
-                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Номер договора</option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Дата договора</option>
+                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>ФИО</option>
+                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Подразделение</option>
+                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Должность</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label for="portal_paginator" class="ws-nowrap me-3 mb-0">Количество:</label>
+                                            <label for="portal_paginator"
+                                                   class="ws-nowrap me-3 mb-0">Количество:</label>
                                             <select class="form-control select-style-1 results-per-page"
                                                     name="results-per-page" onchange="portal_paginator()"
                                                     id="portal_paginator">
@@ -66,7 +67,8 @@
                                     <div class="col-12 col-lg-auto ps-lg-1">
                                         <div class="mx-lg-auto">
                                             <div class="input-group">
-                                                <a href="{% url 'customers_app:staff_list' %}" class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
+                                                <a href="{% url 'customers_app:staff_list' %}"
+                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
                                                     Применить настройки
                                                 </a>
                                             </div>
@@ -156,7 +158,7 @@
             paginator_by = document.getElementById("portal_paginator").value;
             $.ajax({
                 type: "GET",
-                url: '/contracts/',
+                url: '{% url 'customers_app:staff_list' %}',
                 data: {
                     "result": paginator_by,
                 },
@@ -170,11 +172,12 @@
                 }
             });
         };
+
         function field_sorted() {
             item_sorted = document.getElementById("field_sorted").value;
             $.ajax({
                 type: "GET",
-                url: '/contracts/',
+                url: '{% url 'customers_app:staff_list' %}',
                 data: {
                     "sort_item": item_sorted,
                 },

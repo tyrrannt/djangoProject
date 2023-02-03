@@ -65,7 +65,9 @@
                                             <label class="col"
                                                    for="id_person_executor">Исполнитель</label>
                                             <div class="col">
-                                                <span>{{ form.person_executor }}</span>
+                                                <select class="form-control form-control-modern" name="person_executor" id="id_person_executor" data-plugin-selectTwo>
+                                                    <option value="{{ user.pk }}" selected>{{ user }}</option>
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col">
@@ -91,9 +93,9 @@
                                                    for="id_comments_for_approval">Комментарий для согласования</label>
                                             <div class="col">
                                                 {% if object.submit_for_approval %}
-                                                    <span>{{ form.comments_for_approval | attr:"disabled" }}</span>
+                                                    <span>{{ form.comments_for_approval | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
                                                 {% else %}
-                                                    <span>{{ form.comments_for_approval }}</span>
+                                                    <span>{{ form.comments_for_approval | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -131,9 +133,9 @@
                                                    for="id_reason_for_approval">Примечание к согласованию</label>
                                             <div class="col">
                                                 {% if object.document_not_agreed %}
-                                                    <span>{{ form.reason_for_approval | attr:"disabled" }}</span>
+                                                    <span>{{ form.reason_for_approval | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
                                                 {% else %}
-                                                    <span>{{ form.reason_for_approval }}</span>
+                                                    <span>{{ form.reason_for_approval | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -161,7 +163,7 @@
                                                        value="Выбрано"/>
                                             {% else %}
                                                 <div class="col">
-                                                    <span>{{ form.location_selected }}</span>
+                                                    <span>{{ form.location_selected  }}</span>
                                                 </div>
                                             {% endif %}
                                         </div>
@@ -170,9 +172,9 @@
                                                    for="id_accommodation">Место проживания</label>
                                             <div class="col">
                                                 {% if object.location_selected %}
-                                                    <span>{{ form.accommodation | attr:"disabled" }}</span>
+                                                    <span>{{ form.accommodation | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
                                                 {% else %}
-                                                    <span>{{ form.accommodation }}</span>
+                                                    <span>{{ form.accommodation | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -223,19 +225,19 @@
                                             <div class="col">
                                                 {% if object.process_accepted %}
                                                     <input type="date" readonly
-                                                       class="form-control form-control-modern"
-                                                        value="{{ object.order_date | date:'c' }}"/>
+                                                           class="form-control form-control-modern"
+                                                           value="{{ object.order_date | date:'c' }}"/>
                                                     <input type="date" hidden=""
-                                                       class="form-control form-control-modern"
-                                                       name="order_date"
-                                                       value="{{ object.order_date | date:'c' }}"
-                                                       id="id_order_date"/>
+                                                           class="form-control form-control-modern"
+                                                           name="order_date"
+                                                           value="{{ object.order_date | date:'c' }}"
+                                                           id="id_order_date"/>
                                                 {% else %}
                                                     <input type="date"
-                                                       class="form-control form-control-modern"
-                                                       name="order_date"
-                                                       value="{{ object.order_date | date:'c' }}"
-                                                       id="id_order_date"/>
+                                                           class="form-control form-control-modern"
+                                                           name="order_date"
+                                                           value="{{ object.order_date | date:'c' }}"
+                                                           id="id_order_date"/>
                                                 {% endif %}
                                             </div>
                                         </div>

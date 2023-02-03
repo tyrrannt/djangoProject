@@ -88,11 +88,12 @@ class OfficialMemo(models.Model):
     place_production_activity = models.ManyToManyField(Division, verbose_name='МПД')
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
                                      help_text='', blank=True, default='')
-    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True)
-    order_date = models.DateField(verbose_name='Дата приказа', null=True)
+    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
+    order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
-
+    responsible = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
+                               related_name='responsible')
     def __str__(self):
         return f'{self.person} с {self.period_from} по {self.period_for}'
 
@@ -108,15 +109,15 @@ class ApprovalProcess(models.Model):
     comments_for_approval = models.CharField(verbose_name='Комментарий для согласования', max_length=200, help_text='',
                                            blank=True, default='')
     person_agreement = models.ForeignKey(DataBaseUser, verbose_name='Согласующее лицо', on_delete=models.SET_NULL,
-                                         null=True, related_name='person_agreement')
+                                         null=True, blank=True, related_name='person_agreement')
     document_not_agreed = models.BooleanField(verbose_name='Документ согласован', default=False)
     reason_for_approval = models.CharField(verbose_name='Примечание к согласованию', max_length=200, help_text='',
                                            blank=True, default='')
-    person_distributor = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОНО', on_delete=models.SET_NULL,
-                                           null=True, related_name='person_distributor')
+    person_distributor = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ГСМ и НТ', on_delete=models.SET_NULL,
+                                           null=True, blank=True, related_name='person_distributor')
     location_selected = models.BooleanField(verbose_name='Выбрано место проживания', default=False)
     person_department_staff = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
-                                                null=True, related_name='person_department_staff')
+                                                null=True, blank=True, related_name='person_department_staff')
     process_accepted = models.BooleanField(verbose_name='Активность', default=False)
 
 

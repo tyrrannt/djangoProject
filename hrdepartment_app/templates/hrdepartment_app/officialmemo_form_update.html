@@ -25,27 +25,7 @@
 {% endblock %}
 
 {% block content %}
-    <script>
-/* Локализация datepicker */
-$.datepicker.regional['ru'] = {
-	closeText: 'Закрыть',
-	prevText: 'Предыдущий',
-	nextText: 'Следующий',
-	currentText: 'Сегодня',
-	monthNames: ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
-	monthNamesShort: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
-	dayNames: ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],
-	dayNamesShort: ['вск','пнд','втр','срд','чтв','птн','сбт'],
-	dayNamesMin: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
-	weekHeader: 'Не',
-	dateFormat: 'dd.mm.yy',
-	firstDay: 1,
-	isRTL: false,
-	showMonthAfterYear: false,
-	yearSuffix: ''
-};
-$.datepicker.setDefaults($.datepicker.regional['ru']);
-</script>
+
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
         <div>
@@ -73,11 +53,11 @@ $.datepicker.setDefaults($.datepicker.regional['ru']);
                     <section class="card card-modern card-big-info">
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc" id="testof">Служебная записка на служебную поездку</p>
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
+
+                                <div class="col-sm-12">
+                                    <div class="form-group row align-items-center pb-3">
+                                        <h4 style="text-align: center">Направление в служебную поездку</h4>
+                                    </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_period_from">Тип служебной поездки</label>
@@ -88,23 +68,24 @@ $.datepicker.setDefaults($.datepicker.regional['ru']);
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_period_from">Дата начала</label>
-                                        <div class="col-lg-7 col-xl-6" id="period_from_id">
+                                        <div class="col-lg-7 col-xl-6">
                                             <input type="text" id="id_period_from"
                                                    class="form-control form-control-modern"
                                                    name="period_from" value="{{ object.period_from | date:'d.m.Y' }}"
                                                    data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'
+                                                   pi/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_period_for">Дата окончания</label>
-                                        <div class="col-lg-7 col-xl-6" id="period_for_id">
+                                        <div class="col-lg-7 col-xl-6">
                                             <input type="text" id="id_period_for"
                                                    class="form-control form-control-modern "
                                                    name="period_for" value="{{ object.period_for | date:'d.m.Y' }}"
                                                    data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -132,9 +113,7 @@ $.datepicker.setDefaults($.datepicker.regional['ru']);
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_accommodation">Ответственный</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="responsible" id="id_responsible" data-plugin-selectTwo>
-                                                    <option value="{{ user.pk }}" selected>{{ user }}</option>
-                                            </select>
+                                            <span>{{ object.responsible }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -171,28 +150,19 @@ $.datepicker.setDefaults($.datepicker.regional['ru']);
     <script type="text/javascript">
         function employee_change() {
             employee = document.getElementById("id_person").value;
-            period_from = document.getElementById("id_period_from").value;
             $.ajax({
                 type: "GET",
                 url: '{% url 'hrdepartment_app:memo_add' %}',
                 data: {
-                    "employee": employee,
-                    "period_from": period_from,
+                    "result": employee,
                 },
                 dataType: "json",
                 success: function (data) {
                     // any process in data
-                    var period_from = document.getElementById("period_from_id");
-                    var period_for = document.getElementById("period_for_id");
-                    period_from.innerHTML = data[0];
-                    period_for.innerHTML = data[1];
-
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
+                    alert("success");
                 },
-                failure: function (data) {
-                    console.log("failure");
+                failure: function () {
+                    alert("failure");
                 }
             });
         };

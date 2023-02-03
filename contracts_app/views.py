@@ -12,7 +12,7 @@ from django.shortcuts import HttpResponseRedirect, redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import int_validate
+from administration_app.utils import int_validate, change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm
@@ -28,7 +28,7 @@ class ContractList(LoginRequiredMixin, ListView):
     Отображение списка договоров
     """
     model = Contract
-    paginate_by = 5
+    paginate_by = 6
     item_sorted = 'pk'
     sorted_list = ['pk', 'contract_counteragent', 'contract_number', 'date_conclusion',
                    'type_of_contract', 'divisions']
@@ -36,41 +36,17 @@ class ContractList(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
         context['title'] = 'База договоров'
-        try:
-            context['portal_paginator'] = int(self.request.session['portal_paginator'])
-            context['sort_item'] = int(self.request.session['sort_item'])
-        except Exception as _ex:
-            context['portal_paginator'] = self.paginate_by
-            context['sort_item'] = 0
+        change_session_context(context, self)
         return context
 
     def get_queryset(self):
         user_access = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.contracts_access_view.level
-        try:
-            if self.request.session['portal_paginator']:
-                self.paginate_by = int(self.request.session['portal_paginator'])
-            else:
-                self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
-
-        except Exception as _ex:
-            self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
-        try:
-            if self.request.session['sort_item']:
-                self.item_sorted = self.sorted_list[int(self.request.session['sort_item'])]
-            else:
-                self.item_sorted = 'pk'
-        except Exception as _ex:
-            self.item_sorted = 'pk'
+        change_session_queryset(self.request, self)
         return Contract.objects.filter(Q(allowed_placed=True),
                                        Q(access__level__gte=user_access)).order_by(self.item_sorted)
 
     def get(self, request, *args, **kwargs):
-        result = request.GET.get('result', None)
-        sort_item = request.GET.get('sort_item', None)
-        if sort_item:
-            self.request.session['sort_item'] = sort_item
-        if result:
-            self.request.session['portal_paginator'] = result
+        change_session_get(request, self)
 
         return super(ContractList, self).get(self, request, *args, **kwargs)
 
@@ -83,7 +59,7 @@ class ContractSearch(LoginRequiredMixin, ListView):
     template_name_suffix = '_search'
     context_object_name = 'object'
     object_list = None
-    paginate_by = 5
+    paginate_by = 6
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()

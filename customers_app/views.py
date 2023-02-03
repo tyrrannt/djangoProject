@@ -7,7 +7,8 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import boolean_return, get_jsons_data, transliterate, get_jsons_data_filter, get_jsons
+from administration_app.utils import boolean_return, get_jsons_data, transliterate, get_jsons_data_filter, get_jsons, \
+    change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
@@ -93,8 +94,18 @@ def login(request):
         user = auth.authenticate(username=username, password=password)
         if user and user.is_active:
             auth.login(request, user)
-            request.session.set_expiry(PortalProperty.objects.get(pk=1).portal_session)
-            request.session['portal_paginator'] = PortalProperty.objects.get(pk=1).portal_paginator
+            try:
+                portal_session = PortalProperty.objects.get(pk=1).portal_session
+            except Exception as _ex:
+                portal_session = 900
+                print(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
+            try:
+                portal_paginator = PortalProperty.objects.get(pk=1).portal_paginator
+            except Exception as _ex:
+                portal_paginator = 900
+                print(f'{_ex}: Не заданы базовые параметры пагинации страниц')
+            request.session.set_expiry(portal_session)
+            request.session['portal_paginator'] = portal_paginator
             return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
     # else:
     #     content['errors'] = login_form.get_invalid_login_error()
@@ -150,7 +161,7 @@ class PostsAddView(LoginRequiredMixin, CreateView):
 class PostsListView(LoginRequiredMixin, ListView):
     template_name = 'customers_app/posts_list.html'
     model = Posts
-    paginate_by = 5
+    paginate_by = 6
 
 
 class PostsDetailView(LoginRequiredMixin, DetailView):
@@ -176,7 +187,7 @@ class PostsUpdateView(LoginRequiredMixin, UpdateView):
 class CounteragentListView(LoginRequiredMixin, ListView):
     # template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
     model = Counteragent
-    paginate_by = 5
+    paginate_by = 6
 
     def get_queryset(self):
         qs = Counteragent.objects.all().order_by('pk')
@@ -292,14 +303,27 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
 class StaffListView(LoginRequiredMixin, ListView):
     template_name = 'customers_app/staff_list.html'
     model = DataBaseUser
-    paginate_by = 5
+    paginate_by = 6
+    item_sorted = 'pk'
+    sorted_list = ['pk', 'last_name', 'user_work_profile__divisions__code', 'user_work_profile__job__name']
+
+    def get_context_data(self, **kwargs):
+        context = super(StaffListView, self).get_context_data(**kwargs)
+        context['title'] = 'Список пользователей'
+        change_session_context(context, self)
+        return context
 
     def get_queryset(self):
-        qs = DataBaseUser.objects.all().order_by('pk')
+        change_session_queryset(self.request, self)
+        qs = DataBaseUser.objects.all().order_by('pk').exclude(is_superuser=True).order_by(self.item_sorted)
         return qs
 
     def get(self, request, *args, **kwargs):
-        Ref_Key, username, first_name, last_name, surname, birthday, gender, email, telephone, address, = '', '', '', '', '', '1900-01-01', '', '', '', '',
+
+        change_session_get(request, self)
+
+        ref_key, username, first_name = '', '', ''
+        last_name, surname, birthday, gender, email, telephone, address, =  '', '', '1900-01-01', '', '', '', '',
         job_code, division_code, date_of_employment = '', '', '1900-01-01'
         count = 0
         count2 = 0
@@ -361,7 +385,7 @@ class StaffListView(LoginRequiredMixin, ListView):
                                 address = item3['Представление']
                     divisions_kwargs = {
                         'ref_key': item['Ref_Key'],
-                        'person_ref_key': Ref_Key,
+                        'person_ref_key': ref_key,
                         'username': username,
                         'first_name': first_name,
                         'last_name': last_name,
@@ -701,9 +725,13 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
 class JobsList(LoginRequiredMixin, ListView):
     model = Job
     template_name = 'customers_app/jobs_list.html'
+    paginate_by = 6
+    item_sorted = 'pk'
+    sorted_list = ['pk', 'code', 'name', 'date_entry']
 
     def get(self, request, *args, **kwargs):
         count = 0
+        change_session_get(request, self)
         if self.request.GET:
             todos = get_jsons_data("Catalog", "Должности", 0)
             todos2 = get_jsons_data("Catalog", "ТрудовыеФункции", 0)
@@ -735,8 +763,15 @@ class JobsList(LoginRequiredMixin, ListView):
         return super(JobsList, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = Job.objects.filter(excluded_standard_spelling=False)
+        change_session_queryset(self.request, self)
+        qs = Job.objects.filter(excluded_standard_spelling=False).order_by(self.item_sorted)
         return qs
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super(JobsList, self).get_context_data(**kwargs)
+        context['title'] = 'Должности'
+        change_session_context(context, self)
+        return context
 
 
 class JobsAdd(LoginRequiredMixin, CreateView):

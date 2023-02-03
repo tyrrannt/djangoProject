@@ -38,12 +38,12 @@ class OfficialMemoAddForm(forms.ModelForm):
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     official_memo_type = forms.ChoiceField(choices=memo_type)
-    period_from = forms.DateField(label='Дата начала', validators=[present_or_future_date])
-    period_for = forms.DateField(label='Дата окончания', validators=[present_or_future_date])
+    period_from = forms.DateField(label='Дата начала', validators=[present_or_future_date], required=True)
+    period_for = forms.DateField(label='Дата окончания', validators=[present_or_future_date], required=True)
     class Meta:
         model = OfficialMemo
         fields = ('period_from', 'period_for', 'place_production_activity',
-                  'person', 'purpose_trip')
+                  'person', 'purpose_trip', 'responsible')
 
     # def clean(self):
     #     # user age must be above 18 to register
@@ -72,11 +72,10 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     order_date = forms.DateField(required=False)
     order_number = forms.CharField(required=False)
-    accommodation = forms.ChoiceField(choices=type_of)
-    accommodation.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = OfficialMemo
-        fields = ('person', 'purpose_trip', 'period_from', 'period_for', 'place_production_activity', 'accommodation',
+        fields = ('person', 'purpose_trip', 'period_from', 'period_for', 'place_production_activity',
                   'order_number', 'order_date', 'comments')
 
     def clean(self):
@@ -88,17 +87,26 @@ class OfficialMemoUpdateForm(forms.ModelForm):
 
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
+    type_of = [
+        ('1', 'Квартира'),
+        ('2', 'Гостиница')
+    ]
     person_executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
     person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_distributor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_department_staff.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(docs__isnull=True))
     document.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True, 'type': 'date'})
+    accommodation = forms.ChoiceField(choices=type_of, required=False)
+    accommodation.widget.attrs.update({'class': 'form-control form-control-modern'})
+    order_number = forms.CharField(required=False)
+    order_number.widget.attrs.update({'class': 'form-control form-control-modern'})
+    order_date = forms.DateField(required=False)
 
     class Meta:
         model = ApprovalOficialMemoProcess
@@ -112,15 +120,15 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     ]
 
     person_executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person_executor.widget.attrs.update({'class': 'form-control form-control-modern'})
+    person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person_agreement.widget.attrs.update({'class': 'form-control form-control-modern'})
+    person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person_distributor.widget.attrs.update({'class': 'form-control form-control-modern'})
+    person_distributor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person_department_staff.widget.attrs.update({'class': 'form-control form-control-modern'})
+    person_department_staff.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.all())
-    document.widget.attrs.update({'class': 'form-control form-control-modern'})
+    document.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     accommodation = forms.ChoiceField(choices=type_of, required=False)
     accommodation.widget.attrs.update({'class': 'form-control form-control-modern'})
     comments_for_approval = forms.CharField(required=False)

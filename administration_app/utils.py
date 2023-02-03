@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 from docxtpl import DocxTemplate
 from docx2pdf import convert
 
+from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division, UserAccessMode
 from djangoProject.settings import BASE_DIR
@@ -142,7 +143,9 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
     response = requests.get(source_url)
     return json.loads(response.text)
 
-def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, filter_content: str, logical: int, base_index: int) -> dict:
+
+def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, filter_content: str, logical: int,
+                          base_index: int) -> dict:
     """
     Получение JSON объекта из таблицы 1С
     :param object_type: Тип объекта: Справочник — Catalog; Документ — Document; Журнал документов — DocumentJournal;
@@ -167,7 +170,68 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     response = requests.get(source_url)
     return json.loads(response.text)
 
+
 def get_jsons(url):
     source_url = url
     response = requests.get(source_url)
     return json.loads(response.text)
+
+
+def change_session_get(request, self):
+    """
+    Получает параметры пагинации и сортировки со страницы, и изменяет переменные сессии: Параметр сортировки, и
+    параметр пагинации
+    :param request: Запрос со страницы
+    :param self: Представления экземпляра класса, из которого вызывается функция
+    :return:
+    """
+    result = request.GET.get('result', None)
+    sort_item = request.GET.get('sort_item', None)
+    if sort_item:
+        self.request.session['sort_item'] = sort_item
+    if result:
+        self.request.session['portal_paginator'] = result
+
+def change_session_context(context, self):
+    """
+    Получает параметры пагинации и сортировки со страницы, и изменяет переменные сессии: Параметр сортировки, и
+    параметр пагинации
+    :param request: Запрос со страницы
+    :param self: Представления экземпляра класса, из которого вызывается функция
+    :return:
+    """
+    try:
+        context['portal_paginator'] = int(self.request.session['portal_paginator'])
+        context['sort_item'] = int(self.request.session['sort_item'])
+    except Exception as _ex:
+        print('Error context')
+        context['portal_paginator'] = self.paginate_by
+        context['sort_item'] = 0
+
+def change_session_queryset(request, self):
+    """
+    Получает параметры пагинации и сортировки со страницы, и изменяет переменные сессии: Параметр сортировки, и
+    параметр пагинации
+    :param request: Запрос со страницы
+    :param self: Представления экземпляра класса, из которого вызывается функция
+    :return:
+    """
+    try:
+        if self.request.session['portal_paginator']:
+            self.paginate_by = int(self.request.session['portal_paginator'])
+        else:
+            self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+    except Exception as _ex:
+        self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+
+    try:
+        if self.request.session['sort_item']:
+            self.item_sorted = self.sorted_list[int(self.request.session['sort_item'])]
+        else:
+            self.item_sorted = 'pk'
+    except Exception as _ex:
+        print('Error queryset sort')
+        self.item_sorted = 'pk'
+
+def filter_context(request, self):
+    pass

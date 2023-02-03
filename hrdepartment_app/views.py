@@ -1,13 +1,16 @@
 import datetime
+import json
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
 
+from administration_app.utils import change_session_context, change_session_queryset, change_session_get
 from customers_app.models import DataBaseUser, Counteragent
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm
@@ -34,7 +37,7 @@ class MedicalExaminationAdd(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:medical_list')
-        #return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
+        # return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
 
 
 class MedicalExaminationUpdate(LoginRequiredMixin, UpdateView):
@@ -47,7 +50,8 @@ class MedicalExaminationUpdate(LoginRequiredMixin, UpdateView):
         # content['all_person'] = DataBaseUser.objects.all()
         # content['all_contragent'] = Counteragent.objects.all()
         # content['all_status'] = Medical.type_of
-        content['all_harmful'] = DataBaseUser.objects.get(pk=self.object.person.pk).user_work_profile.job.harmful.iterator()
+        content['all_harmful'] = DataBaseUser.objects.get(
+            pk=self.object.person.pk).user_work_profile.job.harmful.iterator()
         return content
 
     def get_success_url(self):
@@ -56,6 +60,24 @@ class MedicalExaminationUpdate(LoginRequiredMixin, UpdateView):
 
 class OfficialMemoList(LoginRequiredMixin, ListView):
     model = OfficialMemo
+    paginate_by = 6
+
+    def get(self, request, *args, **kwargs):
+        change_session_get(self.request, self)
+        return super(OfficialMemoList, self).get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super(OfficialMemoList, self).get_queryset()
+        change_session_queryset(self.request, self)
+        user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
+        qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by('pk').reverse()
+        return qs
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super(OfficialMemoList, self).get_context_data(**kwargs)
+        context['title'] = 'Список пользователей'
+        change_session_context(context, self)
+        return context
 
 
 class OfficialMemoAdd(LoginRequiredMixin, CreateView):
@@ -65,9 +87,12 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoAdd, self).get_context_data(**kwargs)
         content['all_status'] = OfficialMemo.type_of
-        users_list = [person.person_id for person in OfficialMemo.objects.filter(Q(period_from__lte=datetime.datetime.today()) & Q(period_for__gte=datetime.datetime.today()))]
-        print(users_list)
-        content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list)
+        # Генерируем список сотрудников, которые на текущий момент времени не находятся в СП
+        users_list = [person.person_id for person in OfficialMemo.objects.filter(
+            Q(period_from__lte=datetime.datetime.today()) & Q(period_for__gte=datetime.datetime.today()))]
+        # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
+        # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
+        content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(is_superuser=True)
         return content
 
     def get_success_url(self):
@@ -76,14 +101,41 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         return super().form_valid(form)
 
+    def get(self, request, *args, **kwargs):
+        global min_date
+        html = list()
+        employee = request.GET.get('employee', None)
+        period_from = request.GET.get('period_from', None)
+        if employee and period_from:
+            check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
+            filters = OfficialMemo.objects.filter(
+                Q(person__pk=employee) & Q(period_from__lte=check_date) & Q(period_for__gte=check_date))
+            try:
+                min_date = filters.first().period_for
+            except AttributeError:
+                print('За заданный период СП не найдены')
+            if filters.count() > 0:
+                html.append(f'<input type="date" id="id_period_from" class="form-control form-control-modern" min="{min_date + datetime.timedelta(days=1)}" ' \
+                   f'name="period_from" value="" data-plugin-datepicker data-plugin-options=' + "'" + '{"orientation": "bottom", "format": "yyyy-mm-dd"}' + "'/>")
+                html.append(f'<input type="date" id="id_period_for" class="form-control form-control-modern" min="{min_date + datetime.timedelta(days=1)}" ' \
+                       f'name="period_for" value="" data-plugin-datepicker data-plugin-options=' + "'" + '{"orientation": "bottom", "format": "yyyy-mm-dd"}' + "'/>")
+
+                return JsonResponse(html, safe=False)
+
+
+        return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
 
 class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
+    template_name = 'hrdepartment_app/officialmemo_form_update.html'
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
+        period = self.get_object()
+        delta = (period.period_for - period.period_from)
+        content['period'] = int(delta.days) + 1
         return content
 
     def get_success_url(self):
@@ -93,7 +145,6 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
         return super(OfficialMemoUpdate, self).form_invalid(form)
 
     def form_valid(self, form):
-        print(form.instance.period_from)
         return super().form_valid(form)
 
 
@@ -101,10 +152,12 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
 
     def get_queryset(self):
-        qs = ApprovalOficialMemoProcess.objects.filter(Q(person_agreement=self.request.user) |
-                                                       Q(person_distributor=self.request.user) |
-                                                       Q(person_executor=self.request.user) |
-                                                       Q(person_department_staff=self.request.user))
+        user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
+
+        qs = ApprovalOficialMemoProcess.objects.filter(Q(person_agreement__user_work_profile__divisions=user_division) |
+                                                       Q(person_distributor__user_work_profile__divisions=user_division) |
+                                                       Q(person_executor__user_work_profile__divisions=user_division) |
+                                                       Q(person_department_staff__user_work_profile__divisions=user_division))
         return qs
 
 
@@ -121,11 +174,11 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
 
 
-
 class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessUpdateForm
-    #template_name = 'hrdepartment_app/oficialmemo_form.html'
+
+    # template_name = 'hrdepartment_app/oficialmemo_form.html'
 
     def get_context_data(self, **kwargs):
         content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(**kwargs)

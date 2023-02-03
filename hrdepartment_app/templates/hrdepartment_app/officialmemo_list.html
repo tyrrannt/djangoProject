@@ -1,7 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-
+{% load widget_tweaks %}
 {% block title %}
     <title>{{ title }}</title>
 {% endblock %}
@@ -34,6 +34,31 @@
                                                 Запустить процесс </a>
                                         </div>
                                     {% endif %}
+                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
+                                            <label for="portal_paginator"
+                                                   class="ws-nowrap me-3 mb-0">Количество:</label>
+                                            <select class="form-control select-style-1 results-per-page"
+                                                    name="results-per-page" onchange="portal_paginator()"
+                                                    id="portal_paginator">
+                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6</option>
+                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>12</option>
+                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>24</option>
+                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>48</option>
+                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>96</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-lg-auto ps-lg-1">
+                                        <div class="mx-lg-auto">
+                                            <div class="input-group">
+                                                <a href="{% url 'hrdepartment_app:memo_list' %}"
+                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
+                                                    Применить настройки
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -65,7 +90,7 @@
                                             <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span>{{ item.person }}</span></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span>{{ item.person.user_work_profile.job }}</span></a>
+                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span title="{{ item.person.user_work_profile.job }}">{{ item.person.user_work_profile.job | truncatewords:2 }}</span></a>
                                         </td>
                                         <td>
                                             <span>{% for items in item.place_production_activity.all %}{{ items }} {% endfor %}</span>&nbsp;
@@ -79,7 +104,6 @@
                                         <td>
                                             <span>{{ item.get_accommodation_display }}</span>&nbsp;
                                         </td>
-
                                         <td>
                                             <span>№: {{ item.order_number }} <br> от: {{ item.order_date | date:'d-m-Y'}}</span>&nbsp;
                                         </td>
@@ -119,6 +143,26 @@
         </div>
         <!-- end: page -->
     </section>
+    <script type="text/javascript">
+        function portal_paginator() {
+            paginator_by = document.getElementById("portal_paginator").value;
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:memo_list' %}',
+                data: {
+                    "result": paginator_by,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    alert("success");
+                },
+                failure: function () {
+                    alert("failure");
+                }
+            });
+        };
+    </script>
 {% endblock %}
 
 {% block SpecificPageVendor %}
