@@ -1,8 +1,13 @@
+import pathlib
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
 from contracts_app.templatetags.custom import empty_item
+from djangoProject.settings import BASE_DIR
 
 
 class ViewDocumentsPhysical(models.Model):
@@ -264,6 +269,42 @@ class DataBaseUser(AbstractUser):
 
     def __str__(self):
         return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
+
+
+def rename(file_name, path_name, instance, pfx):
+    try:
+        if instance.avatar:
+            # Получаем расширение файла
+            ext = file_name.split('.')[-1]
+            # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+            filename = f'{instance.username}.{ext}'
+            if file_name:
+                try:
+                    pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
+                                        pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
+                except Exception as _ex0:
+                    print(_ex0)
+            instance.avatar = f'users_avatars/{filename}'
+            if file_name != filename:
+                instance.save()
+
+    except Exception as _ex:
+        print(_ex)
+
+
+@receiver(post_save, sender=DataBaseUser)
+def change_filename(sender, instance, **kwargs):
+
+    try:
+        # Получаем имя сохраненного файла
+        file_name = pathlib.Path(instance.avatar.name).name
+        # Получаем путь к файлу
+        path_name = pathlib.Path(instance.avatar.name).parent
+        rename(file_name, path_name, instance, '')
+
+    except Exception as _ex:
+        print(_ex)
+
 
 
 class Counteragent(models.Model):

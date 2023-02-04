@@ -28,6 +28,35 @@ from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 def get_model_fields(model_object):
     return model_object._meta.fields
 
+def get_profile_fill(self, context):
+    profile_info = 0
+    user_object = self.get_object()
+    user_private = user_object.user_profile
+    user_work = user_object.user_work_profile
+    user_object_list = ['first_name', 'last_name', 'email', 'surname', 'avatar', 'birthday', 'address',
+                        'personal_phone', 'gender']
+    user_private_list = ['citizenship', 'passport', 'snils', 'oms', 'inn']
+    user_work_list = ['date_of_employment', 'internal_phone', 'work_phone', 'job', 'divisions', 'work_email']
+    for item in get_model_fields(user_object):
+        if str(item).split('.')[2] in user_object_list:
+            if getattr(user_object, str(item).split('.')[2]):
+                profile_info += 5
+    try:
+        for item in get_model_fields(user_private):
+            if str(item).split('.')[2] in user_private_list:
+                if getattr(user_private, str(item).split('.')[2]):
+                    profile_info += 5
+    except Exception as _ex:
+        print(f'{_ex}: Отсутствует блок личной информации')
+    try:
+        for item in get_model_fields(user_work):
+            if str(item).split('.')[2] in user_work_list:
+                if getattr(user_work, str(item).split('.')[2]):
+                    profile_info += 5
+    except Exception as _ex:
+        print(f'{_ex}: Отсутствует блок рабочей информации')
+    context['profile_info'] = profile_info
+
 @login_required
 def index(request):
     document_types = TypeDocuments.objects.all()
@@ -58,32 +87,7 @@ class DataBaseUserProfile(LoginRequiredMixin, DetailView):
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
         context['contract'] = Contract.objects.all().count()
-        profile_info = 0
-        user_object = self.get_object()
-        user_private = user_object.user_profile
-        user_work = user_object.user_work_profile
-        user_object_list = ['first_name', 'last_name', 'email', 'surname', 'avatar', 'birthday', 'address', 'personal_phone', 'gender']
-        user_private_list =['citizenship', 'passport', 'snils', 'oms', 'inn']
-        user_work_list = ['date_of_employment', 'internal_phone', 'work_phone', 'job', 'divisions', 'work_email']
-        for item in get_model_fields(user_object):
-            if str(item).split('.')[2] in user_object_list:
-                if getattr(user_object, str(item).split('.')[2]):
-                    profile_info += 5
-        try:
-            for item in get_model_fields(user_private):
-                if str(item).split('.')[2] in user_private_list:
-                    if getattr(user_private, str(item).split('.')[2]):
-                        profile_info += 5
-        except Exception as _ex:
-            print(f'{_ex}: Отсутствует блок личной информации')
-        try:
-            for item in get_model_fields(user_work):
-                if str(item).split('.')[2] in user_work_list:
-                    if getattr(user_work, str(item).split('.')[2]):
-                        profile_info += 5
-        except Exception as _ex:
-            print(f'{_ex}: Отсутствует блок рабочей информации')
-        context['profile_info'] = profile_info
+        get_profile_fill(self, context)
 
         # context.update(groups())
         return context
@@ -99,6 +103,7 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
         context['title'] = 'Профиль пользователя'
         context['posts'] = post
+        get_profile_fill(self, context)
         return context
 
     def get_success_url(self):
