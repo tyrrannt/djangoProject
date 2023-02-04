@@ -69,14 +69,20 @@ class DataBaseUserProfile(LoginRequiredMixin, DetailView):
             if str(item).split('.')[2] in user_object_list:
                 if getattr(user_object, str(item).split('.')[2]):
                     profile_info += 5
-        for item in get_model_fields(user_private):
-            if str(item).split('.')[2] in user_private_list:
-                if getattr(user_private, str(item).split('.')[2]):
-                    profile_info += 5
-        for item in get_model_fields(user_work):
-            if str(item).split('.')[2] in user_work_list:
-                if getattr(user_work, str(item).split('.')[2]):
-                    profile_info += 5
+        try:
+            for item in get_model_fields(user_private):
+                if str(item).split('.')[2] in user_private_list:
+                    if getattr(user_private, str(item).split('.')[2]):
+                        profile_info += 5
+        except Exception as _ex:
+            print(f'{_ex}: Отсутствует блок личной информации')
+        try:
+            for item in get_model_fields(user_work):
+                if str(item).split('.')[2] in user_work_list:
+                    if getattr(user_work, str(item).split('.')[2]):
+                        profile_info += 5
+        except Exception as _ex:
+            print(f'{_ex}: Отсутствует блок рабочей информации')
         context['profile_info'] = profile_info
 
         # context.update(groups())

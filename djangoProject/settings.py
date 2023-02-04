@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-wp=6-v6_hp%wl9dog_#px=+94qnl+drr5o_cd!h_qerp(#l4h)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.10.12', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['192.168.10.12', 'corp.barkol.ru', 'localhost', '127.0.0.1']
 
 # Application definition
 
@@ -87,6 +87,13 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'djangobd',
+    #     'HOST': 'localhost',
+    #     'USER': 'djangouser',
+    #     'PASSWORD': '',
+    # }
 }
 
 # Password validation
