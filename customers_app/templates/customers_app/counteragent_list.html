@@ -35,12 +35,17 @@
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
                                             <label class="ws-nowrap me-3 mb-0">Сортировка:</label>
                                             <select class="form-control select-style-1 filter-by" name="filter-by"
-                                                onchange="field_sorted()" id="field_sorted">
+                                                    onchange="field_sorted()" id="field_sorted">
 
-                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
-                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>Контрагент</option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>ИНН</option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>КПП</option>
+                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код
+                                                </option>
+                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>
+                                                    Контрагент
+                                                </option>
+                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>ИНН
+                                                </option>
+                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>КПП
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
@@ -50,18 +55,28 @@
                                             <select class="form-control select-style-1 results-per-page"
                                                     name="results-per-page" onchange="portal_paginator()"
                                                     id="portal_paginator">
-                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6</option>
-                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>12</option>
-                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>24</option>
-                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>48</option>
-                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>96</option>
+                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6
+                                                </option>
+                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>
+                                                    12
+                                                </option>
+                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>
+                                                    24
+                                                </option>
+                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>
+                                                    48
+                                                </option>
+                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>
+                                                    96
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="col-12 col-lg-auto ps-lg-1">
                                         <div class="mx-lg-auto">
                                             <div class="input-group">
-                                                <a href="{% url 'contracts_app:index' %}" class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
+                                                <a href="{% url 'contracts_app:index' %}"
+                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
                                                     Применить настройки
                                                 </a>
                                             </div>
@@ -157,6 +172,7 @@
                 }
             });
         };
+
         function field_sorted() {
             item_sorted = document.getElementById("field_sorted").value;
             $.ajax({

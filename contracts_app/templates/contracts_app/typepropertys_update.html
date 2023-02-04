@@ -44,7 +44,8 @@
             {% endif %}
         </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'contracts_app:typepropertys_update' object.pk %}"
+        <form class="ecommerce-form action-buttons-fixed"
+              action="{% url 'contracts_app:typepropertys_update' object.pk %}"
               method="post">
             {% csrf_token %}
             <div class="row">
@@ -61,8 +62,9 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_type_property">Тип имущества</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_type_property" class="form-control form-control-modern"
-                                                   name="type_property" value="{{ object.type_property }}" />
+                                            <input type="text" id="id_type_property"
+                                                   class="form-control form-control-modern"
+                                                   name="type_property" value="{{ object.type_property }}"/>
                                         </div>
                                     </div>
                                 </div>

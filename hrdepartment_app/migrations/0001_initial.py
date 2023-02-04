@@ -7,7 +7,6 @@ import hrdepartment_app.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -34,9 +33,15 @@ class Migration(migrations.Migration):
                 ('purpose', models.CharField(default='', max_length=500, verbose_name='Цель')),
                 ('period_from', models.DateField(auto_now_add=True, null=True, verbose_name='Дата начала')),
                 ('period_for', models.DateField(auto_now_add=True, null=True, verbose_name='Дата окончания')),
-                ('accommodation', models.CharField(blank=True, choices=[('1', 'Квартира'), ('2', 'Гостиница')], default='', max_length=9, verbose_name='Проживание')),
-                ('person', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='Сотрудник')),
-                ('place_production_activity', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.division', verbose_name='МПД')),
+                ('accommodation',
+                 models.CharField(blank=True, choices=[('1', 'Квартира'), ('2', 'Гостиница')], default='', max_length=9,
+                                  verbose_name='Проживание')),
+                ('person',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL,
+                                   verbose_name='Сотрудник')),
+                ('place_production_activity',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.division',
+                                   verbose_name='МПД')),
             ],
             options={
                 'verbose_name': 'Служебная записка',
@@ -49,11 +54,21 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('number', models.CharField(default='', max_length=4, verbose_name='Номер')),
                 ('date_entry', models.DateField(auto_now_add=True, null=True, verbose_name='Дата ввода информации')),
-                ('working_status', models.CharField(blank=True, choices=[('1', 'Поступающий на работу'), ('2', 'Работающий')], default='', max_length=40, verbose_name='Статус')),
-                ('medical_direction', models.FileField(blank=True, upload_to=hrdepartment_app.models.contract_directory_path, verbose_name='Файл документа')),
-                ('harmful', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.harmfulworkingconditions', verbose_name='Вредные условия труда')),
-                ('organisation', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.counteragent', verbose_name='Медицинская организация')),
-                ('person', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='Сотрудник')),
+                ('working_status',
+                 models.CharField(blank=True, choices=[('1', 'Поступающий на работу'), ('2', 'Работающий')], default='',
+                                  max_length=40, verbose_name='Статус')),
+                ('medical_direction',
+                 models.FileField(blank=True, upload_to=hrdepartment_app.models.contract_directory_path,
+                                  verbose_name='Файл документа')),
+                ('harmful', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                              to='customers_app.harmfulworkingconditions',
+                                              verbose_name='Вредные условия труда')),
+                ('organisation', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                   to='customers_app.counteragent',
+                                                   verbose_name='Медицинская организация')),
+                ('person',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL,
+                                   verbose_name='Сотрудник')),
             ],
             options={
                 'verbose_name': 'Медицинское направление',

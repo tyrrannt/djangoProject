@@ -55,10 +55,12 @@
                                             <a href="{% url 'library_app:documents' item.pk %}"><strong>{{ item.document_name }}</strong></a>
                                         </td>
                                         <td>
-                                            {{item.document_date}}
+                                            {{ item.document_date }}
                                         </td>
                                         <td>
-                                            {% if item.actuality %}<i class='bx bx-check bx-md' style='color:#087902'  ></i>{% else %}<i class='bx bx-x bx-md' style='color:#f90202'  ></i>{% endif %}
+                                            {% if item.actuality %}
+                                                <i class='bx bx-check bx-md' style='color:#087902'></i>{% else %}
+                                                <i class='bx bx-x bx-md' style='color:#f90202'></i>{% endif %}
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -71,7 +73,7 @@
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
                                         <div class="d-flex align-items-stretch">
-{#                                            ToDo: Тут можно в подвал что то вывести #}
+                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
                                         </div>
                                     </div>
                                     <div class="col-lg-auto text-center order-3 order-lg-2">

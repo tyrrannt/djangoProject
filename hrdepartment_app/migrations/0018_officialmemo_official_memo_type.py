@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('hrdepartment_app', '0017_alter_approvaloficialmemoprocess_order_date_and_more'),
     ]
@@ -13,6 +12,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='officialmemo',
             name='official_memo_type',
-            field=models.CharField(choices=[('1', 'Направление'), ('2', 'Продление')], default='1', max_length=9, verbose_name='Тип СП'),
+            field=models.CharField(choices=[('1', 'Направление'), ('2', 'Продление')], default='1', max_length=9,
+                                   verbose_name='Тип СП'),
         ),
     ]

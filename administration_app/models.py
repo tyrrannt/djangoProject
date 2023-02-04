@@ -43,7 +43,8 @@ class MainMenu(MetaMainMenu):
     def __init__(self, *args, **kwargs):
         super(MainMenu, self).__init__(*args, **kwargs)
 
-#ToDo: Доработать генератор меню
+
+# ToDo: Доработать генератор меню
 def make_menu():
     items = MainMenu.objects.all()
     for item in items:

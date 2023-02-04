@@ -65,7 +65,8 @@
                                             <label class="col"
                                                    for="id_person_executor">Исполнитель</label>
                                             <div class="col">
-                                                <select class="form-control form-control-modern" name="person_executor" id="id_person_executor" data-plugin-selectTwo>
+                                                <select class="form-control form-control-modern" name="person_executor"
+                                                        id="id_person_executor" data-plugin-selectTwo>
                                                     <option value="{{ user.pk }}" selected>{{ user }}</option>
                                                 </select>
                                             </div>
@@ -163,7 +164,7 @@
                                                        value="Выбрано"/>
                                             {% else %}
                                                 <div class="col">
-                                                    <span>{{ form.location_selected  }}</span>
+                                                    <span>{{ form.location_selected }}</span>
                                                 </div>
                                             {% endif %}
                                         </div>

@@ -44,7 +44,8 @@
             {% endif %}
         </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'contracts_app:typecontracts_update' object.pk %}"
+        <form class="ecommerce-form action-buttons-fixed"
+              action="{% url 'contracts_app:typecontracts_update' object.pk %}"
               method="post">
             {% csrf_token %}
             <div class="row">
@@ -61,8 +62,9 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_type_contract">Тип договора</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_type_contract" class="form-control form-control-modern"
-                                                   name="type_contract" value="{{ object.type_contract }}" />
+                                            <input type="text" id="id_type_contract"
+                                                   class="form-control form-control-modern"
+                                                   name="type_contract" value="{{ object.type_contract }}"/>
                                         </div>
                                     </div>
                                 </div>

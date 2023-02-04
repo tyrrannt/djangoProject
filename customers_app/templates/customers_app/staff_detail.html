@@ -45,15 +45,18 @@
                                            aria-controls="usage-restriction" aria-selected="false"><i
                                                 class="bx bx-block me-2"></i> Контактные данные</a>
                                         <a class="nav-link" id="personal-profile-tab" data-bs-toggle="pill"
-                                           data-bs-target="#personal-profile" role="tab" aria-controls="personal-profile"
-                                           aria-selected="false"><i class="bx bxs-user-check me-2"></i> Личный профиль</a>
+                                           data-bs-target="#personal-profile" role="tab"
+                                           aria-controls="personal-profile"
+                                           aria-selected="false"><i class="bx bxs-user-check me-2"></i> Личный
+                                            профиль</a>
                                         <a class="nav-link" id="usage-limits-tab" data-bs-toggle="pill"
                                            data-bs-target="#usage-limits" role="tab" aria-controls="usage-limits"
-                                           aria-selected="false"><i class="bx bxs-buildings me-2"></i> Рабочий профиль</a>
+                                           aria-selected="false"><i class="bx bxs-buildings me-2"></i> Рабочий
+                                            профиль</a>
                                         {% if object.is_active %}
-                                        <a class="nav-link" id="access-tab" data-bs-toggle="pill"
-                                           data-bs-target="#access" role="tab" aria-controls="access"
-                                           aria-selected="false"><i class="bx bxs-traffic me-2"></i> Уровни доступа</a>
+                                            <a class="nav-link" id="access-tab" data-bs-toggle="pill"
+                                               data-bs-target="#access" role="tab" aria-controls="access"
+                                               aria-selected="false"><i class="bx bxs-traffic me-2"></i> Уровни доступа</a>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -65,21 +68,24 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Фамилия</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           value="{{ object.last_name|empty_item }}" name="last_name" id="id_last_name"/>
+                                                           value="{{ object.last_name|empty_item }}" name="last_name"
+                                                           id="id_last_name"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Имя</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           value="{{ object.first_name|empty_item }}" name="first_name" id="id_first_name"/>
+                                                           value="{{ object.first_name|empty_item }}" name="first_name"
+                                                           id="id_first_name"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Отчество</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           value="{{ object.surname|empty_item }}" name="surname" id="id_surname"/>
+                                                           value="{{ object.surname|empty_item }}" name="surname"
+                                                           id="id_surname"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -87,7 +93,8 @@
                                                     рождения</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="birthday" id="id_birthday" placeholder="Данные отсутствуют..."
+                                                           name="birthday" id="id_birthday"
+                                                           placeholder="Данные отсутствуют..."
                                                            value="{{ object.birthday|empty_item }}"/>
                                                 </div>
                                             </div>
@@ -95,7 +102,7 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Пол</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="gender" id="id_gender"
+                                                           name="gender" id="id_gender"
                                                            value="{{ object.get_gender_display|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
@@ -125,8 +132,9 @@
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <input type="email" class="form-control form-control-modern" disabled
-                                                            name="email" id="id_email"
+                                                    <input type="email" class="form-control form-control-modern"
+                                                           disabled
+                                                           name="email" id="id_email"
                                                            value="{{ object.email|empty_item }}"/>
                                                 </div>
                                             </div>
@@ -136,8 +144,8 @@
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
                                                            disabled
-                                                            name="personal_phone" id="id_personal_phone"
-                                                            value="{{ object.personal_phone|empty_item }}"/>
+                                                           name="personal_phone" id="id_personal_phone"
+                                                           value="{{ object.personal_phone|empty_item }}"/>
                                                 </div>
                                             </div>
                                         </div>
@@ -147,7 +155,7 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Гражданство</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="citizenship" id="id_citizenship"
+                                                           name="citizenship" id="id_citizenship"
                                                            value="{{ object.user_profile.citizenship|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
@@ -155,7 +163,8 @@
                                             <div class="form-group row align-items-center  pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Паспорт</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <textarea type="text" class="form-control form-control-modern" disabled
+                                                    <textarea type="text" class="form-control form-control-modern"
+                                                              disabled
                                                               name="passport" rows="4"
                                                               id="id_passport">{{ object.user_profile.passport|empty_item }}</textarea>
 
@@ -165,16 +174,17 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">СНИЛС</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="snils" id="id_snils"
+                                                           name="snils" id="id_snils"
                                                            value="{{ object.user_profile.snils|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Полис ОМС</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Полис
+                                                    ОМС</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="oms" id="id_oms"
+                                                           name="oms" id="id_oms"
                                                            value="{{ object.user_profile.oms|empty_item }}"/>
                                                 </div>
                                             </div>
@@ -182,7 +192,7 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">ИНН</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="inn" id="id_inn"
+                                                           name="inn" id="id_inn"
                                                            value="{{ object.user_profile.inn|empty_item }}"/>
                                                 </div>
                                             </div>
@@ -190,10 +200,11 @@
                                         <div class="tab-pane fade" id="usage-limits" role="tabpanel"
                                              aria-labelledby="usage-limits-tab">
                                             <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Дата приема на работу</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Дата
+                                                    приема на работу</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="date_of_employment" id="id_date_of_employment"
+                                                           name="date_of_employment" id="id_date_of_employment"
                                                            value="{{ object.user_work_profile.date_of_employment|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
@@ -202,7 +213,7 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Подразделение</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="divisions" id="id_divisions"
+                                                           name="divisions" id="id_divisions"
                                                            value="{{ object.user_work_profile.divisions|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
@@ -211,7 +222,7 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Должность</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="job" id="id_job"
+                                                           name="job" id="id_job"
                                                            value="{{ object.user_work_profile.job|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                 </div>
@@ -221,7 +232,7 @@
                                                     номер телефона</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="work_phone" id="id_work_phone"
+                                                           name="work_phone" id="id_work_phone"
                                                            value="{{ object.user_work_profile.work_phone|empty_item }}"/>
                                                 </div>
                                             </div>
@@ -230,63 +241,100 @@
                                                     номер телефона</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                            name="internal_phone" id="id_internal_phone"
+                                                           name="internal_phone" id="id_internal_phone"
                                                            value="{{ object.user_work_profile.internal_phone|empty_item }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <input type="email" class="form-control form-control-modern" disabled
-                                                            name="email" id="id_email"
+                                                    <input type="email" class="form-control form-control-modern"
+                                                           disabled
+                                                           name="email" id="id_email"
                                                            value="{{ object.user_work_profile.work_email|empty_item }}"/>
                                                 </div>
                                             </div>
+                                            {% if user.is_superuser %}
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email pass</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="text" class="form-control form-control-modern"
+                                                           disabled
+                                                           name="work_email_password" id="id_work_email_password"
+                                                           value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                </div>
+                                            </div>
+                                            {% endif %}
                                         </div>
                                         <div class="tab-pane fade" id="access" role="tabpanel"
                                              aria-labelledby="access-tab">
                                             <div class="form-group row align-items-center  pb-1">
-                                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list" style="min-width: 550px;">
-											<thead>
-												<tr>
-													<th width="24%">Наименование</th>
-													<th width="40%">Уровень доступа</th>
-													<th width="12%">Добавление</th>
-													<th width="12%">Редактирование</th>
-                                                    <th width="12%">Публикация</th>
-												</tr>
-											</thead>
-											<tbody>
-                                                <tr>
-													<td>Договора</td>
-													<td>{{ object.access_level.contracts_access_view|empty_item }}</td>
-													<td><input type="checkbox" {% if object.access_level.contracts_access_add  %}checked{% endif %} disabled></td>
-													<td><input type="checkbox" {% if object.access_level.contracts_access_edit  %}checked{% endif %} disabled></td>
-                                                    <td><input type="checkbox" {% if object.access_level.contracts_access_agreement %}checked{% endif %} disabled></td>
-												</tr>
-                                                <tr>
-													<td>Документы</td>
-													<td>{{ object.access_level.documents_access_view|empty_item }}</td>
-													<td><input type="checkbox" {% if object.access_level.documents_access_add  %}checked{% endif %} disabled></td>
-													<td><input type="checkbox" {% if object.access_level.documents_access_edit  %}checked{% endif %} disabled></td>
-                                                    <td><input type="checkbox" {% if object.access_level.documents_access_agreement %}checked{% endif %} disabled></td>
-												</tr>
-                                                <tr>
-													<td>Записи</td>
-													<td>{{ object.access_level.posts_access_view|empty_item }}</td>
-													<td><input type="checkbox" {% if object.access_level.posts_access_add  %}checked{% endif %} disabled></td>
-													<td><input type="checkbox" {% if object.access_level.posts_access_edit  %}checked{% endif %} disabled></td>
-                                                    <td><input type="checkbox" {% if object.access_level.posts_access_agreement %}checked{% endif %} disabled></td>
-												</tr>
-                                                <tr>
-													<td>Справочники</td>
-													<td>{{ object.access_level.guide_access_view|empty_item }}</td>
-													<td><input type="checkbox" {% if object.access_level.guide_access_add  %}checked{% endif %} disabled></td>
-													<td><input type="checkbox" {% if object.access_level.guide_access_edit  %}checked{% endif %} disabled></td>
-                                                    <td><input type="checkbox" {% if object.access_level.guide_access_agreement %}checked{% endif %} disabled></td>
-												</tr>
-                                            </tbody>
-                                            </table>
+                                                <table class="table table-ecommerce-simple table-striped mb-0"
+                                                       id="datatable-ecommerce-list" style="min-width: 550px;">
+                                                    <thead>
+                                                    <tr>
+                                                        <th width="24%">Наименование</th>
+                                                        <th width="40%">Уровень доступа</th>
+                                                        <th width="12%">Добавление</th>
+                                                        <th width="12%">Редактирование</th>
+                                                        <th width="12%">Публикация</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr>
+                                                        <td>Договора</td>
+                                                        <td>{{ object.access_level.contracts_access_view|empty_item }}</td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.contracts_access_add %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.contracts_access_edit %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.contracts_access_agreement %}checked{% endif %}
+                                                                   disabled></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Документы</td>
+                                                        <td>{{ object.access_level.documents_access_view|empty_item }}</td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.documents_access_add %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.documents_access_edit %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.documents_access_agreement %}checked{% endif %}
+                                                                   disabled></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Записи</td>
+                                                        <td>{{ object.access_level.posts_access_view|empty_item }}</td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.posts_access_add %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.posts_access_edit %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.posts_access_agreement %}checked{% endif %}
+                                                                   disabled></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Справочники</td>
+                                                        <td>{{ object.access_level.guide_access_view|empty_item }}</td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.guide_access_add %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.guide_access_edit %}checked{% endif %}
+                                                                   disabled></td>
+                                                        <td><input type="checkbox"
+                                                                   {% if object.access_level.guide_access_agreement %}checked{% endif %}
+                                                                   disabled></td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>

@@ -70,7 +70,8 @@ class OfficialMemoList(LoginRequiredMixin, ListView):
         qs = super(OfficialMemoList, self).get_queryset()
         change_session_queryset(self.request, self)
         user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
-        qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by('pk').reverse()
+        qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by(
+            'pk').reverse()
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -86,7 +87,7 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoAdd, self).get_context_data(**kwargs)
-        content['all_status'] = OfficialMemo.type_of
+        #content['all_status'] = OfficialMemo.type_of_accommodation
         # Генерируем список сотрудников, которые на текущий момент времени не находятся в СП
         users_list = [person.person_id for person in OfficialMemo.objects.filter(
             Q(period_from__lte=datetime.datetime.today()) & Q(period_for__gte=datetime.datetime.today()))]
@@ -102,26 +103,24 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get(self, request, *args, **kwargs):
-        global min_date
+        global filter_string
         html = list()
         employee = request.GET.get('employee', None)
         period_from = request.GET.get('period_from', None)
         if employee and period_from:
             check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
             filters = OfficialMemo.objects.filter(
-                Q(person__pk=employee) & Q(period_from__lte=check_date) & Q(period_for__gte=check_date))
+                Q(person__pk=employee) & Q(period_for__gte=check_date))
             try:
-                min_date = filters.first().period_for
+                filter_string = datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
+                for item in filters:
+                    if item.period_for > filter_string:
+                        filter_string = item.period_for
             except AttributeError:
                 print('За заданный период СП не найдены')
             if filters.count() > 0:
-                html.append(f'<input type="date" id="id_period_from" class="form-control form-control-modern" min="{min_date + datetime.timedelta(days=1)}" ' \
-                   f'name="period_from" value="" data-plugin-datepicker data-plugin-options=' + "'" + '{"orientation": "bottom", "format": "yyyy-mm-dd"}' + "'/>")
-                html.append(f'<input type="date" id="id_period_for" class="form-control form-control-modern" min="{min_date + datetime.timedelta(days=1)}" ' \
-                       f'name="period_for" value="" data-plugin-datepicker data-plugin-options=' + "'" + '{"orientation": "bottom", "format": "yyyy-mm-dd"}' + "'/>")
-
+                html = filter_string + datetime.timedelta(days=1)
                 return JsonResponse(html, safe=False)
-
 
         return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
@@ -133,9 +132,25 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
+        # Получаем объект
         period = self.get_object()
+        # Получаем разницу в днях, для определения количества дней СП
         delta = (period.period_for - period.period_from)
+        # Передаем количество дней в контекст
         content['period'] = int(delta.days) + 1
+        # Пол
+        filters = OfficialMemo.objects.filter(person=period.person).exclude(pk=period.pk)
+        filter_string = {
+            "pk": 0,
+            "period": datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
+        }
+        for item in filters:
+            print(item.period_for)
+            if item.period_for > filter_string["period"]:
+                filter_string["pk"] = item.pk
+                filter_string["period"] = item.period_for
+        print(filter_string)
+
         return content
 
     def get_success_url(self):

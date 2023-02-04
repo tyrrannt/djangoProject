@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('hrdepartment_app', '0006_alter_officialmemo_comments'),
     ]

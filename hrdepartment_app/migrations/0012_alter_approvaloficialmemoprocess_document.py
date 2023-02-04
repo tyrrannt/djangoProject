@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('hrdepartment_app', '0011_approvaloficialmemoprocess_location_selected'),
     ]
@@ -14,6 +13,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='approvaloficialmemoprocess',
             name='document',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, parent_link=True, to='hrdepartment_app.officialmemo', verbose_name='Документ'),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, parent_link=True,
+                                       to='hrdepartment_app.officialmemo', verbose_name='Документ'),
         ),
     ]

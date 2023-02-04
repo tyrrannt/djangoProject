@@ -1,4 +1,3 @@
-
 {% load static %}
 {% load i18n %}
 <aside id="sidebar-right" class="sidebar-right">
@@ -24,7 +23,7 @@
                     <ul>
                         <li class="status-online">
                             <figure class="profile-picture">
-{#                                ToDo: Доработать блок вывода изображения, в случае если не задано в профиле пользователя#}
+                                {#                                ToDo: Доработать блок вывода изображения, в случае если не задано в профиле пользователя#}
                                 <img src="{% if user.avatar %}{{ user.avatar.url }}{% else %}{% endif %}"
                                      alt="{{ user.last_name }} {{ user.first_name }}"
                                      class="rounded-circle">

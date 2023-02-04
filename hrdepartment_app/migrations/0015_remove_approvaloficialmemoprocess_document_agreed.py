@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('hrdepartment_app', '0014_alter_approvaloficialmemoprocess_document'),
     ]

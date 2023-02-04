@@ -45,7 +45,7 @@
         </div>
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-        {% csrf_token %}
+            {% csrf_token %}
             <div class="row">
                 <div class="col">
                     <section class="card card-modern card-big-info">
@@ -60,8 +60,9 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_type_property">Тип имущества</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_type_property" class="form-control form-control-modern"
-                                                   name="type_property" value="" />
+                                            <input type="text" id="id_type_property"
+                                                   class="form-control form-control-modern"
+                                                   name="type_property" value=""/>
                                         </div>
                                     </div>
                                 </div>
@@ -84,11 +85,11 @@
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
                 {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                </div>
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="#"
+                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    </div>
                 {% endif %}
             </div>
         </form>

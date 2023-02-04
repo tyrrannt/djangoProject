@@ -86,8 +86,8 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_harmful">Вредные условия труда</label>
-                                    <div class="col-lg-7 col-xl-6">
-                                        <select class="form-control form-control-modern" name="harmful"
+                                        <div class="col-lg-7 col-xl-6">
+                                            <select class="form-control form-control-modern" name="harmful"
                                                     data-plugin-selectTwo multiple id="id_harmful">
                                                 {% for item in harmful.iterator %}
                                                     {% if item in object.harmful.iterator %}
@@ -96,11 +96,11 @@
                                                         <option value="{{ item.pk }}">{{ item }}</option>
                                                     {% endif %}
                                                 {% endfor %}
-                                        </select>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
                     </section>
                 </div>
             </div>

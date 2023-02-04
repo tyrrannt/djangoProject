@@ -23,10 +23,10 @@
         <ul class="list-unstyled mb-2">
             <li class="divider"></li>
             {% if user.is_superuser %}
-            <li>
-                <a role="menuitem" tabindex="-1" href="/admin/"><i
-                        class="bx bx-user-circle"></i> Панель администратора</a>
-            </li>
+                <li>
+                    <a role="menuitem" tabindex="-1" href="/admin/"><i
+                            class="bx bx-user-circle"></i> Панель администратора</a>
+                </li>
             {% endif %}
             <li>
                 <a role="menuitem" tabindex="-1" href="{% url 'customers_app:profile' user.pk %}"><i

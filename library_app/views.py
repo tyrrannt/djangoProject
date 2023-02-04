@@ -24,7 +24,7 @@ def index(request):
 
 
 class DocumentsList(LoginRequiredMixin, ListView):
-    #template_name = ''
+    # template_name = ''
     model = Documents
 
     def get_queryset(self):
@@ -32,7 +32,7 @@ class DocumentsList(LoginRequiredMixin, ListView):
 
 
 class DocumentsAdd(LoginRequiredMixin, CreateView):
-    #template_name = ''
+    # template_name = ''
     model = Documents
     form_class = DocumentsAddForm
 
@@ -46,7 +46,7 @@ class DocumentsAdd(LoginRequiredMixin, CreateView):
 
 
 class DocumentsDetail(LoginRequiredMixin, DetailView):
-    #template_name = ''
+    # template_name = ''
     model = Documents
 
     def dispatch(self, request, *args, **kwargs):

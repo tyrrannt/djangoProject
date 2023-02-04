@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0004_alter_counteragent_ogrn'),
         ('hrdepartment_app', '0018_officialmemo_official_memo_type'),

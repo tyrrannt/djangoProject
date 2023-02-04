@@ -5,4 +5,3 @@ from .models import PortalProperty, MainMenu
 
 admin.site.register(PortalProperty)
 admin.site.register(MainMenu)
-

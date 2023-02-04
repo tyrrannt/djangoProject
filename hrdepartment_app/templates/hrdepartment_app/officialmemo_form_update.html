@@ -58,13 +58,22 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <h4 style="text-align: center">Направление в служебную поездку</h4>
                                     </div>
+
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_period_from">Тип служебной поездки</label>
+                                               for="id_official_memo_type">Тип служебной поездки</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.official_memo_type | add_class:"form-control form-control-modern" }}
                                         </div>
                                     </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_type_trip">Вид служебной поездки</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            {{ form.type_trip | add_class:"form-control form-control-modern" }}
+                                        </div>
+                                    </div>
+
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_period_from">Дата начала</label>

@@ -107,8 +107,11 @@
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_division">Принадлежность к подразделению</label>
                                             <!--@formatter:off-->
-                                            <textarea name="document_division" id="id_document_division" disabled rows="3"
-                                                class="form-control mb-4 form-control-modern">{% for item in object.document_division.iterator %}{% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;{% endif %}{% endfor %}</textarea>
+                                            <textarea name="document_division" id="id_document_division" disabled
+                                                      rows="3"
+                                                      class="form-control mb-4 form-control-modern">{% for item in object.document_division.iterator %}
+                                                {% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;
+                                                {% endif %}{% endfor %}</textarea>
                                             <!--@formatter:on-->
                                         </div>
                                         <div class="col-md-4 text-black-50">
@@ -120,7 +123,9 @@
                                             <label for="id_employee">Ответственное лицо</label>
                                             <!--@formatter:off-->
                                             <textarea name="employee" id="id_employee" disabled rows="3"
-                                                class="form-control mb-4 form-control-modern">{% for item in object.employee.iterator %}{% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;{% endif %}{% endfor %}</textarea>
+                                                      class="form-control mb-4 form-control-modern">{% for item in object.employee.iterator %}
+                                                {% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;
+                                                {% endif %}{% endfor %}</textarea>
                                             <!--@formatter:on-->
                                         </div>
                                     </div>
@@ -151,9 +156,13 @@
                                             {% if object.doc_file %}
                                                 <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
                                                 <!--@formatter:off-->
-                                                <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px" height="750px">
+                                                <object data="{{ object.doc_file.url }}" type="application/pdf"
+                                                        width="750px" height="750px">
                                                     <embed src="{{ object.doc_file.url }}" type="application/pdf">
-                                                    <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы просмотреть его: <a href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p></embed>
+                                                    <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
+                                                        PDF-файл, чтобы просмотреть его: <a
+                                                                href="{{ object.doc_file.url }}">Скачать PDF.</a>.
+                                                    </p></embed>
                                                 </object>
                                                 <!--@formatter:on-->
                                             {% endif %}

@@ -76,7 +76,8 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_organisation">Медицинская организация</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_organisation" class="form-control form-control-modern"
+                                            <input type="text" id="id_organisation"
+                                                   class="form-control form-control-modern"
                                                    name="organisation" value="{{ object.organisation }}"/>
                                         </div>
                                     </div>
@@ -84,8 +85,10 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_working_status">Статус</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_working_status" class="form-control form-control-modern"
-                                                   name="working_status" value="{{ object.get_working_status_display }}"/>
+                                            <input type="text" id="id_working_status"
+                                                   class="form-control form-control-modern"
+                                                   name="working_status"
+                                                   value="{{ object.get_working_status_display }}"/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -104,7 +107,8 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_medical_direction">Файл направления</label>
                                         <div class="col-lg-7 col-xl-6">
-                                             <a href="{{ object.medical_direction.url }}" target="_blank">Открыть документ</a>
+                                            <a href="{{ object.medical_direction.url }}" target="_blank">Открыть
+                                                документ</a>
                                         </div>
                                     </div>
                                 </div>

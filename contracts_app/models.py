@@ -110,7 +110,8 @@ class ContractModel(models.Model):
                                     help_text='', blank=True, default='', )
     comment = models.TextField(verbose_name='Примечание', blank=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
-    executor = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Исполнитель', on_delete=models.SET_NULL, null=True,
+    executor = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Исполнитель', on_delete=models.SET_NULL,
+                                 null=True,
                                  related_name='contract_executor')
     doc_file = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
@@ -174,7 +175,8 @@ class Posts(models.Model):
     contract_number = models.ForeignKey(Contract, verbose_name='Номер договора', on_delete=models.CASCADE)
     creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
-    responsible_person = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо', on_delete=models.SET_NULL,
+    responsible_person = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо',
+                                           on_delete=models.SET_NULL,
                                            null=True)
 
 

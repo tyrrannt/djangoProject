@@ -7,4 +7,3 @@ admin.site.register(Medical)
 admin.site.register(Purpose)
 admin.site.register(OfficialMemo)
 admin.site.register(ApprovalOficialMemoProcess)
-

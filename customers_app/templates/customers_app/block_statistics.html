@@ -1,0 +1,74 @@
+{% load static %}
+
+    <h4 class="mb-3 mt-0 font-weight-semibold text-dark">Статистика портала</h4>
+    <ul class="simple-card-list mb-3">
+        <li class="primary">
+            <h3>{{ sp }}</h3>
+            <p class="text-light"><a href="{% url 'hrdepartment_app:memo_list' %}" title="Список служебных записок" style="color: #FFFFFF; text-decoration: none"><b>Служебных записок</b></a></p>
+        </li>
+        <li class="primary">
+            <h3>{{ bp }}</h3>
+            <p class="text-light">Запущено бизнес-процессов</p>
+        </li>
+        <li class="primary">
+            <h3>{{ contract }}</h3>
+            <p class="text-light">Договоров в базе</p>
+        </li>
+    </ul>
+{% if user.is_superuser %}
+    <h4 class="mb-3 mt-4 pt-2 font-weight-semibold text-dark">Проекты в работе</h4>
+    <ul class="simple-bullet-list mb-3">
+        <li class="red">
+            <span class="title">Раздел договоров</span>
+            <span class="description truncate">Lorem ipsom dolor sit.</span>
+        </li>
+        <li class="green">
+            <span class="title">Tucson HTML5 Template</span>
+            <span class="description truncate">Lorem ipsom dolor sit amet</span>
+        </li>
+        <li class="blue">
+            <span class="title">Porto HTML5 Template</span>
+            <span class="description truncate">Lorem ipsom dolor sit.</span>
+        </li>
+        <li class="orange">
+            <span class="title">Tucson Template</span>
+            <span class="description truncate">Lorem ipsom dolor sit.</span>
+        </li>
+    </ul>
+
+    <h4 class="mb-3 mt-4 pt-2 font-weight-semibold text-dark">Messages</h4>
+    <ul class="simple-user-list mb-3">
+        <li>
+            <figure class="image rounded">
+                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Doe Junior"
+                     class="rounded-circle">
+            </figure>
+            <span class="title">Joseph Doe Junior</span>
+            <span class="message">Lorem ipsum dolor sit.</span>
+        </li>
+        <li>
+            <figure class="image rounded">
+                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Junior"
+                     class="rounded-circle">
+            </figure>
+            <span class="title">Joseph Junior</span>
+            <span class="message">Lorem ipsum dolor sit.</span>
+        </li>
+        <li>
+            <figure class="image rounded">
+                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joe Junior"
+                     class="rounded-circle">
+            </figure>
+            <span class="title">Joe Junior</span>
+            <span class="message">Lorem ipsum dolor sit.</span>
+        </li>
+        <li>
+            <figure class="image rounded">
+                <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Doe Junior"
+                     class="rounded-circle">
+            </figure>
+            <span class="title">Joseph Doe Junior</span>
+            <span class="message">Lorem ipsum dolor sit.</span>
+        </li>
+    </ul>
+{% endif %}

@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('hrdepartment_app', '0020_alter_officialmemo_place_production_activity'),
@@ -16,16 +15,22 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='approvaloficialmemoprocess',
             name='person_agreement',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='person_agreement', to=settings.AUTH_USER_MODEL, verbose_name='Согласующее лицо'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='person_agreement', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Согласующее лицо'),
         ),
         migrations.AlterField(
             model_name='approvaloficialmemoprocess',
             name='person_department_staff',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='person_department_staff', to=settings.AUTH_USER_MODEL, verbose_name='Сотрудник ОК'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='person_department_staff', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Сотрудник ОК'),
         ),
         migrations.AlterField(
             model_name='approvaloficialmemoprocess',
             name='person_distributor',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='person_distributor', to=settings.AUTH_USER_MODEL, verbose_name='Сотрудник ГСМ и НТ'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='person_distributor', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Сотрудник ГСМ и НТ'),
         ),
     ]

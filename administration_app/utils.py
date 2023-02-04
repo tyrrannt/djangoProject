@@ -192,6 +192,7 @@ def change_session_get(request, self):
     if result:
         self.request.session['portal_paginator'] = result
 
+
 def change_session_context(context, self):
     """
     Получает параметры пагинации и сортировки со страницы, и изменяет переменные сессии: Параметр сортировки, и
@@ -207,6 +208,7 @@ def change_session_context(context, self):
         print('Error context')
         context['portal_paginator'] = self.paginate_by
         context['sort_item'] = 0
+
 
 def change_session_queryset(request, self):
     """
@@ -232,6 +234,7 @@ def change_session_queryset(request, self):
     except Exception as _ex:
         print('Error queryset sort')
         self.item_sorted = 'pk'
+
 
 def filter_context(request, self):
     pass

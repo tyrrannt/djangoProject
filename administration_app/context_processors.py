@@ -5,11 +5,13 @@ from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocum
 from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel
 from library_app.models import Documents
 
+#ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
 
 def get_all_contracts(request):
     make_menu()
     all_contract = Contract.objects.all()
-    contracts_count = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True), Q(type_of_document__type_document='Договор')).count()
+    contracts_count = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True),
+                                              Q(type_of_document__type_document='Договор')).count()
     all_users = DataBaseUser.objects.all()
     all_type_of_contract = TypeContract.objects.all()
     all_type_property = TypeProperty.objects.all()
@@ -21,9 +23,9 @@ def get_all_contracts(request):
     if not request.user.is_anonymous:
         try:
             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False),
-                                                          Q(access__level__gte=request.user.access_level.contracts_access_view))
+                                                              Q(access__level__gte=request.user.access_level.contracts_access_view))
             documents_not_published = Documents.objects.filter(Q(allowed_placed=False),
-                                                              Q(access__level__gte=request.user.access_level.documents_access_view))
+                                                               Q(access__level__gte=request.user.access_level.documents_access_view))
         except Exception as _ex:
             contracts_not_published = Contract.objects.filter(allowed_placed=False)
             documents_not_published = Documents.objects.filter(allowed_placed=False)
@@ -44,5 +46,6 @@ def get_all_contracts(request):
             'type_contract': all_type_of_contract, 'contracts_count': contracts_count,
             'contracts_not_published': contracts_not_published, 'posts_not_published': posts_not_published,
             'contracts_not_published_count': contracts_not_published_count, 'access': all_access,
-            'documents_not_published': documents_not_published, 'documents_not_published_count': documents_not_published_count,
+            'documents_not_published': documents_not_published,
+            'documents_not_published_count': documents_not_published_count,
             'posts_not_published_count': posts_not_published_count, 'type_of_document': all_type_of_document, }

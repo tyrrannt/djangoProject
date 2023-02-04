@@ -11,6 +11,7 @@ def present_or_future_date(value):
         raise forms.ValidationError("Нельзя использовать прошедшую дату!")
     return value
 
+
 class MedicalExaminationAddForm(forms.ModelForm):
     class Meta:
         model = Medical
@@ -28,7 +29,10 @@ class OfficialMemoAddForm(forms.ModelForm):
         ('1', 'Направление'),
         ('2', 'Продление')
     ]
-
+    type_of_trip = [
+        ('1', 'Служебная поездка'),
+        ('2', 'Командировка')
+    ]
     place_production_activity = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
     person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
     person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
@@ -38,12 +42,14 @@ class OfficialMemoAddForm(forms.ModelForm):
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     official_memo_type = forms.ChoiceField(choices=memo_type)
+    type_trip = forms.ChoiceField(choices=type_of_trip)
     period_from = forms.DateField(label='Дата начала', validators=[present_or_future_date], required=True)
     period_for = forms.DateField(label='Дата окончания', validators=[present_or_future_date], required=True)
+
     class Meta:
         model = OfficialMemo
         fields = ('period_from', 'period_for', 'place_production_activity',
-                  'person', 'purpose_trip', 'responsible')
+                  'person', 'purpose_trip', 'responsible', 'type_trip', 'official_memo_type')
 
     # def clean(self):
     #     # user age must be above 18 to register
@@ -61,6 +67,10 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         ('1', 'Направление'),
         ('2', 'Продление')
     ]
+    type_of_trip = [
+        ('1', 'Служебная поездка'),
+        ('2', 'Командировка')
+    ]
     official_memo_type = forms.ChoiceField(choices=memo_type)
     place_production_activity = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
     person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
@@ -72,18 +82,18 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     order_date = forms.DateField(required=False)
     order_number = forms.CharField(required=False)
+    type_trip = forms.ChoiceField(choices=type_of_trip)
 
     class Meta:
         model = OfficialMemo
         fields = ('person', 'purpose_trip', 'period_from', 'period_for', 'place_production_activity',
-                  'order_number', 'order_date', 'comments')
+                  'order_number', 'order_date', 'comments', 'type_trip', 'official_memo_type')
 
     def clean(self):
         # user age must be above 18 to register
         if self.cleaned_data.get('period_for') < self.cleaned_data.get('period_from'):
             msg = 'Дата начала не может быть больше даты окончания!'
             self.add_error(None, msg)
-
 
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
@@ -101,7 +111,8 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
     person_department_staff.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(docs__isnull=True))
-    document.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True, 'type': 'date'})
+    document.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True, 'type': 'date'})
     accommodation = forms.ChoiceField(choices=type_of, required=False)
     accommodation.widget.attrs.update({'class': 'form-control form-control-modern'})
     order_number = forms.CharField(required=False)
@@ -126,7 +137,8 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
     person_distributor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person_department_staff.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_department_staff.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.all())
     document.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     accommodation = forms.ChoiceField(choices=type_of, required=False)

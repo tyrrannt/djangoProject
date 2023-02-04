@@ -74,6 +74,7 @@ class HarmfulWorkingConditions(models.Model):
     name = models.TextField(verbose_name='Наименование')
     frequency_inspection = models.PositiveSmallIntegerField(verbose_name='Периодичность осмотров', default=0)
     frequency_multiplicity = models.PositiveSmallIntegerField(verbose_name='Кратность осмотров', default=0)
+
     def __str__(self):
         return self.code
 
@@ -224,6 +225,8 @@ class DataBaseUserWorkProfile(models.Model):
     divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
                                   help_text='', blank=True)
     work_email = models.EmailField(verbose_name='Рабочий email', default='')
+    work_email_password = models.CharField(verbose_name='Пароль от корпоративной почты', max_length=50, blank=True,
+                                           default='')
 
 
 class DataBaseUser(AbstractUser):
@@ -257,7 +260,7 @@ class DataBaseUser(AbstractUser):
     user_profile = models.OneToOneField(DataBaseUserProfile, verbose_name='Личный профиль пользователя',
                                         on_delete=models.SET_NULL, null=True, blank=True)
     user_work_profile = models.OneToOneField(DataBaseUserWorkProfile, verbose_name='Рабочий профиль пользователя',
-                                        on_delete=models.SET_NULL, null=True, blank=True)
+                                             on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
@@ -312,5 +315,3 @@ class Posts(models.Model):
 
     def __str__(self):
         return f'{self.creation_date} / {self.pk}'
-
-

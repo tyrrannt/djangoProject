@@ -22,6 +22,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 
 # Create your views here.
+from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
+
+
+def get_model_fields(model_object):
+    return model_object._meta.fields
 
 @login_required
 def index(request):
@@ -50,6 +55,30 @@ class DataBaseUserProfile(LoginRequiredMixin, DetailView):
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
         context['title'] = 'редактирование'
         context['posts'] = post
+        context['sp'] = OfficialMemo.objects.all().count()
+        context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
+        context['contract'] = Contract.objects.all().count()
+        profile_info = 0
+        user_object = self.get_object()
+        user_private = user_object.user_profile
+        user_work = user_object.user_work_profile
+        user_object_list = ['first_name', 'last_name', 'email', 'surname', 'avatar', 'birthday', 'address', 'personal_phone', 'gender']
+        user_private_list =['citizenship', 'passport', 'snils', 'oms', 'inn']
+        user_work_list = ['date_of_employment', 'internal_phone', 'work_phone', 'job', 'divisions', 'work_email']
+        for item in get_model_fields(user_object):
+            if str(item).split('.')[2] in user_object_list:
+                if getattr(user_object, str(item).split('.')[2]):
+                    profile_info += 5
+        for item in get_model_fields(user_private):
+            if str(item).split('.')[2] in user_private_list:
+                if getattr(user_private, str(item).split('.')[2]):
+                    profile_info += 5
+        for item in get_model_fields(user_work):
+            if str(item).split('.')[2] in user_work_list:
+                if getattr(user_work, str(item).split('.')[2]):
+                    profile_info += 5
+        context['profile_info'] = profile_info
+
         # context.update(groups())
         return context
 
@@ -106,7 +135,8 @@ def login(request):
                 print(f'{_ex}: Не заданы базовые параметры пагинации страниц')
             request.session.set_expiry(portal_session)
             request.session['portal_paginator'] = portal_paginator
-            return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
+            #return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
+            return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
     # else:
     #     content['errors'] = login_form.get_invalid_login_error()
     return render(request, 'customers_app/login.html', content)
@@ -323,7 +353,7 @@ class StaffListView(LoginRequiredMixin, ListView):
         change_session_get(request, self)
 
         ref_key, username, first_name = '', '', ''
-        last_name, surname, birthday, gender, email, telephone, address, =  '', '', '1900-01-01', '', '', '', '',
+        last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
         job_code, division_code, date_of_employment = '', '', '1900-01-01'
         count = 0
         count2 = 0
@@ -347,16 +377,16 @@ class StaffListView(LoginRequiredMixin, ListView):
                                 date_of_employment = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
                     user_work_profile = {
                         'date_of_employment': date_of_employment,
-                        'job': Job.objects.get(ref_key=job_code) if job_code != "00000000-0000-0000-0000-000000000000" else None,
-                        'divisions': Division.objects.get(ref_key=division_code) if division_code != "00000000-0000-0000-0000-000000000000" else None,
+                        'job': Job.objects.get(
+                            ref_key=job_code) if job_code != "00000000-0000-0000-0000-000000000000" else None,
+                        'divisions': Division.objects.get(
+                            ref_key=division_code) if division_code != "00000000-0000-0000-0000-000000000000" else None,
                     }
                     if not units.user_work_profile:
                         obj_work_profile = DataBaseUserWorkProfile(**user_work_profile)
                         obj_work_profile.save()
                         units.user_work_profile = obj_work_profile
                         units.save()
-
-
 
         if self.request.GET.get('update') == '0':
             todos = get_jsons_data("Catalog", "Сотрудники", 0)
@@ -469,7 +499,8 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
                 'date_of_employment': content['date_of_employment'] if content['date_of_employment'] != '' else None,
                 'internal_phone': content['internal_phone'],
                 'work_phone': content['work_phone'],
-                'work_email': content['work_email']
+                'work_email': content['work_email'],
+                'work_email_password': content['work_email_password']
             }
             # Формируем словарь записей, которые будем записывать, поля citizenship и passport обрабатываем отдельно
             personal_kwargs = {

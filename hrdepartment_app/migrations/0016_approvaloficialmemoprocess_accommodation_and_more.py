@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('hrdepartment_app', '0015_remove_approvaloficialmemoprocess_document_agreed'),
     ]
@@ -13,7 +12,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='approvaloficialmemoprocess',
             name='accommodation',
-            field=models.CharField(blank=True, choices=[('1', 'Квартира'), ('2', 'Гостиница')], default='', max_length=9, verbose_name='Проживание'),
+            field=models.CharField(blank=True, choices=[('1', 'Квартира'), ('2', 'Гостиница')], default='',
+                                   max_length=9, verbose_name='Проживание'),
         ),
         migrations.AddField(
             model_name='approvaloficialmemoprocess',

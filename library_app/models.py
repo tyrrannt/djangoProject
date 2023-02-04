@@ -17,8 +17,6 @@ def document_directory_path(instance, filename):
     return f'library/{filename}'
 
 
-
-
 class Documents(models.Model):
     class Meta:
         verbose_name = 'Документ'
@@ -50,6 +48,7 @@ class Documents(models.Model):
 
     def get_absolute_url(self):
         return reverse('library_app:documents', kwargs={'pk': self.pk})
+
 
 # @receiver(post_save, sender=Documents)
 def rename_file_name(sender, instance, **kwargs):

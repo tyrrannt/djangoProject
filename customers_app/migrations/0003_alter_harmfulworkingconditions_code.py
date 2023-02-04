@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0002_remove_harmfulworkingconditions_frequency_and_more'),
     ]

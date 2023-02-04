@@ -17,74 +17,74 @@
 
                 <ul class="nav nav-main">
                     {% if user.access_level.guide_access_view %}
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class="bx bx-book-content" aria-hidden="true"></i>
-                            <span>Справочники</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
-                                    Физические лица
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
-                                    Должности
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}">
-                                    Вредные условия труда
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
-                                    Типы документов
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
-                                    Типы договоров
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
-                                    Типы имущества
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:divisions_list' %}">
-                                    Подразделения
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
-                                    Контрагенты
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class="bx bx-book-content" aria-hidden="true"></i>
+                                <span>Справочники</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
+                                        Физические лица
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
+                                        Должности
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}">
+                                        Вредные условия труда
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
+                                        Типы документов
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
+                                        Типы договоров
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
+                                        Типы имущества
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'customers_app:divisions_list' %}">
+                                        Подразделения
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
+                                        Контрагенты
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     {% endif %}
                     {% if user.access_level.contracts_access_view %}
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class="bx bx-file" aria-hidden="true"></i>
-                            <span>База договоров</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:index' %}">
-                                    Общий список договоров
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:search' %}">
-                                    Поиск договоров
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class="bx bx-file" aria-hidden="true"></i>
+                                <span>База договоров</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'contracts_app:index' %}">
+                                        Общий список договоров
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'contracts_app:search' %}">
+                                        Поиск договоров
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     {% endif %}
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
@@ -151,21 +151,21 @@
                                             Служебным запискам
                                         </a>
                                     </li>
-{#                                    <li>#}
-{#                                        <a class="nav-link" href="#">#}
-{#                                            Положения#}
-{#                                        </a>#}
-{#                                    </li>#}
-{#                                    <li>#}
-{#                                        <a class="nav-link" href="#">#}
-{#                                            Приказы по ОД#}
-{#                                        </a>#}
-{#                                    </li>#}
-{#                                    <li>#}
-{#                                        <a class="nav-link" href="#">#}
-{#                                            Приказы по ЛС#}
-{#                                        </a>#}
-{#                                    </li>#}
+                                    {#                                    <li>#}
+                                    {#                                        <a class="nav-link" href="#">#}
+                                    {#                                            Положения#}
+                                    {#                                        </a>#}
+                                    {#                                    </li>#}
+                                    {#                                    <li>#}
+                                    {#                                        <a class="nav-link" href="#">#}
+                                    {#                                            Приказы по ОД#}
+                                    {#                                        </a>#}
+                                    {#                                    </li>#}
+                                    {#                                    <li>#}
+                                    {#                                        <a class="nav-link" href="#">#}
+                                    {#                                            Приказы по ЛС#}
+                                    {#                                        </a>#}
+                                    {#                                    </li>#}
                                 </ul>
                             </li>
                             <li>

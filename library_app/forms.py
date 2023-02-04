@@ -17,5 +17,3 @@ class DocumentsUpdateForm(forms.ModelForm):
         fields = ('type_of_document', 'executor', 'document_date', 'document_number', 'doc_file', 'access',
                   'document_division', 'employee', 'validity_period_start', 'validity_period_end', 'previous_document',
                   'allowed_placed', 'actuality', 'document_name')
-
-

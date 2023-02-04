@@ -95,62 +95,63 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                    <div class="row text">
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="id_type_of_contract">Тип договора</label>
-                                            <select class="form-control form-control-modern" name="type_of_contract"
-                                                    id="id_type_of_contract" required
-                                                    data-plugin-selectTwo multiple>
-                                                {% for item in type_contract.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="id_employee">Ответственные лица</label>
-                                            <select class="form-control form-control-modern" name="employee"
-                                                    data-plugin-selectTwo multiple id="id_employee">
-                                                {% for item in employee.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-4 text">
-                                            <label for="id_contract_number">Номер договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="contract_number"
-                                                   value="{% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
-                                                   id="id_contract_number"/>
-                                        </div>
-                                        <div class="col-md-4 date">
-                                            <label for="id_date_conclusion">Дата заключения</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="date_conclusion"
-                                                   value="{{ object.date_conclusion }}" required
-                                                   data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
-                                                   id="id_date_conclusion"/>
-                                        </div>
-                                        <div class="col-md-4 date">
-                                            <label for="id_closing_date">Дата закрытия договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="closing_date"
-                                                   value="{{ object.closing_date }}"
-                                                   data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
-                                                   id="id_closing_date"/>
+                                        <div class="row text">
+                                            <div class="col-md-6 text-black-50">
+                                                <label for="id_type_of_contract">Тип договора</label>
+                                                <select class="form-control form-control-modern" name="type_of_contract"
+                                                        id="id_type_of_contract" required
+                                                        data-plugin-selectTwo multiple>
+                                                    {% for item in type_contract.iterator %}
+                                                        <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 text-black-50">
+                                                <label for="id_employee">Ответственные лица</label>
+                                                <select class="form-control form-control-modern" name="employee"
+                                                        data-plugin-selectTwo multiple id="id_employee">
+                                                    {% for item in employee.iterator %}
+                                                        <option value="{{ item.pk }}">{{ item }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                                <div class="form-row">
+                                    <div class="form-group col mb-3">
+                                        <div class="row">
+                                            <div class="col-md-4 text">
+                                                <label for="id_contract_number">Номер договора</label>
+                                                <input type="text" class="form-control form-control-modern"
+                                                       name="contract_number"
+                                                       value="
+                                                               {% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
+                                                       id="id_contract_number"/>
+                                            </div>
+                                            <div class="col-md-4 date">
+                                                <label for="id_date_conclusion">Дата заключения</label>
+                                                <input type="text" class="form-control form-control-modern"
+                                                       name="date_conclusion"
+                                                       value="{{ object.date_conclusion }}" required
+                                                       data-plugin-datepicker
+                                                       data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                       id="id_date_conclusion"/>
+                                            </div>
+                                            <div class="col-md-4 date">
+                                                <label for="id_closing_date">Дата закрытия договора</label>
+                                                <input type="text" class="form-control form-control-modern"
+                                                       name="closing_date"
+                                                       value="{{ object.closing_date }}"
+                                                       data-plugin-datepicker
+                                                       data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                       id="id_closing_date"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <code>{{ object.access }}</code>
                             </div>
-                            <code>{{ object.access }}</code>
-                        </div>
                     </section>
                     <section class="toggle">
                         <label>Дополнительные данные</label>
@@ -251,14 +252,14 @@
                                             <textarea name="comment" cols="40" rows="10" class="form-control mb-4"
                                                       id="id_comment"></textarea>
                                         </p>
-                                    <div class="form-group row align-items-center">
-                                        <div class="col-md-12 text-black-50">
-                                            <label for="id_doc_file">Файл документа:</label>
-                                            <input type="file" name="doc_file" class="form-control mb-4"
-                                                   id="id_doc_file" multiple>
+                                        <div class="form-group row align-items-center">
+                                            <div class="col-md-12 text-black-50">
+                                                <label for="id_doc_file">Файл документа:</label>
+                                                <input type="file" name="doc_file" class="form-control mb-4"
+                                                       id="id_doc_file" multiple>
 
+                                            </div>
                                         </div>
-                                    </div>
                                     </div>
                                 </div>
                             </div>

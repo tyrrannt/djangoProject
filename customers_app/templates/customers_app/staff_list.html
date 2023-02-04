@@ -42,10 +42,15 @@
                                             <label for="field_sorted" class="ws-nowrap me-3 mb-0">Сортировка:</label>
                                             <select class="form-control select-style-1 filter-by" name="filter-by"
                                                     onchange="field_sorted()" id="field_sorted">
-                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код</option>
-                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>ФИО</option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Подразделение</option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Должность</option>
+                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код
+                                                </option>
+                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>ФИО
+                                                </option>
+                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>
+                                                    Подразделение
+                                                </option>
+                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Должность
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
@@ -56,11 +61,20 @@
                                             <select class="form-control select-style-1 results-per-page"
                                                     name="results-per-page" onchange="portal_paginator()"
                                                     id="portal_paginator">
-                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6</option>
-                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>12</option>
-                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>24</option>
-                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>48</option>
-                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>96</option>
+                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6
+                                                </option>
+                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>
+                                                    12
+                                                </option>
+                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>
+                                                    24
+                                                </option>
+                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>
+                                                    48
+                                                </option>
+                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>
+                                                    96
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
@@ -85,11 +99,15 @@
                                     <th width="3%"><input type="checkbox" name="select-all"
                                                           class="select-all checkbox-style-1 p-relative top-2"
                                                           value=""/></th>
-                                    <th width="8%">Код</th>
-                                    <th width="30%">ФИО</th>
-                                    <th width="29%">Подразделение</th>
+                                    <th width="4%">Код</th>
+                                    <th width="20%">ФИО</th>
+                                    <th width="19%">Подразделение</th>
                                     <th width="20%">Должность</th>
                                     <th width="12%">Телефон</th>
+                                    <th width="10%">Email</th>
+                                    {% if user.is_superuser %}
+                                    <th width="10%">Пароль</th>
+                                    {% endif %}
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -112,6 +130,14 @@
                                         <td>
                                             {{ item.user_work_profile.work_phone|empty_item }}
                                         </td>
+                                        <td>
+                                            {{ item.user_work_profile.work_email|empty_item }}
+                                        </td>
+                                        {% if user.is_superuser %}
+                                        <td>
+                                            {{ item.user_work_profile.work_email_password|empty_item }}
+                                        </td>
+                                        {% endif %}
                                     </tr>
                                 {% endfor %}
                                 </tbody>

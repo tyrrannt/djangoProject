@@ -68,9 +68,14 @@ class OfficialMemo(models.Model):
         verbose_name = 'Служебная записка'
         verbose_name_plural = 'Служебные записки'
 
-    type_of = [
+    type_of_accommodation = [
         ('1', 'Квартира'),
         ('2', 'Гостиница')
+    ]
+
+    type_of_trip = [
+        ('1', 'Служебная поездка'),
+        ('2', 'Командировка')
     ]
 
     memo_type = [
@@ -79,24 +84,26 @@ class OfficialMemo(models.Model):
     ]
 
     official_memo_type = models.CharField(verbose_name='Тип СП', max_length=9, choices=memo_type,
-                                     help_text='', default='1')
+                                          help_text='', default='1')
     person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
                                related_name='employee')
     purpose_trip = models.ForeignKey(Purpose, verbose_name='Цель', on_delete=models.SET_NULL, null=True, )
     period_from = models.DateField(verbose_name='Дата начала', null=True)
     period_for = models.DateField(verbose_name='Дата окончания', null=True)
     place_production_activity = models.ManyToManyField(Division, verbose_name='МПД')
-    accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
+    accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of_accommodation,
+                                     help_text='', blank=True, default='')
+    type_trip = models.CharField(verbose_name='Тип поездки', max_length=9, choices=type_of_trip,
                                      help_text='', blank=True, default='')
     order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
     order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
     responsible = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
-                               related_name='responsible')
+                                    related_name='responsible')
+
     def __str__(self):
         return f'{self.person} с {self.period_from} по {self.period_for}'
-
 
 
 class ApprovalProcess(models.Model):
@@ -107,7 +114,7 @@ class ApprovalProcess(models.Model):
                                         null=True, related_name='person_executor')
     submit_for_approval = models.BooleanField(verbose_name='Передан на согласование', default=False)
     comments_for_approval = models.CharField(verbose_name='Комментарий для согласования', max_length=200, help_text='',
-                                           blank=True, default='')
+                                             blank=True, default='')
     person_agreement = models.ForeignKey(DataBaseUser, verbose_name='Согласующее лицо', on_delete=models.SET_NULL,
                                          null=True, blank=True, related_name='person_agreement')
     document_not_agreed = models.BooleanField(verbose_name='Документ согласован', default=False)
@@ -126,11 +133,13 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         ('1', 'Квартира'),
         ('2', 'Гостиница')
     ]
-    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE, null=True, related_name='docs')
+    document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE, null=True,
+                                    related_name='docs')
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
                                      help_text='', blank=True, default='')
     order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
     order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
+
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
         verbose_name_plural = 'Служебные записки по служебным поездкам'

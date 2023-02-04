@@ -1,0 +1,50 @@
+{% load static %}
+<div class="card-body">
+    <div class="thumb-info mb-3">
+        {% if databaseuser.avatar %}
+            <img src="{{ databaseuser.avatar.url }}" class="rounded img-fluid"
+                 alt="{{ databaseuser.username }}">
+        {% else %}
+            <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
+                 alt="{{ databaseuser.username }}">
+        {% endif %}
+        <div class="thumb-info-title">
+            <span class="thumb-info-inner">{{ user.last_name }} {{ user.first_name }}</span>
+            <span class="thumb-info-type">{{ user.job }}</span>
+        </div>
+    </div>
+
+    <div class="widget-toggle-expand mb-3">
+        <div class="widget-header">
+            <h5 class="mb-2 font-weight-semibold text-dark">Заполнение профиля: {{ profile_info }}%</h5>
+            <div class="widget-toggle">+</div>
+        </div>
+        <div class="widget-content-collapsed">
+            <div class="progress progress-xs light">
+                <div class="progress-bar" role="progressbar" aria-valuenow="{{ profile_info }}" aria-valuemin="0"
+                     aria-valuemax="100" style="width: 60%;">
+                    60%
+                </div>
+            </div>
+        </div>
+        {#ToDo: Доработать блок#}
+        <div class="widget-content-expanded">
+            <ul class="simple-todo-list mt-3">
+                <li {% if databaseuser.avatar %} class="completed" {% endif %}>Изображение профиля</li>
+                <li class="completed">Личная информация</li>
+                <li>Рабочая информация</li>
+            </ul>
+        </div>
+    </div>
+
+    <hr class="dotted short">
+
+    <h5 class="mb-2 mt-3">About</h5>
+    <p class="text-2">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam quis vulputate
+        quam. Interdum et malesuada</p>
+    <div class="clearfix">
+        <a class="text-uppercase text-muted float-end" href="#">(View All)</a>
+    </div>
+
+    <hr class="dotted short">
+</div>

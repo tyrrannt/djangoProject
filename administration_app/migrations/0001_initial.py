@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,7 +15,8 @@ class Migration(migrations.Migration):
             name='PortalProperty',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('portal_name', models.CharField(blank=True, default='ООО Авиакомпания "БАРКОЛ"', max_length=100, verbose_name='Название портала')),
+                ('portal_name', models.CharField(blank=True, default='ООО Авиакомпания "БАРКОЛ"', max_length=100,
+                                                 verbose_name='Название портала')),
                 ('portal_paginator', models.IntegerField(default=10, verbose_name='Пагинация по умолчанию')),
                 ('portal_session', models.BigIntegerField(default=3600, verbose_name='Длительность сессии')),
             ],
@@ -32,7 +32,8 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=128, unique=True, verbose_name='Название пункта меню')),
                 ('url_address', models.CharField(max_length=100, verbose_name='URL адрес пункта')),
                 ('description', models.TextField(blank=True, verbose_name='Описание пункта меню')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='administration_app.mainmenu')),
+                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                             to='administration_app.mainmenu')),
             ],
             options={
                 'verbose_name': 'Меню',
