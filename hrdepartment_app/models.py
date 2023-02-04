@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 
 from django.db import models
@@ -82,7 +83,7 @@ class OfficialMemo(models.Model):
         ('1', 'Направление'),
         ('2', 'Продление')
     ]
-
+    date_of_creation = models.DateTimeField(verbose_name='Дата и время создания', auto_now_add=True) # При миграции указать 1 и вставить timezone.now()
     official_memo_type = models.CharField(verbose_name='Тип СП', max_length=9, choices=memo_type,
                                           help_text='', default='1')
     person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
@@ -91,11 +92,12 @@ class OfficialMemo(models.Model):
     period_from = models.DateField(verbose_name='Дата начала', null=True)
     period_for = models.DateField(verbose_name='Дата окончания', null=True)
     place_production_activity = models.ManyToManyField(Division, verbose_name='МПД')
+    other_place_production_activity = models.CharField(verbose_name='Другое место назначения', max_length=20, default='', blank=True)
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of_accommodation,
                                      help_text='', blank=True, default='')
     type_trip = models.CharField(verbose_name='Тип поездки', max_length=9, choices=type_of_trip,
                                      help_text='', blank=True, default='')
-    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
+    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', blank=True)
     order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
@@ -110,6 +112,7 @@ class ApprovalProcess(models.Model):
     class Meta:
         abstract = True
 
+    date_of_creation = models.DateTimeField(verbose_name='Дата и время создания', auto_now_add=True)
     person_executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                         null=True, related_name='person_executor')
     submit_for_approval = models.BooleanField(verbose_name='Передан на согласование', default=False)

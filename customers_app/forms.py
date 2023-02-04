@@ -124,21 +124,17 @@ class DivisionsUpdateForm(forms.ModelForm):
 
 
 class JobsAddForm(forms.ModelForm):
+
     class Meta:
         model = Job
-        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling')
+        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval')
 
 
 class JobsUpdateForm(forms.ModelForm):
+
     class Meta:
         model = Job
-        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling')
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control form-control-modern'
-            field.help_text = ''
+        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval')
 
 
 class StaffUpdateForm(forms.ModelForm):

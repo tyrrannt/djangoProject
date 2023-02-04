@@ -11,7 +11,7 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
 
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get
-from customers_app.models import DataBaseUser, Counteragent
+from customers_app.models import DataBaseUser, Counteragent, Division
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess
@@ -94,6 +94,7 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
         # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(is_superuser=True)
+        content['form'].fields['place_production_activity'].queryset = Division.objects.all().exclude(destination_point=False)
         return content
 
     def get_success_url(self):
@@ -150,7 +151,8 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
                 filter_string["pk"] = item.pk
                 filter_string["period"] = item.period_for
         print(filter_string)
-
+        content['form'].fields['place_production_activity'].queryset = Division.objects.all().exclude(
+            destination_point=False)
         return content
 
     def get_success_url(self):
@@ -183,6 +185,7 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
         content['form'].fields['document'].queryset = OfficialMemo.objects.filter(docs__isnull=True)
+
         return content
 
     def get_success_url(self):
@@ -192,13 +195,35 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
 class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessUpdateForm
-
-    # template_name = 'hrdepartment_app/oficialmemo_form.html'
+    template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_update.html'
 
     def get_context_data(self, **kwargs):
         content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(**kwargs)
         document = self.get_object()
         content['document'] = document.document
+        # Получаем подразделение исполнителя
+        division = document.person_executor.user_work_profile.divisions
+        # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
+        content['form'].fields['person_executor'].queryset = DataBaseUser.objects.filter(pk=document.person_executor.pk)
+        # Если установлен признак согласования документа, то фильтруем поле согласующего лица
+        if document.document_not_agreed:
+            content['form'].fields['person_agreement'].queryset = DataBaseUser.objects.filter(pk=document.person_agreement.pk)
+        else:
+            # Иначе по подразделению исполнителя фильтруем руководителей для согласования
+            content['form'].fields['person_agreement'].queryset = DataBaseUser.objects.filter(
+                Q(user_work_profile__divisions=division) & Q(user_work_profile__job__right_to_approval=True) &
+                Q(is_superuser=False))
+        content['form'].fields['person_distributor'].queryset = DataBaseUser.objects.filter(
+            Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
+            Q(is_superuser=False))
+        content['form'].fields['person_department_staff'].queryset = DataBaseUser.objects.filter(
+            Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
+            Q(is_superuser=False))
+        try:
+            check = DataBaseUser.objects.get(pk=document.person_distributor.pk)
+            print(check.user_work_profile.divisions.type_of_role)
+        except Exception as _ex:
+            pass
         # content['all_contragent'] = Counteragent.objects.all()
         # content['all_status'] = Medical.type_of
         # content['all_harmful'] = DataBaseUser.objects.get(pk=self.object.person.pk).user_work_profile.job.harmful.iterator()

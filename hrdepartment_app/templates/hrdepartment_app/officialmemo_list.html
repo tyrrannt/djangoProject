@@ -93,7 +93,7 @@
 
                                     <tr style="color: {% if item.document_accepted %} green  {% else %} {% if item.comments %} blue {% else %} {% if item.order_number %} black {% else %} red {% endif %} {% endif %} {% endif %}">
                                         <td>
-                                            <strong>{% if item.type_trip == '1' %}СП{% elif item.type_trip == '2' %}К{% endif %}</strong>
+                                            <strong>{% if item.type_trip == '1' %}{% if item.official_memo_type == '1' %}СП{% else %}СП+{% endif %}{% elif item.type_trip == '2' %}{% if item.official_memo_type == '1' %}К{% else %}К+{% endif %}{% endif %}</strong>
                                         </td>
                                         <td>
                                             <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span>{{ item.person }}</span></a>

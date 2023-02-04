@@ -97,6 +97,7 @@ class Job(models.Model):
     excluded_standard_spelling = models.BooleanField(verbose_name='Исключена из штатного расписания', default=True)
     employment_function = models.CharField(verbose_name='Трудовая функция', max_length=37, default='')
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда', blank=True)
+    right_to_approval = models.BooleanField(verbose_name='Имеет право на согласование', default=False)
 
     def __str__(self):
         return f'{self.name}'
@@ -165,10 +166,17 @@ class Division(Category):
     """
     Класс Division - содержит подразделения компании
     """
-
+    type_of = [
+        ('1', 'НО'),
+        ('2', 'Кадры'),
+        ('3', 'Бухгалтерия')
+    ]
     class Meta:
         verbose_name = 'Подразделение'
         verbose_name_plural = 'Подразделения организации'
+
+    type_of_role = models.CharField(verbose_name="Роль подразделения", choices=type_of, null=True, blank=True, max_length=11)
+    destination_point = models.BooleanField(verbose_name='Используется как место назначения', default=False)
 
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)

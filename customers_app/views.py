@@ -103,6 +103,9 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
         context['title'] = 'Профиль пользователя'
         context['posts'] = post
+        context['sp'] = OfficialMemo.objects.all().count()
+        context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
+        context['contract'] = Contract.objects.all().count()
         get_profile_fill(self, context)
         return context
 
@@ -232,6 +235,7 @@ class CounteragentListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = Counteragent.objects.all().order_by('pk')
+        change_session_queryset(self.request, self)
         return qs
 
     def get(self, request, *args, **kwargs):
@@ -257,8 +261,14 @@ class CounteragentListView(LoginRequiredMixin, ListView):
                         count += 1
             url_match = reverse_lazy('customers_app:counteragent_list')
             return redirect(url_match)
-
+        change_session_get(self.request, self)
         return super(CounteragentListView, self).get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super(CounteragentListView, self).get_context_data(**kwargs)
+        context['title'] = 'Список контрагентов'
+        change_session_context(context, self)
+        return context
 
 
 class CounteragentAdd(LoginRequiredMixin, CreateView):
@@ -774,7 +784,7 @@ class JobsList(LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         count = 0
         change_session_get(request, self)
-        if self.request.GET:
+        if self.request.GET.get('update') == '0':
             todos = get_jsons_data("Catalog", "Должности", 0)
             todos2 = get_jsons_data("Catalog", "ТрудовыеФункции", 0)
             # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение

@@ -121,7 +121,9 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
 
     class Meta:
         model = ApprovalOficialMemoProcess
-        fields = '__all__'
+        fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
+                  'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
+                  'person_department_staff', 'process_accepted', 'accommodation', 'order_number', 'order_date')
 
 
 class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
@@ -130,13 +132,12 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         ('2', 'Гостиница')
     ]
 
-    person_executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+
+    person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_distributor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_department_staff.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.all())
