@@ -226,7 +226,7 @@ class PostsUpdateView(LoginRequiredMixin, UpdateView):
                :return: Возвращает URL адрес страницы, с которой создавалось сообщение.
                """
         pk = self.request.user.pk
-        return reverse("customers_app:post_list", kwargs={"pk": pk})
+        return reverse("customers_app:post_list")
 
 
 class CounteragentListView(LoginRequiredMixin, ListView):

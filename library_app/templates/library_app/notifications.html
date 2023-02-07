@@ -59,7 +59,7 @@
                 <ul>
                     {% for item in posts_not_published %}
                         <li>
-                            <a href="{% url 'customers_app:post' user.pk item.pk %}" class="clearfix">
+                            <a href="{% url 'customers_app:post' item.pk %}" class="clearfix">
                                 <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
                                      title="" data-bs-original-title="Создано: {{ item.creation_date| date:'d-m-Y' }}">
                                     <code style="font-size: small">
@@ -74,7 +74,7 @@
                 <hr/>
 
                 <div class="text-end">
-                    <a href="{% url 'customers_app:post_list' user.pk %}" class="view-more">Просмотреть все</a>
+                    <a href="{% url 'customers_app:post_list' %}" class="view-more">Просмотреть все</a>
                 </div>
             </div>
         </div>
