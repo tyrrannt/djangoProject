@@ -1,7 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-
+{% load widget_tweaks %}
 {% block title %}
     <title>{{ title }}</title>
 {% endblock %}
@@ -20,38 +20,14 @@
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-                                    {% if user.access_level.guide_access_add %}
+                                    {% if user.is_superuser %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:jobs_add' %}"
+                                            <a href="{% url 'hrdepartment_app:bptrip_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить должность </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:jobs_list' %}?update=0"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Синхронизация с 1С </a>
+                                                Добавить новое направление </a>
                                         </div>
                                     {% endif %}
-
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label for="field_sorted" class="ws-nowrap me-3 mb-0">Сортировка:</label>
-                                            <select class="form-control select-style-1 filter-by" name="filter-by"
-                                                    onchange="field_sorted()" id="field_sorted">
-                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код
-                                                </option>
-                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>Код
-                                                    должности
-                                                </option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>
-                                                    Подразделение
-                                                </option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Должность
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
                                             <label for="portal_paginator"
                                                    class="ws-nowrap me-3 mb-0">Количество:</label>
@@ -78,7 +54,7 @@
                                     <div class="col-12 col-lg-auto ps-lg-1">
                                         <div class="mx-lg-auto">
                                             <div class="input-group">
-                                                <a href="{% url 'customers_app:jobs_list' %}"
+                                                <a href="{% url 'hrdepartment_app:bptrip_list' %}"
                                                    class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
                                                     Применить настройки
                                                 </a>
@@ -93,42 +69,43 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="10%">Код в БД</th>
-                                    <th width="20%">Номер по ОК</th>
-                                    <th width="50%">Наименование</th>
-                                    <th width="20%">Условия труда</th>
-                                    {% if user.is_superuser %}
-                                    <th width="20%">Ref_Key</th>
-                                    {% endif %}
+                                    <th width="5%">Тип</th>
+                                    <th width="25%">Исполнитель</th>
+                                    <th width="25%">Согласующее лицо</th>
+                                    <th width="25%">Делопроизводитель</th>
+                                    <th width="10%">Дата начала</th>
+                                    <th width="10%">Дата окончания</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {% for item in object_list %}
-                                    <tr>
+
+                                    <tr style="color: {% if item.document_accepted %} green  {% else %} {% if item.comments %} blue {% else %} {% if item.order_number %} black {% else %} red {% endif %} {% endif %} {% endif %}">
                                         <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.code }}</strong></a>
+                                            <strong>{{ item.get_business_process_type_display }}</strong>
                                         </td>
                                         <td>
-                                            <a href="{% url 'customers_app:jobs' item.pk %}"><strong>{{ item.name }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:bptrip_update' item.pk %}"><span>{% for items in item.person_executor.all %}{{ items }} {% endfor %}</span></a>
                                         </td>
                                         <td>
-                                            {% for parts in item.harmful.iterator %}
-                                                <strong>{{ parts }}</strong>&nbsp;
-                                            {% endfor %}
+                                            <a href="{% url 'hrdepartment_app:bptrip_update' item.pk %}"><span>{% for items in item.person_agreement.all %}{{ items }} {% endfor %}</span></a>
                                         </td>
-                                        {% if user.is_superuser %}
-                                            <td>
-                                            <strong>{{ item.ref_key }}</strong>
+                                        <td>
+                                            <span>{% for items in item.clerk.all %}{{ items }} {% endfor %}</span>&nbsp;
                                         </td>
-                                        {% endif %}
+                                        <td>
+                                            <span>С: {{ item.date_start | date:'d-m-Y' }}</span>
+                                        </td>
+                                        <td>
+                                            <span>По: {{ item.date_end | date:'d-m-Y' }}</span>&nbsp;
+                                        </td>
+
                                     </tr>
+
+
                                 {% endfor %}
                                 </tbody>
                             </table>
-
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}
                             <div class="datatable-footer">
@@ -146,6 +123,8 @@
                                     </div>
                                 </div>
                             </div>
+
+
                         </div>
                     </div>
 
@@ -159,7 +138,7 @@
             paginator_by = document.getElementById("portal_paginator").value;
             $.ajax({
                 type: "GET",
-                url: '{% url 'customers_app:jobs_list' %}',
+                url: '{% url 'hrdepartment_app:memo_list' %}',
                 data: {
                     "result": paginator_by,
                 },
@@ -172,26 +151,6 @@
                     alert("failure");
                 }
             });
-        };
-
-        function field_sorted() {
-            item_sorted = document.getElementById("field_sorted").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'customers_app:jobs_list' %}',
-                data: {
-                    "sort_item": item_sorted,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-
         };
     </script>
 {% endblock %}

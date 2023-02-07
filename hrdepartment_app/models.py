@@ -4,9 +4,10 @@ import pathlib
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.urls import reverse
 
 from administration_app.utils import Med
-from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division
+from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job
 from djangoProject.settings import BASE_DIR
 
 
@@ -83,7 +84,8 @@ class OfficialMemo(models.Model):
         ('1', 'Направление'),
         ('2', 'Продление')
     ]
-    date_of_creation = models.DateTimeField(verbose_name='Дата и время создания', auto_now_add=True) # При миграции указать 1 и вставить timezone.now()
+    date_of_creation = models.DateTimeField(verbose_name='Дата и время создания',
+                                            auto_now_add=True)  # При миграции указать 1 и вставить timezone.now()
     official_memo_type = models.CharField(verbose_name='Тип СП', max_length=9, choices=memo_type,
                                           help_text='', default='1')
     person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
@@ -92,12 +94,13 @@ class OfficialMemo(models.Model):
     period_from = models.DateField(verbose_name='Дата начала', null=True)
     period_for = models.DateField(verbose_name='Дата окончания', null=True)
     place_production_activity = models.ManyToManyField(Division, verbose_name='МПД')
-    other_place_production_activity = models.CharField(verbose_name='Другое место назначения', max_length=20, default='', blank=True)
+    other_place_production_activity = models.CharField(verbose_name='Другое место назначения', max_length=20,
+                                                       default='', blank=True)
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of_accommodation,
                                      help_text='', blank=True, default='')
     type_trip = models.CharField(verbose_name='Тип поездки', max_length=9, choices=type_of_trip,
-                                     help_text='', blank=True, default='')
-    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', blank=True)
+                                 help_text='', blank=True, default='')
+    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', blank=True, null=True)
     order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
@@ -149,3 +152,23 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
 
     def __init__(self, *args, **kwargs):
         super(ApprovalOficialMemoProcess, self).__init__(*args, **kwargs)
+
+
+class BusinessProcessDirection(models.Model):
+    type_of = [
+        ('1', 'SP')
+    ]
+
+    class Meta:
+        verbose_name = 'Направление бизнес процесса'
+        verbose_name_plural = 'Направления бизнес процессов'
+
+    business_process_type = models.CharField(verbose_name='Тип бизнес процесса', max_length=5, default='', blank=True, choices=type_of)
+    person_executor = models.ManyToManyField(Job, verbose_name='Исполнитель', related_name='person_executor')
+    person_agreement = models.ManyToManyField(Job, verbose_name='Согласующее лицо', related_name='person_agreement')
+    clerk = models.ManyToManyField(Job, verbose_name='Делопроизводитель', related_name='clerk')
+    date_start = models.DateField(verbose_name='Дата начала', null=True, blank=True)
+    date_end = models.DateField(verbose_name='Дата окончания', null=True, blank=True)
+
+    def get_absolute_url(self):
+        return reverse('hrdepartment_app:bptrip_list')

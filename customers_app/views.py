@@ -20,13 +20,13 @@ from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-
 # Create your views here.
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
 
 def get_model_fields(model_object):
     return model_object._meta.fields
+
 
 def get_profile_fill(self, context):
     profile_info = 0
@@ -56,6 +56,7 @@ def get_profile_fill(self, context):
     except Exception as _ex:
         print(f'{_ex}: Отсутствует блок рабочей информации')
     context['profile_info'] = profile_info
+
 
 @login_required
 def index(request):
@@ -149,7 +150,7 @@ def login(request):
                 print(f'{_ex}: Не заданы базовые параметры пагинации страниц')
             request.session.set_expiry(portal_session)
             request.session['portal_paginator'] = portal_paginator
-            #return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
+            # return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
             return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
     # else:
     #     content['errors'] = login_form.get_invalid_login_error()
@@ -373,19 +374,20 @@ class StaffListView(LoginRequiredMixin, ListView):
 
         change_session_get(request, self)
 
-        ref_key, username, first_name = '', '', ''
-        last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
-        job_code, division_code, date_of_employment = '', '', '1900-01-01'
+
+
         count = 0
         count2 = 0
         count3 = DataBaseUser.objects.all().count() + 1
         if self.request.GET.get('update') == '1':
-            users_list = DataBaseUser.objects.all()
+            users_list = DataBaseUser.objects.all().exclude(is_superuser=True)
             for units in users_list:
+                job_code, division_code, date_of_employment = '', '', '1900-01-01'
                 todo_str = get_jsons(
                     f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_КадроваяИсторияСотрудников?$format=application/json;odata=nometadata&$filter=RecordSet/any(d:%20d/Сотрудник_Key%20eq%20guid%27{units.ref_key}%27)")
                 period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
                 if units.ref_key != "":
+                    moving = 0
                     for items in todo_str['value']:
                         for items2 in items['RecordSet']:
                             if items2['Active'] == True and items2['ВидСобытия'] == 'Перемещение':
@@ -393,15 +395,17 @@ class StaffListView(LoginRequiredMixin, ListView):
                                     period = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
                                     division_code = items2['Подразделение_Key']
                                     job_code = items2['Должность_Key']
+                                    moving = 1
 
                             if items2['Active'] == True and items2['ВидСобытия'] == 'Прием':
                                 date_of_employment = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
+                                if moving == 0:
+                                    division_code = items2['Подразделение_Key']
+                                    job_code = items2['Должность_Key']
                     user_work_profile = {
                         'date_of_employment': date_of_employment,
-                        'job': Job.objects.get(
-                            ref_key=job_code) if job_code != "00000000-0000-0000-0000-000000000000" else None,
-                        'divisions': Division.objects.get(
-                            ref_key=division_code) if division_code != "00000000-0000-0000-0000-000000000000" else None,
+                        'job': Job.objects.get(ref_key=job_code) if job_code not in ["", '00000000-0000-0000-0000-000000000000'] else None,
+                        'divisions': Division.objects.get(ref_key=division_code) if division_code not in ["", '00000000-0000-0000-0000-000000000000'] else None,
                     }
                     if not units.user_work_profile:
                         obj_work_profile = DataBaseUserWorkProfile(**user_work_profile)
@@ -414,6 +418,8 @@ class StaffListView(LoginRequiredMixin, ListView):
             # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
             for item in todos['value']:
                 if item['Description'] != "" and item['ВАрхиве'] == False:
+                    ref_key, username, first_name = '', '', ''
+                    last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
                     todos2 = get_jsons_data_filter("Catalog", "ФизическиеЛица", "Ref_Key", item['ФизическоеЛицо_Key'],
                                                    0, 0)
                     for item2 in todos2['value']:
@@ -659,7 +665,6 @@ class DivisionsList(LoginRequiredMixin, ListView):
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
-        print(kwargs)
         context = super().get_context_data(object_list=None, **kwargs)
         return context
 

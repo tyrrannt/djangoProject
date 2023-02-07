@@ -2,8 +2,8 @@ import datetime
 
 from django import forms
 
-from customers_app.models import Division, DataBaseUser
-from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess
+from customers_app.models import Division, DataBaseUser, Job
+from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, BusinessProcessDirection
 
 
 def present_or_future_date(value):
@@ -157,3 +157,41 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
                   'person_department_staff', 'process_accepted', 'accommodation', 'order_number', 'order_date')
+
+
+class BusinessProcessDirectionAddForm(forms.ModelForm):
+    type_of = [
+        ('1', 'SP')
+    ]
+    business_process_type = forms.ChoiceField(choices=type_of)
+    person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    clerk.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    date_start = forms.DateField(required=False)
+    date_end = forms.DateField(required=False)
+
+    class Meta:
+        model = BusinessProcessDirection
+        fields = '__all__'
+
+
+class BusinessProcessDirectionUpdateForm(forms.ModelForm):
+    type_of = [
+        ('1', 'SP')
+    ]
+    business_process_type = forms.ChoiceField(choices=type_of)
+    person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    clerk.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    date_start = forms.DateField(required=False)
+    date_end = forms.DateField(required=False)
+
+    class Meta:
+        model = BusinessProcessDirection
+        fields = '__all__'

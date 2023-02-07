@@ -11,10 +11,11 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
 
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get
-from customers_app.models import DataBaseUser, Counteragent, Division
+from customers_app.models import DataBaseUser, Counteragent, Division, Job
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
-    OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm
-from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess
+    OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
+    BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm
+from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection
 
 
 # Create your views here.
@@ -67,11 +68,11 @@ class OfficialMemoList(LoginRequiredMixin, ListView):
         return super(OfficialMemoList, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = super(OfficialMemoList, self).get_queryset()
+        qs = super(OfficialMemoList, self).get_queryset().order_by('pk')
         change_session_queryset(self.request, self)
-        user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
-        qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by(
-            'pk').reverse()
+        if not self.request.user.is_superuser:
+            user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
+            qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by('pk').reverse()
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -87,14 +88,15 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoAdd, self).get_context_data(**kwargs)
-        #content['all_status'] = OfficialMemo.type_of_accommodation
+        # content['all_status'] = OfficialMemo.type_of_accommodation
         # Генерируем список сотрудников, которые на текущий момент времени не находятся в СП
         users_list = [person.person_id for person in OfficialMemo.objects.filter(
             Q(period_from__lte=datetime.datetime.today()) & Q(period_for__gte=datetime.datetime.today()))]
         # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(is_superuser=True)
-        content['form'].fields['place_production_activity'].queryset = Division.objects.all().exclude(destination_point=False)
+        content['form'].fields['place_production_activity'].queryset = Division.objects.all().exclude(
+            destination_point=False)
         return content
 
     def get_success_url(self):
@@ -169,12 +171,14 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
 
     def get_queryset(self):
-        user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
+        qs = super(ApprovalOficialMemoProcessList, self).get_queryset()
+        if not self.request.user.is_superuser:
+            user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
 
-        qs = ApprovalOficialMemoProcess.objects.filter(Q(person_agreement__user_work_profile__divisions=user_division) |
+            qs = ApprovalOficialMemoProcess.objects.filter(Q(person_agreement__user_work_profile__divisions=user_division) |
                                                        Q(person_distributor__user_work_profile__divisions=user_division) |
                                                        Q(person_executor__user_work_profile__divisions=user_division) |
-                                                       Q(person_department_staff__user_work_profile__divisions=user_division))
+                                                       Q(person_department_staff__user_work_profile__divisions=user_division)).order_by('pk')
         return qs
 
 
@@ -183,9 +187,28 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
     form_class = ApprovalOficialMemoProcessAddForm
 
     def get_context_data(self, **kwargs):
+        global person_agreement_list
         content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
         content['form'].fields['document'].queryset = OfficialMemo.objects.filter(docs__isnull=True)
+        business_process = BusinessProcessDirection.objects.all()
+        users_list = DataBaseUser.objects.all()
+        #
+        content['form'].fields['person_executor'].queryset = users_list.filter(
+            pk=self.request.user.pk)
 
+        person_agreement_list = list()
+        content['form'].fields['person_agreement'].queryset = users_list.filter(
+            user_work_profile__job__pk__in=person_agreement_list)
+        for item in business_process:
+            if item.person_executor.filter(name__contains=self.request.user.user_work_profile.job.name):
+                person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
+                content['form'].fields['person_agreement'].queryset = users_list.filter(user_work_profile__job__pk__in=person_agreement_list )
+        content['form'].fields['person_distributor'].queryset = DataBaseUser.objects.filter(
+            Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
+            Q(is_superuser=False))
+        content['form'].fields['person_department_staff'].queryset = DataBaseUser.objects.filter(
+            Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
+            Q(is_superuser=False))
         return content
 
     def get_success_url(self):
@@ -198,35 +221,41 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
     template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_update.html'
 
     def get_context_data(self, **kwargs):
+        global person_agreement_list
+        business_process = BusinessProcessDirection.objects.all()
+        users_list = DataBaseUser.objects.all()
         content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(**kwargs)
         document = self.get_object()
         content['document'] = document.document
         # Получаем подразделение исполнителя
-        division = document.person_executor.user_work_profile.divisions
+        #division = document.person_executor.user_work_profile.divisions
         # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
-        content['form'].fields['person_executor'].queryset = DataBaseUser.objects.filter(pk=document.person_executor.pk)
+        content['form'].fields['person_executor'].queryset = users_list.filter(pk=document.person_executor.pk)
         # Если установлен признак согласования документа, то фильтруем поле согласующего лица
         if document.document_not_agreed:
-            content['form'].fields['person_agreement'].queryset = DataBaseUser.objects.filter(pk=document.person_agreement.pk)
+            content['form'].fields['person_agreement'].queryset = users_list.filter(
+                pk=document.person_agreement.pk)
         else:
             # Иначе по подразделению исполнителя фильтруем руководителей для согласования
-            content['form'].fields['person_agreement'].queryset = DataBaseUser.objects.filter(
-                Q(user_work_profile__divisions=division) & Q(user_work_profile__job__right_to_approval=True) &
-                Q(is_superuser=False))
-        content['form'].fields['person_distributor'].queryset = DataBaseUser.objects.filter(
+            person_agreement_list = list()
+            content['form'].fields['person_agreement'].queryset = users_list.filter(
+                user_work_profile__job__pk__in=person_agreement_list)
+            for item in business_process:
+                if item.person_executor.filter(name__contains=self.request.user.user_work_profile.job.name):
+                    person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
+                    content['form'].fields['person_agreement'].queryset = users_list.filter(
+                        user_work_profile__job__pk__in=person_agreement_list)
+        content['form'].fields['person_distributor'].queryset = users_list.filter(
             Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
             Q(is_superuser=False))
-        content['form'].fields['person_department_staff'].queryset = DataBaseUser.objects.filter(
+        content['form'].fields['person_department_staff'].queryset = users_list.filter(
             Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
             Q(is_superuser=False))
         try:
-            check = DataBaseUser.objects.get(pk=document.person_distributor.pk)
-            print(check.user_work_profile.divisions.type_of_role)
+            check = users_list.get(pk=document.person_distributor.pk)
         except Exception as _ex:
             pass
-        # content['all_contragent'] = Counteragent.objects.all()
-        # content['all_status'] = Medical.type_of
-        # content['all_harmful'] = DataBaseUser.objects.get(pk=self.object.person.pk).user_work_profile.job.harmful.iterator()
+
         return content
 
     def form_valid(self, form):
@@ -290,3 +319,17 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
+
+
+class BusinessProcessDirectionList(LoginRequiredMixin, ListView):
+    model = BusinessProcessDirection
+
+
+class BusinessProcessDirectionAdd(LoginRequiredMixin, CreateView):
+    model = BusinessProcessDirection
+    form_class = BusinessProcessDirectionAddForm
+
+
+class BusinessProcessDirectionUpdate(LoginRequiredMixin, UpdateView):
+    model = BusinessProcessDirection
+    form_class = BusinessProcessDirectionUpdateForm
