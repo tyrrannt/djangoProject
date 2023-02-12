@@ -216,7 +216,7 @@
                                 <h4 class="mb-3 font-weight-semibold text-dark">Статус обновления</h4>
 
                                 <section class="simple-compose-box mb-3">
-                                    <form method="post" action="{% url 'customers_app:post_add' user.pk %}">
+                                    <form method="post" action="{% url 'customers_app:post_add' %}">
                                         {% csrf_token %}
                                         <textarea name="post_description" data-plugin-textarea-autosize
                                                   placeholder="Добавить событие ..." rows="1"></textarea>

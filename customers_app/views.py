@@ -81,7 +81,8 @@ class DataBaseUserProfile(LoginRequiredMixin, DetailView):
         return super(DataBaseUserProfile, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        post = Posts.objects.all().order_by('creation_date').reverse()
+        user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
+        post = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by('creation_date').reverse()
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
         context['title'] = 'редактирование'
         context['posts'] = post
@@ -100,7 +101,8 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
     form_class = DataBaseUserUpdateForm
 
     def get_context_data(self, **kwargs):
-        post = Posts.objects.all().order_by('creation_date').reverse()
+        user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
+        post = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by('creation_date').reverse()
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
         context['title'] = 'Профиль пользователя'
         context['posts'] = post
@@ -136,15 +138,16 @@ def login(request):
         username = request.POST['username']
         password = request.POST['password']
         user = auth.authenticate(username=username, password=password)
+        portal = PortalProperty.objects.all()
         if user and user.is_active:
             auth.login(request, user)
             try:
-                portal_session = PortalProperty.objects.get(pk=1).portal_session
+                portal_session = portal.first().portal_session
             except Exception as _ex:
                 portal_session = 900
                 print(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
             try:
-                portal_paginator = PortalProperty.objects.get(pk=1).portal_paginator
+                portal_paginator = portal.first().portal_paginator
             except Exception as _ex:
                 portal_paginator = 900
                 print(f'{_ex}: Не заданы базовые параметры пагинации страниц')
@@ -207,6 +210,12 @@ class PostsListView(LoginRequiredMixin, ListView):
     template_name = 'customers_app/posts_list.html'
     model = Posts
     paginate_by = 6
+
+    def get_queryset(self):
+        user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
+        print(user_obj.user_work_profile.divisions.pk)
+        qs = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk)
+        return qs
 
 
 class PostsDetailView(LoginRequiredMixin, DetailView):

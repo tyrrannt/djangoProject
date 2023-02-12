@@ -1,14 +1,18 @@
 import datetime
 import pathlib
+import smtplib
 
+from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.template import Context
+from django.template.loader import render_to_string, get_template
 from django.urls import reverse
 
-from administration_app.utils import Med
+from administration_app.utils import Med, ending_day, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job
-from djangoProject.settings import BASE_DIR
+from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_PASSWORD, MEDIA_URL
 
 
 # Create your models here.
@@ -154,6 +158,80 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         super(ApprovalOficialMemoProcess, self).__init__(*args, **kwargs)
 
 
+def create_xlsx(instance):
+    from openpyxl import load_workbook
+    filepath = pathlib.Path.joinpath(MEDIA_URL, 'wb.xlsx')
+    print(filepath)
+    wb = load_workbook(filepath)
+    ws = wb.active()
+    ws['C3'] = instance.document.person
+    filepath2 = pathlib.Path.joinpath(MEDIA_URL, 'wb-1.xlsx')
+    ws.save(filepath2)
+
+@receiver(post_save, sender=ApprovalOficialMemoProcess)
+def create_report(sender, instance, **kwargs):
+    type_of = ['Служебная квартира', 'Гостиница']
+    try:
+        if instance.process_accepted:
+            from openpyxl import load_workbook
+            delta = instance.document.period_for - instance.document.period_from
+            place = [item.name for item in instance.document.place_production_activity.all()]
+            filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx')
+            print(filepath.exists())
+            wb = load_workbook(filepath)
+            ws = wb.active
+            ws['C3'] = str(instance.document.person)
+            ws['C4'] = str(instance.document.person.user_work_profile.job)
+            ws['C5'] = str(instance.document.person.user_work_profile.divisions)
+            ws['C6'] = 'Приказ № ' + str(instance.order_number)
+            ws['F6'] = instance.order_date.strftime("%d.%m.%y")
+            ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
+            ws['L6'] = instance.document.period_from.strftime("%d.%m.%y")
+            ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
+            ws['C8'] = str(place).strip('[]')
+            ws['C9'] = str(instance.document.purpose_trip)
+            ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(instance.person_agreement)
+
+            wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
+            wb.close()
+            TO = instance.document.person.email
+            TO_COPY = instance.person_executor.email
+            SUBJECT = "Направление"
+
+
+
+            try:
+                current_context = {
+                    'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
+                    'person': instance.document.person,
+                    'place': str(place).strip('[]'),
+                    'purpose_trip': instance.document.purpose_trip,
+                    'order_number': instance.order_number,
+                    'order_date': instance.order_date,
+                    'delta': ending_day(int(delta.days) + 1),
+                    'period_from': instance.document.period_from,
+                    'period_for':  instance.document.period_for,
+                    'accommodation': type_of[int(instance.accommodation)],
+                    'person_executor': instance.person_executor,
+                    'person_distributor': instance.person_distributor,
+                }
+                text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+                html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+
+                msg = EmailMultiAlternatives(SUBJECT, text_content, EMAIL_HOST_USER, [TO, TO_COPY, ])
+                msg.attach_alternative(html_content, "text/html")
+                msg.attach_file(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
+                res = msg.send()
+                #create_xlsx(instance)
+
+
+            except Exception as e:
+                print("Failed to send the mail..", e)
+
+    except Exception as _ex:
+        print(_ex)
+
+
 class BusinessProcessDirection(models.Model):
     type_of = [
         ('1', 'SP')
@@ -163,7 +241,8 @@ class BusinessProcessDirection(models.Model):
         verbose_name = 'Направление бизнес процесса'
         verbose_name_plural = 'Направления бизнес процессов'
 
-    business_process_type = models.CharField(verbose_name='Тип бизнес процесса', max_length=5, default='', blank=True, choices=type_of)
+    business_process_type = models.CharField(verbose_name='Тип бизнес процесса', max_length=5, default='', blank=True,
+                                             choices=type_of)
     person_executor = models.ManyToManyField(Job, verbose_name='Исполнитель', related_name='person_executor')
     person_agreement = models.ManyToManyField(Job, verbose_name='Согласующее лицо', related_name='person_agreement')
     clerk = models.ManyToManyField(Job, verbose_name='Делопроизводитель', related_name='clerk')

@@ -8,34 +8,30 @@
         </li>
         <li class="primary">
             <h3>{{ bp }}</h3>
-            <p class="text-light">Запущено бизнес-процессов</p>
+            <p class="text-light"><a href="{% url 'hrdepartment_app:bpmemo_list' %}" title="Список служебных записок" style="color: #FFFFFF; text-decoration: none"><b>Запущено бизнес-процессов</b></a></p>
         </li>
         <li class="primary">
             <h3>{{ contract }}</h3>
-            <p class="text-light">Договоров в базе</p>
+            <p class="text-light"><a href="{% url 'contracts_app:index' %}" title="Список служебных записок" style="color: #FFFFFF; text-decoration: none"><b>Договоров в базе</b></a></p>
         </li>
     </ul>
-{% if user.is_superuser %}
+
     <h4 class="mb-3 mt-4 pt-2 font-weight-semibold text-dark">Проекты в работе</h4>
     <ul class="simple-bullet-list mb-3">
         <li class="red">
             <span class="title">Раздел договоров</span>
-            <span class="description truncate">Lorem ipsom dolor sit.</span>
+            <span class="description truncate">Ведется доработка процесса интеграции имеющейся ИС Договора, с новой.</span>
         </li>
         <li class="green">
-            <span class="title">Tucson HTML5 Template</span>
-            <span class="description truncate">Lorem ipsom dolor sit amet</span>
+            <span class="title">Раздел документации</span>
+            <span class="description truncate">Медицинские направления. Дорабатывается процесс интеграции с 1С, для получения документов.</span>
         </li>
         <li class="blue">
-            <span class="title">Porto HTML5 Template</span>
-            <span class="description truncate">Lorem ipsom dolor sit.</span>
-        </li>
-        <li class="orange">
-            <span class="title">Tucson Template</span>
-            <span class="description truncate">Lorem ipsom dolor sit.</span>
+            <span class="title">Раздел справочники</span>
+            <span class="description truncate">Дорабатывается пользовательский интерфейс</span>
         </li>
     </ul>
-
+{% if user.is_superuser %}
     <h4 class="mb-3 mt-4 pt-2 font-weight-semibold text-dark">Messages</h4>
     <ul class="simple-user-list mb-3">
         <li>

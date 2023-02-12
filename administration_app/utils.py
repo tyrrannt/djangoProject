@@ -238,3 +238,24 @@ def change_session_queryset(request, self):
 
 def filter_context(request, self):
     pass
+
+
+def ending_day(value):
+    first_answer = [1, 21, 31, 41, ] # День
+    second_answer = [2, 3, 4, 22, 23, 24, 32, 33, 34, 42, 43, 44, ] # Дня
+    third_answer = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 26, 27, 28, 29, 30, 35, 36, 37, 38, 39, 40, 45, 46, 47, 48, 49, 50, ] # Дней
+
+    if int(value) in first_answer:
+        return f'{value} день'
+    if int(value) in second_answer:
+        return f'{value} дня'
+    if int(value) in third_answer:
+        return f'{value} дней'
+
+
+def FIO_format(value):
+    string_obj = str(value)
+    list_obj = string_obj.split(' ')
+    result = f'{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}.'
+    return result
+

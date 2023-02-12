@@ -141,18 +141,18 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
         delta = (period.period_for - period.period_from)
         # Передаем количество дней в контекст
         content['period'] = int(delta.days) + 1
-        # Пол
+        # Получаем все служебные записки по человеку, исключая текущую
         filters = OfficialMemo.objects.filter(person=period.person).exclude(pk=period.pk)
         filter_string = {
             "pk": 0,
             "period": datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
         }
+        # Проходимся по выборке в цикле
         for item in filters:
-            print(item.period_for)
             if item.period_for > filter_string["period"]:
                 filter_string["pk"] = item.pk
                 filter_string["period"] = item.period_for
-        print(filter_string)
+
         content['form'].fields['place_production_activity'].queryset = Division.objects.all().exclude(
             destination_point=False)
         return content
@@ -175,10 +175,11 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
         if not self.request.user.is_superuser:
             user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
 
-            qs = ApprovalOficialMemoProcess.objects.filter(Q(person_agreement__user_work_profile__divisions=user_division) |
-                                                       Q(person_distributor__user_work_profile__divisions=user_division) |
-                                                       Q(person_executor__user_work_profile__divisions=user_division) |
-                                                       Q(person_department_staff__user_work_profile__divisions=user_division)).order_by('pk')
+            qs = ApprovalOficialMemoProcess.objects.filter(
+                Q(person_agreement__user_work_profile__divisions=user_division) |
+                Q(person_distributor__user_work_profile__divisions=user_division) |
+                Q(person_executor__user_work_profile__divisions=user_division) |
+                Q(person_department_staff__user_work_profile__divisions=user_division)).order_by('pk')
         return qs
 
 
