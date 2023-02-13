@@ -1,13 +1,14 @@
 from django.urls import path
 from . import views
-from .views import DocumentsList, DocumentsAdd, DocumentsDetail, DocumentsUpdate
+from .views import DocumentsJobDescriptionList, DocumentsJobDescriptionAdd, DocumentsJobDescriptionDetail, \
+    DocumentsJobDescriptionUpdate
 
 app_name = 'library_app'
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('documents/', DocumentsList.as_view(), name='documents_list'),
-    path('documents/add/', DocumentsAdd.as_view(), name='documents_add'),
-    path('documents/<int:pk>', DocumentsDetail.as_view(), name='documents'),
-    path('documents/<int:pk>/update/', DocumentsUpdate.as_view(), name='documents_update'),
+    path('jobdescription/', DocumentsJobDescriptionList.as_view(), name='jobdescription_list'),
+    path('jobdescription/add/', DocumentsJobDescriptionAdd.as_view(), name='jobdescription_add'),
+    path('jobdescription/<int:pk>', DocumentsJobDescriptionDetail.as_view(), name='jobdescription'),
+    path('jobdescription/<int:pk>/update/', DocumentsJobDescriptionUpdate.as_view(), name='jobdescription_update'),
 ]

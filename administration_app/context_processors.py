@@ -3,7 +3,7 @@ from django.db.models import Q
 from administration_app.models import make_menu
 from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocuments
 from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel
-from library_app.models import Documents
+from library_app.models import DocumentsJobDescription
 
 #ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
 
@@ -24,11 +24,11 @@ def get_all_contracts(request):
         try:
             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False),
                                                               Q(access__level__gte=request.user.access_level.contracts_access_view))
-            documents_not_published = Documents.objects.filter(Q(allowed_placed=False),
+            documents_not_published = DocumentsJobDescription.objects.filter(Q(allowed_placed=False),
                                                                Q(access__level__gte=request.user.access_level.documents_access_view))
         except Exception as _ex:
             contracts_not_published = Contract.objects.filter(allowed_placed=False)
-            documents_not_published = Documents.objects.filter(allowed_placed=False)
+            documents_not_published = DocumentsJobDescription.objects.filter(allowed_placed=False)
         contracts_not_published_count = contracts_not_published.count()
         documents_not_published_count = documents_not_published.count()
     else:

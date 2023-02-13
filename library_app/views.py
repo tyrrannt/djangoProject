@@ -1,43 +1,34 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.http import QueryDict
-from django.shortcuts import render, HttpResponseRedirect, redirect
-from django.utils.decorators import method_decorator
+from django.shortcuts import redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView
-
-from administration_app.utils import boolean_return
 from contracts_app.models import TypeDocuments
 from customers_app.models import DataBaseUser, AccessLevel, Division
-from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm
-from django.contrib import auth, messages
-from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required, user_passes_test
-
-from library_app.forms import DocumentsAddForm, DocumentsUpdateForm
-from library_app.models import Documents
+from django.urls import reverse_lazy
+from library_app.forms import DocumentsJobDescriptionAddForm, DocumentsJobDescriptionUpdateForm
+from library_app.models import DocumentsJobDescription
 
 
 # Create your views here.
 
 def index(request):
-    return render(request, 'library_app/base.html')
+    #return render(request, 'library_app/base.html')
+    return redirect('/users/login/')
 
 
-class DocumentsList(LoginRequiredMixin, ListView):
-    # template_name = ''
-    model = Documents
+class DocumentsJobDescriptionList(LoginRequiredMixin, ListView):
+    model = DocumentsJobDescription
 
     def get_queryset(self):
-        return Documents.objects.filter(Q(allowed_placed=True))
+        return DocumentsJobDescription.objects.filter(Q(allowed_placed=True))
 
 
-class DocumentsAdd(LoginRequiredMixin, CreateView):
-    # template_name = ''
-    model = Documents
-    form_class = DocumentsAddForm
+class DocumentsJobDescriptionAdd(LoginRequiredMixin, CreateView):
+    model = DocumentsJobDescription
+    form_class = DocumentsJobDescriptionAddForm
 
     def get_context_data(self, **kwargs):
-        content = super(DocumentsAdd, self).get_context_data(**kwargs)
+        content = super(DocumentsJobDescriptionAdd, self).get_context_data(**kwargs)
         content['all_document_types'] = TypeDocuments.objects.all()
         content['all_access'] = AccessLevel.objects.all()
         content['all_employee'] = DataBaseUser.objects.all()
@@ -45,9 +36,8 @@ class DocumentsAdd(LoginRequiredMixin, CreateView):
         return content
 
 
-class DocumentsDetail(LoginRequiredMixin, DetailView):
-    # template_name = ''
-    model = Documents
+class DocumentsJobDescriptionDetail(LoginRequiredMixin, DetailView):
+    model = DocumentsJobDescription
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -65,16 +55,16 @@ class DocumentsDetail(LoginRequiredMixin, DetailView):
             # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
             url_match = reverse_lazy('library_app:documents_list')
             return redirect(url_match)
-        return super(DocumentsDetail, self).dispatch(request, *args, **kwargs)
+        return super(DocumentsJobDescriptionDetail, self).dispatch(request, *args, **kwargs)
 
 
-class DocumentsUpdate(LoginRequiredMixin, UpdateView):
-    template_name = 'library_app/documents_update.html'
-    model = Documents
-    form_class = DocumentsUpdateForm
+class DocumentsJobDescriptionUpdate(LoginRequiredMixin, UpdateView):
+    template_name = 'library_app/documentsjobdescription_update.html'
+    model = DocumentsJobDescription
+    form_class = DocumentsJobDescriptionUpdateForm
 
     def get_context_data(self, **kwargs):
-        content = super(DocumentsUpdate, self).get_context_data(**kwargs)
+        content = super(DocumentsJobDescriptionUpdate, self).get_context_data(**kwargs)
         content['all_document_types'] = TypeDocuments.objects.all()
         content['all_access'] = AccessLevel.objects.all()
         content['all_employee'] = DataBaseUser.objects.all()

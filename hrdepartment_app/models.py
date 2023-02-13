@@ -176,8 +176,8 @@ def create_report(sender, instance, **kwargs):
             from openpyxl import load_workbook
             delta = instance.document.period_for - instance.document.period_from
             place = [item.name for item in instance.document.place_production_activity.all()]
+            # Получаем ссылку на файл шаблона
             filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx')
-            print(filepath.exists())
             wb = load_workbook(filepath)
             ws = wb.active
             ws['C3'] = str(instance.document.person)
@@ -197,8 +197,6 @@ def create_report(sender, instance, **kwargs):
             TO = instance.document.person.email
             TO_COPY = instance.person_executor.email
             SUBJECT = "Направление"
-
-
 
             try:
                 current_context = {
@@ -222,7 +220,7 @@ def create_report(sender, instance, **kwargs):
                 msg.attach_alternative(html_content, "text/html")
                 msg.attach_file(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
                 res = msg.send()
-                #create_xlsx(instance)
+                print(res)
 
 
             except Exception as e:

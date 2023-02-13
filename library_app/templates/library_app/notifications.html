@@ -97,7 +97,7 @@
                 <ul>
                     {% for item in documents_not_published %}
                         <li>
-                            <a href="{% url 'library_app:documents_update' item.pk %}" class="clearfix">
+                            <a href="{% url 'library_app:jobdescription_update' item.pk %}" class="clearfix">
                                 <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
                                      title="" data-bs-original-title="Создано: {{ item.document_date| date:'d-m-Y' }}">
                                     <code style="font-size: small">
@@ -112,7 +112,7 @@
                 <hr/>
 
                 <div class="text-end">
-                    <a href="{% url 'library_app:documents_list' %}" class="view-more">Просмотреть все</a>
+                    <a href="{% url 'library_app:jobdescription_list' %}" class="view-more">Просмотреть все</a>
                 </div>
             </div>
         </div>

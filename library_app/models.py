@@ -14,13 +14,12 @@ from djangoProject.settings import BASE_DIR
 
 def document_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
-    return f'library/{filename}'
+    return f'docs/{instance.type_of_document.file_name_prefix}/{filename}'
 
 
 class Documents(models.Model):
     class Meta:
-        verbose_name = 'Документ'
-        verbose_name_plural = 'Документы'
+        abstract = True
 
     ref_key = models.UUIDField(verbose_name='Уникальный номер', default=uuid.uuid4, unique=True)
     type_of_document = models.ForeignKey(TypeDocuments, verbose_name='Тип документа', on_delete=models.SET_NULL,
@@ -47,7 +46,7 @@ class Documents(models.Model):
         return f'{self.type_of_document} № {self.document_number} от {self.document_date}'
 
     def get_absolute_url(self):
-        return reverse('library_app:documents', kwargs={'pk': self.pk})
+        return reverse('library_app:jobdescription', kwargs={'pk': self.pk})
 
 
 # @receiver(post_save, sender=Documents)
@@ -67,9 +66,14 @@ def rename_file_name(sender, instance, **kwargs):
             pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
                                 pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
 
-        instance.doc_file = f'contracts/{instance.contract_counteragent.inn}/' \
-                            f'{instance.contract_counteragent.kpp}/{filename}'
+        instance.doc_file = f'docs/{instance.type_of_document.file_name_prefix}/{filename}'
         if file_name != filename:
             instance.save()
     except Exception as _ex:
         print(_ex)
+
+
+class DocumentsJobDescription(Documents):
+    class Meta:
+        verbose_name = 'Должностная инструкция'
+        verbose_name_plural = 'Должностные инструкции'

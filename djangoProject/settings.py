@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import pathlib
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -21,10 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-wp=6-v6_hp%wl9dog_#px=+94qnl+drr5o_cd!h_qerp(#l4h)'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', cast=bool)
 
 ALLOWED_HOSTS = ['192.168.10.12', 'corp.barkol.ru', 'localhost', '127.0.0.1']
 
@@ -82,19 +83,23 @@ WSGI_APPLICATION = 'djangoProject.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.mysql',
-    #     'NAME': 'djangobd',
-    #     'HOST': 'localhost',
-    #     'USER': 'djangouser',
-    #     'PASSWORD': '',
-    # }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('DATABASE_NAME'),
+            'HOST': config('DATABASE_HOST'),
+            'USER': config('DATABASE_USERNAME'),
+            'PASSWORD': config('DATABASE_PASSWORD'),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -134,13 +139,12 @@ USE_TZ = True
 # )
 
 STATIC_URL = '/static/'
-#STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
+# STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
 
-STATICFILES_DIRS = [pathlib.Path.joinpath(BASE_DIR, 'static_dev'), pathlib.Path.joinpath(BASE_DIR, 'static'),]
+STATICFILES_DIRS = [pathlib.Path.joinpath(BASE_DIR, 'static_dev'), pathlib.Path.joinpath(BASE_DIR, 'static'), ]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -148,14 +152,14 @@ MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
-#MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
-#MEDIA_URL = pathlib.Path.joinpath(BASE_DIR, 'media')
+# MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
+# MEDIA_URL = pathlib.Path.joinpath(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'customers_app.DataBaseUser'
 LOGIN_URL = '/users/login/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.yandex.ru'
-EMAIL_HOST_USER = 'corp@barkol.ru'
-EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_USE_SSL = True
 EMAIL_PORT = 465
