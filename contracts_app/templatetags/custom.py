@@ -19,6 +19,13 @@ def empty_item(string):
         string = ''
     return string
 
+def FIO_format(value):
+    string_obj = str(value)
+    list_obj = string_obj.split(' ')
+    result = f'{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}.'
+    return result
 
+
+register.filter('FIO_format', FIO_format)
 register.filter('empty_item', empty_item)
 register.filter('media_folder_products', media_folder_products)

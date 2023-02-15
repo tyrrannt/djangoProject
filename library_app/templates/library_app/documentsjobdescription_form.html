@@ -117,25 +117,23 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_document_division">Принадлежность к подразделению</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="document_division" id="id_document_division"
-                                                    data-plugin-selectTwo multiple>
-
-                                                {% for item in all_divisions.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <label for="id_document_division">Подразделение</label>
+                                            {{ form.document_division }}
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_division">Должность</label>
+                                            {{ form.document_job }}
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_order">Приказ</label>
+                                            {{ form.document_order }}
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_executor">Исполнитель</label>
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="executor" id="id_executor"
                                                     data-plugin-selectTwo>
-                                                <option value="none" selected>Выберите значение...</option>
-                                                {% for item in all_employee.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
+                                                <option value="{{ user.pk }}" selected>{{ user }}</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4 text-black-50">

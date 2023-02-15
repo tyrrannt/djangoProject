@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -105,29 +106,24 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_document_division">Принадлежность к подразделению</label>
-                                            {{ object.document_division }}
-                                            <!--@formatter:off-->
-                                            <textarea name="document_division" id="id_document_division" disabled
-                                                      rows="3"
-                                                      class="form-control mb-4 form-control-modern">{% for item in object.document_division.iterator %}
-                                                {% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;
-                                                {% endif %}{% endfor %}</textarea>
-                                            <!--@formatter:on-->
+                                            <label for="id_document_division">Подразделение</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="document_division" value="{{ object.document_division }}" id="id_document_division"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_job">Должность</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="document_job" value="{{ object.document_job }}" id="id_document_job"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_executor">Исполнитель</label>
                                             <input type="text" class="form-control form-control-modern" disabled
-                                                   name="executor" value="{{ object.executor }}" id="id_executor"/>
+                                                   name="executor" value="{{ object.executor | FIO_format}}" id="id_executor"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_employee">Ответственное лицо</label>
-                                            <!--@formatter:off-->
-                                            <textarea name="employee" id="id_employee" disabled rows="3"
-                                                      class="form-control mb-4 form-control-modern">{% for item in object.employee.iterator %}
-                                                {% if forloop.last %}{{ item }}{% else %}{{ item }},&nbsp;
-                                                {% endif %}{% endfor %}</textarea>
-                                            <!--@formatter:on-->
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="employee" value="{% for item in object.employee.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }},{% endif %}{% endfor %}" id="id_employee"/>
                                         </div>
                                     </div>
                                     <div class="row text">
