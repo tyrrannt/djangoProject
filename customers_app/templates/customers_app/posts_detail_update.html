@@ -1,6 +1,7 @@
 {% extends 'contracts_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -27,7 +28,22 @@
 
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
-
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
             {% csrf_token %}
@@ -52,14 +68,32 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_post_divisions">Подразделения поста</label>
+                                               for="id_post_divisions">Подразделения</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="post_divisions"
-                                                    data-plugin-selectTwo multiple id="id_post_divisions">
-                                                {% for item in object.post_divisions.iterator %}
-                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.post_divisions | attr:"multiple" }}
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_post_date_start">Начало показа</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <input type="text" id="id_post_date_start"
+                                                   class="form-control form-control-modern"
+                                                   name="post_date_start"
+                                                   value="{{ object.post_date_start | date:'d.m.Y' }}"
+                                                   data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_post_date_end">Окончание показа</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <input type="text" id="id_post_date_end"
+                                                   class="form-control form-control-modern"
+                                                   name="post_date_end" value="{{ object.post_date_end | date:'d.m.Y' }}"
+                                                   data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">

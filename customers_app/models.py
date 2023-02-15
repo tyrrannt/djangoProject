@@ -7,6 +7,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
 from contracts_app.templatetags.custom import empty_item
+from djangoProject import settings
 from djangoProject.settings import BASE_DIR
 
 
@@ -361,6 +362,11 @@ class Posts(models.Model):
     post_description = models.TextField(verbose_name='Текст поста', blank=True, default='')
     post_divisions = models.ManyToManyField(Division, verbose_name='Подразделения поста', )
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
+    responsible = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо',
+                                           on_delete=models.SET_NULL,
+                                           null=True, related_name='responsible_person')
+    post_date_start = models.DateField(verbose_name='Дата начала отображения', blank=True, null=True)
+    post_date_end = models.DateField(verbose_name='Дата окончания отображения', blank=True, null=True)
 
     def __str__(self):
         return f'{self.creation_date} / {self.pk}'

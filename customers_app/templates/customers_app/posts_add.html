@@ -1,5 +1,25 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load widget_tweaks %}
+{% load custom %}
+
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+
+{% endblock %}
 
 {% block title %}
     <title>{{ title }}</title>
@@ -34,69 +54,9 @@
             <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0">
 
                 <section class="card">
-                    <div class="card-body">
-                        <div class="thumb-info mb-3">
-                            {% if user.avatar %}
-                                <img src="{{ user.avatar.url }}" class="rounded img-fluid"
-                                     alt="{{ user.username }}">
-                            {% else %}
-                                <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
-                                     alt="{{ user.username }}">
-                            {% endif %}
-                            <div class="thumb-info-title">
-                                <span class="thumb-info-inner">{{ user.last_name }} {{ user.first_name }}</span>
-                                <span class="thumb-info-type">{{ user.job }}</span>
-                            </div>
-                        </div>
-
-                        <div class="widget-toggle-expand mb-3">
-                            <div class="widget-header">
-                                <h5 class="mb-2 font-weight-semibold text-dark">Заполнение профиля</h5>
-                                <div class="widget-toggle">+</div>
-                            </div>
-                            <div class="widget-content-collapsed">
-                                <div class="progress progress-xs light">
-                                    <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0"
-                                         aria-valuemax="100" style="width: 60%;">
-                                        60%
-                                    </div>
-                                </div>
-                            </div>
-                            {#ToDo: Доработать блок#}
-                            <div class="widget-content-expanded">
-                                <ul class="simple-todo-list mt-3">
-                                    <li {% if user.avatar %} class="completed" {% endif %}>Изображение профиля
-                                    </li>
-                                    <li class="completed">Личная информация</li>
-                                    <li>Профиль в соцсетях</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <hr class="dotted short">
-
-                        <h5 class="mb-2 mt-3">About</h5>
-                        <p class="text-2">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam quis vulputate
-                            quam. Interdum et malesuada</p>
-                        <div class="clearfix">
-                            <a class="text-uppercase text-muted float-end" href="#">(View All)</a>
-                        </div>
-
-                        <hr class="dotted short">
-
-                        {#                        <div class="social-icons-list">#}
-                        {#                            <a rel="tooltip" data-bs-placement="bottom" target="_blank" href="https://www.facebook.com"#}
-                        {#                               data-original-title="Facebook"><i class="fab fa-facebook-f"></i><span>Facebook</span></a>#}
-                        {#                            <a rel="tooltip" data-bs-placement="bottom" href="https://www.twitter.com"#}
-                        {#                               data-original-title="Twitter"><i class="fab fa-twitter"></i><span>Twitter</span></a>#}
-                        {#                            <a rel="tooltip" data-bs-placement="bottom" href="http://www.linkedin.com"#}
-                        {#                               data-original-title="Linkedin"><i#}
-                        {#                                    class="fab fa-linkedin-in"></i><span>Linkedin</span></a>#}
-                        {#                        </div>#}
-
-                    </div>
+                    {% include 'customers_app/block_personal_info.html' %}
                 </section>
-
+                {% if user.is_superuser %}
                 <section class="card">
                     <header class="card-header">
                         <div class="card-actions">
@@ -194,7 +154,7 @@
                         </ul>
                     </div>
                 </section>
-
+                {% endif %}
             </div>
             <div class="col-lg-8 col-xl-6">
 
@@ -218,24 +178,41 @@
                                 <section class="simple-compose-box mb-3">
                                     <form method="post" action="{% url 'customers_app:post_add' %}">
                                         {% csrf_token %}
-                                        <textarea name="post_description" data-plugin-textarea-autosize
-                                                  placeholder="Добавить событие ..." rows="1"></textarea>
 
-                                        <div class="compose-box-footer">
-                                            <ul class="compose-toolbar">
-                                                <li>
-                                                    <a href="#"><i class="fas fa-camera"></i></a>
-                                                </li>
-                                                <li>
-                                                    <a href="#"><i class="fas fa-map-marker-alt"></i></a>
-                                                </li>
-                                            </ul>
-                                            <input type="text" name="post_divisions"
-                                                   value="{{ user.user_work_profile.divisions.pk }}" hidden/>
-                                            <button type="submit"
+                                        <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_post_description">Сообщение</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <textarea name="post_description" data-plugin-textarea-autosize
+                                                  placeholder="Добавить событие ..." rows="1" id="id_post_description"></textarea>
+                                        </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                                   for="id_post_divisions">Подразделения</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                {{ form.post_divisions | attr:"multiple" }}
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                        <input type="text" name="responsible"
+                                                   value="{{ user.pk }}" hidden/>
+                                        </div>
+
+{#                                        <div class="compose-box-footer">#}
+{#                                            <ul class="compose-toolbar">#}
+{#                                                <li>#}
+{#                                                    <a href="#"><i class="fas fa-camera"></i></a>#}
+{#                                                </li>#}
+{#                                                <li>#}
+{#                                                    <a href="#"><i class="fas fa-map-marker-alt"></i></a>#}
+{#                                                </li>#}
+{#                                            </ul>                                    #}
+{#                                            #}
+{#                                        </div>#}
+                                        <button type="submit"
                                                     class="compose-btn btn btn-primary btn-xs  form-control">Добавить
                                             </button>
-                                        </div>
                                     </form>
                                 </section>
 
@@ -323,78 +300,7 @@
                 </div>
             </div>
             <div class="col-xl-3">
-
-                <h4 class="mb-3 mt-0 font-weight-semibold text-dark">Sale Stats</h4>
-                <ul class="simple-card-list mb-3">
-                    <li class="primary">
-                        <h3>488</h3>
-                        <p class="text-light">Nullam quris ris.</p>
-                    </li>
-                    <li class="primary">
-                        <h3>$ 189,000.00</h3>
-                        <p class="text-light">Nullam quris ris.</p>
-                    </li>
-                    <li class="primary">
-                        <h3>16</h3>
-                        <p class="text-light">Nullam quris ris.</p>
-                    </li>
-                </ul>
-
-                <h4 class="mb-3 mt-4 pt-2 font-weight-semibold text-dark">Projects</h4>
-                <ul class="simple-bullet-list mb-3">
-                    <li class="red">
-                        <span class="title">Porto Template</span>
-                        <span class="description truncate">Lorem ipsom dolor sit.</span>
-                    </li>
-                    <li class="green">
-                        <span class="title">Tucson HTML5 Template</span>
-                        <span class="description truncate">Lorem ipsom dolor sit amet</span>
-                    </li>
-                    <li class="blue">
-                        <span class="title">Porto HTML5 Template</span>
-                        <span class="description truncate">Lorem ipsom dolor sit.</span>
-                    </li>
-                    <li class="orange">
-                        <span class="title">Tucson Template</span>
-                        <span class="description truncate">Lorem ipsom dolor sit.</span>
-                    </li>
-                </ul>
-
-                <h4 class="mb-3 mt-4 pt-2 font-weight-semibold text-dark">Messages</h4>
-                <ul class="simple-user-list mb-3">
-                    <li>
-                        <figure class="image rounded">
-                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Doe Junior"
-                                 class="rounded-circle">
-                        </figure>
-                        <span class="title">Joseph Doe Junior</span>
-                        <span class="message">Lorem ipsum dolor sit.</span>
-                    </li>
-                    <li>
-                        <figure class="image rounded">
-                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Junior"
-                                 class="rounded-circle">
-                        </figure>
-                        <span class="title">Joseph Junior</span>
-                        <span class="message">Lorem ipsum dolor sit.</span>
-                    </li>
-                    <li>
-                        <figure class="image rounded">
-                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joe Junior"
-                                 class="rounded-circle">
-                        </figure>
-                        <span class="title">Joe Junior</span>
-                        <span class="message">Lorem ipsum dolor sit.</span>
-                    </li>
-                    <li>
-                        <figure class="image rounded">
-                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}" alt="Joseph Doe Junior"
-                                 class="rounded-circle">
-                        </figure>
-                        <span class="title">Joseph Doe Junior</span>
-                        <span class="message">Lorem ipsum dolor sit.</span>
-                    </li>
-                </ul>
+                {% include 'customers_app/block_statistics.html' %}
             </div>
 
         </div>

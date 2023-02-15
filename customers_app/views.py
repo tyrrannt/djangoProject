@@ -1,6 +1,7 @@
 import datetime
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.utils.decorators import method_decorator
@@ -82,10 +83,14 @@ class DataBaseUserProfile(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
-        post = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by('creation_date').reverse()
+        post_high = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+                                    Q(post_date_start__gt=datetime.datetime.today())).order_by('-post_date_start')
+        post_low = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+                                         Q(post_date_start__lte=datetime.datetime.today())).order_by('-post_date_start')
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
         context['title'] = 'редактирование'
-        context['posts'] = post
+        context['post_high'] = post_high
+        context['post_low'] = post_low
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
         context['contract'] = Contract.objects.all().count()
@@ -213,8 +218,7 @@ class PostsListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
-        print(user_obj.user_work_profile.divisions.pk)
-        qs = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk)
+        qs = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by('pk').reverse()
         return qs
 
 
@@ -380,11 +384,7 @@ class StaffListView(LoginRequiredMixin, ListView):
         return qs
 
     def get(self, request, *args, **kwargs):
-
         change_session_get(request, self)
-
-
-
         count = 0
         count2 = 0
         count3 = DataBaseUser.objects.all().count() + 1

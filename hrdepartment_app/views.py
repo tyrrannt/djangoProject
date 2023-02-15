@@ -360,6 +360,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
         return qs
 
     def get(self, request, *args, **kwargs):
+        # Получаем выборку из базы данных, если был изменен один из параметров
         if self.request.GET:
             current_year = int(self.request.GET.get('CY'))
             current_month = int(self.request.GET.get('CM'))
@@ -463,5 +464,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
         content['table_set'] = dict_obj
         content['table_count'] = range(1, (date_end - date_start).days + 2)
         content['title'] = 'Отчет'
+        content['current_year'] = current_year
+        content['current_month'] = current_month
 
         return content

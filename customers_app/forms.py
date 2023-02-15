@@ -60,9 +60,12 @@ class DataBaseUserAddForm(UserChangeForm):
 
 
 class PostsAddForm(forms.ModelForm):
+    post_divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
+    post_divisions.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     class Meta:
         model = Posts
-        fields = ('post_description', 'post_divisions', 'allowed_placed')
+        fields = ('post_description', 'post_divisions', 'allowed_placed', 'responsible')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -72,9 +75,19 @@ class PostsAddForm(forms.ModelForm):
 
 
 class PostsUpdateForm(forms.ModelForm):
+    post_divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
+    post_divisions.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    post_date_start = forms.DateField(required=False)
+    post_date_start.widget.attrs.update(
+        {'class': 'form-control form-control-modern'})
+    post_date_end = forms.DateField(required=False)
+    post_date_end.widget.attrs.update(
+        {'class': 'form-control form-control-modern'})
+
     class Meta:
         model = Posts
-        fields = ('post_description', 'post_divisions', 'allowed_placed')
+        fields = ('post_description', 'post_divisions', 'allowed_placed', 'post_date_start', 'post_date_end')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
