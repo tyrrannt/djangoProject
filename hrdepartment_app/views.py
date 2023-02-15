@@ -4,13 +4,13 @@ import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
 
-from administration_app.utils import change_session_context, change_session_queryset, change_session_get
+from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, Division, Job
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
@@ -72,7 +72,8 @@ class OfficialMemoList(LoginRequiredMixin, ListView):
         change_session_queryset(self.request, self)
         if not self.request.user.is_superuser:
             user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
-            qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by('pk').reverse()
+            qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by(
+                'pk').reverse()
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -203,7 +204,8 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
         for item in business_process:
             if item.person_executor.filter(name__contains=self.request.user.user_work_profile.job.name):
                 person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
-                content['form'].fields['person_agreement'].queryset = users_list.filter(user_work_profile__job__pk__in=person_agreement_list )
+                content['form'].fields['person_agreement'].queryset = users_list.filter(
+                    user_work_profile__job__pk__in=person_agreement_list)
         content['form'].fields['person_distributor'].queryset = DataBaseUser.objects.filter(
             Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
             Q(is_superuser=False))
@@ -229,7 +231,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
         document = self.get_object()
         content['document'] = document.document
         # Получаем подразделение исполнителя
-        #division = document.person_executor.user_work_profile.divisions
+        # division = document.person_executor.user_work_profile.divisions
         # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
         content['form'].fields['person_executor'].queryset = users_list.filter(pk=document.person_executor.pk)
         # Если установлен признак согласования документа, то фильтруем поле согласующего лица
@@ -334,3 +336,132 @@ class BusinessProcessDirectionAdd(LoginRequiredMixin, CreateView):
 class BusinessProcessDirectionUpdate(LoginRequiredMixin, UpdateView):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionUpdateForm
+
+
+class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
+    model = ApprovalOficialMemoProcess
+    template_name = 'hrdepartment_app/reportapprovaloficialmemoprocess_list.html'
+
+    def post(self, request):  # ***** this method required! ******
+        self.object_list = self.get_queryset()
+        return HttpResponseRedirect(reverse('hrdepartment_app:bpmemo_report'))
+
+    def get_queryset(self):
+        qs = super(ReportApprovalOficialMemoProcessList, self).get_queryset()
+        # date_start = datetime.datetime.strptime('2023-02-01', '%Y-%m-%d')
+        # date_end = datetime.datetime.strptime('2023-02-28', '%Y-%m-%d')
+        # qs = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__pk=self.request.user.pk) &
+        #                                                (Q(document__period_from__lte=date_start) | Q(
+        #                                                    document__period_for__gte=date_start)) &
+        #                                                (Q(document__period_from__lte=date_end) | Q(
+        #                                                    document__period_for__gte=date_end))
+        #                                                ).order_by('document__period_from')
+
+        return qs
+
+    def get(self, request, *args, **kwargs):
+        if self.request.GET:
+            current_year = int(self.request.GET.get('CY'))
+            current_month = int(self.request.GET.get('CM'))
+            html_obj = ''
+            from calendar import monthrange
+            days = monthrange(current_year, current_month)[1]
+            date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
+            date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
+            qs = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__pk=self.request.user.pk) & (
+                    Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end)) & Q(
+                document__period_for__gte=date_start)).order_by('document__period_from')
+            dict_obj = dict()
+            for item in qs.all():
+                list_obj = []
+                person = FIO_format(str(item.document.person))
+                if person in dict_obj:
+                    list_obj = dict_obj[person]
+                    for days_count in range(0, (date_end - date_start).days + 1):
+                        curent_day = date_start + datetime.timedelta(days_count)
+                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                            list_obj[days_count] = '1'
+                    dict_obj[FIO_format(str(item.document.person))] = list_obj
+                else:
+                    dict_obj[FIO_format(str(item.document.person))] = []
+                    for days_count in range(0, (date_end - date_start).days + 1):
+                        curent_day = date_start + datetime.timedelta(days_count)
+                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                            list_obj.append('1')
+                        else:
+                            list_obj.append('0')
+                    dict_obj[FIO_format(str(item.document.person))] = list_obj
+
+                table_set = dict_obj
+                html_table_count = ''
+                table_count = range(1, (date_end - date_start).days + 2)
+                for item in table_count:
+                    html_table_count += f'<th width="2%"><span style="color: #0a53be">{item}</span></th>'
+                html_table_set = ''
+                for key, value in table_set.items():
+                    html_table_set += f'<tr><td width="14%"><strong>{key}</strong></td>'
+                    for unit in value:
+                        if unit == '1':
+                            html_table_set += '<td width="2%" style="background-color: #d2691e"></td>'
+                        else:
+                            html_table_set += '<td width="2%" style="background-color: #f5f5dc"></td>'
+                    html_table_set += '</tr>'
+
+                html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 750px;">
+                                <thead>
+                                <tr>
+                                    <th width="14%"><span style="color: #0a53be">ФИО</span></th>
+                                    {html_table_count}
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {html_table_set}
+                                </tbody>
+                            </table>'''
+
+            return JsonResponse(html_obj, safe=False)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        content = super().get_context_data(**kwargs)
+
+        if self.request.GET:
+            current_year = int(self.request.GET.get('CY'))
+            current_month = int(self.request.GET.get('CM'))
+            print(current_month, current_year)
+        else:
+            current_year = datetime.datetime.now().year
+            current_month = datetime.datetime.now().month
+        from calendar import monthrange
+        days = monthrange(current_year, current_month)[1]
+        date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
+        date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
+        qs = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__pk=self.request.user.pk) & (
+                    Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end)) & Q(
+            document__period_for__gte=date_start)).order_by('document__period_from')
+        dict_obj = dict()
+        for item in qs.all():
+            list_obj = []
+            person = FIO_format(str(item.document.person))
+            if person in dict_obj:
+                list_obj = dict_obj[person]
+                for days_count in range(0, (date_end - date_start).days + 1):
+                    curent_day = date_start + datetime.timedelta(days_count)
+                    if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                        list_obj[days_count] = '1'
+                dict_obj[FIO_format(str(item.document.person))] = list_obj
+            else:
+                dict_obj[FIO_format(str(item.document.person))] = []
+                for days_count in range(0, (date_end - date_start).days + 1):
+                    curent_day = date_start + datetime.timedelta(days_count)
+                    if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                        list_obj.append('1')
+                    else:
+                        list_obj.append('0')
+                dict_obj[FIO_format(str(item.document.person))] = list_obj
+
+        content['table_set'] = dict_obj
+        content['table_count'] = range(1, (date_end - date_start).days + 2)
+        content['title'] = 'Отчет'
+
+        return content

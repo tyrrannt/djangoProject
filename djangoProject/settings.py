@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import pathlib
 from pathlib import Path
+# Для работы с переменными которые хранятся в файле .env
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

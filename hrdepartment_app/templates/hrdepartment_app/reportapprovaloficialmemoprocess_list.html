@@ -1,0 +1,155 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="{% url 'hrdepartment_app:bpmemo_report' %}"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                            Обновить </a>
+                                    </div>
+                                    <div class="col-1">
+                                        <select class="form-control select-style-1 filter-by" name="filter_month"
+                                                    onchange="filter_date()" id="id_filter_month">
+                                        <option value="1" selected>Январь</option>
+                                        <option value="2">Февраль</option>
+                                        <option value="3">Март</option>
+                                        <option value="4">Апрель</option>
+                                        <option value="5">Май</option>
+                                        <option value="6">Июнь</option>
+                                        <option value="7">Июль</option>
+                                        <option value="8">Август</option>
+                                        <option value="9">Сентябрь</option>
+                                        <option value="10">Октябрь</option>
+                                        <option value="11">Ноябрь</option>
+                                        <option value="12">Декабрь</option>
+                                    </select>
+                                    </div>
+                                    <div class="col-1">
+                                        <select class="form-control select-style-1 filter-by" name="filter_year"
+                                                    onchange="filter_date()" id="id_filter_year">
+                                        <option value="2023" selected>2023</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2025">2025</option>
+                                        <option value="2026">2026</option>
+                                        <option value="2027">2027</option>
+                                        <option value="2028">2028</option>
+                                        <option value="2029">2029</option>
+                                        <option value="2030">2030</option>
+                                        <option value="2031">2031</option>
+                                        <option value="2032">2032</option>
+                                        <option value="2033">2033</option>
+                                        <option value="2034">2034</option>
+                                    </select>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div id="id_tables">
+                              <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
+                                   style="min-width: 750px;">
+
+                                <thead>
+                                <tr>
+                                    <th width="14%"><span style="color: #0a53be">ФИО</span></th>
+                                    {% for item in table_count %}
+                                        <th width="2%"><span style="color: #0a53be">{{ item }}</span></th>
+                                    {% endfor %}
+
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for key, value in table_set.items %}
+                                    <tr>
+                                        <td width="14%"><strong>{{ key }}</strong></td>
+                                        {% for unit in value %}
+                                            {% if unit == '1' %}
+                                                <td width="2%" style="background-color: #d2691e"></td>
+                                            {% else %}
+                                                <td width="2%" style="background-color: #f5f5dc"></td>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                            </div>
+
+
+                            <hr class="solid mt-5 opacity-4">
+
+                            <div class="datatable-footer">
+                                <div class="row align-items-center justify-content-between mt-3">
+                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-stretch">
+                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-auto text-center order-3 order-lg-2">
+                                        <div class="results-info-wrapper"></div>
+                                    </div>
+                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                        <div class="pagination-wrapper"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+    <script type="text/javascript">
+        function filter_date() {
+            current_year = $("#id_filter_year").val();
+            current_month = $("#id_filter_month").val();
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:bpmemo_report' %}',
+                data: {
+                    "CY": current_year,
+                    "CM": current_month,
+                },
+                dataType: "json",
+                success: function (data) {
+                    var ref = $('#id_tables').html('');
+                    var ref = $('#id_tables').html(data);
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+    </script>
+{% endblock %}
+
+{% block SpecificPageVendor %}
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{% endblock %}

@@ -1,18 +1,17 @@
 import datetime
+import os
 import pathlib
-import smtplib
 
-from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.template import Context
-from django.template.loader import render_to_string, get_template
+from django.template.loader import render_to_string
 from django.urls import reverse
 
 from administration_app.utils import Med, ending_day, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job
-from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_PASSWORD, MEDIA_URL
+from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 
 
 # Create your models here.
@@ -168,6 +167,7 @@ def create_xlsx(instance):
     filepath2 = pathlib.Path.joinpath(MEDIA_URL, 'wb-1.xlsx')
     ws.save(filepath2)
 
+
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
 def create_report(sender, instance, **kwargs):
     type_of = ['Служебная квартира', 'Гостиница']
@@ -190,10 +190,18 @@ def create_report(sender, instance, **kwargs):
             ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
             ws['C8'] = str(place).strip('[]')
             ws['C9'] = str(instance.document.purpose_trip)
-            ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(instance.person_agreement)
+            ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
+                instance.person_agreement)
 
             wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
             wb.close()
+            # Конвертируем xlsx в pdf
+            from msoffice2pdf import convert
+            source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
+            output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+            file_name = convert(source=source, output_dir=output_dir, soft=0)
+
+
             TO = instance.document.person.email
             TO_COPY = instance.person_executor.email
             SUBJECT = "Направление"
@@ -208,7 +216,7 @@ def create_report(sender, instance, **kwargs):
                     'order_date': instance.order_date,
                     'delta': ending_day(int(delta.days) + 1),
                     'period_from': instance.document.period_from,
-                    'period_for':  instance.document.period_for,
+                    'period_for': instance.document.period_for,
                     'accommodation': type_of[int(instance.accommodation)],
                     'person_executor': instance.person_executor,
                     'person_distributor': instance.person_distributor,
@@ -218,9 +226,9 @@ def create_report(sender, instance, **kwargs):
 
                 msg = EmailMultiAlternatives(SUBJECT, text_content, EMAIL_HOST_USER, [TO, TO_COPY, ])
                 msg.attach_alternative(html_content, "text/html")
-                msg.attach_file(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
-                res = msg.send()
-                print(res)
+                msg.attach_file(str(file_name))
+                # res = msg.send()
+                # print(res)
 
 
             except Exception as e:
