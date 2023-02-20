@@ -65,7 +65,7 @@
                                             <label class="col"
                                                    for="id_person_executor">Исполнитель</label>
                                             <div class="col">
-                                                <span>{{ form.person_executor | add_class:"form-control form-control-modern" | attr:"hidden"}}
+                                                <span>{{ form.person_executor | add_class:"form-control form-control-modern" | attr:"hidden" }}
                                                 <input type="text" disabled
                                                        class="form-control form-control-modern"
                                                        value="{{ object.person_executor }}"/>
@@ -243,13 +243,54 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_document">Служебная записка</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.document }}</span>
-                                        </div>
+                                    <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
+                                        <section class="toggle">
+                                            <label>Служебная записка: {{ object.document }}</label>
+                                            <input hidden value="{{ object.document.pk }}" id="id_document"
+                                                   name="document"/>
+                                            <div class="toggle-content">
+                                                <div class="form-row">
+                                                    <div class="row">
+                                                    <div class="col-sm-4"><label for="d1">Тип служебной поездки</label>
+                                                        <input class="form-control form-control-modern" id="d1"
+                                                               value="{{ object.document.get_official_memo_type_display }}"
+                                                               disabled/></div>
+
+                                                    <div class="col-sm-4"><label for="d1">Вид служебной поездки</label>
+                                                        <input class="form-control form-control-modern" id="d2"
+                                                               value="{{ object.document.get_type_trip_display }}"
+                                                               disabled/></div>
+
+                                                    <div class="col-sm-4"><label for="d1">Дата начала</label>
+                                                        <input class="form-control form-control-modern" id="d3"
+                                                               value="{{ object.document.period_from | date:'c' }}"
+                                                               disabled/></div>
+
+                                                    <div class="col-sm-4"><label for="d1">Дата окончания</label>
+                                                        <input class="form-control form-control-modern" id="d4"
+                                                               value="{{ object.document.period_for | date:'c' }}"
+                                                               disabled/></div>
+
+                                                    <div class="col-sm-4"><label for="d1">Сотрудник</label>
+                                                        <input class="form-control form-control-modern" id="d5"
+                                                               value="{{ object.document.person }}" disabled/></div>
+
+                                                    <div class="col-sm-4"><label for="d1">Цель</label>
+                                                        <input class="form-control form-control-modern" id="d6"
+                                                               value="{{ object.document.purpose_trip }}" disabled/>
+                                                    </div>
+
+                                                    <div class="col-sm-12"><label for="d1">Место назначения</label>
+                                                        <input class="form-control form-control-modern" id="d7"
+                                                               value="{% for item in object.document.place_production_activity.all %}{{ item }}, {% endfor %}"
+                                                               disabled/>
+                                                    </div>
+                                                        </div>
+                                                </div>
+                                            </div>
+                                        </section>
                                     </div>
+
 
                                 </div>
                             </div>

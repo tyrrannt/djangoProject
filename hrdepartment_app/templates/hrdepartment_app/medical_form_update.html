@@ -68,8 +68,14 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person">Сотрудник</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_person" class="form-control form-control-modern"
-                                                   name="person" value="{{ object.person }}"/>
+                                            <div class="input-group">
+                                                <input type="text" id="id_person"
+                                                       class="form-control form-control-modern"
+                                                       name="person" value="{{ object.person }}"/>
+                                                <span class="input-group-text"><a
+                                                        href="{% url 'customers_app:staff_update' object.person.pk %}"><i
+                                                        class="bx bx-user text-4"></i></a></span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">

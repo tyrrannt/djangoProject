@@ -1,5 +1,6 @@
 import datetime
 import json
+from calendar import monthrange
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
@@ -125,7 +126,33 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
             if filters.count() > 0:
                 html = filter_string + datetime.timedelta(days=1)
                 return JsonResponse(html, safe=False)
-
+        # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
+        interval = request.GET.get('interval', None)
+        if interval:
+            request_day = datetime.datetime.strptime(interval, '%Y-%m-%d').day
+            request_month = datetime.datetime.strptime(interval, '%Y-%m-%d').month
+            request_year = datetime.datetime.strptime(interval, '%Y-%m-%d').year
+            current_days = monthrange(request_year, request_month)[1]
+            if request_month < 12:
+                next_days = monthrange(request_year, request_month+1)[1]
+                next_month = request_month + 1
+                next_year = request_year
+            else:
+                next_days = monthrange(request_year + 1, 1)[1]
+                next_month = 1
+                next_year = request_year + 1
+            min_date = datetime.datetime.strptime(interval, '%Y-%m-%d')
+            if request_day == current_days:
+                if request_month == 11:
+                    max_date = datetime.datetime.strptime(f'{next_year+1}-{"01"}-{"01"}', '%Y-%m-%d')
+                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+                else:
+                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month+1}-{"01"}', '%Y-%m-%d')
+                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+            else:
+                max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
+                dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+            return JsonResponse(dict_obj, safe=False)
         return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
 
@@ -166,6 +193,61 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         return super().form_valid(form)
+
+    def get(self, request, *args, **kwargs):
+        global filter_string
+        html = list()
+        employee = request.GET.get('employee', None)
+        period_from = request.GET.get('period_from', None)
+        if employee and period_from:
+            check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
+            filters = OfficialMemo.objects.filter(
+                Q(person__pk=employee) & Q(period_for__gte=check_date))
+            try:
+                filter_string = datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
+                for item in filters:
+                    if item.period_for > filter_string:
+                        filter_string = item.period_for
+            except AttributeError:
+                print('За заданный период СП не найдены')
+            if filters.count() > 0:
+                html = filter_string + datetime.timedelta(days=1)
+                return JsonResponse(html, safe=False)
+        # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
+        interval = request.GET.get('interval', None)
+        period_for_value = request.GET.get('pfv', None)
+        if interval:
+            request_day = datetime.datetime.strptime(interval, '%Y-%m-%d').day
+            request_month = datetime.datetime.strptime(interval, '%Y-%m-%d').month
+            request_year = datetime.datetime.strptime(interval, '%Y-%m-%d').year
+            current_days = monthrange(request_year, request_month)[1]
+            print(interval)
+            if request_month < 12:
+                next_days = monthrange(request_year, request_month+1)[1]
+                next_month = request_month + 1
+                next_year = request_year
+            else:
+                next_days = monthrange(request_year + 1, 1)[1]
+                next_month = 1
+                next_year = request_year + 1
+            min_date = datetime.datetime.strptime(interval, '%Y-%m-%d')
+            if request_day == current_days:
+                if request_month == 11:
+                    max_date = datetime.datetime.strptime(f'{next_year+1}-{"01"}-{"01"}', '%Y-%m-%d')
+                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+                else:
+                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month+1}-{"01"}', '%Y-%m-%d')
+                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+            else:
+                max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
+                dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+            if datetime.datetime.strptime(period_for_value, '%Y-%m-%d') > max_date:
+                period_for_value = max_date
+                dict_obj['pfv'] = max_date
+            else:
+                dict_obj['pfv'] = period_for_value
+            return JsonResponse(dict_obj, safe=False)
+        return super(OfficialMemoUpdate, self).get(request, *args, **kwargs)
 
 
 class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
