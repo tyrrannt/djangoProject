@@ -59,12 +59,12 @@ class Medical(models.Model):
         ('2', 'Работающий')
     ]
 
-    type_of_inspection = [
+    types_of_inspection = [
         ('1', 'Медицинский осмотр'),
         ('2', 'Психиатрическое освидетельствование')
     ]
 
-    type_inspection = [
+    types_inspection = [
         ('1', 'Предварительный'),
         ('2', 'Периодический'),
         ('3', 'Внеплановый')
@@ -79,9 +79,9 @@ class Medical(models.Model):
                                      on_delete=models.SET_NULL, null=True)
     working_status = models.CharField(verbose_name='Статус', max_length=40, choices=type_of,
                                       help_text='', blank=True, default='')
-    type_of_inspection = models.CharField(verbose_name='Вид осмотра', max_length=40, choices=type_of_inspection,
+    type_of_inspection = models.CharField(verbose_name='Вид осмотра', max_length=40, choices=types_of_inspection,
                                       help_text='', blank=True, default='')
-    type_inspection = models.CharField(verbose_name='Тип осмотра', max_length=15, choices=type_inspection,
+    type_inspection = models.CharField(verbose_name='Тип осмотра', max_length=15, choices=types_inspection,
                                           help_text='', blank=True, default='')
     medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда')
