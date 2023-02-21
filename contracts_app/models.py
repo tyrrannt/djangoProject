@@ -176,8 +176,7 @@ class Posts(models.Model):
     creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
     responsible_person = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо',
-                                           on_delete=models.SET_NULL,
-                                           null=True)
+                                           on_delete=models.SET_NULL, null=True)
 
 
 @receiver(post_save, sender=Contract)

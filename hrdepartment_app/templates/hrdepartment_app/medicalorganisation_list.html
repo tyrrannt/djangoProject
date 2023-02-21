@@ -22,12 +22,12 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:medical_add' %}"
+                                            <a href="{% url 'hrdepartment_app:medicalorg_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить направление </a>
+                                                Добавить организацию </a>
                                         </div>
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:medical_list' %}?update=0"
+                                            <a href="{% url 'hrdepartment_app:medicalorg_list' %}?update=0"
                                                class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
                                                 Обновить список </a>
                                         </div>
@@ -40,39 +40,34 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="5%">Номер</th>
-                                    <th width="10%">Дата</th>
-                                    <th width="15%">Сотрудник</th>
-                                    <th width="30%">Медицинская организация</th>
-                                    <th width="10%">Статус</th>
-                                    <th width="15%">Вид</th>
-                                    <th width="15%">Тип</th>
+                                    <th width="3%">#</th>
+                                    <th width="45%">Наименование</th>
+                                    <th width="10%">ОГРН</th>
+                                    <th width="45%">Адрес</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {% for item in object_list %}
                                     <tr>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.number }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:medicalorg_update' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.date_entry | date:'c' }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:medicalorg_update' item.pk %}"><strong>{{ item.description }}</strong></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.person | FIO_format }}</strong></a>
+                                            <a href="{% url 'hrdepartment_app:medicalorg_update' item.pk %}"><strong>{{ item.ogrn }}</strong></a>
                                         </td>
                                         <td>
-                                            <strong>{{ item.organisation }}</strong>&nbsp;
+                                            <strong>{{ item.address|empty_item }}</strong>
                                         </td>
-                                        <td>
-                                            <strong>{{ item.get_working_status_display }}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.get_type_of_inspection_display }}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.get_type_inspection_display }}</strong>&nbsp;
-                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                     </tr>
                                 {% endfor %}
                                 </tbody>
@@ -105,6 +100,46 @@
         </div>
         <!-- end: page -->
     </section>
+    <script type="text/javascript">
+        function portal_paginator() {
+            paginator_by = document.getElementById("portal_paginator").value;
+            $.ajax({
+                type: "GET",
+                url: '/contracts/',
+                data: {
+                    "result": paginator_by,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    alert("success");
+                },
+                failure: function () {
+                    alert("failure");
+                }
+            });
+        };
+
+        function field_sorted() {
+            item_sorted = document.getElementById("field_sorted").value;
+            $.ajax({
+                type: "GET",
+                url: '/contracts/',
+                data: {
+                    "sort_item": item_sorted,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    alert("success");
+                },
+                failure: function () {
+                    alert("failure");
+                }
+            });
+
+        };
+    </script>
 {% endblock %}
 
 {% block SpecificPageVendor %}

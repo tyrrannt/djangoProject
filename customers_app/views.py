@@ -427,7 +427,7 @@ class StaffListView(LoginRequiredMixin, ListView):
             # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
             for item in todos['value']:
                 if item['Description'] != "" and item['ВАрхиве'] == False:
-                    ref_key, username, first_name = '', '', ''
+                    Ref_Key, username, first_name = '', '', ''
                     last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
                     todos2 = get_jsons_data_filter("Catalog", "ФизическиеЛица", "Ref_Key", item['ФизическоеЛицо_Key'],
                                                    0, 0)
@@ -451,7 +451,7 @@ class StaffListView(LoginRequiredMixin, ListView):
                                 address = item3['Представление']
                     divisions_kwargs = {
                         'ref_key': item['Ref_Key'],
-                        'person_ref_key': ref_key,
+                        'person_ref_key': Ref_Key,
                         'username': username,
                         'first_name': first_name,
                         'last_name': last_name,

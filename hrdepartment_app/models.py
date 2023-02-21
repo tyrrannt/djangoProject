@@ -31,6 +31,24 @@ class Purpose(models.Model):
         return self.title
 
 
+class MedicalOrganisation(models.Model):
+    class Meta:
+        verbose_name = 'Медицинская организация'
+        verbose_name_plural = 'Медицинскик организации'
+
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
+    description = models.CharField(verbose_name='Наименование', max_length=200, default='')
+    ogrn = models.CharField(verbose_name='ОГРН', max_length=13, default='')
+    address = models.CharField(verbose_name='Адрес', max_length=250, default='')
+    email = models.EmailField(verbose_name='Email', default='0')
+    phone = models.CharField(verbose_name='Телефон', max_length=15, default='0')
+
+    def __str__(self):
+        return self.description
+
+    def get_absolute_url(self):
+        return reverse('hrdepartment_app:medicalorg_list')
+
 class Medical(models.Model):
     class Meta:
         verbose_name = 'Медицинское направление'
@@ -41,16 +59,32 @@ class Medical(models.Model):
         ('2', 'Работающий')
     ]
 
+    type_of_inspection = [
+        ('1', 'Медицинский осмотр'),
+        ('2', 'Психиатрическое освидетельствование')
+    ]
+
+    type_inspection = [
+        ('1', 'Предварительный'),
+        ('2', 'Периодический'),
+        ('3', 'Внеплановый')
+    ]
+
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     number = models.CharField(verbose_name='Номер', max_length=4, default='')
     person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True, null=True)
-    organisation = models.ForeignKey(Counteragent, verbose_name='Медицинская организация',
+    date_of_inspection = models.DateField(verbose_name='Дата осмотра', auto_now_add=True, null=True)
+    organisation = models.ForeignKey(MedicalOrganisation, verbose_name='Медицинская организация',
                                      on_delete=models.SET_NULL, null=True)
     working_status = models.CharField(verbose_name='Статус', max_length=40, choices=type_of,
                                       help_text='', blank=True, default='')
+    type_of_inspection = models.CharField(verbose_name='Вид осмотра', max_length=40, choices=type_of_inspection,
+                                      help_text='', blank=True, default='')
+    type_inspection = models.CharField(verbose_name='Тип осмотра', max_length=15, choices=type_inspection,
+                                          help_text='', blank=True, default='')
     medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
-    harmful = models.ForeignKey(HarmfulWorkingConditions, verbose_name='Вредные условия труда',
-                                on_delete=models.SET_NULL, null=True)
+    harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда')
 
 
 @receiver(post_save, sender=Medical)

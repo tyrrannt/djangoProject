@@ -4,25 +4,125 @@ from calendar import monthrange
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse_lazy, reverse
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
 
-from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format
-from customers_app.models import DataBaseUser, Counteragent, Division, Job
+from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
+    get_jsons_data
+from customers_app.models import DataBaseUser, Counteragent, Division, Job, HarmfulWorkingConditions
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
-    BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm
-from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection
+    BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
+    MedicalOrganisationUpdateForm
+from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
+    MedicalOrganisation
 
 
 # Create your views here.
+class MedicalOrganisationList(LoginRequiredMixin, ListView):
+    model = MedicalOrganisation
+
+    def get(self, request, *args, **kwargs):
+        count = 0
+        if self.request.GET.get('update') == '0':
+            todos = get_jsons_data("Catalog", "МедицинскиеОрганизации", 0)
+            # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
+            for item in todos['value']:
+                if not item['DeletionMark']:
+                    divisions_kwargs = {
+                        'ref_key': item['Ref_Key'],
+                        'description': item['Description'],
+                        'ogrn': item['ОГРН'],
+                        'address': item['Адрес'],
+                    }
+                    if MedicalOrganisation.objects.filter(ref_key=item['Ref_Key']).count() != 1:
+                        db_instance = MedicalOrganisation(**divisions_kwargs)
+                        db_instance.save()
+                        count += 1
+            url_match = reverse_lazy('hrdepartment_app:medicalorg_list')
+            return redirect(url_match)
+        change_session_get(self.request, self)
+        return super(MedicalOrganisationList, self).get(request, *args, **kwargs)
+
+
+class MedicalOrganisationAdd(LoginRequiredMixin, CreateView):
+    model = MedicalOrganisation
+    form_class = MedicalOrganisationAddForm
+
+
+class MedicalOrganisationUpdate(LoginRequiredMixin, UpdateView):
+    model = MedicalOrganisation
+    form_class = MedicalOrganisationUpdateForm
+
 
 class MedicalExamination(LoginRequiredMixin, ListView):
     model = Medical
+    paginate_by = 10
+
+    def get_queryset(self):
+        qs = super().get_queryset().order_by('pk').reverse()
+        return qs
+
+    def get(self, request, *args, **kwargs):
+        count = 0
+        type_of = [
+            ('1', 'Поступающий на работу'),
+            ('2', 'Работающий')
+        ]
+
+        type_of_inspection = [
+            ('1', 'Медицинский осмотр'),
+            ('2', 'Психиатрическое освидетельствование')
+        ]
+
+        type_inspection = [
+            ('1', 'Предварительный'),
+            ('2', 'Периодический'),
+            ('3', 'Внеплановый')
+        ]
+        if self.request.GET.get('update') == '0':
+            todos = get_jsons_data("Document", "НаправлениеНаМедицинскийОсмотр", 0)
+            # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
+            for item in todos['value']:
+                if item['Posted']:
+                    db_user = DataBaseUser.objects.filter(person_ref_key=item['ФизическоеЛицо_Key'])
+                    db_med_org = item['МедицинскаяОрганизация_Key']
+                    if db_user.count() > 0 and db_med_org != '00000000-0000-0000-0000-000000000000':
+                        qs = list()
+                        for items in item['ВредныеФакторыИВидыРабот']:
+                            qs.append(HarmfulWorkingConditions.objects.get(ref_key=items['ВредныйФактор_Key']))
+                        divisions_kwargs = {
+                            'ref_key': item['Ref_Key'],
+                            'number': item['Number'],
+                            'person': DataBaseUser.objects.get(person_ref_key=item['ФизическоеЛицо_Key']),
+                            'date_entry': datetime.datetime.strptime(item['Date'][:10], "%Y-%m-%d"),
+                            'date_of_inspection': datetime.datetime.strptime(item['ДатаОсмотра'][:10], "%Y-%m-%d"),
+                            'organisation': MedicalOrganisation.objects.get(ref_key=item['МедицинскаяОрганизация_Key']),
+                            'working_status': 1 if next(
+                                x[0] for x in type_inspection if x[1] == item['ТипОсмотра']) == 1 else 2,
+                            'type_of_inspection': 1 if item['ВидОсмотра'] == 'МедицинскийОсмотр' else 2,
+                            'type_inspection': next(x[0] for x in type_inspection if x[1] == item['ТипОсмотра']),
+                            # 'harmful': qs,
+                        }
+                        if Medical.objects.filter(ref_key=item['Ref_Key']).count() != 1:
+                            db_instance = Medical.objects.create(**divisions_kwargs)
+                            db_instance.save()
+                            db_instance = Medical.objects.get(ref_key=item['Ref_Key'])
+                            print(qs)
+                            if len(qs) > 0:
+                                for units in qs:
+                                    db_instance.harmful.add(units)
+                            db_instance.save()
+                            count += 1
+
+            url_match = reverse_lazy('hrdepartment_app:medical_list')
+            return redirect(url_match)
+        change_session_get(self.request, self)
+        return super(MedicalExamination, self).get(request, *args, **kwargs)
 
 
 class MedicalExaminationAdd(LoginRequiredMixin, CreateView):
@@ -49,11 +149,6 @@ class MedicalExaminationUpdate(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         content = super(MedicalExaminationUpdate, self).get_context_data(**kwargs)
-        # content['all_person'] = DataBaseUser.objects.all()
-        # content['all_contragent'] = Counteragent.objects.all()
-        # content['all_status'] = Medical.type_of
-        content['all_harmful'] = DataBaseUser.objects.get(
-            pk=self.object.person.pk).user_work_profile.job.harmful.iterator()
         return content
 
     def get_success_url(self):
@@ -134,7 +229,7 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
             request_year = datetime.datetime.strptime(interval, '%Y-%m-%d').year
             current_days = monthrange(request_year, request_month)[1]
             if request_month < 12:
-                next_days = monthrange(request_year, request_month+1)[1]
+                next_days = monthrange(request_year, request_month + 1)[1]
                 next_month = request_month + 1
                 next_year = request_year
             else:
@@ -144,10 +239,10 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
             min_date = datetime.datetime.strptime(interval, '%Y-%m-%d')
             if request_day == current_days:
                 if request_month == 11:
-                    max_date = datetime.datetime.strptime(f'{next_year+1}-{"01"}-{"01"}', '%Y-%m-%d')
+                    max_date = datetime.datetime.strptime(f'{next_year + 1}-{"01"}-{"01"}', '%Y-%m-%d')
                     dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
                 else:
-                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month+1}-{"01"}', '%Y-%m-%d')
+                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month + 1}-{"01"}', '%Y-%m-%d')
                     dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
             else:
                 max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
@@ -223,7 +318,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
             current_days = monthrange(request_year, request_month)[1]
             print(interval)
             if request_month < 12:
-                next_days = monthrange(request_year, request_month+1)[1]
+                next_days = monthrange(request_year, request_month + 1)[1]
                 next_month = request_month + 1
                 next_year = request_year
             else:
@@ -233,10 +328,10 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
             min_date = datetime.datetime.strptime(interval, '%Y-%m-%d')
             if request_day == current_days:
                 if request_month == 11:
-                    max_date = datetime.datetime.strptime(f'{next_year+1}-{"01"}-{"01"}', '%Y-%m-%d')
+                    max_date = datetime.datetime.strptime(f'{next_year + 1}-{"01"}-{"01"}', '%Y-%m-%d')
                     dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
                 else:
-                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month+1}-{"01"}', '%Y-%m-%d')
+                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month + 1}-{"01"}', '%Y-%m-%d')
                     dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
             else:
                 max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
@@ -520,7 +615,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
         date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
         date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
         qs = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__pk=self.request.user.pk) & (
-                    Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end)) & Q(
+                Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end)) & Q(
             document__period_for__gte=date_start)).order_by('document__period_from')
         dict_obj = dict()
         for item in qs.all():

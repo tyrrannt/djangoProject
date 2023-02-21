@@ -3,7 +3,8 @@ import datetime
 from django import forms
 
 from customers_app.models import Division, DataBaseUser, Job
-from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, BusinessProcessDirection
+from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
+    BusinessProcessDirection, MedicalOrganisation
 
 
 def present_or_future_date(value):
@@ -11,6 +12,16 @@ def present_or_future_date(value):
         raise forms.ValidationError("Нельзя использовать прошедшую дату!")
     return value
 
+
+class MedicalOrganisationAddForm(forms.ModelForm):
+    class Meta:
+        model = MedicalOrganisation
+        fields = ('ref_key', 'description', 'ogrn', 'address', 'email', 'phone')
+
+class MedicalOrganisationUpdateForm(forms.ModelForm):
+    class Meta:
+        model = MedicalOrganisation
+        fields = ('ref_key', 'description', 'ogrn', 'address', 'email', 'phone')
 
 class MedicalExaminationAddForm(forms.ModelForm):
     class Meta:

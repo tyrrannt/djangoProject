@@ -178,6 +178,7 @@ class Division(Category):
 
     type_of_role = models.CharField(verbose_name="Роль подразделения", choices=type_of, null=True, blank=True, max_length=11)
     destination_point = models.BooleanField(verbose_name='Используется как место назначения', default=False)
+    address = models.CharField(verbose_name='Адрес', max_length=250, default='')
 
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)

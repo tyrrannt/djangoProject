@@ -66,30 +66,34 @@ def ChangeAccess(obj):
 
 def Med(obj_model, filepath, filename):
     doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
-    print(obj_model.person.user_work_profile.job.pk)
     if obj_model.person.gender == 'male':
         gender = 'муж.'
     else:
         gender = 'жен.'
     try:
+        harmful_name = list()
+        harmful_code = list()
+        for items in obj_model.harmful.iterator():
+            harmful_name.append(items.name)
+            harmful_code.append((items.code))
         context = {'gender': gender,
                    'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
                    'division': obj_model.person.user_work_profile.divisions,
                    'job': obj_model.person.user_work_profile.job,
                    'FIO': obj_model.person,
-                   'snils': obj_model.person.user_profile.snils,
-                   'oms': obj_model.person.user_profile.oms,
+                   # 'snils': obj_model.person.user_profile.snils,
+                   # 'oms': obj_model.person.user_profile.oms,
                    'status': obj_model.get_working_status_display(),
-                   'harmful_name': obj_model.harmful.name,
-                   'harmful_code': obj_model.harmful.code,
+                   'harmful_name': ", ".join(harmful_name),
+                   'harmful_code': ", ".join(harmful_code),
                    'organisation': obj_model.organisation,
                    'ogrn': obj_model.organisation.ogrn,
                    'email': obj_model.organisation.email,
                    'tel': obj_model.organisation.phone,
-                   'address': obj_model.organisation.juridical_address,
+                   'address': obj_model.organisation.address,
                    }
     except Exception as _ex:
-
+        print(_ex)
         context = {}
     doc.render(context)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
@@ -222,9 +226,9 @@ def change_session_queryset(request, self):
         if self.request.session['portal_paginator']:
             self.paginate_by = int(self.request.session['portal_paginator'])
         else:
-            self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+            self.paginate_by = PortalProperty.objects.all().first().portal_paginator
     except Exception as _ex:
-        self.paginate_by = PortalProperty.objects.get(pk=1).portal_paginator
+        self.paginate_by = PortalProperty.objects.all().first().portal_paginator
 
     try:
         if self.request.session['sort_item']:
