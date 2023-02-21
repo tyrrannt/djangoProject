@@ -83,14 +83,17 @@ class DataBaseUserProfile(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
-        post_high = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                    Q(post_date_start__gt=datetime.datetime.today())).order_by('-post_date_start')
-        post_low = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                         Q(post_date_start__lte=datetime.datetime.today())).order_by('-post_date_start')
         context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
+        try:
+            post_high = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+                                    Q(post_date_start__gt=datetime.datetime.today())).order_by('-post_date_start')
+            post_low = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+                                         Q(post_date_start__lte=datetime.datetime.today())).order_by('-post_date_start')
+            context['post_high'] = post_high
+            context['post_low'] = post_low
+        except Exception as _ex:
+            print(f'У пользователя отсутствует подразделение!!!: {_ex}')
         context['title'] = 'редактирование'
-        context['post_high'] = post_high
-        context['post_low'] = post_low
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
         context['contract'] = Contract.objects.all().count()
