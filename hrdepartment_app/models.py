@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 
 from administration_app.utils import Med, ending_day, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job
@@ -59,12 +60,12 @@ class Medical(models.Model):
         ('2', 'Работающий')
     ]
 
-    types_of_inspection = [
+    inspection_view = [
         ('1', 'Медицинский осмотр'),
         ('2', 'Психиатрическое освидетельствование')
     ]
 
-    types_inspection = [
+    inspection_type = [
         ('1', 'Предварительный'),
         ('2', 'Периодический'),
         ('3', 'Внеплановый')
@@ -79,9 +80,9 @@ class Medical(models.Model):
                                      on_delete=models.SET_NULL, null=True)
     working_status = models.CharField(verbose_name='Статус', max_length=40, choices=type_of,
                                       help_text='', blank=True, default='')
-    type_of_inspection = models.CharField(verbose_name='Вид осмотра', max_length=40, choices=types_of_inspection,
+    view_inspection = models.CharField(verbose_name='Вид осмотра', max_length=40, choices=inspection_view,
                                       help_text='', blank=True, default='')
-    type_inspection = models.CharField(verbose_name='Тип осмотра', max_length=15, choices=types_inspection,
+    type_inspection = models.CharField(verbose_name='Тип осмотра', max_length=15, choices=inspection_type,
                                           help_text='', blank=True, default='')
     medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда')
