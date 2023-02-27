@@ -27,7 +27,7 @@ class CustomUserAdmin(UserAdmin):
             'Профиль',
             {
                 'fields': (
-                    'surname', 'avatar', 'birthday', 'access_level', 'address', 'type_users',
+                    'surname', 'avatar', 'birthday', 'access_level', 'address', 'type_users', 'service_number',
                     'personal_phone', 'gender', 'user_work_profile', 'user_profile', 'ref_key', 'person_ref_key',
                 ),
             },

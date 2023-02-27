@@ -1,5 +1,5 @@
 import datetime
-
+from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse, QueryDict
@@ -8,9 +8,10 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import boolean_return, get_jsons_data, transliterate, get_jsons_data_filter, get_jsons, \
-    change_session_get, change_session_queryset, change_session_context
+from administration_app.utils import boolean_return, get_jsons_data, transliterate, get_jsons_data_filter, \
+    change_session_get, change_session_queryset, change_session_context, get_jsons
 from contracts_app.models import TypeDocuments, Contract
+from customers_app.customers_util import get_database_user_profile
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -24,11 +25,12 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 # Create your views here.
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip", serialize=True)
 
 def get_model_fields(model_object):
     return model_object._meta.fields
 
-
+@logger.catch
 def get_profile_fill(self, context):
     profile_info = 0
     user_object = self.get_object()
@@ -72,27 +74,33 @@ def index(request):
     return render(request, 'customers_app/customers.html', context={'types_count': types_count})
 
 
-class DataBaseUserProfile(LoginRequiredMixin, DetailView):
+class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
     context = {}
     model = DataBaseUser
     template_name = 'customers_app/user_profile.html'
 
     @method_decorator(user_passes_test(lambda u: u.is_active))
     def dispatch(self, request, *args, **kwargs):
-        return super(DataBaseUserProfile, self).dispatch(request, *args, **kwargs)
+        return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
-        context = super(DataBaseUserProfile, self).get_context_data(**kwargs)
+        context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
+        user_obj = self.get_object()#DataBaseUser.objects.get(pk=self.request.user.pk)
+        print(user_obj)
+
         try:
             post_high = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                    Q(post_date_start__gt=datetime.datetime.today())).order_by('-post_date_start')
+                                             Q(post_date_start__gt=datetime.datetime.today())).order_by(
+                '-post_date_start')
             post_low = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                         Q(post_date_start__lte=datetime.datetime.today())).order_by('-post_date_start')
+                                            Q(post_date_start__lte=datetime.datetime.today())).order_by(
+                '-post_date_start')
             context['post_high'] = post_high
             context['post_low'] = post_low
         except Exception as _ex:
-            print(f'У пользователя отсутствует подразделение!!!: {_ex}')
+            print(user_obj)
+            message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
+            logger.debug(message)
         context['title'] = 'редактирование'
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
@@ -109,11 +117,18 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
     form_class = DataBaseUserUpdateForm
 
     def get_context_data(self, **kwargs):
-        user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
-        post = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by('creation_date').reverse()
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
+        user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
+        try:
+            post = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by(
+            'creation_date').reverse()
+            context['posts'] = post
+        except Exception as _ex:
+            message = f'{user_obj}, Ошибка получения записей. У пользователя |{user_obj.username}| отсутствует подразделение!!!: {_ex}'
+            logger.error(message)
+
         context['title'] = 'Профиль пользователя'
-        context['posts'] = post
+
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
         context['contract'] = Contract.objects.all().count()
@@ -271,11 +286,8 @@ class CounteragentListView(LoginRequiredMixin, ListView):
                         'ogrn': item['РегистрационныйНомер'],
                         'base_counteragent': False,
                     }
-
-                    if Counteragent.objects.filter(ref_key=item['Ref_Key']).count() != 1:
-                        db_instance = Counteragent(**divisions_kwargs)
-                        db_instance.save()
-                        count += 1
+                    Counteragent.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**divisions_kwargs})
+                    count += 1
             url_match = reverse_lazy('customers_app:counteragent_list')
             return redirect(url_match)
         change_session_get(self.request, self)
@@ -415,14 +427,16 @@ class StaffListView(LoginRequiredMixin, ListView):
                                     division_code = items2['Подразделение_Key']
                                     job_code = items2['Должность_Key']
                     user_work_profile = {
+                        # 'ref_key': units.ref_key,
                         'date_of_employment': date_of_employment,
                         'job': Job.objects.get(ref_key=job_code) if job_code not in ["", '00000000-0000-0000-0000-000000000000'] else None,
                         'divisions': Division.objects.get(ref_key=division_code) if division_code not in ["", '00000000-0000-0000-0000-000000000000'] else None,
                     }
+
+                    DataBaseUserWorkProfile.objects.update_or_create(ref_key=units.ref_key, defaults=user_work_profile)
+
                     if not units.user_work_profile:
-                        obj_work_profile = DataBaseUserWorkProfile(**user_work_profile)
-                        obj_work_profile.save()
-                        units.user_work_profile = obj_work_profile
+                        units.user_work_profile = DataBaseUserWorkProfile.objects.get(ref_key=units.ref_key)
                         units.save()
 
         if self.request.GET.get('update') == '0':
@@ -431,6 +445,7 @@ class StaffListView(LoginRequiredMixin, ListView):
             for item in todos['value']:
                 if item['Description'] != "" and item['ВАрхиве'] == False:
                     Ref_Key, username, first_name = '', '', ''
+                    personal_kwargs = {}
                     last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
                     todos2 = get_jsons_data_filter("Catalog", "ФизическиеЛица", "Ref_Key", item['ФизическоеЛицо_Key'],
                                                    0, 0)
@@ -452,9 +467,17 @@ class StaffListView(LoginRequiredMixin, ListView):
                                 telephone = '+' + item3['НомерТелефона']
                             if item3['Тип'] == 'Адрес':
                                 address = item3['Представление']
+                        personal_kwargs = {
+                            #'ref_key': item2['Ref_Key'],
+                            'inn': item2['ИНН'],
+                            'snils': item2['СтраховойНомерПФР'],
+                            'oms': get_database_user_profile(item2['Ref_Key']),
+                        }
+
                     divisions_kwargs = {
-                        'ref_key': item['Ref_Key'],
+                        # 'ref_key': item['Ref_Key'],
                         'person_ref_key': Ref_Key,
+                        'service_number': item['Code'],
                         'username': username,
                         'first_name': first_name,
                         'last_name': last_name,
@@ -468,10 +491,22 @@ class StaffListView(LoginRequiredMixin, ListView):
                     }
                     count2 += 1
                     count3 += 1
-                    if DataBaseUser.objects.filter(ref_key=item['Ref_Key']).count() < 1:
-                        db_instance = DataBaseUser(**divisions_kwargs)
-                        db_instance.save()
-                        count += 1
+                    try:
+                        main_obj_item, main_created = DataBaseUser.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**divisions_kwargs})
+                    except Exception as _ex:
+                        logger.error(f'Сохранение пользователя: {username}, {last_name} {first_name} {_ex}')
+                    try:
+                        obj_item, created = UserProfile.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**personal_kwargs})
+                    except Exception as _ex:
+                        logger.error(f'Сохранение профиля пользователя: {_ex}')
+                    if not main_obj_item.user_profile:
+                        try:
+                            main_obj_item.user_profile = UserProfile.objects.get(ref_key=main_obj_item.ref_key)
+                            main_obj_item.save()
+                        except Exception as _ex:
+                            logger.error(f'Сохранения профиля пользователя в модели пользователя: {_ex}')
+
+
             # self.get_context_data(object_list=None, kwargs={'added': count})
             url_match = reverse_lazy('customers_app:staff_list')
             return redirect(url_match)
@@ -585,15 +620,23 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
                 obj_personal_profile.save()
                 obj_user.user_profile = obj_personal_profile
             else:
-                obj_personal_profile = UserProfile.objects.get(pk=obj_user.user_profile.pk)
-                obj_personal_profile_identity_documents = IdentityDocuments.objects.filter(
-                    pk=obj_personal_profile.passport.pk)
-                obj_personal_profile_identity_documents.update(**identity_documents_kwargs)
-                if content['citizenship'] == 'none':
-                    obj_personal_profile.citizenship = None
-                    obj_personal_profile.save()
-                obj_personal_profile = UserProfile.objects.filter(pk=obj_user.user_profile.pk)
-                obj_personal_profile.update(**personal_kwargs)
+                try:
+                    obj_personal_profile = UserProfile.objects.get(pk=obj_user.user_profile.pk)
+                    try:
+                        obj_personal_profile_identity_documents = IdentityDocuments.objects.filter(
+                            pk=obj_personal_profile.passport.pk)
+                        obj_personal_profile_identity_documents.update(**identity_documents_kwargs)
+                    except Exception as _ex:
+                        message = f'Ошибка сохранения профиля. У пользователя |{obj_user.username}| отсутствует данные паспорта!!!: {_ex}'
+                        logger.error(message)
+                    if content['citizenship'] == 'none':
+                        obj_personal_profile.citizenship = None
+                        obj_personal_profile.save()
+                    obj_personal_profile = UserProfile.objects.filter(pk=obj_user.user_profile.pk)
+                    obj_personal_profile.update(**personal_kwargs)
+                except Exception as _ex:
+                    message = f'Ошибка сохранения профиля. У пользователя |{obj_user.username}| отсутствует личный профиль!!!: {_ex}'
+                    logger.error(message)
             access_kwargs = {
                 'contracts_access_view': contracts_access_view,
                 'contracts_access_add': boolean_return(request, 'contracts_access_add'),
@@ -655,10 +698,10 @@ class DivisionsList(LoginRequiredMixin, ListView):
                         'okved': item['КодОКВЭД2'],
                         'active': False if item['Расформировано'] else True,
                     }
-                    if Division.objects.filter(ref_key=item['Ref_Key']).count() != 1:
-                        db_instance = Division(**divisions_kwargs)
-                        db_instance.save()
-                        count += 1
+                    Division.objects.update_or_create(ref_key=item['Ref_Key'], defaults=divisions_kwargs)
+                        # db_instance = Division(**divisions_kwargs)
+                        # db_instance.save()
+                        # count += 1
             all_divisions = Division.objects.filter(parent_category=None)
             for item in todos['value']:
                 if item['Description'] != "" and item['Parent_Key'] != "00000000-0000-0000-0000-000000000000":
@@ -740,9 +783,13 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
             if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
                 # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
                 # Иначе не меняем логику работы класса
+                message = f'Попытка получения доступа к изменению. Пользователь {self.request.user.username}, Подразделение {self.get_object()}'
+                logger.info(message)
                 url_match = reverse_lazy('customers_app:divisions_list')
                 return redirect(url_match)
         except Exception as _ex:
+            message = f'Ошибка получения прав доступа к изменению. Пользователь {self.request.user.username}, {_ex}'
+            logger.error(message)
             # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
             url_match = reverse_lazy('customers_app:divisions_list')
             return redirect(url_match)
@@ -816,10 +863,10 @@ class JobsList(LoginRequiredMixin, ListView):
                         'date_exclusions': datetime.datetime.strptime(item['ДатаИсключения'][:10], "%Y-%m-%d"),
                         'excluded_standard_spelling': item['ИсключенаИзШтатногоРасписания']
                     }
-                    if Job.objects.filter(ref_key=item['Ref_Key']).count() != 1:
-                        db_instance = Job(**jobs_kwargs)
-                        db_instance.save()
-                        count += 1
+                    Job.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**jobs_kwargs})
+                        # db_instance = Job(**jobs_kwargs)
+                        # db_instance.save()
+                        # count += 1
             for item in todos2['value']:
                 object_list = Job.objects.filter(employment_function=item['Ref_Key'])
                 for unit in object_list:

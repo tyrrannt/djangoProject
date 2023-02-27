@@ -1,5 +1,3 @@
-import datetime
-import os
 import pathlib
 
 from django.core.mail import EmailMultiAlternatives
@@ -8,11 +6,14 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
-from django.utils import timezone
+from loguru import logger
 
 from administration_app.utils import Med, ending_day, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
+
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
+           serialize=True)
 
 
 # Create your models here.
@@ -41,14 +42,16 @@ class MedicalOrganisation(models.Model):
     description = models.CharField(verbose_name='Наименование', max_length=200, default='')
     ogrn = models.CharField(verbose_name='ОГРН', max_length=13, default='')
     address = models.CharField(verbose_name='Адрес', max_length=250, default='')
-    email = models.EmailField(verbose_name='Email', default='0')
-    phone = models.CharField(verbose_name='Телефон', max_length=15, default='0')
+    email = models.EmailField(verbose_name='Email', default='')
+    phone = models.CharField(verbose_name='Телефон', max_length=15, default='')
 
     def __str__(self):
         return self.description
 
-    def get_absolute_url(self):
+    @staticmethod
+    def get_absolute_url():
         return reverse('hrdepartment_app:medicalorg_list')
+
 
 class Medical(models.Model):
     class Meta:
@@ -81,9 +84,9 @@ class Medical(models.Model):
     working_status = models.CharField(verbose_name='Статус', max_length=40, choices=type_of,
                                       help_text='', blank=True, default='')
     view_inspection = models.CharField(verbose_name='Вид осмотра', max_length=40, choices=inspection_view,
-                                      help_text='', blank=True, default='')
+                                       help_text='', blank=True, default='')
     type_inspection = models.CharField(verbose_name='Тип осмотра', max_length=15, choices=inspection_type,
-                                          help_text='', blank=True, default='')
+                                       help_text='', blank=True, default='')
     medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда')
 
@@ -95,7 +98,7 @@ def rename_file_name(sender, instance, **kwargs):
         uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
         user_uid = '0' * (7 - len(str(instance.person.pk))) + str(instance.person.pk)
         filename = f'MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}.docx'
-        Med(instance, f'media/hr/medical/{user_uid}', filename)
+        Med(instance, f'media/hr/medical/{user_uid}', filename, user_uid)
         if f'hr/medical/{user_uid}/{filename}' != instance.medical_direction:
             instance.medical_direction = f'hr/medical/{user_uid}/{filename}'
             instance.save()
@@ -216,6 +219,7 @@ def create_report(sender, instance, **kwargs):
             wb = load_workbook(filepath)
             ws = wb.active
             ws['C3'] = str(instance.document.person)
+            ws['M3'] = str(instance.document.person.service_number)
             ws['C4'] = str(instance.document.person.user_work_profile.job)
             ws['C5'] = str(instance.document.person.user_work_profile.divisions)
             ws['C6'] = 'Приказ № ' + str(instance.order_number)
@@ -235,7 +239,6 @@ def create_report(sender, instance, **kwargs):
             source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
             output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
             file_name = convert(source=source, output_dir=output_dir, soft=0)
-
 
             TO = instance.document.person.email
             TO_COPY = instance.person_executor.email
@@ -263,14 +266,12 @@ def create_report(sender, instance, **kwargs):
                 msg.attach_alternative(html_content, "text/html")
                 msg.attach_file(str(file_name))
                 # res = msg.send()
-                # print(res)
 
-
-            except Exception as e:
-                print("Failed to send the mail..", e)
+            except Exception as _ex:
+                logger.debug(f'Failed to send email. {_ex}')
 
     except Exception as _ex:
-        print(_ex)
+        logger.error(f'Ошибка при создании файла СП. {_ex}')
 
 
 class BusinessProcessDirection(models.Model):
@@ -290,5 +291,6 @@ class BusinessProcessDirection(models.Model):
     date_start = models.DateField(verbose_name='Дата начала', null=True, blank=True)
     date_end = models.DateField(verbose_name='Дата окончания', null=True, blank=True)
 
-    def get_absolute_url(self):
+    @staticmethod
+    def get_absolute_url():
         return reverse('hrdepartment_app:bptrip_list')

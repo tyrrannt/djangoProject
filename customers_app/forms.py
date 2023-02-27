@@ -121,13 +121,13 @@ class CounteragentAddForm(forms.ModelForm):
 class DivisionsAddForm(forms.ModelForm):
     class Meta:
         model = Division
-        fields = ('parent_category', 'name', 'description', 'history')
+        fields = ('parent_category', 'name', 'description', 'history', 'address', 'active', 'destination_point')
 
 
 class DivisionsUpdateForm(forms.ModelForm):
     class Meta:
         model = Division
-        fields = ('parent_category', 'name', 'description', 'active')
+        fields = ('parent_category', 'name', 'description', 'address', 'active', 'destination_point')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

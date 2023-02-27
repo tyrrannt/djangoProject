@@ -2,7 +2,7 @@ import datetime
 
 from django import forms
 
-from customers_app.models import Division, DataBaseUser, Job
+from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation
 
@@ -30,6 +30,9 @@ class MedicalExaminationAddForm(forms.ModelForm):
 
 
 class MedicalExaminationUpdateForm(forms.ModelForm):
+    harmful = forms.ModelMultipleChoiceField(HarmfulWorkingConditions.objects.all())
+    harmful.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     class Meta:
         model = Medical
         fields = ('number', 'harmful')

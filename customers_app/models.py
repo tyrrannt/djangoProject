@@ -178,7 +178,7 @@ class Division(Category):
 
     type_of_role = models.CharField(verbose_name="Роль подразделения", choices=type_of, null=True, blank=True, max_length=11)
     destination_point = models.BooleanField(verbose_name='Используется как место назначения', default=False)
-    address = models.CharField(verbose_name='Адрес', max_length=250, default='')
+    address = models.CharField(verbose_name='Адрес', max_length=250, default='', blank=True)
 
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)
@@ -216,6 +216,7 @@ class DataBaseUserProfile(models.Model):
         verbose_name = 'Профиль пользователя'
         verbose_name_plural = 'Профили пользователей'
 
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     citizenship = models.ForeignKey(Citizenships, verbose_name='Гражданство', blank=True, on_delete=models.SET_NULL,
                                     null=True)
     passport = models.OneToOneField(IdentityDocuments, verbose_name='Паспорт', blank=True, on_delete=models.SET_NULL,
@@ -230,6 +231,7 @@ class DataBaseUserWorkProfile(models.Model):
         verbose_name = 'Рабочий профиль пользователя'
         verbose_name_plural = 'Рабочие профили пользователей'
 
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     date_of_employment = models.DateField(verbose_name='Дата приема на работу', blank=True, null=True)
     internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
                                       default='', )
@@ -239,7 +241,7 @@ class DataBaseUserWorkProfile(models.Model):
                             blank=True)
     divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
                                   help_text='', blank=True)
-    work_email = models.EmailField(verbose_name='Рабочий email', default='')
+    work_email = models.EmailField(verbose_name='Рабочий email', default='', blank=True)
     work_email_password = models.CharField(verbose_name='Пароль от корпоративной почты', max_length=50, blank=True,
                                            default='')
 
@@ -260,6 +262,7 @@ class DataBaseUser(AbstractUser):
     ]
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
     person_ref_key = models.CharField(verbose_name='Уникальный номер физ лица', max_length=37, default='')
+    service_number = models.CharField(verbose_name='Табельный номер', max_length=10, default='', blank=True)
     surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, default='', help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')

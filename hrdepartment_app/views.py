@@ -10,6 +10,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy, reverse
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
+from loguru import logger
 
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
     get_jsons_data
@@ -21,6 +22,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation
 
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip", serialize=True)
 
 # Create your views here.
 class MedicalOrganisationList(LoginRequiredMixin, ListView):
@@ -39,10 +41,7 @@ class MedicalOrganisationList(LoginRequiredMixin, ListView):
                         'ogrn': item['ОГРН'],
                         'address': item['Адрес'],
                     }
-                    if MedicalOrganisation.objects.filter(ref_key=item['Ref_Key']).count() != 1:
-                        db_instance = MedicalOrganisation(**divisions_kwargs)
-                        db_instance.save()
-                        count += 1
+                    MedicalOrganisation.objects.update_or_create(ref_key=item['Ref_Key'], defaults=divisions_kwargs)
             url_match = reverse_lazy('hrdepartment_app:medicalorg_list')
             return redirect(url_match)
         change_session_get(self.request, self)
@@ -104,20 +103,17 @@ class MedicalExamination(LoginRequiredMixin, ListView):
                             'organisation': MedicalOrganisation.objects.get(ref_key=item['МедицинскаяОрганизация_Key']),
                             'working_status': 1 if next(
                                 x[0] for x in type_inspection if x[1] == item['ТипОсмотра']) == 1 else 2,
-                            'type_of_inspection': 1 if item['ВидОсмотра'] == 'МедицинскийОсмотр' else 2,
+                            'view_inspection': 1 if item['ВидОсмотра'] == 'МедицинскийОсмотр' else 2,
                             'type_inspection': next(x[0] for x in type_inspection if x[1] == item['ТипОсмотра']),
                             # 'harmful': qs,
                         }
-                        if Medical.objects.filter(ref_key=item['Ref_Key']).count() != 1:
-                            db_instance = Medical.objects.create(**divisions_kwargs)
-                            db_instance.save()
-                            db_instance = Medical.objects.get(ref_key=item['Ref_Key'])
-                            print(qs)
-                            if len(qs) > 0:
-                                for units in qs:
-                                    db_instance.harmful.add(units)
-                            db_instance.save()
-                            count += 1
+                        Medical.objects.update_or_create(ref_key=item['Ref_Key'], defaults=divisions_kwargs)
+                        db_instance = Medical.objects.get(ref_key=item['Ref_Key'])
+                        if len(qs) > 0:
+                            for units in qs:
+                                db_instance.harmful.add(units)
+                        db_instance.save()
+                        count += 1
 
             url_match = reverse_lazy('hrdepartment_app:medical_list')
             return redirect(url_match)
@@ -217,7 +213,7 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
                     if item.period_for > filter_string:
                         filter_string = item.period_for
             except AttributeError:
-                print('За заданный период СП не найдены')
+                logger.info(f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
             if filters.count() > 0:
                 html = filter_string + datetime.timedelta(days=1)
                 return JsonResponse(html, safe=False)
@@ -304,7 +300,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
                     if item.period_for > filter_string:
                         filter_string = item.period_for
             except AttributeError:
-                print('За заданный период СП не найдены')
+                logger.info(f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
             if filters.count() > 0:
                 html = filter_string + datetime.timedelta(days=1)
                 return JsonResponse(html, safe=False)
@@ -434,7 +430,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
         try:
             check = users_list.get(pk=document.person_distributor.pk)
         except Exception as _ex:
-            pass
+            print('345435345345435')
 
         return content
 
@@ -464,7 +460,6 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
             if data != '':
                 document.order_date = data
                 change_status = 1
-        print(data)
         if document.order_number != number:
             # Если добавлен или изменен номер приказа, сохраняем его в документ Служебной записки
             document.order_number = number

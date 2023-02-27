@@ -6,12 +6,15 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from docxtpl import DocxTemplate
 from docx2pdf import convert
+from loguru import logger
 
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division, UserAccessMode
 from djangoProject.settings import BASE_DIR
 
+
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip", serialize=True)
 
 class GetAllObject:
 
@@ -64,36 +67,43 @@ def ChangeAccess(obj):
     print(9)
 
 
-def Med(obj_model, filepath, filename):
+def Med(obj_model, filepath, filename, request):
     doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
     if obj_model.person.gender == 'male':
         gender = 'муж.'
     else:
         gender = 'жен.'
     try:
-        harmful_name = list()
-        harmful_code = list()
+        harmful = list()
         for items in obj_model.harmful.iterator():
-            harmful_name.append(items.name)
-            harmful_code.append((items.code))
+            harmful.append(f'{items.code}: {items.name}')
+        if obj_model.person.user_work_profile.divisions.address:
+            division = str(obj_model.person.user_work_profile.divisions)
+            div_address = f'Адрес обособленного подразделения места производственной деятельности {division[6:]} ' \
+                          f'(далее – {obj_model.person.user_work_profile.divisions}): ' \
+                          f'{obj_model.person.user_work_profile.divisions.address}.'
+        else:
+            div_address = ''
         context = {'gender': gender,
+                   'number': obj_model.number,
                    'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
                    'division': obj_model.person.user_work_profile.divisions,
                    'job': obj_model.person.user_work_profile.job,
                    'FIO': obj_model.person,
-                   # 'snils': obj_model.person.user_profile.snils,
-                   # 'oms': obj_model.person.user_profile.oms,
+                   'snils': obj_model.person.user_profile.snils,
+                   'oms': obj_model.person.user_profile.oms,
                    'status': obj_model.get_working_status_display(),
-                   'harmful_name': ", ".join(harmful_name),
-                   'harmful_code': ", ".join(harmful_code),
+                   'harmful': ", ".join(harmful),
                    'organisation': obj_model.organisation,
                    'ogrn': obj_model.organisation.ogrn,
                    'email': obj_model.organisation.email,
                    'tel': obj_model.organisation.phone,
                    'address': obj_model.organisation.address,
+                   'div_address': div_address,
                    }
     except Exception as _ex:
-        print(_ex)
+        DataBaseUser.objects.get(pk=request)
+        logger.debug(f'Ошибка заполнения файла {filename}: {DataBaseUser.objects.get(pk=request)} {_ex}')
         context = {}
     doc.render(context)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
@@ -121,9 +131,10 @@ def int_validate(check_string):
     try:
         return int(check_string)
     except ValueError:
-        # ToDo: Тут надо обработать запись в журнал ошибки при необходимости
+        logger.error(f'Ошибка перевода строки в число. {ValueError}')
         return 0
     except TypeError:
+        logger.error(f'Ошибка перевода строки в число. {TypeError}')
         return 0
 
 
@@ -144,7 +155,12 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
     url = f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/" \
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
     source_url = url
-    response = requests.get(source_url)
+    try:
+        response = requests.get(source_url)
+    except Exception as _ex:
+        logger.debug(f'{_ex}')
+        return {'value': ""}
+    logger.info(f'Успешное получение данных: {object_type} {object_name} {base_index}')
     return json.loads(response.text)
 
 
@@ -171,7 +187,12 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata" \
           f"&$filter={filter_obj}%20{logical_operation[logical]}%20guid'{filter_content}'"
     source_url = url
-    response = requests.get(source_url)
+    try:
+        response = requests.get(source_url)
+    except Exception as _ex:
+        logger.debug(f'{_ex}')
+        return {'value': ""}
+    logger.info(f'Успешное получение данных: {object_type} {object_name} {filter_obj} {filter_content} {logical} {base_index}')
     return json.loads(response.text)
 
 
@@ -207,10 +228,16 @@ def change_session_context(context, self):
     """
     try:
         context['portal_paginator'] = int(self.request.session['portal_paginator'])
+    except Exception as _ex:
+        message = f'Параметр пагинации в сессии отсутствует. {_ex}'
+        logger.info(message)
+        context['portal_paginator'] = self.paginate_by
+
+    try:
         context['sort_item'] = int(self.request.session['sort_item'])
     except Exception as _ex:
-        print('Error context')
-        context['portal_paginator'] = self.paginate_by
+        message = f'Параметр сортировки в сессии отсутствует. {_ex}'
+        logger.info(message)
         context['sort_item'] = 0
 
 
@@ -228,6 +255,8 @@ def change_session_queryset(request, self):
         else:
             self.paginate_by = PortalProperty.objects.all().first().portal_paginator
     except Exception as _ex:
+        message = f'Параметр пагинации в сессии отсутствует. {_ex}'
+        logger.info(message)
         self.paginate_by = PortalProperty.objects.all().first().portal_paginator
 
     try:
@@ -236,7 +265,8 @@ def change_session_queryset(request, self):
         else:
             self.item_sorted = 'pk'
     except Exception as _ex:
-        print('Error queryset sort')
+        message = f'Параметр сортировки в сессии отсутствует. {_ex}'
+        logger.info(message)
         self.item_sorted = 'pk'
 
 
@@ -245,9 +275,10 @@ def filter_context(request, self):
 
 
 def ending_day(value):
-    first_answer = [1, 21, 31, 41, ] # День
-    second_answer = [2, 3, 4, 22, 23, 24, 32, 33, 34, 42, 43, 44, ] # Дня
-    third_answer = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 26, 27, 28, 29, 30, 35, 36, 37, 38, 39, 40, 45, 46, 47, 48, 49, 50, ] # Дней
+    first_answer = [1, 21, 31, 41, ]  # День
+    second_answer = [2, 3, 4, 22, 23, 24, 32, 33, 34, 42, 43, 44, ]  # Дня
+    third_answer = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 26, 27, 28, 29, 30, 35, 36, 37, 38,
+                    39, 40, 45, 46, 47, 48, 49, 50, ]  # Дней
 
     if int(value) in first_answer:
         return f'{value} день'
@@ -262,4 +293,3 @@ def FIO_format(value):
     list_obj = string_obj.split(' ')
     result = f'{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}.'
     return result
-

@@ -42,7 +42,7 @@
                                             <label for="field_sorted" class="ws-nowrap me-3 mb-0">Сортировка:</label>
                                             <select class="form-control select-style-1 filter-by" name="filter-by"
                                                     onchange="field_sorted()" id="field_sorted">
-                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код
+                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>ТН
                                                 </option>
                                                 <option value="1" {% if sort_item == 1 %}selected{% endif %}>ФИО
                                                 </option>
@@ -99,7 +99,7 @@
                                     <th width="3%"><input type="checkbox" name="select-all"
                                                           class="select-all checkbox-style-1 p-relative top-2"
                                                           value=""/></th>
-                                    <th width="4%">Код</th>
+                                    <th width="4%">ТН</th>
                                     <th width="20%">ФИО</th>
                                     <th width="19%">Подразделение</th>
                                     <th width="20%">Должность</th>
@@ -116,7 +116,7 @@
                                         <td width="30"><input type="checkbox" name="checkboxRow1"
                                                               class="checkbox-style-1 p-relative top-2" value=""/></td>
                                         <td>
-                                            <a href="{% url 'customers_app:staff' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                            <a href="{% url 'customers_app:staff' item.pk %}"><strong>{{ item.service_number }}</strong></a>
                                         </td>
                                         <td>
                                             <a href="{% url 'customers_app:staff' item.pk %}"><strong>{{ item|empty_item }}</strong></a>

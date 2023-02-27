@@ -106,12 +106,7 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_harmful">Вредные условия труда</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="harmful"
-                                                    data-plugin-selectTwo id="id_harmful" >
-                                                {% for item in object.harmful.all %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.harmful }}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
