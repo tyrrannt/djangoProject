@@ -11,7 +11,7 @@ from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, transliterate, get_jsons_data_filter, \
     change_session_get, change_session_queryset, change_session_context, get_jsons
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.customers_util import get_database_user_profile, get_database_user_work_profile
+from customers_app.customers_util import get_database_user_profile, get_database_user_work_profile, get_database_user
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -400,81 +400,12 @@ class StaffListView(LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         change_session_get(request, self)
-        count = 0
-        count2 = 0
-        count3 = DataBaseUser.objects.all().count() + 1
+
         if self.request.GET.get('update') == '1':
             get_database_user_work_profile()
 
         if self.request.GET.get('update') == '0':
-            todos = get_jsons_data("Catalog", "Сотрудники", 0)
-            # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
-            for item in todos['value']:
-                if item['Description'] != "" and item['ВАрхиве'] == False:
-                    Ref_Key, username, first_name = '', '', ''
-                    personal_kwargs = {}
-                    last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
-                    todos2 = get_jsons_data_filter("Catalog", "ФизическиеЛица", "Ref_Key", item['ФизическоеЛицо_Key'],
-                                                   0, 0)
-                    for item2 in todos2['value']:
-                        Ref_Key = item2['Ref_Key']
-                        username = '0' * (4 - len(str(count3))) + str(count3) + '_' + transliterate(
-                            item2['Фамилия']).lower() + '_' + \
-                                   transliterate(item2['Имя']).lower()[:1] + \
-                                   transliterate(item2['Отчество']).lower()[:1]
-                        first_name = item2['Имя']
-                        last_name = item2['Фамилия']
-                        surname = item2['Отчество']
-                        gender = 'male' if item2['Пол'] == 'Мужской' else 'female'
-                        birthday = datetime.datetime.strptime(item2['ДатаРождения'][:10], "%Y-%m-%d")
-                        for item3 in item2['КонтактнаяИнформация']:
-                            if item3['Тип'] == 'АдресЭлектроннойПочты':
-                                email = item3['АдресЭП']
-                            if item3['Тип'] == 'Телефон':
-                                telephone = '+' + item3['НомерТелефона']
-                            if item3['Тип'] == 'Адрес':
-                                address = item3['Представление']
-                        personal_kwargs = {
-                            #'ref_key': item2['Ref_Key'],
-                            'inn': item2['ИНН'],
-                            'snils': item2['СтраховойНомерПФР'],
-                            'oms': get_database_user_profile(item2['Ref_Key']),
-                        }
-
-                    divisions_kwargs = {
-                        # 'ref_key': item['Ref_Key'],
-                        'person_ref_key': Ref_Key,
-                        'service_number': item['Code'],
-                        'username': username,
-                        'first_name': first_name,
-                        'last_name': last_name,
-                        'surname': surname,
-                        'birthday': birthday,
-                        'type_users': 'staff_member',
-                        'gender': gender,
-                        'email': email,
-                        'personal_phone': telephone[:12],
-                        'address': address,
-                    }
-                    count2 += 1
-                    count3 += 1
-                    try:
-                        main_obj_item, main_created = DataBaseUser.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**divisions_kwargs})
-                    except Exception as _ex:
-                        logger.error(f'Сохранение пользователя: {username}, {last_name} {first_name} {_ex}')
-                    try:
-                        obj_item, created = UserProfile.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**personal_kwargs})
-                    except Exception as _ex:
-                        logger.error(f'Сохранение профиля пользователя: {_ex}')
-                    if not main_obj_item.user_profile:
-                        try:
-                            main_obj_item.user_profile = UserProfile.objects.get(ref_key=main_obj_item.ref_key)
-                            main_obj_item.save()
-                        except Exception as _ex:
-                            logger.error(f'Сохранения профиля пользователя в модели пользователя: {_ex}')
-
-
-            # self.get_context_data(object_list=None, kwargs={'added': count})
+            get_database_user()
             url_match = reverse_lazy('customers_app:staff_list')
             return redirect(url_match)
 
