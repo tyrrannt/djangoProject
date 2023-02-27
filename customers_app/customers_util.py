@@ -98,7 +98,6 @@ def get_database_user():
                 for insurance_item in insurance_policy_item:
                     oms = insurance_item['НомерПолиса']
                 personal_kwargs = {
-                    # 'ref_key': item2['Ref_Key'],
                     'inn': item2['ИНН'],
                     'snils': item2['СтраховойНомерПФР'],
                     'oms': oms,

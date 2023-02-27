@@ -85,19 +85,21 @@ class MedicalExamination(LoginRequiredMixin, ListView):
         ]
         if self.request.GET.get('update') == '0':
             todos = get_jsons_data("Document", "НаправлениеНаМедицинскийОсмотр", 0)
+            db_users = DataBaseUser.objects.all()
+            harmfuls = HarmfulWorkingConditions.objects.all()
             # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
             for item in todos['value']:
                 if item['Posted']:
-                    db_user = DataBaseUser.objects.filter(person_ref_key=item['ФизическоеЛицо_Key'])
+                    db_user = db_users.filter(person_ref_key=item['ФизическоеЛицо_Key'])
                     db_med_org = item['МедицинскаяОрганизация_Key']
                     if db_user.count() > 0 and db_med_org != '00000000-0000-0000-0000-000000000000':
                         qs = list()
                         for items in item['ВредныеФакторыИВидыРабот']:
-                            qs.append(HarmfulWorkingConditions.objects.get(ref_key=items['ВредныйФактор_Key']))
+                            qs.append(harmfuls.get(ref_key=items['ВредныйФактор_Key']))
                         divisions_kwargs = {
                             'ref_key': item['Ref_Key'],
                             'number': item['Number'],
-                            'person': DataBaseUser.objects.get(person_ref_key=item['ФизическоеЛицо_Key']),
+                            'person': db_users.get(person_ref_key=item['ФизическоеЛицо_Key']),
                             'date_entry': datetime.datetime.strptime(item['Date'][:10], "%Y-%m-%d"),
                             'date_of_inspection': datetime.datetime.strptime(item['ДатаОсмотра'][:10], "%Y-%m-%d"),
                             'organisation': MedicalOrganisation.objects.get(ref_key=item['МедицинскаяОрганизация_Key']),
