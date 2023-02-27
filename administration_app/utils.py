@@ -2,15 +2,12 @@ import json
 import pathlib
 
 import requests
-from django.shortcuts import redirect
-from django.urls import reverse_lazy
 from docxtpl import DocxTemplate
-from docx2pdf import convert
 from loguru import logger
 
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
-from customers_app.models import DataBaseUser, Counteragent, Division, UserAccessMode
+from customers_app.models import DataBaseUser, Counteragent, Division
 from djangoProject.settings import BASE_DIR
 
 
@@ -68,6 +65,11 @@ def ChangeAccess(obj):
 
 
 def Med(obj_model, filepath, filename, request):
+    inspection_type = [
+        ('1', 'Предварительный'),
+        ('2', 'Периодический'),
+        ('3', 'Внеплановый')
+    ]
     doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
     if obj_model.person.gender == 'male':
         gender = 'муж.'
@@ -85,6 +87,7 @@ def Med(obj_model, filepath, filename, request):
         else:
             div_address = ''
         context = {'gender': gender,
+                   'title': next(x[1] for x in inspection_type if x[0] == obj_model.type_inspection).lower(),
                    'number': obj_model.number,
                    'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
                    'division': obj_model.person.user_work_profile.divisions,
