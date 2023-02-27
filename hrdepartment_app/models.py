@@ -75,7 +75,7 @@ class Medical(models.Model):
     ]
 
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
-    number = models.CharField(verbose_name='Номер', max_length=4, default='')
+    number = models.CharField(verbose_name='Номер', max_length=11, default='')
     person = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True)
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True, null=True)
     date_of_inspection = models.DateField(verbose_name='Дата осмотра', auto_now_add=True, null=True)
