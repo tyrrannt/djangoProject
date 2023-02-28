@@ -113,11 +113,27 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_type_of_role">Роль подразделения</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            {{ form.type_of_role }}
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_active">Действующее</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="checkbox"
                                                    name="active" id="id_active"
                                                     {% if object.active %} checked {% endif %}/>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_destination_point">Используется как место назначения</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <input type="checkbox"
+                                                   name="destination_point" id="id_destination_point"
+                                                    {% if object.destination_point %} checked {% endif %}/>
                                         </div>
                                     </div>
                                 </div>

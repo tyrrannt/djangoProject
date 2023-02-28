@@ -42,8 +42,8 @@ class MedicalOrganisation(models.Model):
     description = models.CharField(verbose_name='Наименование', max_length=200, default='')
     ogrn = models.CharField(verbose_name='ОГРН', max_length=13, default='')
     address = models.CharField(verbose_name='Адрес', max_length=250, default='')
-    email = models.EmailField(verbose_name='Email', default='')
-    phone = models.CharField(verbose_name='Телефон', max_length=15, default='')
+    email = models.CharField(verbose_name='Email', max_length=150, default='')
+    phone = models.CharField(verbose_name='Телефон', max_length=150, default='')
 
     def __str__(self):
         return self.description

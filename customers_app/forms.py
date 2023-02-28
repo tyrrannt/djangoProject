@@ -121,13 +121,17 @@ class CounteragentAddForm(forms.ModelForm):
 class DivisionsAddForm(forms.ModelForm):
     class Meta:
         model = Division
-        fields = ('parent_category', 'name', 'description', 'history', 'address', 'active', 'destination_point')
+        fields = ('parent_category', 'name', 'description', 'history', 'address', 'active', 'destination_point',
+                  'type_of_role')
 
 
 class DivisionsUpdateForm(forms.ModelForm):
+    type_of_role = forms.ChoiceField(choices=Division.type_of)
+    type_of_role.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     class Meta:
         model = Division
-        fields = ('parent_category', 'name', 'description', 'address', 'active', 'destination_point')
+        fields = ('parent_category', 'name', 'description', 'address', 'active', 'destination_point', 'type_of_role',
+                  )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
