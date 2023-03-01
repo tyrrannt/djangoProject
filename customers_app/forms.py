@@ -148,10 +148,12 @@ class JobsAddForm(forms.ModelForm):
 
 
 class JobsUpdateForm(forms.ModelForm):
-
+    type_of_job = forms.ChoiceField(choices=Job.job_type)
+    type_of_job.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     class Meta:
         model = Job
-        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval')
+        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval',
+                  'type_of_job')
 
 
 class StaffUpdateForm(forms.ModelForm):
