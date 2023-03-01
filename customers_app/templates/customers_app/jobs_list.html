@@ -97,9 +97,6 @@
                                     <th width="20%">Номер по ОК</th>
                                     <th width="50%">Наименование</th>
                                     <th width="20%">Условия труда</th>
-                                    {% if user.is_superuser %}
-                                    <th width="20%">Ref_Key</th>
-                                    {% endif %}
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -119,11 +116,6 @@
                                                 <strong>{{ parts }}</strong>&nbsp;
                                             {% endfor %}
                                         </td>
-                                        {% if user.is_superuser %}
-                                            <td>
-                                            <strong>{{ item.ref_key }}</strong>
-                                        </td>
-                                        {% endif %}
                                     </tr>
                                 {% endfor %}
                                 </tbody>

@@ -70,13 +70,13 @@ class MedicalExamination(LoginRequiredMixin, ListView):
         change_session_queryset(self.request, self)
         if self.item_sorted == 'date_entry':
             qs = super().get_queryset().order_by(self.item_sorted).reverse()
-            print('1')
         else:
             qs = super().get_queryset().order_by(self.item_sorted)
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['title'] = 'Список медицинских направлений'
         change_session_context(context, self)
         return context
 
