@@ -62,10 +62,23 @@ class MedicalOrganisationUpdate(LoginRequiredMixin, UpdateView):
 class MedicalExamination(LoginRequiredMixin, ListView):
     model = Medical
     paginate_by = 10
+    item_sorted = 'date_entry'
+    sorted_list = ['number', 'date_entry', 'person', 'person__user_work_profile__job__name', 'organisation',
+                   'type_inspection']
 
     def get_queryset(self):
-        qs = super().get_queryset().order_by('pk').reverse()
+        change_session_queryset(self.request, self)
+        if self.item_sorted == 'date_entry':
+            qs = super().get_queryset().order_by(self.item_sorted).reverse()
+            print('1')
+        else:
+            qs = super().get_queryset().order_by(self.item_sorted)
         return qs
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        change_session_context(context, self)
+        return context
 
     def get(self, request, *args, **kwargs):
 

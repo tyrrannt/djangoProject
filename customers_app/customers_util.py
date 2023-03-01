@@ -107,7 +107,6 @@ def get_database_user():
                 # 'ref_key': item['Ref_Key'],
                 'person_ref_key': Ref_Key,
                 'service_number': item['Code'],
-                'username': username,
                 'first_name': first_name,
                 'last_name': last_name,
                 'surname': surname,
@@ -122,6 +121,8 @@ def get_database_user():
             try:
                 main_obj_item, main_created = DataBaseUser.objects.update_or_create(ref_key=item['Ref_Key'],
                                                                                     defaults={**divisions_kwargs})
+                if main_created:
+                    main_obj_item.username = username
             except Exception as _ex:
                 logger.error(f'Сохранение пользователя: {username}, {last_name} {first_name} {_ex}')
             try:
