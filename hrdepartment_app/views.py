@@ -18,10 +18,10 @@ from customers_app.models import DataBaseUser, Counteragent, Division, Job, Harm
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
-    MedicalOrganisationUpdateForm
+    MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
-    MedicalOrganisation
+    MedicalOrganisation, Purpose
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip", serialize=True)
 
@@ -463,6 +463,20 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
+
+
+class PurposeList(LoginRequiredMixin, ListView):
+    model = Purpose
+
+
+class PurposeAdd(LoginRequiredMixin, CreateView):
+    model = Purpose
+    form_class = PurposeAddForm
+
+
+class PurposeUpdate(LoginRequiredMixin, UpdateView):
+    model = Purpose
+    form_class = PurposeUpdateForm
 
 
 class BusinessProcessDirectionList(LoginRequiredMixin, ListView):

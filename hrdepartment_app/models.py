@@ -32,6 +32,10 @@ class Purpose(models.Model):
     def __str__(self):
         return self.title
 
+    @staticmethod
+    def get_absolute_url():
+        return reverse('hrdepartment_app:purpose_list')
+
 
 class MedicalOrganisation(models.Model):
     class Meta:

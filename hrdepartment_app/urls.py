@@ -4,7 +4,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     OfficialMemoAdd, OfficialMemoUpdate, ApprovalOficialMemoProcessList, ApprovalOficialMemoProcessAdd, \
     ApprovalOficialMemoProcessUpdate, BusinessProcessDirectionList, BusinessProcessDirectionAdd, \
     BusinessProcessDirectionUpdate, ReportApprovalOficialMemoProcessList, MedicalOrganisationList, \
-    MedicalOrganisationAdd, MedicalOrganisationUpdate
+    MedicalOrganisationAdd, MedicalOrganisationUpdate, PurposeList, PurposeAdd, PurposeUpdate
 
 app_name = 'hrdepartment_app'
 
@@ -26,4 +26,7 @@ urlpatterns = [
     path('bptrip/', BusinessProcessDirectionList.as_view(), name='bptrip_list'),
     path('bptrip/add/', BusinessProcessDirectionAdd.as_view(), name='bptrip_add'),
     path('bptrip/<int:pk>/update/', BusinessProcessDirectionUpdate.as_view(), name='bptrip_update'),
+    path('purpose/', PurposeList.as_view(), name='purpose_list'),
+    path('purpose/add/', PurposeAdd.as_view(), name='purpose_add'),
+    path('purpose/<int:pk>/update/', PurposeUpdate.as_view(), name='purpose_update'),
 ]

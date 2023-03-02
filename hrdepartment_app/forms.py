@@ -209,3 +209,15 @@ class BusinessProcessDirectionUpdateForm(forms.ModelForm):
     class Meta:
         model = BusinessProcessDirection
         fields = '__all__'
+
+
+class PurposeAddForm(forms.ModelForm):
+    class Meta:
+        model = Purpose
+        fields = '__all__'
+
+
+class PurposeUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Purpose
+        fields = '__all__'
