@@ -271,6 +271,12 @@ class CounteragentListView(LoginRequiredMixin, ListView):
         return qs
 
     def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            counteragent_list = Counteragent.objects.all()
+            data = [counteragent_item.get_data() for counteragent_item in counteragent_list]
+            response = {'data': data}
+            return JsonResponse(response)
         count = 0
         if self.request.GET.get('update') == '0':
             todos = get_jsons_data("Catalog", "Контрагенты", 1)
@@ -408,6 +414,13 @@ class StaffListView(LoginRequiredMixin, ListView):
             get_database_user()
             url_match = reverse_lazy('customers_app:staff_list')
             return redirect(url_match)
+
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            baseusers = DataBaseUser.objects.all().exclude(is_superuser=True)
+            data = [baseuser.get_data() for baseuser in baseusers]
+            response = {'data': data}
+            return JsonResponse(response)
 
         return super(StaffListView, self).get(request, *args, **kwargs)
 
@@ -577,6 +590,12 @@ class DivisionsList(LoginRequiredMixin, ListView):
     template_name = 'customers_app/divisions_list.html'
 
     def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            divisions_list = Division.objects.filter(active=True)
+            data = [divisions_item.get_data() for divisions_item in divisions_list]
+            response = {'data': data}
+            return JsonResponse(response)
         count = 0
         if self.request.GET:
             todos = get_jsons_data("Catalog", "ПодразделенияОрганизаций", 0)
@@ -744,6 +763,12 @@ class JobsList(LoginRequiredMixin, ListView):
     sorted_list = ['pk', 'code', 'name', 'date_entry']
 
     def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            job_list = Job.objects.filter(excluded_standard_spelling=False)
+            data = [job_item.get_data() for job_item in job_list]
+            response = {'data': data}
+            return JsonResponse(response)
         count = 0
         change_session_get(request, self)
         if self.request.GET.get('update') == '0':

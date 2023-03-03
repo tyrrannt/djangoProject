@@ -40,37 +40,12 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="3%">#</th>
+
                                     <th width="45%">Наименование</th>
                                     <th width="10%">ОГРН</th>
                                     <th width="45%">Адрес</th>
                                 </tr>
                                 </thead>
-                                <tbody>
-                                {% for item in object_list %}
-                                    <tr>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:medicalorg_update' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:medicalorg_update' item.pk %}"><strong>{{ item.description }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:medicalorg_update' item.pk %}"><strong>{{ item.ogrn }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.address|empty_item }}</strong>
-                                        </td>
-                                    </tr>
-                                {% empty %}
-                                    <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
                             </table>
 
                             <hr class="solid mt-5 opacity-4">
@@ -90,8 +65,6 @@
                                     </div>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
 
@@ -100,49 +73,35 @@
         </div>
         <!-- end: page -->
     </section>
-    <script type="text/javascript">
-        function portal_paginator() {
-            paginator_by = document.getElementById("portal_paginator").value;
-            $.ajax({
-                type: "GET",
-                url: '/contracts/',
-                data: {
-                    "result": paginator_by,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-        };
 
-        function field_sorted() {
-            item_sorted = document.getElementById("field_sorted").value;
-            $.ajax({
-                type: "GET",
-                url: '/contracts/',
-                data: {
-                    "sort_item": item_sorted,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-
-        };
-    </script>
 {% endblock %}
 
-{% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{% block custome_script %}
+    <script>
+    $(document).ready(function(){
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'hrdepartment_app:medicalorg_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).css( 'cursor', 'pointer' );
+                    $(nRow).click(function(){
+                        window.location = $(this).attr('href');
+                    return false;
+                    });
+                },
+                "columns": [
+
+                    {"data": "description"},
+                    {"data": "ogrn"},
+                    {"data": "address"},
+                ],
+            });
+        });
+
+    </script>
 {% endblock %}

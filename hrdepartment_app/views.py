@@ -30,6 +30,12 @@ class MedicalOrganisationList(LoginRequiredMixin, ListView):
     model = MedicalOrganisation
 
     def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            medicals = MedicalOrganisation.objects.all()
+            data = [medical.get_data() for medical in medicals]
+            response = {'data': data}
+            return JsonResponse(response)
         count = 0
         if self.request.GET.get('update') == '0':
             todos = get_jsons_data("Catalog", "МедицинскиеОрганизации", 0)

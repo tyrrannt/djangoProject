@@ -59,6 +59,14 @@ class MedicalOrganisation(models.Model):
     def get_absolute_url():
         return reverse('hrdepartment_app:medicalorg_list')
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'description': self.description,
+            'ogrn': self.ogrn,
+            'address': self.address,
+        }
+
 
 class Medical(models.Model):
     class Meta:

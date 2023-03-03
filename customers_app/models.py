@@ -110,6 +110,17 @@ class Job(models.Model):
     def __str__(self):
         return f'{self.name}'
 
+    def get_title(self):
+        return f'{self.name}'
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'code': self.code,
+            'name': self.name,
+            'harmful': '', #if not self.parent_category else str(self.parent_category),
+        }
+
 
 class Category(models.Model):
     """Класс Category является родительским классом для таких классов как MainMenu,
@@ -190,6 +201,17 @@ class Division(Category):
 
     def __init__(self, *args, **kwargs):
         super(Division, self).__init__(*args, **kwargs)
+
+    def get_title(self):
+        return self.name
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'code': self.code,
+            'name': self.name,
+            'parent_category': '' if not self.parent_category else str(self.parent_category),
+        }
 
 
 class Citizenships(models.Model):
@@ -294,6 +316,18 @@ class DataBaseUser(AbstractUser):
     def get_title(self):
         return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'number': self.service_number,
+            'person': self.get_title(),
+            'division': str(self.user_work_profile.divisions),
+            'job': str(self.user_work_profile.job),
+            'phone': self.personal_phone,
+            'email': self.email,
+            'password': str(self.user_work_profile.work_email_password),
+        }
+
 
 def rename(file_name, path_name, instance, pfx):
     try:
@@ -366,6 +400,14 @@ class Counteragent(models.Model):
 
     def __str__(self):
         return f'{self.short_name}'
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'short_name': self.full_name,
+            'inn': self.inn,
+            'kpp': self.kpp,
+        }
 
 
 class Posts(models.Model):

@@ -31,57 +31,6 @@
                                                 Обновить список </a>
                                         </div>
                                     {% endif %}
-                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label class="ws-nowrap me-3 mb-0">Сортировка:</label>
-                                            <select class="form-control select-style-1 filter-by" name="filter-by"
-                                                    onchange="field_sorted()" id="field_sorted">
-
-                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Код
-                                                </option>
-                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>
-                                                    Контрагент
-                                                </option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>ИНН
-                                                </option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>КПП
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label class="ws-nowrap me-3 mb-0">Количество:</label>
-                                            <select class="form-control select-style-1 results-per-page"
-                                                    name="results-per-page" onchange="portal_paginator()"
-                                                    id="portal_paginator">
-                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6
-                                                </option>
-                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>
-                                                    12
-                                                </option>
-                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>
-                                                    24
-                                                </option>
-                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>
-                                                    48
-                                                </option>
-                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>
-                                                    96
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-lg-auto ps-lg-1">
-                                        <div class="mx-lg-auto">
-                                            <div class="input-group">
-                                                <a href="{% url 'customers_app:counteragent_list' %}"
-                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
-                                                    Применить настройки
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -90,35 +39,15 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="3%"><input type="checkbox" name="select-all"
-                                                          class="select-all checkbox-style-1 p-relative top-2"
-                                                          value=""/></th>
-                                    <th width="8%">Код</th>
                                     <th width="67%">Контрагент</th>
                                     <th width="12%">ИНН</th>
                                     <th width="12%">КПП</th>
                                 </tr>
                                 </thead>
-                                <tbody>
-                                {% for item in object_list %}
-                                    <tr>
-                                        <td width="30"><input type="checkbox" name="checkboxRow1"
-                                                              class="checkbox-style-1 p-relative top-2" value=""/></td>
-                                        <td>
-                                            <a href="{% url 'customers_app:counteragent' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'customers_app:counteragent' item.pk %}"><strong>{{ item.short_name }}</strong></a>
-                                        </td>
-                                        <td>{{ item.inn }}</td>
-                                        <td>{{ item.kpp }}</td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
                             </table>
 
                             <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
+
                             <div class="datatable-footer">
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
@@ -153,49 +82,34 @@
         </div>
         <!-- end: page -->
     </section>
-    <script type="text/javascript">
-        function portal_paginator() {
-            paginator_by = document.getElementById("portal_paginator").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'customers_app:counteragent_list' %}',
-                data: {
-                    "result": paginator_by,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-        };
 
-        function field_sorted() {
-            item_sorted = document.getElementById("field_sorted").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'customers_app:counteragent_list' %}',
-                data: {
-                    "sort_item": item_sorted,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-
-        };
-    </script>
 {% endblock %}
 
-{% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{% block custome_script %}
+    <script>
+    $(document).ready(function(){
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'customers_app:counteragent_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).css( 'cursor', 'pointer' );
+                    $(nRow).click(function(){
+                        window.location = $(this).attr('href');
+                    return false;
+                    });
+                },
+                "columns": [
+                    {"data": "short_name"},
+                    {"data": "inn"},
+                    {"data": "kpp"},
+                ],
+            });
+        });
+
+    </script>
 {% endblock %}
