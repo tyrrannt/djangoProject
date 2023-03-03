@@ -61,10 +61,10 @@ class MedicalOrganisationUpdate(LoginRequiredMixin, UpdateView):
 
 class MedicalExamination(LoginRequiredMixin, ListView):
     model = Medical
-    paginate_by = 10
-    item_sorted = 'date_entry'
-    sorted_list = ['number', 'date_entry', 'person', 'person__user_work_profile__job__name', 'organisation',
-                   'type_inspection']
+    # paginate_by = 10
+    # item_sorted = 'date_entry'
+    # sorted_list = ['number', 'date_entry', 'person', 'person__user_work_profile__job__name', 'organisation',
+    #                'type_inspection']
 
     def get_queryset(self):
         change_session_queryset(self.request, self)
@@ -81,13 +81,25 @@ class MedicalExamination(LoginRequiredMixin, ListView):
         return context
 
     def get(self, request, *args, **kwargs):
-
         if self.request.GET.get('update') == '0':
             get_medical_documents()
             url_match = reverse_lazy('hrdepartment_app:medical_list')
             return redirect(url_match)
         change_session_get(self.request, self)
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            medicals = Medical.objects.all()
+            data = [medical.get_data() for medical in medicals]
+            response = {'data': data}
+            return JsonResponse(response)
+
         return super(MedicalExamination, self).get(request, *args, **kwargs)
+
+    def ajax_get(self, request, *args, **kwargs):
+        medicals = Medical.objects.all()
+        data = [medical.get_data() for medical in medicals]
+        response = {'data': data}
+        return JsonResponse(response)
 
 
 class MedicalExaminationAdd(LoginRequiredMixin, CreateView):

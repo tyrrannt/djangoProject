@@ -27,8 +27,9 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/font-awesome/css/all.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/boxicons/css/boxicons.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/magnific-popup/magnific-popup.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
 
     <!-- Theme CSS -->
@@ -117,7 +118,17 @@
 
 
 <!-- Specific Page Vendor -->
-<script src="{% static 'admin_templates/vendor/autosize/autosize.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{#        <script src="{% static 'admin_templates/vendor/autosize/autosize.js' %}"></script>#}
+<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/dataTables.buttons.min.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.bootstrap4.min.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.html5.min.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.print.min.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/JSZip-2.5.0/jszip.min.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/pdfmake-0.1.32/pdfmake.min.js' %}"></script>
+<script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/pdfmake-0.1.32/vfs_fonts.js' %}"></script>
 
 {% block custome_script %}
 {% endblock %}

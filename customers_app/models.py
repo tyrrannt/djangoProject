@@ -291,6 +291,9 @@ class DataBaseUser(AbstractUser):
     def __str__(self):
         return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
 
+    def get_title(self):
+        return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
+
 
 def rename(file_name, path_name, instance, pfx):
     try:

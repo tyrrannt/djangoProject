@@ -52,6 +52,9 @@ class MedicalOrganisation(models.Model):
     def __str__(self):
         return self.description
 
+    def get_title(self):
+        return self.description
+
     @staticmethod
     def get_absolute_url():
         return reverse('hrdepartment_app:medicalorg_list')
@@ -93,6 +96,18 @@ class Medical(models.Model):
                                        help_text='', blank=True, default='')
     medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда')
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'number': self.number,
+            'date_entry': self.date_entry,
+            'person': self.person.get_title(),
+            'organisation': self.organisation.get_title(),
+            'working_status': self.get_working_status_display(),
+            'view_inspection': self.get_view_inspection_display(),
+            'type_inspection': self.get_type_inspection_display(),
+        }
 
 
 @receiver(post_save, sender=Medical)

@@ -14,7 +14,6 @@
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
@@ -32,62 +31,13 @@
                                                 Обновить список </a>
                                         </div>
                                     {% endif %}
-                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label for="field_sorted" class="ws-nowrap me-3 mb-0">Сортировка:</label>
-                                            <select class="form-control select-style-1 filter-by" name="filter-by"
-                                                    onchange="field_sorted()" id="field_sorted">
-                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>Номер</option>
-                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>Дата</option>
-                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>Сотрудник</option>
-                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Должность</option>
-                                                <option value="4" {% if sort_item == 4 %}selected{% endif %}>Медицинская организация</option>
-                                                <option value="5" {% if sort_item == 5 %}selected{% endif %}>Тип</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label for="portal_paginator"
-                                                   class="ws-nowrap me-3 mb-0">Количество:</label>
-                                            <select class="form-control select-style-1 results-per-page"
-                                                    name="results-per-page" onchange="portal_paginator()"
-                                                    id="portal_paginator">
-                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6
-                                                </option>
-                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>
-                                                    12
-                                                </option>
-                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>
-                                                    24
-                                                </option>
-                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>
-                                                    48
-                                                </option>
-                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>
-                                                    96
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-lg-auto ps-lg-1">
-                                        <div class="mx-lg-auto">
-                                            <div class="input-group">
-                                                <a href="{% url 'hrdepartment_app:medical_list' %}"
-                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
-                                                    Применить настройки
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-
+                            <table class="table table-striped mb-0" id="datatable-tabletools" style="min-width: 750px;">
                                 <thead>
                                 <tr>
+                                    <th width="5%">Код</th>
                                     <th width="5%">Номер</th>
                                     <th width="10%">Дата</th>
                                     <th width="15%">Сотрудник</th>
@@ -97,37 +47,8 @@
                                     <th width="15%">Тип</th>
                                 </tr>
                                 </thead>
-                                <tbody>
-                                {% for item in object_list %}
-                                    <tr>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.number }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.date_entry | date:'c' }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:medical_update' item.pk %}"><strong>{{ item.person | FIO_format }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.organisation }}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.get_working_status_display }}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.get_type_of_inspection_display }}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.get_type_inspection_display }}</strong>&nbsp;
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
                             </table>
-
                             <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
                             <div class="datatable-footer">
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
@@ -145,55 +66,58 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
         <!-- end: page -->
     </section>
-    <script type="text/javascript">
-        function portal_paginator() {
-            paginator_by = document.getElementById("portal_paginator").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'hrdepartment_app:medical_list' %}',
-                data: {
-                    "result": paginator_by,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-        };
 
-        function field_sorted() {
-            item_sorted = document.getElementById("field_sorted").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'hrdepartment_app:medical_list' %}',
-                data: {
-                    "sort_item": item_sorted,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-
-        };
-    </script>
 {% endblock %}
 
 {% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+    $(document).ready(function(){
+            var table = $('#datatable-tabletools').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'hrdepartment_app:medical_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                {#"fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {#}
+                {#    var slug = $(nRow).data("slug");#}
+                {#    var id = table.fnGetData(position)[0]#}
+                {#    $(nRow).attr("href", $(nRow).data("pk") + '/update/');#}
+                {#    $(nRow).css( 'cursor', 'pointer' );#}
+                {#    $(nRow).click(function(){#}
+                {#        window.location = $(this).attr('href');#}
+                {#    return false;#}
+                {#    });#}
+                {#},#}
+                "columns": [
+                    {"data": "pk"},
+                    {"data": "number"},
+                    {"data": "date_entry"},
+                    {"data": "person"},
+                    {"data": "organisation"},
+                    {"data": "working_status"},
+                    {"data": "view_inspection"},
+                    {"data": "type_inspection"},
+                ],
+                columnDefs: [{
+                    targets: 0,
+                    render: function ( data, type, row, meta ) {
+                    if(type === 'display'){
+                        data = '<a href="' + encodeURIComponent(data) + '/update/">' + data + '</a>';
+                        }
+                    return data;
+                    }
+                }],
+            });
+        });
+
+    </script>
 {% endblock %}
