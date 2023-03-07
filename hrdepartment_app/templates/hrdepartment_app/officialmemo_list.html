@@ -34,40 +34,6 @@
                                                 Запустить процесс </a>
                                         </div>
                                     {% endif %}
-                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">
-                                            <label for="portal_paginator"
-                                                   class="ws-nowrap me-3 mb-0">Количество:</label>
-                                            <select class="form-control select-style-1 results-per-page"
-                                                    name="results-per-page" onchange="portal_paginator()"
-                                                    id="portal_paginator">
-                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6
-                                                </option>
-                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>
-                                                    12
-                                                </option>
-                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>
-                                                    24
-                                                </option>
-                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>
-                                                    48
-                                                </option>
-                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>
-                                                    96
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-lg-auto ps-lg-1">
-                                        <div class="mx-lg-auto">
-                                            <div class="input-group">
-                                                <a href="{% url 'hrdepartment_app:memo_list' %}"
-                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
-                                                    Применить настройки
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -83,52 +49,14 @@
                                     <th width="15%">Цель</th>
                                     <th width="10%">Период</th>
                                     <th width="8%">Проживание</th>
-
                                     <th width="10%">Приказ</th>
                                     <th width="18%">Примечание</th>
                                 </tr>
                                 </thead>
-                                <tbody>
-                                {% for item in object_list %}
 
-                                    <tr style="color: {% if item.document_accepted %} green  {% else %} {% if item.comments %} blue {% else %} {% if item.order_number %} black {% else %} red {% endif %} {% endif %} {% endif %}">
-                                        <td>
-                                            <strong>{% if item.type_trip == '1' %}{% if item.official_memo_type == '1' %}СП{% else %}СП+{% endif %}{% elif item.type_trip == '2' %}{% if item.official_memo_type == '1' %}К{% else %}К+{% endif %}{% endif %}</strong>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span>{{ item.person }}</span></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:memo_update' item.pk %}"><span
-                                                    title="{{ item.person.user_work_profile.job }}">{{ item.person.user_work_profile.job | truncatewords:2 }}</span></a>
-                                        </td>
-                                        <td>
-                                            <span>{% for items in item.place_production_activity.all %}
-                                                {{ items }} {% endfor %}</span>&nbsp;
-                                        </td>
-                                        <td>
-                                            <span>{{ item.purpose_trip }}</span>
-                                        </td>
-                                        <td>
-                                            <span>С: {{ item.period_from | date:'d-m-Y' }}<br>По: {{ item.period_for | date:'d-m-Y' }}</span>&nbsp;
-                                        </td>
-                                        <td>
-                                            <span>{{ item.get_accommodation_display }}</span>&nbsp;
-                                        </td>
-                                        <td>
-                                            <span>№: {{ item.order_number }} <br> от: {{ item.order_date | date:'d-m-Y' }}</span>&nbsp;
-                                        </td>
-                                        <td>
-                                            <span>{{ item.comments }}</span>&nbsp;
-                                        </td>
-                                    </tr>
-
-
-                                {% endfor %}
-                                </tbody>
                             </table>
                             <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
+
                             <div class="datatable-footer">
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
@@ -154,29 +82,39 @@
         </div>
         <!-- end: page -->
     </section>
-    <script type="text/javascript">
-        function portal_paginator() {
-            paginator_by = document.getElementById("portal_paginator").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'hrdepartment_app:memo_list' %}',
-                data: {
-                    "result": paginator_by,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    alert("success");
-                },
-                failure: function () {
-                    alert("failure");
-                }
-            });
-        };
-    </script>
 {% endblock %}
 
-{% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'hrdepartment_app:memo_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "type_trip"},
+                    {"data": "person"},
+                    {"data": "job"},
+                    {"data": "place_production_activity"},
+                    {"data": "purpose_trip"},
+                    {"data": "period_from"},
+                    {"data": "accommodation"},
+                    {"data": "order"},
+                    {"data": "comments"},
+                ],
+            });
+        });
+
+    </script>
 {% endblock %}

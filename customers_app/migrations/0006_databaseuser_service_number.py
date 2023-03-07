@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0005_remove_databaseuserworkprofile_service_number'),
     ]

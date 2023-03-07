@@ -83,9 +83,9 @@
                                                for="id_organisation">Медицинская организация</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <div class="input-group">
-                                            <input type="text" id="id_organisation"
-                                                   class="form-control form-control-modern"
-                                                   name="organisation" value="{{ object.organisation }}"/>
+                                                <input type="text" id="id_organisation"
+                                                       class="form-control form-control-modern"
+                                                       name="organisation" value="{{ object.organisation }}"/>
                                                 <span class="input-group-text"><a
                                                         href="{% url 'hrdepartment_app:medicalorg_update' object.organisation.pk %}"><i
                                                         class="bx bxl-medium-old text-4"></i></a></span>
@@ -113,7 +113,9 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_medical_direction">Файл направления</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <a href="{% if object.medical_direction %}{{ object.medical_direction.url }}{% else %}#{% endif %}" target="_blank">Открыть
+                                            <a href="
+                                                    {% if object.medical_direction %}{{ object.medical_direction.url }}{% else %}#{% endif %}"
+                                               target="_blank">Открыть
                                                 документ</a>
                                         </div>
                                     </div>

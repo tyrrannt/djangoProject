@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0010_alter_division_type_of_role'),
     ]
@@ -13,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='job',
             name='type_of_job',
-            field=models.CharField(blank=True, choices=[('0', 'Общий состав'), ('1', 'Летный состав'), ('2', 'Инженерный состав')], max_length=17, null=True, verbose_name='Принадлежность'),
+            field=models.CharField(blank=True,
+                                   choices=[('0', 'Общий состав'), ('1', 'Летный состав'), ('2', 'Инженерный состав')],
+                                   max_length=17, null=True, verbose_name='Принадлежность'),
         ),
     ]

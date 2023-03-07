@@ -25,10 +25,13 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 # Create your views here.
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip", serialize=True)
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
+           serialize=True)
+
 
 def get_model_fields(model_object):
     return model_object._meta.fields
+
 
 @logger.catch
 def get_profile_fill(self, context):
@@ -85,7 +88,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
-        user_obj = self.get_object()#DataBaseUser.objects.get(pk=self.request.user.pk)
+        user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
         print(user_obj)
 
         try:
@@ -121,7 +124,7 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
         user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
         try:
             post = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by(
-            'creation_date').reverse()
+                'creation_date').reverse()
             context['posts'] = post
         except Exception as _ex:
             message = f'{user_obj}, Ошибка получения записей. У пользователя |{user_obj.username}| отсутствует подразделение!!!: {_ex}'
@@ -616,9 +619,9 @@ class DivisionsList(LoginRequiredMixin, ListView):
                         'active': False if item['Расформировано'] else True,
                     }
                     Division.objects.update_or_create(ref_key=item['Ref_Key'], defaults=divisions_kwargs)
-                        # db_instance = Division(**divisions_kwargs)
-                        # db_instance.save()
-                        # count += 1
+                    # db_instance = Division(**divisions_kwargs)
+                    # db_instance.save()
+                    # count += 1
             all_divisions = Division.objects.filter(parent_category=None)
             for item in todos['value']:
                 if item['Description'] != "" and item['Parent_Key'] != "00000000-0000-0000-0000-000000000000":
@@ -787,9 +790,9 @@ class JobsList(LoginRequiredMixin, ListView):
                         'excluded_standard_spelling': item['ИсключенаИзШтатногоРасписания']
                     }
                     Job.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**jobs_kwargs})
-                        # db_instance = Job(**jobs_kwargs)
-                        # db_instance.save()
-                        # count += 1
+                    # db_instance = Job(**jobs_kwargs)
+                    # db_instance.save()
+                    # count += 1
             for item in todos2['value']:
                 object_list = Job.objects.filter(employment_function=item['Ref_Key'])
                 for unit in object_list:

@@ -1,11 +1,12 @@
 from django.db.models import Q
-
 from administration_app.models import make_menu
 from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocuments
 from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel
+from hrdepartment_app.models import ApprovalOficialMemoProcess, BusinessProcessDirection
 from library_app.models import DocumentsJobDescription
 
-#ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
+
+# ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
 
 def get_all_contracts(request):
     make_menu()
@@ -25,7 +26,7 @@ def get_all_contracts(request):
             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False),
                                                               Q(access__level__gte=request.user.access_level.contracts_access_view))
             documents_not_published = DocumentsJobDescription.objects.filter(Q(allowed_placed=False),
-                                                               Q(access__level__gte=request.user.access_level.documents_access_view))
+                                                                             Q(access__level__gte=request.user.access_level.documents_access_view))
         except Exception as _ex:
             contracts_not_published = Contract.objects.filter(allowed_placed=False)
             documents_not_published = DocumentsJobDescription.objects.filter(allowed_placed=False)
@@ -49,3 +50,27 @@ def get_all_contracts(request):
             'documents_not_published': documents_not_published,
             'documents_not_published_count': documents_not_published_count,
             'posts_not_published_count': posts_not_published_count, 'type_of_document': all_type_of_document, }
+
+
+def get_approval_oficial_memo_process(request):
+    if not request.user.is_anonymous:
+        try:
+            business_process_direction_list = BusinessProcessDirection.objects.filter(
+                person_agreement=request.user.user_work_profile.job)
+            person_executor_job_list = list()
+            for item in business_process_direction_list:
+                person_executor_job_list = [items[0] for items in item.person_executor.values_list()]
+            person_executor_list = [item for item in
+                                    DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_job_list)]
+            person_agreement = ApprovalOficialMemoProcess.objects.filter(
+                Q(person_executor__in=person_executor_list) & Q(document_not_agreed=False))
+            return {
+                'person_agreement': person_agreement,
+                'document_not_agreed': person_agreement.count(),
+                'person_distributor': '',
+                'person_department_staff': '',
+            }
+        except Exception as _ex:
+            return {}
+    else:
+        return {}

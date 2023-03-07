@@ -348,14 +348,15 @@
                                                 </div>
                                             </div>
                                             {% if user.is_superuser %}
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email pass</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern"
-                                                           name="work_email_password" id="id_work_email_password"
-                                                           value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email
+                                                        pass</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        <input type="text" class="form-control form-control-modern"
+                                                               name="work_email_password" id="id_work_email_password"
+                                                               value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                    </div>
                                                 </div>
-                                            </div>
                                             {% endif %}
                                         </div>
                                         <div class="tab-pane fade" id="access" role="tabpanel"

@@ -73,6 +73,7 @@
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number" disabled
                                                    value="
+
                                                            {% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
                                                    id="contract_number"/>
                                         </div>
@@ -177,6 +178,7 @@
                                             <input type="text" class="form-control form-control-modern"
                                                    name="prolongation" disabled
                                                    value="
+
                                                            {% for key, value in prolongation %}{% if key == object.prolongation %}{{ value }}{% endif %}{% endfor %}"
                                                    id="prolongation"/>
                                         </div>

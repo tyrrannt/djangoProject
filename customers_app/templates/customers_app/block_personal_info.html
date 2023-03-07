@@ -41,7 +41,7 @@
 
     <h5 class="mb-2 mt-3">Моя статистика:</h5>
     <p class="text-2">Последний вход: <strong>{{ user.last_login }}</strong> <br>
-    Дата регистрации: <strong>{{ user.date_joined }}</strong>
+        Дата регистрации: <strong>{{ user.date_joined }}</strong>
     </p>
     <div class="clearfix">
         <a class="text-uppercase text-muted float-end" href="{% url 'customers_app:staff' user.pk %}">(Подробнее...)</a>

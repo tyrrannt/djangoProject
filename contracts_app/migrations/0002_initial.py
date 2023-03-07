@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -24,27 +23,32 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='posts',
             name='contract_number',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contracts_app.contract', verbose_name='Номер договора'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contracts_app.contract',
+                                    verbose_name='Номер договора'),
         ),
         migrations.AddField(
             model_name='posts',
             name='responsible_person',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to=settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо'),
         ),
         migrations.AddField(
             model_name='estate',
             name='type_property',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='contracts_app.typeproperty'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='contracts_app.typeproperty'),
         ),
         migrations.AddField(
             model_name='contract',
             name='access',
-            field=models.ForeignKey(default=5, null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.accesslevel', verbose_name='Уровень доступа к документу'),
+            field=models.ForeignKey(default=5, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='customers_app.accesslevel', verbose_name='Уровень доступа к документу'),
         ),
         migrations.AddField(
             model_name='contract',
             name='contract_counteragent',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='customers_app.counteragent', verbose_name='Контрагент'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='customers_app.counteragent', verbose_name='Контрагент'),
         ),
         migrations.AddField(
             model_name='contract',
@@ -59,22 +63,27 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contract',
             name='executor',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='contract_executor', to=settings.AUTH_USER_MODEL, verbose_name='Исполнитель'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='contract_executor', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Исполнитель'),
         ),
         migrations.AddField(
             model_name='contract',
             name='parent_category',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='contracts_app.contract', verbose_name='Главный документ'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE,
+                                    to='contracts_app.contract', verbose_name='Главный документ'),
         ),
         migrations.AddField(
             model_name='contract',
             name='type_of_contract',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='contracts_app.typecontract', verbose_name='Тип договора'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='contracts_app.typecontract', verbose_name='Тип договора'),
         ),
         migrations.AddField(
             model_name='contract',
             name='type_of_document',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='contracts_app.typedocuments', verbose_name='Тип документа'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='contracts_app.typedocuments', verbose_name='Тип документа'),
         ),
         migrations.AddField(
             model_name='contract',

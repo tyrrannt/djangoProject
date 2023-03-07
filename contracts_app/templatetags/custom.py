@@ -19,6 +19,7 @@ def empty_item(string):
         string = ''
     return string
 
+
 def FIO_format(value):
     string_obj = str(value)
     list_obj = string_obj.split(' ')

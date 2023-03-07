@@ -23,7 +23,9 @@ from hrdepartment_app.hrdepartment_util import get_medical_documents
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip", serialize=True)
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
+           serialize=True)
+
 
 # Create your views here.
 class MedicalOrganisationList(LoginRequiredMixin, ListView):
@@ -67,6 +69,7 @@ class MedicalOrganisationUpdate(LoginRequiredMixin, UpdateView):
 
 class MedicalExamination(LoginRequiredMixin, ListView):
     model = Medical
+
     # paginate_by = 10
     # item_sorted = 'date_entry'
     # sorted_list = ['number', 'date_entry', 'person', 'person__user_work_profile__job__name', 'organisation',
@@ -94,14 +97,15 @@ class MedicalExamination(LoginRequiredMixin, ListView):
         change_session_get(self.request, self)
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            medicals = Medical.objects.all()
-            data = [medical.get_data() for medical in medicals]
+            medical_list = Medical.objects.all()
+            data = [medical_item.get_data() for medical_item in medical_list]
             response = {'data': data}
             return JsonResponse(response)
 
         return super(MedicalExamination, self).get(request, *args, **kwargs)
 
-    def ajax_get(self, request, *args, **kwargs):
+    @staticmethod
+    def ajax_get(request, *args, **kwargs):
         medicals = Medical.objects.all()
         data = [medical.get_data() for medical in medicals]
         response = {'data': data}
@@ -143,6 +147,12 @@ class OfficialMemoList(LoginRequiredMixin, ListView):
     paginate_by = 6
 
     def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            memo_list = OfficialMemo.objects.all()
+            data = [memo_item.get_data() for memo_item in memo_list]
+            response = {'data': data}
+            return JsonResponse(response)
         change_session_get(self.request, self)
         return super(OfficialMemoList, self).get(request, *args, **kwargs)
 
@@ -200,7 +210,8 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
                     if item.period_for > filter_string:
                         filter_string = item.period_for
             except AttributeError:
-                logger.info(f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
+                logger.info(
+                    f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
             if filters.count() > 0:
                 html = filter_string + datetime.timedelta(days=1)
                 return JsonResponse(html, safe=False)
@@ -287,7 +298,8 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
                     if item.period_for > filter_string:
                         filter_string = item.period_for
             except AttributeError:
-                logger.info(f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
+                logger.info(
+                    f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
             if filters.count() > 0:
                 html = filter_string + datetime.timedelta(days=1)
                 return JsonResponse(html, safe=False)
@@ -343,6 +355,15 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
                 Q(person_department_staff__user_work_profile__divisions=user_division)).order_by('pk')
         return qs
 
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            aapprovalmemo_list = ApprovalOficialMemoProcess.objects.all()
+            data = [aapprovalmemo_item.get_data() for aapprovalmemo_item in aapprovalmemo_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
 
 class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
     model = ApprovalOficialMemoProcess
@@ -351,12 +372,13 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         global person_agreement_list
         content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
-        content['form'].fields['document'].queryset = OfficialMemo.objects.filter(docs__isnull=True)
-        business_process = BusinessProcessDirection.objects.all()
+        content['form'].fields['document'].queryset = OfficialMemo.objects.filter(
+            Q(docs__isnull=True) & Q(responsible=self.request.user))
+        business_process = BusinessProcessDirection.objects.filter(
+            person_executor=self.request.user.user_work_profile.job)
         users_list = DataBaseUser.objects.all()
-        #
-        content['form'].fields['person_executor'].queryset = users_list.filter(
-            pk=self.request.user.pk)
+        # Для поля Исполнитель, делаем выборку пользователя из БД на основе request
+        content['form'].fields['person_executor'].queryset = users_list.filter(pk=self.request.user.pk)
 
         person_agreement_list = list()
         content['form'].fields['person_agreement'].queryset = users_list.filter(
@@ -366,12 +388,12 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
                 person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
                 content['form'].fields['person_agreement'].queryset = users_list.filter(
                     user_work_profile__job__pk__in=person_agreement_list)
-        content['form'].fields['person_distributor'].queryset = DataBaseUser.objects.filter(
-            Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
-            Q(is_superuser=False))
-        content['form'].fields['person_department_staff'].queryset = DataBaseUser.objects.filter(
-            Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
-            Q(is_superuser=False))
+        # content['form'].fields['person_distributor'].queryset = users_list.filter(
+        #     Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
+        #     Q(is_superuser=False))
+        # content['form'].fields['person_department_staff'].queryset = users_list.filter(
+        #     Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
+        #     Q(is_superuser=False))
         return content
 
     def get_success_url(self):
@@ -385,10 +407,12 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         global person_agreement_list
-        business_process = BusinessProcessDirection.objects.all()
+
         users_list = DataBaseUser.objects.all()
         content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(**kwargs)
         document = self.get_object()
+        business_process = BusinessProcessDirection.objects.filter(
+            person_executor=document.person_executor.user_work_profile.job)
         content['document'] = document.document
         # Получаем подразделение исполнителя
         # division = document.person_executor.user_work_profile.divisions
@@ -398,26 +422,29 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
         if document.document_not_agreed:
             content['form'].fields['person_agreement'].queryset = users_list.filter(
                 pk=document.person_agreement.pk)
+            print('7')
         else:
             # Иначе по подразделению исполнителя фильтруем руководителей для согласования
             person_agreement_list = list()
             content['form'].fields['person_agreement'].queryset = users_list.filter(
                 user_work_profile__job__pk__in=person_agreement_list)
             for item in business_process:
-                if item.person_executor.filter(name__contains=self.request.user.user_work_profile.job.name):
-                    person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
-                    content['form'].fields['person_agreement'].queryset = users_list.filter(
-                        user_work_profile__job__pk__in=person_agreement_list)
+                person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
+            # Если пользователь = Согласующее лицо
+            if self.request.user.user_work_profile.job.pk in person_agreement_list:
+                content['form'].fields['person_agreement'].queryset = users_list.filter(
+                    Q(user_work_profile__job__pk__in=person_agreement_list) & Q(pk=self.request.user.pk))
+            # Иначе весь список согласующих лиц
+            else:
+                content['form'].fields['person_agreement'].queryset = users_list.filter(
+                    user_work_profile__job__pk__in=person_agreement_list)
+
         content['form'].fields['person_distributor'].queryset = users_list.filter(
             Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
             Q(is_superuser=False))
         content['form'].fields['person_department_staff'].queryset = users_list.filter(
             Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
             Q(is_superuser=False))
-        try:
-            check = users_list.get(pk=document.person_distributor.pk)
-        except Exception as _ex:
-            print('345435345345435')
 
         return content
 

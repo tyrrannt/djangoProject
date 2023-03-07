@@ -30,10 +30,12 @@ def get_medical_documents():
                     'date_entry': datetime.datetime.strptime(item['Date'][:10], "%Y-%m-%d"),
                     'date_of_inspection': datetime.datetime.strptime(item['ДатаОсмотра'][:10], "%Y-%m-%d"),
                     'organisation': MedicalOrganisation.objects.get(ref_key=item['МедицинскаяОрганизация_Key']),
-                    'working_status': 1 if next(x[0] for x in type_inspection if x[1] == item['ТипОсмотра']) == 1 else 2,
+                    'working_status': 1 if next(
+                        x[0] for x in type_inspection if x[1] == item['ТипОсмотра']) == 1 else 2,
                     'view_inspection': 1 if item['ВидОсмотра'] == 'МедицинскийОсмотр' else 2,
                     'type_inspection': next(x[0] for x in type_inspection if x[1] == item['ТипОсмотра']),
                     # 'harmful': qs,
                 }
-                db_instance, created = Medical.objects.update_or_create(ref_key=item['Ref_Key'], defaults=divisions_kwargs)
+                db_instance, created = Medical.objects.update_or_create(ref_key=item['Ref_Key'],
+                                                                        defaults=divisions_kwargs)
                 db_instance.harmful.set(qs)

@@ -178,6 +178,31 @@ class OfficialMemo(models.Model):
     def __str__(self):
         return f'{self.person} с {self.period_from} по {self.period_for}'
 
+    def get_data(self):
+        place = [str(item) for item in self.place_production_activity.iterator()]
+        if self.type_trip == '1':
+            if self.official_memo_type == '1':
+                type_trip = 'СП'
+            else:
+                type_trip = 'СП+'
+        else:
+            if self.official_memo_type == '1':
+                type_trip = 'К'
+            else:
+                type_trip = 'К+'
+        return {
+            'pk': self.pk,
+            'type_trip': type_trip,
+            'person': str(self.person),
+            'job': str(self.person.user_work_profile.job),
+            'place_production_activity': '; '.join(place),
+            'purpose_trip': str(self.purpose_trip),
+            'period_from': f'С: {self.period_from} \nПо: {self.period_for}',
+            'accommodation': str(self.get_accommodation_display()),
+            'order': f'№: {self.order_number} от: {self.order_date}',
+            'comments': str(self.comments),
+        }
+
 
 class ApprovalProcess(models.Model):
     class Meta:
@@ -220,6 +245,22 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
 
     def __init__(self, *args, **kwargs):
         super(ApprovalOficialMemoProcess, self).__init__(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.document)
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'document': str(self.document),
+            'submit_for_approval': FIO_format(self.person_executor) if self.submit_for_approval else '',
+            'document_not_agreed': FIO_format(self.person_agreement) if self.document_not_agreed else '',
+            'location_selected': FIO_format(self.person_distributor) if self.location_selected else '',
+            'process_accepted': FIO_format(self.person_department_staff) if self.process_accepted else '',
+            'accommodation': str(self.get_accommodation_display()),
+            'order': f'№: {self.order_number} от: {self.order_date}',
+            'comments': str(self.document.comments),
+        }
 
 
 def create_xlsx(instance):

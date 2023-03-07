@@ -74,7 +74,8 @@ def get_database_user():
             Ref_Key, username, first_name = '', '', ''
             personal_kwargs = {}
             last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
-            individuals_item = [items for items in individuals['value'] if items['Ref_Key'] == item['ФизическоеЛицо_Key']]
+            individuals_item = [items for items in individuals['value'] if
+                                items['Ref_Key'] == item['ФизическоеЛицо_Key']]
             for item2 in individuals_item:
                 Ref_Key = item2['Ref_Key']
                 username = '0' * (4 - len(str(count))) + str(count) + '_' + transliterate(
@@ -94,7 +95,8 @@ def get_database_user():
                     if item3['Тип'] == 'Адрес':
                         address = item3['Представление']
                 oms = ''
-                insurance_policy_item = [items for items in insurance_policy['value'] if items['ФизическоеЛицо_Key'] == item['ФизическоеЛицо_Key']]
+                insurance_policy_item = [items for items in insurance_policy['value'] if
+                                         items['ФизическоеЛицо_Key'] == item['ФизическоеЛицо_Key']]
                 for insurance_item in insurance_policy_item:
                     oms = insurance_item['НомерПолиса']
                 personal_kwargs = {
@@ -127,7 +129,7 @@ def get_database_user():
                 logger.error(f'Сохранение пользователя: {username}, {last_name} {first_name} {_ex}')
             try:
                 obj_item, created = DataBaseUserProfile.objects.update_or_create(ref_key=item['Ref_Key'],
-                                                                         defaults={**personal_kwargs})
+                                                                                 defaults={**personal_kwargs})
             except Exception as _ex:
                 logger.error(f'Сохранение профиля пользователя: {_ex}')
             if not main_obj_item.user_profile:

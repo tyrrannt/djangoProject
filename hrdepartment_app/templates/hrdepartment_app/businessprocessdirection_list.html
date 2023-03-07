@@ -85,10 +85,12 @@
                                             <strong>{{ item.get_business_process_type_display }}</strong>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:bptrip_update' item.pk %}"><span>{% for items in item.person_executor.all %}{{ items }} {% endfor %}</span></a>
+                                            <a href="{% url 'hrdepartment_app:bptrip_update' item.pk %}"><span>{% for items in item.person_executor.all %}
+                                                {{ items }} {% endfor %}</span></a>
                                         </td>
                                         <td>
-                                            <a href="{% url 'hrdepartment_app:bptrip_update' item.pk %}"><span>{% for items in item.person_agreement.all %}{{ items }} {% endfor %}</span></a>
+                                            <a href="{% url 'hrdepartment_app:bptrip_update' item.pk %}"><span>{% for items in item.person_agreement.all %}
+                                                {{ items }} {% endfor %}</span></a>
                                         </td>
                                         <td>
                                             <span>{% for items in item.clerk.all %}{{ items }} {% endfor %}</span>&nbsp;

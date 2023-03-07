@@ -63,6 +63,7 @@ class PostsAddForm(forms.ModelForm):
     post_divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
     post_divisions.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Posts
         fields = ('post_description', 'post_divisions', 'allowed_placed', 'responsible')
@@ -128,6 +129,7 @@ class DivisionsAddForm(forms.ModelForm):
 class DivisionsUpdateForm(forms.ModelForm):
     type_of_role = forms.ChoiceField(choices=Division.type_of)
     type_of_role.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Division
         fields = ('parent_category', 'name', 'description', 'address', 'active', 'destination_point', 'type_of_role',
@@ -141,7 +143,6 @@ class DivisionsUpdateForm(forms.ModelForm):
 
 
 class JobsAddForm(forms.ModelForm):
-
     class Meta:
         model = Job
         fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval')
@@ -150,6 +151,7 @@ class JobsAddForm(forms.ModelForm):
 class JobsUpdateForm(forms.ModelForm):
     type_of_job = forms.ChoiceField(choices=Job.job_type)
     type_of_job.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Job
         fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval',

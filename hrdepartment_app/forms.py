@@ -18,10 +18,12 @@ class MedicalOrganisationAddForm(forms.ModelForm):
         model = MedicalOrganisation
         fields = ('ref_key', 'description', 'ogrn', 'address', 'email', 'phone')
 
+
 class MedicalOrganisationUpdateForm(forms.ModelForm):
     class Meta:
         model = MedicalOrganisation
         fields = ('ref_key', 'description', 'ogrn', 'address', 'email', 'phone')
+
 
 class MedicalExaminationAddForm(forms.ModelForm):
     class Meta:
@@ -33,6 +35,7 @@ class MedicalExaminationUpdateForm(forms.ModelForm):
     harmful = forms.ModelMultipleChoiceField(HarmfulWorkingConditions.objects.all())
     harmful.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Medical
         fields = ('number', 'harmful')
@@ -119,25 +122,13 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
     person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
-    person_distributor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
-    person_department_staff.widget.attrs.update(
-        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(docs__isnull=True))
     document.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True, 'type': 'date'})
-    accommodation = forms.ChoiceField(choices=type_of, required=False)
-    accommodation.widget.attrs.update({'class': 'form-control form-control-modern'})
-    order_number = forms.CharField(required=False)
-    order_number.widget.attrs.update({'class': 'form-control form-control-modern'})
-    order_date = forms.DateField(required=False)
 
     class Meta:
         model = ApprovalOficialMemoProcess
-        fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
-                  'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
-                  'person_department_staff', 'process_accepted', 'accommodation', 'order_number', 'order_date')
+        fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement')
 
 
 class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
@@ -145,7 +136,6 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         ('1', 'Квартира'),
         ('2', 'Гостиница')
     ]
-
 
     person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})

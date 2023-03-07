@@ -37,65 +37,22 @@
                                 </div>
                             </div>
 
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                            <table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
 
                                 <thead>
                                 <tr>
-                                    <th width="4%">№</th>
-                                    <th width="15%">Сотрудник</th>
-                                    <th width="10%">Должность</th>
-                                    <th width="10%">Куда</th>
-                                    <th width="15%">Цель</th>
-                                    <th width="10%">Период</th>
-                                    <th width="8%">Проживание</th>
-
+                                    <th width="20%">Документ</th>
+                                    <th width="10%">Исполнитель</th>
+                                    <th width="10%">Руководитель</th>
+                                    <th width="10%">Служба НО</th>
+                                    <th width="10%">Отдел кадров</th>
+                                    <th width="12%">Проживание</th>
                                     <th width="10%">Приказ</th>
                                     <th width="18%">Примечание</th>
                                 </tr>
                                 </thead>
-                                <tbody>
-                                {% for item in object_list %}
 
-                                    <tr style="color: {% if item.document_accepted %} green  {% else %} {% if item.comments %} blue {% else %} {% if item.order_number %} black {% else %} red {% endif %} {% endif %} {% endif %}">
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>
-                                                {% if item.document.person %}{{ item.document.person }}{% else %}
-                                                    Отсутствует документ{% endif %}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}"><strong>{{ item.document.person.user_work_profile.job }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <span>{% for items in item.document.place_production_activity.all %}
-                                                {{ items }} {% endfor %}</span>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.document.purpose_trip }}</strong>
-                                        </td>
-                                        <td>
-                                            <strong>С: {{ item.document.period_from | date:'d-m-Y' }}<br>По: {{ item.document.period_for | date:'d-m-Y' }}
-                                            </strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.document.get_accommodation_display }}</strong>&nbsp;
-                                        </td>
-
-                                        <td>
-                                            <strong>№: {{ item.document.order_number }} <br>
-                                                от: {{ item.document.order_date | date:'d-m-Y' }}</strong>&nbsp;
-                                        </td>
-                                        <td>
-                                            <strong>{{ item.document.comments }}</strong>&nbsp;
-                                        </td>
-                                    </tr>
-
-
-                                {% endfor %}
-                                </tbody>
                             </table>
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}
@@ -114,11 +71,8 @@
                                     </div>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -126,7 +80,42 @@
     </section>
 {% endblock %}
 
-{% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'hrdepartment_app:bpmemo_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    if (aData['process_accepted'] === 'Согласован') {
+                        $(nRow).addClass('text-black-50  fs-6')
+                    }
+                    if (aData['process_accepted'] === '') {
+                        $(nRow).addClass('text-danger fs-6')
+                    }
+                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "document"},
+                    {"data": "submit_for_approval"},
+                    {"data": "document_not_agreed"},
+                    {"data": "location_selected"},
+                    {"data": "process_accepted"},
+                    {"data": "accommodation"},
+                    {"data": "order"},
+                    {"data": "comments"},
+                ],
+            });
+        });
+
+    </script>
 {% endblock %}

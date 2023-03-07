@@ -75,7 +75,7 @@
 
 {% block custome_script %}
     <script>
-    $(document).ready(function(){
+        $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
                 "sDom": 'T<"clear">lfrtip',
                 "ajax": "{% url 'customers_app:jobs_list' %}",
@@ -85,10 +85,10 @@
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
                     $(nRow).attr("href", id + '/update/');
-                    $(nRow).css( 'cursor', 'pointer' );
-                    $(nRow).click(function(){
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
                         window.location = $(this).attr('href');
-                    return false;
+                        return false;
                     });
                 },
                 "columns": [

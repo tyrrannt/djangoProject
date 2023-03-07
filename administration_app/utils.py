@@ -10,12 +10,14 @@ from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division
 from djangoProject.settings import BASE_DIR
 
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
+           serialize=True)
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip", serialize=True)
 
 class GetAllObject:
 
-    def get_object(self):
+    @staticmethod
+    def get_object():
         context = {}
         all_users = DataBaseUser.objects.all()
         all_type_of_contract = TypeContract.objects.all()
@@ -200,7 +202,8 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
-    logger.info(f'Успешное получение данных: {object_type} {object_name} {filter_obj} {filter_content} {logical} {base_index}')
+    logger.info(
+        f'Успешное получение данных: {object_type} {object_name} {filter_obj} {filter_content} {logical} {base_index}')
     return json.loads(response.text)
 
 

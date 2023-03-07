@@ -91,6 +91,7 @@ class Job(models.Model):
         ('1', 'Летный состав'),
         ('2', 'Инженерный состав'),
     ]
+
     class Meta:
         verbose_name = 'Должность'
         verbose_name_plural = 'Должности'
@@ -99,7 +100,7 @@ class Job(models.Model):
     code = models.CharField(verbose_name='Код должности', max_length=5, help_text='', default='')
     name = models.CharField(verbose_name='Должность', max_length=200, help_text='')
     type_of_job = models.CharField(verbose_name="Принадлежность", choices=job_type, null=True, blank=True,
-                                    max_length=17)
+                                   max_length=17)
     date_entry = models.DateField(verbose_name='Дата ввода', auto_now_add=True, null=True)
     date_exclusions = models.DateField(verbose_name='Дата исключения', auto_now_add=True, null=True)
     excluded_standard_spelling = models.BooleanField(verbose_name='Исключена из штатного расписания', default=True)
@@ -118,7 +119,7 @@ class Job(models.Model):
             'pk': self.pk,
             'code': self.code,
             'name': self.name,
-            'harmful': '', #if not self.parent_category else str(self.parent_category),
+            'harmful': '',  # if not self.parent_category else str(self.parent_category),
         }
 
 
@@ -191,11 +192,13 @@ class Division(Category):
         ('2', 'Кадры'),
         ('3', 'Бухгалтерия')
     ]
+
     class Meta:
         verbose_name = 'Подразделение'
         verbose_name_plural = 'Подразделения организации'
 
-    type_of_role = models.CharField(verbose_name="Роль подразделения", choices=type_of, null=True, blank=True, max_length=11)
+    type_of_role = models.CharField(verbose_name="Роль подразделения", choices=type_of, null=True, blank=True,
+                                    max_length=11)
     destination_point = models.BooleanField(verbose_name='Используется как место назначения', default=False)
     address = models.CharField(verbose_name='Адрес', max_length=250, default='', blank=True)
 
@@ -352,7 +355,6 @@ def rename(file_name, path_name, instance, pfx):
 
 @receiver(post_save, sender=DataBaseUser)
 def change_filename(sender, instance, **kwargs):
-
     try:
         # Получаем имя сохраненного файла
         file_name = pathlib.Path(instance.avatar.name).name
@@ -362,7 +364,6 @@ def change_filename(sender, instance, **kwargs):
 
     except Exception as _ex:
         print(_ex)
-
 
 
 class Counteragent(models.Model):
@@ -420,8 +421,8 @@ class Posts(models.Model):
     post_divisions = models.ManyToManyField(Division, verbose_name='Подразделения поста', )
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
     responsible = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо',
-                                           on_delete=models.SET_NULL,
-                                           null=True, related_name='responsible_person')
+                                    on_delete=models.SET_NULL,
+                                    null=True, related_name='responsible_person')
     post_date_start = models.DateField(verbose_name='Дата начала отображения', blank=True, null=True)
     post_date_end = models.DateField(verbose_name='Дата окончания отображения', blank=True, null=True)
 

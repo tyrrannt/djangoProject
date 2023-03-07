@@ -92,7 +92,6 @@
                 <span class="float-end badge badge-default">{{ documents_not_published_count }}</span>
                 Документы
             </div>
-
             <div class="content">
                 <ul>
                     {% for item in documents_not_published %}
@@ -108,13 +107,47 @@
                         </li>
                     {% endfor %}
                 </ul>
-
                 <hr/>
-
                 <div class="text-end">
                     <a href="{% url 'library_app:jobdescription_list' %}" class="view-more">Просмотреть все</a>
                 </div>
             </div>
         </div>
     </li>
+{#Оповещение о новом БП на служебную записку#}
+    <li>
+        {% if document_not_agreed != 0 %}
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <i class='bx bx-user-pin'></i>
+                <span class="badge">{{ document_not_agreed }}</span>
+            </a>
+        {% endif %}
+        <div class="dropdown-menu notification-menu">
+            <div class="notification-title">
+                <span class="float-end badge badge-default">{{ document_not_agreed }}</span>
+                Служебные записки
+            </div>
+            <div class="content">
+                <ul>
+                    {% for item in person_agreement %}
+                        <li>
+                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                    <code style="font-size: small">
+                                        {{ item }}
+                                    </code>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <hr/>
+                <div class="text-end">
+                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                </div>
+            </div>
+        </div>
+    </li>
+
 </ul>

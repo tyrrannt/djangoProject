@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,15 +15,19 @@ class Migration(migrations.Migration):
             name='Contract',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('contract_number', models.CharField(blank=True, default='', max_length=50, verbose_name='Номер договора')),
+                ('contract_number',
+                 models.CharField(blank=True, default='', max_length=50, verbose_name='Номер договора')),
                 ('date_conclusion', models.DateField(verbose_name='Дата заключения договора')),
                 ('subject_contract', models.TextField(blank=True, verbose_name='Предмет договора')),
                 ('cost', models.FloatField(blank=True, default=0, null=True, verbose_name='Стоимость')),
                 ('closing_date', models.DateField(blank=True, null=True, verbose_name='Дата закрытия договора')),
-                ('prolongation', models.CharField(blank=True, choices=[('auto', 'Автоматическая пролонгация'), ('ag', 'Оформление ДС')], default='', max_length=40, verbose_name='Пролонгация')),
+                ('prolongation',
+                 models.CharField(blank=True, choices=[('auto', 'Автоматическая пролонгация'), ('ag', 'Оформление ДС')],
+                                  default='', max_length=40, verbose_name='Пролонгация')),
                 ('comment', models.TextField(blank=True, verbose_name='Примечание')),
                 ('date_entry', models.DateField(auto_now_add=True, verbose_name='Дата ввода информации')),
-                ('doc_file', models.FileField(blank=True, upload_to=contracts_app.models.contract_directory_path, verbose_name='Файл документа')),
+                ('doc_file', models.FileField(blank=True, upload_to=contracts_app.models.contract_directory_path,
+                                              verbose_name='Файл документа')),
                 ('allowed_placed', models.BooleanField(default=False, verbose_name='Разрешение на публикацию')),
             ],
             options={
@@ -36,14 +39,19 @@ class Migration(migrations.Migration):
             name='Estate',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('registration_number', models.CharField(blank=True, default='', max_length=100, verbose_name='Номер машины')),
+                ('registration_number',
+                 models.CharField(blank=True, default='', max_length=100, verbose_name='Номер машины')),
                 ('release_date', models.DateField(verbose_name='Дата выпуска')),
-                ('factory_number', models.CharField(blank=True, default='', max_length=100, verbose_name='Заводской номер')),
-                ('exploits', models.CharField(blank=True, default='', max_length=100, verbose_name='Баркол эксплуатирует')),
+                ('factory_number',
+                 models.CharField(blank=True, default='', max_length=100, verbose_name='Заводской номер')),
+                ('exploits',
+                 models.CharField(blank=True, default='', max_length=100, verbose_name='Баркол эксплуатирует')),
                 ('gtd', models.CharField(blank=True, default='', max_length=100, verbose_name='GTD')),
                 ('passport', models.CharField(blank=True, default='', max_length=100, verbose_name='Паспорт')),
-                ('ownership_right', models.CharField(blank=True, default='', max_length=100, verbose_name='Право владения')),
-                ('year_of_manufacture', models.CharField(blank=True, default='', max_length=100, verbose_name='Год выпуска авто')),
+                ('ownership_right',
+                 models.CharField(blank=True, default='', max_length=100, verbose_name='Право владения')),
+                ('year_of_manufacture',
+                 models.CharField(blank=True, default='', max_length=100, verbose_name='Год выпуска авто')),
             ],
             options={
                 'verbose_name': 'Имущество',
@@ -90,7 +98,8 @@ class Migration(migrations.Migration):
             name='TypeProperty',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type_property', models.CharField(blank=True, default='', max_length=50, verbose_name='Тип имущества')),
+                (
+                'type_property', models.CharField(blank=True, default='', max_length=50, verbose_name='Тип имущества')),
             ],
             options={
                 'verbose_name': 'Тип имущества',

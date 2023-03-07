@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('customers_app', '0009_databaseuserprofile_ref_key_and_more'),
     ]
@@ -13,6 +12,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='division',
             name='type_of_role',
-            field=models.CharField(blank=True, choices=[('0', 'Общий'), ('1', 'НО'), ('2', 'Кадры'), ('3', 'Бухгалтерия')], max_length=11, null=True, verbose_name='Роль подразделения'),
+            field=models.CharField(blank=True,
+                                   choices=[('0', 'Общий'), ('1', 'НО'), ('2', 'Кадры'), ('3', 'Бухгалтерия')],
+                                   max_length=11, null=True, verbose_name='Роль подразделения'),
         ),
     ]

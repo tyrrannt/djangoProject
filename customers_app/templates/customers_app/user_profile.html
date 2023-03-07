@@ -158,20 +158,21 @@
                                         <ol class="tm-items">
                                             {# ToDo: Доработать вывод постов#}
                                             {% for item in post_high %}
-                                                    {% if item.allowed_placed %}
-                                                        <li>
-                                                            <div class="tm-box">
-                                                                {% if item.post_date_start %}
+                                                {% if item.allowed_placed %}
+                                                    <li>
+                                                        <div class="tm-box">
+                                                            {% if item.post_date_start %}
                                                                 <p class="text-muted mb-0">{{ item.post_date_start }}</p>
-                                                                {% else %}
+                                                            {% else %}
                                                                 <p class="text-muted mb-0">{{ item.creation_date }}</p>
-                                                                {% endif %}
-                                                                <p>{{ item.post_description }}</p>
-                                                                <p class="text-danger mb-0">Ответственный: {{ item.responsible }}</p>
-                                                                <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
-                                                            </div>
-                                                        </li>
-                                                    {% endif %}
+                                                            {% endif %}
+                                                            <p>{{ item.post_description }}</p>
+                                                            <p class="text-danger mb-0">
+                                                                Ответственный: {{ item.responsible }}</p>
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
+                                                        </div>
+                                                    </li>
+                                                {% endif %}
                                             {% endfor %}
                                         </ol>
                                         <div class="tm-title">
@@ -181,20 +182,21 @@
                                         <ol class="tm-items">
                                             {# ToDo: Доработать вывод постов#}
                                             {% for item in post_low %}
-                                                    {% if item.allowed_placed %}
-                                                        <li>
-                                                            <div class="tm-box">
-                                                                {% if item.post_date_start %}
+                                                {% if item.allowed_placed %}
+                                                    <li>
+                                                        <div class="tm-box">
+                                                            {% if item.post_date_start %}
                                                                 <p class="text-muted mb-0">{{ item.post_date_start }}</p>
-                                                                {% else %}
+                                                            {% else %}
                                                                 <p class="text-muted mb-0">{{ item.creation_date }}</p>
-                                                                {% endif %}
-                                                                <p>{{ item.post_description }}</p>
-                                                                <p class="text-danger mb-0">Ответственный: {{ item.responsible }}</p>
-                                                                <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
-                                                            </div>
-                                                        </li>
-                                                    {% endif %}
+                                                            {% endif %}
+                                                            <p>{{ item.post_description }}</p>
+                                                            <p class="text-danger mb-0">
+                                                                Ответственный: {{ item.responsible }}</p>
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
+                                                        </div>
+                                                    </li>
+                                                {% endif %}
                                             {% endfor %}
                                         </ol>
                                     </div>
