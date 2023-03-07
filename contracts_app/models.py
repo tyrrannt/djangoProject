@@ -28,6 +28,14 @@ class TypeDocuments(models.Model):
     def __str__(self):
         return f'{self.type_document}'
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'type_document': self.type_document,
+            'short_name': self.short_name,
+            'file_name_prefix': self.file_name_prefix,
+        }
+
 
 class TypeContract(models.Model):
     class Meta:
@@ -40,6 +48,12 @@ class TypeContract(models.Model):
     def __str__(self):
         return f'{self.type_contract}'
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'type_contract': self.type_contract,
+        }
+
 
 class TypeProperty(models.Model):
     class Meta:
@@ -51,6 +65,12 @@ class TypeProperty(models.Model):
 
     def __str__(self):
         return f'{self.type_property}'
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'type_property': self.type_property,
+        }
 
 
 class Estate(models.Model):

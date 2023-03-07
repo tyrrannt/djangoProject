@@ -36,6 +36,12 @@ class Purpose(models.Model):
     def get_absolute_url():
         return reverse('hrdepartment_app:purpose_list')
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'title': self.title,
+        }
+
 
 class MedicalOrganisation(models.Model):
     class Meta:

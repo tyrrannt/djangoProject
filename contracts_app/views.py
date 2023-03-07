@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db.models import Q
-from django.http import QueryDict
+from django.http import QueryDict, JsonResponse
 from django.shortcuts import HttpResponseRedirect, redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
@@ -345,6 +345,15 @@ class TypeDocumentsList(LoginRequiredMixin, ListView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_list.html'
 
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            type_documents_list = TypeDocuments.objects.all()
+            data = [type_documents_item.get_data() for type_documents_item in type_documents_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
 
 class TypeDocumentsAdd(LoginRequiredMixin, CreateView):
     model = TypeDocuments
@@ -418,6 +427,15 @@ class TypeContractsList(LoginRequiredMixin, ListView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_list.html'
 
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            type_contracts_list = TypeContract.objects.all()
+            data = [type_contracts_item.get_data() for type_contracts_item in type_contracts_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
 
 class TypeContractsAdd(LoginRequiredMixin, CreateView):
     model = TypeContract
@@ -490,6 +508,15 @@ class TypeContractsUpdate(LoginRequiredMixin, UpdateView):
 class TypePropertysList(LoginRequiredMixin, ListView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_list.html'
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            type_property_list = TypeProperty.objects.all()
+            data = [type_property_item.get_data() for type_property_item in type_property_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
 
 
 class TypePropertysAdd(LoginRequiredMixin, CreateView):

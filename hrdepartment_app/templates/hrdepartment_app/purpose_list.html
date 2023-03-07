@@ -39,38 +39,10 @@
                                     <th width="90%">Наименование</th>
                                 </tr>
                                 </thead>
-                                <tbody>
-                                {% for item in object_list %}
-                                    <tr>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:purpose_update' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                        </td>
-                                        <td>
-                                            <a href="{% url 'hrdepartment_app:purpose_update' item.pk %}"><strong>{{ item.title }}</strong></a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
+
                             </table>
 
                             <hr class="solid mt-5 opacity-4">
-                            {% include 'library_app/paginator.html' %}
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
 
                         </div>
                     </div>
@@ -82,7 +54,29 @@
     </section>
 {% endblock %}
 
-{% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'hrdepartment_app:purpose_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "pk"},
+                    {"data": "title"},
+                ],
+            });
+        });
+    </script>
 {% endblock %}

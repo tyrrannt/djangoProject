@@ -912,6 +912,12 @@ class HarmfulWorkingConditionsList(LoginRequiredMixin, ListView):
     model = HarmfulWorkingConditions
 
     def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            harmful_list = HarmfulWorkingConditions.objects.all()
+            data = [harmful_item.get_data() for harmful_item in harmful_list]
+            response = {'data': data}
+            return JsonResponse(response)
         count = 0
         if self.request.GET:
             todos = get_jsons_data("Catalog", "ВредныеОпасныеПроизводственныеФакторыИВыполняемыеРаботы", 0)

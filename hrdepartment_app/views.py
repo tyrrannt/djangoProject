@@ -513,6 +513,15 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
 class PurposeList(LoginRequiredMixin, ListView):
     model = Purpose
 
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            purpose_list = Purpose.objects.all()
+            data = [purpose_item.get_data() for purpose_item in purpose_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
 
 class PurposeAdd(LoginRequiredMixin, CreateView):
     model = Purpose

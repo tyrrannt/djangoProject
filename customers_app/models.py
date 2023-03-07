@@ -84,6 +84,16 @@ class HarmfulWorkingConditions(models.Model):
     def __str__(self):
         return self.code
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'code': self.code,
+            'name': self.name,
+            'frequency_multiplicity': self.frequency_multiplicity,
+            'frequency_inspection': self.frequency_inspection,
+
+        }
+
 
 class Job(models.Model):
     job_type = [
