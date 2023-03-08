@@ -299,8 +299,12 @@ def ending_day(value):
         return f'{value} дней'
 
 
-def FIO_format(value):
-    string_obj = str(value)
-    list_obj = string_obj.split(' ')
-    result = f'{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}.'
+def FIO_format(value, self=None):
+    try:
+        string_obj = str(value)
+        list_obj = string_obj.split(' ')
+        result = f'{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}.'
+    except Exception as _ex:
+        logger.error(f'Ошибка при сокращении ФИО, Значение: {str(value)}; Документ: {self}; Ошибка: {_ex}')
+        result = ''
     return result

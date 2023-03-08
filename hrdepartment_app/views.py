@@ -22,6 +22,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
 from hrdepartment_app.hrdepartment_util import get_medical_documents
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose
+from library_app.models import DocumentsOrder
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -422,7 +423,6 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
         if document.document_not_agreed:
             content['form'].fields['person_agreement'].queryset = users_list.filter(
                 pk=document.person_agreement.pk)
-            print('7')
         else:
             # Иначе по подразделению исполнителя фильтруем руководителей для согласования
             person_agreement_list = list()
@@ -464,20 +464,16 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
         :param kwargs:
         :return:
         """
-        data = request.POST.get('order_date')
-        number = request.POST.get('order_number')
+        order = request.POST.get('order')
         accommodation = request.POST.get('accommodation')
         change_status = 0
         document = OfficialMemo.objects.get(pk=self.get_object().document.pk)
-        if document.order_date != data:
-            # Если добавлена или изменена дата приказа, сохраняем ее в документ Служебной записки
-            if data != '':
-                document.order_date = data
+        if document.order != order:
+            # Если добавлен или изменен приказ, сохраняем его в документ Служебной записки
+            if order != '':
+                document.order = DocumentsOrder.objects.get(pk=order)
                 change_status = 1
-        if document.order_number != number:
-            # Если добавлен или изменен номер приказа, сохраняем его в документ Служебной записки
-            document.order_number = number
-            change_status = 1
+
         if document.accommodation != accommodation:
             # Если добавлено или изменено место проживания, сохраняем его в документ Служебной записки
             if accommodation:

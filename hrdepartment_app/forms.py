@@ -5,6 +5,7 @@ from django import forms
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation
+from library_app.models import DocumentsOrder
 
 
 def present_or_future_date(value):
@@ -152,15 +153,15 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     comments_for_approval.widget.attrs.update({'class': 'form-control form-control-modern'})
     reason_for_approval = forms.CharField(required=False)
     reason_for_approval.widget.attrs.update({'class': 'form-control form-control-modern'})
-    order_number = forms.CharField(required=False)
-    order_number.widget.attrs.update({'class': 'form-control form-control-modern'})
-    order_date = forms.DateField(required=False)
+    order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all(), required=False)
+    order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
 
     class Meta:
         model = ApprovalOficialMemoProcess
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
-                  'person_department_staff', 'process_accepted', 'accommodation', 'order_number', 'order_date')
+                  'person_department_staff', 'process_accepted', 'accommodation', 'order')
 
 
 class BusinessProcessDirectionAddForm(forms.ModelForm):

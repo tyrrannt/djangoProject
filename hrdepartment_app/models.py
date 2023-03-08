@@ -11,6 +11,7 @@ from loguru import logger
 from administration_app.utils import Med, ending_day, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
+from library_app.models import DocumentsOrder
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -174,8 +175,9 @@ class OfficialMemo(models.Model):
                                      help_text='', blank=True, default='')
     type_trip = models.CharField(verbose_name='Тип поездки', max_length=9, choices=type_of_trip,
                                  help_text='', blank=True, default='')
-    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', blank=True, null=True)
-    order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
+    # order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', blank=True, null=True)
+    # order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
+    order = models.ForeignKey(DocumentsOrder, verbose_name='Приказ', on_delete=models.SET_NULL, null=True, blank=True)
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
     responsible = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
@@ -205,7 +207,7 @@ class OfficialMemo(models.Model):
             'purpose_trip': str(self.purpose_trip),
             'period_from': f'С: {self.period_from} \nПо: {self.period_for}',
             'accommodation': str(self.get_accommodation_display()),
-            'order': f'№: {self.order_number} от: {self.order_date}',
+            'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
         }
 
@@ -242,8 +244,9 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                                     related_name='docs')
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
                                      help_text='', blank=True, default='')
-    order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
-    order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
+    order = models.ForeignKey(DocumentsOrder, verbose_name='Приказ', on_delete=models.SET_NULL, null=True, blank=True)
+    # order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
+    # order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
@@ -259,12 +262,12 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         return {
             'pk': self.pk,
             'document': str(self.document),
-            'submit_for_approval': FIO_format(self.person_executor) if self.submit_for_approval else '',
-            'document_not_agreed': FIO_format(self.person_agreement) if self.document_not_agreed else '',
-            'location_selected': FIO_format(self.person_distributor) if self.location_selected else '',
-            'process_accepted': FIO_format(self.person_department_staff) if self.process_accepted else '',
+            'submit_for_approval': FIO_format(self.person_executor, self) if self.submit_for_approval else '',
+            'document_not_agreed': FIO_format(self.person_agreement, self) if self.document_not_agreed else '',
+            'location_selected': FIO_format(self.person_distributor, self) if self.location_selected else '',
+            'process_accepted': FIO_format(self.person_department_staff, self) if self.process_accepted else '',
             'accommodation': str(self.get_accommodation_display()),
-            'order': f'№: {self.order_number} от: {self.order_date}',
+            'order': str(self.order) if self.order else '',
             'comments': str(self.document.comments),
         }
 
@@ -296,8 +299,8 @@ def create_report(sender, instance, **kwargs):
             ws['M3'] = str(instance.document.person.service_number)
             ws['C4'] = str(instance.document.person.user_work_profile.job)
             ws['C5'] = str(instance.document.person.user_work_profile.divisions)
-            ws['C6'] = 'Приказ № ' + str(instance.order_number)
-            ws['F6'] = instance.order_date.strftime("%d.%m.%y")
+            ws['C6'] = 'Приказ № ' + str(instance.order.document_number)
+            ws['F6'] = instance.order.document_date.strftime("%d.%m.%y")
             ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
             ws['L6'] = instance.document.period_from.strftime("%d.%m.%y")
             ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
@@ -324,8 +327,8 @@ def create_report(sender, instance, **kwargs):
                     'person': instance.document.person,
                     'place': str(place).strip('[]'),
                     'purpose_trip': instance.document.purpose_trip,
-                    'order_number': instance.order_number,
-                    'order_date': instance.order_date,
+                    'order_number': instance.order.document_number,
+                    'order_date': instance.order.document_date,
                     'delta': ending_day(int(delta.days) + 1),
                     'period_from': instance.document.period_from,
                     'period_for': instance.document.period_for,
