@@ -22,9 +22,9 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'library_app:jobdescription_add' %}"
+                                            <a href="{% url 'hrdepartment_app:place_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить ДИ </a>
+                                                Добавить место назначения </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -35,18 +35,15 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="10%">Номер</th>
-                                    <th width="10%">Дата</th>
-                                    <th width="20%">Должность</th>
-                                    <th width="20%">Подразделение</th>
-                                    <th width="20%">Приказ</th>
-                                    <th width="8%">Актуальность</th>
-                                    <th width="12%">Исполнитель</th>
+                                    <th width="10%">Наименование</th>
+                                    <th width="90%">Адрес</th>
                                 </tr>
                                 </thead>
+
                             </table>
+
                             <hr class="solid mt-5 opacity-4">
-                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -61,7 +58,7 @@
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
                 "sDom": 'T<"clear">lfrtip',
-                "ajax": "{% url 'library_app:jobdescription_list' %}",
+                "ajax": "{% url 'hrdepartment_app:place_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
@@ -75,13 +72,8 @@
                     });
                 },
                 "columns": [
-                    {"data": "document_number"},
-                    {"data": "document_date"},
-                    {"data": "document_job"},
-                    {"data": "document_division"},
-                    {"data": "document_order"},
-                    {"data": "actuality"},
-                    {"data": "executor"},
+                    {"data": "name"},
+                    {"data": "address"},
                 ],
             });
         });

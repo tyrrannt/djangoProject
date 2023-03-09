@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -47,7 +48,7 @@
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">Создание документа</h4>
+                <h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }} от {{ object.document_date }}</h4>
 
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
@@ -59,51 +60,37 @@
                                         <div class="col-lg-12 text-black-50">
                                             <label for="id_document_name">Наименование документа</label>
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="document_name" value="" id="id_document_name"/>
+                                                   name="document_name" value="{{ object.document_name }}" id="id_document_name"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_type_of_document">Тип документа</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="type_of_document" id="id_type_of_document"
-                                                    data-plugin-selectTwo>
-                                                <option value="none" selected>Выберите значение...</option>
-                                                {% for item in all_document_types.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <label for="id_document_foundation">Документ основание</label>
+                                            {{ form.document_foundation }}
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_date">Дата документа</label>
                                             <input type="date" class="form-control form-control-modern"
-                                                   name="document_date" value="" id="id_document_date"/>
+                                                   name="document_date" value="{{ object.document_date | date:'c' }}" id="id_document_date"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_number">Номер документа</label>
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="document_number" value="" id="id_document_number"/>
+                                                   name="document_number" value="{{ object.document_number }}" id="id_document_number"/>
                                         </div>
                                     </div>
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_access">Уровень доступа</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="access" id="id_access"
-                                                    data-plugin-selectTwo>
-                                                <option value="none" selected>Выберите значение...</option>
-                                                {% for item in all_access.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.access }}
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_validity_period_start">Действителен с:</label>
                                             <input type="date" class="form-control form-control-modern"
-                                                   name="validity_period_start" value="" id="id_validity_period_start"/>
+                                                   name="validity_period_start" value="{{ object.validity_period_start | date:'c' }}" id="id_validity_period_start"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_validity_period_end">Действителен по:</label>
                                             <input type="date" class="form-control form-control-modern"
-                                                   name="validity_period_end" value="" id="id_validity_period_end"/>
+                                                   name="validity_period_end" value="{{ object.validity_period_end | date:'c' }}" id="id_validity_period_end"/>
                                         </div>
                                     </div>
                                 </div>
@@ -117,18 +104,6 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_document_division">Подразделение</label>
-                                            {{ form.document_division }}
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_document_division">Должность</label>
-                                            {{ form.document_job }}
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_document_order">Приказ</label>
-                                            {{ form.document_order }}
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
                                             <label for="id_executor">Исполнитель</label>
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="executor" id="id_executor"
@@ -138,14 +113,11 @@
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_employee">Ответственное лицо</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="employee" id="id_employee"
-                                                    data-plugin-selectTwo multiple>
-
-                                                {% for item in all_employee.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.employee }}
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_order_type">Тип приказа</label>
+                                            {{ form.document_order_type }}
                                         </div>
                                     </div>
                                     <div class="row text">
@@ -200,7 +172,7 @@
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'library_app:jobdescription_list' %}"
+                    <a href="{% url 'hrdepartment_app:order_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
                 {% if user.is_superuser %}

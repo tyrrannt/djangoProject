@@ -9,7 +9,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy, reverse
 from django.views import View
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from loguru import logger
 
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
@@ -18,11 +18,12 @@ from customers_app.models import DataBaseUser, Counteragent, Division, Job, Harm
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
-    MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm
+    MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
+    DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
+    PlaceProductionActivityUpdateForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
-    MedicalOrganisation, Purpose
-from library_app.models import DocumentsOrder
+    MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -186,8 +187,7 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
         # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(is_superuser=True)
-        content['form'].fields['place_production_activity'].queryset = Division.objects.all().exclude(
-            destination_point=False)
+        content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
         return content
 
     def get_success_url(self):
@@ -271,8 +271,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
                 filter_string["pk"] = item.pk
                 filter_string["period"] = item.period_for
 
-        content['form'].fields['place_production_activity'].queryset = Division.objects.all().exclude(
-            destination_point=False)
+        content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
         return content
 
     def get_success_url(self):
@@ -673,3 +672,153 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
         content['current_month'] = current_month
 
         return content
+
+
+# Должностные инструкции
+class DocumentsJobDescriptionList(LoginRequiredMixin, ListView):
+    model = DocumentsJobDescription
+
+    def get_queryset(self):
+        return DocumentsJobDescription.objects.filter(Q(allowed_placed=True))
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            documents_job_list = DocumentsJobDescription.objects.all()
+            data = [documents_job_item.get_data() for documents_job_item in documents_job_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+
+class DocumentsJobDescriptionAdd(LoginRequiredMixin, CreateView):
+    model = DocumentsJobDescription
+    form_class = DocumentsJobDescriptionAddForm
+
+    def get_context_data(self, **kwargs):
+        content = super(DocumentsJobDescriptionAdd, self).get_context_data(**kwargs)
+        content['title'] = 'Создание ДИ'
+        return content
+
+
+class DocumentsJobDescriptionDetail(LoginRequiredMixin, DetailView):
+    model = DocumentsJobDescription
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.documents_access_view.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('library_app:documents_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy('library_app:documents_list')
+            return redirect(url_match)
+        return super(DocumentsJobDescriptionDetail, self).dispatch(request, *args, **kwargs)
+
+
+class DocumentsJobDescriptionUpdate(LoginRequiredMixin, UpdateView):
+    template_name = 'hrdepartment_app/documentsjobdescription_update.html'
+    model = DocumentsJobDescription
+    form_class = DocumentsJobDescriptionUpdateForm
+
+    def get_context_data(self, **kwargs):
+        content = super(DocumentsJobDescriptionUpdate, self).get_context_data(**kwargs)
+        content['title'] = 'Изменение ДИ'
+        return content
+
+
+# Приказы
+class DocumentsOrderList(LoginRequiredMixin, ListView):
+    model = DocumentsOrder
+
+    def get_queryset(self):
+        return DocumentsOrder.objects.filter(Q(allowed_placed=True))
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            documents_order_list = DocumentsOrder.objects.all()
+            data = [documents_order_item.get_data() for documents_order_item in documents_order_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Список приказов'
+        return context
+
+
+class DocumentsOrderAdd(LoginRequiredMixin, CreateView):
+    model = DocumentsOrder
+    form_class = DocumentsOrderAddForm
+
+    def get_context_data(self, **kwargs):
+        content = super(DocumentsOrderAdd, self).get_context_data(**kwargs)
+        content['title'] = 'Создание приказа'
+        return content
+
+
+class DocumentsOrderDetail(LoginRequiredMixin, DetailView):
+    model = DocumentsOrder
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.documents_access_view.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('library_app:documents_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy('library_app:documents_list')
+            return redirect(url_match)
+        return super(DocumentsOrderDetail, self).dispatch(request, *args, **kwargs)
+
+
+class DocumentsOrderUpdate(LoginRequiredMixin, UpdateView):
+    template_name = 'hrdepartment_app/documentsorder_update.html'
+    model = DocumentsOrder
+    form_class = DocumentsOrderUpdateForm
+
+    def get_context_data(self, **kwargs):
+        content = super(DocumentsOrderUpdate, self).get_context_data(**kwargs)
+        content['title'] = 'Изменение приказа'
+        return content
+
+
+class PlaceProductionActivityList(LoginRequiredMixin, ListView):
+    model = PlaceProductionActivity
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            place_list = PlaceProductionActivity.objects.all()
+            data = [place_item.get_data() for place_item in place_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+class PlaceProductionActivityAdd(LoginRequiredMixin, CreateView):
+    model = PlaceProductionActivity
+    form_class = PlaceProductionActivityAddForm
+
+class PlaceProductionActivityDetail(LoginRequiredMixin, DetailView):
+    model = PlaceProductionActivity
+
+class PlaceProductionActivityUpdate(LoginRequiredMixin, UpdateView):
+    model = PlaceProductionActivity
+    template_name = 'hrdepartment_app/placeproductionactivity_form_update.html'
+    form_class = PlaceProductionActivityUpdateForm

@@ -2,10 +2,9 @@ import datetime
 
 from django import forms
 
-from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions
+from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
-    BusinessProcessDirection, MedicalOrganisation
-from library_app.models import DocumentsOrder
+    BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity
 
 
 def present_or_future_date(value):
@@ -51,11 +50,11 @@ class OfficialMemoAddForm(forms.ModelForm):
         ('1', 'Служебная поездка'),
         ('2', 'Командировка')
     ]
-    place_production_activity = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
-    person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    place_production_activity = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_production_activity.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
@@ -90,22 +89,20 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         ('2', 'Командировка')
     ]
     official_memo_type = forms.ChoiceField(choices=memo_type)
-    place_production_activity = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
-    person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    place_production_activity = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_production_activity.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    order_date = forms.DateField(required=False)
-    order_number = forms.CharField(required=False)
     type_trip = forms.ChoiceField(choices=type_of_trip)
 
     class Meta:
         model = OfficialMemo
         fields = ('person', 'purpose_trip', 'period_from', 'period_for', 'place_production_activity',
-                  'order_number', 'order_date', 'comments', 'type_trip', 'official_memo_type')
+                  'comments', 'type_trip', 'official_memo_type')
 
     def clean(self):
         # user age must be above 18 to register
@@ -212,3 +209,99 @@ class PurposeUpdateForm(forms.ModelForm):
     class Meta:
         model = Purpose
         fields = '__all__'
+
+
+class DocumentsJobDescriptionAddForm(forms.ModelForm):
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    document_division.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_job = forms.ModelChoiceField(queryset=Job.objects.all())
+    document_job.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+    class Meta:
+        model = DocumentsJobDescription
+        fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
+                  'document_division', 'employee', 'allowed_placed', 'validity_period_start', 'document_order',
+                  'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_job')
+
+
+class DocumentsJobDescriptionUpdateForm(forms.ModelForm):
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    document_division.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_job = forms.ModelChoiceField(queryset=Job.objects.all())
+    document_job.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+    class Meta:
+        model = DocumentsJobDescription
+        fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
+                  'document_division', 'employee', 'validity_period_start', 'validity_period_end', 'previous_document',
+                  'allowed_placed', 'actuality', 'document_name', 'document_order', 'document_job')
+
+
+type_of_order = [
+        ('1', 'Общая деятельность'),
+        ('2', 'Личный состав')
+    ]
+
+
+class DocumentsOrderAddForm(forms.ModelForm):
+    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
+    document_foundation.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_order_type = forms.ChoiceField(choices=type_of_order, label='Тип приказа')
+    document_order_type.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all(), label='Ответственные лица')
+    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+    class Meta:
+        model = DocumentsOrder
+        fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
+                  'employee', 'allowed_placed', 'validity_period_start', 'document_order_type',
+                  'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_foundation')
+
+
+class DocumentsOrderUpdateForm(forms.ModelForm):
+    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
+    document_foundation.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_order_type = forms.ChoiceField(choices=type_of_order)
+    document_order_type.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all(), label='Ответственные лица')
+    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+    class Meta:
+        model = DocumentsOrder
+        fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
+                  'employee', 'allowed_placed', 'validity_period_start', 'document_order_type',
+                  'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_foundation')
+
+
+class PlaceProductionActivityAddForm(forms.ModelForm):
+    class Meta:
+        model = PlaceProductionActivity
+        fields = ('name', 'address')
+
+
+class PlaceProductionActivityUpdateForm(forms.ModelForm):
+    class Meta:
+        model = PlaceProductionActivity
+        fields = ('name', 'address')
+
+

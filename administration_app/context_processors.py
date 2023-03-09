@@ -2,14 +2,13 @@ from django.db.models import Q
 from administration_app.models import make_menu
 from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocuments
 from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel
-from hrdepartment_app.models import ApprovalOficialMemoProcess, BusinessProcessDirection
-from library_app.models import DocumentsJobDescription
+from hrdepartment_app.models import ApprovalOficialMemoProcess, BusinessProcessDirection, DocumentsJobDescription
 
 
 # ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
 
 def get_all_contracts(request):
-    make_menu()
+    # make_menu()
     all_contract = Contract.objects.all()
     contracts_count = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True),
                                               Q(type_of_document__type_document='Договор')).count()

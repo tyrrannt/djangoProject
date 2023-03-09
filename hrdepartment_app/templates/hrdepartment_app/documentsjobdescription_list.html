@@ -22,9 +22,9 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.access_level.guide_access_add %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'library_app:order_add' %}"
+                                            <a href="{% url 'hrdepartment_app:jobdescription_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить Приказ </a>
+                                                Добавить ДИ </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -37,8 +37,11 @@
                                 <tr>
                                     <th width="10%">Номер</th>
                                     <th width="10%">Дата</th>
-                                    <th width="20%">Наименование</th>
-                                    <th width="20%">Утвержден</th>
+                                    <th width="20%">Должность</th>
+                                    <th width="20%">Подразделение</th>
+                                    <th width="20%">Приказ</th>
+                                    <th width="8%">Актуальность</th>
+                                    <th width="12%">Исполнитель</th>
                                 </tr>
                                 </thead>
                             </table>
@@ -58,7 +61,7 @@
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
                 "sDom": 'T<"clear">lfrtip',
-                "ajax": "{% url 'library_app:order_list' %}",
+                "ajax": "{% url 'hrdepartment_app:jobdescription_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
@@ -74,8 +77,11 @@
                 "columns": [
                     {"data": "document_number"},
                     {"data": "document_date"},
-                    {"data": "document_name"},
-                    {"data": "approved"},
+                    {"data": "document_job"},
+                    {"data": "document_division"},
+                    {"data": "document_order"},
+                    {"data": "actuality"},
+                    {"data": "executor"},
                 ],
             });
         });

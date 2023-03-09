@@ -1,9 +1,13 @@
 from django.contrib import admin
 
 from hrdepartment_app.models import Medical, Purpose, OfficialMemo, ApprovalOficialMemoProcess, \
-    BusinessProcessDirection, MedicalOrganisation
+    BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity
 
 # Register your models here.
+
+admin.site.register(DocumentsJobDescription)
+admin.site.register(DocumentsOrder)
+admin.site.register(PlaceProductionActivity)
 admin.site.register(MedicalOrganisation)
 admin.site.register(Medical)
 admin.site.register(Purpose)
