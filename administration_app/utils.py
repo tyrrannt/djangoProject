@@ -1,14 +1,10 @@
 import json
-import pathlib
-
 import requests
-from docxtpl import DocxTemplate
 from loguru import logger
-
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division
-from djangoProject.settings import BASE_DIR
+
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -64,65 +60,6 @@ def ChangeAccess(obj):
     # for key, value in kwargs:
     #     obj[key] = True
     print(9)
-
-
-def Med(obj_model, filepath, filename, request):
-    inspection_type = [
-        ('1', 'Предварительный'),
-        ('2', 'Периодический'),
-        ('3', 'Внеплановый')
-    ]
-    if obj_model.person.user_work_profile.job.type_of_job == '1':
-        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
-        print('1')
-    else:
-        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med2.docx'))
-        print('2')
-    if obj_model.person.gender == 'male':
-        gender = 'муж.'
-    else:
-        gender = 'жен.'
-    try:
-        harmful = list()
-        for items in obj_model.harmful.iterator():
-            harmful.append(f'{items.code}: {items.name}')
-        if obj_model.person.user_work_profile.divisions.address:
-            division = str(obj_model.person.user_work_profile.divisions)
-            div_address = f'Адрес обособленного подразделения места производственной деятельности {division[6:]} ' \
-                          f'(далее – {obj_model.person.user_work_profile.divisions}): ' \
-                          f'{obj_model.person.user_work_profile.divisions.address}.'
-        else:
-            div_address = ''
-        context = {'gender': gender,
-                   'title': next(x[1] for x in inspection_type if x[0] == obj_model.type_inspection).lower(),
-                   'number': obj_model.number,
-                   'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
-                   'division': obj_model.person.user_work_profile.divisions,
-                   'job': obj_model.person.user_work_profile.job,
-                   'FIO': obj_model.person,
-                   'snils': obj_model.person.user_profile.snils,
-                   'oms': obj_model.person.user_profile.oms,
-                   'status': obj_model.get_working_status_display(),
-                   'harmful': ", ".join(harmful),
-                   'organisation': obj_model.organisation,
-                   'ogrn': obj_model.organisation.ogrn,
-                   'email': obj_model.organisation.email,
-                   'tel': obj_model.organisation.phone,
-                   'address': obj_model.organisation.address,
-                   'div_address': div_address,
-                   }
-    except Exception as _ex:
-        DataBaseUser.objects.get(pk=request)
-        logger.debug(f'Ошибка заполнения файла {filename}: {DataBaseUser.objects.get(pk=request)} {_ex}')
-        context = {}
-    doc.render(context)
-    path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
-    if not path_obj.exists():
-        path_obj.mkdir(parents=True)
-    doc.save(pathlib.Path.joinpath(path_obj, filename))
-    # ToDo: Попытка конвертации docx в pdf в Linux. Не работает
-    # convert(filename, (filename[:-4]+'pdf'))
-    # convert(filepath)
 
 
 def boolean_return(request, check_string):

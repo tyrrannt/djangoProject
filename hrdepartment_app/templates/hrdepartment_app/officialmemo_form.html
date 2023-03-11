@@ -121,7 +121,12 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_place_production_activity">Место назначения</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.place_production_activity | attr:"multiple" }}</span>
+                                            <div class="input-group">
+                                                {{ form.place_production_activity | attr:"multiple" | add_class:"input-group-text" }}
+                                                <span class="input-group-text"><a
+                                                        href="{% url 'hrdepartment_app:place_add' %}"><i
+                                                        class="bx bxl-medium-old text-4"></i></a></span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">

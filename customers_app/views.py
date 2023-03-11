@@ -53,14 +53,14 @@ def get_profile_fill(self, context):
                 if getattr(user_private, str(item).split('.')[2]):
                     profile_info += 5
     except Exception as _ex:
-        print(f'{_ex}: Отсутствует блок личной информации')
+        logger.info(f'{_ex}: Отсутствует блок личной информации')
     try:
         for item in get_model_fields(user_work):
             if str(item).split('.')[2] in user_work_list:
                 if getattr(user_work, str(item).split('.')[2]):
                     profile_info += 5
     except Exception as _ex:
-        print(f'{_ex}: Отсутствует блок рабочей информации')
+        logger.info(f'{_ex}: Отсутствует блок рабочей информации')
     context['profile_info'] = profile_info
 
 
@@ -89,8 +89,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
         user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
-        print(user_obj)
-
         try:
             post_high = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
                                              Q(post_date_start__gt=datetime.datetime.today())).order_by(
@@ -101,7 +99,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             context['post_high'] = post_high
             context['post_low'] = post_low
         except Exception as _ex:
-            print(user_obj)
             message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
             logger.debug(message)
         context['title'] = 'редактирование'
@@ -171,12 +168,12 @@ def login(request):
                 portal_session = portal.first().portal_session
             except Exception as _ex:
                 portal_session = 900
-                print(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
+                logger.info(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
             try:
                 portal_paginator = portal.first().portal_paginator
             except Exception as _ex:
                 portal_paginator = 900
-                print(f'{_ex}: Не заданы базовые параметры пагинации страниц')
+                logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
             request.session.set_expiry(portal_session)
             request.session['portal_paginator'] = portal_paginator
             # return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))

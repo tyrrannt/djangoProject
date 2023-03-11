@@ -7,11 +7,13 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+from docxtpl import DocxTemplate
 from loguru import logger
 
-from administration_app.utils import Med, ending_day, FIO_format
+from administration_app.utils import ending_day, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job, AccessLevel
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
+
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -113,6 +115,64 @@ class MedicalOrganisation(models.Model):
         }
 
 
+def Med(obj_model, filepath, filename, request):
+    inspection_type = [
+        ('1', 'Предварительный'),
+        ('2', 'Периодический'),
+        ('3', 'Внеплановый')
+    ]
+    if obj_model.person.user_work_profile.job.type_of_job == '1':
+        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
+        print('1')
+    else:
+        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med2.docx'))
+        print('2')
+    if obj_model.person.gender == 'male':
+        gender = 'муж.'
+    else:
+        gender = 'жен.'
+    try:
+        harmful = list()
+        for items in obj_model.harmful.iterator():
+            harmful.append(f'{items.code}: {items.name}')
+        if obj_model.person.user_work_profile.divisions.address:
+            division = str(obj_model.person.user_work_profile.divisions)
+            div_address = f'Адрес обособленного подразделения места производственной деятельности {division[6:]} ' \
+                          f'(далее – {obj_model.person.user_work_profile.divisions}): ' \
+                          f'{obj_model.person.user_work_profile.divisions.address}.'
+        else:
+            div_address = ''
+        context = {'gender': gender,
+                   'title': next(x[1] for x in inspection_type if x[0] == obj_model.type_inspection).lower(),
+                   'number': obj_model.number,
+                   'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
+                   'division': obj_model.person.user_work_profile.divisions,
+                   'job': obj_model.person.user_work_profile.job,
+                   'FIO': obj_model.person,
+                   'snils': obj_model.person.user_profile.snils,
+                   'oms': obj_model.person.user_profile.oms,
+                   'status': obj_model.get_working_status_display(),
+                   'harmful': ", ".join(harmful),
+                   'organisation': obj_model.organisation,
+                   'ogrn': obj_model.organisation.ogrn,
+                   'email': obj_model.organisation.email,
+                   'tel': obj_model.organisation.phone,
+                   'address': obj_model.organisation.address,
+                   'div_address': div_address,
+                   }
+    except Exception as _ex:
+        DataBaseUser.objects.get(pk=request)
+        logger.debug(f'Ошибка заполнения файла {filename}: {DataBaseUser.objects.get(pk=request)} {_ex}')
+        context = {}
+    doc.render(context)
+    path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
+    if not path_obj.exists():
+        path_obj.mkdir(parents=True)
+    doc.save(pathlib.Path.joinpath(path_obj, filename))
+    # ToDo: Попытка конвертации docx в pdf в Linux. Не работает
+    # convert(filename, (filename[:-4]+'pdf'))
+    # convert(filepath)
+
 class Medical(models.Model):
     class Meta:
         verbose_name = 'Медицинское направление'
@@ -175,7 +235,7 @@ def rename_file_name(sender, instance, **kwargs):
             instance.medical_direction = f'hr/medical/{user_uid}/{filename}'
             instance.save()
     except Exception as _ex:
-        print(_ex)
+        logger.error(f'Ошибка при переименовании файла {_ex}')
 
 
 class PlaceProductionActivity(models.Model):
@@ -244,7 +304,7 @@ class OfficialMemo(models.Model):
                                     related_name='responsible')
 
     def __str__(self):
-        return f'{self.person} с {self.period_from} по {self.period_for}'
+        return f'СЗ {FIO_format(self.person)} с {self.period_from} по {self.period_for}'
 
     def get_data(self):
         place = [str(item) for item in self.place_production_activity.iterator()]
@@ -465,7 +525,7 @@ class DocumentsOrder(Documents):
         return reverse('hrdepartment_app:order_list')
 
     def __str__(self):
-        return f'№ {self.document_number} от {self.document_date} г.'
+        return f'Пр. № {self.document_number} от {self.document_date} г.'
 
 
 class DocumentsJobDescription(Documents):
@@ -488,12 +548,15 @@ class DocumentsJobDescription(Documents):
             'document_job': str(self.document_job),
             'document_division': str(self.document_division),
             'document_order': str(self.document_order),
-            'actuality': self.actuality,
+            'actuality': 'Да' if self.actuality else 'Нет',
             'executor': str(self.executor),
         }
 
     def get_absolute_url(self):
         return reverse('hrdepartment_app:jobdescription_list')
+
+    def __str__(self):
+        return f'ДИ {self.document_name} №{self.document_number} от {self.document_date}'
 
 
 @receiver(post_save, sender=DocumentsJobDescription)

@@ -1,20 +1,15 @@
 import datetime
-import json
 from calendar import monthrange
-
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, QuerySet
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
-from django.shortcuts import render, redirect
+from django.db.models import Q
+from django.http import JsonResponse, HttpResponseRedirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy, reverse
-from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from loguru import logger
-
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
     get_jsons_data
-from customers_app.models import DataBaseUser, Counteragent, Division, Job, HarmfulWorkingConditions
+from customers_app.models import DataBaseUser, Counteragent
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
@@ -430,9 +425,14 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
             for item in business_process:
                 person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
             # Если пользователь = Согласующее лицо
-            if self.request.user.user_work_profile.job.pk in person_agreement_list:
-                content['form'].fields['person_agreement'].queryset = users_list.filter(
-                    Q(user_work_profile__job__pk__in=person_agreement_list) & Q(pk=self.request.user.pk))
+            try:
+                if self.request.user.user_work_profile.job.pk in person_agreement_list:
+                    content['form'].fields['person_agreement'].queryset = users_list.filter(
+                        Q(user_work_profile__job__pk__in=person_agreement_list) & Q(pk=self.request.user.pk))
+            except AttributeError as _ex:
+                logger.error(f'У пользователя отсутствует должность')
+                #ToDo: Нужно вставить выдачу ошибки
+                return {}
             # Иначе весь список согласующих лиц
             else:
                 content['form'].fields['person_agreement'].queryset = users_list.filter(

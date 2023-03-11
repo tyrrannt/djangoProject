@@ -1,5 +1,7 @@
 import datetime
 
+from loguru import logger
+
 from administration_app.utils import get_jsons_data
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
 from hrdepartment_app.models import MedicalOrganisation, Medical
