@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'administration_app.middleware.RequestMiddleware',
+    'xff.middleware.XForwardedForMiddleware',
 
 ]
 
