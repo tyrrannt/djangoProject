@@ -153,6 +153,15 @@ class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
         return super(DataBaseUserUpdate, self).get(request, *args, **kwargs)
 
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
 def login(request):
     content = {'title': 'вход'}
     login_form = DataBaseUserLoginForm(data=request.POST)
@@ -164,6 +173,7 @@ def login(request):
         portal = PortalProperty.objects.all()
         if user and user.is_active:
             auth.login(request, user)
+            logger.info(f'Успешный вход. {user}')
             try:
                 portal_session = portal.first().portal_session
             except Exception as _ex:
@@ -178,6 +188,11 @@ def login(request):
             request.session['portal_paginator'] = portal_paginator
             # return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
             return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
+    else:
+        try:
+            logger.error(f'Ошибка авторизации!!! {request.POST["username"]}, IP: {get_client_ip(request)}')
+        except Exception as _ex:
+            logger.error(f'Ошибка!!! {_ex}')
     # else:
     #     content['errors'] = login_form.get_invalid_login_error()
     return render(request, 'customers_app/login.html', content)
