@@ -9,7 +9,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_queryset, change_session_context, HasPermissions
+    change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
