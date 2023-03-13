@@ -1,4 +1,6 @@
 import datetime
+
+from django.core.exceptions import PermissionDenied
 from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
@@ -484,6 +486,15 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
     model = DataBaseUser
     permission_required = 'customers_app.view_databaseuser'
+
+    def dispatch(self, request, *args, **kwargs):
+        user_object = self.get_object()
+        if request.user.pk == user_object.pk or request.user.is_superuser:
+            return super().dispatch(request, *args, **kwargs)
+        else:
+            logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
+            raise PermissionDenied
+
 
 
 class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):

@@ -1,9 +1,5 @@
-import functools
 import pathlib
-from os import path
-
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db.models import Q
@@ -11,14 +7,12 @@ from django.http import QueryDict, JsonResponse
 from django.shortcuts import HttpResponseRedirect, redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
-from administration_app.models import PortalProperty
 from administration_app.utils import int_validate, change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm
 from django.urls import reverse, reverse_lazy
 
-# Create your views here.
 from customers_app.models import DataBaseUser, Counteragent
 from djangoProject import settings
 
