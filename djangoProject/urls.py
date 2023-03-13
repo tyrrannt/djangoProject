@@ -26,7 +26,7 @@ handler404 = library_views.show_404
 urlpatterns = [
     # path('admin/', include('administration_app.urls')),
     path('', include('library_app.urls')),
-    path('admin/', admin.site.urls),
+    path('bklproxmoxadmin/', admin.site.urls),
     path('users/', include('customers_app.urls')),
     path('contracts/', include('contracts_app.urls')),
     path('hr/', include('hrdepartment_app.urls')),
