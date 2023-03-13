@@ -2,7 +2,7 @@ import functools
 import pathlib
 from os import path
 
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -23,7 +23,7 @@ from customers_app.models import DataBaseUser, Counteragent
 from djangoProject import settings
 
 
-class ContractList(LoginRequiredMixin, ListView):
+class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """
     Отображение списка договоров
     """
@@ -32,6 +32,7 @@ class ContractList(LoginRequiredMixin, ListView):
     item_sorted = 'pk'
     sorted_list = ['pk', 'contract_counteragent', 'contract_number', 'date_conclusion',
                    'type_of_contract', 'divisions']
+    permission_required = 'hrdepartment_app.view_contract'
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
@@ -51,7 +52,7 @@ class ContractList(LoginRequiredMixin, ListView):
         return super(ContractList, self).get(self, request, *args, **kwargs)
 
 
-class ContractSearch(LoginRequiredMixin, ListView):
+class ContractSearch(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """
     Поиск договоров в базе
     ToDo: Не работает пагинация при прямом открытии списка. Разобраться почему!!! После нажатия кнопки поиска, все норм.
@@ -60,6 +61,7 @@ class ContractSearch(LoginRequiredMixin, ListView):
     context_object_name = 'object'
     object_list = None
     paginate_by = 6
+    permission_required = 'hrdepartment_app.view_contract'
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()
@@ -121,13 +123,14 @@ class ContractSearch(LoginRequiredMixin, ListView):
         return context
 
 
-class ContractAdd(LoginRequiredMixin, CreateView):
+class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """
     Создание нового договора
     """
     model = Contract
     form_class = ContractsAddForm
     success_url = reverse_lazy('contracts_app:index')
+    permission_required = 'hrdepartment_app.add_contract'
 
     def post(self, request, *args, **kwargs):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
@@ -180,11 +183,12 @@ class ContractAdd(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class ContractDetail(LoginRequiredMixin, DetailView):
+class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """
     Просмотр договора.
     """
     model = Contract
+    permission_required = 'hrdepartment_app.view_contract'
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -225,10 +229,11 @@ class ContractDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class ContractUpdate(LoginRequiredMixin, UpdateView):
+class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Contract
     form_class = ContractsUpdateForm
     template_name_suffix = '_form_update'
+    permission_required = 'hrdepartment_app.change_contract'
 
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
@@ -293,12 +298,13 @@ class ContractUpdate(LoginRequiredMixin, UpdateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class ContractPostAdd(LoginRequiredMixin, CreateView):
+class ContractPostAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """
     Добавление записи к договору.
     """
     model = Posts
     form_class = ContractsPostAddForm
+    permission_required = 'hrdepartment_app.add_posts'
 
     def get_success_url(self):
         """
@@ -310,11 +316,12 @@ class ContractPostAdd(LoginRequiredMixin, CreateView):
         return reverse("contracts_app:detail", kwargs={"pk": pk})
 
 
-class ContractPostList(LoginRequiredMixin, ListView):
+class ContractPostList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """
     Вывод списка записей, относящихся к конкретному договору
     """
     model = Posts
+    permission_required = 'hrdepartment_app.view_posts'
 
     def get_queryset(self):
         """
@@ -329,11 +336,12 @@ class ContractPostList(LoginRequiredMixin, ListView):
         return qs
 
 
-class ContractPostDelete(LoginRequiredMixin, DeleteView):
+class ContractPostDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     """
     Удаление записи
     """
     model = Posts
+    permission_required = 'hrdepartment_app.delete_posts'
 
 
 """
@@ -341,9 +349,10 @@ class ContractPostDelete(LoginRequiredMixin, DeleteView):
 """
 
 
-class TypeDocumentsList(LoginRequiredMixin, ListView):
+class TypeDocumentsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_list.html'
+    permission_required = 'hrdepartment_app.view_typedocuments'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -355,10 +364,11 @@ class TypeDocumentsList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class TypeDocumentsAdd(LoginRequiredMixin, CreateView):
+class TypeDocumentsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = TypeDocuments
     form_class = TypeDocumentsAddForm
     template_name = 'contracts_app/typedocuments_add.html'
+    permission_required = 'hrdepartment_app.add_typedocuments'
 
     def get(self, request, *args, **kwargs):
         """
@@ -384,15 +394,17 @@ class TypeDocumentsAdd(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class TypeDocumentsDetail(LoginRequiredMixin, DetailView):
+class TypeDocumentsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_detail.html'
+    permission_required = 'hrdepartment_app.view_typedocuments'
 
 
-class TypeDocumentsUpdate(LoginRequiredMixin, UpdateView):
+class TypeDocumentsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_update.html'
     form_class = TypeDocumentsUpdateForm
+    permission_required = 'hrdepartment_app.change_typedocuments'
 
     def get(self, request, *args, **kwargs):
         """
@@ -423,9 +435,10 @@ class TypeDocumentsUpdate(LoginRequiredMixin, UpdateView):
 """
 
 
-class TypeContractsList(LoginRequiredMixin, ListView):
+class TypeContractsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_list.html'
+    permission_required = 'hrdepartment_app.view_typecontract'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -437,10 +450,11 @@ class TypeContractsList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class TypeContractsAdd(LoginRequiredMixin, CreateView):
+class TypeContractsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = TypeContract
     form_class = TypeContractsAddForm
     template_name = 'contracts_app/typecontracts_add.html'
+    permission_required = 'hrdepartment_app.add_typecontract'
 
     def get(self, request, *args, **kwargs):
         """
@@ -466,15 +480,17 @@ class TypeContractsAdd(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class TypeContractsDetail(LoginRequiredMixin, DetailView):
+class TypeContractsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_detail.html'
+    permission_required = 'hrdepartment_app.view_typecontract'
 
 
-class TypeContractsUpdate(LoginRequiredMixin, UpdateView):
+class TypeContractsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_update.html'
     form_class = TypeContractsUpdateForm
+    permission_required = 'hrdepartment_app.change_typecontract'
 
     def get(self, request, *args, **kwargs):
         """
@@ -505,9 +521,10 @@ class TypeContractsUpdate(LoginRequiredMixin, UpdateView):
 """
 
 
-class TypePropertysList(LoginRequiredMixin, ListView):
+class TypePropertysList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_list.html'
+    permission_required = 'hrdepartment_app.view_typeproperty'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -519,10 +536,11 @@ class TypePropertysList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class TypePropertysAdd(LoginRequiredMixin, CreateView):
+class TypePropertysAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = TypeProperty
     form_class = TypePropertysAddForm
     template_name = 'contracts_app/typepropertys_add.html'
+    permission_required = 'hrdepartment_app.add_typeproperty'
 
     def get(self, request, *args, **kwargs):
         """
@@ -548,15 +566,17 @@ class TypePropertysAdd(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class TypePropertysDetail(LoginRequiredMixin, DetailView):
+class TypePropertysDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_detail.html'
+    permission_required = 'hrdepartment_app.view_typeproperty'
 
 
-class TypePropertysUpdate(LoginRequiredMixin, UpdateView):
+class TypePropertysUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_update.html'
     form_class = TypePropertysUpdateForm
+    permission_required = 'hrdepartment_app.change_typeproperty'
 
     def get(self, request, *args, **kwargs):
         """

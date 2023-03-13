@@ -18,6 +18,11 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+import library_app.views as library_views
+
+handler403 = library_views.show_403
+handler404 = library_views.show_404
+
 urlpatterns = [
     # path('admin/', include('administration_app.urls')),
     path('', include('library_app.urls')),

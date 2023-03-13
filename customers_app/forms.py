@@ -1,5 +1,7 @@
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
-from .models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job
+from django.contrib.auth.models import Permission
+
+from .models import DataBaseUser, Posts, Counteragent, Division, Job, Groups
 from django import forms
 
 
@@ -143,19 +145,23 @@ class DivisionsUpdateForm(forms.ModelForm):
 
 
 class JobsAddForm(forms.ModelForm):
+    group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all())
+    group.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     class Meta:
         model = Job
-        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval')
+        fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval', 'group')
 
 
 class JobsUpdateForm(forms.ModelForm):
     type_of_job = forms.ChoiceField(choices=Job.job_type)
     type_of_job.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all())
+    group.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
     class Meta:
         model = Job
         fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval',
-                  'type_of_job')
+                  'type_of_job', 'group')
 
 
 class StaffUpdateForm(forms.ModelForm):
@@ -173,3 +179,20 @@ class StaffUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
+
+
+class GroupAddForm(forms.ModelForm):
+    permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all())
+    permissions.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    class Meta:
+        model = Groups
+        fields = ('name', 'permissions')
+
+
+class GroupUpdateForm(forms.ModelForm):
+    permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all())
+    permissions.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+    class Meta:
+        model = Groups
+        fields = ('name', 'permissions')

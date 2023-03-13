@@ -9,6 +9,21 @@ from django.urls import reverse
 from contracts_app.templatetags.custom import empty_item
 from djangoProject import settings
 from djangoProject.settings import BASE_DIR
+from django.contrib.auth.models import Group, Permission
+
+
+class Groups(Group):
+    class Meta:
+        verbose_name = 'Группа'
+        verbose_name_plural = 'Группы'
+
+    def get_data(self):
+        permissions = [str(item.name) for item in self.permissions.iterator()]
+        return {
+            'pk': self.pk,
+            'name': self.name,
+            'permissions': '; '.join(permissions),
+        }
 
 
 class ViewDocumentsPhysical(models.Model):
@@ -117,6 +132,7 @@ class Job(models.Model):
     employment_function = models.CharField(verbose_name='Трудовая функция', max_length=37, default='')
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда', blank=True)
     right_to_approval = models.BooleanField(verbose_name='Имеет право на согласование', default=False)
+    group = models.ManyToManyField(Groups, verbose_name='Группы должности')
 
     def __str__(self):
         return f'{self.name}'

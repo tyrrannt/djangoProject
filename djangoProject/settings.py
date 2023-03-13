@@ -60,6 +60,8 @@ MIDDLEWARE = [
 
 ]
 
+XFF_TRUSTED_PROXY_DEPTH = 2
+
 ROOT_URLCONF = 'djangoProject.urls'
 
 TEMPLATES = [

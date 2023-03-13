@@ -30,4 +30,7 @@ urlpatterns = [
     path('jobs/<int:pk>/', views.JobsDetail.as_view(), name='jobs'),
     path('jobs/<int:pk>/update/', views.JobsUpdate.as_view(), name='jobs_update'),
     path('harmful/', views.HarmfulWorkingConditionsList.as_view(), name='harmfuls_list'),
+    path('group/', views.GroupListView.as_view(), name='group_list'),
+    path('group/add/', views.GroupCreateView.as_view(), name='group_add'),
+    path('group/<int:pk>/update/', views.GroupUpdateView.as_view(), name='group_update'),
 ]

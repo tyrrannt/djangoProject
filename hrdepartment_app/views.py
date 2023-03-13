@@ -1,6 +1,6 @@
 import datetime
 from calendar import monthrange
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import redirect
@@ -25,8 +25,9 @@ logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotat
 
 
 # Create your views here.
-class MedicalOrganisationList(LoginRequiredMixin, ListView):
+class MedicalOrganisationList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = MedicalOrganisation
+    permission_required = 'customers_app.view_medicalorganisation'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -54,18 +55,21 @@ class MedicalOrganisationList(LoginRequiredMixin, ListView):
         return super(MedicalOrganisationList, self).get(request, *args, **kwargs)
 
 
-class MedicalOrganisationAdd(LoginRequiredMixin, CreateView):
+class MedicalOrganisationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = MedicalOrganisation
     form_class = MedicalOrganisationAddForm
+    permission_required = 'customers_app.add_medicalorganisation'
 
 
-class MedicalOrganisationUpdate(LoginRequiredMixin, UpdateView):
+class MedicalOrganisationUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = MedicalOrganisation
     form_class = MedicalOrganisationUpdateForm
+    permission_required = 'customers_app.change_medicalorganisation'
 
 
-class MedicalExamination(LoginRequiredMixin, ListView):
+class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Medical
+    permission_required = 'hrdepartment_app.view_medical'
 
     # paginate_by = 10
     # item_sorted = 'date_entry'
@@ -109,9 +113,10 @@ class MedicalExamination(LoginRequiredMixin, ListView):
         return JsonResponse(response)
 
 
-class MedicalExaminationAdd(LoginRequiredMixin, CreateView):
+class MedicalExaminationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Medical
     form_class = MedicalExaminationAddForm
+    permission_required = 'hrdepartment_app.add_medical'
 
     def get_context_data(self, **kwargs):
         content = super(MedicalExaminationAdd, self).get_context_data(**kwargs)
@@ -126,10 +131,11 @@ class MedicalExaminationAdd(LoginRequiredMixin, CreateView):
         # return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
 
 
-class MedicalExaminationUpdate(LoginRequiredMixin, UpdateView):
+class MedicalExaminationUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Medical
     form_class = MedicalExaminationUpdateForm
     template_name = 'hrdepartment_app/medical_form_update.html'
+    permission_required = 'hrdepartment_app.change_medical'
 
     def get_context_data(self, **kwargs):
         content = super(MedicalExaminationUpdate, self).get_context_data(**kwargs)
@@ -139,9 +145,10 @@ class MedicalExaminationUpdate(LoginRequiredMixin, UpdateView):
         return reverse_lazy('hrdepartment_app:medical_list')
 
 
-class OfficialMemoList(LoginRequiredMixin, ListView):
+class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = OfficialMemo
     paginate_by = 6
+    permission_required = 'hrdepartment_app.view_officialmemo'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -169,9 +176,10 @@ class OfficialMemoList(LoginRequiredMixin, ListView):
         return context
 
 
-class OfficialMemoAdd(LoginRequiredMixin, CreateView):
+class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = OfficialMemo
     form_class = OfficialMemoAddForm
+    permission_required = 'hrdepartment_app.add_officialmemo'
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoAdd, self).get_context_data(**kwargs)
@@ -241,10 +249,11 @@ class OfficialMemoAdd(LoginRequiredMixin, CreateView):
         return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
 
-class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
+class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
     template_name = 'hrdepartment_app/officialmemo_form_update.html'
+    permission_required = 'hrdepartment_app.change_officialmemo'
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
@@ -335,8 +344,9 @@ class OfficialMemoUpdate(LoginRequiredMixin, UpdateView):
         return super(OfficialMemoUpdate, self).get(request, *args, **kwargs)
 
 
-class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
+class ApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
+    permission_required = 'hrdepartment_app.view_approvaloficialmemoprocess'
 
     def get_queryset(self):
         qs = super(ApprovalOficialMemoProcessList, self).get_queryset()
@@ -360,9 +370,10 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
+class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessAddForm
+    permission_required = 'hrdepartment_app.add_approvaloficialmemoprocess'
 
     def get_context_data(self, **kwargs):
         global person_agreement_list
@@ -395,10 +406,11 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, CreateView):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
 
 
-class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
+class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessUpdateForm
     template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_update.html'
+    permission_required = 'hrdepartment_app.change_approvaloficialmemoprocess'
 
     def get_context_data(self, **kwargs):
         global person_agreement_list
@@ -431,7 +443,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
                         Q(user_work_profile__job__pk__in=person_agreement_list) & Q(pk=self.request.user.pk))
             except AttributeError as _ex:
                 logger.error(f'У пользователя отсутствует должность')
-                #ToDo: Нужно вставить выдачу ошибки
+                # ToDo: Нужно вставить выдачу ошибки
                 return {}
             # Иначе весь список согласующих лиц
             else:
@@ -505,8 +517,9 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, UpdateView):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
 
 
-class PurposeList(LoginRequiredMixin, ListView):
+class PurposeList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Purpose
+    permission_required = 'hrdepartment_app.view_purpose'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -518,33 +531,39 @@ class PurposeList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class PurposeAdd(LoginRequiredMixin, CreateView):
+class PurposeAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Purpose
     form_class = PurposeAddForm
+    permission_required = 'hrdepartment_app.add_purpose'
 
 
-class PurposeUpdate(LoginRequiredMixin, UpdateView):
+class PurposeUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Purpose
     form_class = PurposeUpdateForm
+    permission_required = 'hrdepartment_app.change_purpose'
 
 
-class BusinessProcessDirectionList(LoginRequiredMixin, ListView):
+class BusinessProcessDirectionList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = BusinessProcessDirection
+    permission_required = 'hrdepartment_app.view_businessprocessdirection'
 
 
-class BusinessProcessDirectionAdd(LoginRequiredMixin, CreateView):
+class BusinessProcessDirectionAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionAddForm
+    permission_required = 'hrdepartment_app.add_businessprocessdirection'
 
 
-class BusinessProcessDirectionUpdate(LoginRequiredMixin, UpdateView):
+class BusinessProcessDirectionUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionUpdateForm
+    permission_required = 'hrdepartment_app.change_businessprocessdirection'
 
 
-class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
+class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
     template_name = 'hrdepartment_app/reportapprovaloficialmemoprocess_list.html'
+    permission_required = 'hrdepartment_app.view_approvaloficialmemoprocess'
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()
@@ -675,8 +694,9 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, ListView):
 
 
 # Должностные инструкции
-class DocumentsJobDescriptionList(LoginRequiredMixin, ListView):
+class DocumentsJobDescriptionList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = DocumentsJobDescription
+    permission_required = 'hrdepartment_app.view_documentsjobdescription'
 
     def get_queryset(self):
         return DocumentsJobDescription.objects.filter(Q(allowed_placed=True))
@@ -691,9 +711,10 @@ class DocumentsJobDescriptionList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class DocumentsJobDescriptionAdd(LoginRequiredMixin, CreateView):
+class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = DocumentsJobDescription
     form_class = DocumentsJobDescriptionAddForm
+    permission_required = 'hrdepartment_app.add_documentsjobdescription'
 
     def get_context_data(self, **kwargs):
         content = super(DocumentsJobDescriptionAdd, self).get_context_data(**kwargs)
@@ -701,8 +722,9 @@ class DocumentsJobDescriptionAdd(LoginRequiredMixin, CreateView):
         return content
 
 
-class DocumentsJobDescriptionDetail(LoginRequiredMixin, DetailView):
+class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = DocumentsJobDescription
+    permission_required = 'hrdepartment_app.view_documentsjobdescription'
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -723,10 +745,11 @@ class DocumentsJobDescriptionDetail(LoginRequiredMixin, DetailView):
         return super(DocumentsJobDescriptionDetail, self).dispatch(request, *args, **kwargs)
 
 
-class DocumentsJobDescriptionUpdate(LoginRequiredMixin, UpdateView):
+class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'hrdepartment_app/documentsjobdescription_update.html'
     model = DocumentsJobDescription
     form_class = DocumentsJobDescriptionUpdateForm
+    permission_required = 'hrdepartment_app.change_documentsjobdescription'
 
     def get_context_data(self, **kwargs):
         content = super(DocumentsJobDescriptionUpdate, self).get_context_data(**kwargs)
@@ -735,8 +758,9 @@ class DocumentsJobDescriptionUpdate(LoginRequiredMixin, UpdateView):
 
 
 # Приказы
-class DocumentsOrderList(LoginRequiredMixin, ListView):
+class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = DocumentsOrder
+    permission_required = 'hrdepartment_app.view_documentsorder'
 
     def get_queryset(self):
         return DocumentsOrder.objects.filter(Q(allowed_placed=True))
@@ -756,9 +780,10 @@ class DocumentsOrderList(LoginRequiredMixin, ListView):
         return context
 
 
-class DocumentsOrderAdd(LoginRequiredMixin, CreateView):
+class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = DocumentsOrder
     form_class = DocumentsOrderAddForm
+    permission_required = 'hrdepartment_app.add_documentsorder'
 
     def get_context_data(self, **kwargs):
         content = super(DocumentsOrderAdd, self).get_context_data(**kwargs)
@@ -766,8 +791,9 @@ class DocumentsOrderAdd(LoginRequiredMixin, CreateView):
         return content
 
 
-class DocumentsOrderDetail(LoginRequiredMixin, DetailView):
+class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = DocumentsOrder
+    permission_required = 'hrdepartment_app.view_documentsorder'
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -788,10 +814,11 @@ class DocumentsOrderDetail(LoginRequiredMixin, DetailView):
         return super(DocumentsOrderDetail, self).dispatch(request, *args, **kwargs)
 
 
-class DocumentsOrderUpdate(LoginRequiredMixin, UpdateView):
+class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'hrdepartment_app/documentsorder_update.html'
     model = DocumentsOrder
     form_class = DocumentsOrderUpdateForm
+    permission_required = 'hrdepartment_app.change_documentsorder'
 
     def get_context_data(self, **kwargs):
         content = super(DocumentsOrderUpdate, self).get_context_data(**kwargs)
@@ -799,8 +826,9 @@ class DocumentsOrderUpdate(LoginRequiredMixin, UpdateView):
         return content
 
 
-class PlaceProductionActivityList(LoginRequiredMixin, ListView):
+class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = PlaceProductionActivity
+    permission_required = 'hrdepartment_app.view_placeproductionactivity'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -811,14 +839,20 @@ class PlaceProductionActivityList(LoginRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
-class PlaceProductionActivityAdd(LoginRequiredMixin, CreateView):
+
+class PlaceProductionActivityAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = PlaceProductionActivity
     form_class = PlaceProductionActivityAddForm
+    permission_required = 'hrdepartment_app.add_placeproductionactivity'
 
-class PlaceProductionActivityDetail(LoginRequiredMixin, DetailView):
+
+class PlaceProductionActivityDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = PlaceProductionActivity
+    permission_required = 'hrdepartment_app.view_placeproductionactivity'
 
-class PlaceProductionActivityUpdate(LoginRequiredMixin, UpdateView):
+
+class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = PlaceProductionActivity
     template_name = 'hrdepartment_app/placeproductionactivity_form_update.html'
     form_class = PlaceProductionActivityUpdateForm
+    permission_required = 'hrdepartment_app.change_placeproductionactivity'

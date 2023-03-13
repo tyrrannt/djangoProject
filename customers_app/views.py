@@ -1,6 +1,6 @@
 import datetime
 from loguru import logger
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, redirect
@@ -8,25 +8,54 @@ from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
-from administration_app.utils import boolean_return, get_jsons_data, transliterate, get_jsons_data_filter, \
-    change_session_get, change_session_queryset, change_session_context, get_jsons
+from administration_app.utils import boolean_return, get_jsons_data, \
+    change_session_get, change_session_queryset, change_session_context, HasPermissions
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.customers_util import get_database_user_profile, get_database_user_work_profile, get_database_user
+from customers_app.customers_util import get_database_user_work_profile, get_database_user
 from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
-    DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions
+    DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
-    CounteragentAddForm, PostsUpdateForm
+    CounteragentAddForm, PostsUpdateForm, GroupAddForm, GroupUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
-
-# Create your views here.
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
+
+
+class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = Groups
+    template_name = 'customers_app/group_list.html'
+    success_url = reverse_lazy('customers_app:group_list')
+    permission_required = 'customers_app.view_groups'
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            group_list = Groups.objects.all()
+            data = [group_item.get_data() for group_item in group_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+
+class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = Groups
+    form_class = GroupAddForm
+    template_name = 'customers_app/group_form.html'
+    success_url = reverse_lazy('customers_app:group_list')
+    permission_required = 'customers_app.add_groups'
+
+
+class GroupUpdateView(LoginRequiredMixin, UpdateView):
+    model = Groups
+    form_class = GroupUpdateForm
+    template_name = 'customers_app/group_form.html'
+    success_url = reverse_lazy('customers_app:group_list')
 
 
 def get_model_fields(model_object):
@@ -281,10 +310,11 @@ class PostsUpdateView(LoginRequiredMixin, UpdateView):
         return reverse("customers_app:post_list")
 
 
-class CounteragentListView(LoginRequiredMixin, ListView):
+class CounteragentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     # template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
     model = Counteragent
     paginate_by = 6
+    permission_required = 'customers_app.view_counteragent'
 
     def get_queryset(self):
         qs = Counteragent.objects.all().order_by('pk')
@@ -327,10 +357,11 @@ class CounteragentListView(LoginRequiredMixin, ListView):
         return context
 
 
-class CounteragentAdd(LoginRequiredMixin, CreateView):
+class CounteragentAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Counteragent
     form_class = CounteragentAddForm
     template_name = 'customers_app/counteragent_add.html'
+    permission_required = 'customers_app.add_counteragent'
 
     def get_context_data(self, **kwargs):
         context = super(CounteragentAdd, self).get_context_data(**kwargs)
@@ -358,15 +389,17 @@ class CounteragentAdd(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class CounteragentDetail(LoginRequiredMixin, DetailView):
+class CounteragentDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     # template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
     model = Counteragent
+    permission_required = 'customers_app.view_counteragent'
 
 
-class CounteragentUpdate(LoginRequiredMixin, UpdateView):
+class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     # template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
     model = Counteragent
     form_class = CounteragentUpdateForm
+    permission_required = 'customers_app.change_counteragent'
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -407,12 +440,13 @@ class CounteragentUpdate(LoginRequiredMixin, UpdateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class StaffListView(LoginRequiredMixin, ListView):
+class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'customers_app/staff_list.html'
     model = DataBaseUser
     paginate_by = 6
     item_sorted = 'pk'
     sorted_list = ['pk', 'last_name', 'user_work_profile__divisions__code', 'user_work_profile__job__name']
+    permission_required = 'customers_app.view_databaseuser'
 
     def get_context_data(self, **kwargs):
         context = super(StaffListView, self).get_context_data(**kwargs)
@@ -446,15 +480,17 @@ class StaffListView(LoginRequiredMixin, ListView):
         return super(StaffListView, self).get(request, *args, **kwargs)
 
 
-class StaffDetail(LoginRequiredMixin, DetailView):
+class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
     model = DataBaseUser
+    permission_required = 'customers_app.view_databaseuser'
 
 
-class StaffUpdate(LoginRequiredMixin, UpdateView):
+class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'customers_app/staff_form.html'
     model = DataBaseUser
     form_class = StaffUpdateForm
+    permission_required = 'customers_app.change_databaseuser'
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -606,9 +642,10 @@ class StaffUpdate(LoginRequiredMixin, UpdateView):
 """
 
 
-class DivisionsList(LoginRequiredMixin, ListView):
+class DivisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Division
     template_name = 'customers_app/divisions_list.html'
+    permission_required = 'customers_app.view_division'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -662,10 +699,11 @@ class DivisionsList(LoginRequiredMixin, ListView):
         return context
 
 
-class DivisionsAdd(LoginRequiredMixin, CreateView):
+class DivisionsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Division
     form_class = DivisionsAddForm
     template_name = 'customers_app/divisions_add.html'
+    permission_required = 'customers_app.add_division'
 
     def get_context_data(self, **kwargs):
         content = super(DivisionsAdd, self).get_context_data(**kwargs)
@@ -705,15 +743,17 @@ class DivisionsAdd(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class DivisionsDetail(LoginRequiredMixin, DetailView):
+class DivisionsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = Division
     template_name = 'customers_app/divisions_detail.html'
+    permission_required = 'customers_app.view_division'
 
 
-class DivisionsUpdate(LoginRequiredMixin, UpdateView):
+class DivisionsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Division
     template_name = 'customers_app/divisions_update.html'
     form_class = DivisionsUpdateForm
+    permission_required = 'customers_app.change_division'
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -776,12 +816,13 @@ class DivisionsUpdate(LoginRequiredMixin, UpdateView):
 """
 
 
-class JobsList(LoginRequiredMixin, ListView):
+class JobsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Job
     template_name = 'customers_app/jobs_list.html'
     paginate_by = 6
     item_sorted = 'pk'
     sorted_list = ['pk', 'code', 'name', 'date_entry']
+    permission_required = 'customers_app.view_job'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -834,10 +875,11 @@ class JobsList(LoginRequiredMixin, ListView):
         return context
 
 
-class JobsAdd(LoginRequiredMixin, CreateView):
+class JobsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Job
     form_class = JobsAddForm
     template_name = 'customers_app/jobs_add.html'
+    permission_required = 'customers_app.add_job'
 
     def get_context_data(self, **kwargs):
         content = super(JobsAdd, self).get_context_data(**kwargs)
@@ -868,15 +910,17 @@ class JobsAdd(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class JobsDetail(LoginRequiredMixin, DetailView):
+class JobsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = Job
     template_name = 'customers_app/jobs_detail.html'
+    permission_required = 'customers_app.view_job'
 
 
-class JobsUpdate(LoginRequiredMixin, UpdateView):
+class JobsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Job
     template_name = 'customers_app/jobs_update.html'
     form_class = JobsUpdateForm
+    permission_required = 'customers_app.change_job'
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -926,8 +970,9 @@ class JobsUpdate(LoginRequiredMixin, UpdateView):
 """
 
 
-class HarmfulWorkingConditionsList(LoginRequiredMixin, ListView):
+class HarmfulWorkingConditionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = HarmfulWorkingConditions
+    permission_required = 'customers_app.view_harmfulworkingconditions'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ

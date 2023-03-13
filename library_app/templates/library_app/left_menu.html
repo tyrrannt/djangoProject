@@ -10,11 +10,9 @@
             <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
         </div>
     </div>
-
     <div class="nano">
         <div class="nano-content">
             <nav id="menu" class="nav-main" role="navigation">
-
                 <ul class="nav nav-main">
                     {% if user.is_superuser %}
                         <li class="nav-parent">
@@ -33,94 +31,95 @@
                                         Настройки бизнес процессов
                                     </a>
                                 </li>
-                            </ul>
-                        </li>
-                    {% endif %}
-                    {% if user.access_level.guide_access_view %}
-                        <li class="nav-parent">
-                            <a class="nav-link" href="#">
-                                <i class="bx bx-book-content" aria-hidden="true"></i>
-                                <span>Справочники</span>
-                            </a>
-                            <ul class="nav nav-children">
                                 <li>
-                                    <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
-                                        Физические лица
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
-                                        Должности
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}">
-                                        Вредные условия труда
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
-                                        Типы документов
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
-                                        Типы договоров
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
-                                        Типы имущества
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'customers_app:divisions_list' %}">
-                                        Подразделения
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
-                                        Контрагенты
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'hrdepartment_app:purpose_list' %}">
-                                        Цели служебной поездки
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'hrdepartment_app:medicalorg_list' %}">
-                                        Медицинские организации
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'hrdepartment_app:place_list' %}">
-                                        Места назначения
+                                    <a class="nav-link" href="{% url 'customers_app:group_list' %}">
+                                        Группы
                                     </a>
                                 </li>
                             </ul>
                         </li>
                     {% endif %}
-                    {% if user.access_level.contracts_access_view %}
-                        <li class="nav-parent">
-                            <a class="nav-link" href="#">
-                                <i class="bx bx-file" aria-hidden="true"></i>
-                                <span>База договоров</span>
-                            </a>
-                            <ul class="nav nav-children">
-                                <li>
-                                    <a class="nav-link" href="{% url 'contracts_app:index' %}">
-                                        Общий список договоров
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'contracts_app:search' %}">
-                                        Поиск договоров
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    {% endif %}
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-book-content" aria-hidden="true"></i>
+                            <span>Справочники</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
+                                    Физические лица
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
+                                    Должности
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}">
+                                    Вредные условия труда
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
+                                    Типы документов
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
+                                    Типы договоров
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
+                                    Типы имущества
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:divisions_list' %}">
+                                    Подразделения
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
+                                    Контрагенты
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'hrdepartment_app:purpose_list' %}">
+                                    Цели служебной поездки
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'hrdepartment_app:medicalorg_list' %}">
+                                    Медицинские организации
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'hrdepartment_app:place_list' %}">
+                                    Места назначения
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class="bx bx-file" aria-hidden="true"></i>
+                            <span>База договоров</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:index' %}">
+                                    Общий список договоров
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:search' %}">
+                                    Поиск договоров
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class="bx bx-briefcase-alt-2" aria-hidden="true"></i>
@@ -186,21 +185,7 @@
                                             Отчет по сотрудникам
                                         </a>
                                     </li>
-                                    {#                                    <li>#}
-                                    {#                                        <a class="nav-link" href="#">#}
-                                    {#                                            Положения#}
-                                    {#                                        </a>#}
-                                    {#                                    </li>#}
-                                    {#                                    <li>#}
-                                    {#                                        <a class="nav-link" href="#">#}
-                                    {#                                            Приказы по ОД#}
-                                    {#                                        </a>#}
-                                    {#                                    </li>#}
-                                    {#                                    <li>#}
-                                    {#                                        <a class="nav-link" href="#">#}
-                                    {#                                            Приказы по ЛС#}
-                                    {#                                        </a>#}
-                                    {#                                    </li>#}
+
                                 </ul>
                             </li>
                             <li>
@@ -218,9 +203,7 @@
 
                 </ul>
             </nav>
-
             <hr class="separator"/>
-
             <div class="sidebar-widget widget-tasks">
                 <div class="widget-header">
                     <h6>Наши проекты</h6>
@@ -233,9 +216,7 @@
                     </ul>
                 </div>
             </div>
-
             <hr class="separator"/>
-
             <div class="sidebar-widget widget-stats">
                 <div class="widget-header">
                     <h6>СТАТИСТИКА КОМПАНИИ</h6>
@@ -265,18 +246,15 @@
                 </div>
             </div>
         </div>
-
         <script>
             // Maintain Scroll Position
             if (typeof localStorage !== 'undefined') {
                 if (localStorage.getItem('sidebar-left-position') !== null) {
                     var initialPosition = localStorage.getItem('sidebar-left-position'),
                         sidebarLeft = document.querySelector('#sidebar-left .nano-content');
-
                     sidebarLeft.scrollTop = initialPosition;
                 }
             }
         </script>
-
     </div>
 </aside>
