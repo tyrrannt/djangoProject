@@ -295,8 +295,6 @@ class OfficialMemo(models.Model):
                                      help_text='', blank=True, default='')
     type_trip = models.CharField(verbose_name='Тип поездки', max_length=9, choices=type_of_trip,
                                  help_text='', blank=True, default='')
-    # order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', blank=True, null=True)
-    # order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
     order = models.ForeignKey('DocumentsOrder', verbose_name='Приказ', on_delete=models.SET_NULL, null=True, blank=True)
     comments = models.CharField(verbose_name='Примечание', max_length=250, default='', blank=True)
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)

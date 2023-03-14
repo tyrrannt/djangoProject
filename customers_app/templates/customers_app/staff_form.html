@@ -70,12 +70,6 @@
                                            data-bs-target="#usage-limits" role="tab" aria-controls="usage-limits"
                                            aria-selected="false"><i class="bx bxs-buildings me-2"></i> Рабочий
                                             профиль</a>
-                                        {% if object.is_active %}
-                                            <a class="nav-link" id="access-tab" data-bs-toggle="pill"
-                                               data-bs-target="#access" role="tab" aria-controls="access"
-                                               aria-selected="false"><i class="bx bx-upside-down me-2"></i> Уровни
-                                                доступа</a>
-                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
@@ -322,29 +316,12 @@
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Корпоративный
-                                                    номер телефона</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern"
-                                                           name="work_phone" id="id_work_phone"
-                                                           value="{{ object.user_work_profile.work_phone|empty_item }}"/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Внутренний
                                                     номер телефона</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
                                                            name="internal_phone" id="id_internal_phone"
                                                            value="{{ object.user_work_profile.internal_phone|empty_item }}"/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="email" class="form-control form-control-modern"
-                                                           name="work_email" id="id_work_email"
-                                                           value="{{ object.user_work_profile.work_email|empty_item }}"/>
                                                 </div>
                                             </div>
                                             {% if user.is_superuser %}
@@ -359,139 +336,7 @@
                                                 </div>
                                             {% endif %}
                                         </div>
-                                        <div class="tab-pane fade" id="access" role="tabpanel"
-                                             aria-labelledby="access-tab">
-                                            <div class="form-group row align-items-center  pb-1">
-                                                <table class="table table-ecommerce-simple table-striped mb-0"
-                                                       id="datatable-ecommerce-list" style="min-width: 550px;">
-                                                    <thead>
-                                                    <tr>
-                                                        <th width="24%">Наименование</th>
-                                                        <th width="40%">Уровень доступа</th>
-                                                        <th width="12%">Добавление</th>
-                                                        <th width="12%">Редактирование</th>
-                                                        <th width="12%">Публикация</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    <tr>
-                                                        <td>Договора</td>
-                                                        <td>
-                                                            <select name="contracts_access_view"
-                                                                    id="id_contracts_access_view"
-                                                                    class="form-control form-control-modern">
-                                                                {% for item in all_access %}
-                                                                    {% if item == object.access_level.contracts_access_view %}
-                                                                        <option value="{{ item.pk }}"
-                                                                                selected>{{ item }}</option>
-                                                                    {% else %}
-                                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                                    {% endif %}
-                                                                {% endfor %}
-                                                            </select>
-                                                        </td>
-                                                        <td><input type="checkbox" name="contracts_access_add"
-                                                                   id="id_contracts_access_add"
-                                                                   {% if object.access_level.contracts_access_add %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="contracts_access_edit"
-                                                                   id="id_contracts_access_edit"
-                                                                   {% if object.access_level.contracts_access_edit %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="contracts_access_agreement"
-                                                                   id="id_contracts_access_agreement"
-                                                                   {% if object.access_level.contracts_access_agreement %}checked{% endif %}>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Документы</td>
-                                                        <td>
-                                                            <select name="documents_access_view"
-                                                                    id="id_documents_access_view"
-                                                                    class="form-control form-control-modern">
-                                                                {% for item in all_access %}
-                                                                    {% if item == object.access_level.documents_access_view %}
-                                                                        <option value="{{ item.pk }}"
-                                                                                selected>{{ item }}</option>
-                                                                    {% else %}
-                                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                                    {% endif %}
-                                                                {% endfor %}
-                                                            </select>
-                                                        </td>
-                                                        <td><input type="checkbox" name="documents_access_add"
-                                                                   id="id_documents_access_add"
-                                                                   {% if object.access_level.documents_access_add %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="documents_access_edit"
-                                                                   id="id_documents_access_edit"
-                                                                   {% if object.access_level.documents_access_edit %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="documents_access_agreement"
-                                                                   id="id_documents_access_agreement"
-                                                                   {% if object.access_level.documents_access_agreement %}checked{% endif %}>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Записи</td>
-                                                        <td>
-                                                            <select name="posts_access_view" id="id_posts_access_view"
-                                                                    class="form-control form-control-modern">
-                                                                {% for item in all_access %}
-                                                                    {% if item == object.access_level.posts_access_view %}
-                                                                        <option value="{{ item.pk }}"
-                                                                                selected>{{ item }}</option>
-                                                                    {% else %}
-                                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                                    {% endif %}
-                                                                {% endfor %}
-                                                            </select>
-                                                        </td>
-                                                        <td><input type="checkbox" name="posts_access_add"
-                                                                   id="id_posts_access_add"
-                                                                   {% if object.access_level.posts_access_add %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="posts_access_edit"
-                                                                   id="id_posts_access_edit"
-                                                                   {% if object.access_level.posts_access_edit %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="posts_access_agreement"
-                                                                   id="id_posts_access_agreement"
-                                                                   {% if object.access_level.posts_access_agreement %}checked{% endif %}>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>Справочники</td>
-                                                        <td>
-                                                            <select name="guide_access_view" id="id_guide_access_view"
-                                                                    class="form-control form-control-modern">
-                                                                {% for item in all_access %}
-                                                                    {% if item == object.access_level.guide_access_view %}
-                                                                        <option value="{{ item.pk }}"
-                                                                                selected>{{ item }}</option>
-                                                                    {% else %}
-                                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                                    {% endif %}
-                                                                {% endfor %}
-                                                            </select>
-                                                        </td>
-                                                        <td><input type="checkbox" name="guide_access_add"
-                                                                   id="id_guide_access_add"
-                                                                   {% if object.access_level.guide_access_add %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="guide_access_edit"
-                                                                   id="id_guide_access_edit"
-                                                                   {% if object.access_level.guide_access_edit %}checked{% endif %}>
-                                                        </td>
-                                                        <td><input type="checkbox" name="guide_access_agreement"
-                                                                   id="id_guide_access_agreement"
-                                                                   {% if object.access_level.guide_access_agreement %}checked{% endif %}>
-                                                        </td>
-                                                    </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
+
                                     </div>
                                 </div>
                             </div>

@@ -13,7 +13,7 @@ from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.customers_util import get_database_user_work_profile, get_database_user
+from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -458,6 +458,9 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         change_session_get(request, self)
 
+        if self.request.GET.get('update') == '2':
+            get_identity_documents()
+
         if self.request.GET.get('update') == '1':
             get_database_user_work_profile()
 
@@ -525,16 +528,10 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         self.request.POST = content
         if self.form_valid:
             obj_user = DataBaseUser.objects.get(pk=kwargs['pk'])
-            contracts_access_view = AccessLevel.objects.get(pk=int(content['contracts_access_view']))
-            posts_access_view = AccessLevel.objects.get(pk=int(content['posts_access_view']))
-            guide_access_view = AccessLevel.objects.get(pk=int(content['guide_access_view']))
-            documents_access_view = AccessLevel.objects.get(pk=int(content['documents_access_view']))
             # Формируем словарь записей, которые будем записывать, поля job и division обрабатываем отдельно
             work_kwargs = {
                 'date_of_employment': content['date_of_employment'] if content['date_of_employment'] != '' else None,
                 'internal_phone': content['internal_phone'],
-                'work_phone': content['work_phone'],
-                'work_email': content['work_email'],
                 'work_email_password': content['work_email_password']
             }
             # Формируем словарь записей, которые будем записывать, поля citizenship и passport обрабатываем отдельно
@@ -598,25 +595,6 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
                 except Exception as _ex:
                     message = f'Ошибка сохранения профиля. У пользователя |{obj_user.username}| отсутствует личный профиль!!!: {_ex}'
                     logger.error(message)
-            access_kwargs = {
-                'contracts_access_view': contracts_access_view,
-                'contracts_access_add': boolean_return(request, 'contracts_access_add'),
-                'contracts_access_edit': boolean_return(request, 'contracts_access_edit'),
-                'contracts_access_agreement': boolean_return(request, 'contracts_access_agreement'),
-                'documents_access_view': documents_access_view,
-                'documents_access_add': boolean_return(request, 'documents_access_add'),
-                'documents_access_edit': boolean_return(request, 'documents_access_edit'),
-                'documents_access_agreement': boolean_return(request, 'documents_access_agreement'),
-                'posts_access_view': posts_access_view,
-                'posts_access_add': boolean_return(request, 'posts_access_add'),
-                'posts_access_edit': boolean_return(request, 'posts_access_edit'),
-                'posts_access_agreement': boolean_return(request, 'posts_access_agreement'),
-                'guide_access_view': guide_access_view,
-                'guide_access_add': boolean_return(request, 'guide_access_add'),
-                'guide_access_edit': boolean_return(request, 'guide_access_edit'),
-                'guide_access_agreement': boolean_return(request, 'guide_access_agreement')
-            }
-
             obj_user.save()
         return super(StaffUpdate, self).post(request, *args, **kwargs)
 

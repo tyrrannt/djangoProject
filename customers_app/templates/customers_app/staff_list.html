@@ -29,71 +29,24 @@
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'customers_app:staff_list' %}?update=0"
                                                class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить список </a>
+                                                Обновить ЛД </a>
                                         </div>
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'customers_app:staff_list' %}?update=1"
                                                class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить список 2 </a>
+                                                Обновить РД </a>
+                                        </div>
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'customers_app:staff_list' %}?update=2"
+                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Обновить ПД </a>
                                         </div>
                                     {% endif %}
-                                    {#                                    <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">#}
-                                    {#                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">#}
-                                    {#                                            <label for="field_sorted" class="ws-nowrap me-3 mb-0">Сортировка:</label>#}
-                                    {#                                            <select class="form-control select-style-1 filter-by" name="filter-by"#}
-                                    {#                                                    onchange="field_sorted()" id="field_sorted">#}
-                                    {#                                                <option value="0" {% if sort_item == 0 %}selected{% endif %}>ТН#}
-                                    {#                                                </option>#}
-                                    {#                                                <option value="1" {% if sort_item == 1 %}selected{% endif %}>ФИО#}
-                                    {#                                                </option>#}
-                                    {#                                                <option value="2" {% if sort_item == 2 %}selected{% endif %}>#}
-                                    {#                                                    Подразделение#}
-                                    {#                                                </option>#}
-                                    {#                                                <option value="3" {% if sort_item == 3 %}selected{% endif %}>Должность#}
-                                    {#                                                </option>#}
-                                    {#                                            </select>#}
-                                    {#                                        </div>#}
-                                    {#                                    </div>#}
-                                    {#                                    <div class="col-4 col-lg-auto ps-lg-1 mb-3 mb-lg-0">#}
-                                    {#                                        <div class="d-flex align-items-lg-center flex-column flex-lg-row">#}
-                                    {#                                            <label for="portal_paginator"#}
-                                    {#                                                   class="ws-nowrap me-3 mb-0">Количество:</label>#}
-                                    {#                                            <select class="form-control select-style-1 results-per-page"#}
-                                    {#                                                    name="results-per-page" onchange="portal_paginator()"#}
-                                    {#                                                    id="portal_paginator">#}
-                                    {#                                                <option value="6" {% if portal_paginator == 6 %}selected{% endif %}>6#}
-                                    {#                                                </option>#}
-                                    {#                                                <option value="12" {% if portal_paginator == 12 %}selected{% endif %}>#}
-                                    {#                                                    12#}
-                                    {#                                                </option>#}
-                                    {#                                                <option value="24" {% if portal_paginator == 24 %}selected{% endif %}>#}
-                                    {#                                                    24#}
-                                    {#                                                </option>#}
-                                    {#                                                <option value="48" {% if portal_paginator == 48 %}selected{% endif %}>#}
-                                    {#                                                    48#}
-                                    {#                                                </option>#}
-                                    {#                                                <option value="96" {% if portal_paginator == 96 %}selected{% endif %}>#}
-                                    {#                                                    96#}
-                                    {#                                                </option>#}
-                                    {#                                            </select>#}
-                                    {#                                        </div>#}
-                                    {#                                    </div>#}
-                                    {#                                    <div class="col-12 col-lg-auto ps-lg-1">#}
-                                    {#                                        <div class="mx-lg-auto">#}
-                                    {#                                            <div class="input-group">#}
-                                    {#                                                <a href="{% url 'customers_app:staff_list' %}"#}
-                                    {#                                                   class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">#}
-                                    {#                                                    Применить настройки#}
-                                    {#                                                </a>#}
-                                    {#                                            </div>#}
-                                    {#                                        </div>#}
-                                    {#                                    </div>#}
                                 </div>
                             </div>
 
                             <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
-
                                 <thead>
                                 <tr>
                                     <th width="4%">ТН</th>
@@ -107,11 +60,8 @@
                                     {% endif %}
                                 </tr>
                                 </thead>
-
                             </table>
-
                             <hr class="solid mt-5 opacity-4">
-                            {#                            {% include 'library_app/paginator.html' %}#}
                             <div class="datatable-footer">
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
@@ -125,7 +75,6 @@
                                                 <a href="#"
                                                    class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
                                             </div>
-
                                         </div>
                                     </div>
                                     <div class="col-lg-auto text-center order-3 order-lg-2">
@@ -136,8 +85,6 @@
                                     </div>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
 
@@ -219,6 +166,5 @@
                 ],
             });
         });
-
     </script>
 {% endblock %}

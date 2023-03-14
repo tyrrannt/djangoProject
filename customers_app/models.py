@@ -225,7 +225,7 @@ class IdentityDocuments(models.Model):
         verbose_name_plural = 'Паспорта пользователей'
 
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
-    series = models.CharField(verbose_name='Серия', max_length=4, default='')
+    series = models.CharField(verbose_name='Серия', max_length=5, default='')
     number = models.CharField(verbose_name='Номер', max_length=6, default='')
     issued_by_whom = models.CharField(verbose_name='Кем выдан', max_length=250, default='')
     date_of_issue = models.DateField(verbose_name='Дата выдачи', null=True)
@@ -259,13 +259,10 @@ class DataBaseUserWorkProfile(models.Model):
     date_of_employment = models.DateField(verbose_name='Дата приема на работу', blank=True, null=True)
     internal_phone = models.CharField(verbose_name='Внутренний номер телефона', max_length=3, help_text='', blank=True,
                                       default='', )
-    work_phone = models.CharField(verbose_name='Корпоративный номер телефона', max_length=15, help_text='', blank=True,
-                                  default='', )
     job = models.ForeignKey(Job, verbose_name='Должность', on_delete=models.SET_NULL, null=True, help_text='',
                             blank=True)
     divisions = models.ForeignKey(Division, verbose_name='Подразделение', on_delete=models.SET_NULL, null=True,
                                   help_text='', blank=True)
-    work_email = models.EmailField(verbose_name='Рабочий email', default='', blank=True)
     work_email_password = models.CharField(verbose_name='Пароль от корпоративной почты', max_length=50, blank=True,
                                            default='')
 
