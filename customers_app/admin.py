@@ -2,7 +2,7 @@ from django.contrib import admin
 # Register your models here.
 from django.contrib.auth.admin import UserAdmin
 
-from .models import DataBaseUser, Job, Division, Counteragent, Posts, UserAccessMode, AccessLevel, DataBaseUserProfile, \
+from .models import DataBaseUser, Job, Division, Counteragent, Posts, AccessLevel, DataBaseUserProfile, \
     Citizenships, IdentityDocuments, DataBaseUserWorkProfile, HarmfulWorkingConditions, ViewDocumentsPhysical
 
 
@@ -27,7 +27,7 @@ class CustomUserAdmin(UserAdmin):
             'Профиль',
             {
                 'fields': (
-                    'surname', 'avatar', 'birthday', 'access_level', 'address', 'type_users', 'service_number',
+                    'surname', 'avatar', 'birthday', 'address', 'type_users', 'service_number',
                     'personal_phone', 'gender', 'user_work_profile', 'user_profile', 'ref_key', 'person_ref_key',
                 ),
             },
@@ -40,7 +40,6 @@ admin.site.register(Posts)
 admin.site.register(Job, )
 admin.site.register(Division, )
 admin.site.register(Counteragent)
-admin.site.register(UserAccessMode)
 admin.site.register(AccessLevel)
 admin.site.register(DataBaseUserProfile)
 admin.site.register(Citizenships)

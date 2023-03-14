@@ -14,7 +14,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user
-from customers_app.models import DataBaseUser, Posts, Counteragent, UserAccessMode, Division, Job, AccessLevel, \
+from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
@@ -404,17 +404,6 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
     permission_required = 'customers_app.change_counteragent'
 
     def dispatch(self, request, *args, **kwargs):
-        try:
-            # Получаем уровень доступа у пользователя к редактированию
-            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
-                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
-                # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('customers_app:counteragent_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
-            url_match = reverse_lazy('customers_app:counteragent_list')
-            return redirect(url_match)
         return super(CounteragentUpdate, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -496,7 +485,6 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             raise PermissionDenied
 
 
-
 class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'customers_app/staff_form.html'
     model = DataBaseUser
@@ -504,17 +492,6 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     permission_required = 'customers_app.change_databaseuser'
 
     def dispatch(self, request, *args, **kwargs):
-        try:
-            # Получаем уровень доступа у пользователя к редактированию
-            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
-                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
-                # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('customers_app:staff_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
-            url_match = reverse_lazy('customers_app:staff_list')
-            return redirect(url_match)
         return super(StaffUpdate, self).dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -634,13 +611,7 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
                 'guide_access_edit': boolean_return(request, 'guide_access_edit'),
                 'guide_access_agreement': boolean_return(request, 'guide_access_agreement')
             }
-            if not obj_user.access_level:
-                obj_access = UserAccessMode(**access_kwargs)
-                obj_access.save()
-                obj_user.access_level = obj_access
-            else:
-                obj_access = UserAccessMode.objects.filter(pk=obj_user.access_level.pk)
-                obj_access.update(**access_kwargs)
+
             obj_user.save()
         return super(StaffUpdate, self).post(request, *args, **kwargs)
 
@@ -722,19 +693,7 @@ class DivisionsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return content
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
-                return super(DivisionsAdd, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('customers_app:divisions_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('customers_app:divisions_list')
-            return redirect(url_match)
+        return super(DivisionsAdd, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         if request.method == 'POST':
@@ -767,37 +726,10 @@ class DivisionsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     permission_required = 'customers_app.change_division'
 
     def dispatch(self, request, *args, **kwargs):
-        try:
-            # Получаем уровень доступа у пользователя к редактированию
-            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
-                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
-                # Иначе не меняем логику работы класса
-                message = f'Попытка получения доступа к изменению. Пользователь {self.request.user.username}, Подразделение {self.get_object()}'
-                logger.info(message)
-                url_match = reverse_lazy('customers_app:divisions_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            message = f'Ошибка получения прав доступа к изменению. Пользователь {self.request.user.username}, {_ex}'
-            logger.error(message)
-            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
-            url_match = reverse_lazy('customers_app:divisions_list')
-            return redirect(url_match)
         return super(DivisionsUpdate, self).dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
-                return super(DivisionsUpdate, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('customers_app:divisions_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('customers_app:divisions_list')
-            return redirect(url_match)
+        return super(DivisionsUpdate, self).get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         if request.method == 'POST':
@@ -898,19 +830,7 @@ class JobsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return content
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
-                return super(JobsAdd, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('customers_app:jobs_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('customers_app:jobs_list')
-            return redirect(url_match)
+        return super(JobsAdd, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
@@ -934,17 +854,6 @@ class JobsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     permission_required = 'customers_app.change_job'
 
     def dispatch(self, request, *args, **kwargs):
-        try:
-            # Получаем уровень доступа у пользователя к редактированию
-            if not DataBaseUser.objects.get(pk=self.request.user.pk).access_level.guide_access_edit:
-                # Если права доступа отсутствуют у пользователя, производим перенаправление к списку контрагентов
-                # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('customers_app:jobs_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку контрагентов
-            url_match = reverse_lazy('customers_app:jobs_list')
-            return redirect(url_match)
         return super(JobsUpdate, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -953,19 +862,7 @@ class JobsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return content
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
-                return super(JobsUpdate, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('customers_app:jobs_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('customers_app:jobs_list')
-            return redirect(url_match)
+        return super(JobsUpdate, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():

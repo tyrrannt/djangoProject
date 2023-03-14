@@ -38,7 +38,7 @@ class DataBaseUserUpdateForm(UserChangeForm):
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
             # 'type_users', 'phone', 'works', 'gender', 'surname'
             'last_name', 'first_name', 'surname', 'email', 'birthday',
-            'personal_phone', 'avatar', 'address', 'access_level', 'user_profile', 'user_work_profile',
+            'personal_phone', 'avatar', 'address', 'user_profile', 'user_work_profile',
         )
 
     def __init__(self, *args, **kwargs):
@@ -56,7 +56,7 @@ class DataBaseUserAddForm(UserChangeForm):
         fields = (
             #  'first_name', 'last_name', 'email', 'birthday',  'access_right',
             'last_name', 'first_name', 'surname', 'email', 'birthday',
-            'personal_phone', 'avatar', 'address', 'access_level', 'username', 'type_users',
+            'personal_phone', 'avatar', 'address', 'username', 'type_users',
             'password', 'user_profile', 'user_work_profile',
         )
 

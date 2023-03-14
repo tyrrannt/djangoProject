@@ -35,10 +35,8 @@ class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        user_access = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.contracts_access_view.level
         change_session_queryset(self.request, self)
-        return Contract.objects.filter(Q(allowed_placed=True),
-                                       Q(access__level__gte=user_access)).order_by(self.item_sorted)
+        return Contract.objects.filter(Q(allowed_placed=True)).order_by(self.item_sorted)
 
     def get(self, request, *args, **kwargs):
         change_session_get(request, self)
@@ -65,8 +63,8 @@ class ContractSearch(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         query = Q()
         query &= Q(allowed_placed=True)
-        query &= Q(access__pk__gte=DataBaseUser.objects.get(
-            pk=self.request.user.pk).access_level.contracts_access_view.level)
+        # query &= Q(access__pk__gte=DataBaseUser.objects.get(
+        #     pk=self.request.user.pk).access_level.contracts_access_view.level)
         qs = Contract.objects.filter(query).order_by('pk')
         if self.request.GET:
             dv = self.request.GET.get('dv')
@@ -151,19 +149,7 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа к созданию записи в таблице. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_add:
-                return super(ContractAdd, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:index')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:index')
-            return redirect(url_match)
+        return super(ContractAdd, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         files = self.request.FILES.getlist('doc_file')
@@ -185,21 +171,6 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     permission_required = 'hrdepartment_app.view_contract'
 
     def dispatch(self, request, *args, **kwargs):
-        try:
-            # Получаем уровень доступа для запрашиваемого объекта
-            detail_obj = int(self.get_object().access.level)
-            # Получаем уровень доступа к документам у пользователя
-            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.contracts_access_view.level
-            # Сравниваем права доступа
-            if detail_obj < user_obj:
-                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
-                # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('contracts_app:index')
-                return redirect(url_match)
-        except Exception as _ex:
-            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
-            url_match = reverse_lazy('contracts_app:index')
-            return redirect(url_match)
         return super(ContractDetail, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -208,9 +179,7 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # print(context.get('contract').pk)
         # Выбираем из таблицы Posts все записи относящиеся к текущему договору
         post = Posts.objects.filter(contract_number=self.object.pk)
-        slaves = Contract.objects.filter(Q(parent_category=self.object.pk),
-                                         Q(access__pk__gte=DataBaseUser.objects.get(pk=self.request.user.pk).
-                                           access_level.contracts_access_view.level))
+        slaves = Contract.objects.filter(Q(parent_category=self.object.pk))
         # Формируем заголовок страницы и передаем в контекст
         if self.object.contract_number:
             cn = self.object.contract_number
@@ -259,19 +228,20 @@ class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             print(f'Что то не то')
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_edit:
-                return super(ContractUpdate, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:index')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:index')
-            return redirect(url_match)
+        # """
+        # Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
+        # """
+        # pk = int(self.request.user.pk)
+        # try:
+        #     if DataBaseUser.objects.get(pk=pk).access_level.contracts_access_edit:
+        #         return super(ContractUpdate, self).get(request, *args, **kwargs)
+        #     else:
+        #         url_match = reverse_lazy('contracts_app:index')
+        #         return redirect(url_match)
+        # except Exception as _ex:
+        #     url_match = reverse_lazy('contracts_app:index')
+        #     return redirect(url_match)
+        return super(ContractUpdate, self).get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
 
@@ -365,19 +335,7 @@ class TypeDocumentsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = 'hrdepartment_app.add_typedocuments'
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
-                return super(TypeDocumentsAdd, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:typedocuments_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:typedocuments_list')
-            return redirect(url_match)
+        return super(TypeDocumentsAdd, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
@@ -401,19 +359,7 @@ class TypeDocumentsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
     permission_required = 'hrdepartment_app.change_typedocuments'
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
-                return super(TypeDocumentsUpdate, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:typedocuments_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:typedocuments_list')
-            return redirect(url_match)
+        return super(TypeDocumentsUpdate, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
@@ -451,19 +397,7 @@ class TypeContractsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = 'hrdepartment_app.add_typecontract'
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
-                return super(TypeContractsAdd, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:typecontracts_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:typecontracts_list')
-            return redirect(url_match)
+        return super(TypeContractsAdd, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
@@ -487,19 +421,7 @@ class TypeContractsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
     permission_required = 'hrdepartment_app.change_typecontract'
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
-                return super(TypeContractsUpdate, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:typecontracts_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:typecontracts_list')
-            return redirect(url_match)
+        return super(TypeContractsUpdate, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
@@ -537,19 +459,7 @@ class TypePropertysAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = 'hrdepartment_app.add_typeproperty'
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_add:
-                return super(TypePropertysAdd, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:typepropertys_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:typepropertys_list')
-            return redirect(url_match)
+        return super(TypePropertysAdd, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
@@ -573,19 +483,7 @@ class TypePropertysUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
     permission_required = 'hrdepartment_app.change_typeproperty'
 
     def get(self, request, *args, **kwargs):
-        """
-        Проверка прав доступа на изменение записи. Если прав нет, то пользователь перенаправляется в общую базу.
-        """
-        pk = int(self.request.user.pk)
-        try:
-            if DataBaseUser.objects.get(pk=pk).access_level.guide_access_edit:
-                return super(TypePropertysUpdate, self).get(request, *args, **kwargs)
-            else:
-                url_match = reverse_lazy('contracts_app:typepropertys_list')
-                return redirect(url_match)
-        except Exception as _ex:
-            url_match = reverse_lazy('contracts_app:typepropertys_list')
-            return redirect(url_match)
+        return super(TypePropertysUpdate, self).get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():

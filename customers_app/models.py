@@ -50,41 +50,6 @@ class AccessLevel(models.Model):
         return self.name
 
 
-class UserAccessMode(models.Model):
-    class Meta:
-        verbose_name = 'Уровень доступа пользователя'
-        verbose_name_plural = 'Уровни доступа пользователей'
-
-    # Права доступа к договорам
-    documents_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к договорам', blank=True,
-                                              null=True, on_delete=models.CASCADE, related_name='documents_view')
-    documents_access_add = models.BooleanField(verbose_name='Разрешение на создание договора', default=False)
-    documents_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование договора', default=False)
-    documents_access_agreement = models.BooleanField(verbose_name='Право на публикацию договора', default=False)
-    # Права доступа к документам
-    contracts_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документам', blank=True,
-                                              null=True, on_delete=models.CASCADE, related_name='contracts_view')
-    contracts_access_add = models.BooleanField(verbose_name='Разрешение на создание документа', default=False)
-    contracts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование документа', default=False)
-    contracts_access_agreement = models.BooleanField(verbose_name='Право на публикацию документа', default=False)
-    # Права доступа к сообщениям
-    posts_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к сообщениям', blank=True,
-                                          null=True, on_delete=models.CASCADE, related_name='posts_view')
-    posts_access_add = models.BooleanField(verbose_name='Разрешение на создание сообщения', default=False)
-    posts_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование сообщения', default=False)
-    posts_access_agreement = models.BooleanField(verbose_name='Право на публикацию сообщения', default=False)
-    # Права доступа к справочникам
-    guide_access_view = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к справочникам', blank=True,
-                                          null=True, on_delete=models.CASCADE, related_name='guide_view')
-    guide_access_add = models.BooleanField(verbose_name='Разрешение на создание записи в справочнике', default=False)
-    guide_access_edit = models.BooleanField(verbose_name='Разрешение на редактирование записи в справочнике',
-                                            default=False)
-    guide_access_agreement = models.BooleanField(verbose_name='Право на публикацию записи в справочнике', default=False)
-
-    def get_absolute_url(self):
-        return reverse('customers_app:staff', kwargs={'pk': self.databaseuser.pk})
-
-
 class HarmfulWorkingConditions(models.Model):
     class Meta:
         verbose_name = 'Вредные условия труда'
@@ -325,7 +290,8 @@ class DataBaseUser(AbstractUser):
     surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, default='', help_text='')
     avatar = models.ImageField(upload_to='users_avatars', blank=True, help_text='')
     birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')
-    access_level = models.OneToOneField(UserAccessMode, verbose_name='Права доступа', help_text='',
+
+    user_access = models.ForeignKey(AccessLevel, verbose_name='Права доступа', help_text='',
                                         blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='Тип пользователя', max_length=40, choices=type_of, help_text='',
