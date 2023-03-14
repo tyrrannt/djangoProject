@@ -22,10 +22,8 @@ def get_all_contracts(request):
     all_type_of_document = TypeDocuments.objects.all()
     if not request.user.is_anonymous:
         try:
-            contracts_not_published = Contract.objects.filter(Q(allowed_placed=False),
-                                                              Q(access__level__gte=request.user.access_level.contracts_access_view))
-            documents_not_published = DocumentsJobDescription.objects.filter(Q(allowed_placed=False),
-                                                                             Q(access__level__gte=request.user.access_level.documents_access_view))
+            contracts_not_published = Contract.objects.filter(Q(allowed_placed=False))
+            documents_not_published = DocumentsJobDescription.objects.filter(Q(allowed_placed=False))
         except Exception as _ex:
             contracts_not_published = Contract.objects.filter(allowed_placed=False)
             documents_not_published = DocumentsJobDescription.objects.filter(allowed_placed=False)

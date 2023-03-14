@@ -142,10 +142,11 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class DataBaseUserUpdate(LoginRequiredMixin, UpdateView):
+class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = DataBaseUser
     template_name = 'customers_app/user_profile_update.html'
     form_class = DataBaseUserUpdateForm
+    permission_required = 'customers_app.change_databaseuser'
 
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
