@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from administration_app.models import make_menu
 from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocuments
@@ -6,7 +7,7 @@ from hrdepartment_app.models import ApprovalOficialMemoProcess, BusinessProcessD
 
 
 # ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
-
+@login_required
 def get_all_contracts(request):
     # make_menu()
     all_contract = Contract.objects.all()
@@ -48,7 +49,7 @@ def get_all_contracts(request):
             'documents_not_published_count': documents_not_published_count,
             'posts_not_published_count': posts_not_published_count, 'type_of_document': all_type_of_document, }
 
-
+@login_required
 def get_approval_oficial_memo_process(request):
     if not request.user.is_anonymous:
         try:
