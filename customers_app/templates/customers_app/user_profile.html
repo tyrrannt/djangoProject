@@ -146,10 +146,12 @@
                         <li class="nav-item">
                             <button class="nav-link" data-bs-target="#edit" data-bs-toggle="tab">Профиль</button>
                         </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">Расчетный листок</button>
+                        </li>
                     </ul>
                     <div class="tab-content">
                         <div id="overview" class="tab-pane active">
-
                             <div class="p-3">
                                 <a href="{% url 'customers_app:post_add' %}" class="btn btn-primary btn-xs">Добавить</a>
                                 <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
@@ -201,6 +203,22 @@
                                         </ol>
                                     </div>
                                 </div>
+                            </div>
+
+                        </div>
+                        <div id="calculation" class="tab-pane">
+                            <div class="p-3">
+                                <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                                   style="min-width: 550px;">
+
+                                <thead>
+                                <tr>
+                                    <th width="20%">Тип</th>
+                                    <th width="40%">Начисление</th>
+                                    <th width="10%">Сумма</th>
+                                </tr>
+                                </thead>
+                            </table>
                             </div>
 
                         </div>
@@ -264,4 +282,24 @@
         </div>
         <!-- end: page -->
     </section>
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'customers_app:profile' user.pk %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "columns": [
+                    {"data": "calculation"},
+                    {"data": "description"},
+                    {"data": "summ"},
+                ],
+            });
+        });
+
+    </script>
 {% endblock %}

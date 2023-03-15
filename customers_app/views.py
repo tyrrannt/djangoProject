@@ -13,7 +13,8 @@ from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import TypeDocuments, Contract
-from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents
+from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
+    get_settlement_sheet
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -144,6 +145,13 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
         # context.update(groups())
         return context
+
+    def get(self, request, *args, **kwargs):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            get_user_obj = self.get_object()
+            data = get_settlement_sheet('02', '2023', get_user_obj.person_ref_key)
+            return JsonResponse(data)
+        return super().get(request, *args, **kwargs)
 
 
 class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
