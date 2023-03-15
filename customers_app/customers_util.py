@@ -199,6 +199,8 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_НачисленияУдержанияПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27")
     period = datetime.datetime.strptime(f"{selected_year}-{selected_month}-01", "%Y-%m-%d")
     data = list()
+    positive = 0
+    negative = 0
     result = {}
     for items in todo_str['value']:
         if period == datetime.datetime.strptime(items['Period'][:10], "%Y-%m-%d") and items['Active'] == True:
@@ -207,6 +209,26 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
                 'description': get_chart_of_calculation_types(items['НачислениеУдержание']) if items['ГруппаНачисленияУдержанияВыплаты'] == 'Начислено' else items['НачислениеУдержание'],
                 'summ': items['Сумма'],
             }
+            if items['ГруппаНачисленияУдержанияВыплаты'] == 'Начислено':
+                try:
+                    positive += int(items['Сумма'])
+                except Exception as _ex:
+                    pass
+            else:
+                try:
+                    negative += int(items['Сумма'])
+                except Exception as _ex:
+                    pass
             data.append(result)
+    data.append({
+        'calculation': 'Итого начислено',
+        'description': '',
+        'summ': positive,
+    })
+    data.append({
+        'calculation': 'Итого удержано',
+        'description': '',
+        'summ': negative,
+    })
     response = {'data': data}
     return response
