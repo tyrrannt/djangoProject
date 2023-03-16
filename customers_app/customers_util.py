@@ -238,37 +238,34 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
             if items['ГруппаНачисленияУдержанияВыплаты'] == 'Начислено':
                 result_positive = {
                     'description': get_chart_of_calculation_types(items['НачислениеУдержание']),
-                    'period': '',
-                    'days_worked': work_time[0],
-                    'hours_worked': work_time[1],
-                    'paid_days': work_time[2],
-                    'summ': items['Сумма'],
+                    'days_worked': work_time[0] if work_time[0] != 0 else '',
+                    'hours_worked': work_time[1] if work_time[1] != 0 else '',
+                    'paid_days': work_time[2] if work_time[2] != 0 else '',
+                    'summ': "{:.2f}".format(items['Сумма']),
                 }
                 data_positive.append(result_positive)
             else:
                 result_negative = {
                     'description': items['НачислениеУдержание'],
-                    'period': '',
-                    'summ': items['Сумма'],
+                    'summ': "{:.2f}".format(items['Сумма']),
                 }
                 data_negative.append(result_negative)
             if items['ГруппаНачисленияУдержанияВыплаты'] == 'Начислено':
                 try:
-                    positive += int(items['Сумма'])
+                    positive += float(items['Сумма'])
                 except Exception as _ex:
                     pass
             else:
                 try:
-                    negative += int(items['Сумма'])
+                    negative += float(items['Сумма'])
                 except Exception as _ex:
                     pass
     for items in acc_reg_set['value']:
         result_paid = {
             'document': items['ВидВзаиморасчетов'],
-            'period': '',
-            'paid': items['СуммаВзаиморасчетов']
+            'summ': "{:.2f}".format(items['СуммаВзаиморасчетов'])
         }
-        paid += int(items['СуммаВзаиморасчетов'])
+        paid += float(items['СуммаВзаиморасчетов'])
         data_paid.append(result_paid)
     accrued_table_set = ''
     withheld_table_set = ''
@@ -277,63 +274,71 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     for count in data_positive:
         accrued_table_set_list += '<tr>'
         for key in count:
-            accrued_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
+            if key == 'summ':
+                accrued_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right">{count[key]}</td>'
+            elif key in ['days_worked', 'hours_worked', 'paid_days']:
+                accrued_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">{count[key]}</td>'
+            else:
+                accrued_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
         accrued_table_set_list += '</tr>'
 
     withheld_table_set_list = ''
     for count in data_negative:
         withheld_table_set_list += '<tr>'
         for key in count:
-            withheld_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
+            if key == 'summ':
+                withheld_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right">{count[key]}</td>'
+            else:
+                withheld_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
         withheld_table_set_list += '</tr>'
     paid_table_set_list = ''
     for count in data_paid:
         paid_table_set_list += '<tr>'
         for key in count:
-            paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
+            if key == 'summ':
+                paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right">{count[key]}</td>'
+            else:
+                paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
         paid_table_set_list += '</tr>'
     html_obj = list()
     accrued_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"><thead>
     <tr>
-        <th rowspan="2">Вид</th>
-        <th rowspan="2">Период</th>
-        <th colspan="2">Рабочие</th>
-        <th rowspan="2">Оплачено</th>
-        <th rowspan="2">Сумма</th>
+        <th rowspan="2" style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Вид</th>
+        <th colspan="2" style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Рабочие</th>
+        <th rowspan="2" style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Оплачено</th>
+        <th rowspan="2" width="15%" style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Сумма</th>
     </tr>
         <tr>
-        <th>Дни</th>
-        <th>Часы</th>
+        <th style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Дни</th>
+        <th style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Часы</th>
     </tr>
     </thead>
     <tbody>
-    <tr><td colspan="5" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Начислено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{positive}</strong></td></tr>
+    <tr><td colspan="4" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Начислено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><strong>{"{:.2f}".format(positive)}</strong></td></tr>
     {accrued_table_set_list}
      </tbody>
      </table>'''
     withheld_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
     <thead>
         <tr>
-            <td>Вид</td>
-            <td>Период</td>
-            <td>Сумма</td>
+            <th style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Вид</th>
+            <th width="15%" style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Сумма</th>
         </tr>
     </thead>
     <tbody>
-         <tr><td colspan="2" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Удержано:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{negative}</strong></td></tr>
+         <tr><td colspan="1" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Удержано:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><strong>{"{:.2f}".format(negative)}</strong></td></tr>
     {withheld_table_set_list}
     </tbody>
     </table>'''
     paid_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
     <thead>
         <tr>
-            <td>Вид</td>
-            <td>Период</td>
-            <td>Сумма</td>
+            <th style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Вид</th>
+            <th width="15%" style="border: 1px; border-style: solid; border-color: #01114d; text-align:center">Сумма</th>
         </tr>
     </thead>
     <tbody>
-         <tr><td colspan="2" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Выплачено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{paid}</strong></td></tr>
+         <tr><td colspan="1" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Выплачено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><strong>{"{:.2f}".format(paid)}</strong></td></tr>
     {paid_table_set_list}
     </tbody>
     </table>'''
