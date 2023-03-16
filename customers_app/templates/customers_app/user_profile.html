@@ -147,7 +147,9 @@
                             <button class="nav-link" data-bs-target="#edit" data-bs-toggle="tab">Профиль</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">Расчетный листок</button>
+                            <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">Расчетный
+                                листок
+                            </button>
                         </li>
                     </ul>
                     <div class="tab-content">
@@ -208,19 +210,174 @@
                         </div>
                         <div id="calculation" class="tab-pane">
                             <div class="p-3">
-                                <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 550px;">
-
-                                <thead>
-                                <tr>
-                                    <th width="20%">Тип</th>
-                                    <th width="40%">Начисление</th>
-                                    <th width="10%">Сумма</th>
-                                </tr>
-                                </thead>
-                            </table>
+                                <div class="row">
+                                    <div class="col-2">
+                                        <select class="form-control select-style-1 filter-by" name="filter_month"
+                                                onchange="filter_date()" id="id_filter_month">
+                                            <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
+                                            </option>
+                                            <option value="2" {% if current_month == 2 %}selected{% endif %}>Февраль
+                                            </option>
+                                            <option value="3" {% if current_month == 3 %}selected{% endif %}>Март
+                                            </option>
+                                            <option value="4" {% if current_month == 4 %}selected{% endif %}>Апрель
+                                            </option>
+                                            <option value="5" {% if current_month == 5 %}selected{% endif %}>Май
+                                            </option>
+                                            <option value="6" {% if current_month == 6 %}selected{% endif %}>Июнь
+                                            </option>
+                                            <option value="7" {% if current_month == 7 %}selected{% endif %}>Июль
+                                            </option>
+                                            <option value="8" {% if current_month == 8 %}selected{% endif %}>Август
+                                            </option>
+                                            <option value="9" {% if current_month == 9 %}selected{% endif %}>Сентябрь
+                                            </option>
+                                            <option value="10" {% if current_month == 10 %}selected{% endif %}>Октябрь
+                                            </option>
+                                            <option value="11" {% if current_month == 11 %}selected{% endif %}>Ноябрь
+                                            </option>
+                                            <option value="12" {% if current_month == 12 %}selected{% endif %}>Декабрь
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-2">
+                                        <select class="form-control select-style-1 filter-by" name="filter_year"
+                                                onchange="filter_date()" id="id_filter_year">
+                                            <option value="2013" {% if current_year == 2013 %}selected{% endif %}>2013
+                                            </option>
+                                            <option value="2014" {% if current_year == 2014 %}selected{% endif %}>2014
+                                            </option>
+                                            <option value="2015" {% if current_year == 2015 %}selected{% endif %}>2015
+                                            </option>
+                                            <option value="2016" {% if current_year == 2016 %}selected{% endif %}>2016
+                                            </option>
+                                            <option value="2017" {% if current_year == 2017 %}selected{% endif %}>2017
+                                            </option>
+                                            <option value="2018" {% if current_year == 2018 %}selected{% endif %}>2018
+                                            </option>
+                                            <option value="2019" {% if current_year == 2019 %}selected{% endif %}>2019
+                                            </option>
+                                            <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
+                                            </option>
+                                            <option value="2021" {% if current_year == 2021 %}selected{% endif %}>2021
+                                            </option>
+                                            <option value="2022" {% if current_year == 2022 %}selected{% endif %}>2022
+                                            </option>
+                                            <option value="2023" {% if current_year == 2023 %}selected{% endif %}>2023
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="row">
+                                        <table style="width: 100%; border: 1px">
+                                            <tbody>
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-7">
+                                            <div id="id_accrued">
+                                                <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
+                                                    <thead>
+                                                    <tr>
+                                                        <th rowspan="2">Вид</th>
+                                                        <th rowspan="2">Период</th>
+                                                        <th colspan="2">Рабочие</th>
+                                                        <th rowspan="2">Оплачено</th>
+                                                        <th rowspan="2">Сумма</th>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Дни</th>
+                                                        <th>Часы</th>
+                                                    </tr>
+                                                    </thead>
+                                                </table>
+                                                <strong>Начислено:</strong>
+                                                <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"
+                                                       id="accrued">
+                                                    <tbody>
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-5">
+                                            <div class="row">
+                                                <div id="id_withheld">
+                                                <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
+                                                    <tbody>
+                                                    <tr>
+                                                        <td>Вид</td>
+                                                        <td>Период</td>
+                                                        <td>Сумма</td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+                                                <strong>Удержано:</strong>
+                                                    <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"
+                                                           id="withheld">
+                                                        <tbody>
+                                                        <tr>
+                                                            <td>Вид</td>
+                                                            <td>Период</td>
+                                                            <td>Сумма</td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
+                                                    <tbody>
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+                                                <strong>Выплачено:</strong>
+                                                <div id="id_paid">
+                                                    <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"
+                                                           id="paid">
+                                                        <tbody>
+                                                        <tr>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-
                         </div>
                         <div id="edit" class="tab-pane">
                             <div>
@@ -282,24 +439,31 @@
         </div>
         <!-- end: page -->
     </section>
-{% endblock %}
-
-{% block custome_script %}
-    <script>
-        $(document).ready(function () {
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "sDom": 'T<"clear">lfrtip',
-                "ajax": "{% url 'customers_app:profile' user.pk %}",
-                "language": {
-                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+    <script type="text/javascript">
+        function filter_date() {
+            current_year = $("#id_filter_year").val();
+            current_month = $("#id_filter_month").val();
+            $.ajax({
+                type: "GET",
+                url: '{% url 'customers_app:profile' user.pk %}',
+                data: {
+                    "CY": current_year,
+                    "CM": current_month,
                 },
-                "columns": [
-                    {"data": "calculation"},
-                    {"data": "description"},
-                    {"data": "summ"},
-                ],
+                dataType: "json",
+                success: function (data) {
+                    var ref = $('#id_accrued').html('');
+                    var ref = $('#id_accrued').html(data[0]);
+                    var ref = $('#id_withheld').html('');
+                    var ref = $('#id_withheld').html(data[1]);
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
             });
-        });
-
+        };
     </script>
 {% endblock %}

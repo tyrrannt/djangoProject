@@ -114,13 +114,13 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
     model = DataBaseUser
     template_name = 'customers_app/user_profile.html'
 
-    @method_decorator(user_passes_test(lambda u: u.is_active))
-    def dispatch(self, request, *args, **kwargs):
-        user_object = self.get_object()
-        if request.user.pk == user_object.pk or request.user.is_superuser:
-            return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
-        else:
-            raise PermissionDenied
+    # @method_decorator(user_passes_test(lambda u: u.is_active))
+    # def dispatch(self, request, *args, **kwargs):
+    #     user_object = self.get_object()
+    #     if request.user.pk == user_object.pk or request.user.is_superuser:
+    #         return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
+    #     else:
+    #         raise PermissionDenied
 
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
@@ -147,10 +147,18 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         return context
 
     def get(self, request, *args, **kwargs):
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+
+        if self.request.GET:
+            current_year = self.request.GET.get('CY')
+            current_month = self.request.GET.get('CM')
+            if len(current_month) == 1:
+                current_month = '0' + current_month
+            print(current_year, current_month)
             get_user_obj = self.get_object()
-            data = get_settlement_sheet('02', '2023', get_user_obj.person_ref_key)
-            return JsonResponse(data)
+            html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
+            print(html_obj)
+            return JsonResponse(html_obj, safe=False)
+
         return super().get(request, *args, **kwargs)
 
 
