@@ -278,7 +278,7 @@
                                         </table>
                                     </div>
                                     <div class="row">
-                                        <div class="col-sm-7">
+                                        <div class="col-sm-12">
                                             <div id="id_accrued">
                                                 <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
                                                     <thead>
@@ -294,11 +294,11 @@
                                                         <th>Часы</th>
                                                     </tr>
                                                     </thead>
-                                                </table>
-                                                <strong>Начислено:</strong>
-                                                <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"
-                                                       id="accrued">
                                                     <tbody>
+                                                    <tr>
+                                                        <td colspan="5"><strong>Начислено:</strong></td>
+                                                        <td></td>
+                                                    </tr>
                                                     <tr>
                                                         <td></td>
                                                         <td></td>
@@ -311,11 +311,24 @@
                                                 </table>
                                             </div>
                                         </div>
-                                        <div class="col-sm-5">
-                                            <div class="row">
-                                                <div id="id_withheld">
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div id="id_withheld">
                                                 <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
+                                                    <thead>
+                                                    <tr>
+                                                        <td>Вид</td>
+                                                        <td>Период</td>
+                                                        <td>Сумма</td>
+                                                    </tr>
+                                                    </thead>
                                                     <tbody>
+                                                    <tr>
+                                                        <td colspan="2"><strong>Удержано:</strong></td>
+                                                        <td></td>
+                                                    </tr>
                                                     <tr>
                                                         <td>Вид</td>
                                                         <td>Период</td>
@@ -323,22 +336,26 @@
                                                     </tr>
                                                     </tbody>
                                                 </table>
-                                                <strong>Удержано:</strong>
-                                                    <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"
-                                                           id="withheld">
-                                                        <tbody>
-                                                        <tr>
-                                                            <td>Вид</td>
-                                                            <td>Период</td>
-                                                            <td>Сумма</td>
-                                                        </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
                                             </div>
-                                            <div class="row">
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div id="id_paid">
                                                 <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
+                                                    <thead>
+                                                    <tr>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                    </thead>
                                                     <tbody>
+                                                    <tr>
+                                                        <td colspan="2"><strong>Выплачено:</strong></td>
+                                                        <td></td>
+                                                    </tr>
                                                     <tr>
                                                         <td></td>
                                                         <td></td>
@@ -346,22 +363,10 @@
                                                     </tr>
                                                     </tbody>
                                                 </table>
-                                                <strong>Выплачено:</strong>
-                                                <div id="id_paid">
-                                                    <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"
-                                                           id="paid">
-                                                        <tbody>
-                                                        <tr>
-                                                            <td></td>
-                                                            <td></td>
-                                                            <td></td>
-                                                        </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -442,6 +447,8 @@
                     var ref = $('#id_accrued').html(data[0]);
                     var ref = $('#id_withheld').html('');
                     var ref = $('#id_withheld').html(data[1]);
+                    var ref = $('#id_paid').html('');
+                    var ref = $('#id_paid').html(data[2]);
                     if (data === 'ok') {
                         console.log("success");
                     }

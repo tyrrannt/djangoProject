@@ -182,8 +182,10 @@ def get_identity_documents():
                 obj_item.save()
     return context
 
+
 def get_chart_of_calculation_types(select_uuid):
-    todo_str = get_jsons(f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/ChartOfCalculationTypes_Начисления?$format=application/json;odata=nometadata&$filter=Ref_Key%20eq%20guid%27{select_uuid}%27&$select=Description")
+    todo_str = get_jsons(
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/ChartOfCalculationTypes_Начисления?$format=application/json;odata=nometadata&$filter=Ref_Key%20eq%20guid%27{select_uuid}%27&$select=Description")
     result = ''
     try:
         for item in todo_str['value']:
@@ -191,6 +193,7 @@ def get_chart_of_calculation_types(select_uuid):
     except Exception as _ex:
         pass
     return result
+
 
 def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, calculation_uud) -> list:
     acc_reg_time = get_jsons(
@@ -206,6 +209,7 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
     result = [days_worked, hours_worked, paid_days]
     return result
 
+
 def get_settlement_sheet(selected_month, selected_year, users_uuid):
     """
             Получение расчетного листка сотрудника,
@@ -215,7 +219,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     acc_reg_acc = get_jsons(
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_НачисленияУдержанияПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27")
     # Поля Active = True, ФизическоеЛицо_Key = uuid, Начисление_Key = uuid, ОтработаноДней, ОтработаноЧасов, ОплаченоДней, ОплаченоЧасов, ГруппаНачисленияУдержанияВыплаты = Выплачено
-    #acc_reg_set = get_jsons(
+    # acc_reg_set = get_jsons(
     #    f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ВзаиморасчетыССотрудниками_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20ГруппаНачисленияУдержанияВыплаты%20eq%20%27Выплачено%27")
     # Поля Active = True, ФизическоеЛицо_Key = uuid, СтатьяРасходов_Key = uuid, СуммаВзаиморасчетов, ГруппаНачисленияУдержанияВыплаты = Выплачено, Recorder = uuid, Recorder_Type = Document_ВедомостьНаВыплатуЗарплатыВКассу или Document_ВедомостьНаВыплатуЗарплатыВБанк
     # f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/{Recorder_Type}?$format=application/json;odata=nometadata&$filter=Состав/any(d:%20d/Ref_Key%20eq%20guid%27{Recorder}%27)&$select=Number,%20Date"
@@ -227,7 +231,8 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     result_positive, result_negative = {}, {}
     for items in acc_reg_acc['value']:
         if period == datetime.datetime.strptime(items['Period'][:10], "%Y-%m-%d") and items['Active'] == True:
-            work_time = get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, items['НачислениеУдержание'])
+            work_time = get_worked_out_by_the_workers(selected_month, selected_year, users_uuid,
+                                                      items['НачислениеУдержание'])
             if items['ГруппаНачисленияУдержанияВыплаты'] == 'Начислено':
                 result_positive = {
                     'description': get_chart_of_calculation_types(items['НачислениеУдержание']),
@@ -237,15 +242,14 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
                     'paid_days': work_time[2],
                     'summ': items['Сумма'],
                 }
+                data_positive.append(result_positive)
             else:
                 result_negative = {
                     'description': items['НачислениеУдержание'],
                     'period': '',
-                    'days_worked': work_time[0],
-                    'hours_worked': work_time[1],
-                    'paid_days': work_time[2],
                     'summ': items['Сумма'],
                 }
+                data_negative.append(result_negative)
             if items['ГруппаНачисленияУдержанияВыплаты'] == 'Начислено':
                 try:
                     positive += int(items['Сумма'])
@@ -256,8 +260,6 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
                     negative += int(items['Сумма'])
                 except Exception as _ex:
                     pass
-            data_positive.append(result_positive)
-            data_negative.append(result_negative)
 
     accrued_table_set = ''
     withheld_table_set = ''
@@ -266,58 +268,60 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     for count in data_positive:
         accrued_table_set_list += '<tr>'
         for key in count:
-            accrued_table_set_list += f'<td>{count[key]}</td>'
+            accrued_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
         accrued_table_set_list += '</tr>'
 
     withheld_table_set_list = ''
     for count in data_negative:
         withheld_table_set_list += '<tr>'
         for key in count:
-            withheld_table_set_list += f'<td>{count[key]}</td>'
+            withheld_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
         withheld_table_set_list += '</tr>'
     paid_table_set_list = ''
     html_obj = list()
-    accrued_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
-                                                <thead>
-                                                <tr>
-                                                    <th rowspan="2">Вид</th>
-                                                    <th rowspan="2">Период</th>
-                                                    <th colspan="2">Рабочие</th>
-                                                    <th rowspan="2">Оплачено</th>
-                                                    <th rowspan="2">Сумма</th>
-                                                </tr>
-                                                <tr>
-                                                    <th>Дни</th>
-                                                    <th>Часы</th>
-                                                </tr>
-                                                </thead>
-                                            </table>
-                                            <strong>Начислено:  {positive}</strong>
-    
-    <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a" id="accrued">
-        <tbody>
-        {accrued_table_set_list}
-        </tbody>
-        </table>'''
+    accrued_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"><thead>
+    <tr>
+        <th rowspan="2">Вид</th>
+        <th rowspan="2">Период</th>
+        <th colspan="2">Рабочие</th>
+        <th rowspan="2">Оплачено</th>
+        <th rowspan="2">Сумма</th>
+    </tr>
+        <tr>
+        <th>Дни</th>
+        <th>Часы</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr><td colspan="5" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Начислено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{positive}</strong></td></tr>
+    {accrued_table_set_list}
+     </tbody>
+     </table>'''
     withheld_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
-                                                    <tbody>
-                                                    <tr>
-                                                        <td>Вид</td>
-                                                        <td>Период</td>
-                                                        <td>Сумма</td>
-                                                    </tr>
-                                                    </tbody>
-                                                </table>
-                                                <strong>Удержано:  {negative}</strong>
-    <table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a" id="withheld">
-        <tbody>
-        {withheld_table_set_list}
-        </tbody>
-        </table>'''
-    paid_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a" id="paid">
-        <tbody>
-        {paid_table_set_list}
-        </tbody>
-        </table>'''
+    <thead>
+        <tr>
+            <td>Вид</td>
+            <td>Период</td>
+            <td>Сумма</td>
+        </tr>
+    </thead>
+    <tbody>
+         <tr><td colspan="2" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Удержано:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{negative}</strong></td></tr>
+    {withheld_table_set_list}
+    </tbody>
+    </table>'''
+    paid_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a">
+    <thead>
+        <tr>
+            <td>Вид</td>
+            <td>Период</td>
+            <td>Сумма</td>
+        </tr>
+    </thead>
+    <tbody>
+         <tr><td colspan="2" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Выплачено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{negative}</strong></td></tr>
+    {paid_table_set_list}
+    </tbody>
+    </table>'''
     html_obj = [accrued_table_set, withheld_table_set, paid_table_set]
     return html_obj
