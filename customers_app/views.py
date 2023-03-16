@@ -114,13 +114,13 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
     model = DataBaseUser
     template_name = 'customers_app/user_profile.html'
 
-    # @method_decorator(user_passes_test(lambda u: u.is_active))
-    # def dispatch(self, request, *args, **kwargs):
-    #     user_object = self.get_object()
-    #     if request.user.pk == user_object.pk or request.user.is_superuser:
-    #         return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
-    #     else:
-    #         raise PermissionDenied
+    @method_decorator(user_passes_test(lambda u: u.is_active))
+    def dispatch(self, request, *args, **kwargs):
+        user_object = self.get_object()
+        if request.user.pk == user_object.pk or request.user.is_superuser:
+            return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
+        else:
+            raise PermissionDenied
 
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
