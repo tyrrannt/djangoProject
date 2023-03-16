@@ -314,7 +314,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     </tr>
     </thead>
     <tbody>
-    <tr><td colspan="4" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Начислено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><strong>{"{:.2f}".format(positive)}</strong></td></tr>
+    <tr><td colspan="4" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Начислено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><span style="color:#000"><strong>{"{:.2f}".format(positive)}</strong></span></td></tr>
     {accrued_table_set_list}
      </tbody>
      </table>'''
@@ -326,7 +326,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         </tr>
     </thead>
     <tbody>
-         <tr><td colspan="1" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Удержано:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><strong>{"{:.2f}".format(negative)}</strong></td></tr>
+         <tr><td colspan="1" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Удержано:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><span style="color:#000"><strong>{"{:.2f}".format(negative)}</strong></span></td></tr>
     {withheld_table_set_list}
     </tbody>
     </table>'''
@@ -338,7 +338,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         </tr>
     </thead>
     <tbody>
-         <tr><td colspan="1" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Выплачено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><strong>{"{:.2f}".format(paid)}</strong></td></tr>
+         <tr><td colspan="1" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Выплачено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right"><span style="color:#000"><strong>{"{:.2f}".format(paid)}</strong></span></td></tr>
     {paid_table_set_list}
     </tbody>
     </table>'''
