@@ -153,12 +153,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             current_month = self.request.GET.get('CM')
             if len(current_month) == 1:
                 current_month = '0' + current_month
-            print(current_year, current_month)
             get_user_obj = self.get_object()
             html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
-            print(html_obj)
             return JsonResponse(html_obj, safe=False)
-
         return super().get(request, *args, **kwargs)
 
 
