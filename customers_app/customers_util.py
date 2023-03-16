@@ -219,16 +219,18 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     acc_reg_acc = get_jsons(
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_НачисленияУдержанияПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27")
     # Поля Active = True, ФизическоеЛицо_Key = uuid, Начисление_Key = uuid, ОтработаноДней, ОтработаноЧасов, ОплаченоДней, ОплаченоЧасов, ГруппаНачисленияУдержанияВыплаты = Выплачено
-    # acc_reg_set = get_jsons(
-    #    f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ВзаиморасчетыССотрудниками_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20ГруппаНачисленияУдержанияВыплаты%20eq%20%27Выплачено%27")
+    acc_reg_set = get_jsons(
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ВзаиморасчетыССотрудниками_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20ГруппаНачисленияУдержанияВыплаты%20eq%20%27Выплачено%27")
     # Поля Active = True, ФизическоеЛицо_Key = uuid, СтатьяРасходов_Key = uuid, СуммаВзаиморасчетов, ГруппаНачисленияУдержанияВыплаты = Выплачено, Recorder = uuid, Recorder_Type = Document_ВедомостьНаВыплатуЗарплатыВКассу или Document_ВедомостьНаВыплатуЗарплатыВБанк
     # f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/{Recorder_Type}?$format=application/json;odata=nometadata&$filter=Состав/any(d:%20d/Ref_Key%20eq%20guid%27{Recorder}%27)&$select=Number,%20Date"
     period = datetime.datetime.strptime(f"{selected_year}-{selected_month}-01", "%Y-%m-%d")
     data_positive = list()
     data_negative = list()
+    data_paid = list()
     positive = 0
     negative = 0
-    result_positive, result_negative = {}, {}
+    paid = 0
+    result_positive, result_negative, result_paid = {}, {}, {}
     for items in acc_reg_acc['value']:
         if period == datetime.datetime.strptime(items['Period'][:10], "%Y-%m-%d") and items['Active'] == True:
             work_time = get_worked_out_by_the_workers(selected_month, selected_year, users_uuid,
@@ -260,7 +262,14 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
                     negative += int(items['Сумма'])
                 except Exception as _ex:
                     pass
-
+    for items in acc_reg_set['value']:
+        result_paid = {
+            'document': items['ВидВзаиморасчетов'],
+            'period': '',
+            'paid': items['СуммаВзаиморасчетов']
+        }
+        paid += int(items['СуммаВзаиморасчетов'])
+        data_paid.append(result_paid)
     accrued_table_set = ''
     withheld_table_set = ''
     paid_table_set = ''
@@ -278,6 +287,11 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
             withheld_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
         withheld_table_set_list += '</tr>'
     paid_table_set_list = ''
+    for count in data_paid:
+        paid_table_set_list += '<tr>'
+        for key in count:
+            paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
+        paid_table_set_list += '</tr>'
     html_obj = list()
     accrued_table_set = f'''<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"><thead>
     <tr>
@@ -319,7 +333,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         </tr>
     </thead>
     <tbody>
-         <tr><td colspan="2" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Выплачено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{negative}</strong></td></tr>
+         <tr><td colspan="2" style="border: 1px; border-style: solid; border-color: #01114d"><strong>Выплачено:</strong></td><td style="border: 1px; border-style: solid; border-color: #01114d"><strong>{paid}</strong></td></tr>
     {paid_table_set_list}
     </tbody>
     </table>'''
