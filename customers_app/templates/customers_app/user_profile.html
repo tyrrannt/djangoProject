@@ -211,7 +211,7 @@
                         <div id="calculation" class="tab-pane">
                             <div class="p-3">
                                 <div class="row">
-                                    <div class="col-2">
+                                    <div class="col-3">
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 onchange="filter_date()" id="id_filter_month">
                                             <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
@@ -240,7 +240,7 @@
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-2">
+                                    <div class="col-3">
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
                                                 onchange="filter_date()" id="id_filter_year">
                                             <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
@@ -252,6 +252,9 @@
                                             <option value="2023" {% if current_year == 2023 %}selected{% endif %}>2023
                                             </option>
                                         </select>
+                                    </div>
+                                    <div class="col">
+                                        <input class="form-control" type="password" id="id_pxmx" value="">
                                     </div>
                                 </div>
                                 <div class="row">
@@ -428,12 +431,14 @@
         function filter_date() {
             current_year = $("#id_filter_year").val();
             current_month = $("#id_filter_month").val();
+            pxmp = $("#id_pxmx").val()
             $.ajax({
                 type: "GET",
                 url: '{% url 'customers_app:profile' user.pk %}',
                 data: {
                     "CY": current_year,
                     "CM": current_month,
+                    "PX": pxmp,
                 },
                 dataType: "json",
                 success: function (data) {
@@ -443,6 +448,7 @@
                     var ref = $('#id_withheld').html(data[1]);
                     var ref = $('#id_paid').html('');
                     var ref = $('#id_paid').html(data[2]);
+                    var ref = $('#id_pxmx').val('')
                     if (data === 'ok') {
                         console.log("success");
                     }

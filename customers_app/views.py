@@ -151,10 +151,15 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         if self.request.GET:
             current_year = self.request.GET.get('CY')
             current_month = self.request.GET.get('CM')
+            current_passphrase = self.request.GET.get('PX')
+            print(current_passphrase)
             if len(current_month) == 1:
                 current_month = '0' + current_month
             get_user_obj = self.get_object()
-            html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
+            if current_passphrase == '555':
+                html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
+            else:
+                html_obj = ''
             return JsonResponse(html_obj, safe=False)
         return super().get(request, *args, **kwargs)
 
