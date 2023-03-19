@@ -11,7 +11,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_queryset, change_session_context
+    change_session_get, change_session_queryset, change_session_context, FIO_format
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet
@@ -137,7 +137,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         except Exception as _ex:
             message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
             logger.debug(message)
-        context['title'] = 'редактирование'
+        context['title'] = 'Профиль ' + str(FIO_format(user_obj))
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
         context['contract'] = Contract.objects.all().count()
