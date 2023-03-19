@@ -152,7 +152,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             current_year = self.request.GET.get('CY')
             current_month = self.request.GET.get('CM')
             current_passphrase = self.request.GET.get('PX')
-            print(current_passphrase)
             if len(current_month) == 1:
                 current_month = '0' + current_month
             get_user_obj = self.get_object()

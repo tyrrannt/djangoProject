@@ -155,7 +155,7 @@ class JobsAddForm(forms.ModelForm):
 class JobsUpdateForm(forms.ModelForm):
     type_of_job = forms.ChoiceField(choices=Job.job_type)
     type_of_job.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all())
+    group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all(), required=False)
     group.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
     class Meta:

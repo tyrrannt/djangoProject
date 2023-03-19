@@ -3,7 +3,7 @@ from calendar import monthrange
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from loguru import logger
@@ -92,7 +92,9 @@ class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         if self.request.GET.get('update') == '0':
-            get_medical_documents()
+            error = get_medical_documents()
+            if error:
+                return render(request, 'hrdepartment_app/medical_list.html', {'error': 'Необходимо обновить список организаций.'})
             url_match = reverse_lazy('hrdepartment_app:medical_list')
             return redirect(url_match)
         change_session_get(self.request, self)
@@ -105,12 +107,12 @@ class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         return super(MedicalExamination, self).get(request, *args, **kwargs)
 
-    @staticmethod
-    def ajax_get(request, *args, **kwargs):
-        medicals = Medical.objects.all()
-        data = [medical.get_data() for medical in medicals]
-        response = {'data': data}
-        return JsonResponse(response)
+    # @staticmethod
+    # def ajax_get(request, *args, **kwargs):
+    #     medicals = Medical.objects.all()
+    #     data = [medical.get_data() for medical in medicals]
+    #     response = {'data': data}
+    #     return JsonResponse(response)
 
 
 class MedicalExaminationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -421,45 +423,60 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         business_process = BusinessProcessDirection.objects.filter(
             person_executor=document.person_executor.user_work_profile.job)
         content['document'] = document.document
+        person_agreement_list = list()
+        for item in business_process:
+            person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
         # Получаем подразделение исполнителя
         # division = document.person_executor.user_work_profile.divisions
         # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
         content['form'].fields['person_executor'].queryset = users_list.filter(pk=document.person_executor.pk)
         # Если установлен признак согласования документа, то фильтруем поле согласующего лица
         if document.document_not_agreed:
-            content['form'].fields['person_agreement'].queryset = users_list.filter(
-                pk=document.person_agreement.pk)
+            try:
+                content['form'].fields['person_agreement'].queryset = users_list.filter(
+                    pk=document.person_agreement.pk)
+            except AttributeError:
+                content['form'].fields['person_agreement'].queryset = users_list.filter(
+                    user_work_profile__job__pk__in=person_agreement_list)
         else:
             # Иначе по подразделению исполнителя фильтруем руководителей для согласования
-            person_agreement_list = list()
             content['form'].fields['person_agreement'].queryset = users_list.filter(
                 user_work_profile__job__pk__in=person_agreement_list)
-            for item in business_process:
-                person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
-            # Если пользователь = Согласующее лицо
             try:
+                # Если пользователь = Согласующее лицо
                 if self.request.user.user_work_profile.job.pk in person_agreement_list:
                     content['form'].fields['person_agreement'].queryset = users_list.filter(
                         Q(user_work_profile__job__pk__in=person_agreement_list) & Q(pk=self.request.user.pk))
+                # Иначе весь список согласующих лиц
+                else:
+                    content['form'].fields['person_agreement'].queryset = users_list.filter(
+                        user_work_profile__job__pk__in=person_agreement_list)
             except AttributeError as _ex:
                 logger.error(f'У пользователя отсутствует должность')
                 # ToDo: Нужно вставить выдачу ошибки
                 return {}
-            # Иначе весь список согласующих лиц
-            else:
-                content['form'].fields['person_agreement'].queryset = users_list.filter(
-                    user_work_profile__job__pk__in=person_agreement_list)
 
-        content['form'].fields['person_distributor'].queryset = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
-            Q(is_superuser=False))
-        content['form'].fields['person_department_staff'].queryset = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
-            Q(is_superuser=False))
+        list_agreement = list()
+        for unit in users_list.filter(user_work_profile__job__pk__in=person_agreement_list):
+            list_agreement.append(unit.pk)
+        content['list_agreement'] = list_agreement
 
+        list_distributor = users_list.filter(
+                Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
+                Q(is_superuser=False))
+
+        content['form'].fields['person_distributor'].queryset = list_distributor
+        content['list_distributor'] = list_distributor
+
+        list_department_staff = users_list.filter(
+                Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
+                Q(is_superuser=False))
+        content['form'].fields['person_department_staff'].queryset = list_department_staff
+        content['list_department_staff'] = list_department_staff
         return content
 
     def form_valid(self, form):
+
         return super().form_valid(form)
 
     # Проверяем изменения параметров
@@ -652,7 +669,6 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
         if self.request.GET:
             current_year = int(self.request.GET.get('CY'))
             current_month = int(self.request.GET.get('CM'))
-            print(current_month, current_year)
         else:
             current_year = datetime.datetime.now().year
             current_month = datetime.datetime.now().month

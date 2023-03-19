@@ -2,8 +2,12 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from administration_app.models import make_menu
 from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocuments
-from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel
+from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel, Job
 from hrdepartment_app.models import ApprovalOficialMemoProcess, BusinessProcessDirection, DocumentsJobDescription
+from loguru import logger
+
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
+           serialize=True)
 
 
 # ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
@@ -62,13 +66,30 @@ def get_approval_oficial_memo_process(request):
                                     DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_job_list)]
             person_agreement = ApprovalOficialMemoProcess.objects.filter(
                 Q(person_executor__in=person_executor_list) & Q(document_not_agreed=False))
+            # Получение списка сотрудников НО
+            person_distributor_list = DataBaseUser.objects.filter(
+                Q(user_work_profile__divisions__type_of_role=1) & Q(user_work_profile__job__right_to_approval=True))
+            person_distributor = [item for item in person_distributor_list]
+            location_selected = ApprovalOficialMemoProcess.objects.filter(
+                Q(location_selected=False) & Q(document_not_agreed=True))
+            # Получение списка сотрудников ОК
+            person_department_staff_list = DataBaseUser.objects.filter(
+                Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
+            person_department_staff = [item for item in person_department_staff_list]
+            process_accepted = ApprovalOficialMemoProcess.objects.filter(
+                Q(process_accepted=False) & Q(location_selected=True))
             return {
                 'person_agreement': person_agreement,
                 'document_not_agreed': person_agreement.count(),
-                'person_distributor': '',
-                'person_department_staff': '',
+                'person_distributor': person_distributor,
+                'location_selected': location_selected,
+                'location_selected_count': location_selected.count,
+                'person_department_staff': person_department_staff,
+                'process_accepted': process_accepted,
+                'process_accepted_count': process_accepted.count,
             }
         except Exception as _ex:
+            logger.error(_ex)
             return {}
     else:
         return {}

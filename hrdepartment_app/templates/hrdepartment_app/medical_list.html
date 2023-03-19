@@ -10,7 +10,13 @@
     <section role="main" class="content-body content-body-modern mt-0">
 
         {% include 'library_app/breadcrumb.html' %}
-
+        <div>
+            {% if error %}
+                <div class="alert alert-danger">
+                    <strong><a href="{% url 'hrdepartment_app:medicalorg_list' %}">{{ error }}</a></strong>
+                </div>
+            {% endif %}
+        </div>
         <!-- start: page -->
         <div class="row">
             <div class="col">

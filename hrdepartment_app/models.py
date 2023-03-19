@@ -123,10 +123,8 @@ def Med(obj_model, filepath, filename, request):
     ]
     if obj_model.person.user_work_profile.job.type_of_job == '1':
         doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
-        print('1')
     else:
         doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med2.docx'))
-        print('2')
     if obj_model.person.gender == 'male':
         gender = 'муж.'
     else:

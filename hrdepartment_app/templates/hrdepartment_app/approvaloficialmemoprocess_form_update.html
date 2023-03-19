@@ -63,24 +63,30 @@
                                             <label class="col"
                                                    for="id_person_executor">Исполнитель</label>
                                             <div class="col">
-                                                <span>{{ form.person_executor | add_class:"form-control form-control-modern" | attr:"readonly" }}</span>
+                                                {% if object.submit_for_approval %}
+                                                    <select class="form-control form-control-modern" id="id_person_executor" name="person_executor">
+                                                        <option selected value="{{ object.person_executor.pk }}">{{ object.person_executor }}</option>
+                                                    </select>
+                                                {% else %}
+                                                    <span>{{ form.person_executor }}</span>
+                                                {% endif %}
                                             </div>
                                         </div>
                                         <div class="col">
                                             <label class="col"
                                                    for="id_submit_for_approval">Передан на согласование</label>
                                             {% if object.document_not_agreed %}
-                                                <input type="text" hidden
-                                                       class="form-control form-control-modern"
-                                                       name="submit_for_approval"
-                                                       value="Передан"
-                                                       id="id_submit_for_approval"/>
-                                                <input type="text" disabled
-                                                       class="form-control form-control-modern"
-                                                       value="Передан"/>
-                                            {% else %}
+                                                <input type="checkbox" id="id_submit_for_approval" name="submit_for_approval" {% if object.submit_for_approval %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% elif user.pk == object.person_executor.pk %}
                                                 <div class="col">
                                                     <span>{{ form.submit_for_approval }}</span>
+                                                </div>
+                                            {% else  %}
+                                                <div class="col">
+                                                    <input type="checkbox" id="id_submit_for_approval"
+                                                           name="submit_for_approval"
+                                                           {% if object.submit_for_approval %}checked="checked"{% endif %}
+                                                           onclick="javascript: return false;"/>
                                                 </div>
                                             {% endif %}
                                         </div>
@@ -88,8 +94,8 @@
                                             <label class="col"
                                                    for="id_comments_for_approval">Комментарий для согласования</label>
                                             <div class="col">
-                                                {% if object.submit_for_approval %}
-                                                    <span>{{ form.comments_for_approval | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
+                                                {% if object.submit_for_approval or user.pk != object.person_executor.pk %}
+                                                    <span>{{ form.comments_for_approval | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
                                                 {% else %}
                                                     <span>{{ form.comments_for_approval | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
@@ -103,7 +109,9 @@
                                                    for="id_person_agreement">Руководитель</label>
                                             <div class="col">
                                                 {% if object.document_not_agreed %}
-                                                    <span>{{ form.person_agreement| add_class:"form-control form-control-modern" | attr:"readonly" }}</span>
+                                                    <select class="form-control form-control-modern" id="id_person_agreement" name="person_agreement">
+                                                        <option selected value="{{ object.person_agreement.pk }}">{{ object.person_agreement }}</option>
+                                                    </select>
                                                 {% else %}
                                                     <span>{{ form.person_agreement }}</span>
                                                 {% endif %}
@@ -113,17 +121,12 @@
                                             <label class="col"
                                                    for="id_document_not_agreed">Документ согласован</label>
                                             {% if object.location_selected %}
-                                                <input type="text" hidden
-                                                       class="form-control form-control-modern"
-                                                       name="document_not_agreed"
-                                                       value="Согласован"
-                                                       id="id_document_not_agreed"/>
-                                                <input type="text" disabled
-                                                       class="form-control form-control-modern"
-                                                       value="Согласован"/>
+                                                <input type="checkbox" id="id_document_not_agreed" name="document_not_agreed" {% if object.document_not_agreed %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% elif user.pk not in list_agreement %}
+                                                <input type="checkbox" id="id_document_not_agreed" name="document_not_agreed" {% if object.document_not_agreed %}checked="checked"{% endif %} onclick="javascript: return false;" />
                                             {% else %}
                                                 <div class="col">
-                                                    <span>{{ form.document_not_agreed }}</span>
+                                                    <span>{{ form.document_not_agreed | attr:"id=id_document_not_agreed"}}</span>
                                                 </div>
                                             {% endif %}
 
@@ -132,10 +135,10 @@
                                             <label class="col"
                                                    for="id_reason_for_approval">Примечание к согласованию</label>
                                             <div class="col">
-                                                {% if object.document_not_agreed %}
-                                                    <span>{{ form.reason_for_approval | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
-                                                {% else %}
+                                                {% if user.pk in list_agreement and not object.document_not_agreed %}
                                                     <span>{{ form.reason_for_approval | add_class:"form-control form-control-modern" }}</span>
+                                                {% else %}
+                                                    <span>{{ form.reason_for_approval | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -146,21 +149,24 @@
                                             <label class="col"
                                                    for="id_person_distributor">Служба ГСМ и НТ</label>
                                             <div class="col">
-                                                <span>{{ form.person_distributor }}</span>
+                                                {% if object.location_selected %}
+                                                    <select class="form-control form-control-modern" id="id_person_distributor" name="person_distributor">
+                                                        <option selected value="{{ object.person_distributor.pk }}">{{ object.person_distributor }}</option>
+                                                    </select>
+                                                {% elif user.pk not in list_distributor %}
+                                                    <span>{{ form.person_distributor }}</span>
+                                                {% else %}
+                                                    <span>{{ form.person_distributor }}</span>
+                                                {% endif %}
                                             </div>
                                         </div>
                                         <div class="col">
                                             <label class="col"
                                                    for="id_location_selected">Место проживания: </label>
                                             {% if object.process_accepted %}
-                                                <input type="text" hidden
-                                                       class="form-control form-control-modern"
-                                                       name="location_selected"
-                                                       value="Выбрано"
-                                                       id="id_location_selected"/>
-                                                <input type="text" disabled
-                                                       class="form-control form-control-modern"
-                                                       value="Выбрано"/>
+                                                <input type="checkbox" id="id_location_selected" name="location_selected" {% if object.location_selected %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% elif user not in list_distributor%}
+                                                <input type="checkbox" id="id_location_selected" name="location_selected" {% if object.location_selected %}checked="checked"{% endif %} onclick="javascript: return false;" />
                                             {% else %}
                                                 <div class="col">
                                                     <span>{{ form.location_selected }}</span>
@@ -172,7 +178,9 @@
                                                    for="id_accommodation">Место проживания</label>
                                             <div class="col">
                                                 {% if object.location_selected %}
-                                                    <span>{{ form.accommodation | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
+                                                    <select class="form-control form-control-modern" id="id_accommodation" name="accommodation">
+                                                        <option selected value="{{ object.accommodation }}">{{ object.get_accommodation_display }}</option>
+                                                    </select>
                                                 {% else %}
                                                     <span>{{ form.accommodation | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
@@ -184,27 +192,28 @@
                                             <label class="col"
                                                    for="id_person_department_staff">Отдел кадров</label>
                                             <div class="col">
-                                                <span>{{ form.person_department_staff }}</span>
+                                                {% if object.process_accepted %}
+                                                    <select class="form-control form-control-modern" id="id_person_department_staff" name="person_department_staff">
+                                                        <option selected value="{{ object.person_department_staff.pk }}">{{ object.person_department_staff }}</option>
+                                                    </select>
+                                                {% elif user.pk not in list_department_staff %}
+                                                    <span>{{ form.person_department_staff }}</span>
+                                                {% else %}
+                                                    <span>{{ form.person_department_staff }}</span>
+                                                {% endif %}
                                             </div>
                                         </div>
                                         <div class="col">
                                             <label class="col"
                                                    for="id_process_accepted">Документ принят в ОК</label>
-                                            {% if object.location_selected %}
+                                            {% if user not in list_department_staff %}
+                                                <input type="checkbox" id="id_process_accepted" name="process_accepted" {% if object.process_accepted %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% elif object.location_selected %}
                                                 <div class="col">
                                                     <span>{{ form.process_accepted }}</span>
                                                 </div>
-                                            {% else %}
-                                                <div class="col">
-                                                    <input type="text" hidden
-                                                           class="form-control form-control-modern"
-                                                           name="process_accepted"
-                                                           value=""
-                                                           id="id_process_accepted"/>
-                                                    <input type="text" disabled
-                                                           class="form-control form-control-modern"
-                                                           value="Не выбрано место размещения"/>
-                                                </div>
+                                             {% else %}
+                                                <input type="checkbox" id="id_process_accepted" name="process_accepted" {% if object.process_accepted %}checked="checked"{% endif %} onclick="javascript: return false;" />
                                             {% endif %}
 
                                         </div>
@@ -212,12 +221,13 @@
                                             <label class="col"
                                                    for="id_order_number">Приказ</label>
                                             <div class="col">
-{#                                                {% if object.process_accepted %}#}
-{#                                                    <span>{{ form.order_number | attr:"disabled" }}</span>#}
-{#                                                {% else %}#}
-{#                                                    <span>{{ form.order_number }}</span>#}
-{#                                                {% endif %}#}
-                                                {{ form.order }}
+                                                {% if object.process_accepted %}
+                                                    <select class="form-control form-control-modern" id="id_order" name="order">
+                                                        <option selected value="{{ object.order.pk }}">{{ object.order }}</option>
+                                                    </select>
+                                                {% else %}
+                                                    <span>{{ form.order }}</span>
+                                                {% endif %}
                                             </div>
                                         </div>
 

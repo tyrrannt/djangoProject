@@ -1,6 +1,7 @@
 import datetime
 
 from django import forms
+from django.core.exceptions import ValidationError
 
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
@@ -144,7 +145,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.all())
     document.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    accommodation = forms.ChoiceField(choices=type_of, required=False)
+    accommodation = forms.ChoiceField(choices=ApprovalOficialMemoProcess.type_of, required=False)
     accommodation.widget.attrs.update({'class': 'form-control form-control-modern'})
     comments_for_approval = forms.CharField(required=False)
     comments_for_approval.widget.attrs.update({'class': 'form-control form-control-modern'})
@@ -159,7 +160,45 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
                   'person_department_staff', 'process_accepted', 'accommodation', 'order')
+    def clean(self):
+        cleaned_data = super().clean()
+        person_agreement = cleaned_data.get("person_agreement")
+        document_not_agreed = cleaned_data.get("document_not_agreed")
+        person_distributor = cleaned_data.get("person_distributor")
+        location_selected = cleaned_data.get("location_selected")
+        accommodation = cleaned_data.get("accommodation")
+        person_department_staff = cleaned_data.get("person_department_staff")
+        process_accepted = cleaned_data.get("process_accepted")
+        order = cleaned_data.get("order")
 
+
+
+        if not person_agreement and document_not_agreed:
+            # Сохраняем только если оба поля действительны.
+            raise ValidationError(
+                    "Ошибка согласования документа. Поле руководителя не заполнено!!!"
+                )
+        if (not person_distributor or not accommodation) and location_selected:
+            # Сохраняем только если оба поля действительны.
+            print(person_distributor, accommodation, location_selected)
+            raise ValidationError(
+                    "Ошибка согласования места проживания. Лицо ответственное за НО не заполнено!!!"
+                )
+        if (not person_department_staff or not order) and process_accepted:
+            # Сохраняем только если оба поля действительны.
+            raise ValidationError(
+                    "Ошибка приема документа в ОК. Ответственное лицо не заполнено!!!"
+                )
+        if process_accepted:
+            if not location_selected:
+                raise ValidationError(
+                    "Ошибка приема документа в ОК. Место проживания не установлено!!!"
+                )
+        if location_selected:
+            if not document_not_agreed:
+                raise ValidationError(
+                    "Ошибка в назначении места проживания. Документ не согласован руководителем!!!"
+                )
 
 class BusinessProcessDirectionAddForm(forms.ModelForm):
     type_of = [

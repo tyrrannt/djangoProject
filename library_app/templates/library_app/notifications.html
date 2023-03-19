@@ -149,5 +149,79 @@
             </div>
         </div>
     </li>
-
+{#Оповещение о новом БП на служебную записку#}
+{% if user in person_distributor %}
+    <li>
+        {% if location_selected_count != 0 %}
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <i class='bx bx-user-pin'></i>
+                <span class="badge">{{ location_selected_count }}</span>
+            </a>
+        {% endif %}
+        <div class="dropdown-menu notification-menu">
+            <div class="notification-title">
+                <span class="float-end badge badge-default">{{ location_selected_count }}</span>
+                Служебные записки
+            </div>
+            <div class="content">
+                <ul>
+                    {% for item in location_selected %}
+                        <li>
+                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                    <code style="font-size: small">
+                                        {{ item }}
+                                    </code>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <hr/>
+                <div class="text-end">
+                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                </div>
+            </div>
+        </div>
+    </li>
+{% endif %}
+{#Оповещение о новом БП на служебную записку#}
+{% if user in person_department_staff %}
+    <li>
+        {% if process_accepted_count != 0 %}
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <i class='bx bx-user-pin'></i>
+                <span class="badge">{{ process_accepted_count }}</span>
+            </a>
+        {% endif %}
+        <div class="dropdown-menu notification-menu">
+            <div class="notification-title">
+                <span class="float-end badge badge-default">{{ process_accepted_count }}</span>
+                Служебные записки
+            </div>
+            <div class="content">
+                <ul>
+                    {% for item in process_accepted %}
+                        <li>
+                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                    <code style="font-size: small">
+                                        {{ item }}
+                                    </code>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <hr/>
+                <div class="text-end">
+                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                </div>
+            </div>
+        </div>
+    </li>
+{% endif %}
 </ul>
+
