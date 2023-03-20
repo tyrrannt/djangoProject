@@ -7,6 +7,7 @@ from django.http import QueryDict, JsonResponse
 from django.shortcuts import HttpResponseRedirect, redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 
+from administration_app.models import PortalProperty
 from administration_app.utils import int_validate, change_session_get, change_session_queryset, change_session_context
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
@@ -30,7 +31,7 @@ class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
-        context['title'] = 'База договоров'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // База договоров'
         change_session_context(context, self)
         return context
 
@@ -111,7 +112,7 @@ class ContractSearch(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         else:
             context['s'] = get_request_string
 
-        context['title'] = 'Поиск по базе договоров'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Поиск по базе договоров'
         return context
 
 
@@ -143,7 +144,7 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
-        context['title'] = 'Создание нового договора'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Создание нового договора'
         context['all_contract'] = Contract.objects.all()
         context['all_counteragent'] = Counteragent.objects.all()
         return context
@@ -185,7 +186,7 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             cn = self.object.contract_number
         else:
             cn = '(без номера)'
-        context['title'] = title = 'Договор №' + cn + ' от ' + str(self.object.date_conclusion)
+        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Договор №' + cn + ' от ' + str(self.object.date_conclusion)
         # Передаем найденные записи в контекст
         context['posts'] = post
         context['slaves'] = slaves
@@ -251,7 +252,7 @@ class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             cn = self.object.contract_number
         else:
             cn = '(без номера)'
-        context['title'] = title = 'Редактирование договора №' + cn + ' от ' + str(self.object.date_conclusion)
+        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Редактирование договора №' + cn + ' от ' + str(self.object.date_conclusion)
 
         return context
 

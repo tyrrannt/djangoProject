@@ -22,6 +22,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         context['Group'] = Groups.objects.all()
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Настройки портала'
         return context
 
     def get(self, request, *args, **kwargs):

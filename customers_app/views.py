@@ -137,7 +137,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         except Exception as _ex:
             message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
             logger.debug(message)
-        context['title'] = 'Профиль ' + str(FIO_format(user_obj))
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(FIO_format(user_obj))
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
         context['contract'] = Contract.objects.all().count()
@@ -180,7 +180,7 @@ class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
             message = f'{user_obj}, Ошибка получения записей. У пользователя |{user_obj.username}| отсутствует подразделение!!!: {_ex}'
             logger.error(message)
 
-        context['title'] = 'Профиль пользователя'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль пользователя'
 
         context['sp'] = OfficialMemo.objects.all().count()
         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
@@ -376,7 +376,7 @@ class CounteragentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(CounteragentListView, self).get_context_data(**kwargs)
-        context['title'] = 'Список контрагентов'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список контрагентов'
         change_session_context(context, self)
         return context
 
@@ -463,7 +463,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super(StaffListView, self).get_context_data(**kwargs)
-        context['title'] = 'Список пользователей'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список пользователей'
         change_session_context(context, self)
         return context
 
@@ -813,7 +813,7 @@ class JobsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(JobsList, self).get_context_data(**kwargs)
-        context['title'] = 'Должности'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Должности'
         change_session_context(context, self)
         return context
 

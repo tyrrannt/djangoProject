@@ -7,6 +7,8 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from loguru import logger
+
+from administration_app.models import PortalProperty
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
     get_jsons_data
 from customers_app.models import DataBaseUser, Counteragent
@@ -86,7 +88,7 @@ class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Список медицинских направлений'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список медицинских направлений'
         change_session_context(context, self)
         return context
 
@@ -173,7 +175,7 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(OfficialMemoList, self).get_context_data(**kwargs)
-        context['title'] = 'Список пользователей'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список пользователей'
         change_session_context(context, self)
         return context
 
@@ -793,7 +795,7 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Список приказов'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список приказов'
         return context
 
 
