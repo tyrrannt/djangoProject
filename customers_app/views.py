@@ -688,6 +688,7 @@ class DivisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Подразделения'
         return context
 
 
@@ -922,6 +923,7 @@ class HarmfulWorkingConditionsList(LoginRequiredMixin, PermissionRequiredMixin, 
             return redirect(url_match)
         return super(HarmfulWorkingConditionsList, self).get(request, *args, **kwargs)
 
-    # def get_queryset(self):
-    #     qs = Job.objects.filter(excluded_standard_spelling=False)
-    #     return qs
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Вредные условия труда'
+        return context

@@ -144,7 +144,7 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Создание нового договора'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить новый договор'
         context['all_contract'] = Contract.objects.all()
         context['all_counteragent'] = Counteragent.objects.all()
         return context
@@ -186,7 +186,7 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             cn = self.object.contract_number
         else:
             cn = '(без номера)'
-        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Договор №' + cn + ' от ' + str(self.object.date_conclusion)
+        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Просмотр договора №' + cn + ' от ' + str(self.object.date_conclusion)
         # Передаем найденные записи в контекст
         context['posts'] = post
         context['slaves'] = slaves
@@ -252,7 +252,7 @@ class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             cn = self.object.contract_number
         else:
             cn = '(без номера)'
-        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Редактирование договора №' + cn + ' от ' + str(self.object.date_conclusion)
+        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Изменить договор №' + cn + ' от ' + str(self.object.date_conclusion)
 
         return context
 
@@ -328,6 +328,11 @@ class TypeDocumentsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Типы документов'
+        return context
+
 
 class TypeDocumentsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = TypeDocuments
@@ -346,11 +351,21 @@ class TypeDocumentsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить тип документа'
+        return context
+
 
 class TypeDocumentsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_detail.html'
     permission_required = 'hrdepartment_app.view_typedocuments'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
 
 
 class TypeDocumentsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -369,6 +384,11 @@ class TypeDocumentsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
 
 """
@@ -390,6 +410,11 @@ class TypeContractsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Типы договоров'
+        return context
+
 
 class TypeContractsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = TypeContract
@@ -408,11 +433,21 @@ class TypeContractsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить тип договора'
+        return context
+
 
 class TypeContractsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_detail.html'
     permission_required = 'hrdepartment_app.view_typecontract'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
 
 
 class TypeContractsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -431,6 +466,11 @@ class TypeContractsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
 
 """
@@ -452,6 +492,11 @@ class TypePropertysList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Типы имущества'
+        return context
+
 
 class TypePropertysAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = TypeProperty
@@ -470,11 +515,21 @@ class TypePropertysAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить тип имущества'
+        return context
+
 
 class TypePropertysDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_detail.html'
     permission_required = 'hrdepartment_app.view_typeproperty'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
 
 
 class TypePropertysUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -493,3 +548,8 @@ class TypePropertysUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context

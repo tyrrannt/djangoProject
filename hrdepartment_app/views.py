@@ -56,17 +56,32 @@ class MedicalOrganisationList(LoginRequiredMixin, PermissionRequiredMixin, ListV
         change_session_get(self.request, self)
         return super(MedicalOrganisationList, self).get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Медицинские организации'
+        return context
+
 
 class MedicalOrganisationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = MedicalOrganisation
     form_class = MedicalOrganisationAddForm
     permission_required = 'customers_app.add_medicalorganisation'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить медицинскую организацию'
+        return context
+
 
 class MedicalOrganisationUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = MedicalOrganisation
     form_class = MedicalOrganisationUpdateForm
     permission_required = 'customers_app.change_medicalorganisation'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
 
 class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -88,7 +103,7 @@ class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список медицинских направлений'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Медицинские направления'
         change_session_context(context, self)
         return context
 
@@ -128,6 +143,7 @@ class MedicalExaminationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         content['all_contragent'] = Counteragent.objects.all()
         content['all_status'] = Medical.type_of
         content['all_harmful'] = ''
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить медицинское направление'
         return content
 
     def get_success_url(self):
@@ -141,9 +157,10 @@ class MedicalExaminationUpdate(LoginRequiredMixin, PermissionRequiredMixin, Upda
     template_name = 'hrdepartment_app/medical_form_update.html'
     permission_required = 'hrdepartment_app.change_medical'
 
-    def get_context_data(self, **kwargs):
-        content = super(MedicalExaminationUpdate, self).get_context_data(**kwargs)
-        return content
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:medical_list')
@@ -195,6 +212,7 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(is_superuser=True)
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить медицинское направление'
         return content
 
     def get_success_url(self):
@@ -280,6 +298,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                 filter_string["period"] = item.period_for
 
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         return content
 
     def get_success_url(self):
@@ -409,6 +428,7 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, PermissionRequiredMixin,
         # content['form'].fields['person_department_staff'].queryset = users_list.filter(
         #     Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
         #     Q(is_superuser=False))
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить БП по СП'
         return content
 
     def get_success_url(self):
@@ -480,7 +500,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                 Q(is_superuser=False))
         content['form'].fields['person_department_staff'].queryset = list_department_staff
         content['list_department_staff'] = list_department_staff
-
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         return content
 
     def form_valid(self, form):
@@ -566,11 +586,21 @@ class PurposeAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = PurposeAddForm
     permission_required = 'hrdepartment_app.add_purpose'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить цель СП'
+        return context
+
 
 class PurposeUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Purpose
     form_class = PurposeUpdateForm
     permission_required = 'hrdepartment_app.change_purpose'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
 
 class BusinessProcessDirectionList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -588,11 +618,21 @@ class BusinessProcessDirectionAdd(LoginRequiredMixin, PermissionRequiredMixin, C
     form_class = BusinessProcessDirectionAddForm
     permission_required = 'hrdepartment_app.add_businessprocessdirection'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить направление БП'
+        return context
+
 
 class BusinessProcessDirectionUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionUpdateForm
     permission_required = 'hrdepartment_app.change_businessprocessdirection'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
 
 class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -757,7 +797,7 @@ class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, Cr
 
     def get_context_data(self, **kwargs):
         content = super(DocumentsJobDescriptionAdd, self).get_context_data(**kwargs)
-        content['title'] = 'Создание ДИ'
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить должностную инструкцию'
         return content
 
 
@@ -783,6 +823,11 @@ class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin,
             return redirect(url_match)
         return super(DocumentsJobDescriptionDetail, self).dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
+
 
 class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'hrdepartment_app/documentsjobdescription_update.html'
@@ -790,10 +835,10 @@ class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin,
     form_class = DocumentsJobDescriptionUpdateForm
     permission_required = 'hrdepartment_app.change_documentsjobdescription'
 
-    def get_context_data(self, **kwargs):
-        content = super(DocumentsJobDescriptionUpdate, self).get_context_data(**kwargs)
-        content['title'] = 'Изменение ДИ'
-        return content
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
 
 # Приказы
@@ -824,10 +869,10 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
     form_class = DocumentsOrderAddForm
     permission_required = 'hrdepartment_app.add_documentsorder'
 
-    def get_context_data(self, **kwargs):
-        content = super(DocumentsOrderAdd, self).get_context_data(**kwargs)
-        content['title'] = 'Создание приказа'
-        return content
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавление приказа'
+        return context
 
 
 class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -852,6 +897,11 @@ class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
             return redirect(url_match)
         return super(DocumentsOrderDetail, self).dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
+
 
 class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'hrdepartment_app/documentsorder_update.html'
@@ -859,10 +909,10 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
     form_class = DocumentsOrderUpdateForm
     permission_required = 'hrdepartment_app.change_documentsorder'
 
-    def get_context_data(self, **kwargs):
-        content = super(DocumentsOrderUpdate, self).get_context_data(**kwargs)
-        content['title'] = 'Изменение приказа'
-        return content
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
 
 
 class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -878,16 +928,31 @@ class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, L
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Места назначения'
+        return context
+
 
 class PlaceProductionActivityAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = PlaceProductionActivity
     form_class = PlaceProductionActivityAddForm
     permission_required = 'hrdepartment_app.add_placeproductionactivity'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить место назначения'
+        return context
+
 
 class PlaceProductionActivityDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = PlaceProductionActivity
     permission_required = 'hrdepartment_app.view_placeproductionactivity'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
 
 
 class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -895,3 +960,8 @@ class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin,
     template_name = 'hrdepartment_app/placeproductionactivity_form_update.html'
     form_class = PlaceProductionActivityUpdateForm
     permission_required = 'hrdepartment_app.change_placeproductionactivity'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
