@@ -473,6 +473,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                 Q(is_superuser=False))
         content['form'].fields['person_department_staff'].queryset = list_department_staff
         content['list_department_staff'] = list_department_staff
+
         return content
 
     def form_valid(self, form):

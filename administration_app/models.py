@@ -18,6 +18,13 @@ class PortalProperty(models.Model):
     def __str__(self):
         return str(self.pk)
 
+    def get_data(self):
+        return {
+            'portal_name': self.portal_name,
+            'portal_paginator': self.portal_paginator,
+            'portal_session': self.portal_session,
+        }
+
 
 class MetaMainMenu(models.Model):
     class Meta:
