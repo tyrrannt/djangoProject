@@ -45,7 +45,7 @@
         </div>
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:staff_update' object.pk %}"
-              method="post" prefix="main">
+              method="post" prefix="main" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="row">
                 <div class="col">
@@ -54,6 +54,19 @@
                             <div class="tabs-modern row" style="min-height: 490px;">
                                 <div class="col-lg-2-5 col-xl-1-5">
                                     <div class="nav flex-column" id="tab" role="tablist" aria-orientation="vertical">
+                                        <div class="thumb-info mb-3">
+                                            {% if object.avatar %}
+                                                <img src="{{ object.avatar.url }}" class="rounded img-fluid"
+                                                    alt="{{ object.username }}">
+                                            {% else %}
+                                                <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
+                                                alt="{{ object.username }}">
+                                            {% endif %}
+                                            <div class="thumb-info-title">
+                                                <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}</span>
+{#                                                <span class="thumb-info-type">{{ object.user_work_profile.job }}</span>#}
+                                            </div>
+                                        </div>
                                         <a class="nav-link active" id="general-tab" data-bs-toggle="pill"
                                            data-bs-target="#general" role="tab" aria-controls="general"
                                            aria-selected="true"><i class="bx bx-cog me-2"></i> Личные данные</a>
@@ -126,6 +139,15 @@
                                                             {% endif %}
                                                         {% endfor %}
                                                     </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Фотография</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="file" class="form-control form-control-modern"
+                                                           name="avatar" id="id_avatar"
+                                                           placeholder="Данные отсутствуют..."
+                                                           />
                                                 </div>
                                             </div>
                                         </div>

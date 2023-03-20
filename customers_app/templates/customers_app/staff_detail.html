@@ -37,6 +37,19 @@
                             <div class="tabs-modern row" style="min-height: 490px;">
                                 <div class="col-lg-2-5 col-xl-1-5">
                                     <div class="nav flex-column" id="tab" role="tablist" aria-orientation="vertical">
+                                        <div class="thumb-info mb-3">
+                                            {% if object.avatar %}
+                                                <img src="{{ object.avatar.url }}" class="rounded img-fluid"
+                                                    alt="{{ object.username }}">
+                                            {% else %}
+                                                <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
+                                                alt="{{ object.username }}">
+                                            {% endif %}
+                                            <div class="thumb-info-title">
+                                                <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}</span>
+{#                                                <span class="thumb-info-type">{{ object.user_work_profile.job }}</span>#}
+                                            </div>
+                                        </div>
                                         <a class="nav-link active" id="general-tab" data-bs-toggle="pill"
                                            data-bs-target="#general" role="tab" aria-controls="general"
                                            aria-selected="true"><i class="bx bx-cog me-2"></i> Личные данные</a>
@@ -54,6 +67,7 @@
                                            aria-selected="false"><i class="bx bxs-buildings me-2"></i> Рабочий
                                             профиль</a>
                                     </div>
+
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="tab-content" id="tabContent">

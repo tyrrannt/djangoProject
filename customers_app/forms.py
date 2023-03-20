@@ -169,9 +169,9 @@ class StaffUpdateForm(forms.ModelForm):
         model = DataBaseUser
         fields = (
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
-            #  'phone', 'works', 'access_level', 'avatar', 'surname'
+            #  'phone', 'works', 'access_level',  'surname'
             'last_name', 'first_name', 'surname', 'email', 'birthday',
-            'personal_phone', 'address', 'gender', 'type_users',
+            'personal_phone', 'address', 'gender', 'type_users', 'avatar',
         )
 
     def __init__(self, *args, **kwargs):

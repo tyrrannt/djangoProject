@@ -157,9 +157,15 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             current_year = self.request.GET.get('CY')
             current_month = self.request.GET.get('CM')
             current_passphrase = self.request.GET.get('PX')
-            if len(current_month) == 1:
-                current_month = '0' + current_month
-            get_user_obj = self.get_object()
+            try:
+                if len(current_month) == 1:
+                    current_month = '0' + current_month
+                get_user_obj = self.get_object()
+            except TypeError:
+                logger.error(f'Ошибка передачи запроса, curent_month не содержит значение!')
+                # ToDo: Пришел запрос с поисковой строки
+                # print(self.request.GET.get('q'))
+                return super().get(request, *args, **kwargs)
             if current_passphrase == '555':
                 html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
             else:
