@@ -175,7 +175,7 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(OfficialMemoList, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список пользователей'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Служебные записки'
         change_session_context(context, self)
         return context
 
@@ -373,6 +373,11 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // БП по служебным поездкам'
+        return context
+
 
 class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = ApprovalOficialMemoProcess
@@ -550,6 +555,11 @@ class PurposeList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Цели служебных поездок'
+        return context
+
 
 class PurposeAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Purpose
@@ -566,6 +576,11 @@ class PurposeUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 class BusinessProcessDirectionList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = BusinessProcessDirection
     permission_required = 'hrdepartment_app.view_businessprocessdirection'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Направление бизнес-процессов'
+        return context
 
 
 class BusinessProcessDirectionAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -705,7 +720,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
 
         content['table_set'] = dict_obj
         content['table_count'] = range(1, (date_end - date_start).days + 2)
-        content['title'] = 'Отчет'
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Отчет'
         content['current_year'] = current_year
         content['current_month'] = current_month
 
@@ -728,6 +743,11 @@ class DocumentsJobDescriptionList(LoginRequiredMixin, PermissionRequiredMixin, L
             response = {'data': data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Должностные инструкции'
+        return context
 
 
 class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -795,7 +815,7 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список приказов'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Приказы'
         return context
 
 

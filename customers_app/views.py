@@ -45,6 +45,11 @@ class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Группы'
+        return context
+
 
 class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Groups
