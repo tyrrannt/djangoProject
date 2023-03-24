@@ -64,7 +64,7 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
-                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).attr("href", id + '/');
                     $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {
                         window.location = $(this).attr('href');

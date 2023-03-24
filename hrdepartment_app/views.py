@@ -882,18 +882,18 @@ class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
     def dispatch(self, request, *args, **kwargs):
         try:
             # Получаем уровень доступа для запрашиваемого объекта
-            detail_obj = int(self.get_object().access.level)
+            detail_obj = self.get_object()
             # Получаем уровень доступа к документам у пользователя
-            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.documents_access_view.level
+            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
             # Сравниваем права доступа
-            if detail_obj < user_obj:
+            if detail_obj.access.level < user_obj.user_access.level:
                 # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
                 # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('library_app:documents_list')
+                url_match = reverse_lazy('hrdepartment_app:order_list')
                 return redirect(url_match)
         except Exception as _ex:
             # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
-            url_match = reverse_lazy('library_app:documents_list')
+            url_match = reverse_lazy('hrdepartment_app:order_list')
             return redirect(url_match)
         return super(DocumentsOrderDetail, self).dispatch(request, *args, **kwargs)
 

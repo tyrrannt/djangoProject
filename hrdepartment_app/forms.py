@@ -171,8 +171,6 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         process_accepted = cleaned_data.get("process_accepted")
         order = cleaned_data.get("order")
 
-
-
         if not person_agreement and document_not_agreed:
             # Сохраняем только если оба поля действительны.
             raise ValidationError(
@@ -305,12 +303,25 @@ class DocumentsOrderAddForm(forms.ModelForm):
     access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all(), label='Ответственные лица')
     employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    validity_period_start = forms.DateField(required=False)
+    validity_period_end = forms.DateField(required=False)
 
     class Meta:
         model = DocumentsOrder
         fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'employee', 'allowed_placed', 'validity_period_start', 'document_order_type',
                   'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_foundation')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        scan_file = cleaned_data.get("scan_file")
+        ext = str(scan_file).split('.')[-1]
+        if scan_file and ext != 'pdf':
+            # Сохраняем только если оба поля действительны.
+            raise ValidationError("Скан документа должен быть в формате PDF")
+
+        document_number = cleaned_data.get("document_number")
+        exist_doc = DocumentsOrder.objects.filter()
 
 
 class DocumentsOrderUpdateForm(forms.ModelForm):
@@ -324,12 +335,22 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
     access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all(), label='Ответственные лица')
     employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    validity_period_start = forms.DateField(required=False)
+    validity_period_end = forms.DateField(required=False)
 
     class Meta:
         model = DocumentsOrder
         fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'employee', 'allowed_placed', 'validity_period_start', 'document_order_type',
                   'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_foundation')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        scan_file = cleaned_data.get("scan_file")
+        ext = str(scan_file).split('.')[-1]
+        if scan_file and ext != 'pdf':
+            # Сохраняем только если оба поля действительны.
+            raise ValidationError("Скан документа должен быть в формате PDF")
 
 
 class PlaceProductionActivityAddForm(forms.ModelForm):

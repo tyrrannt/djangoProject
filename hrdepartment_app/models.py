@@ -56,8 +56,8 @@ class Documents(models.Model):
     employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True,
                                       related_name='%(app_label)s_%(class)s_employee')
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
-    validity_period_start = models.DateField(verbose_name='Документ действует с', default='')
-    validity_period_end = models.DateField(verbose_name='Документ действует по', default='')
+    validity_period_start = models.DateField(verbose_name='Документ действует с', blank=True, null=True)
+    validity_period_end = models.DateField(verbose_name='Документ действует по', blank=True, null=True)
     actuality = models.BooleanField(verbose_name='Актуальность', default=False)
     previous_document = models.URLField(verbose_name='Предшествующий документ', blank=True)
 
@@ -493,31 +493,43 @@ class BusinessProcessDirection(models.Model):
 
 
 def order_doc(obj_model, filepath, filename, request):
-
-    if 'Командир воздушного судна' in obj_model.document_foundation.person.user_work_profile.job.get_title():
-        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom2.docx'))
+    if obj_model.document_foundation:
+        if 'Командир воздушного судна' in obj_model.document_foundation.person.user_work_profile.job.get_title():
+            doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom2.docx'))
+        else:
+            doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom.docx'))
+        delta = obj_model.document_foundation.period_for - obj_model.document_foundation.period_from
+        place = [item.name for item in obj_model.document_foundation.place_production_activity.all()]
+        try:
+            context = {'Number': obj_model.document_number,
+                       'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
+                       'FIO': obj_model.document_foundation.person,
+                       'ServiceNum': obj_model.document_foundation.person.service_number,
+                       'Division': obj_model.document_foundation.person.user_work_profile.divisions,
+                       'Job': obj_model.document_foundation.person.user_work_profile.job,
+                       'Place': str(place).strip('[]'),
+                       'DateCount': str(int(delta.days) + 1),
+                       'DateFrom': f'{obj_model.document_foundation.period_from.strftime("%d.%m.%Y")} г.',
+                       'DateFor': f'{obj_model.document_foundation.period_for.strftime("%d.%m.%Y")} г.',
+                       'Purpose': obj_model.document_foundation.purpose_trip,
+                       'DateAcquaintance': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
+                       }
+        except Exception as _ex:
+            # DataBaseUser.objects.get(pk=request)
+            logger.debug(f'Ошибка заполнения файла {filename}: {_ex}')
+            context = {}
     else:
-        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom.docx'))
-    delta = obj_model.document_foundation.period_for - obj_model.document_foundation.period_from
-    place = [item.name for item in obj_model.document_foundation.place_production_activity.all()]
-    try:
-        context = {'Number': obj_model.document_number,
-                   'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
-                   'FIO': obj_model.document_foundation.person,
-                   'ServiceNum': obj_model.document_foundation.person.service_number,
-                   'Division': obj_model.document_foundation.person.user_work_profile.divisions,
-                   'Job': obj_model.document_foundation.person.user_work_profile.job,
-                   'Place': str(place).strip('[]'),
-                   'DateCount': str(int(delta.days) + 1),
-                   'DateFrom': f'{obj_model.document_foundation.period_from.strftime("%d.%m.%Y")} г.',
-                   'DateFor': f'{obj_model.document_foundation.period_for.strftime("%d.%m.%Y")} г.',
-                   'Purpose': obj_model.document_foundation.purpose_trip,
-                   'DateAcquaintance': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
-                   }
-    except Exception as _ex:
-        # DataBaseUser.objects.get(pk=request)
-        logger.debug(f'Ошибка заполнения файла {filename}: {_ex}')
-        context = {}
+        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/ord.docx'))
+        try:
+            context = {'Number': obj_model.document_number,
+                       'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
+                       'Title': obj_model.document_name,
+                       'Description': 'Тут охрененно долгий текст',
+                       }
+        except Exception as _ex:
+            # DataBaseUser.objects.get(pk=request)
+            logger.debug(f'Ошибка заполнения файла {filename}: {_ex}')
+            context = {}
     doc.render(context)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
     if not path_obj.exists():
@@ -563,14 +575,24 @@ class DocumentsOrder(Documents):
 def rename_order_file_name(sender, instance, **kwargs):
     try:
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+
+        ext_scan = str(instance.scan_file).split('.')[-1]
         uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
         filename = f'ORD-{instance.document_order_type}-{instance.document_number}-{instance.document_date}-{uid}.docx'
-        print(filename)
-        year = instance.document_date
-        order_doc(instance, f'media/docs/ORD/{year.year}', filename, instance.document_order_type)
-        if f'docs/ORD/{year}/{filename}' != instance.doc_file:
-            instance.doc_file = f'docs/ORD/{year}/{filename}'
-            instance.save()
+        scanname = f'ORD-{instance.document_order_type}-{instance.document_number}-{instance.document_date}-{uid}.{ext_scan}'
+        date_doc = instance.document_date
+        order_doc(instance, f'media/docs/ORD/{date_doc.year}/{date_doc.month}', filename, instance.document_order_type)
+        scan_name = pathlib.Path(instance.scan_file.name).name
+        if f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}' != instance.doc_file:
+            DocumentsOrder.objects.filter(pk=instance.pk).update(doc_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}')
+        if f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}' != instance.scan_file:
+            try:
+                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scan_name),
+                                    pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scanname))
+            except Exception as _ex0:
+                logger.error(f'Ошибка переименования файла: {_ex0}')
+            DocumentsOrder.objects.filter(pk=instance.pk).update(scan_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}')
+
     except Exception as _ex:
         logger.error(f'Ошибка при переименовании файла {_ex}')
 
