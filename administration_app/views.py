@@ -47,8 +47,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 for user_obj in users_list:
                     print(user_obj)
                     try:
+                        user_obj.user_permissions.clear()
                         for item in user_obj.user_work_profile.job.group.all():
-                            user_obj.user_permissions.clear()
                             perm = item.permissions.all()
                             print(user_obj, perm)
                             user_obj.user_permissions.set(perm)
