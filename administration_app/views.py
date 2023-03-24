@@ -36,7 +36,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             # Установка общих прав пользователя наследованием из групп
             if request.GET.get('update') == '0':
                 group_list = [unit for unit in Groups.objects.filter(name__contains='Общая')]
-                print(group_list)
                 job_list = Job.objects.all()
                 for item in job_list:
                     for unit in group_list:
@@ -45,13 +44,10 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '1':
                 users_list = DataBaseUser.objects.all()
                 for user_obj in users_list:
-                    print(user_obj)
                     try:
-                        user_obj.user_permissions.clear()
+                        user_obj.groups.clear()
                         for item in user_obj.user_work_profile.job.group.all():
-                            perm = item.permissions.all()
-                            print(user_obj, perm)
-                            user_obj.user_permissions.set(perm)
+                            user_obj.groups.add(item)
                         user_obj.save()
                     except AttributeError:
                         logger.info(f"У пользователя {user_obj} отсутствуют группы!")
