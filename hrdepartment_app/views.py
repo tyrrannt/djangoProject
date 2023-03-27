@@ -22,6 +22,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
 from hrdepartment_app.hrdepartment_util import get_medical_documents
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity
+from hrdepartment_app.tasks import report_card_separator
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -857,6 +858,7 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             documents_order_list = DocumentsOrder.objects.all()
             data = [documents_order_item.get_data() for documents_order_item in documents_order_list]
             response = {'data': data}
+            report_card_separator()
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
