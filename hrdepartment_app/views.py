@@ -1,4 +1,5 @@
 import datetime
+import math
 from calendar import monthrange
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
@@ -111,7 +112,8 @@ class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         if self.request.GET.get('update') == '0':
             error = get_medical_documents()
             if error:
-                return render(request, 'hrdepartment_app/medical_list.html', {'error': 'Необходимо обновить список организаций.'})
+                return render(request, 'hrdepartment_app/medical_list.html',
+                              {'error': 'Необходимо обновить список организаций.'})
             url_match = reverse_lazy('hrdepartment_app:medical_list')
             return redirect(url_match)
         change_session_get(self.request, self)
@@ -489,15 +491,15 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         content['list_agreement'] = list_agreement
 
         list_distributor = users_list.filter(
-                Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
-                Q(is_superuser=False))
+            Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
+            Q(is_superuser=False))
 
         content['form'].fields['person_distributor'].queryset = list_distributor
         content['list_distributor'] = list_distributor
 
         list_department_staff = users_list.filter(
-                Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
-                Q(is_superuser=False))
+            Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
+            Q(is_superuser=False))
         content['form'].fields['person_department_staff'].queryset = list_department_staff
         content['list_department_staff'] = list_department_staff
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'

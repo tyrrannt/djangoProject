@@ -650,3 +650,13 @@ def rename_jds_file_name(sender, instance, **kwargs):
             instance.save()
     except Exception as _ex:
         print(_ex)
+
+
+class ReportCard(models.Model):
+    class Meta:
+        verbose_name = 'Рабочее время'
+        verbose_name_plural = 'Табель учета'
+
+    employee = models.ForeignKey(DataBaseUser, on_delete=models.SET_NULL, null=True, blank=True)
+    start_time = models.DateTimeField(verbose_name='Дата и время прихода', blank=True)
+    end_time = models.DateTimeField(verbose_name='Дата и время ухода', blank=True)
