@@ -858,7 +858,7 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             documents_order_list = DocumentsOrder.objects.all()
             data = [documents_order_item.get_data() for documents_order_item in documents_order_list]
             response = {'data': data}
-            report_card_separator()
+            # report_card_separator()
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
