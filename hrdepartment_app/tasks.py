@@ -1,10 +1,14 @@
 import pathlib
 
+from loguru import logger
+
 from customers_app.models import DataBaseUser
 from djangoProject.celery import app
 from djangoProject.settings import BASE_DIR
 from hrdepartment_app.models import ReportCard
 
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
+           serialize=True)
 
 def xldate_to_datetime(xldate):
     import xlrd
@@ -24,7 +28,10 @@ def send_email():
 
 @app.task()
 def report_card_separator():
-    file = pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.txt')
+    try:
+        file = pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.txt')
+    except Exception as _ex:
+        logger.info(f'Ошибка открытия файла: {_ex}')
     import re
     result = {}
     try:
