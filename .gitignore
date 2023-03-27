@@ -10,4 +10,5 @@ db.sqlite3
 media
 static
 debug.*
+rsync
 /static/admin_templates/vendor/simple-line-icons/node_modules/
