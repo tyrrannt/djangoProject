@@ -8,7 +8,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     DocumentsJobDescriptionList, DocumentsJobDescriptionAdd, DocumentsJobDescriptionDetail, \
     DocumentsJobDescriptionUpdate, DocumentsOrderList, DocumentsOrderAdd, DocumentsOrderDetail, DocumentsOrderUpdate, \
     PlaceProductionActivityList, PlaceProductionActivityAdd, PlaceProductionActivityDetail, \
-    PlaceProductionActivityUpdate
+    PlaceProductionActivityUpdate, ReportCardList
 
 app_name = 'hrdepartment_app'
 
@@ -45,4 +45,5 @@ urlpatterns = [
     path('place/add/', PlaceProductionActivityAdd.as_view(), name='place_add'),
     path('place/<int:pk>/', PlaceProductionActivityDetail.as_view(), name='place'),
     path('place/<int:pk>/update/', PlaceProductionActivityUpdate.as_view(), name='place_update'),
+    path('report/', ReportCardList.as_view(), name='reportcard_list'),
 ]

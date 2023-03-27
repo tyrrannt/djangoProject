@@ -21,7 +21,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     PlaceProductionActivityUpdateForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
-    MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity
+    MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard
 from hrdepartment_app.tasks import report_card_separator
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -968,4 +968,22 @@ class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin,
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
+
+class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = ReportCard
+    permission_required = 'hrdepartment_app.view_reportcard'
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            reportcard_list = ReportCard.objects.all()
+            data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
         return context

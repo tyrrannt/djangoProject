@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 
 from loguru import logger
@@ -39,20 +40,25 @@ def report_card_separator():
         with open(file) as fd:
             for line in fd:
                 match = re.search(r'\D*', line)
-                search_day = line[len(match[0]):len(match[0]) + 5]
                 start_time = line[len(match[0]) + 5:len(match[0]) + 21]
                 end_time = line[len(match[0]) + 21:-1]
                 if end_time:
                     result.update({f'{match[0]}': [start_time, end_time]})
                     search_user = match[0].split(' ')
-                    user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
-                                                        surname=search_user[2])
-                    kwargs = {
-                        'employee': user_obj,
-                        'start_time': xldate_to_datetime(start_time),
-                        'end_time': xldate_to_datetime(end_time),
-                    }
-                    ReportCard.objects.update_or_create(kwargs)
+                    try:
+                        user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+                                                            surname=search_user[2])
+                        report_card_day = datetime.datetime.strptime(xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S')
+
+                        kwargs = {
+                            'report_card_day': report_card_day.date(),
+                            'employee': user_obj,
+                            'start_time': datetime.datetime.strptime(xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
+                            'end_time': datetime.datetime.strptime(xldate_to_datetime(float(end_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
+                        }
+                        ReportCard.objects.update_or_create(report_card_day=report_card_day.date(), employee=user_obj, defaults=kwargs)
+                    except Exception as _ex:
+                        logger.error(f'{match[0]} не найден в БД: {_ex}')
         return result
     except IOError:
         logger.error(f'Ошибка открытия файла: {IOError}')

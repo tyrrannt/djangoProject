@@ -657,6 +657,16 @@ class ReportCard(models.Model):
         verbose_name = 'Рабочее время'
         verbose_name_plural = 'Табель учета'
 
+    report_card_day = models.DateField(verbose_name='Дата', null=True, blank=True)
     employee = models.ForeignKey(DataBaseUser, on_delete=models.SET_NULL, null=True, blank=True)
-    start_time = models.DateTimeField(verbose_name='Дата и время прихода', blank=True)
-    end_time = models.DateTimeField(verbose_name='Дата и время ухода', blank=True)
+    start_time = models.TimeField(verbose_name='Дата и время прихода', null=True, blank=True)
+    end_time = models.TimeField(verbose_name='Дата и время ухода', null=True, blank=True)
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'report_card_day': self.report_card_day,
+            'employee': self.employee.get_title(),
+            'start_time': self.start_time,
+            'end_time': str(self.end_time),
+        }
