@@ -30,6 +30,7 @@ def send_email():
 def report_card_separator():
     try:
         file = pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.txt')
+        logger.info(f'Файл получен: {file}')
     except Exception as _ex:
         logger.info(f'Ошибка открытия файла: {_ex}')
     import re
@@ -54,6 +55,6 @@ def report_card_separator():
                     ReportCard.objects.update_or_create(kwargs)
         return result
     except IOError:
-        pass
+        logger.error(f'Ошибка открытия файла: {IOError}')
     finally:
         fd.close()
