@@ -1,5 +1,8 @@
+import hashlib
+
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
 from django.contrib.auth.models import Permission
+from django.core.exceptions import ValidationError
 
 from .models import DataBaseUser, Posts, Counteragent, Division, Job, Groups
 from django import forms
@@ -147,6 +150,7 @@ class DivisionsUpdateForm(forms.ModelForm):
 class JobsAddForm(forms.ModelForm):
     group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all())
     group.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Job
         fields = ('code', 'name', 'harmful', 'ref_key', 'excluded_standard_spelling', 'right_to_approval', 'group')
@@ -165,12 +169,14 @@ class JobsUpdateForm(forms.ModelForm):
 
 
 class StaffUpdateForm(forms.ModelForm):
+    passphrase = forms.CharField(required=False)
+
     class Meta:
         model = DataBaseUser
         fields = (
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
             #  'phone', 'works', 'access_level',  'surname'
-            'last_name', 'first_name', 'surname', 'email', 'birthday',
+            'last_name', 'first_name', 'surname', 'email', 'birthday', 'passphrase',
             'personal_phone', 'address', 'gender', 'type_users', 'avatar',
         )
 
@@ -180,10 +186,15 @@ class StaffUpdateForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
 
+class ChangePassPraseUpdateForm(forms.ModelForm):
+    class Meta:
+        model = DataBaseUser
+        fields = ('passphrase',)
 
 class GroupAddForm(forms.ModelForm):
     permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all())
     permissions.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Groups
         fields = ('name', 'permissions')

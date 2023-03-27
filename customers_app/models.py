@@ -1,13 +1,10 @@
+import hashlib
 import pathlib
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.hashers import make_password
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.urls import reverse
 from contracts_app.templatetags.custom import empty_item
-from djangoProject import settings
 from djangoProject.settings import BASE_DIR
 from django.contrib.auth.models import Group, Permission
 
@@ -301,6 +298,7 @@ class DataBaseUser(AbstractUser):
                                         on_delete=models.SET_NULL, null=True, blank=True)
     user_work_profile = models.OneToOneField(DataBaseUserWorkProfile, verbose_name='Рабочий профиль пользователя',
                                              on_delete=models.SET_NULL, null=True, blank=True)
+    passphrase = models.CharField(verbose_name='Парольная фраза', max_length=256, default='', blank=True)
 
     def __str__(self):
         return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
@@ -319,6 +317,13 @@ class DataBaseUser(AbstractUser):
             'email': self.email,
             'password': str(self.user_work_profile.work_email_password),
         }
+
+    # def save(self, *args, **kwargs):
+    #     print(self.passphrase)
+    #     if self.passphrase != 0:
+    #         passphrase_obj = self.passphrase
+    #         self.passphrase = hashlib.sha256(passphrase_obj.encode()).hexdigest()
+    #     super().save(*args, **kwargs)
 
 
 def rename(file_name, path_name, instance, pfx):

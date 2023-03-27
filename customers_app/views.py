@@ -1,6 +1,9 @@
 import datetime
+import hashlib
 
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
@@ -20,7 +23,7 @@ from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Jo
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
-    CounteragentAddForm, PostsUpdateForm, GroupAddForm, GroupUpdateForm
+    CounteragentAddForm, PostsUpdateForm, GroupAddForm, GroupUpdateForm, ChangePassPraseUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -166,12 +169,21 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # ToDo: Пришел запрос с поисковой строки
                 # print(self.request.GET.get('q'))
                 return super().get(request, *args, **kwargs)
-            if current_passphrase == '555':
+            hash_pass = hashlib.sha256(current_passphrase.encode()).hexdigest()
+            hash_null = hashlib.sha256(''.encode()).hexdigest()
+            print(hash_pass, request.user.passphrase)
+            if hash_pass == request.user.passphrase and hash_pass != hash_null:
                 html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
             else:
                 html_obj = ''
             return JsonResponse(html_obj, safe=False)
         return super().get(request, *args, **kwargs)
+
+
+class ChangePassPraseUpdate(LoginRequiredMixin, UpdateView):
+    model = DataBaseUser
+    form_class = ChangePassPraseUpdateForm
+    template_name = 'customers_app/change_passphrase.html'
 
 
 # class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -589,26 +601,31 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
                 personal_kwargs['citizenship'] = Citizenships.objects.get(pk=content['citizenship'])
             if not obj_user.user_work_profile:
                 obj_work_profile = DataBaseUserWorkProfile(**work_kwargs)
-                obj_work_profile.save()
+                with transaction.atomic():
+                    obj_work_profile.save()
                 obj_user.user_work_profile = obj_work_profile
             else:
                 obj_work_profile = DataBaseUserWorkProfile.objects.get(pk=obj_user.user_work_profile.pk)
                 # Если поле job или division пришли пустыми, присваиваем None значению поля и сохраняем
                 if content['job'] == 'none':
                     obj_work_profile.job = None
-                    obj_work_profile.save()
+                    with transaction.atomic():
+                        obj_work_profile.save()
                 if content['divisions'] == 'none':
                     obj_work_profile.divisions = None
-                    obj_work_profile.save()
+                    with transaction.atomic():
+                        obj_work_profile.save()
                 obj_work_profile = DataBaseUserWorkProfile.objects.filter(pk=obj_user.user_work_profile.pk)
                 obj_work_profile.update(**work_kwargs)
 
             if not obj_user.user_profile:
                 obj_personal_profile_identity_documents = IdentityDocuments(**identity_documents_kwargs)
-                obj_personal_profile_identity_documents.save()
+                with transaction.atomic():
+                    obj_personal_profile_identity_documents.save()
                 personal_kwargs['passport'] = obj_personal_profile_identity_documents
                 obj_personal_profile = UserProfile(**personal_kwargs)
-                obj_personal_profile.save()
+                with transaction.atomic():
+                    obj_personal_profile.save()
                 obj_user.user_profile = obj_personal_profile
             else:
                 try:
@@ -622,13 +639,15 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
                         logger.error(message)
                     if content['citizenship'] == 'none':
                         obj_personal_profile.citizenship = None
-                        obj_personal_profile.save()
+                        with transaction.atomic():
+                            obj_personal_profile.save()
                     obj_personal_profile = UserProfile.objects.filter(pk=obj_user.user_profile.pk)
                     obj_personal_profile.update(**personal_kwargs)
                 except Exception as _ex:
                     message = f'Ошибка сохранения профиля. У пользователя |{obj_user.username}| отсутствует личный профиль!!!: {_ex}'
                     logger.error(message)
-            obj_user.save()
+            with transaction.atomic():
+                obj_user.save()
         return super(StaffUpdate, self).post(request, *args, **kwargs)
 
     def form_invalid(self, form):
@@ -681,7 +700,8 @@ class DivisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                     if all_divisions.filter(ref_key=item['Ref_Key']).count() == 1:
                         division = Division.objects.get(ref_key=item['Ref_Key'])
                         division.parent_category = Division.objects.get(ref_key=item['Parent_Key'])
-                        division.save()
+                        with transaction.atomic():
+                            division.save()
             # self.get_context_data(object_list=None, kwargs={'added': count})
             url_match = reverse_lazy('customers_app:divisions_list')
             return redirect(url_match)
@@ -816,7 +836,8 @@ class JobsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 object_list = Job.objects.filter(employment_function=item['Ref_Key'])
                 for unit in object_list:
                     unit.code = item['ОКПДТРКод']
-                    unit.save()
+                    with transaction.atomic():
+                        unit.save()
 
             url_match = reverse_lazy('customers_app:jobs_list')
             return redirect(url_match)
@@ -921,7 +942,8 @@ class HarmfulWorkingConditionsList(LoginRequiredMixin, PermissionRequiredMixin, 
                     }
                     if HarmfulWorkingConditions.objects.filter(ref_key=item['Ref_Key']).count() != 1:
                         db_instance = HarmfulWorkingConditions(**harmful_kwargs)
-                        db_instance.save()
+                        with transaction.atomic():
+                            db_instance.save()
                         count += 1
 
             # self.get_context_data(object_list=None, kwargs={'added': count})
