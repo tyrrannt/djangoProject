@@ -93,24 +93,25 @@
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Фамилия</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           value="{{ object.last_name|empty_item }}" name="last_name"
-                                                           id="id_last_name"/>
+                                                           name="last_name" id="id_last_name"
+                                                           value="{{ object.last_name|empty_item }}"
+                                                          />
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Имя</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           value="{{ object.first_name|empty_item }}" name="first_name"
-                                                           id="id_first_name"/>
+                                                           name="first_name" id="id_first_name"
+                                                           value="{{ object.first_name|empty_item }}" />
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Отчество</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
-                                                           value="{{ object.surname|empty_item }}" name="surname"
-                                                           id="id_surname"/>
+                                                           name="surname" id="id_surname"
+                                                           value="{{ object.surname|empty_item }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -237,8 +238,8 @@
                                                         выдан</label>
                                                     <div class="col-lg-7 col-xl-6">
                                                         <textarea type="text" class="form-control form-control-modern"
-                                                                  name="issued_by_whom" id="id_issued_by_whom" rows="4"
-                                                        >{{ object.user_profile.passport.issued_by_whom|empty_item }}</textarea>
+                                                                  name="issued_by_whom" id="id_issued_by_whom"
+                                                                  rows="4">{{ object.user_profile.passport.issued_by_whom|empty_item }}</textarea>
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center pb-3">

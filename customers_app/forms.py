@@ -169,14 +169,13 @@ class JobsUpdateForm(forms.ModelForm):
 
 
 class StaffUpdateForm(forms.ModelForm):
-    passphrase = forms.CharField(required=False)
 
     class Meta:
         model = DataBaseUser
         fields = (
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
             #  'phone', 'works', 'access_level',  'surname'
-            'last_name', 'first_name', 'surname', 'email', 'birthday', 'passphrase',
+            'last_name', 'first_name', 'surname', 'email', 'birthday',
             'personal_phone', 'address', 'gender', 'type_users', 'avatar',
         )
 
@@ -186,10 +185,34 @@ class StaffUpdateForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
 
+
 class ChangePassPraseUpdateForm(forms.ModelForm):
+    passphrase = forms.CharField(label='Кодовое слово')
+    passphrase2 = forms.CharField(label='Кодовое слово (повторно)')
+
     class Meta:
         model = DataBaseUser
         fields = ('passphrase',)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        passphrase_first = cleaned_data.get("passphrase")
+        passphrase_second = cleaned_data.get("passphrase2")
+        if passphrase_first != passphrase_second:
+            raise ValidationError("Кодовые слова не совпадают!")
+
+    def clean_passphrase(self):
+        cleaned_data = self.cleaned_data['passphrase']
+        if cleaned_data != '':
+            cleaned_data = hashlib.sha256(cleaned_data.encode()).hexdigest()
+        return cleaned_data
+
+    def clean_passphrase2(self):
+        cleaned_data = self.cleaned_data['passphrase2']
+        if cleaned_data != '':
+            cleaned_data = hashlib.sha256(cleaned_data.encode()).hexdigest()
+        return cleaned_data
+
 
 class GroupAddForm(forms.ModelForm):
     permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all())

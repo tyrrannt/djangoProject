@@ -4,6 +4,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.urls import reverse
+
 from contracts_app.templatetags.custom import empty_item
 from djangoProject.settings import BASE_DIR
 from django.contrib.auth.models import Group, Permission
@@ -318,12 +320,8 @@ class DataBaseUser(AbstractUser):
             'password': str(self.user_work_profile.work_email_password),
         }
 
-    # def save(self, *args, **kwargs):
-    #     print(self.passphrase)
-    #     if self.passphrase != 0:
-    #         passphrase_obj = self.passphrase
-    #         self.passphrase = hashlib.sha256(passphrase_obj.encode()).hexdigest()
-    #     super().save(*args, **kwargs)
+    def get_absolute_url(self):
+        return reverse('customers_app:staff_list')
 
 
 def rename(file_name, path_name, instance, pfx):

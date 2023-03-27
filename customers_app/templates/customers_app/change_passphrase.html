@@ -1,10 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'contracts_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
 
-</body>
-</html>
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0">
+        {% include 'library_app/breadcrumb.html' %}
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <!-- start: page -->
+        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:passphrase_update' object.pk %}"
+              method="post" prefix="main" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col">
+                    <div class="form-group row align-items-center pb-3">
+                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Кодовое слово</label>
+                        <div class="col-lg-7 col-xl-6">
+                            <input type="text" class="form-control form-control-modern"
+                                   name="passphrase" id="id_passphrase"
+                                   value=""/>
+                        </div>
+                    </div>
+                    <div class="form-group row align-items-center pb-3">
+                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Кодовое слово (повторно)</label>
+                        <div class="col-lg-7 col-xl-6">
+                            <input type="text" class="form-control form-control-modern"
+                                   name="passphrase2" id="id_passphrase2"
+                                   value=""/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row action-buttons">
+                <div class="col-12 col-md-auto">
+                    <button type="submit" prefix="main"
+                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            data-loading-text="Loading...">
+                        <i class="bx bx-save text-4 me-2"></i> Сохранить
+                    </button>
+
+                </div>
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                    <a href="{% url 'customers_app:staff_list' %}"
+                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                </div>
+            </div>
+        </form>
+        <!-- end: page -->
+    </section>
+    <!-- end: page -->
+
+{% endblock %}
