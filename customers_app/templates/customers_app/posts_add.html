@@ -169,16 +169,28 @@
                         </li>
                     </ul>
                     <div class="tab-content">
+                        <div>
+                            {% if form.errors %}
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <div class="alert alert-danger">
+                                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <div class="alert alert-danger">
+                                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
                         <div id="overview" class="tab-pane active">
-
                             <div class="p-3">
-
                                 <h4 class="mb-3 font-weight-semibold text-dark">Статус обновления</h4>
-
                                 <section class="simple-compose-box mb-3">
                                     <form method="post" action="{% url 'customers_app:post_add' %}">
                                         {% csrf_token %}
-
                                         <div class="form-group row align-items-center pb-3">
                                             <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                    for="id_post_description">Сообщение</label>
@@ -196,29 +208,37 @@
                                             </div>
                                         </div>
                                         <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                                   for="id_post_date_start">Начало показа</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="date" id="id_post_date_start"
+                                                       class="form-control form-control-modern"
+                                                       name="post_date_start"
+                                                       value=""
+                                                       data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                                   for="id_post_date_end">Окончание показа</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="date" id="id_post_date_end"
+                                                       class="form-control form-control-modern"
+                                                       name="post_date_end"
+                                                       value=""
+                                                       data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
                                             <input type="text" name="responsible"
                                                    value="{{ user.pk }}" hidden/>
                                         </div>
-
-                                        {#                                        <div class="compose-box-footer">#}
-                                        {#                                            <ul class="compose-toolbar">#}
-                                        {#                                                <li>#}
-                                        {#                                                    <a href="#"><i class="fas fa-camera"></i></a>#}
-                                        {#                                                </li>#}
-                                        {#                                                <li>#}
-                                        {#                                                    <a href="#"><i class="fas fa-map-marker-alt"></i></a>#}
-                                        {#                                                </li>#}
-                                        {#                                            </ul>                                    #}
-                                        {#                                            #}
-                                        {#                                        </div>#}
                                         <button type="submit"
                                                 class="compose-btn btn btn-primary btn-xs  form-control">Добавить
                                         </button>
                                     </form>
                                 </section>
-
                                 <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
-
                                 <div class="timeline timeline-simple mt-3 mb-3">
                                     <div class="tm-body">
                                         <div class="tm-title">
@@ -245,7 +265,6 @@
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                         <div id="edit" class="tab-pane">
                             <div>
@@ -285,17 +304,8 @@
                                                value="{{ object.internal_phone }}" readonly="readonly">
                                     </div>
                                 </div>
-
                                 <hr class="dotted tall">
-
-                                {#                                <a href="{% url 'customers_app:profile' object.pk %}">#}
-                                {#                                <div class="col-md-12 text-end mt-3">#}
-                                {#                                    <button class="btn btn-primary" type="submit">Изменить</button>#}
-                                {#                                </div>#}
-                                {#                                </a>#}
-
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -303,7 +313,6 @@
             <div class="col-xl-3">
                 {% include 'customers_app/block_statistics.html' %}
             </div>
-
         </div>
         <!-- end: page -->
     </section>

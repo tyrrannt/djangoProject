@@ -409,7 +409,7 @@ class Posts(models.Model):
         verbose_name_plural = 'Сообщения'
 
     creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
-    post_description = models.TextField(verbose_name='Текст поста', blank=True, default='')
+    post_description = models.TextField(verbose_name='Текст сообщения', blank=True, default='')
     post_divisions = models.ManyToManyField(Division, verbose_name='Подразделения поста', )
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
     responsible = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо',

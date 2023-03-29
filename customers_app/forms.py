@@ -65,19 +65,36 @@ class DataBaseUserAddForm(UserChangeForm):
 
 
 class PostsAddForm(forms.ModelForm):
-    post_divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
+    post_divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
     post_divisions.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    post_date_start = forms.DateField(required=False)
+    post_date_end = forms.DateField(required=False)
+
 
     class Meta:
         model = Posts
-        fields = ('post_description', 'post_divisions', 'allowed_placed', 'responsible')
+        fields = ('post_description', 'post_divisions', 'allowed_placed', 'responsible',
+                  'post_date_start', 'post_date_end')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control mb-4'
             field.help_text = ''
+
+    def clean(self):
+        clean_data = super().clean()
+        start_date = clean_data.get('post_date_start')
+        end_date = clean_data.get('post_date_end')
+        if start_date and end_date:
+            if end_date < start_date:
+                raise ValidationError('Дата окончания не может быть меньше даты начала!')
+
+    def clean_post_description(self):
+        clean_data = self.cleaned_data['post_description']
+        if clean_data == '':
+            raise ValidationError('Сообщение не может быть пустым!')
 
 
 class PostsUpdateForm(forms.ModelForm):
@@ -100,6 +117,19 @@ class PostsUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control mb-4'
             field.help_text = ''
+
+    def clean(self):
+        clean_data = super().clean()
+        start_date = clean_data.get('post_date_start')
+        end_date = clean_data.get('post_date_end')
+        if start_date and end_date:
+            if end_date < start_date:
+                raise ValidationError('Дата окончания не может быть меньше даты начала!')
+    def clean_post_description(self):
+        clean_data = self.cleaned_data['post_description']
+        if clean_data == '':
+            raise ValidationError('Сообщение не может быть пустым!')
+
 
 
 class CounteragentUpdateForm(forms.ModelForm):

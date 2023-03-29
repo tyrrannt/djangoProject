@@ -524,7 +524,7 @@ def order_doc(obj_model, filepath, filename, request):
             context = {'Number': obj_model.document_number,
                        'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
                        'Title': obj_model.document_name,
-                       'Description': 'Тут охрененно долгий текст',
+                       'Description': 'Тут очень важный текст документа. Возможно с графиками и таблицами, а может быть со списками или еще чем нибудь.',
                        }
         except Exception as _ex:
             # DataBaseUser.objects.get(pk=request)

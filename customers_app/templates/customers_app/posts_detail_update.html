@@ -77,10 +77,10 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_post_date_start">Начало показа</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_post_date_start"
+                                            <input type="date" id="id_post_date_start"
                                                    class="form-control form-control-modern"
                                                    name="post_date_start"
-                                                   value="{{ object.post_date_start | date:'d.m.Y' }}"
+                                                   value="{{ object.post_date_start | date:'c' }}"
                                                    data-plugin-datepicker
                                                    data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
                                         </div>
@@ -89,10 +89,10 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_post_date_end">Окончание показа</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_post_date_end"
+                                            <input type="date" id="id_post_date_end"
                                                    class="form-control form-control-modern"
                                                    name="post_date_end"
-                                                   value="{{ object.post_date_end | date:'d.m.Y' }}"
+                                                   value="{{ object.post_date_end | date:'c' }}"
                                                    data-plugin-datepicker
                                                    data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
                                         </div>
