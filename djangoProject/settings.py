@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'customers_app.apps.CustomersAppConfig',
     'contracts_app.apps.ContractsAppConfig',
     'hrdepartment_app.apps.HrdepartmentAppConfig',
+    'telegram_app.apps.TelegramAppConfig',
     'widget_tweaks',
 ]
 

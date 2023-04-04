@@ -341,7 +341,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
             request_month = datetime.datetime.strptime(interval, '%Y-%m-%d').month
             request_year = datetime.datetime.strptime(interval, '%Y-%m-%d').year
             current_days = monthrange(request_year, request_month)[1]
-            print(interval)
+
             if request_month < 12:
                 next_days = monthrange(request_year, request_month + 1)[1]
                 next_month = request_month + 1
@@ -504,6 +504,8 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         content['form'].fields['person_department_staff'].queryset = list_department_staff
         content['list_department_staff'] = list_department_staff
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(document_foundation__pk=document.document.pk)
+
         return content
 
     def form_valid(self, form):
@@ -677,21 +679,22 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
             for item in qs.all():
                 list_obj = []
                 person = FIO_format(str(item.document.person))
+                place = '; '.join([item.name for item in item.document.place_production_activity.all()])
                 if person in dict_obj:
                     list_obj = dict_obj[person]
                     for days_count in range(0, (date_end - date_start).days + 1):
                         curent_day = date_start + datetime.timedelta(days_count)
                         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj[days_count] = '1'
+                            list_obj[days_count] = ['1', place]
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
                 else:
                     dict_obj[FIO_format(str(item.document.person))] = []
                     for days_count in range(0, (date_end - date_start).days + 1):
                         curent_day = date_start + datetime.timedelta(days_count)
                         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj.append('1')
+                            list_obj.append(['1', place])
                         else:
-                            list_obj.append('0')
+                            list_obj.append(['0', ''])
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
 
                 table_set = dict_obj
@@ -703,8 +706,9 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                 for key, value in table_set.items():
                     html_table_set += f'<tr><td width="14%"><strong>{key}</strong></td>'
                     for unit in value:
-                        if unit == '1':
-                            html_table_set += '<td width="2%" style="background-color: #d2691e"></td>'
+                        if unit[0] == '1':
+                            place = unit[1].replace('"', "")
+                            html_table_set += f'<td width="2%" style="background-color: #d2691e"  title="{place}"></td>'
                         else:
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc"></td>'
                     html_table_set += '</tr>'

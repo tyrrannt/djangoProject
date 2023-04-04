@@ -2,11 +2,14 @@ import datetime
 
 from django import forms
 from django.core.exceptions import ValidationError
+from loguru import logger
 
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity
 
+logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
+           serialize=True)
 
 def present_or_future_date(value):
     if value < datetime.date.today():
@@ -107,9 +110,12 @@ class OfficialMemoUpdateForm(forms.ModelForm):
 
     def clean(self):
         # user age must be above 18 to register
-        if self.cleaned_data.get('period_for') < self.cleaned_data.get('period_from'):
-            msg = 'Дата начала не может быть больше даты окончания!'
-            self.add_error(None, msg)
+        try:
+            if self.cleaned_data.get('period_for') < self.cleaned_data.get('period_from'):
+                msg = 'Дата начала не может быть больше даты окончания!'
+                self.add_error(None, msg)
+        except Exception as _ex:
+            logger.error(f"Ошибка проверки времени: {self.cleaned_data.get('period_for')} {self.cleaned_data.get('period_from')} {_ex}")
 
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):

@@ -301,6 +301,7 @@ class DataBaseUser(AbstractUser):
     user_work_profile = models.OneToOneField(DataBaseUserWorkProfile, verbose_name='Рабочий профиль пользователя',
                                              on_delete=models.SET_NULL, null=True, blank=True)
     passphrase = models.CharField(verbose_name='Парольная фраза', max_length=256, default='', blank=True)
+    telegram_id = models.CharField(verbose_name='Telegram ID', max_length=20, blank=True)
 
     def __str__(self):
         return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'

@@ -30,6 +30,7 @@ urlpatterns = [
     path('contracts/', include('contracts_app.urls')),
     path('hr/', include('hrdepartment_app.urls')),
     path('portal/', include('administration_app.urls')),
+    path('telegram_app/', include('telegram_app.urls')),
 
 ]
 

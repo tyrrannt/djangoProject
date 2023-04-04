@@ -330,7 +330,17 @@ class OfficialMemo(models.Model):
         }
 
 
+class ReasonForCancellation(models.Model):
+    class Meta:
+        verbose_name = 'Причина отмены'
+        verbose_name_plural = 'Причины отмены'
+
+    name = models.CharField(verbose_name='Наименование', max_length=250, default='')
+
 class ApprovalProcess(models.Model):
+    """
+    Служебная записка
+    """
     class Meta:
         abstract = True
 
@@ -353,7 +363,11 @@ class ApprovalProcess(models.Model):
     process_accepted = models.BooleanField(verbose_name='Активность', default=False)
 
 
+
 class ApprovalOficialMemoProcess(ApprovalProcess):
+    """
+    Бизнес-процесс служебной записки
+    """
     type_of = [
         ('1', 'Квартира'),
         ('2', 'Гостиница')
@@ -364,8 +378,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                                      help_text='', blank=True, default='')
     order = models.ForeignKey('DocumentsOrder', verbose_name='Приказ', on_delete=models.SET_NULL, null=True, blank=True)
 
-    # order_number = models.CharField(verbose_name='Номер приказа', max_length=20, default='', null=True, blank=True)
-    # order_date = models.DateField(verbose_name='Дата приказа', null=True, blank=True)
+    cancellation = models.BooleanField(verbose_name='Отмена', default=False)
+    reason_cancellation = models.ForeignKey(ReasonForCancellation, on_delete=models.SET_NULL, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
