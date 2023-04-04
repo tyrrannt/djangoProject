@@ -91,10 +91,10 @@ class PostsAddForm(forms.ModelForm):
             if end_date < start_date:
                 raise ValidationError('Дата окончания не может быть меньше даты начала!')
 
-    def clean_post_description(self):
-        clean_data = self.cleaned_data['post_description']
-        if clean_data == '':
-            raise ValidationError('Сообщение не может быть пустым!')
+    # def clean_post_description(self):
+    #     clean_data = self.cleaned_data['post_description']
+    #     if clean_data == '':
+    #         raise ValidationError('Сообщение не может быть пустым!')
 
 
 class PostsUpdateForm(forms.ModelForm):
@@ -125,10 +125,10 @@ class PostsUpdateForm(forms.ModelForm):
         if start_date and end_date:
             if end_date < start_date:
                 raise ValidationError('Дата окончания не может быть меньше даты начала!')
-    def clean_post_description(self):
-        clean_data = self.cleaned_data['post_description']
-        if clean_data == '':
-            raise ValidationError('Сообщение не может быть пустым!')
+    # def clean_post_description(self):
+    #     clean_data = self.cleaned_data['post_description']
+    #     if clean_data == '':
+    #         raise ValidationError('Сообщение не может быть пустым!')
 
 
 
