@@ -213,9 +213,9 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             Q(period_from__lte=datetime.datetime.today()) & Q(period_for__gte=datetime.datetime.today()))]
         # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
-        content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(is_superuser=True)
+        content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(username='proxmox').order_by('last_name')
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить медицинское направление'
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить служебную записку'
         return content
 
     def get_success_url(self):

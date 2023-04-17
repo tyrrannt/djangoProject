@@ -46,9 +46,11 @@ INSTALLED_APPS = [
     'hrdepartment_app.apps.HrdepartmentAppConfig',
     'telegram_app.apps.TelegramAppConfig',
     'widget_tweaks',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -178,3 +180,7 @@ CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
 CELERY_ACCEPT_CONTENT = config('CELERY_ACCEPT_CONTENT')
 CELERY_TASK_SERIALIZER = config('CELERY_TASK_SERIALIZER')
 CELERY_RESULT_SERIALIZER = config('CELERY_RESULT_SERIALIZER')
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]

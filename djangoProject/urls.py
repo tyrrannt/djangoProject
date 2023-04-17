@@ -31,7 +31,7 @@ urlpatterns = [
     path('hr/', include('hrdepartment_app.urls')),
     path('portal/', include('administration_app.urls')),
     path('telegram_app/', include('telegram_app.urls')),
-
+    path('__debug__/', include('debug_toolbar.urls')),
 ]
 
 if settings.DEBUG:
