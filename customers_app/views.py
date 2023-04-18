@@ -1,7 +1,6 @@
 import datetime
 import hashlib
 
-from django.contrib.auth.hashers import make_password
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from loguru import logger
@@ -21,9 +20,10 @@ from customers_app.customers_util import get_database_user_work_profile, get_dat
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
 from customers_app.models import DataBaseUserProfile as UserProfile
-from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, DataBaseUserUpdateForm, PostsAddForm, \
+from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
-    CounteragentAddForm, PostsUpdateForm, GroupAddForm, GroupUpdateForm, ChangePassPraseUpdateForm
+    CounteragentAddForm, PostsUpdateForm, GroupAddForm, GroupUpdateForm, ChangePassPraseUpdateForm, \
+    ChangeAvatarUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -136,7 +136,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         post_obj = Posts.objects.all().exclude(post_date_end__lt=datetime.datetime.today())
         print(post_obj)
         try:
-            #Получаем выборку постов, у которых дата начала больше текущего дня
+            # Получаем выборку постов, у которых дата начала больше текущего дня
             post_high = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
                                              Q(post_date_start__gt=datetime.datetime.today())).order_by(
                 '-post_date_start')
@@ -189,6 +189,11 @@ class ChangePassPraseUpdate(LoginRequiredMixin, UpdateView):
     form_class = ChangePassPraseUpdateForm
     template_name = 'customers_app/change_passphrase.html'
 
+
+class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
+    model = DataBaseUser
+    form_class = ChangeAvatarUpdateForm
+    template_name = 'customers_app/change_avatar.html'
 
 # class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 #     model = DataBaseUser
@@ -357,7 +362,7 @@ class PostsUpdateView(LoginRequiredMixin, UpdateView):
                его в качестве параметра
                :return: Возвращает URL адрес страницы, с которой создавалось сообщение.
                """
-        pk = self.request.user.pk
+        # pk = self.request.user.pk
         return reverse("customers_app:post_list")
 
 

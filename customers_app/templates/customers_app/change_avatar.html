@@ -44,27 +44,19 @@
             {% endif %}
         </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:passphrase_update' object.pk %}"
+        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:avatar_update' object.pk %}"
               method="post" prefix="main" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="row">
                 <div class="col">
                     <div class="form-group row align-items-center pb-3">
-                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Кодовое слово</label>
+                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Фото</label>
                         <div class="col-lg-7 col-xl-6">
-                            <input type="text" class="form-control form-control-modern"
-                                   name="passphrase" id="id_passphrase"
-                                   value=""/>
+                            <input type="file" class="form-control form-control-modern"
+                                   name="avatar" id="id_avatar" placeholder="Данные отсутствуют..." />
                         </div>
                     </div>
-                    <div class="form-group row align-items-center pb-3">
-                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Кодовое слово (повторно)</label>
-                        <div class="col-lg-7 col-xl-6">
-                            <input type="text" class="form-control form-control-modern"
-                                   name="passphrase2" id="id_passphrase2"
-                                   value=""/>
-                        </div>
-                    </div>
+
                 </div>
             </div>
             <div class="row action-buttons">

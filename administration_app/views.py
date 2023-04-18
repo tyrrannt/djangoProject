@@ -1,6 +1,6 @@
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
-from django.shortcuts import render
+
 from django.views.generic import ListView
 from loguru import logger
 

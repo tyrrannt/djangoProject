@@ -53,9 +53,12 @@ class MainMenu(MetaMainMenu):
 
 # ToDo: Доработать генератор меню
 def make_menu():
+    urls = ''
     items = MainMenu.objects.all()
     for item in items:
-        urls = f'<li class="nav-parent"> <a class="nav-link" href="#"><i class="bx bx-file" aria-hidden="true"></i><span>{item}</span></a></li>'
+        urls = f'<li class="nav-parent"> <a class="nav-link" href="#"><i class="bx bx-file" aria-hidden="true">' \
+               f'</i><span>{item}</span></a></li>'
+    return urls
 
 
 class BaseItems(models.Model):

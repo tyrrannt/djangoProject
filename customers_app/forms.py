@@ -216,6 +216,12 @@ class StaffUpdateForm(forms.ModelForm):
             field.help_text = ''
 
 
+class ChangeAvatarUpdateForm(forms.ModelForm):
+    class Meta:
+        model = DataBaseUser
+        fields = ('avatar',)
+
+
 class ChangePassPraseUpdateForm(forms.ModelForm):
     passphrase = forms.CharField(label='Кодовое слово')
     passphrase2 = forms.CharField(label='Кодовое слово (повторно)')

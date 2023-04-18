@@ -34,4 +34,5 @@ urlpatterns = [
     path('group/add/', views.GroupCreateView.as_view(), name='group_add'),
     path('group/<int:pk>/update/', views.GroupUpdateView.as_view(), name='group_update'),
     path('passphrase/<int:pk>/update/', views.ChangePassPraseUpdate.as_view(), name='passphrase_update'),
+    path('avatar/<int:pk>/update/', views.ChangeAvatarUpdate.as_view(), name='avatar_update'),
 ]

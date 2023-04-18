@@ -124,7 +124,8 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     :param object_name: Название объекта. Список можно посмотреть в конфигурации
     :param filter_obj: Ключ (поле), по которому фильтруем
     :param filter_content: Фильтр
-    :param logical: 1 - Равно, 2 - Не равно, 3 - Больше, 4 - Больше или равно, 5 - Меньше, 6 - Меньше или равно, 7 - Логическое И, 8 - Логическое ИЛИ, 9 - Отрицание
+    :param logical: 1 - Равно, 2 - Не равно, 3 - Больше, 4 - Больше или равно, 5 - Меньше, 6 - Меньше или равно,
+                    7 - Логическое И, 8 - Логическое ИЛИ, 9 - Отрицание
     :param base_index: Индекс базы 1С. 0 - Зарплата, 1 - Бухгалтерия
     :return: Возвращает JSON объект, в виде словаря.
     """
@@ -216,10 +217,6 @@ def change_session_queryset(request, self):
         message = f'Параметр сортировки в сессии отсутствует. {_ex}'
         logger.info(message)
         self.item_sorted = 'pk'
-
-
-def filter_context(request, self):
-    pass
 
 
 def ending_day(value):

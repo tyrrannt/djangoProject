@@ -1,8 +1,8 @@
-from django.contrib.auth.decorators import login_required
+
 from django.db.models import Q
-from administration_app.models import make_menu
+
 from contracts_app.models import Contract, TypeContract, TypeProperty, TypeDocuments
-from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel, Job
+from customers_app.models import DataBaseUser, Counteragent, Division, Posts, AccessLevel
 from hrdepartment_app.models import ApprovalOficialMemoProcess, BusinessProcessDirection, DocumentsJobDescription
 from loguru import logger
 
@@ -10,7 +10,8 @@ logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotat
            serialize=True)
 
 
-# ToDo: Создать модель в которую будет записываться вся статистика, а занесение информации будет посредством метода моделей save()
+# ToDo: Создать модель в которую будет записываться вся статистика,
+#  а занесение информации будет посредством метода моделей save()
 
 def get_all_contracts(request):
     # make_menu()
