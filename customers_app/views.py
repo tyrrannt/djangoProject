@@ -134,14 +134,14 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
         user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
         post_obj = Posts.objects.all().exclude(post_date_end__lt=datetime.datetime.today())
-        print(post_obj)
+
         try:
             # Получаем выборку постов, у которых дата начала больше текущего дня
-            post_high = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+            post_high = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
                                              Q(post_date_start__gt=datetime.datetime.today())).order_by(
                 '-post_date_start')
             # Получаем выборку постов, у которых дата начала меньше текущего дня
-            post_low = Posts.objects.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+            post_low = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
                                             Q(post_date_start__lte=datetime.datetime.today())).order_by(
                 '-post_date_start')
             context['post_high'] = post_high
