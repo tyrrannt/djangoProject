@@ -31,7 +31,9 @@ urlpatterns = [
     path('hr/', include('hrdepartment_app.urls')),
     path('portal/', include('administration_app.urls')),
     path('telegram_app/', include('telegram_app.urls')),
+    path('ckeditor5/', include('django_ckeditor_5.urls'), name="ck_editor_5_upload_file"),
     path('__debug__/', include('debug_toolbar.urls')),
+
 ]
 
 if settings.DEBUG:

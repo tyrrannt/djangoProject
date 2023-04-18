@@ -66,13 +66,7 @@
                                                       id="id_post_description">{{ object.post_description }}</textarea>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_post_divisions">Подразделения</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.post_divisions | attr:"multiple" }}
-                                        </div>
-                                    </div>
+
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_post_date_start">Начало показа</label>
@@ -98,6 +92,13 @@
                                             <label for="id_allowed_placed">Разрешение на публикацию:</label>
                                             <input type="checkbox" name="allowed_placed" id="id_allowed_placed"
                                                    {% if object.allowed_placed %}checked{% endif %}>
+                                        </div>
+                                    </div>
+                                <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_post_divisions">Подразделения</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            {{ form.post_divisions | attr:"multiple" }}
                                         </div>
                                     </div>
                                 </div>
