@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django_ckeditor_5.fields import CKEditor5Field
 from docxtpl import DocxTemplate
 from loguru import logger
 
@@ -567,6 +568,7 @@ class DocumentsOrder(Documents):
     document_order_type = models.CharField(verbose_name='Тип приказа', max_length=18, choices=type_of_order)
     document_foundation = models.ForeignKey(OfficialMemo, verbose_name='Документ основание', on_delete=models.SET_NULL,
                                             null=True, blank=True)
+    description = CKEditor5Field('Содержание', config_name='extends', blank=True)
     approved = models.BooleanField(verbose_name='Утверждён', default=False)
 
     def get_data(self):

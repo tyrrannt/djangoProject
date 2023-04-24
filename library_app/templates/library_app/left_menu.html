@@ -206,29 +206,13 @@
                         </ul>
                     </li>
                     {% if user.is_superuser %}
-                        <li class="nav-parent">
-                            <a class="nav-link" href="#">
+                        <li>
+                            <a class="nav-link" href="{% url 'library_app:help_list' %}">
                                 <i class='bx bxs-help-circle' aria-hidden="true"></i>
                                 <span>Справка</span>
 
                             </a>
-                            <ul class="nav nav-children">
-                                <li>
-                                    <a class="nav-link" href="{% url 'administration_app:property_list' %}">
-                                        Настройки портала
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
-                                        Настройки бизнес процессов
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'customers_app:group_list' %}">
-                                        Группы
-                                    </a>
-                                </li>
-                            </ul>
+
                         </li>
                     {% endif %}
                 </ul>

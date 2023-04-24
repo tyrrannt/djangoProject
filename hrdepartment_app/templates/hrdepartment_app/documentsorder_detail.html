@@ -115,7 +115,13 @@
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_employee">Ответственное лицо</label>
-                                            {{ form.employee }}
+                                            <select class="form-control mb-4 form-control-modern"
+                                                    name="employee" id="id_employee"
+                                                    data-plugin-selectTwo multiple>
+                                                {% for item in object.employee.all %}
+                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_order_type">Тип приказа</label>
@@ -127,12 +133,12 @@
                                         <div class="col-md-4 text-black-50 mt-3">
                                             <label for="id_allowed_placed">Разрешение на публикацию:</label>
                                             <input type="checkbox" class="mt-2"
-                                                   name="allowed_placed" value="" id="id_allowed_placed"/>
+                                                   name="allowed_placed" {% if object.allowed_placed %}checked{% endif %}  id="id_allowed_placed"/>
                                         </div>
                                         <div class="col-md-4 text-black-50 mt-3">
                                             <label for="id_actuality">Актуальность:</label>
                                             <input type="checkbox" class="mt-2"
-                                                   name="actuality" value="" id="id_actuality"/>
+                                                   name="actuality" {% if object.actuality %}checked{% endif %} id="id_actuality"/>
                                         </div>
                                     </div>
                                 </div>
@@ -145,15 +151,15 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-                                        <div class="col-lg-12 text-black-50 mt-2">
+                                        <div class="col-lg-6 text-black-50 mt-2">
                                             <label for="id_doc_file">Файл приказа</label>
                                             {% if object.doc_file %}
                                                 <span id="id_doc_file"><a href="{{ object.doc_file.url }}" target="_blank"><img src="{% static 'Extension/docx.png' %}"></a></span>
                                             {% endif %}
                                         </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="col-lg-12 text-black-50 mt-2">
+{#                                    </div>#}
+{#                                    <div class="row text">#}
+                                        <div class="col-lg-6 text-black-50 mt-2">
                                             <label for="id_scan_file">Скан приказа</label>
                                             {% if object.scan_file %}
                                                 <span id="id_scan_file"><a href="{{ object.scan_file.url }}"><img src="{% static 'Extension/pdf.png' %}"></a></span>

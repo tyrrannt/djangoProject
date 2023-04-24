@@ -2,6 +2,7 @@ import datetime
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django_ckeditor_5.widgets import CKEditor5Widget
 from loguru import logger
 
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
@@ -344,17 +345,26 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
     validity_period_start = forms.DateField(required=False)
     validity_period_end = forms.DateField(required=False)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.fields["description"].required = False
+
     class Meta:
         model = DocumentsOrder
         fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
-                  'employee', 'allowed_placed', 'validity_period_start', 'document_order_type',
+                  'employee', 'allowed_placed', 'validity_period_start', 'document_order_type', 'description',
                   'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_foundation')
+        widgets = {
+            "description": CKEditor5Widget(
+                attrs={"class": "django_ckeditor_5"}, config_name="extends"
+            )
+        }
 
     def clean(self):
         cleaned_data = super().clean()
         scan_file = cleaned_data.get("scan_file")
         ext = str(scan_file).split('.')[-1]
-        if scan_file and ext != 'pdf':
+        if ext != '' and ext != 'pdf':
             # Сохраняем только если оба поля действительны.
             raise ValidationError("Скан документа должен быть в формате PDF")
 

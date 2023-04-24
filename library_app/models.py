@@ -42,3 +42,12 @@ class HelpTopic(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'title': self.title,
+            'category': self.category.title,
+            'hash_tag': '',
+
+        }

@@ -1,0 +1,110 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+        <div>
+            {% if error %}
+                <div class="alert alert-danger">
+                    <strong><a href="{% url 'hrdepartment_app:medicalorg_list' %}">{{ error }}</a></strong>
+                </div>
+            {% endif %}
+        </div>
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'hrdepartment_app:medical_add' %}"
+                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Добавить направление </a>
+                                        </div>
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'hrdepartment_app:medical_list' %}?update=0"
+                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Обновить список </a>
+                                        </div>
+
+                                </div>
+                            </div>
+
+                            <table class="table table-striped mb-0" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+                                <thead>
+                                <tr>
+                                    <th width="50%">Заголовок</th>
+                                    <th width="15%">Категория</th>
+                                    <th width="35%">Хэш-тег</th>
+                                </tr>
+                                </thead>
+                            </table>
+                            <hr class="solid mt-5 opacity-4">
+                            <div class="datatable-footer">
+                                <div class="row align-items-center justify-content-between mt-3">
+                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-stretch">
+                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-auto text-center order-3 order-lg-2">
+                                        <div class="results-info-wrapper"></div>
+                                    </div>
+                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                        <div class="pagination-wrapper"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+
+{% endblock %}
+
+{% block SpecificPageVendor %}
+
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "sDom": 'T<"clear">lfrtip',
+                "ajax": "{% url 'library_app:help_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", id + '/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "title"},
+                    {"data": "category"},
+                    {"data": "hash_tag"},
+                ],
+            });
+        });
+
+    </script>
+{% endblock %}

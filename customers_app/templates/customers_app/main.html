@@ -33,8 +33,10 @@
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
+<link rel="stylesheet" href="{% static 'admin_templates/css/content-styles.css' %}"  type="text/css"/>
 
     <!-- Theme CSS -->
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}" />
     <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
 
     <!-- Skin CSS -->
@@ -42,6 +44,7 @@
 
     <!-- Theme Custom CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/css/custom.css' %}"/>
+
     {% block custome_css %}
     {% endblock %}
     <!-- Head Libs -->
@@ -124,6 +127,7 @@
 <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
 {#        <script src="{% static 'admin_templates/vendor/autosize/autosize.js' %}"></script>#}
+
 <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/dataTables.buttons.min.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.bootstrap4.min.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.html5.min.js' %}"></script>
