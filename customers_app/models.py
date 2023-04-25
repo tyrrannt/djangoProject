@@ -109,6 +109,7 @@ class Job(models.Model):
             'pk': self.pk,
             'code': self.code,
             'name': self.name,
+            'type_of_job': self.get_type_of_job_display(),
             'harmful': '',  # if not self.parent_category else str(self.parent_category),
         }
 
