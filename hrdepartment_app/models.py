@@ -476,7 +476,7 @@ def create_report(sender, instance, **kwargs):
                 msg = EmailMultiAlternatives(SUBJECT, text_content, EMAIL_HOST_USER, [TO, TO_COPY, ])
                 msg.attach_alternative(html_content, "text/html")
                 msg.attach_file(str(file_name))
-                # res = msg.send()
+                res = msg.send()
 
             except Exception as _ex:
                 logger.debug(f'Failed to send email. {_ex}')
