@@ -317,7 +317,7 @@ class DataBaseUser(AbstractUser):
             'person': self.get_title(),
             'division': str(self.user_work_profile.divisions),
             'job': str(self.user_work_profile.job),
-            'phone': self.personal_phone,
+            'phone': str(self.user_work_profile.internal_phone),
             'email': self.email,
             'password': str(self.user_work_profile.work_email_password),
         }
