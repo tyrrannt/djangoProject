@@ -213,7 +213,11 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             Q(period_from__lte=datetime.datetime.today()) & Q(period_for__gte=datetime.datetime.today()))]
         # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
-        content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(username='proxmox').order_by('last_name')
+        user_job = self.request.user
+
+        content['form'].fields['person'].queryset = DataBaseUser.objects.filter(
+            user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job).exclude(
+            username='proxmox').exclude(username='shakirov').order_by('last_name')
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить служебную записку'
         return content
@@ -504,7 +508,8 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         content['form'].fields['person_department_staff'].queryset = list_department_staff
         content['list_department_staff'] = list_department_staff
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
-        content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(document_foundation__pk=document.document.pk)
+        content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
+            document_foundation__pk=document.document.pk)
 
         return content
 
@@ -973,6 +978,7 @@ class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin,
         context = super().get_context_data(object_list=None, **kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         return context
+
 
 class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ReportCard
