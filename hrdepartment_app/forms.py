@@ -58,7 +58,7 @@ class OfficialMemoAddForm(forms.ModelForm):
     place_production_activity = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_production_activity.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    place_departure = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
+    place_departure = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_departure.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
