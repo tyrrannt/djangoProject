@@ -484,6 +484,7 @@ def create_report(sender, instance, **kwargs):
                 html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
 
                 msg = EmailMultiAlternatives(SUBJECT, text_content, EMAIL_HOST_USER, [TO, TO_COPY, ])
+                logger.debug(f'Email string: {SUBJECT}, {text_content}, {EMAIL_HOST_USER}, [{TO}, {TO_COPY}, ]')
                 msg.attach_alternative(html_content, "text/html")
                 msg.attach_file(str(file_name))
                 res = msg.send()
