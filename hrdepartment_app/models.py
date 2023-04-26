@@ -464,12 +464,12 @@ def create_report(sender, instance, **kwargs):
             TO = instance.document.person.email
             TO_COPY = instance.person_executor.email
             SUBJECT = "Направление"
-
+            places = str(place).strip('[]')
             try:
                 current_context = {
                     'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
                     'person': instance.document.person,
-                    'place': str(place).strip('[]'),
+                    'place': places,
                     'purpose_trip': instance.document.purpose_trip,
                     'order_number': instance.order.document_number,
                     'order_date': instance.order.document_date,
