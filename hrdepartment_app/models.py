@@ -472,8 +472,10 @@ def create_report(sender, instance, **kwargs):
                 TO_COPY = 'corp@barkol.ru'
                 logger.debug(f'Email TO: {TO_COPY}')
             SUBJECT = "Направление"
-            places = str(place).strip('[]')
-
+            try:
+                places = str(place).strip('[]')
+            except Exception as _ex:
+                places = ''
             current_context = {
                     'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
                     'person': str(instance.document.person),
