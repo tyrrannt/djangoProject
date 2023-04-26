@@ -55,12 +55,12 @@ class OfficialMemoAddForm(forms.ModelForm):
         ('1', 'Служебная поездка'),
         ('2', 'Командировка')
     ]
-    place_production_activity = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
+    place_production_activity = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_production_activity.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     place_departure = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_departure.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
     person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
@@ -98,7 +98,7 @@ class OfficialMemoUpdateForm(forms.ModelForm):
     ]
     place_departure = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_departure.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     official_memo_type = forms.ChoiceField(choices=memo_type)
     place_production_activity = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_production_activity.widget.attrs.update(
