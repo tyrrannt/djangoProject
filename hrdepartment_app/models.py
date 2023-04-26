@@ -466,7 +466,10 @@ def create_report(sender, instance, **kwargs):
 
             TO = instance.document.person.email
             logger.debug(f'Email TO: {TO}')
-            TO_COPY = instance.person_executor.email
+            try:
+                TO_COPY = instance.person_executor.email
+            except Exception as _ex:
+                TO_COPY = 'corp@barkol.ru'
             logger.debug(f'Email TO: {TO_COPY}')
             SUBJECT = "Направление"
             places = str(place).strip('[]')
