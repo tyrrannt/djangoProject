@@ -223,6 +223,9 @@ class Medical(models.Model):
             'type_inspection': self.get_type_inspection_display(),
         }
 
+    def __str__(self):
+        return f'{self.number} {self.person}'
+
 
 @receiver(post_save, sender=Medical)
 def rename_file_name(sender, instance, **kwargs):
