@@ -467,21 +467,23 @@ def create_report(sender, instance, **kwargs):
         mail_to_copy = instance.person_executor.email
         subject_mail = 'Направление'
         try:
-            places = str(place).strip('[]')
+            accommodation = str(type_of[int(instance.accommodation)])
         except Exception as _ex:
-            logger.debug(f'Place')
-            places = ''
+            if instance.accommodation == '0':
+                accommodation = 'Квартира'
+            else:
+                accommodation = 'Гостиница'
         current_context = {
             'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
             'person': str(instance.document.person),
-            'place': places,
+            'place': str(place).strip('[]'),
             'purpose_trip': str(instance.document.purpose_trip),
             'order_number': str(instance.order.document_number),
             'order_date': str(instance.order.document_date),
             'delta': str(ending_day(int(delta.days) + 1)),
             'period_from': str(instance.document.period_from),
             'period_for': str(instance.document.period_for),
-            'accommodation': str(type_of[int(instance.accommodation)]),
+            'accommodation': accommodation,
             'person_executor': str(instance.person_executor),
             'person_distributor': str(instance.person_distributor),
         }
