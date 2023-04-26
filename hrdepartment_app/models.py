@@ -476,6 +476,7 @@ def create_report(sender, instance, **kwargs):
             try:
                 places = str(place).strip('[]')
             except Exception as _ex:
+                logger.debug(f'Place')
                 places = ''
             current_context = {
                     'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
