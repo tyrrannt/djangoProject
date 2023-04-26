@@ -430,7 +430,10 @@ def create_report(sender, instance, **kwargs):
         if instance.process_accepted:
             from openpyxl import load_workbook
             delta = instance.document.period_for - instance.document.period_from
-            place = [item.name for item in instance.document.place_production_activity.all()]
+            try:
+                place = [item.name for item in instance.document.place_production_activity.all()]
+            except Exception as _ex:
+                place = []
             # Получаем ссылку на файл шаблона
             if instance.document.person.user_work_profile.job.type_of_job == '1':
                 filepath_name = 'sp.xlsx'
