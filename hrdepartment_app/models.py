@@ -465,7 +465,9 @@ def create_report(sender, instance, **kwargs):
             file_name = convert(source=source, output_dir=output_dir, soft=0)
 
             TO = instance.document.person.email
+            logger.debug(f'Email TO: {TO}')
             TO_COPY = instance.person_executor.email
+            logger.debug(f'Email TO: {TO_COPY}')
             SUBJECT = "Направление"
             places = str(place).strip('[]')
 
