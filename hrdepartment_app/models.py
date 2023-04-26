@@ -433,9 +433,10 @@ def create_report(sender, instance, **kwargs):
             place = [item.name for item in instance.document.place_production_activity.all()]
             # Получаем ссылку на файл шаблона
             if instance.document.person.user_work_profile.job.type_of_job == '1':
-                filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx')
+                filepath_name = 'sp.xlsx'
             else:
-                filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp2.xlsx')
+                filepath_name = 'sp2.xlsx'
+            filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name)
             wb = load_workbook(filepath)
             ws = wb.active
             ws['C3'] = str(instance.document.person)
@@ -452,11 +453,11 @@ def create_report(sender, instance, **kwargs):
             ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
                 instance.person_agreement)
 
-            wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
+            wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
             wb.close()
             # Конвертируем xlsx в pdf
             from msoffice2pdf import convert
-            source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx'))
+            source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
             output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
             file_name = convert(source=source, output_dir=output_dir, soft=0)
 
