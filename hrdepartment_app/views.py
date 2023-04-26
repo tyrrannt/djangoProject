@@ -181,6 +181,7 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 memo_list = OfficialMemo.objects.all()
             else:
                 memo_list = OfficialMemo.objects.filter(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
+
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
             return JsonResponse(response)
