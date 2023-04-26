@@ -12,8 +12,9 @@ from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOfic
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
 
+
 def present_or_future_date(value):
-    if value < datetime.date.today():
+    if value < datetime.date.today() - datetime.timedelta(days=3):
         raise forms.ValidationError("Нельзя использовать прошедшую дату!")
     return value
 
@@ -122,7 +123,8 @@ class OfficialMemoUpdateForm(forms.ModelForm):
                 msg = 'Дата начала не может быть больше даты окончания!'
                 self.add_error(None, msg)
         except Exception as _ex:
-            logger.error(f"Ошибка проверки времени: {self.cleaned_data.get('period_for')} {self.cleaned_data.get('period_from')} {_ex}")
+            logger.error(
+                f"Ошибка проверки времени: {self.cleaned_data.get('period_for')} {self.cleaned_data.get('period_from')} {_ex}")
 
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
@@ -167,12 +169,12 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all(), required=False)
     order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
-
     class Meta:
         model = ApprovalOficialMemoProcess
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
                   'person_department_staff', 'process_accepted', 'accommodation', 'order')
+
     def clean(self):
         cleaned_data = super().clean()
         person_agreement = cleaned_data.get("person_agreement")
@@ -187,19 +189,19 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         if not person_agreement and document_not_agreed:
             # Сохраняем только если оба поля действительны.
             raise ValidationError(
-                    "Ошибка согласования документа. Поле руководителя не заполнено!!!"
-                )
+                "Ошибка согласования документа. Поле руководителя не заполнено!!!"
+            )
         if (not person_distributor or not accommodation) and location_selected:
             # Сохраняем только если оба поля действительны.
             print(person_distributor, accommodation, location_selected)
             raise ValidationError(
-                    "Ошибка согласования места проживания. Лицо ответственное за НО не заполнено!!!"
-                )
+                "Ошибка согласования места проживания. Лицо ответственное за НО не заполнено!!!"
+            )
         if (not person_department_staff or not order) and process_accepted:
             # Сохраняем только если оба поля действительны.
             raise ValidationError(
-                    "Ошибка приема документа в ОК. Ответственное лицо не заполнено!!!"
-                )
+                "Ошибка приема документа в ОК. Ответственное лицо не заполнено!!!"
+            )
         if process_accepted:
             if not location_selected:
                 raise ValidationError(
@@ -210,6 +212,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                 raise ValidationError(
                     "Ошибка в назначении места проживания. Документ не согласован руководителем!!!"
                 )
+
 
 class BusinessProcessDirectionAddForm(forms.ModelForm):
     type_of = [
@@ -300,9 +303,9 @@ class DocumentsJobDescriptionUpdateForm(forms.ModelForm):
 
 
 type_of_order = [
-        ('1', 'Общая деятельность'),
-        ('2', 'Личный состав')
-    ]
+    ('1', 'Общая деятельность'),
+    ('2', 'Личный состав')
+]
 
 
 class DocumentsOrderAddForm(forms.ModelForm):
@@ -385,5 +388,3 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
         fields = ('name', 'address')
-
-
