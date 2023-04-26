@@ -468,22 +468,22 @@ def create_report(sender, instance, **kwargs):
             TO_COPY = instance.person_executor.email
             SUBJECT = "Направление"
             places = str(place).strip('[]')
-            logger.debug(f'Email string: {places} {file_name}')
 
             current_context = {
                     'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
-                    'person': instance.document.person,
+                    'person': str(instance.document.person),
                     'place': places,
-                    'purpose_trip': instance.document.purpose_trip,
+                    'purpose_trip': str(instance.document.purpose_trip),
                     'order_number': str(instance.order.document_number),
-                    'order_date': instance.order.document_date,
-                    'delta': ending_day(int(delta.days) + 1),
-                    'period_from': instance.document.period_from,
-                    'period_for': instance.document.period_for,
-                    'accommodation': type_of[int(instance.accommodation)],
-                    'person_executor': instance.person_executor,
-                    'person_distributor': instance.person_distributor,
+                    'order_date': str(instance.order.document_date),
+                    'delta': str(ending_day(int(delta.days) + 1)),
+                    'period_from': str(instance.document.period_from),
+                    'period_for': str(instance.document.period_for),
+                    'accommodation': str(type_of[int(instance.accommodation)]),
+                    'person_executor': str(instance.person_executor),
+                    'person_distributor': str(instance.person_distributor),
                 }
+            logger.debug(f'Email string: {current_context}')
             text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
             html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
             try:
