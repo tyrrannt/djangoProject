@@ -432,7 +432,10 @@ def create_report(sender, instance, **kwargs):
             delta = instance.document.period_for - instance.document.period_from
             place = [item.name for item in instance.document.place_production_activity.all()]
             # Получаем ссылку на файл шаблона
-            filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx')
+            if instance.document.person.user_work_profile.job.type_of_job == '1':
+                filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp.xlsx')
+            else:
+                filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), 'sp2.xlsx')
             wb = load_workbook(filepath)
             ws = wb.active
             ws['C3'] = str(instance.document.person)
