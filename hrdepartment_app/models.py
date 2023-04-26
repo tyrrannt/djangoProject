@@ -498,7 +498,7 @@ def create_report(sender, instance, **kwargs):
             instance.email_send = True
             instance.update()
         except Exception as _ex:
-            logger.debug(f'Failed to send email. {res} {msg} {_ex}')
+            logger.debug(f'Failed to send email. {_ex}')
 
 
 
