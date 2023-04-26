@@ -384,7 +384,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
                                      help_text='', blank=True, default='')
     order = models.ForeignKey('DocumentsOrder', verbose_name='Приказ', on_delete=models.SET_NULL, null=True, blank=True)
-
+    email_send = models.BooleanField(verbose_name='Письмо отправлено', default=False)
     cancellation = models.BooleanField(verbose_name='Отмена', default=False)
     reason_cancellation = models.ForeignKey(ReasonForCancellation, on_delete=models.SET_NULL, blank=True, null=True)
 
@@ -495,6 +495,8 @@ def create_report(sender, instance, **kwargs):
             msg.attach_alternative(html_content, "text/html")
             msg.attach_file(str(file_name))
             res = msg.send()
+            instance.email_send = True
+            instance.update()
         except Exception as _ex:
             logger.debug(f'Failed to send email. {res} {msg} {_ex}')
 
