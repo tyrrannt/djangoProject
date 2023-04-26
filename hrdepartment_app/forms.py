@@ -55,8 +55,11 @@ class OfficialMemoAddForm(forms.ModelForm):
         ('1', 'Служебная поездка'),
         ('2', 'Командировка')
     ]
-    place_production_activity = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
+    place_production_activity = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_production_activity.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    place_departure = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
+    place_departure.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
     person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
@@ -70,7 +73,7 @@ class OfficialMemoAddForm(forms.ModelForm):
 
     class Meta:
         model = OfficialMemo
-        fields = ('period_from', 'period_for', 'place_production_activity',
+        fields = ('period_from', 'period_for', 'place_production_activity', 'place_departure',
                   'person', 'purpose_trip', 'responsible', 'type_trip', 'official_memo_type')
 
     # def clean(self):
@@ -93,6 +96,9 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         ('1', 'Служебная поездка'),
         ('2', 'Командировка')
     ]
+    place_departure = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
+    place_departure.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     official_memo_type = forms.ChoiceField(choices=memo_type)
     place_production_activity = forms.ModelMultipleChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_production_activity.widget.attrs.update(
@@ -107,7 +113,7 @@ class OfficialMemoUpdateForm(forms.ModelForm):
     class Meta:
         model = OfficialMemo
         fields = ('person', 'purpose_trip', 'period_from', 'period_for', 'place_production_activity',
-                  'comments', 'type_trip', 'official_memo_type')
+                  'comments', 'type_trip', 'official_memo_type', 'place_departure')
 
     def clean(self):
         # user age must be above 18 to register

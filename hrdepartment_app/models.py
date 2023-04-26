@@ -291,7 +291,8 @@ class OfficialMemo(models.Model):
     purpose_trip = models.ForeignKey(Purpose, verbose_name='Цель', on_delete=models.SET_NULL, null=True, )
     period_from = models.DateField(verbose_name='Дата начала', null=True)
     period_for = models.DateField(verbose_name='Дата окончания', null=True)
-    place_production_activity = models.ManyToManyField(PlaceProductionActivity, verbose_name='МПД')
+    place_departure = models.ForeignKey(PlaceProductionActivity, verbose_name='Место отправления', on_delete=models.SET_NULL, null=True, related_name='place_departure')
+    place_production_activity = models.ManyToManyField(PlaceProductionActivity, verbose_name='МПД', related_name='place_production_activity')
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of_accommodation,
                                      help_text='', blank=True, default='')
     type_trip = models.CharField(verbose_name='Тип поездки', max_length=9, choices=type_of_trip,
@@ -362,6 +363,8 @@ class ApprovalProcess(models.Model):
     person_department_staff = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
                                                 null=True, blank=True, related_name='person_department_staff')
     process_accepted = models.BooleanField(verbose_name='Активность', default=False)
+    person_accounting = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник Бухгалтерии', on_delete=models.SET_NULL,
+                                          null=True, blank=True, related_name='person_accounting')
 
 
 
