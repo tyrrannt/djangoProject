@@ -496,7 +496,7 @@ def create_report(sender, instance, **kwargs):
                 logger.debug(f'Failed to send email. {res} {msg} {_ex}')
 
     except Exception as _ex:
-        logger.error(f'Ошибка при создании файла СП. {_ex}')
+        logger.error(f'Ошибка при создании файла СП. {res} {msg} {_ex}')
 
 
 class BusinessProcessDirection(models.Model):
