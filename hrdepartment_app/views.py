@@ -177,7 +177,10 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            memo_list = OfficialMemo.objects.all()
+            if request.user.is_superuser:
+                memo_list = OfficialMemo.objects.all()
+            else:
+                memo_list = OfficialMemo.objects.filter(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
             return JsonResponse(response)
