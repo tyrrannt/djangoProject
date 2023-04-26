@@ -426,85 +426,77 @@ def create_xlsx(instance):
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
 def create_report(sender, instance, **kwargs):
     type_of = ['Служебная квартира', 'Гостиница']
-    try:
-        if instance.process_accepted:
-            from openpyxl import load_workbook
-            delta = instance.document.period_for - instance.document.period_from
-            try:
-                place = [item.name for item in instance.document.place_production_activity.all()]
-            except Exception as _ex:
-                place = []
-            # Получаем ссылку на файл шаблона
-            if instance.document.person.user_work_profile.job.type_of_job == '1':
-                filepath_name = 'sp.xlsx'
-            else:
-                filepath_name = 'sp2.xlsx'
-            filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name)
-            wb = load_workbook(filepath)
-            ws = wb.active
-            ws['C3'] = str(instance.document.person)
-            ws['M3'] = str(instance.document.person.service_number)
-            ws['C4'] = str(instance.document.person.user_work_profile.job)
-            ws['C5'] = str(instance.document.person.user_work_profile.divisions)
-            ws['C6'] = 'Приказ № ' + str(instance.order.document_number)
-            ws['F6'] = instance.order.document_date.strftime("%d.%m.%y")
-            ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
-            ws['L6'] = instance.document.period_from.strftime("%d.%m.%y")
-            ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
-            ws['C8'] = str(place).strip('[]')
-            ws['C9'] = str(instance.document.purpose_trip)
-            ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
-                instance.person_agreement)
 
-            wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-            wb.close()
-            # Конвертируем xlsx в pdf
-            from msoffice2pdf import convert
-            source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-            output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-            file_name = convert(source=source, output_dir=output_dir, soft=0)
+    if instance.process_accepted:
+        from openpyxl import load_workbook
+        delta = instance.document.period_for - instance.document.period_from
+        try:
+            place = [item.name for item in instance.document.place_production_activity.all()]
+        except Exception as _ex:
+            place = []
+        # Получаем ссылку на файл шаблона
+        if instance.document.person.user_work_profile.job.type_of_job == '1':
+            filepath_name = 'sp.xlsx'
+        else:
+            filepath_name = 'sp2.xlsx'
+        filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name)
+        wb = load_workbook(filepath)
+        ws = wb.active
+        ws['C3'] = str(instance.document.person)
+        ws['M3'] = str(instance.document.person.service_number)
+        ws['C4'] = str(instance.document.person.user_work_profile.job)
+        ws['C5'] = str(instance.document.person.user_work_profile.divisions)
+        ws['C6'] = 'Приказ № ' + str(instance.order.document_number)
+        ws['F6'] = instance.order.document_date.strftime("%d.%m.%y")
+        ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
+        ws['L6'] = instance.document.period_from.strftime("%d.%m.%y")
+        ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
+        ws['C8'] = str(place).strip('[]')
+        ws['C9'] = str(instance.document.purpose_trip)
+        ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
+            instance.person_agreement)
 
-            TO = instance.document.person.email
-            logger.debug(f'Email TO: {TO}')
-            try:
-                TO_COPY = instance.person_executor.email
-                logger.debug(f'Email TO_COPY: {TO_COPY}')
-            except Exception as _ex:
-                TO_COPY = 'corp@barkol.ru'
+        wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+        wb.close()
+        # Конвертируем xlsx в pdf
+        from msoffice2pdf import convert
+        source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+        output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+        file_name = convert(source=source, output_dir=output_dir, soft=0)
+        mail_to = instance.document.person.email
+        mail_to_copy = instance.person_executor.email
+        subject_mail = 'Направление'
+        try:
+            places = str(place).strip('[]')
+        except Exception as _ex:
+            logger.debug(f'Place')
+            places = ''
+        current_context = {
+            'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
+            'person': str(instance.document.person),
+            'place': places,
+            'purpose_trip': str(instance.document.purpose_trip),
+            'order_number': str(instance.order.document_number),
+            'order_date': str(instance.order.document_date),
+            'delta': str(ending_day(int(delta.days) + 1)),
+            'period_from': str(instance.document.period_from),
+            'period_for': str(instance.document.period_for),
+            'accommodation': str(type_of[int(instance.accommodation)]),
+            'person_executor': str(instance.person_executor),
+            'person_distributor': str(instance.person_distributor),
+        }
+        logger.debug(f'Email string: {current_context}')
+        text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+        html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+        try:
+            msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy, ])
+            msg.attach_alternative(html_content, "text/html")
+            msg.attach_file(str(file_name))
+            res = msg.send()
+        except Exception as _ex:
+            logger.debug(f'Failed to send email. {res} {msg} {_ex}')
 
-            SUBJECT = "Направление"
-            try:
-                places = str(place).strip('[]')
-            except Exception as _ex:
-                logger.debug(f'Place')
-                places = ''
-            current_context = {
-                    'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
-                    'person': str(instance.document.person),
-                    'place': places,
-                    'purpose_trip': str(instance.document.purpose_trip),
-                    'order_number': str(instance.order.document_number),
-                    'order_date': str(instance.order.document_date),
-                    'delta': str(ending_day(int(delta.days) + 1)),
-                    'period_from': str(instance.document.period_from),
-                    'period_for': str(instance.document.period_for),
-                    'accommodation': str(type_of[int(instance.accommodation)]),
-                    'person_executor': str(instance.person_executor),
-                    'person_distributor': str(instance.person_distributor),
-                }
-            logger.debug(f'Email string: {current_context}')
-            text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
-            html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
-            try:
-                msg = EmailMultiAlternatives(SUBJECT, text_content, EMAIL_HOST_USER, [TO, TO_COPY, ])
-                msg.attach_alternative(html_content, "text/html")
-                msg.attach_file(str(file_name))
-                res = msg.send()
-            except Exception as _ex:
-                logger.debug(f'Failed to send email. {res} {msg} {_ex}')
 
-    except Exception as _ex:
-        logger.error(f'Ошибка при создании файла СП. {_ex}')
 
 
 class BusinessProcessDirection(models.Model):
