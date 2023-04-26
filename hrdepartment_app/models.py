@@ -486,17 +486,16 @@ def create_report(sender, instance, **kwargs):
                 }
             text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
             html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
-
-            msg = EmailMultiAlternatives(SUBJECT, text_content, EMAIL_HOST_USER, [TO, TO_COPY, ])
-            msg.attach_alternative(html_content, "text/html")
-            msg.attach_file(str(file_name))
             try:
+                msg = EmailMultiAlternatives(SUBJECT, text_content, EMAIL_HOST_USER, [TO, TO_COPY, ])
+                msg.attach_alternative(html_content, "text/html")
+                msg.attach_file(str(file_name))
                 res = msg.send()
             except Exception as _ex:
                 logger.debug(f'Failed to send email. {res} {msg} {_ex}')
 
     except Exception as _ex:
-        logger.error(f'Ошибка при создании файла СП. {res} {msg} {_ex}')
+        logger.error(f'Ошибка при создании файла СП. {_ex}')
 
 
 class BusinessProcessDirection(models.Model):
