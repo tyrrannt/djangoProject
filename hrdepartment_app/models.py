@@ -472,7 +472,7 @@ def create_report(sender, instance, **kwargs):
                     'person': instance.document.person,
                     'place': places,
                     'purpose_trip': instance.document.purpose_trip,
-                    'order_number': instance.order.document_number,
+                    'order_number': str(instance.order.document_number),
                     'order_date': instance.order.document_date,
                     'delta': ending_day(int(delta.days) + 1),
                     'period_from': instance.document.period_from,
