@@ -2,6 +2,7 @@ import datetime
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms import SelectDateWidget
 from django_ckeditor_5.widgets import CKEditor5Widget
 from loguru import logger
 
@@ -321,6 +322,7 @@ class DocumentsOrderAddForm(forms.ModelForm):
     employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     validity_period_start = forms.DateField(required=False)
     validity_period_end = forms.DateField(required=False)
+    document_date = forms.DateField(input_formats="dd.mm.YYYY")
 
     class Meta:
         model = DocumentsOrder
@@ -329,6 +331,7 @@ class DocumentsOrderAddForm(forms.ModelForm):
                   'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_foundation')
 
     def clean(self):
+        print(datetime.date.today)
         cleaned_data = super().clean()
         scan_file = cleaned_data.get("scan_file")
         ext = str(scan_file).split('.')[-1]

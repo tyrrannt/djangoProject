@@ -64,7 +64,7 @@
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_foundation">Документ основание</label>
-                                            {{ form.document_foundation }}
+                                            {{ form.document_foundation | attr:"onchange=DocumentsChange()" }}
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_date">Дата документа</label>
@@ -187,5 +187,38 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
-
+    <script type="text/javascript">
+        function DocumentsChange() {
+            document_foundation = document.getElementById("id_document_foundation").value;
+            var validity_period_start = document.getElementById("id_validity_period_start");
+            var validity_period_end = document.getElementById("id_validity_period_end");
+            var document_date = document.getElementById("id_document_date");
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:order_add' %}',
+                data: {
+                    "document_foundation": document_foundation,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    validity_period_start.removeAttribute("value")
+                    validity_period_start.setAttribute("value", data['period_from'])
+                    $("#id_validity_period_start").trigger("create")
+                    validity_period_end.removeAttribute("value")
+                    validity_period_end.setAttribute("value", data['period_for'])
+                    $("#id_validity_period_end").trigger("create")
+                    document_date.removeAttribute("value")
+                    document_date.setAttribute("value", data['document_date'])
+                    $("#id_document_date").trigger("create")
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+    </script>
 {% endblock %}

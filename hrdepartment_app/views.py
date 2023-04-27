@@ -891,6 +891,17 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавление приказа'
         return context
 
+    def get(self, request, *args, **kwargs):
+        document_foundation = request.GET.get('document_foundation', None)
+        if document_foundation:
+            memo_obj = OfficialMemo.objects.get(pk=document_foundation)
+            dict_obj = {'period_from': datetime.datetime.strftime(memo_obj.period_from, '%Y-%m-%d'),
+                        'period_for': datetime.datetime.strftime(memo_obj.period_for, '%Y-%m-%d'),
+                        'document_date': datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')}
+            print(dict_obj)
+            return JsonResponse(dict_obj, safe=False)
+        return super().get(request, *args, **kwargs)
+
 
 class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = DocumentsOrder

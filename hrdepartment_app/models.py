@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 from django_ckeditor_5.fields import CKEditor5Field
 from docxtpl import DocxTemplate
 from loguru import logger
@@ -48,7 +49,7 @@ class Documents(models.Model):
     date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
     executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                  null=True, related_name='%(app_label)s_%(class)s_executor')
-    document_date = models.DateField(verbose_name='Дата документа', default='')
+    document_date = models.DateField(verbose_name='Дата документа', default=datetime.datetime.now)
     document_name = models.CharField(verbose_name='Наименование документа', max_length=200, default='')
     document_number = models.CharField(verbose_name='Номер документа', max_length=10, default='')
 
