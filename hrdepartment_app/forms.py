@@ -310,7 +310,7 @@ type_of_order = [
 
 
 class DocumentsOrderAddForm(forms.ModelForm):
-    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
+    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(doc_foundation__isnull=True), required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_order_type = forms.ChoiceField(choices=type_of_order, label='Тип приказа')
@@ -322,7 +322,6 @@ class DocumentsOrderAddForm(forms.ModelForm):
     employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     validity_period_start = forms.DateField(required=False)
     validity_period_end = forms.DateField(required=False)
-    document_date = forms.DateField(input_formats="dd.mm.YYYY")
 
     class Meta:
         model = DocumentsOrder

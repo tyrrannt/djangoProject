@@ -64,7 +64,7 @@ class Documents(models.Model):
     previous_document = models.URLField(verbose_name='Предшествующий документ', blank=True)
 
     def __str__(self):
-        return f'№ {self.document_number} от {self.document_date}'
+        return f'№ {self.document_number} от {self.document_date.strftime("%d.%m.%Y")}'
 
 
 class Purpose(models.Model):
@@ -216,7 +216,7 @@ class Medical(models.Model):
         return {
             'pk': self.pk,
             'number': self.number,
-            'date_entry': self.date_entry,
+            'date_entry': self.date_entry.strftime("%d.%m.%Y"),
             'person': self.person.get_title(),
             'organisation': self.organisation.get_title(),
             'working_status': self.get_working_status_display(),
@@ -308,7 +308,7 @@ class OfficialMemo(models.Model):
                                     related_name='responsible')
 
     def __str__(self):
-        return f'СЗ {FIO_format(self.person)} с {self.period_from} по {self.period_for}'
+        return f'СЗ {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
 
     def get_data(self):
         place = [str(item) for item in self.place_production_activity.iterator()]
@@ -329,7 +329,7 @@ class OfficialMemo(models.Model):
             'job': str(self.person.user_work_profile.job),
             'place_production_activity': '; '.join(place),
             'purpose_trip': str(self.purpose_trip),
-            'period_from': f'С: {self.period_from} \nПо: {self.period_for}',
+            'period_from': f'С: {self.period_from.strftime("%d.%m.%Y")} \nПо: {self.period_for.strftime("%d.%m.%Y")}',
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
@@ -590,7 +590,7 @@ class DocumentsOrder(Documents):
     scan_file = models.FileField(verbose_name='Скан документа', upload_to=ord_directory_path, blank=True)
     document_order_type = models.CharField(verbose_name='Тип приказа', max_length=18, choices=type_of_order)
     document_foundation = models.ForeignKey(OfficialMemo, verbose_name='Документ основание', on_delete=models.SET_NULL,
-                                            null=True, blank=True)
+                                            null=True, blank=True, related_name='doc_foundation')
     description = CKEditor5Field('Содержание', config_name='extends', blank=True)
     approved = models.BooleanField(verbose_name='Утверждён', default=False)
 
@@ -598,7 +598,7 @@ class DocumentsOrder(Documents):
         return {
             'pk': self.pk,
             'document_number': self.document_number,
-            'document_date': self.document_date,
+            'document_date': self.document_date.strftime("%d.%m.%Y"),
             'document_name': self.document_name,
             'person': FIO_format(self.document_foundation.person.get_title()) if self.document_foundation else '',
             'approved': self.approved,
@@ -608,7 +608,7 @@ class DocumentsOrder(Documents):
         return reverse('hrdepartment_app:order_list')
 
     def __str__(self):
-        return f'Пр. № {self.document_number} от {self.document_date} г.'
+        return f'Пр. № {self.document_number} от {self.document_date.strftime("%d.%m.%Y")} г.'
 
 
 @receiver(post_save, sender=DocumentsOrder)
@@ -653,7 +653,7 @@ class DocumentsJobDescription(Documents):
         return {
             'pk': self.pk,
             'document_number': self.document_number,
-            'document_date': self.document_date,
+            'document_date': self.document_date.strftime("%d.%m.%Y"),
             'document_job': str(self.document_job),
             'document_division': str(self.document_division),
             'document_order': str(self.document_order),
@@ -665,7 +665,7 @@ class DocumentsJobDescription(Documents):
         return reverse('hrdepartment_app:jobdescription_list')
 
     def __str__(self):
-        return f'ДИ {self.document_name} №{self.document_number} от {self.document_date}'
+        return f'ДИ {self.document_name} №{self.document_number} от {self.document_date.strftime("%d.%m.%Y")}'
 
 
 @receiver(post_save, sender=DocumentsJobDescription)

@@ -398,12 +398,11 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             if request.user.is_superuser:
-                aapprovalmemo_list = ApprovalOficialMemoProcess.objects.all()
+                approvalmemo_list = ApprovalOficialMemoProcess.objects.all()
             else:
-                aapprovalmemo_list = ApprovalOficialMemoProcess.objects.filter(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
-
-
-            data = [aapprovalmemo_item.get_data() for aapprovalmemo_item in aapprovalmemo_list]
+                approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(
+                    person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
+            data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
             response = {'data': data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
@@ -873,7 +872,7 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            documents_order_list = DocumentsOrder.objects.all()
+            documents_order_list = DocumentsOrder.objects.all().order_by('pk').reverse()
             data = [documents_order_item.get_data() for documents_order_item in documents_order_list]
             response = {'data': data}
             # report_card_separator()
@@ -946,6 +945,17 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
         context = super().get_context_data(object_list=None, **kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         return context
+
+    def get(self, request, *args, **kwargs):
+        document_foundation = request.GET.get('document_foundation', None)
+        if document_foundation:
+            memo_obj = OfficialMemo.objects.get(pk=document_foundation)
+            dict_obj = {'period_from': datetime.datetime.strftime(memo_obj.period_from, '%Y-%m-%d'),
+                        'period_for': datetime.datetime.strftime(memo_obj.period_for, '%Y-%m-%d'),
+                        'document_date': datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')}
+
+            return JsonResponse(dict_obj, safe=False)
+        return super().get(request, *args, **kwargs)
 
 
 class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
