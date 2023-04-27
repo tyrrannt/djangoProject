@@ -179,7 +179,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
                   'person_department_staff', 'process_accepted', 'accommodation', 'order', 'person_accounting',
-                  'prepaid_expense')
+                  'prepaid_expense', 'accepted_accounting')
 
     def clean(self):
         cleaned_data = super().clean()
