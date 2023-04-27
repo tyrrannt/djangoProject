@@ -369,13 +369,13 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
             )
         }
 
-    def clean(self):
-        cleaned_data = super().clean()
-        scan_file = cleaned_data.get("scan_file")
-        ext = str(scan_file).split('.')[-1]
-        if ext != '' and ext != 'pdf':
-            # Сохраняем только если оба поля действительны.
-            raise ValidationError("Скан документа должен быть в формате PDF")
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     scan_file = cleaned_data.get("scan_file")
+    #     ext = str(scan_file).split('.')[-1]
+    #     if scan_file and ext != 'pdf':
+    #         # Сохраняем только если оба поля действительны.
+    #         raise ValidationError("Скан документа должен быть в формате PDF")
 
 
 class PlaceProductionActivityAddForm(forms.ModelForm):
