@@ -544,7 +544,7 @@ def order_doc(obj_model, filepath, filename, request):
                        'ServiceNum': obj_model.document_foundation.person.service_number,
                        'Division': obj_model.document_foundation.person.user_work_profile.divisions,
                        'Job': obj_model.document_foundation.person.user_work_profile.job,
-                       'Place': str(place).strip('[]'),
+                       'Place': str(place).strip('[]').replace("'", ""),
                        'DateCount': str(int(delta.days) + 1),
                        'DateFrom': f'{obj_model.document_foundation.period_from.strftime("%d.%m.%Y")} г.',
                        'DateFor': f'{obj_model.document_foundation.period_for.strftime("%d.%m.%Y")} г.',
