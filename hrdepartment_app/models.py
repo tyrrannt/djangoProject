@@ -596,6 +596,7 @@ class DocumentsOrder(Documents):
             'document_number': self.document_number,
             'document_date': self.document_date,
             'document_name': self.document_name,
+            'person': FIO_format(self.document_foundation.person.get_title()) if self.document_foundation else '',
             'approved': self.approved,
         }
 
