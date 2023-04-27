@@ -397,7 +397,12 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            aapprovalmemo_list = ApprovalOficialMemoProcess.objects.all()
+            if request.user.is_superuser:
+                aapprovalmemo_list = ApprovalOficialMemoProcess.objects.all()
+            else:
+                aapprovalmemo_list = ApprovalOficialMemoProcess.objects.filter(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
+
+
             data = [aapprovalmemo_item.get_data() for aapprovalmemo_item in aapprovalmemo_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -898,7 +903,7 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             dict_obj = {'period_from': datetime.datetime.strftime(memo_obj.period_from, '%Y-%m-%d'),
                         'period_for': datetime.datetime.strftime(memo_obj.period_for, '%Y-%m-%d'),
                         'document_date': datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')}
-            print(dict_obj)
+
             return JsonResponse(dict_obj, safe=False)
         return super().get(request, *args, **kwargs)
 
