@@ -527,11 +527,14 @@ class BusinessProcessDirection(models.Model):
 
 def order_doc(obj_model, filepath, filename, request):
     if obj_model.document_foundation:
-        print('Есть документ основание')
-        if 'Командир воздушного судна' in obj_model.document_foundation.person.user_work_profile.job.get_title():
-            doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom2.docx'))
+        if obj_model.document_foundation.type_trip == '1':
+            if 'Командир воздушного судна' in obj_model.document_foundation.person.user_work_profile.job.get_title():
+                doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom2.docx'))
+            else:
+                doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom.docx'))
         else:
-            doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom.docx'))
+            doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom3.docx'))
+
         delta = obj_model.document_foundation.period_for - obj_model.document_foundation.period_from
         place = [item.name for item in obj_model.document_foundation.place_production_activity.all()]
         try:
