@@ -11,7 +11,7 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
-    get_jsons_data
+    get_jsons_data, ending_day
 from customers_app.models import DataBaseUser, Counteragent
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
@@ -515,10 +515,18 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             Q(is_superuser=False))
         content['form'].fields['person_department_staff'].queryset = list_department_staff
         content['list_department_staff'] = list_department_staff
+
+        list_accounting = users_list.filter(
+            Q(user_work_profile__divisions__type_of_role='3') & Q(user_work_profile__job__right_to_approval=True) &
+            Q(is_superuser=False))
+        content['form'].fields['person_accounting'].queryset = list_accounting
+        content['list_accounting'] = list_accounting
+
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
             document_foundation__pk=document.document.pk)
-
+        delta = document.document.period_for - document.document.period_from
+        content['ending_day'] = ending_day(int(delta.days) + 1)
         return content
 
     def form_valid(self, form):
@@ -566,6 +574,9 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             document.comments = 'Утверждено место проживания'
             change_status = 1
         if request.POST.get('process_accepted'):
+            document.comments = 'Создан приказ'
+            change_status = 1
+        if request.POST.get('accepted_accounting'):
             document.comments = 'Документооборот завершен'
             document.document_accepted = True
             change_status = 1

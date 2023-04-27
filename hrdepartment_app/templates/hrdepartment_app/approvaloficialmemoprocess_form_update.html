@@ -232,9 +232,52 @@
                                         </div>
 
                                     </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_person_accounting">Бухгалтерия</label>
+                                            <div class="col">
+                                                {% if object.accepted_accounting %}
+                                                    <select class="form-control form-control-modern" id="id_person_accounting" name="person_accounting">
+                                                        <option selected value="{{ object.person_accounting.pk }}">{{ object.person_accounting }}</option>
+                                                    </select>
+                                                {% elif user.pk not in list_accounting %}
+                                                    <span>{{ form.person_accounting }}</span>
+                                                {% else %}
+                                                    <span>{{ form.person_accounting }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_accepted_accounting">Принят в бухгалтерии</label>
+                                            {% if user not in list_accounting %}
+                                                <input type="checkbox" id="id_accepted_accounting" name="accepted_accounting" {% if object.accepted_accounting %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% elif object.process_accepted %}
+                                                <div class="col">
+                                                    <span>{{ form.accepted_accounting }}</span>
+                                                </div>
+                                             {% else %}
+                                                <input type="checkbox" id="id_accepted_accounting" name="accepted_accounting" {% if object.accepted_accounting %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% endif %}
+
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_prepaid_expense">Примечание к согласованию</label>
+                                            <div class="col">
+                                                {% if user.pk in list_accounting and not object.accepted_accounting %}
+                                                    <span>{{ form.prepaid_expense | add_class:"form-control form-control-modern" }}</span>
+                                                {% else %}
+                                                    <span>{{ form.prepaid_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                    </div>
                                     <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
                                         <section class="toggle">
-                                            <label>Служебная записка: {{ object.document }}</label>
+                                            <label>Служебная записка: {{ object.document }} на {{ ending_day }}</label>
                                             <input hidden value="{{ object.document.pk }}" id="id_document"
                                                    name="document"/>
                                             <div class="toggle-content">
@@ -255,12 +298,12 @@
                                                         <div class="col-sm-4"><label for="d1">Дата начала</label>
                                                             <input class="form-control form-control-modern" id="d3"
                                                                    value="{{ object.document.period_from | date:'c' }}"
-                                                                   disabled/></div>
+                                                                   disabled type="date"/></div>
 
                                                         <div class="col-sm-4"><label for="d1">Дата окончания</label>
                                                             <input class="form-control form-control-modern" id="d4"
                                                                    value="{{ object.document.period_for | date:'c' }}"
-                                                                   disabled/></div>
+                                                                   disabled type="date"/></div>
 
                                                         <div class="col-sm-4"><label for="d1">Сотрудник</label>
                                                             <input class="form-control form-control-modern" id="d5"

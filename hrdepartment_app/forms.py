@@ -159,6 +159,9 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_department_staff.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_accounting = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
+    person_accounting.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.all())
     document.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     accommodation = forms.ChoiceField(choices=ApprovalOficialMemoProcess.type_of, required=False)
@@ -166,6 +169,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     comments_for_approval = forms.CharField(required=False)
     comments_for_approval.widget.attrs.update({'class': 'form-control form-control-modern'})
     reason_for_approval = forms.CharField(required=False)
+    prepaid_expense = forms.CharField(required=False)
     reason_for_approval.widget.attrs.update({'class': 'form-control form-control-modern'})
     order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all(), required=False)
     order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
@@ -174,7 +178,8 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         model = ApprovalOficialMemoProcess
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
-                  'person_department_staff', 'process_accepted', 'accommodation', 'order')
+                  'person_department_staff', 'process_accepted', 'accommodation', 'order', 'person_accounting',
+                  'prepaid_expense')
 
     def clean(self):
         cleaned_data = super().clean()

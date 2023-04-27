@@ -369,6 +369,7 @@ class ApprovalProcess(models.Model):
     process_accepted = models.BooleanField(verbose_name='Активность', default=False)
     person_accounting = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник Бухгалтерии', on_delete=models.SET_NULL,
                                           null=True, blank=True, related_name='person_accounting')
+    accepted_accounting = models.BooleanField(verbose_name='Принято в бухгалтерии', default=False)
 
 
 
@@ -388,6 +389,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     email_send = models.BooleanField(verbose_name='Письмо отправлено', default=False)
     cancellation = models.BooleanField(verbose_name='Отмена', default=False)
     reason_cancellation = models.ForeignKey(ReasonForCancellation, on_delete=models.SET_NULL, blank=True, null=True)
+    prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
+                                     help_text='', blank=True, default='')
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
