@@ -558,7 +558,7 @@ def order_doc(obj_model, filepath, filename, request):
             context = {'Number': obj_model.document_number,
                        'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
                        'Title': obj_model.document_name,
-                       'Description': 'Тут очень важный текст документа. Возможно с графиками и таблицами, а может быть со списками или еще чем нибудь.',
+                       'Description': '',
                        }
         except Exception as _ex:
             # DataBaseUser.objects.get(pk=request)
@@ -611,10 +611,10 @@ def rename_order_file_name(sender, instance, **kwargs):
     try:
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
 
-        ext_scan = str(instance.scan_file).split('.')[-1]
+        # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
-        filename = f'ORD-{instance.document_order_type}-{instance.document_number}-{instance.document_date}-{uid}.docx'
-        scanname = f'ORD-{instance.document_order_type}-{instance.document_number}-{instance.document_date}-{uid}.{ext_scan}'
+        filename = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.docx'
+        scanname = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.pdf'
         date_doc = instance.document_date
         order_doc(instance, f'media/docs/ORD/{date_doc.year}/{date_doc.month}', filename, instance.document_order_type)
         scan_name = pathlib.Path(instance.scan_file.name).name
