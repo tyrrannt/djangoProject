@@ -269,6 +269,7 @@
                                                 {% if user.pk in list_accounting and not object.accepted_accounting %}
                                                     <span>{{ form.prepaid_expense | add_class:"form-control form-control-modern" }}</span>
                                                 {% else %}
+                                                    {{ object.accepted_accounting }}
                                                     <span>{{ form.prepaid_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
                                             </div>

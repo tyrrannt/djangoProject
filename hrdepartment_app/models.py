@@ -410,6 +410,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             'document_not_agreed': FIO_format(self.person_agreement, self) if self.document_not_agreed else '',
             'location_selected': FIO_format(self.person_distributor, self) if self.location_selected else '',
             'process_accepted': FIO_format(self.person_department_staff, self) if self.process_accepted else '',
+            'accepted_accounting': FIO_format(self.person_accounting, self) if self.accepted_accounting else '',
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.document.comments),
@@ -463,46 +464,48 @@ def create_report(sender, instance, **kwargs):
         wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
         wb.close()
         # Конвертируем xlsx в pdf
-        from msoffice2pdf import convert
-        source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-        output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-        file_name = convert(source=source, output_dir=output_dir, soft=0)
-        mail_to = instance.document.person.email
-        mail_to_copy = instance.person_executor.email
-        subject_mail = 'Направление'
-        try:
-            accommodation = str(type_of[int(instance.accommodation)])
-        except Exception as _ex:
-            if instance.accommodation == '0':
-                accommodation = 'Квартира'
-            else:
-                accommodation = 'Гостиница'
-        current_context = {
-            'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
-            'person': str(instance.document.person),
-            'place': str(place).strip('[]'),
-            'purpose_trip': str(instance.document.purpose_trip),
-            'order_number': str(instance.order.document_number),
-            'order_date': str(instance.order.document_date),
-            'delta': str(ending_day(int(delta.days) + 1)),
-            'period_from': str(instance.document.period_from),
-            'period_for': str(instance.document.period_for),
-            'accommodation': accommodation,
-            'person_executor': str(instance.person_executor),
-            'person_distributor': str(instance.person_distributor),
-        }
-        logger.debug(f'Email string: {current_context}')
-        text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
-        html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
-        try:
+        if not instance.email_send:
+            from msoffice2pdf import convert
+            source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+            output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+            file_name = convert(source=source, output_dir=output_dir, soft=0)
+            mail_to = instance.document.person.email
+            mail_to_copy = instance.person_executor.email
+            subject_mail = 'Направление'
+            try:
+                accommodation = str(type_of[int(instance.accommodation)])
+            except Exception as _ex:
+                if instance.accommodation == '0':
+                    accommodation = 'Квартира'
+                else:
+                    accommodation = 'Гостиница'
+            current_context = {
+                'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
+                'person': str(instance.document.person),
+                'place': str(place).strip('[]'),
+                'purpose_trip': str(instance.document.purpose_trip),
+                'order_number': str(instance.order.document_number),
+                'order_date': str(instance.order.document_date),
+                'delta': str(ending_day(int(delta.days) + 1)),
+                'period_from': str(instance.document.period_from),
+                'period_for': str(instance.document.period_for),
+                'accommodation': accommodation,
+                'person_executor': str(instance.person_executor),
+                'person_distributor': str(instance.person_distributor),
+            }
+            logger.debug(f'Email string: {current_context}')
+            text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+            html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+
             msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy, ])
             msg.attach_alternative(html_content, "text/html")
             msg.attach_file(str(file_name))
-            res = msg.send()
-            instance.email_send = True
-            instance.update()
-        except Exception as _ex:
-            logger.debug(f'Failed to send email. {_ex}')
+            try:
+                res = msg.send()
+                instance.email_send = True
+                instance.save()
+            except Exception as _ex:
+                logger.debug(f'Failed to send email. {_ex}')
 
 
 
