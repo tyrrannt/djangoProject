@@ -464,6 +464,7 @@ def create_report(sender, instance, **kwargs):
         wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
         wb.close()
         # Конвертируем xlsx в pdf
+
         if not instance.email_send:
             from msoffice2pdf import convert
             source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
@@ -472,13 +473,11 @@ def create_report(sender, instance, **kwargs):
             mail_to = instance.document.person.email
             mail_to_copy = instance.person_executor.email
             subject_mail = 'Направление'
-            try:
-                accommodation = str(type_of[int(instance.accommodation)])
-            except Exception as _ex:
-                if instance.accommodation == '0':
-                    accommodation = 'Квартира'
-                else:
-                    accommodation = 'Гостиница'
+
+            if instance.accommodation == '1':
+                accommodation = 'Квартира'
+            else:
+                accommodation = 'Гостиница'
             current_context = {
                 'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
                 'person': str(instance.document.person),
