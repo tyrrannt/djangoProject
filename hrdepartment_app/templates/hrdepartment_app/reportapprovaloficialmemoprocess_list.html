@@ -7,6 +7,19 @@
 {% endblock %}
 
 {% block content %}
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+            position: relative;
+        }
+        .table-responsive th:first-child,
+        .table-responsive td:first-child {
+            position: sticky;
+            left: 0;
+            background-color: #fff;
+            z-index: 1;
+        }
+    </style>
     <section role="main" class="content-body content-body-modern mt-0">
 
         {% include 'library_app/breadcrumb.html' %}
