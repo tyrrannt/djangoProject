@@ -81,6 +81,7 @@
     <script>
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
+                "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
                 "ajax": "{% url 'customers_app:divisions_list' %}",
                 "language": {

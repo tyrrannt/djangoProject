@@ -89,6 +89,7 @@
     <script>
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
+                "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
                 "ajax": "{% url 'customers_app:counteragent_list' %}",
                 "language": {

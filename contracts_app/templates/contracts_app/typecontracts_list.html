@@ -57,6 +57,7 @@
     <script>
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
+                "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
                 "ajax": "{% url 'contracts_app:typecontracts_list' %}",
                 "language": {
