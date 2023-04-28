@@ -738,7 +738,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc"></td>'
                     html_table_set += '</tr>'
 
-                html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1500px;">
+                html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1200px;">
                                 <thead>
                                 <tr>
                                     <th width="14%"><span style="color: #0a53be">ФИО</span></th>
