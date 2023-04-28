@@ -705,19 +705,20 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                 list_obj = []
                 person = FIO_format(str(item.document.person))
                 place = '; '.join([item.name for item in item.document.place_production_activity.all()])
+                place_short = '; '.join([item.short_name for item in item.document.place_production_activity.all()])
                 if person in dict_obj:
                     list_obj = dict_obj[person]
                     for days_count in range(0, (date_end - date_start).days + 1):
                         curent_day = date_start + datetime.timedelta(days_count)
                         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj[days_count] = ['1', place]
+                            list_obj[days_count] = ['1', place, place_short]
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
                 else:
                     dict_obj[FIO_format(str(item.document.person))] = []
                     for days_count in range(0, (date_end - date_start).days + 1):
                         curent_day = date_start + datetime.timedelta(days_count)
                         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj.append(['1', place])
+                            list_obj.append(['1', place, place_short])
                         else:
                             list_obj.append(['0', ''])
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
@@ -733,7 +734,8 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     for unit in value:
                         if unit[0] == '1':
                             place = unit[1].replace('"', "")
-                            html_table_set += f'<td width="2%" style="background-color: #d2691e"  title="{place}"></td>'
+                            plase_short = unit[2]
+                            html_table_set += f'<td width="2%" style="background-color: #d2691e"  title="{place}">{plase_short}</td>'
                         else:
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc"></td>'
                     html_table_set += '</tr>'

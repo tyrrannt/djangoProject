@@ -388,10 +388,10 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
 class PlaceProductionActivityAddForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
-        fields = ('name', 'address')
+        fields = ('name', 'address', 'short_name')
 
 
 class PlaceProductionActivityUpdateForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
-        fields = ('name', 'address')
+        fields = ('name', 'address', 'short_name')

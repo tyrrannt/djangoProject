@@ -250,6 +250,7 @@ class PlaceProductionActivity(models.Model):
 
     name = models.CharField(verbose_name='Наименование', max_length=250)
     address = models.CharField(verbose_name='Адрес', max_length=250, blank=True)
+    short_name = models.CharField(verbose_name='', max_length=3, default='')
 
     def __str__(self):
         return str(self.name)
