@@ -44,10 +44,11 @@ class HelpTopic(models.Model):
         return self.title
 
     def get_data(self):
+        hash_tag = [str(item) for item in self.hash_tag.iterator()]
         return {
             'pk': self.pk,
             'title': self.title,
             'category': self.category.title,
-            'hash_tag': '',
+            'hash_tag': '; '.join(hash_tag),
 
         }
