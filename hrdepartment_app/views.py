@@ -734,7 +734,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     for unit in value:
                         if unit[0] == '1':
                             place = unit[1].replace('"', "")
-                            plase_short = unit[2]
+                            plase_short = '' # unit[2]
                             html_table_set += f'<td width="2%" style="background-color: #d2691e"  title="{place}">{plase_short}</td>'
                         else:
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc"></td>'
