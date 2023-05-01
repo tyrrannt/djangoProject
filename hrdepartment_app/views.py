@@ -575,10 +575,10 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             change_status = 1
         if request.POST.get('process_accepted'):
             document.comments = 'Создан приказ'
+            document.document_accepted = True
             change_status = 1
         if request.POST.get('accepted_accounting'):
             document.comments = 'Документооборот завершен'
-            document.document_accepted = True
             change_status = 1
         else:
             document.document_accepted = False
