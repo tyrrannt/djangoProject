@@ -250,7 +250,7 @@ class PlaceProductionActivity(models.Model):
 
     name = models.CharField(verbose_name='Наименование', max_length=250)
     address = models.CharField(verbose_name='Адрес', max_length=250, blank=True)
-    short_name = models.CharField(verbose_name='', max_length=3, default='')
+    short_name = models.CharField(verbose_name='', max_length=3, default='', blank=True)
 
     def __str__(self):
         return str(self.name)
@@ -309,7 +309,8 @@ class OfficialMemo(models.Model):
                                     related_name='responsible')
 
     def __str__(self):
-        return f'СЗ {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
+        print(self.type_trip)
+        return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
 
     def get_data(self):
         place = [str(item) for item in self.place_production_activity.iterator()]
@@ -334,6 +335,7 @@ class OfficialMemo(models.Model):
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
+            'document_accepted': self.document_accepted,
         }
 
 

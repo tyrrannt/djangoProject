@@ -93,11 +93,10 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
-                    if (aData['process_accepted'] === 'Согласован') {
-                        $(nRow).addClass('text-black-50  fs-6')
-                    }
                     if (aData['process_accepted'] === '') {
                         $(nRow).addClass('text-danger fs-6')
+                    } else {
+                        $(nRow).addClass('text-success  fs-6')
                     }
                     $(nRow).attr("href", id + '/update/');
                     $(nRow).css('cursor', 'pointer');
