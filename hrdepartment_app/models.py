@@ -507,7 +507,7 @@ def create_report(sender, instance, **kwargs):
             msg.attach_alternative(html_content, "text/html")
             msg.attach_file(str(file_name))
             try:
-                #res = msg.send()
+                res = msg.send()
                 instance.email_send = True
                 instance.save()
             except Exception as _ex:
