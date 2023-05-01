@@ -457,20 +457,26 @@ def create_report(sender, instance, **kwargs):
         ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
         ws['L6'] = instance.document.period_from.strftime("%d.%m.%y")
         ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
-        ws['C8'] = str(place).strip('[]')
-        ws['C9'] = str(instance.document.purpose_trip)
-        ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
+        ws['C7'] = str(place).strip('[]')
+        ws['C8'] = str(instance.document.purpose_trip)
+        ws['A89'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
             instance.person_agreement)
 
         wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
         wb.close()
         # Конвертируем xlsx в pdf
+        # Удалить
+        from msoffice2pdf import convert
+        source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+        output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+        file_name = convert(source=source, output_dir=output_dir, soft=0)
+
 
         if not instance.email_send:
-            from msoffice2pdf import convert
-            source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-            output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-            file_name = convert(source=source, output_dir=output_dir, soft=0)
+            # from msoffice2pdf import convert
+            # source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+            # output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+            # file_name = convert(source=source, output_dir=output_dir, soft=0)
             mail_to = instance.document.person.email
             mail_to_copy = instance.person_executor.email
             subject_mail = 'Направление'
