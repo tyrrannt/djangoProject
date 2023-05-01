@@ -577,12 +577,13 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             document.comments = 'Создан приказ'
             document.document_accepted = True
             change_status = 1
-        if request.POST.get('accepted_accounting'):
-            document.comments = 'Документооборот завершен'
-            change_status = 1
         else:
             document.document_accepted = False
             change_status = 1
+        if request.POST.get('accepted_accounting'):
+            document.comments = 'Документооборот завершен'
+            change_status = 1
+
         if change_status > 0:
             document.save()
         return super().post(request, *args, **kwargs)

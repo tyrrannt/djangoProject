@@ -309,7 +309,6 @@ class OfficialMemo(models.Model):
                                     related_name='responsible')
 
     def __str__(self):
-        print(self.type_trip)
         return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
 
     def get_data(self):
@@ -423,7 +422,6 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
 def create_xlsx(instance):
     from openpyxl import load_workbook
     filepath = pathlib.Path.joinpath(MEDIA_URL, 'wb.xlsx')
-    print(filepath)
     wb = load_workbook(filepath)
     ws = wb.active()
     ws['C3'] = instance.document.person
@@ -503,7 +501,7 @@ def create_report(sender, instance, **kwargs):
             msg.attach_alternative(html_content, "text/html")
             msg.attach_file(str(file_name))
             try:
-                res = msg.send()
+                #res = msg.send()
                 instance.email_send = True
                 instance.save()
             except Exception as _ex:
