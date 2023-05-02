@@ -326,6 +326,32 @@
                                             </div>
                                         </section>
                                     </div>
+                                    <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
+                                        <section class="toggle">
+                                            <label>История изменений</label>
+                                            <div class="toggle-content">
+                                                <div class="form-row">
+                                                    {% for date_add, key, value in change_history %}
+
+                                                        <div class="ecommerce-timeline mb-3">
+                                                            <div class="ecommerce-timeline-items-wrapper">
+                                                                <div class="ecommerce-timeline-item">
+                                                                    <small>Добавлено: {{ date_add }}.
+                                                                        Автор: {{ key }}
+                                                                    </small>
+                                                                    <p>{% autoescape off %}
+                                                                        {{ value }}
+                                                                    {% endautoescape %}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
                                 </div>
                             </div>
                         </div>

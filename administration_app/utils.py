@@ -1,13 +1,26 @@
 import json
 import requests
+from django.contrib.contenttypes.models import ContentType
 from loguru import logger
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
-from customers_app.models import DataBaseUser, Counteragent, Division
-
+from customers_app.models import DataBaseUser, Counteragent, Division, HistoryChange
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
+
+
+def get_history(self, model):
+    # Получаем тип объекта
+    obj = ContentType.objects.get_for_model(model)
+    obj_item = self.get_object()
+    # Фильтруем по объекту
+    objects_content = HistoryChange.objects.filter(content_type=obj, object_id=obj_item.pk)
+    change_history = list()
+    for item in objects_content:
+        change_history.append([item.date_add, item.author, item.body])
+    return change_history
+
 
 
 class GetAllObject:

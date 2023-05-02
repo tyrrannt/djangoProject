@@ -1,11 +1,15 @@
 import pathlib
 import uuid
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
+
+from customers_app.models import DataBaseUser
 
 
 class HashTag(models.Model):

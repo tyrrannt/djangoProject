@@ -2,6 +2,7 @@ import datetime
 import math
 from calendar import monthrange
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
@@ -11,8 +12,8 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
-    get_jsons_data, ending_day
-from customers_app.models import DataBaseUser, Counteragent
+    get_jsons_data, ending_day, get_history
+from customers_app.models import DataBaseUser, Counteragent, HistoryChange
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
@@ -289,6 +290,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
     permission_required = 'hrdepartment_app.change_officialmemo'
 
     def get_context_data(self, **kwargs):
+
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
         # Получаем объект
         period = self.get_object()
@@ -310,6 +312,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        content['change_history'] = get_history(self, OfficialMemo)
         return content
 
     def get_success_url(self):
@@ -319,7 +322,36 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         return super(OfficialMemoUpdate, self).form_invalid(form)
 
     def form_valid(self, form):
-        return super().form_valid(form)
+
+        def person_finder(object_item, item, instanse_obj):
+            person_list = ['Сотрудник']
+            if object_item._meta.get_field(k).verbose_name in person_list:
+                return DataBaseUser.objects.get(pk=instanse_obj[item])
+            else:
+                return instanse_obj[item]
+
+        if form.is_valid():
+            # в old_instance сохраняем старые значения записи
+            object_item = self.get_object()
+            old_instance = object_item.__dict__
+            form.save()
+            object_item = self.get_object()
+            # в new_instance сохраняем новые значения записи
+            new_instance = object_item.__dict__
+            changed = False
+            # создаем генератор списка
+            diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
+            message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
+            for k in diffkeys:
+                if k != '_state':
+                    message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
+                    changed = True
+            if changed:
+                object_item.history_change.create(author=self.request.user, body=message)
+
+            return HttpResponseRedirect(reverse('hrdepartment_app:memo_list'))
+        else:
+            logger.info(f'{form.errors}')
 
     def get(self, request, *args, **kwargs):
         global filter_string
@@ -527,11 +559,45 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             document_foundation__pk=document.document.pk)
         delta = document.document.period_for - document.document.period_from
         content['ending_day'] = ending_day(int(delta.days) + 1)
+        content['change_history'] = get_history(self, ApprovalOficialMemoProcess)
         return content
 
     def form_valid(self, form):
 
-        return super().form_valid(form)
+        def person_finder(object_item, item, instanse_obj):
+            person_list = ['Исполнитель', 'Согласующее лицо', 'Сотрудник НО', 'Сотрудник ОК', 'Сотрудник Бухгалтерии']
+            if object_item._meta.get_field(k).verbose_name in person_list:
+                return DataBaseUser.objects.get(pk=instanse_obj[item])
+            else:
+                if instanse_obj[item] == True:
+                    return 'Да'
+                elif instanse_obj[item] == False:
+                    return 'Нет'
+                else:
+                    return instanse_obj[item]
+
+        if form.is_valid():
+            # в old_instance сохраняем старые значения записи
+            object_item = self.get_object()
+            old_instance = object_item.__dict__
+            form.save()
+            object_item = self.get_object()
+            # в new_instance сохраняем новые значения записи
+            new_instance = object_item.__dict__
+            changed = False
+            # создаем генератор списка
+            diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
+            message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
+            for k in diffkeys:
+                if k != '_state':
+                    message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
+                    changed = True
+            if changed:
+                object_item.history_change.create(author=self.request.user, body=message)
+
+            return HttpResponseRedirect(reverse('hrdepartment_app:bpmemo_list'))
+        else:
+            logger.info(f'{form.errors}')
 
     # Проверяем изменения параметров
     def post(self, request, *args, **kwargs):

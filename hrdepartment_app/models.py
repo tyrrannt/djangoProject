@@ -2,6 +2,7 @@ import datetime
 import pathlib
 import uuid
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.db.models.signals import post_save
@@ -14,7 +15,8 @@ from docxtpl import DocxTemplate
 from loguru import logger
 
 from administration_app.utils import ending_day, FIO_format
-from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job, AccessLevel
+from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job, AccessLevel, \
+    HistoryChange
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 
 
@@ -307,6 +309,7 @@ class OfficialMemo(models.Model):
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
     responsible = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
                                     related_name='responsible')
+    history_change = GenericRelation(HistoryChange)
 
     def __str__(self):
         return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
@@ -363,7 +366,7 @@ class ApprovalProcess(models.Model):
     document_not_agreed = models.BooleanField(verbose_name='Документ согласован', default=False)
     reason_for_approval = models.CharField(verbose_name='Примечание к согласованию', max_length=200, help_text='',
                                            blank=True, default='')
-    person_distributor = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ГСМ и НТ', on_delete=models.SET_NULL,
+    person_distributor = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник НО', on_delete=models.SET_NULL,
                                            null=True, blank=True, related_name='person_distributor')
     location_selected = models.BooleanField(verbose_name='Выбрано место проживания', default=False)
     person_department_staff = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
@@ -372,6 +375,7 @@ class ApprovalProcess(models.Model):
     person_accounting = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник Бухгалтерии', on_delete=models.SET_NULL,
                                           null=True, blank=True, related_name='person_accounting')
     accepted_accounting = models.BooleanField(verbose_name='Принято в бухгалтерии', default=False)
+    history_change = GenericRelation(HistoryChange)
 
 
 

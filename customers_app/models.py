@@ -1,10 +1,14 @@
 import hashlib
 import pathlib
+
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
+from django.utils import timezone
 
 from contracts_app.templatetags.custom import empty_item
 from djangoProject.settings import BASE_DIR
@@ -422,3 +426,20 @@ class Posts(models.Model):
 
     def __str__(self):
         return f'{self.creation_date} / {self.pk}'
+
+
+class HistoryChange(models.Model):
+    """
+    Модель HistoryChange - введена для возможности отследить изменения моделей.
+    """
+
+    class Meta:
+        verbose_name = 'История'
+        verbose_name_plural = 'Список истории'
+
+    date_add = models.DateTimeField(verbose_name='Время добавления', auto_now_add=True)
+    author = models.ForeignKey(DataBaseUser, verbose_name='Автор', on_delete=models.SET_NULL, null=True, blank=True, related_name='author_changes')
+    body = models.TextField(blank=True)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
