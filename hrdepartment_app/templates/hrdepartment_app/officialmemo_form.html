@@ -87,6 +87,13 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_official_memo_type">Документ основания</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            {{ form.document_extension | add_class:"form-control form-control-modern" }}
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_type_trip">Вид служебной поездки</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.type_trip | add_class:"form-control form-control-modern" }}
@@ -188,6 +195,8 @@
     <script type="text/javascript">
         function minimumPeriodFor() {
             period_from = document.getElementById("id_period_from").value;
+
+
             var period_for = document.getElementById("id_period_for");
             period_for.removeAttribute("min")
             period_for.setAttribute("min", period_from)
@@ -222,12 +231,14 @@
         function employee_change() {
             employee = document.getElementById("id_person").value;
             period_from = document.getElementById("id_period_from").value;
+            memo_type = document.getElementById("id_official_memo_type").value;
             $.ajax({
                 type: "GET",
                 url: '{% url 'hrdepartment_app:memo_add' %}',
                 data: {
                     "employee": employee,
                     "period_from": period_from,
+                    "memo_type": memo_type,
                 },
                 dataType: "json",
                 success: function (data) {

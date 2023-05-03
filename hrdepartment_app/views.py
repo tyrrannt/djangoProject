@@ -238,6 +238,9 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         html = list()
         employee = request.GET.get('employee', None)
         period_from = request.GET.get('period_from', None)
+        memo_type = request.GET.get('memo_type', None)
+        if memo_type and memo_type == '2':
+            print('Продление')
         if employee and period_from:
             check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
             filters = OfficialMemo.objects.filter(

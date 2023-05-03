@@ -289,6 +289,7 @@ class OfficialMemo(models.Model):
         ('1', 'Направление'),
         ('2', 'Продление')
     ]
+    document_extension = models.ForeignKey('self', verbose_name='Документ основания', on_delete=models.SET_NULL, null=True, blank=True)
     date_of_creation = models.DateTimeField(verbose_name='Дата и время создания',
                                             auto_now_add=True)  # При миграции указать 1 и вставить timezone.now()
     official_memo_type = models.CharField(verbose_name='Тип СП', max_length=9, choices=memo_type,
