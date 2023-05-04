@@ -455,7 +455,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             'title': self.document.get_title(),
             'order_number': str(self.order.document_number),
             'order_date': str(self.order.document_date),
-            'reason_cancellation': self.reason_cancellation.get_title(),
+            'reason_cancellation': self.document.reason_cancellation.get_title(),
             'person_executor': str(self.person_executor),
             'person_distributor': str(self.person_distributor),
             'person_department_staff': str(self.person_department_staff)
