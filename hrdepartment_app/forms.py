@@ -161,6 +161,10 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
 
     person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_clerk = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
+    person_clerk.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_hr = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
+    person_hr.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person_distributor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     person_distributor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     person_department_staff = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
@@ -186,7 +190,9 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'document_not_agreed', 'reason_for_approval', 'person_distributor', 'location_selected',
                   'person_department_staff', 'process_accepted', 'accommodation', 'order', 'person_accounting',
-                  'prepaid_expense', 'accepted_accounting')
+                  'prepaid_expense', 'accepted_accounting', 'person_clerk', 'originals_received', 'person_hr',
+                  'hr_accepted', 'number_business_trip_days', 'number_flight_days', 'start_date_trip',
+                  'end_date_trip', 'date_transfer_hr', 'date_transfer_accounting')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -198,6 +204,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         person_department_staff = cleaned_data.get("person_department_staff")
         process_accepted = cleaned_data.get("process_accepted")
         order = cleaned_data.get("order")
+        originals_received = cleaned_data.get("originals_received")
 
         if not person_agreement and document_not_agreed:
             # Сохраняем только если оба поля действительны.
@@ -219,6 +226,11 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             if not location_selected:
                 raise ValidationError(
                     "Ошибка приема документа в ОК. Место проживания не установлено!!!"
+                )
+        if originals_received:
+            if not process_accepted:
+                raise ValidationError(
+                    "Ошибка приема документа делопроизводителем. Приказ не создан!!!"
                 )
         if location_selected:
             if not document_not_agreed:
@@ -261,6 +273,8 @@ class BusinessProcessDirectionAddForm(forms.ModelForm):
     person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
     clerk.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    person_hr.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     date_start = forms.DateField(required=False)
     date_end = forms.DateField(required=False)
 
@@ -280,6 +294,8 @@ class BusinessProcessDirectionUpdateForm(forms.ModelForm):
     person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
     clerk.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    person_hr.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     date_start = forms.DateField(required=False)
     date_end = forms.DateField(required=False)
 

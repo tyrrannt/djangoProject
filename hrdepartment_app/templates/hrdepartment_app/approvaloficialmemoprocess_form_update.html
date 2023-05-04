@@ -58,14 +58,16 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <p class="card-big-info-desc fs-5">Служебная записка на служебную поездку:</p>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
+                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_executor">Исполнитель</label>
                                             <div class="col">
                                                 {% if object.submit_for_approval %}
-                                                    <select class="form-control form-control-modern" id="id_person_executor" name="person_executor">
-                                                        <option selected value="{{ object.person_executor.pk }}">{{ object.person_executor }}</option>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_person_executor" name="person_executor">
+                                                        <option selected
+                                                                value="{{ object.person_executor.pk }}">{{ object.person_executor }}</option>
                                                     </select>
                                                 {% else %}
                                                     <span>{{ form.person_executor }}</span>
@@ -76,12 +78,15 @@
                                             <label class="col"
                                                    for="id_submit_for_approval">Передан на согласование</label>
                                             {% if object.document_not_agreed %}
-                                                <input type="checkbox" id="id_submit_for_approval" name="submit_for_approval" {% if object.submit_for_approval %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                                <input type="checkbox" id="id_submit_for_approval"
+                                                       name="submit_for_approval"
+                                                       {% if object.submit_for_approval %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
                                             {% elif user.pk == object.person_executor.pk %}
                                                 <div class="col">
                                                     <span>{{ form.submit_for_approval }}</span>
                                                 </div>
-                                            {% else  %}
+                                            {% else %}
                                                 <div class="col">
                                                     <input type="checkbox" id="id_submit_for_approval"
                                                            name="submit_for_approval"
@@ -103,14 +108,16 @@
                                         </div>
 
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
+                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_agreement">Руководитель</label>
                                             <div class="col">
                                                 {% if object.document_not_agreed %}
-                                                    <select class="form-control form-control-modern" id="id_person_agreement" name="person_agreement">
-                                                        <option selected value="{{ object.person_agreement.pk }}">{{ object.person_agreement }}</option>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_person_agreement" name="person_agreement">
+                                                        <option selected
+                                                                value="{{ object.person_agreement.pk }}">{{ object.person_agreement }}</option>
                                                     </select>
                                                 {% else %}
                                                     <span>{{ form.person_agreement }}</span>
@@ -121,12 +128,18 @@
                                             <label class="col"
                                                    for="id_document_not_agreed">Документ согласован</label>
                                             {% if object.location_selected %}
-                                                <input type="checkbox" id="id_document_not_agreed" name="document_not_agreed" {% if object.document_not_agreed %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                                <input type="checkbox" id="id_document_not_agreed"
+                                                       name="document_not_agreed"
+                                                       {% if object.document_not_agreed %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
                                             {% elif user.pk not in list_agreement %}
-                                                <input type="checkbox" id="id_document_not_agreed" name="document_not_agreed" {% if object.document_not_agreed %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                                <input type="checkbox" id="id_document_not_agreed"
+                                                       name="document_not_agreed"
+                                                       {% if object.document_not_agreed %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
                                             {% else %}
                                                 <div class="col">
-                                                    <span>{{ form.document_not_agreed | attr:"id=id_document_not_agreed"}}</span>
+                                                    <span>{{ form.document_not_agreed | attr:"id=id_document_not_agreed" }}</span>
                                                 </div>
                                             {% endif %}
 
@@ -144,14 +157,17 @@
                                         </div>
 
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
+                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
                                         <div class="col">
                                             <label class="col"
-                                                   for="id_person_distributor">Отдел организации наземного обслуживания</label>
+                                                   for="id_person_distributor">Отдел организации наземного
+                                                обслуживания</label>
                                             <div class="col">
                                                 {% if object.location_selected %}
-                                                    <select class="form-control form-control-modern" id="id_person_distributor" name="person_distributor">
-                                                        <option selected value="{{ object.person_distributor.pk }}">{{ object.person_distributor }}</option>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_person_distributor" name="person_distributor">
+                                                        <option selected
+                                                                value="{{ object.person_distributor.pk }}">{{ object.person_distributor }}</option>
                                                     </select>
                                                 {% elif user.pk not in list_distributor %}
                                                     <span>{{ form.person_distributor }}</span>
@@ -164,9 +180,15 @@
                                             <label class="col"
                                                    for="id_location_selected">Место проживания: </label>
                                             {% if object.process_accepted %}
-                                                <input type="checkbox" id="id_location_selected" name="location_selected" {% if object.location_selected %}checked="checked"{% endif %} onclick="javascript: return false;" />
-                                            {% elif user not in list_distributor%}
-                                                <input type="checkbox" id="id_location_selected" name="location_selected" {% if object.location_selected %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                                <input type="checkbox" id="id_location_selected"
+                                                       name="location_selected"
+                                                       {% if object.location_selected %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
+                                            {% elif user not in list_distributor %}
+                                                <input type="checkbox" id="id_location_selected"
+                                                       name="location_selected"
+                                                       {% if object.location_selected %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
                                             {% else %}
                                                 <div class="col">
                                                     <span>{{ form.location_selected }}</span>
@@ -178,8 +200,10 @@
                                                    for="id_accommodation">Место проживания</label>
                                             <div class="col">
                                                 {% if object.location_selected %}
-                                                    <select class="form-control form-control-modern" id="id_accommodation" name="accommodation">
-                                                        <option selected value="{{ object.accommodation }}">{{ object.get_accommodation_display }}</option>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_accommodation" name="accommodation">
+                                                        <option selected
+                                                                value="{{ object.accommodation }}">{{ object.get_accommodation_display }}</option>
                                                     </select>
                                                 {% else %}
                                                     <span>{{ form.accommodation | add_class:"form-control form-control-modern" }}</span>
@@ -187,14 +211,17 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
+                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_department_staff">Отдел кадров</label>
                                             <div class="col">
                                                 {% if object.process_accepted %}
-                                                    <select class="form-control form-control-modern" id="id_person_department_staff" name="person_department_staff">
-                                                        <option selected value="{{ object.person_department_staff.pk }}">{{ object.person_department_staff }}</option>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_person_department_staff"
+                                                            name="person_department_staff">
+                                                        <option selected
+                                                                value="{{ object.person_department_staff.pk }}">{{ object.person_department_staff }}</option>
                                                     </select>
                                                 {% elif user.pk not in list_department_staff %}
                                                     <span>{{ form.person_department_staff }}</span>
@@ -207,13 +234,17 @@
                                             <label class="col"
                                                    for="id_process_accepted">Документ принят в ОК</label>
                                             {% if user not in list_department_staff %}
-                                                <input type="checkbox" id="id_process_accepted" name="process_accepted" {% if object.process_accepted %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                                <input type="checkbox" id="id_process_accepted" name="process_accepted"
+                                                       {% if object.process_accepted %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
                                             {% elif object.location_selected %}
                                                 <div class="col">
                                                     <span>{{ form.process_accepted }}</span>
                                                 </div>
-                                             {% else %}
-                                                <input type="checkbox" id="id_process_accepted" name="process_accepted" {% if object.process_accepted %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% else %}
+                                                <input type="checkbox" id="id_process_accepted" name="process_accepted"
+                                                       {% if object.process_accepted %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
                                             {% endif %}
 
                                         </div>
@@ -222,8 +253,10 @@
                                                    for="id_order_number">Приказ</label>
                                             <div class="col">
                                                 {% if object.process_accepted %}
-                                                    <select class="form-control form-control-modern" id="id_order" name="order">
-                                                        <option selected value="{{ object.order.pk }}">{{ object.order }}</option>
+                                                    <select class="form-control form-control-modern" id="id_order"
+                                                            name="order">
+                                                        <option selected
+                                                                value="{{ object.order.pk }}">{{ object.order }}</option>
                                                     </select>
                                                 {% else %}
                                                     <span>{{ form.order }}</span>
@@ -232,14 +265,148 @@
                                         </div>
 
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
+                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_person_clerk">Делопроизводитель</label>
+                                            <div class="col">
+                                                {% if object.originals_received %}
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_person_clerk" name="person_clerk">
+                                                        <option selected
+                                                                value="{{ object.person_clerk.pk }}">{{ object.person_clerk }}</option>
+                                                    </select>
+                                                {% elif user.pk not in list_clerk %}
+                                                    <span>{{ form.person_clerk }}</span>
+                                                {% else %}
+                                                    <span>{{ form.person_clerk }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_originals_received">Получены оригиналы</label>
+                                            {% if user not in list_clerk %}
+                                                <input type="checkbox" id="id_originals_received"
+                                                       name="originals_received"
+                                                       {% if object.originals_received %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
+                                            {% elif object.process_accepted %}
+                                                <div class="col">
+                                                    <span>{{ form.originals_received }}</span>
+                                                </div>
+                                            {% else %}
+                                                <input type="checkbox" id="id_originals_received"
+                                                       name="originals_received"
+                                                       {% if object.originals_received %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_date_transfer_hr">Документы переданы в
+                                                ОК</label>
+                                            <input type="date" id="id_date_transfer_hr"
+                                                   class="form-control form-control-modern"
+                                                   name="date_transfer_hr"
+                                                   value="{{ object.date_transfer_hr | date:'c' }}"/>
+                                        </div>
+
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
+                                        <div class="row">
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_person_hr">Сотрудник ОК</label>
+                                                <div class="col">
+                                                    {% if object.hr_accepted %}
+                                                        <select class="form-control form-control-modern"
+                                                                id="id_person_hr"
+                                                                name="person_hr">
+                                                            <option selected
+                                                                    value="{{ object.person_hr.pk }}">{{ object.person_hr }}</option>
+                                                        </select>
+                                                    {% elif user.pk not in list_hr %}
+                                                        <span>{{ form.person_hr }}</span>
+                                                    {% else %}
+                                                        <span>{{ form.person_hr }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_hr_accepted">Документы проверены</label>
+                                                {% if user not in list_hr %}
+                                                    <input type="checkbox" id="id_hr_accepted" name="hr_accepted"
+                                                           {% if object.hr_accepted %}checked="checked"{% endif %}
+                                                           onclick="javascript: return false;"/>
+                                                {% elif object.originals_received %}
+                                                    <div class="col">
+                                                        <span>{{ form.hr_accepted }}</span>
+                                                    </div>
+                                                {% else %}
+                                                    <input type="checkbox" id="id_hr_accepted" name="hr_accepted"
+                                                           {% if object.hr_accepted %}checked="checked"{% endif %}
+                                                           onclick="javascript: return false;"/>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_date_transfer_accounting">Документы переданы в
+                                                    бухгалтерию</label>
+                                                <input type="date" id="id_date_transfer_accounting"
+                                                       class="form-control form-control-modern"
+                                                       name="date_transfer_accounting"
+                                                       value="{{ object.date_transfer_accounting | date:'c' }}"/>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_start_date_trip">Начало по СЗ</label>
+                                                <input type="date" id="id_start_date_trip"
+                                                       class="form-control form-control-modern"
+                                                       name="start_date_trip"
+                                                       value="{{ object.start_date_trip | date:'c' }}"/>
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_end_date_trip">Окончание по СЗ</label>
+                                                <input type="date" id="id_end_date_trip"
+                                                       class="form-control form-control-modern"
+                                                       name="end_date_trip"
+                                                       value="{{ object.end_date_trip | date:'c' }}"/>
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_number_business_trip_days">Дни СП</label>
+                                                <input type="number" id="id_number_business_trip_days"
+                                                       class="form-control form-control-modern"
+                                                       name="number_business_trip_days"
+                                                       value="{{ object.number_business_trip_days }}"/>
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_number_flight_days">Дни ЛД</label>
+                                                <input type="number" id="id_number_flight_days"
+                                                       class="form-control form-control-modern"
+                                                       name="number_flight_days"
+                                                       value="{{ object.number_flight_days }}"/>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_accounting">Бухгалтерия</label>
                                             <div class="col">
                                                 {% if object.accepted_accounting %}
-                                                    <select class="form-control form-control-modern" id="id_person_accounting" name="person_accounting">
-                                                        <option selected value="{{ object.person_accounting.pk }}">{{ object.person_accounting }}</option>
+                                                    <select class="form-control form-control-modern"
+                                                            id="id_person_accounting" name="person_accounting">
+                                                        <option selected
+                                                                value="{{ object.person_accounting.pk }}">{{ object.person_accounting }}</option>
                                                     </select>
                                                 {% elif user.pk not in list_accounting %}
                                                     <span>{{ form.person_accounting }}</span>
@@ -252,13 +419,19 @@
                                             <label class="col"
                                                    for="id_accepted_accounting">Принят в бухгалтерии</label>
                                             {% if user not in list_accounting %}
-                                                <input type="checkbox" id="id_accepted_accounting" name="accepted_accounting" {% if object.accepted_accounting %}checked="checked"{% endif %} onclick="javascript: return false;" />
-                                            {% elif object.process_accepted %}
+                                                <input type="checkbox" id="id_accepted_accounting"
+                                                       name="accepted_accounting"
+                                                       {% if object.accepted_accounting %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
+                                            {% elif object.originals_received %}
                                                 <div class="col">
                                                     <span>{{ form.accepted_accounting }}</span>
                                                 </div>
-                                             {% else %}
-                                                <input type="checkbox" id="id_accepted_accounting" name="accepted_accounting" {% if object.accepted_accounting %}checked="checked"{% endif %} onclick="javascript: return false;" />
+                                            {% else %}
+                                                <input type="checkbox" id="id_accepted_accounting"
+                                                       name="accepted_accounting"
+                                                       {% if object.accepted_accounting %}checked="checked"{% endif %}
+                                                       onclick="javascript: return false;"/>
                                             {% endif %}
 
                                         </div>
@@ -318,6 +491,9 @@
                                                         <div class="col-sm-12"><label for="d1">Место назначения</label>
                                                             <input class="form-control form-control-modern" id="d7"
                                                                    value="
+
+
+
                                                                            {% for item in object.document.place_production_activity.all %}{{ item }}, {% endfor %}"
                                                                    disabled/>
                                                         </div>
@@ -372,7 +548,7 @@
                     <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
-                {% if user == object.person_executor or user.is_superuser%}
+                {% if user == object.person_executor or user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="{% url 'hrdepartment_app:bpmemo_cancel' object.pk %}"
                            class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">

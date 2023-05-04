@@ -389,7 +389,13 @@ class ApprovalProcess(models.Model):
     location_selected = models.BooleanField(verbose_name='Выбрано место проживания', default=False)
     person_department_staff = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
                                                 null=True, blank=True, related_name='person_department_staff')
-    process_accepted = models.BooleanField(verbose_name='Активность', default=False)
+    process_accepted = models.BooleanField(verbose_name='Издан приказ', default=False)
+    person_clerk = models.ForeignKey(DataBaseUser, verbose_name='Делопроизводитель', on_delete=models.SET_NULL,
+                                     null=True, blank=True, related_name='person_clerk')
+    originals_received = models.BooleanField(verbose_name='Получены оригиналы', default=False)
+    person_hr = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
+                                                null=True, blank=True, related_name='person_hr')
+    hr_accepted = models.BooleanField(verbose_name='Документы проверены', default=False)
     person_accounting = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник Бухгалтерии', on_delete=models.SET_NULL,
                                           null=True, blank=True, related_name='person_accounting')
     accepted_accounting = models.BooleanField(verbose_name='Принято в бухгалтерии', default=False)
@@ -415,6 +421,12 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                                             on_delete=models.SET_NULL, blank=True, null=True)
     prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
                                        help_text='', blank=True, default='')
+    number_business_trip_days = models.IntegerField(verbose_name='Дни СП', default=0)
+    number_flight_days = models.IntegerField(verbose_name='Дни ЛД', default=0)
+    start_date_trip = models.DateField(verbose_name='Дата начала по СЗ', null=True, blank=True)
+    end_date_trip = models.DateField(verbose_name='Дата окончания по СЗ', null=True, blank=True)
+    date_transfer_hr = models.DateField(verbose_name='Дата передачи в ОК', null=True, blank=True)
+    date_transfer_accounting = models.DateField(verbose_name='Дата передачи в бухгалтерию', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
@@ -587,6 +599,7 @@ class BusinessProcessDirection(models.Model):
     person_executor = models.ManyToManyField(Job, verbose_name='Исполнитель', related_name='person_executor')
     person_agreement = models.ManyToManyField(Job, verbose_name='Согласующее лицо', related_name='person_agreement')
     clerk = models.ManyToManyField(Job, verbose_name='Делопроизводитель', related_name='clerk')
+    person_hr = models.ManyToManyField(Job, verbose_name='Сотрудник ОК', related_name='person_hr')
     date_start = models.DateField(verbose_name='Дата начала', null=True, blank=True)
     date_end = models.DateField(verbose_name='Дата окончания', null=True, blank=True)
 

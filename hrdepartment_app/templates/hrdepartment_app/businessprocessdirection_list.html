@@ -69,12 +69,13 @@
 
                                 <thead>
                                 <tr>
-                                    <th width="5%">Тип</th>
-                                    <th width="25%">Исполнитель</th>
-                                    <th width="25%">Согласующее лицо</th>
-                                    <th width="25%">Делопроизводитель</th>
-                                    <th width="10%">Дата начала</th>
-                                    <th width="10%">Дата окончания</th>
+                                    <th width="6%">Тип</th>
+                                    <th width="19%">Исполнитель</th>
+                                    <th width="19%">Согласующее лицо</th>
+                                    <th width="19%">Делопроизводитель</th>
+                                    <th width="19%">Сотрудник ОК</th>
+                                    <th width="9%">Дата начала</th>
+                                    <th width="9%">Дата окончания</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -94,6 +95,9 @@
                                         </td>
                                         <td>
                                             <span>{% for items in item.clerk.all %}{{ items }} {% endfor %}</span>&nbsp;
+                                        </td>
+                                        <td>
+                                            <span>{% for items in item.person_hr.all %}{{ items }} {% endfor %}</span>&nbsp;
                                         </td>
                                         <td>
                                             <span>С: {{ item.date_start | date:'d-m-Y' }}</span>

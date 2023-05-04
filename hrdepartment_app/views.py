@@ -291,7 +291,7 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
 class OfficialMemoDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = OfficialMemo
-    permission_required = 'hrdepartment_app.add_officialmemo'
+    permission_required = 'hrdepartment_app.view_officialmemo'
 
 
 class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -509,8 +509,12 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             person_executor=document.person_executor.user_work_profile.job)
         content['document'] = document.document
         person_agreement_list = list()
+        person_clerk_list = list()
+        person_hr_list = list()
         for item in business_process:
             person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
+            person_clerk_list = [items[0] for items in item.clerk.values_list()]
+            person_hr_list = [items[0] for items in item.person_hr.values_list()]
         # Получаем подразделение исполнителя
         # division = document.person_executor.user_work_profile.divisions
         # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
@@ -565,6 +569,54 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         content['form'].fields['person_accounting'].queryset = list_accounting
         content['list_accounting'] = list_accounting
 
+        list_clerk = users_list.filter(user_work_profile__job__pk__in=person_clerk_list)
+        if document.originals_received:
+            try:
+                content['form'].fields['person_clerk'].queryset = users_list.filter(
+                    pk=document.person_clerk.pk)
+            except AttributeError:
+                content['form'].fields['person_clerk'].queryset = list_clerk
+        else:
+            # Иначе по подразделению исполнителя фильтруем делопроизводителя для согласования
+            content['form'].fields['person_clerk'].queryset = list_clerk
+            try:
+                # Если пользователь = Делопроизводитель
+                if self.request.user.user_work_profile.job.pk in person_clerk_list:
+                    content['form'].fields['person_clerk'].queryset = users_list.filter(
+                        Q(user_work_profile__job__pk__in=person_clerk_list) & Q(pk=self.request.user.pk))
+                # Иначе весь список делопроизводителей
+                else:
+                    content['form'].fields['person_clerk'].queryset = list_clerk
+            except AttributeError as _ex:
+                logger.error(f'У пользователя отсутствует должность')
+                # ToDo: Нужно вставить выдачу ошибки
+                return {}
+        content['list_clerk'] = list_clerk
+
+        list_hr = users_list.filter(user_work_profile__job__pk__in=person_hr_list)
+        if document.originals_received:
+            try:
+                content['form'].fields['person_hr'].queryset = users_list.filter(
+                    pk=document.person_hr.pk)
+            except AttributeError:
+                content['form'].fields['person_hr'].queryset = list_hr
+        else:
+            # Иначе по подразделению исполнителя фильтруем сотрудника ОК для согласования
+            content['form'].fields['person_hr'].queryset = list_hr
+            try:
+                # Если пользователь = Сотрудник ОК
+                if self.request.user.user_work_profile.job.pk in person_hr_list:
+                    content['form'].fields['person_hr'].queryset = users_list.filter(
+                        Q(user_work_profile__job__pk__in=person_hr_list) & Q(pk=self.request.user.pk))
+                # Иначе весь список сотрудников ОК
+                else:
+                    content['form'].fields['person_hr'].queryset = list_hr
+            except AttributeError as _ex:
+                logger.error(f'У пользователя отсутствует должность')
+                # ToDo: Нужно вставить выдачу ошибки
+                return {}
+        content['list_hr'] = list_hr
+
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
             document_foundation__pk=document.document.pk)
@@ -576,7 +628,8 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
     def form_valid(self, form):
 
         def person_finder(object_item, item, instanse_obj):
-            person_list = ['Исполнитель', 'Согласующее лицо', 'Сотрудник НО', 'Сотрудник ОК', 'Сотрудник Бухгалтерии']
+            person_list = ['Исполнитель', 'Согласующее лицо', 'Сотрудник НО', 'Сотрудник ОК', 'Сотрудник Бухгалтерии',
+                           'Делопроизводитель']
             if object_item._meta.get_field(k).verbose_name in person_list:
                 return DataBaseUser.objects.get(pk=instanse_obj[item])
             else:
@@ -654,6 +707,12 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             document.comments = 'Создан приказ'
             document.document_accepted = True
             change_status = 1
+        if request.POST.get('originals_received'):
+            document.comments = 'Передано в ОК'
+            change_status = 1
+        if request.POST.get('hr_accepted'):
+            document.comments = 'Передано в бухгалтерию'
+            change_status = 1
         else:
             document.document_accepted = False
             change_status = 1
@@ -662,6 +721,8 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             change_status = 1
 
         if change_status > 0:
+            if document.cancellation:
+                document.comments = 'Документ отменен'
             document.save()
         return super().post(request, *args, **kwargs)
 
