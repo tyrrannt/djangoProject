@@ -3,7 +3,7 @@ import pathlib
 import uuid
 
 from django.contrib.contenttypes.fields import GenericRelation
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, send_mass_mail
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -18,7 +18,6 @@ from administration_app.utils import ending_day, FIO_format
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job, AccessLevel, \
     HistoryChange
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
-
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -177,6 +176,7 @@ def Med(obj_model, filepath, filename, request):
     # convert(filename, (filename[:-4]+'pdf'))
     # convert(filepath)
 
+
 class Medical(models.Model):
     class Meta:
         verbose_name = 'Медицинское направление'
@@ -302,7 +302,8 @@ class OfficialMemo(models.Model):
         ('1', 'Направление'),
         ('2', 'Продление')
     ]
-    document_extension = models.ForeignKey('self', verbose_name='Документ основания', on_delete=models.SET_NULL, null=True, blank=True)
+    document_extension = models.ForeignKey('self', verbose_name='Документ основания', on_delete=models.SET_NULL,
+                                           null=True, blank=True)
     date_of_creation = models.DateTimeField(verbose_name='Дата и время создания',
                                             auto_now_add=True)  # При миграции указать 1 и вставить timezone.now()
     official_memo_type = models.CharField(verbose_name='Тип СП', max_length=9, choices=memo_type,
@@ -312,8 +313,10 @@ class OfficialMemo(models.Model):
     purpose_trip = models.ForeignKey(Purpose, verbose_name='Цель', on_delete=models.SET_NULL, null=True, )
     period_from = models.DateField(verbose_name='Дата начала', null=True)
     period_for = models.DateField(verbose_name='Дата окончания', null=True)
-    place_departure = models.ForeignKey(PlaceProductionActivity, verbose_name='Место отправления', on_delete=models.SET_NULL, null=True, related_name='place_departure')
-    place_production_activity = models.ManyToManyField(PlaceProductionActivity, verbose_name='МПД', related_name='place_production_activity')
+    place_departure = models.ForeignKey(PlaceProductionActivity, verbose_name='Место отправления',
+                                        on_delete=models.SET_NULL, null=True, related_name='place_departure')
+    place_production_activity = models.ManyToManyField(PlaceProductionActivity, verbose_name='МПД',
+                                                       related_name='place_production_activity')
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of_accommodation,
                                      help_text='', blank=True, default='')
     type_trip = models.CharField(verbose_name='Тип поездки', max_length=9, choices=type_of_trip,
@@ -333,7 +336,6 @@ class OfficialMemo(models.Model):
 
     def get_title(self):
         return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
-
 
     def get_data(self):
         place = [str(item) for item in self.place_production_activity.iterator()]
@@ -366,6 +368,7 @@ class ApprovalProcess(models.Model):
     """
     Служебная записка
     """
+
     class Meta:
         abstract = True
 
@@ -392,7 +395,6 @@ class ApprovalProcess(models.Model):
     history_change = GenericRelation(HistoryChange)
 
 
-
 class ApprovalOficialMemoProcess(ApprovalProcess):
     """
     Бизнес-процесс служебной записки
@@ -408,9 +410,10 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     order = models.ForeignKey('DocumentsOrder', verbose_name='Приказ', on_delete=models.SET_NULL, null=True, blank=True)
     email_send = models.BooleanField(verbose_name='Письмо отправлено', default=False)
     cancellation = models.BooleanField(verbose_name='Отмена', default=False)
-    reason_cancellation = models.ForeignKey(ReasonForCancellation, verbose_name='Причина отмены', on_delete=models.SET_NULL, blank=True, null=True)
+    reason_cancellation = models.ForeignKey(ReasonForCancellation, verbose_name='Причина отмены',
+                                            on_delete=models.SET_NULL, blank=True, null=True)
     prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
-                                     help_text='', blank=True, default='')
+                                       help_text='', blank=True, default='')
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
@@ -434,6 +437,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.document.comments),
+            'cancellation': self.cancellation,
         }
 
     @staticmethod
@@ -459,10 +463,17 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         logger.debug(f'Email string: {current_context}')
         text_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
         html_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
-        msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third ])
-        msg.attach_alternative(html_content, "text/html")
+        first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
+                                           [mail_to, mail_to_copy_first])
+        second_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
+                                            [mail_to_copy_second, mail_to_copy_third])
+        first_msg.attach_alternative(html_content, "text/html")
+        second_msg.attach_alternative(html_content, "text/html")
+
         try:
-            msg.send()
+            # send_mass_mail((first_msg, second_msg), fail_silently=False)
+            first_msg.send()
+            second_msg.send()
         except Exception as _ex:
             logger.debug(f'Failed to send email. {_ex}')
 
@@ -519,7 +530,6 @@ def create_report(sender, instance, **kwargs):
         output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
         file_name = convert(source=source, output_dir=output_dir, soft=0)
 
-
         if not instance.email_send:
             # from msoffice2pdf import convert
             # source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
@@ -560,8 +570,6 @@ def create_report(sender, instance, **kwargs):
                 instance.save()
             except Exception as _ex:
                 logger.debug(f'Failed to send email. {_ex}')
-
-
 
 
 class BusinessProcessDirection(models.Model):
@@ -687,14 +695,17 @@ def rename_order_file_name(sender, instance, **kwargs):
         order_doc(instance, f'media/docs/ORD/{date_doc.year}/{date_doc.month}', filename, instance.document_order_type)
         scan_name = pathlib.Path(instance.scan_file.name).name
         if f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}' != instance.doc_file:
-            DocumentsOrder.objects.filter(pk=instance.pk).update(doc_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}')
+            DocumentsOrder.objects.filter(pk=instance.pk).update(
+                doc_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}')
         if f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}' != instance.scan_file:
             try:
-                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scan_name),
-                                    pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scanname))
+                pathlib.Path.rename(
+                    pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scan_name),
+                    pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scanname))
             except Exception as _ex0:
                 logger.error(f'Ошибка переименования файла: {_ex0}')
-            DocumentsOrder.objects.filter(pk=instance.pk).update(scan_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}')
+            DocumentsOrder.objects.filter(pk=instance.pk).update(
+                scan_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}')
 
     except Exception as _ex:
         logger.error(f'Ошибка при переименовании файла {_ex}')

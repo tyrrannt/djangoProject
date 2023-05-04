@@ -93,10 +93,13 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
-                    if (aData['process_accepted'] === '') {
-                        $(nRow).addClass('text-danger fs-6')
-                    } else {
+                    if (aData['process_accepted']) {
                         $(nRow).addClass('text-success  fs-6')
+                    } else {
+                        $(nRow).addClass('text-danger fs-6')
+                    }
+                    if (aData['cancellation']){
+                        $(nRow).addClass('text-decoration-line-through text-danger fs-6')
                     }
                     $(nRow).attr("href", id + '/update/');
                     $(nRow).css('cursor', 'pointer');
