@@ -493,7 +493,7 @@ def create_report(sender, instance, **kwargs):
             filepath_name = 'sp.xlsx'
         else:
             filepath_name = 'sp2.xlsx'
-        filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name)
+        filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates'), filepath_name)
         wb = load_workbook(filepath)
         ws = wb.active
         ws['C3'] = str(instance.document.person)
@@ -505,9 +505,9 @@ def create_report(sender, instance, **kwargs):
         ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
         ws['L6'] = instance.document.period_from.strftime("%d.%m.%y")
         ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
-        ws['C7'] = str(place).strip('[]')
-        ws['C8'] = str(instance.document.purpose_trip)
-        ws['A89'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
+        ws['C8'] = str(place).strip('[]')
+        ws['C9'] = str(instance.document.purpose_trip)
+        ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
             instance.person_agreement)
 
         wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
