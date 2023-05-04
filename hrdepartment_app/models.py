@@ -361,6 +361,7 @@ class OfficialMemo(models.Model):
             'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
             'cancellation': self.cancellation,
+            'document_accepted': self.document_accepted,
         }
 
 
