@@ -315,6 +315,10 @@ class OfficialMemo(models.Model):
     def __str__(self):
         return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
 
+    def get_title(self):
+        return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
+
+
     def get_data(self):
         place = [str(item) for item in self.place_production_activity.iterator()]
         if self.type_trip == '1':

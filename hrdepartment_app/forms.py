@@ -72,7 +72,9 @@ class OfficialMemoAddForm(forms.ModelForm):
     type_trip = forms.ChoiceField(choices=type_of_trip)
     period_from = forms.DateField(label='Дата начала', validators=[present_or_future_date], required=True)
     period_for = forms.DateField(label='Дата окончания', validators=[present_or_future_date], required=True)
-    document_extension = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(pk=0))
+    document_extension = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
+    document_extension.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     class Meta:
         model = OfficialMemo
         fields = ('period_from', 'period_for', 'place_production_activity', 'place_departure',

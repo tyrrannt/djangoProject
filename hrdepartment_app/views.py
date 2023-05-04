@@ -181,7 +181,8 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
                 memo_list = OfficialMemo.objects.all()
             else:
-                memo_list = OfficialMemo.objects.filter(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
+                memo_list = OfficialMemo.objects.filter(
+                    responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
 
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
@@ -230,17 +231,19 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:memo_list')
 
-    def form_valid(self, form):
-        return super().form_valid(form)
-
     def get(self, request, *args, **kwargs):
         global filter_string
         html = list()
         employee = request.GET.get('employee', None)
         period_from = request.GET.get('period_from', None)
         memo_type = request.GET.get('memo_type', None)
-        if memo_type and memo_type == '2':
-            print('Продление')
+        if memo_type and employee:
+            if memo_type == '2':
+                memo_list = OfficialMemo.objects.filter(person=employee)
+                memo_obj_list = dict()
+                for item in memo_list:
+                    memo_obj_list.update({item.get_title(): item.pk})
+                return JsonResponse(memo_obj_list)
         if employee and period_from:
             check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
             filters = OfficialMemo.objects.filter(
@@ -804,7 +807,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     for unit in value:
                         if unit[0] == '1':
                             place = unit[1].replace('"', "")
-                            plase_short = '' # unit[2]
+                            plase_short = ''  # unit[2]
                             html_table_set += f'<td width="2%" style="background-color: #d2691e"  title="{place}">{plase_short}</td>'
                         else:
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc"></td>'

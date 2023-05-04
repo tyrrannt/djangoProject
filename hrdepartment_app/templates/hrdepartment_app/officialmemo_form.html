@@ -82,14 +82,14 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_official_memo_type">Тип служебной поездки</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            {{ form.official_memo_type | add_class:"form-control form-control-modern" }}
+                                            {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()"}}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_official_memo_type">Документ основания</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            {{ form.document_extension | add_class:"form-control form-control-modern" }}
+                                            {{ form.document_extension | add_class:"form-control form-control-modern" | attr:"disabled"}}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -251,7 +251,36 @@
                     period_for.removeAttribute("min")
                     period_for.setAttribute("min", data)
                     $("#id_period_for").trigger("create")
-
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+        function memo_type_change() {
+            employee = document.getElementById("id_person").value;
+            memo_type = document.getElementById("id_official_memo_type").value;
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:memo_add' %}',
+                data: {
+                    "employee": employee,
+                    "memo_type": memo_type,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    var document_extension = $("#id_document_extension");
+                    document_extension.empty();
+                    $.each(data, function(key,value) {
+                        document_extension.append($("<option selected></option>")
+                        .attr("value", value).text(key));
+                    });
+                    document_extension.removeAttr("disabled")
+                    $('#id_document_extension').refresh;
                     if (data === 'ok') {
                         console.log("success");
                     }
