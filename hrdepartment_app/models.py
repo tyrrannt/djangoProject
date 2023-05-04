@@ -269,6 +269,19 @@ class PlaceProductionActivity(models.Model):
         return reverse('hrdepartment_app:place_list')
 
 
+class ReasonForCancellation(models.Model):
+    class Meta:
+        verbose_name = 'Причина отмены'
+        verbose_name_plural = 'Причины отмены'
+
+    name = models.CharField(verbose_name='Наименование', max_length=250, default='')
+
+    def __str__(self):
+        return self.name
+
+    def get_title(self):
+        return str(self.name)
+
 
 class OfficialMemo(models.Model):
     class Meta:
@@ -310,6 +323,9 @@ class OfficialMemo(models.Model):
     document_accepted = models.BooleanField(verbose_name='Документ принят', default=False)
     responsible = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник', on_delete=models.SET_NULL, null=True,
                                     related_name='responsible')
+    cancellation = models.BooleanField(verbose_name='Отмена', default=False)
+    reason_cancellation = models.ForeignKey(ReasonForCancellation, verbose_name='Причина отмены',
+                                            on_delete=models.SET_NULL, blank=True, null=True)
     history_change = GenericRelation(HistoryChange)
 
     def __str__(self):
@@ -342,16 +358,9 @@ class OfficialMemo(models.Model):
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
-            'document_accepted': self.document_accepted,
+            'cancellation': self.cancellation,
         }
 
-
-class ReasonForCancellation(models.Model):
-    class Meta:
-        verbose_name = 'Причина отмены'
-        verbose_name_plural = 'Причины отмены'
-
-    name = models.CharField(verbose_name='Наименование', max_length=250, default='')
 
 class ApprovalProcess(models.Model):
     """
@@ -399,7 +408,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     order = models.ForeignKey('DocumentsOrder', verbose_name='Приказ', on_delete=models.SET_NULL, null=True, blank=True)
     email_send = models.BooleanField(verbose_name='Письмо отправлено', default=False)
     cancellation = models.BooleanField(verbose_name='Отмена', default=False)
-    reason_cancellation = models.ForeignKey(ReasonForCancellation, on_delete=models.SET_NULL, blank=True, null=True)
+    reason_cancellation = models.ForeignKey(ReasonForCancellation, verbose_name='Причина отмены', on_delete=models.SET_NULL, blank=True, null=True)
     prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
                                      help_text='', blank=True, default='')
 
@@ -426,6 +435,38 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             'order': str(self.order) if self.order else '',
             'comments': str(self.document.comments),
         }
+
+    @staticmethod
+    def get_absolute_url():
+        return reverse('hrdepartment_app:bpmemo_list')
+
+    def send_mail(self):
+        mail_to = self.document.person.email
+        mail_to_copy_first = self.person_executor.email
+        mail_to_copy_second = self.person_distributor.email
+        mail_to_copy_third = self.person_department_staff.email
+        subject_mail = 'Направление'
+
+        current_context = {
+            'title': self.document.get_title(),
+            'order_number': str(self.order.document_number),
+            'order_date': str(self.order.document_date),
+            'reason_cancellation': self.reason_cancellation.get_title(),
+            'person_executor': str(self.person_executor),
+            'person_distributor': str(self.person_distributor),
+            'person_department_staff': str(self.person_department_staff)
+        }
+        logger.debug(f'Email string: {current_context}')
+        text_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
+        html_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
+        print(mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third)
+        msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third ])
+        msg.attach_alternative(html_content, "text/html")
+        try:
+            msg.send()
+        except Exception as _ex:
+            print(_ex)
+            logger.debug(f'Failed to send email. {_ex}')
 
 
 def create_xlsx(instance):
@@ -614,6 +655,9 @@ class DocumentsOrder(Documents):
                                             null=True, blank=True, related_name='doc_foundation')
     description = CKEditor5Field('Содержание', config_name='extends', blank=True)
     approved = models.BooleanField(verbose_name='Утверждён', default=False)
+    cancellation = models.BooleanField(verbose_name='Отмена', default=False)
+    reason_cancellation = models.ForeignKey(ReasonForCancellation, verbose_name='Причина отмены',
+                                            on_delete=models.SET_NULL, blank=True, null=True)
 
     def get_data(self):
         return {

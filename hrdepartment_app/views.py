@@ -19,7 +19,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
-    PlaceProductionActivityUpdateForm
+    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard
@@ -662,6 +662,31 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
+
+
+class ApprovalOficialMemoProcessCansel(LoginRequiredMixin, UpdateView):
+    model = ApprovalOficialMemoProcess
+    form_class = ApprovalOficialMemoProcessChangeForm
+    template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_cancel.html'
+
+    def form_valid(self, form):
+        if form.is_valid():
+            obj_item = self.get_object()
+            official_memo = obj_item.document
+            order = obj_item.order
+            form.save()
+            if official_memo:
+                official_memo.cancellation = True
+                official_memo.reason_cancellation = obj_item.reason_cancellation
+                official_memo.comments = 'Документ отменен'
+                official_memo.save()
+            if order:
+                order.cancellation = True
+                order.reason_cancellation = obj_item.reason_cancellation
+                order.save()
+
+            obj_item.send_mail()
+        return super().form_valid(form)
 
 
 class PurposeList(LoginRequiredMixin, PermissionRequiredMixin, ListView):

@@ -8,7 +8,8 @@ from loguru import logger
 
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
-    BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity
+    BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
+    ReasonForCancellation
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -220,6 +221,27 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                 raise ValidationError(
                     "Ошибка в назначении места проживания. Документ не согласован руководителем!!!"
                 )
+
+
+class ApprovalOficialMemoProcessChangeForm(forms.ModelForm):
+    reason_cancellation = forms.ModelChoiceField(queryset=ReasonForCancellation.objects.all(), required=False)
+    reason_cancellation.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    class Meta:
+        model = ApprovalOficialMemoProcess
+        fields = ('cancellation', 'reason_cancellation')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        cancellation = cleaned_data.get("cancellation")
+        reason_cancellation = cleaned_data.get("reason_cancellation")
+        if not cancellation:
+            raise ValidationError(
+                "Ошибка! Не установлен переключатель отмены документа"
+            )
+        if not reason_cancellation:
+            raise ValidationError(
+                "Ошибка! Не выбрана причина отмены"
+            )
 
 
 class BusinessProcessDirectionAddForm(forms.ModelForm):
