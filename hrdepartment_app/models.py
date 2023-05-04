@@ -440,12 +440,12 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     def get_absolute_url():
         return reverse('hrdepartment_app:bpmemo_list')
 
-    def send_mail(self):
+    def send_mail(self, title):
         mail_to = self.document.person.email
         mail_to_copy_first = self.person_executor.email
         mail_to_copy_second = self.person_distributor.email
         mail_to_copy_third = self.person_department_staff.email
-        subject_mail = 'Направление'
+        subject_mail = title
 
         current_context = {
             'title': self.document.get_title(),
@@ -459,13 +459,11 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         logger.debug(f'Email string: {current_context}')
         text_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
         html_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
-        print(mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third)
         msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third ])
         msg.attach_alternative(html_content, "text/html")
         try:
             msg.send()
         except Exception as _ex:
-            print(_ex)
             logger.debug(f'Failed to send email. {_ex}')
 
 

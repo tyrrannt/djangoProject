@@ -685,7 +685,7 @@ class ApprovalOficialMemoProcessCansel(LoginRequiredMixin, UpdateView):
                 order.reason_cancellation = obj_item.reason_cancellation
                 order.save()
 
-            obj_item.send_mail()
+            obj_item.send_mail('Уведомление об отмене')
         return super().form_valid(form)
 
 
