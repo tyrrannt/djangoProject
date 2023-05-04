@@ -76,6 +76,7 @@ class OfficialMemoAddForm(forms.ModelForm):
     document_extension = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
     document_extension.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = OfficialMemo
         fields = ('period_from', 'period_for', 'place_production_activity', 'place_departure',
@@ -114,11 +115,14 @@ class OfficialMemoUpdateForm(forms.ModelForm):
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_trip = forms.ChoiceField(choices=type_of_trip)
+    document_extension = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
+    document_extension.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
     class Meta:
         model = OfficialMemo
         fields = ('person', 'purpose_trip', 'period_from', 'period_for', 'place_production_activity',
-                  'comments', 'type_trip', 'official_memo_type', 'place_departure')
+                  'comments', 'type_trip', 'official_memo_type', 'place_departure', 'document_extension')
 
     def clean(self):
         # user age must be above 18 to register
@@ -225,7 +229,9 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
 
 class ApprovalOficialMemoProcessChangeForm(forms.ModelForm):
     reason_cancellation = forms.ModelChoiceField(queryset=ReasonForCancellation.objects.all(), required=False)
-    reason_cancellation.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    reason_cancellation.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = ApprovalOficialMemoProcess
         fields = ('cancellation', 'reason_cancellation')
@@ -339,7 +345,8 @@ type_of_order = [
 
 
 class DocumentsOrderAddForm(forms.ModelForm):
-    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(doc_foundation__isnull=True), required=False)
+    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(doc_foundation__isnull=True),
+                                                 required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_order_type = forms.ChoiceField(choices=type_of_order, label='Тип приказа')

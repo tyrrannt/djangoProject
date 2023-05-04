@@ -63,28 +63,27 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_official_memo_type">Тип служебной поездки</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            {{ form.official_memo_type | add_class:"form-control form-control-modern" }}
-                                        </div>
-                                    </div>
-                                <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_document_extension">Документ основания</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.document_extension | add_class:"form-control form-control-modern" }}
+                                            <input type="text" id="id_official_memo_type"
+                                                   class="form-control form-control-modern"
+                                                   name="official_memo_type" value="{{ object.get_official_memo_type_display }}"/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_type_trip">Вид служебной поездки</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            {{ form.type_trip | add_class:"form-control form-control-modern" }}
+                                            <input type="text" id="id_type_trip"
+                                                   class="form-control form-control-modern"
+                                                   name="type_trip" value="{{ object.get_type_trip_display }}"/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person">Сотрудник</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
+                                            <input type="text" id="id_person"
+                                                   class="form-control form-control-modern"
+                                                   name="person" value="{{ object.person }}"/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -101,7 +100,7 @@
                                                for="id_period_for">Дата окончания</label>
                                         <div class="col-lg-7 col-xl-6" id="period_for_id">
                                             <input type="date" id="id_period_for"
-                                                   class="form-control form-control-modern " onclick=minimumPeriodFor()
+                                                   class="form-control form-control-modern"
                                                    name="period_for" value="{{ object.period_for | date:'c' }}"/>
                                         </div>
                                     </div>
@@ -109,26 +108,27 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_place_departure">Место отправления</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.place_departure }}</span>
+                                            <input type="text" id="id_place_departure"
+                                                   class="form-control form-control-modern"
+                                                   name="place_departure" value="{{ object.place_departure }}"/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_place_production_activity">Место назначения</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <div class="input-group">
-                                                {{ form.place_production_activity | attr:"multiple" | add_class:"input-group-text input-group-lg" }}
-                                                <span class="input-group-text"><a
-                                                        href="{% url 'hrdepartment_app:place_add' %}"><i
-                                                        class="bx bxl-medium-old text-4"></i></a></span>
-                                            </div>
+                                            <textarea type="text" id="id_place_production_activity"
+                                                   class="form-control form-control-modern"
+                                                      name="place_production_activity" value="">{% for item in object.place_production_activity.all %}{{ item }}&nbsp;{% endfor %}</textarea>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_purpose_trip">Цель</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.purpose_trip }}</span>
+                                            <input type="text" id="id_purpose_trip"
+                                                   class="form-control form-control-modern"
+                                                   name="purpose_trip" value="{{ object.purpose_trip }}"/>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -172,14 +172,18 @@
             </div>
             <div class="row action-buttons">
 
-                <div class="col-12 col-md-auto">
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <button type="submit"
                             class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:memo_update' object.pk %}"
+                       class="cancel-button btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'hrdepartment_app:memo_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
                 </div>
@@ -195,104 +199,6 @@
         </form>
         <!-- end: page -->
     </section>
-    <script type="text/javascript">
-        function minimumPeriodFor() {
-            period_from = document.getElementById("id_period_from").value;
-            period_for_value = document.getElementById("id_period_for").value;
-            var period_for = document.getElementById("id_period_for");
-            period_for.removeAttribute("min")
-            period_for.setAttribute("min", period_from)
-            $("#period_for_id").trigger("create")
-            $.ajax({
-                type: "GET",
-                url: '{% url 'hrdepartment_app:memo_update' object.pk %}',
-                data: {
-                    "interval": period_from,
-                    "pfv": period_for_value,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    period_for.removeAttribute("min")
-                    period_for.setAttribute("min", data[0])
-                    $("#period_for_id").trigger("create")
-                    period_for.removeAttribute("max")
-                    period_for.setAttribute("max", data[1])
-                    period_for.value = data[2]
-                    $("#period_for_id").trigger("create")
-                    console.log(data[1]);
-                    console.log(period_from)
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
-                },
-                failure: function (data) {
-                    console.log("failure");
-                }
-            });
-        };
 
-        function employee_change() {
-            employee = document.getElementById("id_person").value;
-            period_from = document.getElementById("id_period_from").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'hrdepartment_app:memo_update' object.pk %}',
-                data: {
-                    "employee": employee,
-                    "period_from": period_from,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    var period_from = document.getElementById("id_period_from");
-                    var period_for = document.getElementById("id_period_for");
-                    period_from.removeAttribute("min")
-                    period_from.setAttribute("min", data)
-                    $("#id_period_from").trigger("create")
-                    period_for.removeAttribute("min")
-                    period_for.setAttribute("min", data)
-                    $("#id_period_for").trigger("create")
-
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
-                },
-                failure: function (data) {
-                    console.log("failure");
-                }
-            });
-        };
-        function memo_type_change() {
-            employee = document.getElementById("id_person").value;
-            memo_type = document.getElementById("id_official_memo_type").value;
-            $.ajax({
-                type: "GET",
-                url: '{% url 'hrdepartment_app:memo_add' %}',
-                data: {
-                    "employee": employee,
-                    "memo_type": memo_type,
-                },
-                dataType: "json",
-                success: function (data) {
-                    // any process in data
-                    var document_extension = $("#id_document_extension");
-                    document_extension.empty();
-                    $.each(data, function(key,value) {
-                        document_extension.append($("<option selected></option>")
-                        .attr("value", value).text(key));
-                    });
-                    document_extension.removeAttr("disabled")
-                    $('#id_document_extension').refresh;
-                    if (data === 'ok') {
-                        console.log("success");
-                    }
-                },
-                failure: function (data) {
-                    console.log("failure");
-                }
-            });
-        };
-    </script>
     <!-- end: page -->
 {% endblock %}

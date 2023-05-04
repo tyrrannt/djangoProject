@@ -289,6 +289,11 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
 
+class OfficialMemoDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = OfficialMemo
+    permission_required = 'hrdepartment_app.add_officialmemo'
+
+
 class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
