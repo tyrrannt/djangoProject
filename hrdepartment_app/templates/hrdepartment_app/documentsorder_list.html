@@ -39,7 +39,7 @@
                                     <th width="10%">Дата</th>
                                     <th width="20%">Наименование</th>
                                     <th width="20%">Сотрудник</th>
-                                    <th width="20%">Утвержден</th>
+                                    <th width="20%">Состояние</th>
                                 </tr>
                                 </thead>
                             </table>
@@ -68,6 +68,12 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
+                    if (aData['approved'] === 'Действует'){
+                        $(nRow).addClass('text-success fs-6')
+                    }
+                    if (aData['cancellation']){
+                        $(nRow).addClass('text-decoration-line-through text-danger fs-6')
+                    }
                     $(nRow).attr("href", id + '/');
                     $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {

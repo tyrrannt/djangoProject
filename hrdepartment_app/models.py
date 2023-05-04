@@ -666,13 +666,24 @@ class DocumentsOrder(Documents):
                                             on_delete=models.SET_NULL, blank=True, null=True)
 
     def get_data(self):
+        status = ''
+        dt = datetime.datetime.today()
+
+        if self.validity_period_end and datetime.date(dt.year, dt.month, dt.day) > self.validity_period_end:
+            status = 'Действие завершил'
+        else:
+            status = 'Действует'
+
+        if self.cancellation:
+            status = 'Отменён'
         return {
             'pk': self.pk,
             'document_number': self.document_number,
             'document_date': self.document_date.strftime("%d.%m.%Y"),
             'document_name': self.document_name,
             'person': FIO_format(self.document_foundation.person.get_title()) if self.document_foundation else '',
-            'approved': self.approved,
+            'approved': status,
+            'cancellation': self.cancellation,
         }
 
     def get_absolute_url(self):
