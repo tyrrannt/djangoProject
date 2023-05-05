@@ -426,6 +426,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     start_date_trip = models.DateField(verbose_name='Дата начала по СЗ', null=True, blank=True)
     end_date_trip = models.DateField(verbose_name='Дата окончания по СЗ', null=True, blank=True)
     date_transfer_hr = models.DateField(verbose_name='Дата передачи в ОК', null=True, blank=True)
+    submitted_for_signature = models.DateField(verbose_name='Дата передачи на подпись', null=True, blank=True)
     date_transfer_accounting = models.DateField(verbose_name='Дата передачи в бухгалтерию', null=True, blank=True)
 
     class Meta:
@@ -458,37 +459,38 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         return reverse('hrdepartment_app:bpmemo_list')
 
     def send_mail(self, title):
-        mail_to = self.document.person.email
-        mail_to_copy_first = self.person_executor.email
-        mail_to_copy_second = self.person_distributor.email
-        mail_to_copy_third = self.person_department_staff.email
-        subject_mail = title
+        if not self.cancellation:
+            mail_to = self.document.person.email
+            mail_to_copy_first = self.person_executor.email
+            mail_to_copy_second = self.person_distributor.email
+            mail_to_copy_third = self.person_department_staff.email
+            subject_mail = title
 
-        current_context = {
-            'title': self.document.get_title(),
-            'order_number': str(self.order.document_number),
-            'order_date': str(self.order.document_date),
-            'reason_cancellation': self.document.reason_cancellation.get_title(),
-            'person_executor': str(self.person_executor),
-            'person_distributor': str(self.person_distributor),
-            'person_department_staff': str(self.person_department_staff)
-        }
-        logger.debug(f'Email string: {current_context}')
-        text_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
-        html_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
-        first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
-                                           [mail_to, mail_to_copy_first])
-        second_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
-                                            [mail_to_copy_second, mail_to_copy_third])
-        first_msg.attach_alternative(html_content, "text/html")
-        second_msg.attach_alternative(html_content, "text/html")
+            current_context = {
+                'title': self.document.get_title(),
+                'order_number': str(self.order.document_number),
+                'order_date': str(self.order.document_date),
+                'reason_cancellation': self.document.reason_cancellation.get_title(),
+                'person_executor': str(self.person_executor),
+                'person_distributor': str(self.person_distributor),
+                'person_department_staff': str(self.person_department_staff)
+            }
+            logger.debug(f'Email string: {current_context}')
+            text_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
+            html_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
+            first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
+                                               [mail_to, mail_to_copy_first])
+            second_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
+                                                [mail_to_copy_second, mail_to_copy_third])
+            first_msg.attach_alternative(html_content, "text/html")
+            second_msg.attach_alternative(html_content, "text/html")
 
-        try:
-            # send_mass_mail((first_msg, second_msg), fail_silently=False)
-            first_msg.send()
-            second_msg.send()
-        except Exception as _ex:
-            logger.debug(f'Failed to send email. {_ex}')
+            try:
+                # send_mass_mail((first_msg, second_msg), fail_silently=False)
+                first_msg.send()
+                second_msg.send()
+            except Exception as _ex:
+                logger.debug(f'Failed to send email. {_ex}')
 
 
 def create_xlsx(instance):

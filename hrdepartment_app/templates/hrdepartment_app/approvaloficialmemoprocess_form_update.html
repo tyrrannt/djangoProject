@@ -106,7 +106,6 @@
                                                 {% endif %}
                                             </div>
                                         </div>
-
                                     </div>
                                     <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
                                         <div class="col">
@@ -142,7 +141,6 @@
                                                     <span>{{ form.document_not_agreed | attr:"id=id_document_not_agreed" }}</span>
                                                 </div>
                                             {% endif %}
-
                                         </div>
                                         <div class="col">
                                             <label class="col"
@@ -155,7 +153,6 @@
                                                 {% endif %}
                                             </div>
                                         </div>
-
                                     </div>
                                     <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
                                         <div class="col">
@@ -246,7 +243,6 @@
                                                        {% if object.process_accepted %}checked="checked"{% endif %}
                                                        onclick="javascript: return false;"/>
                                             {% endif %}
-
                                         </div>
                                         <div class="col">
                                             <label class="col"
@@ -263,7 +259,6 @@
                                                 {% endif %}
                                             </div>
                                         </div>
-
                                     </div>
                                     <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
                                         <div class="col">
@@ -283,7 +278,6 @@
                                                 {% endif %}
                                             </div>
                                         </div>
-
                                         <div class="col">
                                             <label class="col"
                                                    for="id_originals_received">Получены оригиналы</label>
@@ -305,6 +299,14 @@
                                         </div>
                                         <div class="col">
                                             <label class="col"
+                                                   for="id_submitted_for_signature">Документы переданы на подпись</label>
+                                            <input type="date" id="id_submitted_for_signature"
+                                                   class="form-control form-control-modern"
+                                                   name="submitted_for_signature"
+                                                   value="{{ object.submitted_for_signature | date:'c' }}"/>
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
                                                    for="id_date_transfer_hr">Документы переданы в
                                                 ОК</label>
                                             <input type="date" id="id_date_transfer_hr"
@@ -312,7 +314,6 @@
                                                    name="date_transfer_hr"
                                                    value="{{ object.date_transfer_hr | date:'c' }}"/>
                                         </div>
-
                                     </div>
                                     <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
                                         <div class="row">
@@ -395,7 +396,6 @@
                                                        value="{{ object.number_flight_days }}"/>
                                             </div>
                                         </div>
-
                                     </div>
                                     <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
                                         <div class="col">
@@ -433,7 +433,6 @@
                                                        {% if object.accepted_accounting %}checked="checked"{% endif %}
                                                        onclick="javascript: return false;"/>
                                             {% endif %}
-
                                         </div>
                                         <div class="col">
                                             <label class="col"
@@ -447,7 +446,6 @@
                                                 {% endif %}
                                             </div>
                                         </div>
-
                                     </div>
                                     <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
                                         <section class="toggle">
@@ -490,11 +488,7 @@
 
                                                         <div class="col-sm-12"><label for="d1">Место назначения</label>
                                                             <input class="form-control form-control-modern" id="d7"
-                                                                   value="
-
-
-
-                                                                           {% for item in object.document.place_production_activity.all %}{{ item }}, {% endfor %}"
+                                                                   value="{% for item in object.document.place_production_activity.all %}{{ item }}, {% endfor %}"
                                                                    disabled/>
                                                         </div>
                                                     </div>
@@ -508,7 +502,6 @@
                                             <div class="toggle-content">
                                                 <div class="form-row">
                                                     {% for date_add, key, value in change_history %}
-
                                                         <div class="ecommerce-timeline mb-3">
                                                             <div class="ecommerce-timeline-items-wrapper">
                                                                 <div class="ecommerce-timeline-item">
@@ -522,7 +515,6 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-
                                                     {% endfor %}
                                                 </div>
                                             </div>
@@ -532,11 +524,9 @@
                             </div>
                         </div>
                     </section>
-
                 </div>
             </div>
             <div class="row action-buttons">
-
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <button type="submit"
                             class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
@@ -561,13 +551,9 @@
                            class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
                     </div>
-
                 {% endif %}
-
             </div>
-
         </form>
-
         <!-- end: page -->
     </section>
     <!-- end: page -->
