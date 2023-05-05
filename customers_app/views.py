@@ -150,8 +150,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
             logger.debug(message)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(FIO_format(user_obj))
-        context['sp'] = OfficialMemo.objects.all().exclude(cancellation=True).count()
-        context['bp'] = ApprovalOficialMemoProcess.objects.all().exclude(cancellation=True).count()
+        context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
+        context['sp-'] = OfficialMemo.objects.filter(cancellation=True).count()
+        context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()
+        context['bp-'] = ApprovalOficialMemoProcess.objects.filter(cancellation=True).count()
         context['contract'] = Contract.objects.all().count()
         get_profile_fill(self, context)
 
