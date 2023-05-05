@@ -455,6 +455,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             'order': str(self.order) if self.order else '',
             'comments': str(self.document.comments),
             'cancellation': self.cancellation,
+            'originals_received': self.originals_received,
         }
 
     @staticmethod

@@ -369,9 +369,10 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
             if critical_change == 1:
-                get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
-                get_order_obj = object_item.order
-                print(get_order_obj, get_bpmemo_obj)
+                print(object_item.docs.pk)
+                # get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
+                # get_order_obj = object_item.order
+                # print(get_order_obj, get_bpmemo_obj)
             return HttpResponseRedirect(reverse('hrdepartment_app:memo_list'))
 
         else:
@@ -426,10 +427,11 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                 max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
                 dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
             if datetime.datetime.strptime(period_for_value, '%Y-%m-%d') > max_date:
-                period_for_value = max_date
-                dict_obj['pfv'] = max_date
+                # period_for_value = max_date
+                dict_obj.append(max_date)
             else:
-                dict_obj['pfv'] = period_for_value
+                dict_obj.append(period_for_value)
+            print(period_for_value, dict_obj)
             return JsonResponse(dict_obj, safe=False)
         return super(OfficialMemoUpdate, self).get(request, *args, **kwargs)
 
