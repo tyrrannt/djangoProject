@@ -332,6 +332,7 @@ class OfficialMemo(models.Model):
     history_change = GenericRelation(HistoryChange)
 
     def __str__(self):
+        # print(self.docs.pk)
         return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
 
     def get_title(self):
@@ -419,16 +420,18 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     cancellation = models.BooleanField(verbose_name='Отмена', default=False)
     reason_cancellation = models.ForeignKey(ReasonForCancellation, verbose_name='Причина отмены',
                                             on_delete=models.SET_NULL, blank=True, null=True)
-    prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
+    date_receipt_original = models.DateField(verbose_name='Дата получения', null=True, blank=True)
+    originals_docs_comment = models.CharField(verbose_name='Примечание', max_length=100,
                                        help_text='', blank=True, default='')
+    submitted_for_signature = models.DateField(verbose_name='Дата передачи на подпись', null=True, blank=True)
+    date_transfer_hr = models.DateField(verbose_name='Дата передачи в ОК', null=True, blank=True)
     number_business_trip_days = models.IntegerField(verbose_name='Дни СП', default=0)
     number_flight_days = models.IntegerField(verbose_name='Дни ЛД', default=0)
     start_date_trip = models.DateField(verbose_name='Дата начала по СЗ', null=True, blank=True)
     end_date_trip = models.DateField(verbose_name='Дата окончания по СЗ', null=True, blank=True)
-    date_transfer_hr = models.DateField(verbose_name='Дата передачи в ОК', null=True, blank=True)
-    submitted_for_signature = models.DateField(verbose_name='Дата передачи на подпись', null=True, blank=True)
     date_transfer_accounting = models.DateField(verbose_name='Дата передачи в бухгалтерию', null=True, blank=True)
-
+    prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
+                                       help_text='', blank=True, default='')
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
         verbose_name_plural = 'Служебные записки по служебным поездкам'

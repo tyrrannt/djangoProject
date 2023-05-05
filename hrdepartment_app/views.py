@@ -293,6 +293,10 @@ class OfficialMemoDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView
     model = OfficialMemo
     permission_required = 'hrdepartment_app.view_officialmemo'
 
+    def get_context_data(self, **kwargs):
+        content = super().get_context_data(**kwargs)
+        content['change_history'] = get_history(self, OfficialMemo)
+        return content
 
 class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = OfficialMemo
@@ -333,7 +337,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         return super(OfficialMemoUpdate, self).form_invalid(form)
 
     def form_valid(self, form):
-
+        critical_change = 0
         def person_finder(object_item, item, instanse_obj):
             person_list = ['Сотрудник']
             if object_item._meta.get_field(k).verbose_name in person_list:
@@ -355,12 +359,21 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
             for k in diffkeys:
                 if k != '_state':
+                    if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
+                        critical_change = 1
+                    if object_item._meta.get_field(k).verbose_name == 'Дата начала':
+                        if new_instance[k] < old_instance[k]:
+                            critical_change = 1
                     message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
                     changed = True
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
-
+            if critical_change == 1:
+                get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
+                get_order_obj = object_item.order
+                print(get_order_obj, get_bpmemo_obj)
             return HttpResponseRedirect(reverse('hrdepartment_app:memo_list'))
+
         else:
             logger.info(f'{form.errors}')
 

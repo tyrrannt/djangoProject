@@ -58,7 +58,8 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <p class="card-big-info-desc fs-5">Служебная записка на служебную поездку:</p>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
+                                    <div class="form-group row align-items-center pb-3"
+                                         style="border:1px solid #a6b3ff;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_executor">Исполнитель</label>
@@ -107,7 +108,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
+                                    <div class="form-group row align-items-center pb-3"
+                                         style="border:1px solid #8bfd8b;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_agreement">Руководитель</label>
@@ -154,7 +156,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
+                                    <div class="form-group row align-items-center pb-3"
+                                         style="border:1px solid #a6b3ff;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_distributor">Отдел организации наземного
@@ -208,7 +211,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
+                                    <div class="form-group row align-items-center pb-3"
+                                         style="border:1px solid #8bfd8b;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_department_staff">Отдел кадров</label>
@@ -260,62 +264,84 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
-                                        <div class="col">
-                                            <label class="col"
-                                                   for="id_person_clerk">Делопроизводитель</label>
+                                    <div class="form-group row align-items-center pb-3"
+                                         style="border:1px solid #a6b3ff;">
+                                        <div class="row">
                                             <div class="col">
-                                                {% if object.originals_received %}
-                                                    <select class="form-control form-control-modern"
-                                                            id="id_person_clerk" name="person_clerk">
-                                                        <option selected
-                                                                value="{{ object.person_clerk.pk }}">{{ object.person_clerk }}</option>
-                                                    </select>
-                                                {% elif user.pk not in list_clerk %}
-                                                    <span>{{ form.person_clerk }}</span>
+                                                <label class="col"
+                                                       for="id_person_clerk">Делопроизводитель</label>
+                                                <div class="col">
+                                                    {% if object.originals_received %}
+                                                        <select class="form-control form-control-modern"
+                                                                id="id_person_clerk" name="person_clerk">
+                                                            <option selected
+                                                                    value="{{ object.person_clerk.pk }}">{{ object.person_clerk }}</option>
+                                                        </select>
+                                                    {% elif user.pk not in list_clerk %}
+                                                        <span>{{ form.person_clerk }}</span>
+                                                    {% else %}
+                                                        <span>{{ form.person_clerk }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_originals_received">Получены оригиналы</label>
+                                                {% if user not in list_clerk %}
+                                                    <input type="checkbox" id="id_originals_received"
+                                                           name="originals_received"
+                                                           {% if object.originals_received %}checked="checked"{% endif %}
+                                                           onclick="javascript: return false;"/>
+                                                {% elif object.process_accepted %}
+                                                    <div class="col">
+                                                        <span>{{ form.originals_received }}</span>
+                                                    </div>
                                                 {% else %}
-                                                    <span>{{ form.person_clerk }}</span>
+                                                    <input type="checkbox" id="id_originals_received"
+                                                           name="originals_received"
+                                                           {% if object.originals_received %}checked="checked"{% endif %}
+                                                           onclick="javascript: return false;"/>
                                                 {% endif %}
                                             </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_date_receipt_original">Дата получения документов</label>
+                                                <input type="date" id="id_date_receipt_original"
+                                                       class="form-control form-control-modern"
+                                                       name="date_receipt_original"
+                                                       value="{{ object.date_receipt_original | date:'c' }}"/>
+                                            </div>
                                         </div>
-                                        <div class="col">
-                                            <label class="col"
-                                                   for="id_originals_received">Получены оригиналы</label>
-                                            {% if user not in list_clerk %}
-                                                <input type="checkbox" id="id_originals_received"
-                                                       name="originals_received"
-                                                       {% if object.originals_received %}checked="checked"{% endif %}
-                                                       onclick="javascript: return false;"/>
-                                            {% elif object.process_accepted %}
+                                        <div class="row">
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_submitted_for_signature">Документы переданы на
+                                                    подпись</label>
+                                                <input type="date" id="id_submitted_for_signature"
+                                                       class="form-control form-control-modern"
+                                                       name="submitted_for_signature"
+                                                       value="{{ object.submitted_for_signature | date:'c' }}"/>
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_date_transfer_hr">Документы переданы в
+                                                    ОК</label>
+                                                <input type="date" id="id_date_transfer_hr"
+                                                       class="form-control form-control-modern"
+                                                       name="date_transfer_hr"
+                                                       value="{{ object.date_transfer_hr | date:'c' }}"/>
+                                            </div>
+                                            <div class="col">
+                                                <label class="col"
+                                                       for="id_originals_docs_comment">Примечание</label>
                                                 <div class="col">
-                                                    <span>{{ form.originals_received }}</span>
+                                                    {{ form.originals_docs_comment | add_class:"form-control form-control-modern" }}
                                                 </div>
-                                            {% else %}
-                                                <input type="checkbox" id="id_originals_received"
-                                                       name="originals_received"
-                                                       {% if object.originals_received %}checked="checked"{% endif %}
-                                                       onclick="javascript: return false;"/>
-                                            {% endif %}
-                                        </div>
-                                        <div class="col">
-                                            <label class="col"
-                                                   for="id_submitted_for_signature">Документы переданы на подпись</label>
-                                            <input type="date" id="id_submitted_for_signature"
-                                                   class="form-control form-control-modern"
-                                                   name="submitted_for_signature"
-                                                   value="{{ object.submitted_for_signature | date:'c' }}"/>
-                                        </div>
-                                        <div class="col">
-                                            <label class="col"
-                                                   for="id_date_transfer_hr">Документы переданы в
-                                                ОК</label>
-                                            <input type="date" id="id_date_transfer_hr"
-                                                   class="form-control form-control-modern"
-                                                   name="date_transfer_hr"
-                                                   value="{{ object.date_transfer_hr | date:'c' }}"/>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #8bfd8b;">
+                                    <div class="form-group row align-items-center pb-3"
+                                         style="border:1px solid #8bfd8b;">
                                         <div class="row">
                                             <div class="col">
                                                 <label class="col"
@@ -397,7 +423,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3" style="border:1px solid #a6b3ff;">
+                                    <div class="form-group row align-items-center pb-3"
+                                         style="border:1px solid #a6b3ff;">
                                         <div class="col">
                                             <label class="col"
                                                    for="id_person_accounting">Бухгалтерия</label>
@@ -488,7 +515,8 @@
 
                                                         <div class="col-sm-12"><label for="d1">Место назначения</label>
                                                             <input class="form-control form-control-modern" id="d7"
-                                                                   value="{% for item in object.document.place_production_activity.all %}{{ item }}, {% endfor %}"
+                                                                   value="
+                                                                           {% for item in object.document.place_production_activity.all %}{{ item }}, {% endfor %}"
                                                                    disabled/>
                                                         </div>
                                                     </div>

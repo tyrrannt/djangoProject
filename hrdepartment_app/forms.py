@@ -192,7 +192,8 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                   'person_department_staff', 'process_accepted', 'accommodation', 'order', 'person_accounting',
                   'prepaid_expense', 'accepted_accounting', 'person_clerk', 'originals_received', 'person_hr',
                   'hr_accepted', 'number_business_trip_days', 'number_flight_days', 'start_date_trip',
-                  'end_date_trip', 'date_transfer_hr', 'date_transfer_accounting')
+                  'end_date_trip', 'date_transfer_hr', 'date_transfer_accounting', 'date_receipt_original',
+                  'originals_docs_comment')
 
     def clean(self):
         cleaned_data = super().clean()
