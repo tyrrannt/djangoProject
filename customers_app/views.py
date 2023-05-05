@@ -151,9 +151,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             logger.debug(message)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(FIO_format(user_obj))
         context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
-        context['sp-'] = OfficialMemo.objects.filter(cancellation=True).count()
+        context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
         context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()
-        context['bp-'] = ApprovalOficialMemoProcess.objects.filter(cancellation=True).count()
+        context['bpf'] = ApprovalOficialMemoProcess.objects.filter(cancellation=True).count()
         context['contract'] = Contract.objects.all().count()
         get_profile_fill(self, context)
 
