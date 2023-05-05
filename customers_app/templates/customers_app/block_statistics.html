@@ -3,17 +3,17 @@
 <h4 class="mb-3 mt-0 font-weight-semibold text-dark">Статистика портала</h4>
 <ul class="simple-card-list mb-3">
     <li class="primary">
-        <h3>{{ sp }} - Активных, {{ spf }} - Отменено</h3>
+        <h4>{{ sp }} - Активных, {{ spf }} - Отменено</h4>
         <p class="text-light"><a href="{% url 'hrdepartment_app:memo_list' %}" title="Список служебных записок"
                                  style="color: #FFFFFF; text-decoration: none"><b>Служебных записок</b></a></p>
     </li>
     <li class="primary">
-        <h3>{{ bp }} - Активных, {{ bpf }} - Отменено</h3>
+        <h4>{{ bp }} - Активных, {{ bpf }} - Отменено</h4>
         <p class="text-light"><a href="{% url 'hrdepartment_app:bpmemo_list' %}" title="Список служебных записок"
                                  style="color: #FFFFFF; text-decoration: none"><b>Запущено бизнес-процессов</b></a></p>
     </li>
     <li class="primary">
-        <h3>{{ contract }}</h3>
+        <h4>{{ contract }}</h4>
         <p class="text-light"><a href="{% url 'contracts_app:index' %}" title="Список служебных записок"
                                  style="color: #FFFFFF; text-decoration: none"><b>Договоров в базе</b></a></p>
     </li>
