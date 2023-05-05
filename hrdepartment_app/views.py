@@ -644,7 +644,10 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             person_list = ['Исполнитель', 'Согласующее лицо', 'Сотрудник НО', 'Сотрудник ОК', 'Сотрудник Бухгалтерии',
                            'Делопроизводитель']
             if object_item._meta.get_field(k).verbose_name in person_list:
-                return DataBaseUser.objects.get(pk=instanse_obj[item])
+                if instanse_obj[item]:
+                    return DataBaseUser.objects.get(pk=instanse_obj[item])
+                else:
+                    return 'Пустое значение'
             else:
                 if instanse_obj[item] == True:
                     return 'Да'
