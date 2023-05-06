@@ -141,6 +141,14 @@
                                                    name="actuality" {% if object.actuality %}checked{% endif %} id="id_actuality"/>
                                         </div>
                                     </div>
+                                    <div class="row text">
+                                        <div class="col-sm-12 text-black-50 mt-3">
+                                            <label for="id_description">Содержание:</label>
+                                            <div class="ck ck-content">
+                                                    {{ form.description | safe }}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

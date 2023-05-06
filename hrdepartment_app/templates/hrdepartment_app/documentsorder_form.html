@@ -47,6 +47,7 @@
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
+            {{ form.media }}
             <div class="col-lg-12">
                 <h4 class="font-weight-bold text-dark">Создание приказа</h4>
 
@@ -129,6 +130,14 @@
                                             <label for="id_actuality">Актуальность:</label>
                                             <input type="checkbox" class="mt-2"
                                                    name="actuality" value="" id="id_actuality"/>
+                                        </div>
+                                    </div>
+                                    <div class="row text">
+                                        <div class="col-sm-12 text-black-50 mt-3">
+                                            <label for="id_description">Содержание:</label>
+                                            <div class="ck ck-content">
+                                                    {{ form.description | safe }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

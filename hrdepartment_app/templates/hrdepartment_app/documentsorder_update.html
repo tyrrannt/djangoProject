@@ -145,12 +145,9 @@
                                     </div>
                                     <div class="row text">
                                         <div class="col-sm-12 text-black-50 mt-3">
-                                            <label for="id_actuality">Содержание:</label>
-                                            <div class="ck-content">
-                                                <div class="ck-editor">
-                                                    {{ form.description }}
-                                                </div>
-
+                                            <label for="id_description">Содержание:</label>
+                                            <div class="ck ck-content">
+                                                    {{ form.description | safe }}
                                             </div>
                                         </div>
                                     </div>
