@@ -418,17 +418,14 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # self.fields["description"].required = False
+        self.fields['description'].widget.attrs.update({'class': 'form-control django_ckeditor_5'})
+        self.fields['description'].required = False
 
     class Meta:
         model = DocumentsOrder
         fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'employee', 'allowed_placed', 'validity_period_start', 'document_order_type', 'description',
                   'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_foundation')
-        widgets = {
-            "description": CKEditor5Widget(
-                attrs={"class": "django_ckeditor_5"}, config_name="extends"
-            )
-        }
 
     # def clean(self):
     #     cleaned_data = super().clean()

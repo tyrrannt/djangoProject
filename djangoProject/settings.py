@@ -279,3 +279,5 @@ CELERY_RESULT_SERIALIZER = config('CELERY_RESULT_SERIALIZER')
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
+
+CKEDITOR_5_FILE_STORAGE = 'administration_app.utils.CkeditorCustomStorage'

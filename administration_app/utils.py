@@ -1,10 +1,16 @@
 import json
+import os
+from datetime import datetime
+from urllib.parse import urljoin
+
 import requests
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.storage import FileSystemStorage
 from loguru import logger
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division, HistoryChange
+from djangoProject import settings
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -255,3 +261,21 @@ def FIO_format(value, self=None):
         logger.error(f'Ошибка при сокращении ФИО, Значение: {str(value)}; Документ: {self}; Ошибка: {_ex}')
         result = ''
     return result
+
+class CkeditorCustomStorage(FileSystemStorage):
+    """
+    Кастомное расположение для медиа файлов редактора
+    """
+    def get_folder_name(self):
+        return datetime.now().strftime('%Y/%m/%d')
+
+    def get_valid_name(self, name):
+        return name
+
+    def _save(self, name, content):
+        folder_name = self.get_folder_name()
+        name = os.path.join(folder_name, self.get_valid_name(name))
+        return super()._save(name, content)
+
+    location = os.path.join(settings.MEDIA_ROOT, 'uploads/')
+    base_url = urljoin(settings.MEDIA_URL, 'uploads/')
