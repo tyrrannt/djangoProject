@@ -1,11 +1,33 @@
 from django.forms import CheckboxSelectMultiple, SelectMultiple, ClearableFileInput
 
-from customers_app.models import Division
+from customers_app.models import Division, DataBaseUser, Counteragent
 from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract
 from django import forms
 
 
 class ContractsAddForm(forms.ModelForm):
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
+    employee.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    type_of_contract = forms.ModelChoiceField(queryset=TypeContract.objects.all())
+    type_of_contract.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    type_of_document = forms.ModelChoiceField(queryset=TypeDocuments.objects.all())
+    type_of_document.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
+    divisions.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
+    contract_counteragent.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    parent_category = forms.ModelChoiceField(queryset=Contract.objects.all())
+    parent_category.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all())
+    type_property.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Contract
         fields = ['parent_category', 'contract_counteragent', 'contract_number',

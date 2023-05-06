@@ -59,61 +59,24 @@
                                     <div class="row text">
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_parent_category">Основной документ</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="parent_category"
-                                                    id="id_parent_category"
-                                                    data-plugin-selectTwo>
-                                                <option value="none" selected>Выберите значение...</option>
-                                                {% for item in all_contract.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.parent_category }}
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_contract_counteragent">Контрагент</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="contract_counteragent"
-                                                    id="id_contract_counteragent" required
-                                                    data-plugin-selectTwo>
-                                                <option value="none" selected>Выберите значение...</option>
-                                                {% for item in all_counteragent.iterator %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.contract_counteragent }}
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_type_of_document">Тип документа</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="type_of_document"
-                                                    id="id_type_of_document" required
-                                                    data-plugin-selectTwo>
-                                                {% for item in type_of_document %}
-                                                    {% if forloop.first %}
-                                                        <option value="0" selected>Выберите значение...</option>
-                                                    {% endif %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.type_of_document }}
                                         </div>
                                         <div class="row text">
                                             <div class="col-md-6 text-black-50">
                                                 <label for="id_type_of_contract">Тип договора</label>
-                                                <select class="form-control form-control-modern" name="type_of_contract"
-                                                        id="id_type_of_contract" required
-                                                        data-plugin-selectTwo multiple>
-                                                    {% for item in type_contract.iterator %}
-                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                    {% endfor %}
-                                                </select>
+                                                {{ form.type_of_contract }}
                                             </div>
                                             <div class="col-md-6 text-black-50">
                                                 <label for="id_employee">Ответственные лица</label>
-                                                <select class="form-control form-control-modern" name="employee"
-                                                        data-plugin-selectTwo multiple id="id_employee">
-                                                    {% for item in employee.iterator %}
-                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                    {% endfor %}
-                                                </select>
+                                                {{ form.employee }}
                                             </div>
                                         </div>
                                     </div>
@@ -125,9 +88,7 @@
                                                 <label for="id_contract_number">Номер договора</label>
                                                 <input type="text" class="form-control form-control-modern"
                                                        name="contract_number"
-                                                       value="
-
-                                                               {% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
+                                                       value="{% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
                                                        id="id_contract_number"/>
                                             </div>
                                             <div class="col-md-4 date">
@@ -162,29 +123,11 @@
                                     <div class="row">
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_divisions">Подразделение</label>
-                                            <select class="form-control form-control-modern" id="id_divisions"
-                                                    name="divisions" required
-                                                    data-plugin-selectTwo multiple>
-                                                {% for item in division.iterator %}
-                                                    {% if forloop.first %}
-                                                        <option value="0" selected>Выберите значение...</option>
-                                                    {% endif %}
-                                                    <option value="{{ item.pk }}">{{ item.name }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.divisions }}
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_type_property">Тип имущества</label>
-                                            <select class="form-control form-control-modern" id="id_type_property"
-                                                    name="type_property" required
-                                                    data-plugin-selectTwo multiple>
-                                                {% for item in type_property.iterator %}
-                                                    {% if forloop.first %}
-                                                        <option value="0" selected>Выберите значение...</option>
-                                                    {% endif %}
-                                                    <option value="{{ item.pk }}">{{ item.type_property }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.type_property }}
                                         </div>
                                     </div>
                                 </div>

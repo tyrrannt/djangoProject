@@ -369,10 +369,35 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
             if critical_change == 1:
-                print(object_item.docs.pk)
-                # get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
-                # get_order_obj = object_item.order
-                # print(get_order_obj, get_bpmemo_obj)
+                get_obj = self.get_object()
+                try:
+                    get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
+                    if object_item.order:
+                        get_order_obj = object_item.order
+                    else:
+                        get_order_obj = ''
+                    if get_order_obj != '':
+                        get_bpmemo_obj.location_selected = False
+                        get_bpmemo_obj.process_accepted = False
+                        get_bpmemo_obj.email_send = False
+                        get_bpmemo_obj.accommodation = ''
+                        get_bpmemo_obj.order = None
+                        get_order_obj.cancellation = True
+                        get_obj.accommodation = ''
+                        get_obj.document_accepted = False
+                        get_obj.order = None
+                        get_obj.comments = 'Документ согласован'
+                        get_obj.save()
+                        get_bpmemo_obj.save()
+                        get_order_obj.save()
+                    else:
+                        get_bpmemo_obj.location_selected = False
+                        get_bpmemo_obj.accommodation = ''
+                        get_obj.comments = 'Документ согласован'
+                        get_obj.save()
+                        get_bpmemo_obj.save()
+                except Exception as _ex:
+                    print(_ex)
             return HttpResponseRedirect(reverse('hrdepartment_app:memo_list'))
 
         else:
@@ -634,7 +659,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
 
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
-            document_foundation__pk=document.document.pk)
+            document_foundation__pk=document.document.pk).exclude(cancellation=True)
         delta = document.document.period_for - document.document.period_from
         content['ending_day'] = ending_day(int(delta.days) + 1)
         content['change_history'] = get_history(self, ApprovalOficialMemoProcess)

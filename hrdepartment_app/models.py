@@ -395,7 +395,7 @@ class ApprovalProcess(models.Model):
                                      null=True, blank=True, related_name='person_clerk')
     originals_received = models.BooleanField(verbose_name='Получены оригиналы', default=False)
     person_hr = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник ОК', on_delete=models.SET_NULL,
-                                                null=True, blank=True, related_name='person_hr')
+                                  null=True, blank=True, related_name='person_hr')
     hr_accepted = models.BooleanField(verbose_name='Документы проверены', default=False)
     person_accounting = models.ForeignKey(DataBaseUser, verbose_name='Сотрудник Бухгалтерии', on_delete=models.SET_NULL,
                                           null=True, blank=True, related_name='person_accounting')
@@ -422,7 +422,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                                             on_delete=models.SET_NULL, blank=True, null=True)
     date_receipt_original = models.DateField(verbose_name='Дата получения', null=True, blank=True)
     originals_docs_comment = models.CharField(verbose_name='Примечание', max_length=100,
-                                       help_text='', blank=True, default='')
+                                              help_text='', blank=True, default='')
     submitted_for_signature = models.DateField(verbose_name='Дата передачи на подпись', null=True, blank=True)
     date_transfer_hr = models.DateField(verbose_name='Дата передачи в ОК', null=True, blank=True)
     number_business_trip_days = models.IntegerField(verbose_name='Дни СП', default=0)
@@ -432,6 +432,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     date_transfer_accounting = models.DateField(verbose_name='Дата передачи в бухгалтерию', null=True, blank=True)
     prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
                                        help_text='', blank=True, default='')
+
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
         verbose_name_plural = 'Служебные записки по служебным поездкам'
@@ -661,6 +662,14 @@ def order_doc(obj_model, filepath, filename, request):
     if not path_obj.exists():
         path_obj.mkdir(parents=True)
     doc.save(pathlib.Path.joinpath(path_obj, filename))
+
+
+class OrderDescription(models.Model):
+    class Meta:
+        verbose_name = 'Наименование приказа'
+        verbose_name_plural = 'Наименования приказов'
+
+    name = models.CharField(verbose_name='', max_length=150)
 
 
 class DocumentsOrder(Documents):
