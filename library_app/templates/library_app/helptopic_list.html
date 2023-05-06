@@ -25,18 +25,13 @@
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-
+                                    {% if user.is_superuser %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:medical_add' %}"
+                                            <a href="{% url 'library_app:help_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить направление </a>
+                                                Добавить справку </a>
                                         </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:medical_list' %}?update=0"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить список </a>
-                                        </div>
-
+                                    {% endif %}
                                 </div>
                             </div>
 

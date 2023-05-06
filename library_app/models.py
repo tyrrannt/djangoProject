@@ -56,3 +56,7 @@ class HelpTopic(models.Model):
             'hash_tag': '; '.join(hash_tag),
 
         }
+
+    def get_absolute_url(self):
+        return reverse('library_app:help_list')
+

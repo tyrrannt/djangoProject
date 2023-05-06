@@ -1,9 +1,10 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView
 
 from administration_app.models import PortalProperty
+from library_app.forms import HelpItemAddForm, HelpItemUpdateForm
 from library_app.models import HelpTopic, HelpCategory
 
 
@@ -47,4 +48,25 @@ class HelpItem(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // {self.get_object()}'
+        return context
+
+
+class HelpItemAdd(LoginRequiredMixin, CreateView):
+    model = HelpTopic
+    form_class = HelpItemAddForm
+
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить справку'
+        return context
+
+
+class HelpItemUpdate(LoginRequiredMixin, UpdateView):
+    model = HelpTopic
+    form_class = HelpItemUpdateForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование: {self.get_object()}'
         return context
