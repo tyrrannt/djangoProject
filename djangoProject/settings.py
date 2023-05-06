@@ -209,7 +209,7 @@ CKEDITOR_5_CONFIGS = {
         },
         'image': {
             'toolbar': ['imageTextAlternative', '|', 'imageStyle:alignLeft',
-                        'imageStyle:alignRight', 'imageStyle:alignCenter', 'imageStyle:side', '|'],
+                        'imageStyle:alignRight', 'imageStyle:alignCenter', 'imageStyle:side', '|', "toggleImageCaption", "|", "resizeImage"],
             'styles': [
                 'full',
                 'side',
