@@ -205,16 +205,12 @@
                             </li>
                         </ul>
                     </li>
-                    {% if user.is_superuser %}
                         <li>
                             <a class="nav-link" href="{% url 'library_app:help_list' %}">
                                 <i class='bx bxs-help-circle' aria-hidden="true"></i>
                                 <span>Справка</span>
-
                             </a>
-
                         </li>
-                    {% endif %}
                 </ul>
             </nav>
             <hr class="separator"/>
