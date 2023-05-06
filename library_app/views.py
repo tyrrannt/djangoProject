@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.generic import ListView, DetailView
 
+from administration_app.models import PortalProperty
 from library_app.models import HelpTopic, HelpCategory
 
 
@@ -27,7 +28,7 @@ class HelpList(LoginRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         context['help_category'] = HelpCategory.objects.all()
-
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Справка'
         return context
 
     def get(self, request, *args, **kwargs):
@@ -42,3 +43,8 @@ class HelpList(LoginRequiredMixin, ListView):
 
 class HelpItem(LoginRequiredMixin, DetailView):
     model = HelpTopic
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // {self.get_object()}'
+        return context
