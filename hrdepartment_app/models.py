@@ -686,8 +686,8 @@ class DocumentsOrder(Documents):
         verbose_name_plural = 'Приказы'
         # default_related_name = 'order'
 
-    #document_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=None)
-    #doc_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True)
+    document_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=None)
+    #doc_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=1)
     doc_file = models.FileField(verbose_name='Файл документа', upload_to=ord_directory_path, blank=True)
     scan_file = models.FileField(verbose_name='Скан документа', upload_to=ord_directory_path, blank=True)
     document_order_type = models.CharField(verbose_name='Тип приказа', max_length=18, choices=type_of_order)
