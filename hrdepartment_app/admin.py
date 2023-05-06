@@ -3,7 +3,7 @@ from django.contrib import admin
 from customers_app.models import Groups
 from hrdepartment_app.models import Medical, Purpose, OfficialMemo, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
-    ReportCard, ReasonForCancellation
+    ReportCard, ReasonForCancellation, OrderDescription
 
 # Register your models here.
 
@@ -19,3 +19,5 @@ admin.site.register(BusinessProcessDirection)
 admin.site.register(Groups)
 admin.site.register(ReportCard)
 admin.site.register(ReasonForCancellation)
+admin.site.register(OrderDescription)
+
