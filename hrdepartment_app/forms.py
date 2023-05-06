@@ -9,7 +9,7 @@ from loguru import logger
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
-    ReasonForCancellation
+    ReasonForCancellation, OrderDescription
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -366,6 +366,9 @@ class DocumentsOrderAddForm(forms.ModelForm):
                                                  required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
+    document_name.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_order_type = forms.ChoiceField(choices=type_of_order, label='Тип приказа')
     document_order_type.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
@@ -398,6 +401,9 @@ class DocumentsOrderAddForm(forms.ModelForm):
 class DocumentsOrderUpdateForm(forms.ModelForm):
     document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
     document_foundation.widget.attrs.update(
+        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
+    document_name.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_order_type = forms.ChoiceField(choices=type_of_order)
     document_order_type.widget.attrs.update(
