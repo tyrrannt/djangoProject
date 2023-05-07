@@ -166,23 +166,23 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             current_year = self.request.GET.get('CY')
             current_month = self.request.GET.get('CM')
             current_passphrase = self.request.GET.get('PX')
-            try:
-                if len(current_month) == 1:
-                    current_month = '0' + current_month
-                get_user_obj = self.get_object()
-            except TypeError:
-                logger.error(f'Ошибка передачи запроса, curent_month не содержит значение!')
-                # ToDo: Пришел запрос с поисковой строки
-                # print(self.request.GET.get('q'))
-                return super().get(request, *args, **kwargs)
-            hash_pass = hashlib.sha256(current_passphrase.encode()).hexdigest()
-            hash_null = hashlib.sha256(''.encode()).hexdigest()
-            print(hash_pass, request.user.passphrase)
-            if hash_pass == request.user.passphrase and hash_pass != hash_null:
-                html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
-            else:
-                html_obj = ''
-            return JsonResponse(html_obj, safe=False)
+            if current_month and current_passphrase and current_year:
+                try:
+                    if len(current_month) == 1:
+                        current_month = '0' + current_month
+                    get_user_obj = self.get_object()
+                except TypeError:
+                    logger.error(f'Ошибка передачи запроса, curent_month не содержит значение!')
+                    # ToDo: Пришел запрос с поисковой строки
+                    # print(self.request.GET.get('q'))
+                    return super().get(request, *args, **kwargs)
+                hash_pass = hashlib.sha256(current_passphrase.encode()).hexdigest()
+                hash_null = hashlib.sha256(''.encode()).hexdigest()
+                if hash_pass == request.user.passphrase and hash_pass != hash_null:
+                    html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
+                else:
+                    html_obj = ''
+                return JsonResponse(html_obj, safe=False)
         return super().get(request, *args, **kwargs)
 
 

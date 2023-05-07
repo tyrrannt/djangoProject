@@ -110,7 +110,8 @@ class OfficialMemoUpdateForm(forms.ModelForm):
     place_production_activity.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    person.widget.attrs.update(
+        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})

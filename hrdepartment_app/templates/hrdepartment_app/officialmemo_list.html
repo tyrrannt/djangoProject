@@ -46,7 +46,8 @@
                                     <th width="10%">Должность</th>
                                     <th width="10%">Куда</th>
                                     <th width="15%">Цель</th>
-                                    <th width="10%">Период</th>
+                                    <th width="10%">С</th>
+                                    <th width="10%">По</th>
                                     <th width="8%">Проживание</th>
                                     <th width="10%">Приказ</th>
                                     <th width="18%">Примечание</th>
@@ -87,7 +88,7 @@
     <script>
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
-                "order": [[ 0, 'desc' ], [ 1, 'desc' ],],
+                "order": [[ 10, 'desc' ]],
                 "pageLength": 25,
                 "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
@@ -119,11 +120,15 @@
                     {"data": "place_production_activity"},
                     {"data": "purpose_trip"},
                     {"data": "period_from"},
+                    {"data": "period_for"},
                     {"data": "accommodation"},
                     {"data": "order"},
                     {"data": "comments"},
+                    {"data": "date_order"},
+
                 ],
             });
+            table.column(10).visible(false);
         });
 
     </script>

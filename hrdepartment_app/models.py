@@ -357,12 +357,14 @@ class OfficialMemo(models.Model):
             'job': str(self.person.user_work_profile.job),
             'place_production_activity': '; '.join(place),
             'purpose_trip': str(self.purpose_trip),
-            'period_from': f'С: {self.period_from.strftime("%d.%m.%Y")} \nПо: {self.period_for.strftime("%d.%m.%Y")}',
+            'period_from': self.period_from.strftime("%d.%m.%Y"),
+            'period_for': self.period_for.strftime("%d.%m.%Y"),
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
             'cancellation': self.cancellation,
             'document_accepted': self.document_accepted,
+            'date_order': self.period_from,
         }
 
 

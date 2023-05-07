@@ -187,22 +187,19 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
             return JsonResponse(response)
-        change_session_get(self.request, self)
         return super(OfficialMemoList, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = super(OfficialMemoList, self).get_queryset().order_by('pk')
-        change_session_queryset(self.request, self)
         if not self.request.user.is_superuser:
             user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
             qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by(
-                'pk').reverse()
+                'period_from').reverse()
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(OfficialMemoList, self).get_context_data(**kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Служебные записки'
-        change_session_context(context, self)
         return context
 
 
@@ -349,7 +346,10 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
             # в old_instance сохраняем старые значения записи
             object_item = self.get_object()
             old_instance = object_item.__dict__
-            form.save()
+            refresh_form = form.save(commit=False)
+            if refresh_form.official_memo_type == '1':
+                refresh_form.document_extension = None
+            refresh_form.save()
             object_item = self.get_object()
             # в new_instance сохраняем новые значения записи
             new_instance = object_item.__dict__
@@ -408,6 +408,14 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         html = list()
         employee = request.GET.get('employee', None)
         period_from = request.GET.get('period_from', None)
+        memo_type = request.GET.get('memo_type', None)
+        if memo_type and employee:
+            if memo_type == '2':
+                memo_list = OfficialMemo.objects.filter(person=employee).exclude(pk=self.get_object().pk)
+                memo_obj_list = dict()
+                for item in memo_list:
+                    memo_obj_list.update({item.get_title(): item.pk})
+                return JsonResponse(memo_obj_list)
         if employee and period_from:
             check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
             filters = OfficialMemo.objects.filter(
