@@ -679,6 +679,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         delta = document.document.period_for - document.document.period_from
         content['ending_day'] = ending_day(int(delta.days) + 1)
         content['change_history'] = get_history(self, ApprovalOficialMemoProcess)
+        #print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
         return content
 
     def form_valid(self, form):

@@ -56,7 +56,7 @@
 
                                 <div class="col-sm-12">
                                     <div class="form-group row align-items-center pb-3">
-                                        <p class="card-big-info-desc fs-5">Служебная записка на служебную поездку:</p>
+                                        <p class="card-big-info-desc fs-5">Служебная записка на служебную поездку: <strong>{{ document.title }}</strong></p>
                                     </div>
                                     <div class="form-group row align-items-center pb-3"
                                          style="border:1px solid #a6b3ff;">
@@ -463,12 +463,22 @@
                                         </div>
                                         <div class="col">
                                             <label class="col"
-                                                   for="id_prepaid_expense">Примечание к согласованию</label>
+                                                   for="id_prepaid_expense_summ">Сумма по авансовому отчету</label>
                                             <div class="col">
-                                                {% if user.pk in list_accounting and not object.accepted_accounting %}
-                                                    <span>{{ form.prepaid_expense | add_class:"form-control form-control-modern" }}</span>
+                                                {% if user.pk not in list_accounting %}
+                                                    {{ form.prepaid_expense_summ | add_class:"form-control form-control-modern" }}
                                                 {% else %}
-                                                    {{ object.accepted_accounting }}
+                                                    <span>{{ form.prepaid_expense_summ | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <label class="col"
+                                                   for="id_prepaid_expense">Примечание</label>
+                                            <div class="col">
+                                                {% if user.pk in list_accounting %}
+                                                    {{ form.prepaid_expense | add_class:"form-control form-control-modern" }}
+                                                {% else %}
                                                     <span>{{ form.prepaid_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
                                                 {% endif %}
                                             </div>

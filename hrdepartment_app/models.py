@@ -332,13 +332,12 @@ class OfficialMemo(models.Model):
     history_change = GenericRelation(HistoryChange)
     title = models.CharField(verbose_name='Наименование', max_length=200, default='', blank=True)
 
-
     def __str__(self):
         # print(self.docs.pk)
-        return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
+        return self.title
 
     def get_title(self):
-        return f'{"(СП):" if self.type_trip == "1" else "(К):"} {FIO_format(self.person)} с {self.period_from.strftime("%d.%m.%Y")} по {self.period_for.strftime("%d.%m.%Y")}'
+        return self.title
 
     def get_data(self):
         place = [str(item) for item in self.place_production_activity.iterator()]
@@ -369,6 +368,7 @@ class OfficialMemo(models.Model):
             'date_order': self.period_from,
         }
 
+
 @receiver(pre_save, sender=OfficialMemo)
 def fill_title(sender, instance, **kwargs):
     if instance.official_memo_type == '1':
@@ -376,6 +376,7 @@ def fill_title(sender, instance, **kwargs):
     else:
         type_memo = "(СП+):" if instance.type_trip == "1" else "(К+):"
     instance.title = f'{type_memo} {FIO_format(instance.person)} с {instance.period_from.strftime("%d.%m.%Y")} по {instance.period_for.strftime("%d.%m.%Y")}'
+
 
 class ApprovalProcess(models.Model):
     """
@@ -443,6 +444,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     date_transfer_accounting = models.DateField(verbose_name='Дата передачи в бухгалтерию', null=True, blank=True)
     prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
                                        help_text='', blank=True, default='')
+    prepaid_expense_summ = models.DecimalField(verbose_name='Сумма авансового отчета', default=0, max_digits=10, decimal_places=2)
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
@@ -697,8 +699,9 @@ class DocumentsOrder(Documents):
         verbose_name_plural = 'Приказы'
         # default_related_name = 'order'
 
-    document_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=None)
-    #doc_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=1)
+    document_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа',
+                                      on_delete=models.SET_NULL, null=True, default=None)
+    # doc_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=1)
     doc_file = models.FileField(verbose_name='Файл документа', upload_to=ord_directory_path, blank=True)
     scan_file = models.FileField(verbose_name='Скан документа', upload_to=ord_directory_path, blank=True)
     document_order_type = models.CharField(verbose_name='Тип приказа', max_length=18, choices=type_of_order)
