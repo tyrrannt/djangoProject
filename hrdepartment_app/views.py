@@ -670,8 +670,12 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         content['list_hr'] = list_hr
 
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
-        content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
-            document_foundation__pk=document.document.pk).exclude(cancellation=True)
+        if document.document.official_memo_type == '1':
+            content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
+                document_foundation__pk=document.document.pk).exclude(cancellation=True)
+        else:
+            content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
+                document_foundation__pk=document.document.document_extension.pk).exclude(cancellation=True)
         delta = document.document.period_for - document.document.period_from
         content['ending_day'] = ending_day(int(delta.days) + 1)
         content['change_history'] = get_history(self, ApprovalOficialMemoProcess)
