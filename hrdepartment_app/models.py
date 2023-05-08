@@ -3,13 +3,12 @@ import pathlib
 import uuid
 
 from django.contrib.contenttypes.fields import GenericRelation
-from django.core.mail import EmailMultiAlternatives, send_mass_mail
+from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
-from django.utils import timezone
 from django_ckeditor_5.fields import CKEditor5Field
 from docxtpl import DocxTemplate
 from loguru import logger

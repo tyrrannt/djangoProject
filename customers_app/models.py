@@ -443,3 +443,6 @@ class HistoryChange(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
+
+    def __str__(self):
+        return f"{str(self.content_type.name)} : {str(self.content_object)}"
