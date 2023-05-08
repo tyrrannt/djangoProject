@@ -669,7 +669,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                 return {}
         content['list_hr'] = list_hr
 
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}'
         if document.document.official_memo_type == '1':
             content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
                 document_foundation__pk=document.document.pk).exclude(cancellation=True)
