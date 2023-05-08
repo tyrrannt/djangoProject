@@ -295,6 +295,7 @@ class OfficialMemoDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView
         content['change_history'] = get_history(self, OfficialMemo)
         return content
 
+
 class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
@@ -305,13 +306,12 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
         # Получаем объект
-        period = self.get_object()
         # Получаем разницу в днях, для определения количества дней СП
-        delta = (period.period_for - period.period_from)
+        delta = (self.object.period_for - self.object.period_from)
         # Передаем количество дней в контекст
         content['period'] = int(delta.days) + 1
         # Получаем все служебные записки по человеку, исключая текущую
-        filters = OfficialMemo.objects.filter(person=period.person).exclude(pk=period.pk)
+        filters = OfficialMemo.objects.filter(person=self.object.person).exclude(pk=self.object.pk)
         filter_string = {
             "pk": 0,
             "period": datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
@@ -323,7 +323,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                 filter_string["period"] = item.period_for
 
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}'
         content['change_history'] = get_history(self, OfficialMemo)
         return content
 
@@ -546,6 +546,10 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
     form_class = ApprovalOficialMemoProcessUpdateForm
     template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_update.html'
     permission_required = 'hrdepartment_app.change_approvaloficialmemoprocess'
+
+    def get_queryset(self):
+        qs = ApprovalOficialMemoProcess.objects.all().select_related('person_executor', 'person_agreement', 'person_distributor', 'person_department_staff', 'person_clerk', 'person_hr', 'person_accounting', 'document', 'order')
+        return qs
 
     def get_context_data(self, **kwargs):
         global person_agreement_list

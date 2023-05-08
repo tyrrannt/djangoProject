@@ -19,9 +19,9 @@ logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotat
 def get_history(self, model):
     # Получаем тип объекта
     obj = ContentType.objects.get_for_model(model)
-    obj_item = self.get_object()
+    # obj_item = self.get_object()
     # Фильтруем по объекту
-    objects_content = HistoryChange.objects.filter(content_type=obj, object_id=obj_item.pk)
+    objects_content = HistoryChange.objects.filter(content_type=obj, object_id=self.object.pk).select_related('author')
     change_history = list()
     for item in objects_content:
         change_history.append([item.date_add, item.author, item.body])

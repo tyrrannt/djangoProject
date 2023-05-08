@@ -6,6 +6,7 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, Groups, Job
+from hrdepartment_app.models import OfficialMemo
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -51,4 +52,11 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         user_obj.save()
                     except AttributeError:
                         logger.info(f"У пользователя {user_obj} отсутствуют группы!")
+                        # Установка общих прав пользователя наследованием из групп
+            if request.GET.get('update') == '2':
+                memo_list = OfficialMemo.objects.all()
+                for item in memo_list:
+                    if item.title == '':
+                        item.save()
+
         return super().get(request, *args, **kwargs)

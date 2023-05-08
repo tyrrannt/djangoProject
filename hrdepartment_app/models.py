@@ -5,7 +5,7 @@ import uuid
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives, send_mass_mail
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -330,6 +330,8 @@ class OfficialMemo(models.Model):
     reason_cancellation = models.ForeignKey(ReasonForCancellation, verbose_name='Причина отмены',
                                             on_delete=models.SET_NULL, blank=True, null=True)
     history_change = GenericRelation(HistoryChange)
+    title = models.CharField(verbose_name='Наименование', max_length=200, default='', blank=True)
+
 
     def __str__(self):
         # print(self.docs.pk)
@@ -367,6 +369,13 @@ class OfficialMemo(models.Model):
             'date_order': self.period_from,
         }
 
+@receiver(pre_save, sender=OfficialMemo)
+def fill_title(sender, instance, **kwargs):
+    if instance.official_memo_type == '1':
+        type_memo = "(СП):" if instance.type_trip == "1" else "(К):"
+    else:
+        type_memo = "(СП+):" if instance.type_trip == "1" else "(К+):"
+    instance.title = f'{type_memo} {FIO_format(instance.person)} с {instance.period_from.strftime("%d.%m.%Y")} по {instance.period_for.strftime("%d.%m.%Y")}'
 
 class ApprovalProcess(models.Model):
     """
@@ -448,7 +457,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     def get_data(self):
         return {
             'pk': self.pk,
-            'document': str(self.document),
+            'document': str(self.document.title),
             'submit_for_approval': FIO_format(self.person_executor, self) if self.submit_for_approval else '',
             'document_not_agreed': FIO_format(self.person_agreement, self) if self.document_not_agreed else '',
             'location_selected': FIO_format(self.person_distributor, self) if self.location_selected else '',
