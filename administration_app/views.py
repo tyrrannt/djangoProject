@@ -5,7 +5,7 @@ from django.views.generic import ListView
 from loguru import logger
 
 from administration_app.models import PortalProperty
-from administration_app.utils import get_users_info
+from administration_app.utils import get_users_info, change_users_password
 from customers_app.models import DataBaseUser, Groups, Job
 from hrdepartment_app.models import OfficialMemo
 
@@ -61,5 +61,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         item.save()
             if request.GET.get('update') == '3':
                 get_users_info()
+            if request.GET.get('update') == '4':
+                change_users_password()
 
         return super().get(request, *args, **kwargs)

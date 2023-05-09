@@ -9,7 +9,7 @@ from django.core.files.storage import FileSystemStorage
 from loguru import logger
 from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
-from customers_app.models import DataBaseUser, Counteragent, Division, HistoryChange
+from customers_app.models import DataBaseUser, Counteragent, Division, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -282,7 +282,33 @@ class CkeditorCustomStorage(FileSystemStorage):
 
 
 def change_users_password():
-    pass
+    users_list = DataBaseUser.objects.all()
+    error_list = list()
+    import csv
+    with open('eggs.csv', newline='') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            list_item = row[0].split(';')
+            try:
+                user_obj = DataBaseUser.objects.get(username=list_item[1])
+                user_obj.set_password(list_item[3])
+                user_obj.save()
+            except Exception as _ex:
+                error_list.append(list_item)
+            try:
+                user_obj = DataBaseUser.objects.get(username=list_item[1])
+                work_profile = DataBaseUserWorkProfile.objects.get(pk=user_obj.user_work_profile.pk)
+                work_profile.work_email_password = list_item[3]
+                work_profile.save()
+            except Exception as _ex:
+                error_list.append(list_item)
+    with open('eggs_err.csv', 'w', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for item in error_list:
+            spamwriter.writerow([f'{item}'])
+
+
+
 
 def get_users_info():
     users_list = DataBaseUser.objects.all()
