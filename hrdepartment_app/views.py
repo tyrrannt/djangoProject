@@ -1,8 +1,6 @@
 import datetime
-import math
 from calendar import monthrange
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
@@ -13,17 +11,16 @@ from loguru import logger
 from administration_app.models import PortalProperty
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
     get_jsons_data, ending_day, get_history
-from customers_app.models import DataBaseUser, Counteragent, HistoryChange
+from customers_app.models import DataBaseUser, Counteragent
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
     PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm
-from hrdepartment_app.hrdepartment_util import get_medical_documents
+from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard
-from hrdepartment_app.tasks import report_card_separator
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -219,7 +216,8 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         user_job = self.request.user
 
         content['form'].fields['person'].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job).exclude(username='proxmox').exclude(is_active=False).order_by('last_name')
+            user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job).exclude(
+            username='proxmox').exclude(is_active=False).order_by('last_name')
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить служебную записку'
         return content
@@ -334,6 +332,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
     def form_valid(self, form):
         critical_change = 0
+
         def person_finder(object_item, item, instanse_obj):
             person_list = ['Сотрудник']
             if object_item._meta.get_field(k).verbose_name in person_list:
@@ -376,22 +375,17 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                     else:
                         get_order_obj = ''
                     if get_order_obj != '':
-                        get_bpmemo_obj.location_selected = False
-                        get_bpmemo_obj.process_accepted = False
-                        get_bpmemo_obj.email_send = False
-                        get_bpmemo_obj.accommodation = ''
-                        get_bpmemo_obj.order = None
+                        send_mail_change(1, get_obj)
+                        get_bpmemo_obj(location_selected=False, process_accepted=False, email_send=False,
+                                       accommodation='', order=None)
                         get_order_obj.cancellation = True
-                        get_obj.accommodation = ''
-                        get_obj.document_accepted = False
-                        get_obj.order = None
-                        get_obj.comments = 'Документ согласован'
+                        get_obj(accommodation='', document_accepted=False, order=None, comments='Документ согласован')
                         get_obj.save()
                         get_bpmemo_obj.save()
                         get_order_obj.save()
                     else:
-                        get_bpmemo_obj.location_selected = False
-                        get_bpmemo_obj.accommodation = ''
+                        send_mail_change(2, get_obj)
+                        get_bpmemo_obj(location_selected=False, accommodation='')
                         get_obj.comments = 'Документ согласован'
                         get_obj.save()
                         get_bpmemo_obj.save()
@@ -547,7 +541,10 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
     permission_required = 'hrdepartment_app.change_approvaloficialmemoprocess'
 
     def get_queryset(self):
-        qs = ApprovalOficialMemoProcess.objects.all().select_related('person_executor', 'person_agreement', 'person_distributor', 'person_department_staff', 'person_clerk', 'person_hr', 'person_accounting', 'document', 'order')
+        qs = ApprovalOficialMemoProcess.objects.all().select_related('person_executor', 'person_agreement',
+                                                                     'person_distributor', 'person_department_staff',
+                                                                     'person_clerk', 'person_hr', 'person_accounting',
+                                                                     'document', 'order')
         return qs
 
     def get_context_data(self, **kwargs):
@@ -668,7 +665,8 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                 return {}
         content['list_hr'] = list_hr
 
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}'
+        content[
+            'title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}'
         if document.document.official_memo_type == '1':
             content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
                 document_foundation__pk=document.document.pk).exclude(cancellation=True)
@@ -678,7 +676,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         delta = document.document.period_for - document.document.period_from
         content['ending_day'] = ending_day(int(delta.days) + 1)
         content['change_history'] = get_history(self, ApprovalOficialMemoProcess)
-        #print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
+        # print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
         return content
 
     def form_valid(self, form):
