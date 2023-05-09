@@ -304,12 +304,6 @@ def change_users_password():
                 work_profile.save()
             except Exception as _ex:
                 error_list.append(list_item)
-    with open('eggs_err.csv', 'w', newline='') as csvfile:
-        spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        for item in error_list:
-            spamwriter.writerow([f'{item}'])
-
-
 
 
 def get_users_info():
