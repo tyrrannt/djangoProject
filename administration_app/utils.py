@@ -1,5 +1,6 @@
 import json
 import os
+import pathlib
 from datetime import datetime
 from urllib.parse import urljoin
 
@@ -11,6 +12,7 @@ from administration_app.models import PortalProperty
 from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
+from djangoProject.settings import BASE_DIR
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -285,7 +287,7 @@ def change_users_password():
     users_list = DataBaseUser.objects.all()
     error_list = list()
     import csv
-    with open('eggs.csv', newline='') as f:
+    with open(pathlib.Path.joinpath(BASE_DIR, 'eggs.csv'), newline='') as f:
         reader = csv.reader(f)
         for row in reader:
             list_item = row[0].split(';')
