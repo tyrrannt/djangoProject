@@ -219,8 +219,7 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         user_job = self.request.user
 
         content['form'].fields['person'].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job).exclude(
-            username='proxmox').exclude(username='shakirov').order_by('last_name')
+            user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job).exclude(username='proxmox', is_active=False).order_by('last_name')
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить служебную записку'
         return content
@@ -516,7 +515,7 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, PermissionRequiredMixin,
             Q(docs__isnull=True) & Q(responsible=self.request.user))
         business_process = BusinessProcessDirection.objects.filter(
             person_executor=self.request.user.user_work_profile.job)
-        users_list = DataBaseUser.objects.all()
+        users_list = DataBaseUser.objects.all().exclude(username='proxmox', is_active=False)
         # Для поля Исполнитель, делаем выборку пользователя из БД на основе request
         content['form'].fields['person_executor'].queryset = users_list.filter(pk=self.request.user.pk)
 
@@ -554,7 +553,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
     def get_context_data(self, **kwargs):
         global person_agreement_list
 
-        users_list = DataBaseUser.objects.all()
+        users_list = DataBaseUser.objects.all().exclude(username='proxmox', is_active=False)
         content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(**kwargs)
         document = self.get_object()
         business_process = BusinessProcessDirection.objects.filter(

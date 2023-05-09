@@ -423,7 +423,7 @@ class CounteragentAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(CounteragentAdd, self).get_context_data(**kwargs)
-        context['counteragent_users'] = DataBaseUser.objects.all()
+        context['counteragent_users'] = DataBaseUser.objects.all().exclude(username='proxmox', is_active=False)
         context['type_counteragent'] = Counteragent.type_of
         return context
 
@@ -464,7 +464,7 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
     def get_context_data(self, **kwargs):
         context = super(CounteragentUpdate, self).get_context_data(**kwargs)
-        context['counteragent_users'] = DataBaseUser.objects.all()
+        context['counteragent_users'] = DataBaseUser.objects.all().exclude(username='proxmox', is_active=False)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -503,7 +503,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_queryset(self):
         change_session_queryset(self.request, self)
-        qs = DataBaseUser.objects.all().order_by('pk').exclude(is_active=False).exclude(username='Admin').order_by(self.item_sorted)
+        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox', is_active=False).order_by(self.item_sorted)
         return qs
 
     def get(self, request, *args, **kwargs):
@@ -522,7 +522,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            baseusers = DataBaseUser.objects.all().exclude(username='Admin').exclude(is_active=False)
+            baseusers = DataBaseUser.objects.all().exclude(username='proxmox', is_active=False)
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
             return JsonResponse(response)

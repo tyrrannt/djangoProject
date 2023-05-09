@@ -44,7 +44,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         item.group.add(unit.id)
             # Установка прав пользователя наследованием из групп
             if request.GET.get('update') == '1':
-                users_list = DataBaseUser.objects.all()
+                users_list = DataBaseUser.objects.all().exclude(username='proxmox', is_active=False)
                 for user_obj in users_list:
                     try:
                         user_obj.groups.clear()
