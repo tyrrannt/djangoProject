@@ -214,8 +214,7 @@
                                                 <input type="date" id="id_post_date_start"
                                                        class="form-control form-control-modern"
                                                        name="post_date_start"
-                                                       value=""
-                                                       data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
+                                                       value="{{ object.post_date_start | date:'c' }}"/>
                                             </div>
                                         </div>
                                         <div class="form-group row align-items-center pb-3">
@@ -225,8 +224,7 @@
                                                 <input type="date" id="id_post_date_end"
                                                        class="form-control form-control-modern"
                                                        name="post_date_end"
-                                                       value=""
-                                                       data-plugin-options='{"orientation": "bottom", "format": "dd.mm.yyyy"}'/>
+                                                       value="{{ object.post_date_end | date:'c' }}"/>
                                             </div>
                                         </div>
                                         <div class="form-group row align-items-center pb-3">
