@@ -279,3 +279,19 @@ class CkeditorCustomStorage(FileSystemStorage):
 
     location = os.path.join(settings.MEDIA_ROOT, 'uploads/')
     base_url = urljoin(settings.MEDIA_URL, 'uploads/')
+
+
+def change_users_password():
+    pass
+
+def get_users_info():
+    users_list = DataBaseUser.objects.all()
+    import csv
+    with open('eggs.csv', 'w', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for item in users_list:
+            if item.email:
+                spamwriter.writerow([f'{item.last_name} {item.first_name} {item.surname}', f'{item.username}', f'{item.email}'])
+            else:
+                spamwriter.writerow(
+                    [f'{item.last_name} {item.first_name} {item.surname}', f'{item.username}', f'E-mail отсутствует'])
