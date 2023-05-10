@@ -54,11 +54,13 @@ def get_approval_oficial_memo_process(request):
                 person_executor_job_list = [items[0] for items in item.person_executor.values_list()]
 
             business_process_direction_list = BusinessProcessDirection.objects.filter(clerk=request.user.user_work_profile.job)
-            clerk_job_list = list()
-            clerk_job_list_executor = list()
+            clerk_job_list_set = list()
+            clerk_job_list_executor_set = list()
             for item in business_process_direction_list:
-                clerk_job_list = [items[0] for items in item.clerk.values_list()]
-                clerk_job_list_executor = [items[0] for items in item.person_executor.values_list()]
+                clerk_job_list_set += [items[0] for items in item.clerk.values_list()]
+                clerk_job_list_executor_set += [items[0] for items in item.person_executor.values_list()]
+            clerk_job_list = set(clerk_job_list_set)
+            clerk_job_list_executor = set(clerk_job_list_executor_set)
             # Выбор согласующих лиц
             person_executor_list = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_job_list)]
             person_agreement = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__in=person_executor_list) & Q(document_not_agreed=False))
