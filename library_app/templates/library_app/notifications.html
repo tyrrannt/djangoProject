@@ -260,5 +260,42 @@
         </div>
     </li>
 {% endif %}
+{#Оповещение о новом БП на служебную записку#}
+{% if user in clerk %}
+    <li>
+        {% if originals_received_count != 0 %}
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <i class='bx bx-notepad'></i>
+                <span class="badge">{{ originals_received_count }}</span>
+            </a>
+        {% endif %}
+        <div class="dropdown-menu notification-menu">
+            <div class="notification-title">
+                <span class="float-end badge badge-default">{{ originals_received_count }}</span>
+                Оригиналы
+            </div>
+            <div class="content">
+                <ul>
+                    {% for item in originals_received %}
+                        <li>
+                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                    <code style="font-size: small">
+                                        {{ item }}
+                                    </code>
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <hr/>
+                <div class="text-end">
+                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                </div>
+            </div>
+        </div>
+    </li>
+{% endif %}
 </ul>
 
