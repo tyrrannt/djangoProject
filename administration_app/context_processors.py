@@ -71,6 +71,12 @@ def get_approval_oficial_memo_process(request):
             person_department_staff = [item for item in person_department_staff_list]
             process_accepted = ApprovalOficialMemoProcess.objects.filter(
                 Q(process_accepted=False) & Q(location_selected=True))
+            # Получение списка сотрудников ОК 2
+            person_hr_list = DataBaseUser.objects.filter(
+                Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
+            person_hr = [item for item in person_hr_list]
+            hr_accepted = ApprovalOficialMemoProcess.objects.filter(
+                Q(hr_accepted=False) & Q(originals_received=True))
             return {
                 'person_agreement': person_agreement,
                 'document_not_agreed': person_agreement.count(),
@@ -80,6 +86,9 @@ def get_approval_oficial_memo_process(request):
                 'person_department_staff': person_department_staff,
                 'process_accepted': process_accepted,
                 'process_accepted_count': process_accepted.count,
+                'person_hr': person_hr,
+                'hr_accepted': hr_accepted,
+                'hr_accepted_count': hr_accepted.count,
             }
         except Exception as _ex:
             logger.error(_ex)
