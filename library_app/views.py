@@ -1,4 +1,4 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
@@ -42,8 +42,9 @@ class HelpList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class HelpItem(LoginRequiredMixin, DetailView):
+class HelpItem(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = HelpTopic
+    permission_required = 'library_app.view_helptopic'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -51,9 +52,10 @@ class HelpItem(LoginRequiredMixin, DetailView):
         return context
 
 
-class HelpItemAdd(LoginRequiredMixin, CreateView):
+class HelpItemAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = HelpTopic
     form_class = HelpItemAddForm
+    permission_required = 'library_app.add_helptopic'
 
 
     def get_context_data(self, **kwargs):
@@ -62,9 +64,10 @@ class HelpItemAdd(LoginRequiredMixin, CreateView):
         return context
 
 
-class HelpItemUpdate(LoginRequiredMixin, UpdateView):
+class HelpItemUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = HelpTopic
     form_class = HelpItemUpdateForm
+    permission_required = 'library_app.change_helptopic'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
