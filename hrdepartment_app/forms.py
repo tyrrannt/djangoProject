@@ -363,7 +363,7 @@ type_of_order = [
 
 
 class DocumentsOrderAddForm(forms.ModelForm):
-    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(doc_foundation__isnull=True),
+    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(order=None),
                                                  required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
