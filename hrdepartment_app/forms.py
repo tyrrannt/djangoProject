@@ -16,7 +16,7 @@ logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotat
 
 
 def present_or_future_date(value):
-    if value < datetime.date.today() - datetime.timedelta(days=3):
+    if value < datetime.date.today() - datetime.timedelta(days=7):
         raise forms.ValidationError("Нельзя использовать прошедшую дату!")
     return value
 
