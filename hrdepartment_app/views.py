@@ -376,16 +376,23 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                         get_order_obj = ''
                     if get_order_obj != '':
                         send_mail_change(1, get_obj)
-                        get_bpmemo_obj(location_selected=False, process_accepted=False, email_send=False,
-                                       accommodation='', order=None)
+                        get_bpmemo_obj.location_selected = False
+                        get_bpmemo_obj.process_accepted = False
+                        get_bpmemo_obj.email_send = False
+                        get_bpmemo_obj.accommodation = ''
+                        get_bpmemo_obj.order = None
                         get_order_obj.cancellation = True
-                        get_obj(accommodation='', document_accepted=False, order=None, comments='Документ согласован')
+                        get_obj.accommodation = ''
+                        get_obj.document_accepted = False
+                        get_obj.order = None
+                        get_obj.comments = 'Документ согласован'
                         get_obj.save()
                         get_bpmemo_obj.save()
                         get_order_obj.save()
                     else:
                         send_mail_change(2, get_obj)
-                        get_bpmemo_obj(location_selected=False, accommodation='')
+                        get_bpmemo_obj.location_selected = False
+                        get_bpmemo_obj.accommodation = ''
                         get_obj.comments = 'Документ согласован'
                         get_obj.save()
                         get_bpmemo_obj.save()
