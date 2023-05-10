@@ -53,16 +53,16 @@ def get_medical_documents():
 
 
 def send_mail_change(counter, obj):
-    mail_to = obj.object.person.email
-    mail_to_copy_first = obj.object.responsible.email
-    mail_to_copy_second = obj.object.docs.person_distributor.email
-    mail_to_copy_third = obj.object.docs.person_department_staff.email
-    subject_mail = obj.object.title
+    mail_to = obj.person.email
+    mail_to_copy_first = obj.responsible.email
+    mail_to_copy_second = obj.docs.person_distributor.email
+    mail_to_copy_third = obj.docs.person_department_staff.email
+    subject_mail = obj.title
     print(mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third, subject_mail)
     current_context = {
-        'title': obj.object.get_title(),
-        'order_number': str(obj.object.order.document_number),
-        'order_date': str(obj.object.order.document_date),
+        'title': obj.get_title(),
+        'order_number': str(obj.order.document_number),
+        'order_date': str(obj.order.document_date),
     }
     logger.debug(f'Email string: {current_context}')
     text_content = render_to_string('hrdepartment_app/email_change_bpmemo.html', current_context)
