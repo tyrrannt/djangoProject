@@ -1,6 +1,7 @@
-{% extends 'customers_app/main.html' %}
+{% extends 'contracts_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 
 {% block title %}
     <title>{{ title }}</title>
@@ -8,13 +9,21 @@
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-
         {% include 'library_app/breadcrumb.html' %}
         <div>
-            {% if error %}
-                <div class="alert alert-danger">
-                    <strong><a href="{% url 'hrdepartment_app:medicalorg_list' %}">{{ error }}</a></strong>
-                </div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
             {% endif %}
         </div>
         <!-- start: page -->

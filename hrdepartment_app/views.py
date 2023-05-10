@@ -677,12 +677,15 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         if document.document.official_memo_type == '1':
             content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
                 document_foundation__pk=document.document.pk).exclude(cancellation=True)
-        else:
+        elif document.document.official_memo_type == '2':
             content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
                 document_foundation__pk=document.document.document_extension.pk).exclude(cancellation=True)
+        else:
+            content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(pk=0)
         delta = document.document.period_for - document.document.period_from
         content['ending_day'] = ending_day(int(delta.days) + 1)
         content['change_history'] = get_history(self, ApprovalOficialMemoProcess)
+        content['without_departure'] = False if document.document.official_memo_type == '3' else True
         # print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
         return content
 

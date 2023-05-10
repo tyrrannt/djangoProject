@@ -52,7 +52,8 @@ class MedicalExaminationUpdateForm(forms.ModelForm):
 class OfficialMemoAddForm(forms.ModelForm):
     memo_type = [
         ('1', 'Направление'),
-        ('2', 'Продление')
+        ('2', 'Продление'),
+        ('3', 'Без выезда'),
     ]
     type_of_trip = [
         ('1', 'Служебная поездка'),
@@ -96,7 +97,8 @@ class OfficialMemoUpdateForm(forms.ModelForm):
     ]
     memo_type = [
         ('1', 'Направление'),
-        ('2', 'Продление')
+        ('2', 'Продление'),
+        ('3', 'Без выезда'),
     ]
     type_of_trip = [
         ('1', 'Служебная поездка'),
@@ -194,7 +196,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                   'prepaid_expense', 'accepted_accounting', 'person_clerk', 'originals_received', 'person_hr',
                   'hr_accepted', 'number_business_trip_days', 'number_flight_days', 'start_date_trip',
                   'end_date_trip', 'date_transfer_hr', 'date_transfer_accounting', 'date_receipt_original',
-                  'originals_docs_comment', 'prepaid_expense_summ')
+                  'originals_docs_comment', 'prepaid_expense_summ', 'submitted_for_signature')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -206,6 +208,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         person_department_staff = cleaned_data.get("person_department_staff")
         process_accepted = cleaned_data.get("process_accepted")
         order = cleaned_data.get("order")
+        d1 = str(cleaned_data.get("document"))
         originals_received = cleaned_data.get("originals_received")
 
         if not person_agreement and document_not_agreed:
@@ -231,9 +234,10 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                 )
         if originals_received:
             if not process_accepted:
-                raise ValidationError(
-                    "Ошибка приема документа делопроизводителем. Приказ не создан!!!"
-                )
+                if d1[:4] != '(БВ)':
+                    raise ValidationError(
+                        "Ошибка приема документа делопроизводителем. Приказ не создан!!!"
+                    )
         if location_selected:
             if not document_not_agreed:
                 raise ValidationError(

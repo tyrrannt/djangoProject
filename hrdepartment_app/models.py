@@ -299,7 +299,8 @@ class OfficialMemo(models.Model):
 
     memo_type = [
         ('1', 'Направление'),
-        ('2', 'Продление')
+        ('2', 'Продление'),
+        ('3', 'Без выезда'),
     ]
     document_extension = models.ForeignKey('self', verbose_name='Документ основания', on_delete=models.SET_NULL,
                                            null=True, blank=True)
@@ -343,13 +344,16 @@ class OfficialMemo(models.Model):
         if self.type_trip == '1':
             if self.official_memo_type == '1':
                 type_trip = 'СП'
-            else:
+            elif self.official_memo_type == '2':
                 type_trip = 'СП+'
+            else:
+                type_trip = 'БВ'
         else:
             if self.official_memo_type == '1':
                 type_trip = 'К'
             else:
                 type_trip = 'К+'
+
         return {
             'pk': self.pk,
             'type_trip': type_trip,
@@ -372,8 +376,10 @@ class OfficialMemo(models.Model):
 def fill_title(sender, instance, **kwargs):
     if instance.official_memo_type == '1':
         type_memo = "(СП):" if instance.type_trip == "1" else "(К):"
-    else:
+    elif instance.official_memo_type == '2':
         type_memo = "(СП+):" if instance.type_trip == "1" else "(К+):"
+    else:
+        type_memo = "(БВ)"
     instance.title = f'{type_memo} {FIO_format(instance.person)} с {instance.period_from.strftime("%d.%m.%Y")} по {instance.period_for.strftime("%d.%m.%Y")}'
 
 
@@ -456,13 +462,19 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         return str(self.document)
 
     def get_data(self):
+        if self.document.official_memo_type == '3':
+            location_selected = '--//--'
+            process_accepted = '--//--'
+        else:
+            location_selected = FIO_format(self.person_distributor, self) if self.location_selected else ''
+            process_accepted = FIO_format(self.person_department_staff, self) if self.process_accepted else ''
         return {
             'pk': self.pk,
             'document': str(self.document.title),
             'submit_for_approval': FIO_format(self.person_executor, self) if self.submit_for_approval else '',
             'document_not_agreed': FIO_format(self.person_agreement, self) if self.document_not_agreed else '',
-            'location_selected': FIO_format(self.person_distributor, self) if self.location_selected else '',
-            'process_accepted': FIO_format(self.person_department_staff, self) if self.process_accepted else '',
+            'location_selected': location_selected,
+            'process_accepted': process_accepted,
             'accepted_accounting': FIO_format(self.person_accounting, self) if self.accepted_accounting else '',
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
