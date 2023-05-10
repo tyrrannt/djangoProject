@@ -1,6 +1,11 @@
 {% load static %}
+<style>
+    #wrapper {
+        overflow: auto;
+        height: 320px;
+    }
+</style>
 <ul class="notifications">
-
     <li>
         {% if contracts_not_published_count != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -15,7 +20,7 @@
                 <span class="float-end badge badge-default">{{ contracts_not_published_count }}</span>
                 Договора к публикации
             </div>
-            <div class="content">
+            <div class="content" id="wrapper">
                 <ul>
                     {% for item in contracts_not_published %}
                         <li>
@@ -55,7 +60,7 @@
                 Сообщения к публикации
             </div>
 
-            <div class="content">
+            <div class="content" id="wrapper">
                 <ul>
                     {% for item in posts_not_published %}
                         <li>
@@ -92,7 +97,7 @@
                 <span class="float-end badge badge-default">{{ documents_not_published_count }}</span>
                 Документы
             </div>
-            <div class="content">
+            <div class="content" id="wrapper">
                 <ul>
                     {% for item in documents_not_published %}
                         <li>
@@ -114,7 +119,7 @@
             </div>
         </div>
     </li>
-{#Оповещение о новом БП на служебную записку#}
+    {#Оповещение о новом БП на служебную записку#}
     <li>
         {% if document_not_agreed != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -127,13 +132,14 @@
                 <span class="float-end badge badge-default">{{ document_not_agreed }}</span>
                 Служебные записки
             </div>
-            <div class="content">
+            <div class="content" id="wrapper">
                 <ul>
                     {% for item in person_agreement %}
                         <li>
                             <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
                                 <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                     title=""
+                                     data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
                                     <code style="font-size: small">
                                         {{ item }}
                                     </code>
@@ -149,153 +155,157 @@
             </div>
         </div>
     </li>
-{#Оповещение о новом БП на служебную записку#}
-{% if user in person_distributor %}
-    <li>
-        {% if location_selected_count != 0 %}
-            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                <i class='bx bx-user-pin'></i>
-                <span class="badge">{{ location_selected_count }}</span>
-            </a>
-        {% endif %}
-        <div class="dropdown-menu notification-menu">
-            <div class="notification-title">
-                <span class="float-end badge badge-default">{{ location_selected_count }}</span>
-                Служебные записки
-            </div>
-            <div class="content">
-                <ul>
-                    {% for item in location_selected %}
-                        <li>
-                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
-                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
-                                    <code style="font-size: small">
-                                        {{ item }}
-                                    </code>
-                                </div>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-                <hr/>
-                <div class="text-end">
-                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+    {#Оповещение о новом БП на служебную записку#}
+    {% if user in person_distributor %}
+        <li>
+            {% if location_selected_count != 0 %}
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                    <i class='bx bx-user-pin'></i>
+                    <span class="badge">{{ location_selected_count }}</span>
+                </a>
+            {% endif %}
+            <div class="dropdown-menu notification-menu">
+                <div class="notification-title">
+                    <span class="float-end badge badge-default">{{ location_selected_count }}</span>
+                    Служебные записки
+                </div>
+                <div class="content" id="wrapper">
+                    <ul>
+                        {% for item in location_selected %}
+                            <li>
+                                <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                         title=""
+                                         data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                        <code style="font-size: small">
+                                            {{ item }}
+                                        </code>
+                                    </div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <hr/>
+                    <div class="text-end">
+                        <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </li>
-{% endif %}
-{#Оповещение о новом БП на служебную записку#}
-{% if user in person_department_staff %}
-    <li>
-        {% if process_accepted_count != 0 %}
-            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                <i class='bx bx-user-pin'></i>
-                <span class="badge">{{ process_accepted_count }}</span>
-            </a>
-        {% endif %}
-        <div class="dropdown-menu notification-menu">
-            <div class="notification-title">
-                <span class="float-end badge badge-default">{{ process_accepted_count }}</span>
-                Служебные записки
-            </div>
-            <div class="content">
-                <ul>
-                    {% for item in process_accepted %}
-                        <li>
-                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
-                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
-                                    <code style="font-size: small">
-                                        {{ item }}
-                                    </code>
-                                </div>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-                <hr/>
-                <div class="text-end">
-                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+        </li>
+    {% endif %}
+    {#Оповещение о новом БП на служебную записку#}
+    {% if user in person_department_staff %}
+        <li>
+            {% if process_accepted_count != 0 %}
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                    <i class='bx bx-user-pin'></i>
+                    <span class="badge">{{ process_accepted_count }}</span>
+                </a>
+            {% endif %}
+            <div class="dropdown-menu notification-menu">
+                <div class="notification-title">
+                    <span class="float-end badge badge-default">{{ process_accepted_count }}</span>
+                    Служебные записки
+                </div>
+                <div class="content" id="wrapper">
+                    <ul>
+                        {% for item in process_accepted %}
+                            <li>
+                                <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                         title=""
+                                         data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                        <code style="font-size: small">
+                                            {{ item }}
+                                        </code>
+                                    </div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <hr/>
+                    <div class="text-end">
+                        <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </li>
-{% endif %}
-{#Оповещение о новом БП на служебную записку#}
-{% if user in person_hr %}
-    <li>
-        {% if hr_accepted_count != 0 %}
-            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                <i class='bx bx-notepad'></i>
-                <span class="badge">{{ hr_accepted_count }}</span>
-            </a>
-        {% endif %}
-        <div class="dropdown-menu notification-menu">
-            <div class="notification-title">
-                <span class="float-end badge badge-default">{{ hr_accepted_count }}</span>
-                Оригиналы
-            </div>
-            <div class="content">
-                <ul>
-                    {% for item in hr_accepted %}
-                        <li>
-                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
-                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
-                                    <code style="font-size: small">
-                                        {{ item }}
-                                    </code>
-                                </div>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-                <hr/>
-                <div class="text-end">
-                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+        </li>
+    {% endif %}
+    {#Оповещение о новом БП на служебную записку#}
+    {% if user in person_hr %}
+        <li>
+            {% if hr_accepted_count != 0 %}
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                    <i class='bx bx-notepad'></i>
+                    <span class="badge">{{ hr_accepted_count }}</span>
+                </a>
+            {% endif %}
+            <div class="dropdown-menu notification-menu">
+                <div class="notification-title">
+                    <span class="float-end badge badge-default">{{ hr_accepted_count }}</span>
+                    Оригиналы
+                </div>
+                <div class="content" id="wrapper">
+                    <ul>
+                        {% for item in hr_accepted %}
+                            <li>
+                                <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                         title=""
+                                         data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                        <code style="font-size: small">
+                                            {{ item }}
+                                        </code>
+                                    </div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <hr/>
+                    <div class="text-end">
+                        <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </li>
-{% endif %}
-{#Оповещение о новом БП на служебную записку#}
-{% if user in clerk %}
-    <li>
-        {% if originals_received_count != 0 %}
-            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                <i class='bx bx-notepad'></i>
-                <span class="badge">{{ originals_received_count }}</span>
-            </a>
-        {% endif %}
-        <div class="dropdown-menu notification-menu">
-            <div class="notification-title">
-                <span class="float-end badge badge-default">{{ originals_received_count }}</span>
-                Оригиналы
-            </div>
-            <div class="content">
-                <ul>
-                    {% for item in originals_received %}
-                        <li>
-                            <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
-                                <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
-                                     title="" data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
-                                    <code style="font-size: small">
-                                        {{ item }}
-                                    </code>
-                                </div>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-                <hr/>
-                <div class="text-end">
-                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+        </li>
+    {% endif %}
+    {#Оповещение о новом БП на служебную записку#}
+    {% if user in clerk %}
+        <li>
+            {% if originals_received_count != 0 %}
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                    <i class='bx bx-notepad'></i>
+                    <span class="badge">{{ originals_received_count }}</span>
+                </a>
+            {% endif %}
+            <div class="dropdown-menu notification-menu">
+                <div class="notification-title">
+                    <span class="float-end badge badge-default">{{ originals_received_count }}</span>
+                    Оригиналы
+                </div>
+                <div class="content" id="wrapper">
+                    <ul>
+                        {% for item in originals_received %}
+                            <li>
+                                <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
+                                         title=""
+                                         data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                        <code style="font-size: small">
+                                            {{ item }}
+                                        </code>
+                                    </div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <hr/>
+                    <div class="text-end">
+                        <a href="{% url 'hrdepartment_app:bpmemo_list' %}" class="view-more">Просмотреть все</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </li>
-{% endif %}
+        </li>
+    {% endif %}
 </ul>
 
