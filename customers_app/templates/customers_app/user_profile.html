@@ -171,7 +171,9 @@
                                                             <p>{{ item.post_description }}</p>
                                                             <p class="text-danger mb-0">
                                                                 Ответственный: {{ item.responsible }}</p>
+                                                            {% if user == item.responsible %}
                                                             <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
+                                                            {% endif %}
                                                         </div>
                                                     </li>
                                                 {% endif %}
