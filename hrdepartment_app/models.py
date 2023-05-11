@@ -496,7 +496,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             subject_mail = title
 
             current_context = {
-                'title': self.document.get_title(),
+                'title': self.document.title,
                 'order_number': str(self.order.document_number),
                 'order_date': str(self.order.document_date),
                 'reason_cancellation': self.document.reason_cancellation.get_title(),

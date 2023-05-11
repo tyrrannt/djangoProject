@@ -797,7 +797,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         return reverse_lazy('hrdepartment_app:bpmemo_list')
 
 
-class ApprovalOficialMemoProcessCansel(LoginRequiredMixin, UpdateView):
+class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessChangeForm
     template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_cancel.html'
