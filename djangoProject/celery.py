@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from celery import Celery
 from celery.schedules import crontab

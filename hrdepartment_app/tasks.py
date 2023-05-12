@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datetime
 import pathlib
 
@@ -10,6 +11,7 @@ from hrdepartment_app.models import ReportCard
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
+
 
 def xldate_to_datetime(xldate):
     import xlrd
@@ -48,15 +50,19 @@ def report_card_separator():
                     try:
                         user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
                                                             surname=search_user[2])
-                        report_card_day = datetime.datetime.strptime(xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S')
+                        report_card_day = datetime.datetime.strptime(
+                            xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S')
 
                         kwargs = {
                             'report_card_day': report_card_day.date(),
                             'employee': user_obj,
-                            'start_time': datetime.datetime.strptime(xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
-                            'end_time': datetime.datetime.strptime(xldate_to_datetime(float(end_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
+                            'start_time': datetime.datetime.strptime(
+                                xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
+                            'end_time': datetime.datetime.strptime(
+                                xldate_to_datetime(float(end_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
                         }
-                        ReportCard.objects.update_or_create(report_card_day=report_card_day.date(), employee=user_obj, defaults=kwargs)
+                        ReportCard.objects.update_or_create(report_card_day=report_card_day.date(), employee=user_obj,
+                                                            defaults=kwargs)
                     except Exception as _ex:
                         logger.error(f'{match[0]} not found in the database: {_ex}')
         return result
