@@ -12,6 +12,6 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'send-spam': {
         'task': 'hrdepartment_app.tasks.report_card_separator',
-        'schedule': crontab(minute=10, hour=0),
+        'schedule': crontab(minute=10),
     }
 }
