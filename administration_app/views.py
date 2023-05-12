@@ -8,6 +8,7 @@ from administration_app.models import PortalProperty
 from administration_app.utils import get_users_info, change_users_password
 from customers_app.models import DataBaseUser, Groups, Job
 from hrdepartment_app.models import OfficialMemo
+from hrdepartment_app.tasks import report_card_separator
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -63,5 +64,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 get_users_info()
             if request.GET.get('update') == '4':
                 change_users_password()
+            if request.GET.get('update') == '4':
+                report_card_separator()
 
         return super().get(request, *args, **kwargs)
