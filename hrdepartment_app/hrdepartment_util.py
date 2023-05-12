@@ -58,7 +58,6 @@ def send_mail_change(counter, obj):
     mail_to_copy_second = obj.docs.person_distributor.email
     mail_to_copy_third = obj.docs.person_department_staff.email
     subject_mail = obj.title
-    print(mail_to, mail_to_copy_first, mail_to_copy_second, mail_to_copy_third, subject_mail)
     current_context = {
         'title': obj.get_title(),
         'order_number': str(obj.order.document_number),

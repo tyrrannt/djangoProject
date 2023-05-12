@@ -343,18 +343,26 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         if form.is_valid():
             # в old_instance сохраняем старые значения записи
             object_item = self.get_object()
+            place_old = set([item.name for item in object_item.place_production_activity.all()])
+
             old_instance = object_item.__dict__
             refresh_form = form.save(commit=False)
             if refresh_form.official_memo_type == '1':
                 refresh_form.document_extension = None
             refresh_form.save()
+            form.save_m2m()
             object_item = self.get_object()
             # в new_instance сохраняем новые значения записи
             new_instance = object_item.__dict__
+            place_new = set([item.name for item in object_item.place_production_activity.all()])
             changed = False
             # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
+            if place_old != place_new:
+                critical_change = 1
+                message += f'Место назначения: <strike>{place_old}</strike> -> {place_new}\n'
+                changed = True
             for k in diffkeys:
                 if k != '_state':
                     if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
@@ -364,6 +372,8 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                             critical_change = 1
                     message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
                     changed = True
+
+
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
             if critical_change == 1:
@@ -375,6 +385,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                     else:
                         get_order_obj = ''
                     if get_order_obj != '':
+                        # ToDo: Сделать обработку отправки письма
                         send_mail_change(1, get_obj)
                         get_bpmemo_obj.location_selected = False
                         get_bpmemo_obj.process_accepted = False
@@ -390,6 +401,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                         get_bpmemo_obj.save()
                         get_order_obj.save()
                     else:
+                        # ToDo: Сделать обработку отправки письма
                         send_mail_change(2, get_obj)
                         get_bpmemo_obj.location_selected = False
                         get_bpmemo_obj.accommodation = ''
