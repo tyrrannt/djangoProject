@@ -63,6 +63,7 @@ def report_card_separator():
                         }
                         ReportCard.objects.update_or_create(report_card_day=report_card_day.date(), employee=user_obj,
                                                             defaults=kwargs)
+                        logger.error(f'File write: {kwargs}')
                     except Exception as _ex:
                         logger.error(f'{match[0]} not found in the database: {_ex}')
         return result
