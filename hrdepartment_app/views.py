@@ -773,6 +773,9 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         if request.POST.get('process_accepted'):
             document.comments = 'Создан приказ'
             change_status = 1
+        if request.POST.get('originals_received') and request.POST.get('date_receipt_original'):
+            document.comments = 'Получены оригиналы'
+            change_status = 1
         if request.POST.get('originals_received') and request.POST.get('date_transfer_hr'):
             document.comments = 'Передано в ОК'
             change_status = 1
