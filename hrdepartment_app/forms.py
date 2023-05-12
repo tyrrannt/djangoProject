@@ -153,7 +153,8 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
 
     class Meta:
         model = ApprovalOficialMemoProcess
-        fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement')
+        fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
+                  'start_date_trip', 'end_date_trip')
 
 
 class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):

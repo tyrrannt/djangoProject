@@ -373,7 +373,6 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                     message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
                     changed = True
 
-
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
             if critical_change == 1:
@@ -551,6 +550,14 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, PermissionRequiredMixin,
 
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
+
+    def form_valid(self, form):
+        if form.is_valid():
+            refresh_form = form.save(commit=False)
+            refresh_form.start_date_trip = refresh_form.document.period_from
+            refresh_form.end_date_trip = refresh_form.document.period_for
+            refresh_form.save()
+        return super().form_valid(form)
 
 
 class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
