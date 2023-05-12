@@ -480,7 +480,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             'order': str(self.order) if self.order else '',
             'comments': str(self.document.comments),
             'cancellation': self.cancellation,
-            'originals_received': self.originals_received,
+            'originals_received': True if self.originals_received and self.date_transfer_hr else False,
         }
 
     @staticmethod

@@ -9,6 +9,7 @@ from django.urls import reverse
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
 from djangoProject import settings
 from djangoProject.settings import BASE_DIR
+from hrdepartment_app.models import PlaceProductionActivity
 
 
 def contract_directory_path(instance, filename):
@@ -87,13 +88,6 @@ class Estate(models.Model):
     passport = models.CharField(verbose_name='Паспорт', max_length=100, default='', blank=True)
     ownership_right = models.CharField(verbose_name='Право владения', max_length=100, default='', blank=True)
     year_of_manufacture = models.CharField(verbose_name='Год выпуска авто', max_length=100, default='', blank=True)
-    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
-    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
-    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
-    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
-    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
-    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
-    # = models.CharField(verbose_name='', max_length=100, default='', blank=True)
 
 
 class ContractModel(models.Model):
@@ -197,6 +191,26 @@ class Posts(models.Model):
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
     responsible_person = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо',
                                            on_delete=models.SET_NULL, null=True)
+
+
+class Hotel(models.Model):
+    """
+        Модель Hotel - введена для возможности ведения квартир.
+    """
+
+    class Meta:
+        verbose_name = 'Квартира'
+        verbose_name_plural = 'Квартиры'
+
+    contract_number = models.ForeignKey(Contract, verbose_name='Номер договора', on_delete=models.CASCADE)
+    name = models.CharField(verbose_name='Наименование', max_length=150, default='')
+    place_production_activity = models.ForeignKey(PlaceProductionActivity, verbose_name='Наименование точки',
+                                                  on_delete=models.SET_NULL, null=True, related_name='place_production')
+    address = models.CharField(verbose_name='Адрес', max_length=250, default='', blank=True)
+    container = models.BigIntegerField(verbose_name='Количество мест', default=0)
+
+    def __str__(self):
+        return f'{self.name}'
 
 
 @receiver(post_save, sender=Contract)

@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import FileSystemStorage
 from loguru import logger
 from administration_app.models import PortalProperty
-from contracts_app.models import TypeContract, TypeProperty, Contract
+# from contracts_app.models import TypeContract, TypeProperty, Contract
 from customers_app.models import DataBaseUser, Counteragent, Division, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
 from djangoProject.settings import BASE_DIR
@@ -31,24 +31,24 @@ def get_history(self, model):
 
 
 
-class GetAllObject:
-
-    @staticmethod
-    def get_object():
-        context = {}
-        all_users = DataBaseUser.objects.all()
-        all_type_of_contract = TypeContract.objects.all()
-        all_type_property = TypeProperty.objects.all()
-        all_counteragent = Counteragent.objects.all()
-        all_prolongation = Contract.type_of_prolongation
-        all_divisions = Division.objects.all()
-        context['employee'] = all_users
-        context['type_property'] = all_type_property
-        context['counteragent'] = all_counteragent
-        context['prolongation'] = all_prolongation
-        context['division'] = all_divisions
-        context['type_contract'] = all_type_of_contract
-        return context
+# class GetAllObject:
+#
+#     @staticmethod
+#     def get_object():
+#         context = {}
+#         all_users = DataBaseUser.objects.all()
+#         # all_type_of_contract = TypeContract.objects.all()
+#         # all_type_property = TypeProperty.objects.all()
+#         all_counteragent = Counteragent.objects.all()
+#         # all_prolongation = Contract.type_of_prolongation
+#         all_divisions = Division.objects.all()
+#         context['employee'] = all_users
+#         # context['type_property'] = all_type_property
+#         context['counteragent'] = all_counteragent
+#         # context['prolongation'] = all_prolongation
+#         context['division'] = all_divisions
+#         # context['type_contract'] = all_type_of_contract
+#         return context
 
 
 def transliterate(name):
