@@ -31,9 +31,9 @@ def send_email():
 def report_card_separator():
     try:
         file = pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.txt')
-        logger.info(f'Файл получен: {file}')
+        logger.info(f'File received: {file}')
     except Exception as _ex:
-        logger.info(f'Ошибка открытия файла: {_ex}')
+        logger.info(f'File opening error: {_ex}')
     import re
     result = {}
     try:
@@ -58,9 +58,9 @@ def report_card_separator():
                         }
                         ReportCard.objects.update_or_create(report_card_day=report_card_day.date(), employee=user_obj, defaults=kwargs)
                     except Exception as _ex:
-                        logger.error(f'{match[0]} не найден в БД: {_ex}')
+                        logger.error(f'{match[0]} not found in the database: {_ex}')
         return result
     except IOError:
-        logger.error(f'Ошибка открытия файла: {IOError}')
+        logger.error(f'File opening error: {IOError}')
     finally:
         fd.close()

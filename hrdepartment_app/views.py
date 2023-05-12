@@ -1130,6 +1130,9 @@ class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin,
 
 # Приказы
 class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """
+        Список приказов
+    """
     model = DocumentsOrder
     permission_required = 'hrdepartment_app.view_documentsorder'
 
@@ -1153,6 +1156,9 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 
 class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """
+    Добавление приказа
+    """
     model = DocumentsOrder
     form_class = DocumentsOrderAddForm
     permission_required = 'hrdepartment_app.add_documentsorder'
