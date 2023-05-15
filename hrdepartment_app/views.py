@@ -1315,10 +1315,10 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         sample_date = datetime.datetime(2023, 2, 14)
-        first_day = sample_date + relativedelta(day=1)
-        last_day = sample_date + relativedelta(day=31)
-        # first_day = datetime.datetime.today() + relativedelta(day=1)
-        # last_day = datetime.datetime.today() + relativedelta(day=31)
+        # first_day = sample_date + relativedelta(day=1)
+        # last_day = sample_date + relativedelta(day=31)
+        first_day = datetime.datetime.today() + relativedelta(day=1)
+        last_day = datetime.datetime.today() + relativedelta(day=31)
         total_score = 0
         data_dict = dict()
         for item in ReportCard.objects.filter(Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=self.request.user)):
