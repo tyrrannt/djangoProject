@@ -65,6 +65,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '4':
                 change_users_password()
             if request.GET.get('update') == '4':
-                report_card_separator()
+                report_card_separator.delay()
 
         return super().get(request, *args, **kwargs)
