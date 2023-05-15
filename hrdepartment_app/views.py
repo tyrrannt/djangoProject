@@ -1290,7 +1290,10 @@ class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            reportcard_list = ReportCard.objects.all()
+            if self.request.user.is_superuser:
+                reportcard_list = ReportCard.objects.all()
+            else:
+                reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
