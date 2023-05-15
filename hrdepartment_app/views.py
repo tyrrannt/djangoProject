@@ -1319,7 +1319,7 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         # last_day = sample_date + relativedelta(day=31)
         first_day = datetime.datetime.today() + relativedelta(day=1)
         last_day = datetime.datetime.today() + relativedelta(day=31)
-
+        total_score = 0
         data_dict = dict()
         for item in ReportCard.objects.filter(Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=self.request.user)):
             if data_dict.get(str(item.employee)):
@@ -1327,9 +1327,10 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
                 time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 5 else datetime.timedelta(hours=7, minutes=30)
                 time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
+                total_score += time_4
                 sign = '-' if time_4 < 0 else ''
                 time_delta = datetime.timedelta(seconds=abs(time_4))
-                data_dict[str(item.employee)].append([item.report_card_day, item.start_time, item.end_time, sign, time_delta])
+                data_dict[str(item.employee)].append([[item.report_card_day, item.start_time, item.end_time, sign, time_delta]], total_score)
 
             else:
                 data_dict[str(item.employee)] = []
@@ -1337,9 +1338,10 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
                 time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 5 else datetime.timedelta(hours=7, minutes=30)
                 time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
+                total_score += time_4
                 sign = '-' if time_4 < 0 else ''
                 time_delta = datetime.timedelta(seconds=abs(time_4))
-                data_dict[str(item.employee)].append([item.report_card_day, item.start_time, item.end_time, sign, time_delta])
+                data_dict[str(item.employee)].append([[item.report_card_day, item.start_time, item.end_time, sign, time_delta]], total_score)
         # print(data_dict)
         context['data_dict'] = data_dict
         context['first_day'] = first_day
