@@ -1329,7 +1329,7 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
                 time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
                 time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 4 else datetime.timedelta(hours=7, minutes=30)
-                print(item.report_card_day.weekday())
+
                 time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
                 total_score += time_4
                 sign = '-' if time_4 < 0 else ''
@@ -1343,7 +1343,7 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
                 time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
                 time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 4 else datetime.timedelta(hours=7, minutes=30)
-                print(item.report_card_day.weekday())
+
                 time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
                 total_score += time_4
                 sign = '-' if time_4 < 0 else ''
