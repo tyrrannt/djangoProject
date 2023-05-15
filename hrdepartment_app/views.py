@@ -1346,7 +1346,6 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 data_dict[str(item.employee)].append(
                     [item.report_card_day, item.start_time, item.end_time, sign, time_delta])
 
-        print(data_dict)
         context['data_dict'] = data_dict
         context['first_day'] = first_day
         context['last_day'] = last_day
