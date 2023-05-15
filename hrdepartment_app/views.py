@@ -1315,10 +1315,10 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         sample_date = datetime.datetime(2023, 2, 14)
-        # first_day = sample_date + relativedelta(day=1)
-        # last_day = sample_date + relativedelta(day=31)
-        first_day = datetime.datetime.today() + relativedelta(day=1)
-        last_day = datetime.datetime.today() + relativedelta(day=31)
+        first_day = sample_date + relativedelta(day=1)
+        last_day = sample_date + relativedelta(day=31)
+        # first_day = datetime.datetime.today() + relativedelta(day=1)
+        # last_day = datetime.datetime.today() + relativedelta(day=31)
         total_score = 0
         data_dict = dict()
         for item in ReportCard.objects.filter(Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=self.request.user)):
@@ -1330,7 +1330,9 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 total_score += time_4
                 sign = '-' if time_4 < 0 else ''
                 time_delta = datetime.timedelta(seconds=abs(time_4))
-                data_dict[str(item.employee)].append([[item.report_card_day, item.start_time, item.end_time, sign, time_delta]], total_score)
+                data_dict[str(item.employee)].append(
+                    [item.report_card_day, item.start_time, item.end_time, sign, time_delta])
+
 
             else:
                 data_dict[str(item.employee)] = []
@@ -1341,10 +1343,14 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 total_score += time_4
                 sign = '-' if time_4 < 0 else ''
                 time_delta = datetime.timedelta(seconds=abs(time_4))
-                data_dict[str(item.employee)].append([[item.report_card_day, item.start_time, item.end_time, sign, time_delta]], total_score)
-        # print(data_dict)
+                data_dict[str(item.employee)].append(
+                    [item.report_card_day, item.start_time, item.end_time, sign, time_delta])
+
+        print(data_dict)
         context['data_dict'] = data_dict
         context['first_day'] = first_day
         context['last_day'] = last_day
+        context['total_sign'] = '-' if total_score < 0 else ''
+        context['total_score'] = datetime.timedelta(seconds=abs(total_score))
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
         return context

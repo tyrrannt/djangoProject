@@ -51,24 +51,22 @@
                                         <th>Табель</th>
                                         <th>Факт</th>
                                     </tr>
-                                    {% for time_list, totel_score in value %}
-                                        {% for r1, r2, r3, r4, r5 in time_list %}
-                                            <tr>
-                                                <td>{{ r1 }}</td>
-                                                <td><span
-                                                        {% if r4 == '-' %}style="color: #ff0000"{% endif %}>{{ r4 }} {{ r5 }}</span>
-                                                </td>
-                                                <td>9:30-18:00</td>
-                                                <td>{{ r2 }}-{{ r3 }}</td>
-                                            </tr>
-                                        {% endfor %}
+                                    {% for r1, r2, r3, r4, r5 in value %}
                                         <tr>
-                                            <th></th>
-                                            <th>{{ totel_score }}</th>
-                                            <th></th>
-                                            <th></th>
+                                            <td>{{ r1 }}</td>
+                                            <td><span
+                                                    {% if r4 == '-' %}style="color: #ff0000"{% endif %}>{{ r4 }} {{ r5 }}</span>
+                                            </td>
+                                            <td>9:30-18:00</td>
+                                            <td>{{ r2 }}-{{ r3 }}</td>
                                         </tr>
                                     {% endfor %}
+                                    <tr>
+                                        <th>Итого:</th>
+                                        <th>{{ total_sign }}{{ total_score }}</th>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
                                 {% endfor %}
                                 </tbody>
                             </table>
