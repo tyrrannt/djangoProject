@@ -1,5 +1,6 @@
 import datetime
 
+from dateutil.relativedelta import relativedelta
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -7,8 +8,8 @@ from loguru import logger
 
 from administration_app.utils import get_jsons_data
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
-from djangoProject.settings import EMAIL_HOST_USER
-from hrdepartment_app.models import MedicalOrganisation, Medical
+from djangoProject.settings import EMAIL_HOST_USER, DEBUG
+from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard
 
 
 def get_medical_documents():
@@ -85,3 +86,30 @@ def send_mail_change(counter, obj):
 
     except Exception as _ex:
         logger.debug(f'Failed to send email. {_ex}')
+
+def get_report_card(pk):
+    sample_date = datetime.datetime(2023, 2, 14)
+    if DEBUG:
+        first_day = sample_date + relativedelta(day=1)
+        last_day = sample_date + relativedelta(day=31)
+    else:
+        first_day = datetime.datetime.today() + relativedelta(day=1)
+        last_day = datetime.datetime.today() + relativedelta(day=31)
+    total_score = 0
+    get_user = DataBaseUser.objects.get(pk=pk)
+    data_dict = dict()
+    for item in ReportCard.objects.filter(
+            Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)):
+        if not data_dict.get(str(item.employee)):
+            data_dict[str(item.employee)] = []
+        time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
+        time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
+        time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 4 else datetime.timedelta(
+            hours=7, minutes=30)
+        time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
+        total_score += time_4
+        sign = '-' if time_4 < 0 else ''
+        time_delta = datetime.timedelta(seconds=abs(time_4))
+        data_dict[str(item.employee)].append(
+            [item.report_card_day, item.start_time, item.end_time, sign, time_delta])
+    return data_dict, total_score, first_day, last_day
