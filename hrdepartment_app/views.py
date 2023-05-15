@@ -14,6 +14,7 @@ from administration_app.models import PortalProperty
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
     get_jsons_data, ending_day, get_history
 from customers_app.models import DataBaseUser, Counteragent
+from djangoProject.settings import DEBUG
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
@@ -1315,17 +1316,20 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         sample_date = datetime.datetime(2023, 2, 14)
-        # first_day = sample_date + relativedelta(day=1)
-        # last_day = sample_date + relativedelta(day=31)
-        first_day = datetime.datetime.today() + relativedelta(day=1)
-        last_day = datetime.datetime.today() + relativedelta(day=31)
+        if DEBUG:
+            first_day = sample_date + relativedelta(day=1)
+            last_day = sample_date + relativedelta(day=31)
+        else:
+            first_day = datetime.datetime.today() + relativedelta(day=1)
+            last_day = datetime.datetime.today() + relativedelta(day=31)
         total_score = 0
         data_dict = dict()
         for item in ReportCard.objects.filter(Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=self.request.user)):
             if data_dict.get(str(item.employee)):
                 time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
                 time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
-                time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 5 else datetime.timedelta(hours=7, minutes=30)
+                time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 4 else datetime.timedelta(hours=7, minutes=30)
+                print(item.report_card_day.weekday())
                 time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
                 total_score += time_4
                 sign = '-' if time_4 < 0 else ''
@@ -1338,7 +1342,8 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 data_dict[str(item.employee)] = []
                 time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
                 time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
-                time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 5 else datetime.timedelta(hours=7, minutes=30)
+                time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 4 else datetime.timedelta(hours=7, minutes=30)
+                print(item.report_card_day.weekday())
                 time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
                 total_score += time_4
                 sign = '-' if time_4 < 0 else ''
