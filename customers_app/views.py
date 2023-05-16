@@ -149,6 +149,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         except Exception as _ex:
             message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
             logger.debug(message)
+
+
+
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(FIO_format(user_obj))
         context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
         context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()

@@ -5,7 +5,7 @@ import pathlib
 from django.db.models import Q
 from loguru import logger
 
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Division, Posts
 from djangoProject.celery import app
 from djangoProject.settings import BASE_DIR
 from hrdepartment_app.models import ReportCard
@@ -31,11 +31,25 @@ def send_email():
 
 
 @app.task()
-def happy_birthday():
+def happy_birthday(self):
     today = datetime.datetime.today()
+    posts_dict = dict()
+    division = [item.pk for item in Division.objects.filter(active=True)]
     list_birthday_people = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month))
+    description = ''
     for item in list_birthday_people:
-        logger.info(f'{item}')
+        description = f'Сегодня {item} празднует свой {today.year - item.birthday.year}-й день рождения!'
+        posts_dict = {
+            'post_description': description,
+            'allowed_placed': True,
+            'responsible': self.request.user,
+            'post_date_start': datetime.datetime.today(),
+            'post_date_end': datetime.datetime.today(),
+        }
+        post, created = Posts.objects.update_or_create(post_description=description, defaults=posts_dict)
+        if created:
+            post.post_divisions.add(*division)
+            post.save()
 
 
 @app.task()
