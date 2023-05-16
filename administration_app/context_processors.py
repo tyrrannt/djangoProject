@@ -63,24 +63,24 @@ def get_approval_oficial_memo_process(request):
             clerk_job_list_executor = set(clerk_job_list_executor_set)
             # Выбор согласующих лиц
             person_executor_list = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_job_list)]
-            person_agreement = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__in=person_executor_list) & Q(document_not_agreed=False))
+            person_agreement = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__in=person_executor_list) & Q(document_not_agreed=False)).exclude(cancellation=True)
             # Получение списка сотрудников НО
             person_distributor_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=1) & Q(user_work_profile__job__right_to_approval=True))
             person_distributor = [item for item in person_distributor_list]
-            location_selected = ApprovalOficialMemoProcess.objects.filter(Q(location_selected=False) & Q(document_not_agreed=True))
+            location_selected = ApprovalOficialMemoProcess.objects.filter(Q(location_selected=False) & Q(document_not_agreed=True)).exclude(cancellation=True)
             # Получение списка сотрудников ОК
             person_department_staff_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
             person_department_staff = [item for item in person_department_staff_list]
-            process_accepted = ApprovalOficialMemoProcess.objects.filter(Q(process_accepted=False) & Q(location_selected=True))
+            process_accepted = ApprovalOficialMemoProcess.objects.filter(Q(process_accepted=False) & Q(location_selected=True)).exclude(cancellation=True)
             # Выбор делопроизводителя
             clerk_list = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=clerk_job_list)]
             clerk_list_executor = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=clerk_job_list_executor)]
             clerk = ApprovalOficialMemoProcess.objects.filter(
-                Q(person_executor__in=clerk_list_executor) & Q(originals_received=False) & Q(process_accepted=True))
+                Q(person_executor__in=clerk_list_executor) & Q(originals_received=False) & Q(process_accepted=True)).exclude(cancellation=True)
             # Получение списка сотрудников ОК 2
             person_hr_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
             person_hr = [item for item in person_hr_list]
-            hr_accepted = ApprovalOficialMemoProcess.objects.filter(Q(hr_accepted=False) & Q(originals_received=True))
+            hr_accepted = ApprovalOficialMemoProcess.objects.filter(Q(hr_accepted=False) & Q(originals_received=True)).exclude(cancellation=True)
             return {
                 'person_agreement': person_agreement,
                 'document_not_agreed': person_agreement.count(),
