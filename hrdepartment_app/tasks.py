@@ -39,7 +39,7 @@ def report_card_separator():
     import re
     result = {}
     try:
-        with open(file) as fd:
+        with open(file, encoding='cp1251') as fd:
             for line in fd:
                 match = re.search(r'\D*', line)
                 start_time = line[len(match[0]) + 5:len(match[0]) + 21]
