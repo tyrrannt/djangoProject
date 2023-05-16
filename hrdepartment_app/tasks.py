@@ -31,7 +31,7 @@ def send_email():
 
 
 @app.task()
-def happy_birthday(self):
+def happy_birthday():
     today = datetime.datetime.today()
     posts_dict = dict()
     division = [item.pk for item in Division.objects.filter(active=True)]
@@ -42,7 +42,7 @@ def happy_birthday(self):
         posts_dict = {
             'post_description': description,
             'allowed_placed': True,
-            'responsible': self.request.user,
+            'responsible': DataBaseUser.objects.get(pk=1),
             'post_date_start': datetime.datetime.today(),
             'post_date_end': datetime.datetime.today(),
         }
