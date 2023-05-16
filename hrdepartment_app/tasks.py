@@ -2,6 +2,7 @@
 import datetime
 import pathlib
 
+from django.db.models import Q
 from loguru import logger
 
 from customers_app.models import DataBaseUser
@@ -27,6 +28,14 @@ def xldate_to_datetime(xldate):
 @app.task()
 def send_email():
     print('It is work!')
+
+
+@app.task()
+def happy_birthday():
+    today = datetime.datetime.today()
+    list_birthday_people = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month))
+    for item in list_birthday_people:
+        logger.info(f'{item}')
 
 
 @app.task()

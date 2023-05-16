@@ -10,8 +10,12 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    'send-spam': {
+    'load_report_card': {
         'task': 'hrdepartment_app.tasks.report_card_separator',
+        'schedule': crontab(minute=0, hour=7),
+    },
+    'birthday_gift': {
+        'task': 'hrdepartment_app.tasks.happy_birthday',
         'schedule': crontab(minute='*/5'),
-    }
+    },
 }
