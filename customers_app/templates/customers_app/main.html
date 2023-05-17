@@ -57,7 +57,7 @@
     <!-- start: header -->
     <header class="header">
         <div class="logo-container">
-            <a href="{% if user.is_superuser %}/bklproxmoxadmin/{% else %}/{% endif %}" class="logo">
+            <a href="{% if user.is_superuser %}/bklproxmoxadmin/{% else %}/users/profile/{{ user.pk }}/{% endif %}" class="logo">
                 <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Панель администрирования"/>
             </a>
 
