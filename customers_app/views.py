@@ -158,6 +158,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()
         context['bpf'] = ApprovalOficialMemoProcess.objects.filter(cancellation=True).count()
         context['contract'] = Contract.objects.all().count()
+        context['current_year'] = datetime.datetime.today().year
+        context['current_month'] = datetime.datetime.today().month
         get_profile_fill(self, context)
 
         # context.update(groups())
