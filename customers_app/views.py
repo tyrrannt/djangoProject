@@ -171,7 +171,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             report_year = self.request.GET.get('RY')
             report_month = self.request.GET.get('RM')
             current_passphrase = self.request.GET.get('PX')
-            if current_month and current_passphrase and current_year:
+            if current_month and current_year:
                 try:
                     if len(current_month) == 1:
                         current_month = '0' + current_month
