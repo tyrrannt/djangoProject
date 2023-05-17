@@ -220,7 +220,6 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                             <tr>
                                 <td colspan="4">За период с: {first_day} по: {last_day}</td>
                             </tr>"""
-    print(data_dict)
     for key in data_dict:
         html_obj += f"""
                         <tr>
