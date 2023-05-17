@@ -209,7 +209,51 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
     result = [days_worked, hours_worked, paid_days]
     return result
 
+def get_report_card_table(data_dict, total_score, first_day, last_day):
+    html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+                                <tbody>
+                                <tr>
+                                    <td colspan="4"><h4>Выполнение графика по сотрудникам</h4></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4">За период с: { first_day } по: { last_day }</td>
+                                </tr>"""
+    print(data_dict)
+    for key in data_dict:
+        html_obj += f"""
+                                    <tr>
+                                        <td colspan="2">{ key }</td>
+                                        <td>Табельный номер</td>
+                                        <td>{ key }</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Дата</th>
+                                        <th>Нормы</th>
+                                        <th>Табель</th>
+                                        <th>Факт</th>
+                                    </tr>"""
+        for r1, r2, r3, r4, r5 in data_dict[key]:
+            html_obj += f"""<tr>
+                                <td>{ r1 }</td>
+                                <td><span {'style="color: #ff0000"' if r4 == '-' else ''}>{ r4 } { r5 }</span>
+                                </td>
+                                <td>9:30-18:00</td>
+                                <td>{ r2 }-{ r3 }</td>
+                            </tr>"""
+        html_obj += f"""
+                         <tr>
+                            <th>Итого:</th>
+                            <th>{ '-' if total_score < 0 else '' }{ datetime.timedelta(seconds=abs(total_score)) }</th>
+                            <th></th>
+                            <th></th>
+                            </tr>"""
 
+    html_obj += f"""
+        </tbody>
+    </table>     
+    """
+    return html_obj
 def get_settlement_sheet(selected_month, selected_year, users_uuid):
     """
             Получение расчетного листка сотрудника,

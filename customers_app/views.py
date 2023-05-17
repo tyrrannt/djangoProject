@@ -16,7 +16,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_queryset, change_session_context, FIO_format
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
-    get_settlement_sheet
+    get_settlement_sheet, get_report_card_table
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -27,6 +27,8 @@ from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm,
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
+
+from hrdepartment_app.hrdepartment_util import get_report_card
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -138,19 +140,17 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         try:
             # Получаем выборку постов, у которых дата начала больше текущего дня
             post_high = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                             Q(post_date_start__gt=datetime.datetime.today())).order_by(
+                                        Q(post_date_start__gt=datetime.datetime.today())).order_by(
                 '-post_date_start')
             # Получаем выборку постов, у которых дата начала меньше текущего дня
             post_low = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                            Q(post_date_start__lte=datetime.datetime.today())).order_by(
+                                       Q(post_date_start__lte=datetime.datetime.today())).order_by(
                 '-post_date_start')
             context['post_high'] = post_high
             context['post_low'] = post_low
         except Exception as _ex:
             message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
             logger.debug(message)
-
-
 
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(FIO_format(user_obj))
         context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
@@ -168,6 +168,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         if self.request.GET:
             current_year = self.request.GET.get('CY')
             current_month = self.request.GET.get('CM')
+            report_year = self.request.GET.get('RY')
+            report_month = self.request.GET.get('RM')
             current_passphrase = self.request.GET.get('PX')
             if current_month and current_passphrase and current_year:
                 try:
@@ -186,6 +188,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 else:
                     html_obj = ''
                 return JsonResponse(html_obj, safe=False)
+            if report_year and report_month:
+                data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk)
+                return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day), safe=False)
         return super().get(request, *args, **kwargs)
 
 
@@ -199,6 +204,7 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
     model = DataBaseUser
     form_class = ChangeAvatarUpdateForm
     template_name = 'customers_app/change_avatar.html'
+
 
 # class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 #     model = DataBaseUser
@@ -506,7 +512,8 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_queryset(self):
         change_session_queryset(self.request, self)
-        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False).order_by(self.item_sorted)
+        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False).order_by(
+            self.item_sorted)
         return qs
 
     def get(self, request, *args, **kwargs):
