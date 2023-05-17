@@ -186,7 +186,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 if hash_pass == request.user.passphrase and hash_pass != hash_null:
                     html_obj = get_settlement_sheet(current_month, current_year, get_user_obj.person_ref_key)
                 else:
-                    html_obj = ''
+                    html_obj = ['', '', '']
                 return JsonResponse(html_obj, safe=False)
             if report_year and report_month:
                 data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk, RY=report_year, RM=report_month)
