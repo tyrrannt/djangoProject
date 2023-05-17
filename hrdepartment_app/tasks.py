@@ -103,11 +103,10 @@ def report_card_separator():
     # Read the values of the file in the dataframe
     data = pd.DataFrame(excel_data, columns=['ФИО', 'Дата', 'Время прихода', 'Время ухода'])
     # # Print the content
-    dictionary = data.set_index('ФИО').T.to_dict('list')
+    dictionary = data.to_dict('records')
     for key in dictionary:
-        d1, t1, t2 = dictionary[key]
-        print(key, datetime.datetime.date(d1), datetime.datetime.time(t1), datetime.datetime.time(t2))
-        search_user = key.split(' ')
+        usr, d1, t1, t2 = key['ФИО'], key['Дата'], key['Время прихода'], key['Время ухода']
+        search_user = usr.split(' ')
         try:
             user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
                                                 surname=search_user[2])
