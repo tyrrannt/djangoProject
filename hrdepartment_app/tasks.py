@@ -99,7 +99,7 @@ def happy_birthday():
 def report_card_separator():
     import pandas as pd
     # Load the xlsx file
-    excel_data = pd.read_excel('PersonsWorkLite.xls')
+    excel_data = pd.read_excel(pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.xls'))
     # Read the values of the file in the dataframe
     data = pd.DataFrame(excel_data, columns=['ФИО', 'Дата', 'Время прихода', 'Время ухода'])
     # # Print the content
