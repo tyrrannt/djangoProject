@@ -40,8 +40,10 @@ lxml==4.9.2
 MarkupSafe==2.1.2
 msoffice2pdf==0.0.8
 mysqlclient==2.1.1
+numpy==1.24.3
 openpyxl==3.1.2
 packaging==23.1
+pandas==2.0.1
 Pillow==9.5.0
 pip-upgrader==1.4.15
 prometheus-client==0.16.0
@@ -62,6 +64,7 @@ sqlparse==0.4.4
 terminaltables==3.1.10
 tornado==6.3
 tqdm==4.65.0
+tzdata==2023.3
 urllib3==1.26.15
 vine==5.0.0
 wcwidth==0.2.6

@@ -52,44 +52,73 @@ def happy_birthday():
             post.save()
 
 
+# @app.task()
+# def report_card_separator():
+#     try:
+#         file = pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.txt')
+#         logger.info(f'File received: {file}')
+#     except Exception as _ex:
+#         logger.info(f'File opening error: {_ex}')
+#     import re
+#     result = {}
+#     try:
+#         with open(file, encoding='cp1251') as fd:
+#             for line in fd:
+#                 match = re.search(r'\D*', line)
+#                 start_time = line[len(match[0]) + 5:len(match[0]) + 21]
+#                 end_time = line[len(match[0]) + 21:-1]
+#                 if end_time:
+#                     result.update({f'{match[0]}': [start_time, end_time]})
+#                     search_user = match[0].split(' ')
+#                     try:
+#                         user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+#                                                             surname=search_user[2])
+#                         report_card_day = datetime.datetime.strptime(
+#                             xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S')
+#
+#                         kwargs = {
+#                             'report_card_day': report_card_day.date(),
+#                             'employee': user_obj,
+#                             'start_time': datetime.datetime.strptime(
+#                                 xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
+#                             'end_time': datetime.datetime.strptime(
+#                                 xldate_to_datetime(float(end_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
+#                         }
+#                         ReportCard.objects.update_or_create(report_card_day=report_card_day.date(), employee=user_obj,
+#                                                             defaults=kwargs)
+#                     except Exception as _ex:
+#                         logger.error(f'{match[0]} not found in the database: {_ex}')
+#         return result
+#     except IOError:
+#         logger.error(f'File opening error: {IOError}')
+#     finally:
+#         fd.close()
+
+
 @app.task()
 def report_card_separator():
-    try:
-        file = pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.txt')
-        logger.info(f'File received: {file}')
-    except Exception as _ex:
-        logger.info(f'File opening error: {_ex}')
-    import re
-    result = {}
-    try:
-        with open(file, encoding='cp1251') as fd:
-            for line in fd:
-                match = re.search(r'\D*', line)
-                start_time = line[len(match[0]) + 5:len(match[0]) + 21]
-                end_time = line[len(match[0]) + 21:-1]
-                if end_time:
-                    result.update({f'{match[0]}': [start_time, end_time]})
-                    search_user = match[0].split(' ')
-                    try:
-                        user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
-                                                            surname=search_user[2])
-                        report_card_day = datetime.datetime.strptime(
-                            xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S')
-
-                        kwargs = {
-                            'report_card_day': report_card_day.date(),
-                            'employee': user_obj,
-                            'start_time': datetime.datetime.strptime(
-                                xldate_to_datetime(float(start_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
-                            'end_time': datetime.datetime.strptime(
-                                xldate_to_datetime(float(end_time.replace(',', '.'))), '%Y-%m-%d %H:%M:%S').time(),
-                        }
-                        ReportCard.objects.update_or_create(report_card_day=report_card_day.date(), employee=user_obj,
-                                                            defaults=kwargs)
-                    except Exception as _ex:
-                        logger.error(f'{match[0]} not found in the database: {_ex}')
-        return result
-    except IOError:
-        logger.error(f'File opening error: {IOError}')
-    finally:
-        fd.close()
+    import pandas as pd
+    # Load the xlsx file
+    excel_data = pd.read_excel('PersonsWorkLite.xls')
+    # Read the values of the file in the dataframe
+    data = pd.DataFrame(excel_data, columns=['ФИО', 'Дата', 'Время прихода', 'Время ухода'])
+    # # Print the content
+    dictionary = data.set_index('ФИО').T.to_dict('list')
+    for key in dictionary:
+        d1, t1, t2 = dictionary[key]
+        print(key, datetime.datetime.date(d1), datetime.datetime.time(t1), datetime.datetime.time(t2))
+        search_user = key.split(' ')
+        try:
+            user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+                                                surname=search_user[2])
+            kwargs = {
+                'report_card_day': datetime.datetime.date(d1),
+                'employee': user_obj,
+                'start_time': datetime.datetime.time(t1),
+                'end_time': datetime.datetime.time(t2),
+            }
+            ReportCard.objects.update_or_create(report_card_day=datetime.datetime.date(d1), employee=user_obj,
+                                                defaults=kwargs)
+        except Exception as _ex:
+            logger.error(f'{key} not found in the database: {_ex}')
+    return dictionary
