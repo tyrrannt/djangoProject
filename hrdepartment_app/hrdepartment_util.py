@@ -87,9 +87,10 @@ def send_mail_change(counter, obj):
     except Exception as _ex:
         logger.debug(f'Failed to send email. {_ex}')
 
-def get_report_card(pk):
-    sample_date = datetime.datetime(2023, 2, 14)
-    if DEBUG:
+def get_report_card(pk, RY=None, RM=None ):
+
+    if RY and RM:
+        sample_date = datetime.datetime(RY, RM, 1)
         first_day = sample_date + relativedelta(day=1)
         last_day = sample_date + relativedelta(day=31)
     else:
