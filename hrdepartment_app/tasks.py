@@ -106,6 +106,7 @@ def report_card_separator():
     dictionary = data.to_dict('records')
     for key in dictionary:
         usr, d1, t1, t2 = key['ФИО'], key['Дата'], key['Время прихода'], key['Время ухода']
+
         search_user = usr.split(' ')
         try:
             user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
