@@ -90,7 +90,10 @@ def send_mail_change(counter, obj):
 def get_report_card(pk, RY=None, RM=None ):
 
     if RY and RM:
-        sample_date = datetime.datetime(RY, RM, 1)
+        try:
+            sample_date = datetime.datetime(int(RY), int(RM), 1)
+        except TypeError:
+            sample_date = datetime.datetime(2023, 1, 1)
         first_day = sample_date + relativedelta(day=1)
         last_day = sample_date + relativedelta(day=31)
     else:
