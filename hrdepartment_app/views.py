@@ -958,21 +958,48 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                 person = FIO_format(str(item.document.person))
                 place = '; '.join([item.name for item in item.document.place_production_activity.all()])
                 place_short = '; '.join([item.short_name for item in item.document.place_production_activity.all()])
+
                 if person in dict_obj:
                     list_obj = dict_obj[person]
                     for days_count in range(0, (date_end - date_start).days + 1):
                         curent_day = date_start + datetime.timedelta(days_count)
-                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj[days_count] = ['1', place, place_short]
+                        if item.hr_accepted:
+                            if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
+                                list_obj[days_count] = ['2', place, place_short]
+                        else:
+                            if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                                list_obj[days_count] = ['1', place, place_short]
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
                 else:
                     dict_obj[FIO_format(str(item.document.person))] = []
                     for days_count in range(0, (date_end - date_start).days + 1):
                         curent_day = date_start + datetime.timedelta(days_count)
-                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj.append(['1', place, place_short])
+                        if item.hr_accepted:
+                            if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
+                                list_obj.append(['2', place, place_short])
+                            else:
+                                list_obj.append(['0', place, place_short])
                         else:
-                            list_obj.append(['0', ''])
+                            if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                                list_obj.append(['1', place, place_short])
+                            else:
+                                list_obj.append(['0', ''])
+
+                # if person in dict_obj:
+                #     list_obj = dict_obj[person]
+                #     for days_count in range(0, (date_end - date_start).days + 1):
+                #         curent_day = date_start + datetime.timedelta(days_count)
+                #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                #             list_obj[days_count] = ['1', place, place_short]
+                #     dict_obj[FIO_format(str(item.document.person))] = list_obj
+                # else:
+                #     dict_obj[FIO_format(str(item.document.person))] = []
+                #     for days_count in range(0, (date_end - date_start).days + 1):
+                #         curent_day = date_start + datetime.timedelta(days_count)
+                #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                #             list_obj.append(['1', place, place_short])
+                #         else:
+                #             list_obj.append(['0', ''])
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
 
                 table_set = dict_obj
@@ -988,6 +1015,10 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                             place = unit[1].replace('"', "")
                             plase_short = ''  # unit[2]
                             html_table_set += f'<td width="2%" style="background-color: #d2691e; border-color:#4670ad;border-style:dashed;border-width:1px;"  title="{place}">{plase_short}</td>'
+                        elif unit[0] == '2':
+                            place = unit[1].replace('"', "")
+                            plase_short = ''  # unit[2]
+                            html_table_set += f'<td width="2%" style="background-color: #2b8101; border-color:#4670ad;border-style:dashed;border-width:1px;"  title="{place}">{plase_short}</td>'
                         else:
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
