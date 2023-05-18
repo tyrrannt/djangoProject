@@ -986,7 +986,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     html_table_count += f'<th width="2%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">{item}</span></th>'
                 html_table_set = ''
                 for key, value in table_set.items():
-                    html_table_set += f'<tr><td width="14%"><strong>{key}</strong></td>'
+                    html_table_set += f'<tr><td width="14%" style="position: fixed;"><strong>{key}</strong></td>'
                     for unit in value:
                         if unit[0] == '1':
                             place = unit[1].replace('"', "")
@@ -999,7 +999,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                 html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; height: 500px; overflow: auto;">
                                 <thead>
                                 <tr>
-                                    <th width="14%"><span style="color: #0a53be">ФИО</span></th>
+                                    <th width="14%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">ФИО</span></th>
                                     {html_table_count}
                                 </tr>
                                 </thead>
