@@ -80,6 +80,13 @@
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_person">Сотрудник</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_official_memo_type">Тип служебной поездки</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()"}}
@@ -97,13 +104,6 @@
                                                for="id_type_trip">Вид служебной поездки</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.type_trip | add_class:"form-control form-control-modern" }}
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person">Сотрудник</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">

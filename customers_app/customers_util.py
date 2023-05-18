@@ -218,7 +218,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                                 <td colspan="4"><h4>Выполнение графика по сотрудникам</h4></td>
                             </tr>
                             <tr>
-                                <td colspan="4">За период с: {first_day} по: {last_day}</td>
+                                <td colspan="4">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
                             </tr>"""
     for key in data_dict:
         html_obj += f"""
@@ -235,7 +235,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                         </tr>"""
         for r1, r2, r3, r4, r5 in data_dict[key]:
             html_obj += f"""<tr>
-                                <td>{r1}</td>
+                                <td>{r1.strftime('%d-%m-%Y')}</td>
                                 <td><span {'style="color: #ff0000"' if r4 == '-' else ''}>{r4} {r5}</span>
                                 </td>
                                 <td>9:30-18:00</td>
