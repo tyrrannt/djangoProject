@@ -991,9 +991,9 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                         if unit[0] == '1':
                             place = unit[1].replace('"', "")
                             plase_short = ''  # unit[2]
-                            html_table_set += f'<td width="2%" style="background-color: #d2691e"  title="{place}">{plase_short}</td>'
+                            html_table_set += f'<td width="2%" style="background-color: #d2691e; border-color:#4670ad;border-style:dashed;border-width:1px;"  title="{place}">{plase_short}</td>'
                         else:
-                            html_table_set += '<td width="2%" style="background-color: #f5f5dc"></td>'
+                            html_table_set += '<td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
 
                 html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; height: 500px; overflow: auto;">
