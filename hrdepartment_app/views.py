@@ -1037,21 +1037,33 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
         for item in qs.all():
             list_obj = []
             person = FIO_format(str(item.document.person))
+            # Проверяем, заполнялся ли список по сотруднику
             if person in dict_obj:
                 list_obj = dict_obj[person]
                 for days_count in range(0, (date_end - date_start).days + 1):
                     curent_day = date_start + datetime.timedelta(days_count)
-                    if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                        list_obj[days_count] = '1'
+                    if item.start_date_trip and item.end_date_trip and item.hr_accepted:
+                        if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
+                            list_obj[days_count] = '2'
+                    else:
+                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                            list_obj[days_count] = '1'
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
             else:
                 dict_obj[FIO_format(str(item.document.person))] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
                     curent_day = date_start + datetime.timedelta(days_count)
-                    if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                        list_obj.append('1')
+                    if item.start_date_trip and item.end_date_trip and item.hr_accepted:
+                        if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
+                            list_obj[days_count] = '2'
+                        else:
+                            list_obj.append('0')
                     else:
-                        list_obj.append('0')
+                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                            list_obj[days_count] = '1'
+                        else:
+                            list_obj.append('0')
+
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
 
         content['table_set'] = dict_obj
