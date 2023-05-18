@@ -240,7 +240,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
             delta = datetime.datetime.strptime(str(r5), '%H:%M:%S').time().strftime('%H:%M')
             html_obj += f"""<tr>
                                 <td>{r1.strftime('%d-%m-%Y')}</td>
-                                <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4} {delta}</span>
+                                <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span>
                                 </td>
                                 <td>9:30-{end_work_time}</td>
                                 <td>{start_time}-{end_time}</td>
@@ -248,7 +248,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>
-                            <th>{'-' if total_score < 0 else ''}{datetime.datetime.strptime(str(datetime.timedelta(seconds=abs(total_score))), '%H:%M:%S').time().strftime('%H:%M')}</th>
+                            <th><span style="{' color: #ff0000;' if total_score < 0 else ''}">{'-' if total_score < 0 else ''}{datetime.datetime.strptime(str(datetime.timedelta(seconds=abs(total_score))), '%H:%M:%S').time().strftime('%H:%M')}</span></th>
                             <th></th>
                             <th></th>
                             </tr>"""
