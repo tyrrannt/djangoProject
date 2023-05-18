@@ -99,7 +99,7 @@
                                                        value="Передан"/>
                                             {% else %}
                                                 <div class="col">
-                                                    <span>{{ form.submit_for_approval }}</span>
+                                                    <span>{{ form.submit_for_approval | add_class:"form-control-modern" }}</span>
                                                 </div>
                                             {% endif %}
                                         </div>

@@ -84,10 +84,6 @@ class OfficialMemoAddForm(forms.ModelForm):
                   'person', 'purpose_trip', 'responsible', 'type_trip', 'official_memo_type', 'document_extension')
 
     def clean(self):
-        # user age must be above 18 to register
-        # if self.cleaned_data.get('period_for') < self.cleaned_data.get('period_from'):
-        #     msg = 'Дата начала не может быть больше даты окончания!'
-        #     self.add_error(None, msg)
         cleaned_data = super().clean()
         official_memo_type = cleaned_data.get("official_memo_type")
         document_extension = cleaned_data.get("document_extension")
