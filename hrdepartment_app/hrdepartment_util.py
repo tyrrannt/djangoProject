@@ -9,7 +9,7 @@ from loguru import logger
 from administration_app.utils import get_jsons_data
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
 from djangoProject.settings import EMAIL_HOST_USER, DEBUG
-from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard
+from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay
 
 
 def get_medical_documents():
@@ -87,6 +87,19 @@ def send_mail_change(counter, obj):
     except Exception as _ex:
         logger.debug(f'Failed to send email. {_ex}')
 
+
+def get_preholiday_day(curent_day, hour, minute):
+    try:
+        pre_holiday_day = PreHolidayDay.objects.get(preholiday_day=curent_day)
+        if hour == 0 and minute == 0:
+            return datetime.timedelta(hours=hour, minutes=minute)
+        else:
+            return datetime.timedelta(hours=pre_holiday_day.work_time.hour, minutes=pre_holiday_day.work_time.minute)
+    except Exception as _ex:
+        return datetime.timedelta(hours=hour, minutes=minute)
+
+
+
 def get_report_card(pk, RY=None, RM=None ):
 
     if RY and RM:
@@ -108,8 +121,12 @@ def get_report_card(pk, RY=None, RM=None ):
             data_dict[str(item.employee)] = []
         time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
         time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
-        time_3 = datetime.timedelta(hours=8, minutes=30) if item.report_card_day.weekday() != 4 else datetime.timedelta(
-            hours=7, minutes=30)
+        if item.report_card_day.weekday() in [0, 1, 2, 3]:
+            time_3 = get_preholiday_day(item.report_card_day, 8, 30)
+        elif item.report_card_day.weekday() == 4:
+            time_3 = get_preholiday_day(item.report_card_day, 7, 30)
+        else:
+            time_3 = get_preholiday_day(item.report_card_day, 0, 0)
         time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
         total_score += time_4
         sign = '-' if time_4 < 0 else ''

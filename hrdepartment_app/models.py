@@ -854,3 +854,11 @@ class ReportCard(models.Model):
             'start_time': self.start_time,
             'end_time': str(self.end_time),
         }
+
+class PreHolidayDay(models.Model):
+    class Meta:
+        verbose_name = 'Предпраздничный день'
+        verbose_name_plural = 'Предпраздничные дни'
+
+    preholiday_day = models.DateField(verbose_name='Дата', null=True, blank=True)
+    work_time = models.TimeField(verbose_name='Рабочее время', null=True, blank=True)
