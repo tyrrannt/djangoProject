@@ -943,10 +943,15 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
             days = monthrange(current_year, current_month)[1]
             date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
-            qs = ApprovalOficialMemoProcess.objects.filter(
-                Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                & Q(document__period_for__gte=date_start)).order_by('document__period_from')
+            if self.request.user.user_work_profile.divisions.type_of_role == '2':
+                qs = ApprovalOficialMemoProcess.objects.filter(
+                    (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
+                    & Q(document__period_for__gte=date_start)).order_by('document__responsible')
+            else:
+                qs = ApprovalOficialMemoProcess.objects.filter(
+                    Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
+                    & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
+                    & Q(document__period_for__gte=date_start)).order_by('document__responsible')
             dict_obj = dict()
             for item in qs.all():
                 list_obj = []
@@ -1022,12 +1027,12 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
         if self.request.user.user_work_profile.divisions.type_of_role == '2':
             qs = ApprovalOficialMemoProcess.objects.filter(
                 (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                & Q(document__period_for__gte=date_start)).order_by('document__period_from')
+                & Q(document__period_for__gte=date_start)).order_by('document__responsible')
         else:
             qs = ApprovalOficialMemoProcess.objects.filter(
                 Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
                 & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                & Q(document__period_for__gte=date_start)).order_by('document__period_from')
+                & Q(document__period_for__gte=date_start)).order_by('document__responsible')
         dict_obj = dict()
         for item in qs.all():
             list_obj = []
