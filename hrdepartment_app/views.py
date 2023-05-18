@@ -946,12 +946,12 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                    & Q(document__period_for__gte=date_start)).order_by('document__responsible')
+                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
             else:
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
                     & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                    & Q(document__period_for__gte=date_start)).order_by('document__responsible')
+                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
             dict_obj = dict()
             for item in qs.all():
                 list_obj = []
@@ -1027,12 +1027,12 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
         if self.request.user.user_work_profile.divisions.type_of_role == '2':
             qs = ApprovalOficialMemoProcess.objects.filter(
                 (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                & Q(document__period_for__gte=date_start)).order_by('document__responsible')
+                & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
         else:
             qs = ApprovalOficialMemoProcess.objects.filter(
                 Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
                 & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                & Q(document__period_for__gte=date_start)).order_by('document__responsible')
+                & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
         dict_obj = dict()
         for item in qs.all():
             list_obj = []
