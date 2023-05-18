@@ -89,14 +89,19 @@ def send_mail_change(counter, obj):
 
 
 def get_preholiday_day(curent_day, hour, minute):
+    start_time = datetime.timedelta(hours=9, minutes=30)
     try:
         pre_holiday_day = PreHolidayDay.objects.get(preholiday_day=curent_day)
         if hour == 0 and minute == 0:
-            return datetime.timedelta(hours=hour, minutes=minute)
+            start_time += datetime.timedelta(hours=hour, minutes=minute)
+            return datetime.timedelta(hours=hour, minutes=minute), start_time
         else:
-            return datetime.timedelta(hours=pre_holiday_day.work_time.hour, minutes=pre_holiday_day.work_time.minute)
+            start_time += datetime.timedelta(hours=pre_holiday_day.work_time.hour, minutes=pre_holiday_day.work_time.minute)
+            return datetime.timedelta(hours=pre_holiday_day.work_time.hour, minutes=pre_holiday_day.work_time.minute), start_time
+
     except Exception as _ex:
-        return datetime.timedelta(hours=hour, minutes=minute)
+        start_time += datetime.timedelta(hours=hour, minutes=minute)
+        return datetime.timedelta(hours=hour, minutes=minute), start_time
 
 
 
@@ -116,21 +121,21 @@ def get_report_card(pk, RY=None, RM=None ):
     get_user = DataBaseUser.objects.get(pk=pk)
     data_dict = dict()
     for item in ReportCard.objects.filter(
-            Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)):
+            Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by('report_card_day'):
         if not data_dict.get(str(item.employee)):
             data_dict[str(item.employee)] = []
         time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
         time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
         if item.report_card_day.weekday() in [0, 1, 2, 3]:
-            time_3 = get_preholiday_day(item.report_card_day, 8, 30)
+            time_3, end_time = get_preholiday_day(item.report_card_day, 8, 30)
         elif item.report_card_day.weekday() == 4:
-            time_3 = get_preholiday_day(item.report_card_day, 7, 30)
+            time_3, end_time = get_preholiday_day(item.report_card_day, 7, 30)
         else:
-            time_3 = get_preholiday_day(item.report_card_day, 0, 0)
+            time_3, end_time = get_preholiday_day(item.report_card_day, 0, 0)
         time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
         total_score += time_4
         sign = '-' if time_4 < 0 else ''
         time_delta = datetime.timedelta(seconds=abs(time_4))
         data_dict[str(item.employee)].append(
-            [item.report_card_day, item.start_time, item.end_time, sign, time_delta])
+            [item.report_card_day, item.start_time, item.end_time, sign, time_delta, end_time])
     return data_dict, total_score, first_day, last_day

@@ -233,18 +233,22 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                             <th>Табель</th>
                             <th>Факт</th>
                         </tr>"""
-        for r1, r2, r3, r4, r5 in data_dict[key]:
+        for r1, r2, r3, r4, r5, r6 in data_dict[key]:
+            end_work_time = datetime.datetime.strptime(str(r6), '%H:%M:%S').time().strftime('%H:%M')
+            start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
+            end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
+            delta = datetime.datetime.strptime(str(r5), '%H:%M:%S').time().strftime('%H:%M')
             html_obj += f"""<tr>
                                 <td>{r1.strftime('%d-%m-%Y')}</td>
-                                <td><span {'style="color: #ff0000"' if r4 == '-' else ''}>{r4} {r5}</span>
+                                <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4} {delta}</span>
                                 </td>
-                                <td>9:30-18:00</td>
-                                <td>{r2}-{r3}</td>
+                                <td>9:30-{end_work_time}</td>
+                                <td>{start_time}-{end_time}</td>
                             </tr>"""
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>
-                            <th>{'-' if total_score < 0 else ''}{datetime.timedelta(seconds=abs(total_score))}</th>
+                            <th>{'-' if total_score < 0 else ''}{datetime.datetime.strptime(str(datetime.timedelta(seconds=abs(total_score))), '%H:%M:%S').time().strftime('%H:%M')}</th>
                             <th></th>
                             <th></th>
                             </tr>"""
