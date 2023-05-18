@@ -112,10 +112,10 @@ def report_card_separator():
             user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
                                                 surname=search_user[2])
             kwargs = {
-                'report_card_day': datetime.datetime.date(d1).strftime('%d-%m-%Y'),
+                'report_card_day': datetime.datetime.date(d1),
                 'employee': user_obj,
-                'start_time': datetime.datetime.time(t1).strftime('%H:%M'),
-                'end_time': datetime.datetime.time(t2).strftime('%H:%M'),
+                'start_time': datetime.datetime.time(t1),
+                'end_time': datetime.datetime.time(t2),
             }
             ReportCard.objects.update_or_create(report_card_day=datetime.datetime.date(d1), employee=user_obj,
                                                 defaults=kwargs)
