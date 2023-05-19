@@ -476,7 +476,7 @@
                                             <label class="col"
                                                    for="id_prepaid_expense_summ">Сумма по авансовому отчету</label>
                                             <div class="col">
-                                                {% if user.pk in list_accounting %}
+                                                {% if user in list_accounting %}
                                                     {{ form.prepaid_expense_summ | add_class:"form-control form-control-modern" }}
                                                 {% else %}
                                                     <span>{{ form.prepaid_expense_summ | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
@@ -487,7 +487,7 @@
                                             <label class="col"
                                                    for="id_prepaid_expense">Примечание</label>
                                             <div class="col">
-                                                {% if user.pk in list_accounting %}
+                                                {% if user in list_accounting %}
                                                     {{ form.prepaid_expense | add_class:"form-control form-control-modern" }}
                                                 {% else %}
                                                     <span>{{ form.prepaid_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
