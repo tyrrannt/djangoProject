@@ -9,7 +9,7 @@ from loguru import logger
 from administration_app.utils import get_jsons_data
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
 from djangoProject.settings import EMAIL_HOST_USER, DEBUG
-from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay
+from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay, WeekendDay
 
 
 def get_medical_documents():
@@ -88,6 +88,23 @@ def send_mail_change(counter, obj):
         logger.debug(f'Failed to send email. {_ex}')
 
 
+def get_month(period):
+    first_day = period + relativedelta(day=1)
+    last_day = period + relativedelta(day=31)
+    get_month_obj = []
+    for item in range(first_day.day, last_day.day + 1):
+        date_obj = first_day + datetime.timedelta(days=item - 1)
+        current_day = datetime.date(date_obj.year, date_obj.month, date_obj.day)
+        if date_obj.weekday() in [0, 1, 2, 3, 4]:
+            if WeekendDay.objects.filter(weekend_day=current_day).exists():
+                get_month_obj.append([current_day, 'В'])
+            else:
+                get_month_obj.append([current_day, 'Р'])
+        else:
+            get_month_obj.append([current_day, 'В'])
+    return get_month_obj
+
+
 def get_preholiday_day(curent_day, hour, minute):
     start_time = datetime.timedelta(hours=9, minutes=30)
     try:
@@ -96,17 +113,17 @@ def get_preholiday_day(curent_day, hour, minute):
             start_time += datetime.timedelta(hours=hour, minutes=minute)
             return datetime.timedelta(hours=hour, minutes=minute), start_time
         else:
-            start_time += datetime.timedelta(hours=pre_holiday_day.work_time.hour, minutes=pre_holiday_day.work_time.minute)
-            return datetime.timedelta(hours=pre_holiday_day.work_time.hour, minutes=pre_holiday_day.work_time.minute), start_time
+            start_time += datetime.timedelta(hours=pre_holiday_day.work_time.hour,
+                                             minutes=pre_holiday_day.work_time.minute)
+            return datetime.timedelta(hours=pre_holiday_day.work_time.hour,
+                                      minutes=pre_holiday_day.work_time.minute), start_time
 
     except Exception as _ex:
         start_time += datetime.timedelta(hours=hour, minutes=minute)
         return datetime.timedelta(hours=hour, minutes=minute), start_time
 
 
-
-def get_report_card(pk, RY=None, RM=None ):
-
+def get_report_card(pk, RY=None, RM=None):
     if RY and RM:
         try:
             sample_date = datetime.datetime(int(RY), int(RM), 1)
@@ -121,7 +138,8 @@ def get_report_card(pk, RY=None, RM=None ):
     get_user = DataBaseUser.objects.get(pk=pk)
     data_dict = dict()
     for item in ReportCard.objects.filter(
-            Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by('report_card_day'):
+            Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by(
+        'report_card_day'):
         if not data_dict.get(str(item.employee)):
             data_dict[str(item.employee)] = []
         time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)

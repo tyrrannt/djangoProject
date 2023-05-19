@@ -862,3 +862,18 @@ class PreHolidayDay(models.Model):
 
     preholiday_day = models.DateField(verbose_name='Дата', null=True, blank=True)
     work_time = models.TimeField(verbose_name='Рабочее время', null=True, blank=True)
+
+    def __str__(self):
+        return str(self.preholiday_day)
+
+
+class WeekendDay(models.Model):
+    class Meta:
+        verbose_name = 'Праздничный день'
+        verbose_name_plural = 'Праздничные дни'
+
+    weekend_day = models.DateField(verbose_name='Дата', null=True, blank=True)
+    description = models.CharField(verbose_name='Описание', max_length=200, default='', blank=True)
+
+    def __str__(self):
+        return str(self.weekend_day)

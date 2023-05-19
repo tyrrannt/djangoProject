@@ -21,7 +21,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
     PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm
-from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card
+from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card, get_month
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard
 
@@ -1339,15 +1339,16 @@ class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin,
 
 class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ReportCard
-    permission_required = 'hrdepartment_app.view_reportcard'
+    permission_required = 'hrdepartment_app.add_reportcard'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            if self.request.user.is_superuser:
-                reportcard_list = ReportCard.objects.all()
-            else:
-                reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
+            # if self.request.user.is_superuser:
+            #     reportcard_list = ReportCard.objects.all()
+            # else:
+            #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
+            reportcard_list = ReportCard.objects.all()
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -1361,14 +1362,19 @@ class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ReportCard
-    permission_required = 'hrdepartment_app.view_reportcard'
+    permission_required = 'hrdepartment_app.add_reportcard'
     template_name = 'hrdepartment_app/reportcard_detail.html'
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
 
         data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk)
-
+        month_obj = get_month(datetime.datetime(2023, 1, 1))
+        for item in month_obj:
+            try:
+                print(item[1], ': ', ReportCard.objects.get(report_card_day=item[0], employee=self.request.user))
+            except Exception as _ex:
+                print(item[1], ': ', 'None')
         context['data_dict'] = data_dict
         context['first_day'] = first_day
         context['last_day'] = last_day
