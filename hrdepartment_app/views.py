@@ -1398,6 +1398,7 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                         all_dict[users_obj_set[user_obj]].append([item[0], item[1], time_obj])
                 if found == 0:
                     all_dict[users_obj_set[user_obj]].append([item[0], item[1], '00:00'])
+
         context['all_dict'] = all_dict
         context['data_dict'] = data_dict
         context['first_day'] = first_day
