@@ -1372,29 +1372,34 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         current_day = datetime.datetime(2023, 1, 1)
         report_obj_list = ReportCard.objects.filter(
             Q(report_card_day__gte=(current_day + relativedelta(days=1))) &
-            Q(report_card_day__lte=(current_day + relativedelta(days=31)))).select_related('employee').values(
-            'report_card_day', 'employee', 'start_time', 'end_time')
-
+            Q(report_card_day__lte=(current_day + relativedelta(days=31)))).select_related('employee').values_list(
+            'report_card_day', 'employee', 'start_time', 'end_time'
+        )
         users_obj_list = []
         for item in report_obj_list:
-            users_obj_list.append(item['employee'])
-        users_obj_id = set(users_obj_list)
+            if item[1] not in users_obj_list:
+                users_obj_list.append(item[1])
         users_obj_set = dict()
-        for item in users_obj_id:
+        for item in users_obj_list:
             users_obj_set[item] = DataBaseUser.objects.get(pk=item)
         data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk)
         month_obj = get_month(datetime.datetime(2023, 1, 1))
-        # print(report_obj_list)
+        all_dict = dict()
         for user_obj in users_obj_set:
+            all_dict[users_obj_set[user_obj]] = []
             for item in month_obj:
-                try:
-                    # pass
-                    # print(report_obj_list.filter('report_card_day' == item[0], 'employee' == user_obj))
-                    print(users_obj_set[user_obj], item[0], ':', item[1], ': ', report_obj_list.get('report_card_day' == item[0], 'employee' == user_obj))
-                except Exception as _ex:
-                    # pass
-                    print(_ex)
-                    print(users_obj_set[user_obj], item[0], ':', item[1], ': ', 'None')
+                found = 0
+                for rec in report_obj_list:
+                    find_obj = (item[0], user_obj)
+                    if set(find_obj).issubset(rec):
+                        found = 1
+                        time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute)-datetime.timedelta(hours=rec[2].hour, minutes=rec[2].minute)
+                        time_obj = datetime.datetime.strptime(str(time_obj_raw), '%H:%M:%S').time().strftime('%H:%M')
+                        all_dict[users_obj_set[user_obj]].append([item[0], item[1], time_obj])
+                if found == 0:
+                    all_dict[users_obj_set[user_obj]].append([item[0], item[1], '00:00'])
+        print(all_dict)
+        context['all_dict'] = all_dict
         context['data_dict'] = data_dict
         context['first_day'] = first_day
         context['last_day'] = last_day
