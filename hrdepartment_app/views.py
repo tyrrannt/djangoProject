@@ -696,12 +696,13 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
 
         content[
             'title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}'
+        # Выбираем приказ
         if document.document.official_memo_type == '1':
             content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
                 document_foundation__pk=document.document.pk).exclude(cancellation=True)
         elif document.document.official_memo_type == '2':
             content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
-                document_foundation__pk=document.document.document_extension.pk).exclude(cancellation=True)
+                document_foundation__pk=document.document.pk).exclude(cancellation=True)
         else:
             content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(pk=0)
         delta = document.document.period_for - document.document.period_from
@@ -946,12 +947,14 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
+                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by(
+                    'document__responsible')
             else:
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
                     & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
+                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by(
+                    'document__responsible')
             dict_obj = dict()
             for item in qs.all():
                 list_obj = []
@@ -985,21 +988,21 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                             else:
                                 list_obj.append(['0', ''])
 
-                # if person in dict_obj:
-                #     list_obj = dict_obj[person]
-                #     for days_count in range(0, (date_end - date_start).days + 1):
-                #         curent_day = date_start + datetime.timedelta(days_count)
-                #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                #             list_obj[days_count] = ['1', place, place_short]
-                #     dict_obj[FIO_format(str(item.document.person))] = list_obj
-                # else:
-                #     dict_obj[FIO_format(str(item.document.person))] = []
-                #     for days_count in range(0, (date_end - date_start).days + 1):
-                #         curent_day = date_start + datetime.timedelta(days_count)
-                #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                #             list_obj.append(['1', place, place_short])
-                #         else:
-                #             list_obj.append(['0', ''])
+                    # if person in dict_obj:
+                    #     list_obj = dict_obj[person]
+                    #     for days_count in range(0, (date_end - date_start).days + 1):
+                    #         curent_day = date_start + datetime.timedelta(days_count)
+                    #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                    #             list_obj[days_count] = ['1', place, place_short]
+                    #     dict_obj[FIO_format(str(item.document.person))] = list_obj
+                    # else:
+                    #     dict_obj[FIO_format(str(item.document.person))] = []
+                    #     for days_count in range(0, (date_end - date_start).days + 1):
+                    #         curent_day = date_start + datetime.timedelta(days_count)
+                    #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
+                    #             list_obj.append(['1', place, place_short])
+                    #         else:
+                    #             list_obj.append(['0', ''])
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
 
                 table_set = dict_obj
@@ -1095,7 +1098,6 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                             list_obj.append('1')
                         else:
                             list_obj.append('0')
-
 
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
 
@@ -1367,14 +1369,32 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
+        current_day = datetime.datetime(2023, 1, 1)
+        report_obj_list = ReportCard.objects.filter(
+            Q(report_card_day__gte=(current_day + relativedelta(days=1))) &
+            Q(report_card_day__lte=(current_day + relativedelta(days=31)))).select_related('employee').values(
+            'report_card_day', 'employee', 'start_time', 'end_time')
 
+        users_obj_list = []
+        for item in report_obj_list:
+            users_obj_list.append(item['employee'])
+        users_obj_id = set(users_obj_list)
+        users_obj_set = dict()
+        for item in users_obj_id:
+            users_obj_set[item] = DataBaseUser.objects.get(pk=item)
         data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk)
         month_obj = get_month(datetime.datetime(2023, 1, 1))
-        for item in month_obj:
-            try:
-                print(item[1], ': ', ReportCard.objects.get(report_card_day=item[0], employee=self.request.user))
-            except Exception as _ex:
-                print(item[1], ': ', 'None')
+        # print(report_obj_list)
+        for user_obj in users_obj_set:
+            for item in month_obj:
+                try:
+                    # pass
+                    # print(report_obj_list.filter('report_card_day' == item[0], 'employee' == user_obj))
+                    print(users_obj_set[user_obj], item[0], ':', item[1], ': ', report_obj_list.get('report_card_day' == item[0], 'employee' == user_obj))
+                except Exception as _ex:
+                    # pass
+                    print(_ex)
+                    print(users_obj_set[user_obj], item[0], ':', item[1], ': ', 'None')
         context['data_dict'] = data_dict
         context['first_day'] = first_day
         context['last_day'] = last_day
