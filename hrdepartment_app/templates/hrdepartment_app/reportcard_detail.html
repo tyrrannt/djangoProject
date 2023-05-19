@@ -21,47 +21,6 @@
                             <div class="datatable-header">
                             </div>
 
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <tbody>
-                                <tr>
-                                    <td colspan="4"><h4>Выполнение графика по сотрудникам</h4></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="4">За период с: {{ first_day }} по: {{ last_day }}</td>
-                                </tr>
-                                {% for key, value in data_dict.items %}
-                                    <tr>
-                                        <td colspan="2">{{ key }}</td>
-                                        <td>Табельный номер</td>
-                                        <td>{{ key.pk }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Дата</th>
-                                        <th>Нормы</th>
-                                        <th>Табель</th>
-                                        <th>Факт</th>
-                                    </tr>
-                                    {% for r1, r2, r3, r4, r5 in value %}
-                                        <tr>
-                                            <td>{{ r1 }}</td>
-                                            <td><span
-                                                    {% if r4 == '-' %}style="color: #ff0000"{% endif %}>{{ r4 }} {{ r5 }}</span>
-                                            </td>
-                                            <td>9:30-18:00</td>
-                                            <td>{{ r2 }}-{{ r3 }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    <tr>
-                                        <th>Итого:</th>
-                                        <th>{{ total_sign }}{{ total_score }}</th>
-                                        <th></th>
-                                        <th></th>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-
                             <table style="border-style:dashed;">
                                 <tbody>
                                 <tr>
