@@ -91,13 +91,15 @@ def send_mail_change(counter, obj):
 def get_month(period):
     first_day = period + relativedelta(day=1)
     last_day = period + relativedelta(day=31)
-    weekend_days = WeekendDay.objects.filter(Q(weekend_day__gte=first_day) & Q(weekend_day__lte=last_day))
+    weekend_days = [item.weekend_day for item in WeekendDay.objects.filter(Q(weekend_day__gte=first_day) & Q(weekend_day__lte=last_day))]
+    print('weekend_days', weekend_days)
     get_month_obj = []
     for item in range(first_day.day, last_day.day + 1):
         date_obj = first_day + datetime.timedelta(days=item - 1)
         current_day = datetime.date(date_obj.year, date_obj.month, date_obj.day)
         if date_obj.weekday() in [0, 1, 2, 3, 4]:
-            if current_day in weekend_days:
+            if current_day in list(weekend_days):
+                print(current_day)
                 get_month_obj.append([current_day, 'В'])
             else:
                 get_month_obj.append([current_day, 'Р'])
