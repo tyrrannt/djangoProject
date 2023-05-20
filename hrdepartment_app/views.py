@@ -1385,7 +1385,7 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             current_day = datetime.datetime(int(year), int(month), 1)
         else:
             current_day = datetime.datetime.today() + relativedelta(day=1)
-        print(current_day)
+
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
         report_obj_list = ReportCard.objects.filter(
