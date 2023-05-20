@@ -3,7 +3,7 @@ from django.contrib import admin
 from customers_app.models import Groups
 from hrdepartment_app.models import Medical, Purpose, OfficialMemo, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
-    ReportCard, ReasonForCancellation, OrderDescription, PreHolidayDay, WeekendDay
+    ReportCard, ReasonForCancellation, OrderDescription, PreHolidayDay, WeekendDay, ProductionCalendar
 
 # Register your models here.
 
@@ -22,3 +22,4 @@ admin.site.register(ReasonForCancellation)
 admin.site.register(OrderDescription)
 admin.site.register(PreHolidayDay)
 admin.site.register(WeekendDay)
+admin.site.register(ProductionCalendar)

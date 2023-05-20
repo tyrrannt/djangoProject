@@ -23,7 +23,8 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card, get_month
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
-    MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard
+    MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
+    ProductionCalendar
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -1367,12 +1368,29 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'hrdepartment_app.add_reportcard'
     template_name = 'hrdepartment_app/reportcard_detail.html'
 
+    def post(self, request):  # ***** this method required! ******
+        self.object_list = self.get_queryset()
+        return HttpResponseRedirect(reverse('hrdepartment_app:reportcard_detail'))
+
+    def get_queryset(self):
+        queryset = ReportCard.objects.all()
+        return queryset
+
     def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(object_list=None, **kwargs)
-        current_day = datetime.datetime(2023, 1, 1)
+        context = super().get_context_data(**kwargs)
+        month = self.request.GET.get('report_month', None)
+        year = self.request.GET.get('report_year', None)
+
+        if month and year:
+            current_day = datetime.datetime(int(year), int(month), 1)
+        else:
+            current_day = datetime.datetime.today() + relativedelta(day=1)
+        print(current_day)
+        first_day = current_day + relativedelta(day=1)
+        last_day = current_day + relativedelta(day=31)
         report_obj_list = ReportCard.objects.filter(
-            Q(report_card_day__gte=(current_day + relativedelta(days=1))) &
-            Q(report_card_day__lte=(current_day + relativedelta(days=31)))).select_related('employee').values_list(
+            Q(report_card_day__gte=first_day) &
+            Q(report_card_day__lte=last_day)).select_related('employee').values_list(
             'report_card_day', 'employee', 'start_time', 'end_time'
         )
         users_obj_list = []
@@ -1382,28 +1400,47 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         users_obj_set = dict()
         for item in users_obj_list:
             users_obj_set[item] = DataBaseUser.objects.get(pk=item)
-        data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk)
-        month_obj = get_month(datetime.datetime(2023, 1, 1))
+
+        month_obj = get_month(current_day)
         all_dict = dict()
+        norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
+
         for user_obj in users_obj_set:
-            all_dict[users_obj_set[user_obj]] = []
+            dict_count = []
+            days_count = 0
+            time_count = datetime.timedelta(hours=0, minutes=0)
             for item in month_obj:
                 found = 0
                 for rec in report_obj_list:
                     find_obj = (item[0], user_obj)
                     if set(find_obj).issubset(rec):
                         found = 1
-                        time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute)-datetime.timedelta(hours=rec[2].hour, minutes=rec[2].minute)
+                        days_count += 1
+                        time_obj_raw = datetime.timedelta(hours=rec[3].hour,
+                                                          minutes=rec[3].minute) - datetime.timedelta(hours=rec[2].hour,
+                                                                                                      minutes=rec[
+                                                                                                          2].minute)
+                        time_count += time_obj_raw
                         time_obj = datetime.datetime.strptime(str(time_obj_raw), '%H:%M:%S').time().strftime('%H:%M')
-                        all_dict[users_obj_set[user_obj]].append([item[0], item[1], time_obj])
+                        dict_count.append([item[0], item[1], time_obj])
                 if found == 0:
-                    all_dict[users_obj_set[user_obj]].append([item[0], item[1], '00:00'])
-
+                    dict_count.append([item[0], item[1], '00:00'])
+            absences = days_count - norm_time.number_working_days
+            all_dict[users_obj_set[user_obj]] = {
+                'dict_count': dict_count,
+                'days_count': days_count,
+                'time_count_day': time_count.days,
+                'time_count_hour': (time_count.total_seconds() / 3600),
+                'absences': abs(absences) if absences < 0 else 0,
+            }
         context['all_dict'] = all_dict
-        context['data_dict'] = data_dict
+        context['month_obj'] = month_obj
         context['first_day'] = first_day
+        context['norm_time'] = norm_time.get_norm_time()
+        context['norm_day'] = norm_time.number_working_days
+        context['holidays'] = norm_time.number_days_off_and_holidays
         context['last_day'] = last_day
-        context['total_sign'] = '-' if total_score < 0 else ''
-        context['total_score'] = datetime.timedelta(seconds=abs(total_score))
+        context['current_year'] = datetime.datetime.today().year
+        context['current_month'] = datetime.datetime.today().month
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
         return context

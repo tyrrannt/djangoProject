@@ -14,12 +14,65 @@
         <!-- start: page -->
         <div class="row">
             <div class="col">
+                <div class="card card-modern">
+                    <form action="{% url 'hrdepartment_app:reportcard_detail' %}" method="get">
+                        <div class="row">
+                            <div class="col-3">
+                                <select class="form-control select-style-1 filter-by" name="report_month"
+                                        id="id_report_month">
+                                    <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
+                                    </option>
+                                    <option value="2" {% if current_month == 2 %}selected{% endif %}>Февраль
+                                    </option>
+                                    <option value="3" {% if current_month == 3 %}selected{% endif %}>Март
+                                    </option>
+                                    <option value="4" {% if current_month == 4 %}selected{% endif %}>Апрель
+                                    </option>
+                                    <option value="5" {% if current_month == 5 %}selected{% endif %}>Май
+                                    </option>
+                                    <option value="6" {% if current_month == 6 %}selected{% endif %}>Июнь
+                                    </option>
+                                    <option value="7" {% if current_month == 7 %}selected{% endif %}>Июль
+                                    </option>
+                                    <option value="8" {% if current_month == 8 %}selected{% endif %}>Август
+                                    </option>
+                                    <option value="9" {% if current_month == 9 %}selected{% endif %}>Сентябрь
+                                    </option>
+                                    <option value="10" {% if current_month == 10 %}selected{% endif %}>Октябрь
+                                    </option>
+                                    <option value="11" {% if current_month == 11 %}selected{% endif %}>Ноябрь
+                                    </option>
+                                    <option value="12" {% if current_month == 12 %}selected{% endif %}>Декабрь
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <select class="form-control select-style-1 filter-by" name="report_year"
+                                        id="id_report_year">
+                                    <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
+                                    </option>
+                                    <option value="2021" {% if current_year == 2021 %}selected{% endif %}>2021
+                                    </option>
+                                    <option value="2022" {% if current_year == 2022 %}selected{% endif %}>2022
+                                    </option>
+                                    <option value="2023" {% if current_year == 2023 %}selected{% endif %}>2023
+                                    </option>
+                                </select>
+                            </div>
 
+                        </div>
+                        <div class="form-row mt-2 center">
+                            <input type="submit"
+                                   class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                   value="Сформировать"/>
+                        </div>
+                    </form>
+                </div>
                 <div class="card card-modern">
                     <div class="card-body">
                         <div id="id_tables" class="table-responsive">
                             <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
-                                       style="min-width: 1000px; display: block; height: 700px; overflow: auto;">
+                                   style="min-width: 1000px; display: block; height: 700px; overflow: auto;">
                                 <tbody>
                                 <tr>
                                     <td style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;"
@@ -31,8 +84,9 @@
                                     </td>
 
                                     <td style="border-style:solid; border-width: 1px;border-left-style:none;width:651pt;"
-                                        colspan="32">
-                                        &nbsp;
+                                        colspan="{{ last_day }}">
+                                        Табель учета рабочего времени за {{ month_obj_ }} (Норма дней: {{ norm_day }};
+                                        Норма часов: {{ norm_time }})
                                     </td>
                                     <td style="border-style:solid; border-width: 1px;width:62pt;" colspan="2">
                                         Итого за месяц
@@ -45,18 +99,12 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    {% for key, value in all_dict.items %}
-                                        {% if forloop.first %}
-                                            {% for item1, item2, item3 in value %}
-                                                <td style="border-style:solid; border-width: 1px;height:48.75pt;width:20pt;">
-                                                    {{ item1 | date:"d" }}
-                                                </td>
-                                            {% endfor %}
-                                        {% endif %}
+                                    {% for key, value in month_obj %}
+                                        <td style="border-style:solid; border-width: 1px;height:48.75pt;width:20pt;">
+                                            {{ key | date:"d" }}
+                                        </td>
                                     {% endfor %}
-                                    <td style="border-style:solid; border-width: 1px;width:31pt;">
-                                        Итого
-                                    </td>
+
                                     <td style="border-style:solid; border-width: 1px;width:26pt;">
                                         дней
                                     </td>
@@ -71,11 +119,13 @@
                                     <td style="border-style:solid; border-width: 1px;border-top-style:none;">
                                         2
                                     </td>
-
-                                    <td style="border-style:solid; border-width: 1px;" colspan="15">
+                                    <td style="border-style:solid; border-width: 1px;" colspan="{{ last_day }}">
+                                        3
+                                    </td>
+                                    <td style="border-style:solid; border-width: 1px;">
                                         4
                                     </td>
-                                    <td style="border-style:solid; border-width: 1px;" colspan="16">
+                                    <td style="border-style:solid; border-width: 1px;">
                                         5
                                     </td>
                                     <td style="border-style:solid; border-width: 1px;">
@@ -83,15 +133,6 @@
                                     </td>
                                     <td style="border-style:solid; border-width: 1px;">
                                         7
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;">
-                                        8
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;">
-                                        9
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;">
-                                        10
                                     </td>
                                 </tr>
                                 {% for key, value in all_dict.items %}
@@ -102,42 +143,40 @@
                                         <td style="border-style:solid; border-width: 1px;width:144pt;" rowspan="2">
                                             {{ key }}
                                         </td>
-                                        {% for item1, item2, item3 in value %}
+                                        {% for item1, item2, item3 in value.dict_count %}
                                             <td style="{% if item2 == 'В' %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;">
                                                 {{ item2 }}
                                             </td>
                                         {% endfor %}
-                                        <td style="border-style:solid; border-width: 1px;">
-                                            3,00
-                                        </td>
+
+
                                         <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
                                             rowspan="2">
-                                            11,00
+                                            {{ value.days_count }}
                                         </td>
-                                        <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
+
+                                        <td style="{% if value.time_count_hour < norm_time %}background-color:#ff0116;{% else %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;"
                                             rowspan="2">
-                                            94,88
+                                            {{ value.time_count_hour | floatformat:2 }}
                                         </td>
                                         <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
                                             style="border-left-style:none;">
-                                            0,00
+                                            {{ value.absences }}
                                         </td>
                                         <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
                                             rowspan="2">
-                                            11,00
+                                            {{ holidays }}
                                         </td>
                                     </tr>
                                     <tr>
-                                        {% for item1, item2, item3 in value %}
+                                        {% for item1, item2, item3 in value.dict_count %}
                                             <td style="border-style:solid; border-width: 1px;height:11.25pt;">
                                                 {{ item3 }}
                                             </td>
                                         {% endfor %}
+
                                         <td style="border-style:solid; border-width: 1px;">
-                                            26,21
-                                        </td>
-                                        <td style="border-style:solid; border-width: 1px;">
-                                            0,00
+                                            {{ value.absences | multiply:8 }}
                                         </td>
                                     </tr>
                                 {% endfor %}

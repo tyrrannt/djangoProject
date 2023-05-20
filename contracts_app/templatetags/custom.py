@@ -27,6 +27,13 @@ def FIO_format(value):
     return result
 
 
+@register.simple_tag()
+def multiply(first, second, *args, **kwargs):
+    # you would need to do any localization of the result here
+    return first * second
+
+
+register.filter('multiply', multiply)
 register.filter('FIO_format', FIO_format)
 register.filter('empty_item', empty_item)
 register.filter('media_folder_products', media_folder_products)

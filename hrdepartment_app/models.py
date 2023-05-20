@@ -2,6 +2,8 @@ import datetime
 import pathlib
 import uuid
 
+import dateutil.relativedelta
+from dateutil.relativedelta import relativedelta
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
@@ -449,7 +451,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     date_transfer_accounting = models.DateField(verbose_name='Дата передачи в бухгалтерию', null=True, blank=True)
     prepaid_expense = models.CharField(verbose_name='Пометка выплаты', max_length=100,
                                        help_text='', blank=True, default='')
-    prepaid_expense_summ = models.DecimalField(verbose_name='Сумма авансового отчета', default=0, max_digits=10, decimal_places=2)
+    prepaid_expense_summ = models.DecimalField(verbose_name='Сумма авансового отчета', default=0, max_digits=10,
+                                               decimal_places=2)
 
     class Meta:
         verbose_name = 'Служебная записка по служебной поездке'
@@ -855,6 +858,7 @@ class ReportCard(models.Model):
             'end_time': str(self.end_time),
         }
 
+
 class PreHolidayDay(models.Model):
     class Meta:
         verbose_name = 'Предпраздничный день'
@@ -877,3 +881,35 @@ class WeekendDay(models.Model):
 
     def __str__(self):
         return str(self.weekend_day)
+
+
+class ProductionCalendar(models.Model):
+    class Meta:
+        verbose_name = 'Месяц в производственом календаре'
+        verbose_name_plural = 'Производственный календарь'
+
+    calendar_month = models.DateField(verbose_name='Месяц', null=True, blank=True)
+    number_calendar_days = models.PositiveIntegerField(verbose_name='Количество календарных дней', default=0, null=True,
+                                                       blank=True)
+    number_working_days = models.PositiveIntegerField(verbose_name='Количество рабочих дней', default=0, null=True,
+                                                      blank=True)
+    number_days_off_and_holidays = models.PositiveIntegerField(verbose_name='Количество выходных и празднечных дней',
+                                                               default=0, null=True, blank=True)
+    description = models.CharField(verbose_name='Описание', max_length=200, default='', blank=True)
+
+    def get_friday_count(self):
+        first_day = self.calendar_month + relativedelta(day=1)
+        last_day = self.calendar_month + relativedelta(day=31)
+        friday = 0
+        for item in range(first_day.day, last_day.day + 1):
+            date_obj = first_day + datetime.timedelta(days=item - 1)
+            if date_obj.weekday() == 4:
+                if WeekendDay.objects.filter(weekend_day=date_obj).count() == 0:
+                    friday += 1
+        return friday
+
+    def get_norm_time(self):
+        return (self.number_working_days * 8) + (self.number_working_days/2) - self.get_friday_count()
+
+    def __str__(self):
+        return str(self.calendar_month)
