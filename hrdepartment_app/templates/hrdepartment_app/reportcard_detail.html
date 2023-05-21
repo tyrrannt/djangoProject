@@ -17,7 +17,7 @@
                 <div class="card card-modern">
                     <form action="{% url 'hrdepartment_app:reportcard_detail' %}" method="get">
                         <div class="row">
-                            <div class="col-3">
+                            <div class="col-sm-12 col-md-6 col-lg-3">
                                 <select class="form-control select-style-1 filter-by" name="report_month"
                                         id="id_report_month">
                                     <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
@@ -46,7 +46,7 @@
                                     </option>
                                 </select>
                             </div>
-                            <div class="col-3">
+                            <div class="col-sm-12 col-md-6 col-lg-3">
                                 <select class="form-control select-style-1 filter-by" name="report_year"
                                         id="id_report_year">
                                     <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
@@ -59,7 +59,7 @@
                                     </option>
                                 </select>
                             </div>
-                            <div class="col-3">
+                            <div class="col-sm-12 col-md-6 col-lg-3">
                                 <input type="submit"
                                    class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
                                    value="Сформировать"/>
