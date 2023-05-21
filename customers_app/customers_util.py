@@ -212,7 +212,7 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
 
 def get_report_card_table(data_dict, total_score, first_day, last_day):
     html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
+                                   style="min-width: 750px; display: block; height: 700px; overflow: auto;">
                         <tbody>
                             <tr>
                                 <td colspan="4"><h4>Выполнение графика по сотрудникам</h4></td>
