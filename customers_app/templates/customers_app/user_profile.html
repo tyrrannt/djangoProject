@@ -218,7 +218,7 @@
                         <div id="calculation" class="tab-pane">
                             <div class="p-3">
                                 <div class="row">
-                                    <div class="col-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 id="id_filter_month">
                                             <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
@@ -247,7 +247,7 @@
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
                                                 id="id_filter_year">
                                             <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
@@ -260,10 +260,10 @@
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col">
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
                                         <input class="form-control" type="password" id="id_pxmx" value="">
                                     </div>
-                                    <div class="col-1">
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
                                         <button class="btn btn-primary" onclick="filter_date()">OK</button>
                                     </div>
                                 </div>
@@ -301,7 +301,7 @@
                         <div id="reportcard" class="tab-pane">
                             <div class="p-3">
                                 <div class="row">
-                                    <div class="col-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
                                         <select class="form-control select-style-1 filter-by" name="report_month"
                                                 onchange="report_date()" id="id_report_month">
                                             <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
@@ -330,7 +330,7 @@
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
                                         <select class="form-control select-style-1 filter-by" name="report_year"
                                                 onchange="report_date()" id="id_report_year">
                                             <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
