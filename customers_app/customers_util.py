@@ -221,12 +221,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                                 <td colspan="4">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
                             </tr>"""
     for key in data_dict:
-        html_obj += f"""
-                        <tr>
-                            <td colspan="2">{key}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
+        html_obj += f"""                        
                         <tr>
                             <th>Дата</th>
                             <th>Нормы</th>
