@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import datetime
+import json
 import pathlib
 
+import requests
 from django.db.models import Q
 from loguru import logger
 
@@ -95,30 +97,60 @@ def happy_birthday():
 #         fd.close()
 
 
+# @app.task()
+# def report_card_separator():
+#     import pandas as pd
+#     # Load the xlsx file
+#     excel_data = pd.read_excel(pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.xls'))
+#     # Read the values of the file in the dataframe
+#     data = pd.DataFrame(excel_data, columns=['ФИО', 'Дата', 'Время прихода', 'Время ухода'])
+#     # # Print the content
+#     dictionary = data.to_dict('records')
+#     for key in dictionary:
+#         usr, d1, t1, t2 = key['ФИО'], key['Дата'], key['Время прихода'], key['Время ухода']
+#
+#         search_user = usr.split(' ')
+#         try:
+#             user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+#                                                 surname=search_user[2])
+#             kwargs = {
+#                 'report_card_day': datetime.datetime.date(d1),
+#                 'employee': user_obj,
+#                 'start_time': datetime.datetime.time(t1),
+#                 'end_time': datetime.datetime.time(t2),
+#             }
+#             ReportCard.objects.update_or_create(report_card_day=datetime.datetime.date(d1), employee=user_obj,
+#                                                 defaults=kwargs)
+#         except Exception as _ex:
+#             logger.error(f'{key} not found in the database: {_ex}')
+#     return dictionary
+
 @app.task()
 def report_card_separator():
-    import pandas as pd
-    # Load the xlsx file
-    excel_data = pd.read_excel(pathlib.Path.joinpath(BASE_DIR, 'rsync/timecontrol/PersonsWorkLite.xls'))
-    # Read the values of the file in the dataframe
-    data = pd.DataFrame(excel_data, columns=['ФИО', 'Дата', 'Время прихода', 'Время ухода'])
-    # # Print the content
-    dictionary = data.to_dict('records')
-    for key in dictionary:
-        usr, d1, t1, t2 = key['ФИО'], key['Дата'], key['Время прихода'], key['Время ухода']
-
+    current_data = datetime.datetime.date(datetime.datetime.today())
+    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
+    source_url = url
+    try:
+        response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
+    except Exception as _ex:
+        return f"{_ex} ошибка"
+    dicts = json.loads(response.text)
+    for item in dicts['data']:
+        usr = item['FULLNAME']
+        start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
+        end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
         search_user = usr.split(' ')
         try:
             user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
                                                 surname=search_user[2])
             kwargs = {
-                'report_card_day': datetime.datetime.date(d1),
+                'report_card_day': current_data,
                 'employee': user_obj,
-                'start_time': datetime.datetime.time(t1),
-                'end_time': datetime.datetime.time(t2),
+                'start_time': datetime.datetime.time(start_time),
+                'end_time': datetime.datetime.time(end_time),
             }
-            ReportCard.objects.update_or_create(report_card_day=datetime.datetime.date(d1), employee=user_obj,
+            ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj,
                                                 defaults=kwargs)
         except Exception as _ex:
-            logger.error(f'{key} not found in the database: {_ex}')
-    return dictionary
+            logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
+
