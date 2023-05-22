@@ -153,4 +153,5 @@ def report_card_separator():
                                                 defaults=kwargs)
         except Exception as _ex:
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
+    return dicts
 
