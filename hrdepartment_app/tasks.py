@@ -146,8 +146,8 @@ def report_card_separator():
             kwargs = {
                 'report_card_day': current_data,
                 'employee': user_obj,
-                'start_time': datetime.datetime.time(start_time),
-                'end_time': datetime.datetime.time(end_time),
+                'start_time': start_time,
+                'end_time': end_time,
             }
             ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj,
                                                 defaults=kwargs)
