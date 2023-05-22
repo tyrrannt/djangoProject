@@ -1416,10 +1416,8 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                     if set(find_obj).issubset(rec):
                         found = 1
                         days_count += 1
-                        time_obj_raw = datetime.timedelta(hours=rec[3].hour,
-                                                          minutes=rec[3].minute) - datetime.timedelta(hours=rec[2].hour,
-                                                                                                      minutes=rec[
-                                                                                                          2].minute)
+                        time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute) - \
+                                       datetime.timedelta(hours=rec[2].hour, minutes=rec[2].minute)
                         time_count += time_obj_raw
                         time_obj = datetime.datetime.strptime(str(time_obj_raw), '%H:%M:%S').time().strftime('%H:%M')
                         dict_count.append([item[0], item[1], time_obj])
@@ -1442,5 +1440,6 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['last_day'] = last_day
         context['current_year'] = datetime.datetime.today().year
         context['current_month'] = datetime.datetime.today().month
+        context['tabel_month'] = first_day
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
         return context
