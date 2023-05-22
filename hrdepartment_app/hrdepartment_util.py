@@ -100,14 +100,28 @@ def get_month(period):
             if current_day in list(weekend_days):
                 get_month_obj.append([current_day, 'В'])
             else:
-                get_month_obj.append([current_day, 'Р'])
+                get_month_obj.append([current_day, 'Я'])
         else:
             get_month_obj.append([current_day, 'В'])
     return get_month_obj
 
 
 def get_preholiday_day(curent_day, hour, minute):
+    """
+    Проверка даты на предпраздничный день.
+    :param curent_day: День
+    :param hour: Количество часов
+    :param minute: Количество минут
+    :return: Если передано нулевое время, то возвращается тоже нулевое. Если передано не нулевое время, а день оказался
+    предпраздничным, то возвращается время заданное в предпраздничном дне, иначе возвращается, то время, которое пришло.
+    Также возвращается врорым аргументом время окончания рабочего времени
+    """
     start_time = datetime.timedelta(hours=9, minutes=30)
+    # Проверка на выходной. Если истина, то вернуть нулевое время
+    holiday_day = WeekendDay.objects.filter(weekend_day=curent_day).exists()
+    if holiday_day:
+        start_time += datetime.timedelta(hours=0, minutes=0)
+        return datetime.timedelta(hours=0, minutes=0), start_time
     try:
         pre_holiday_day = PreHolidayDay.objects.get(preholiday_day=curent_day)
         if hour == 0 and minute == 0:
@@ -125,6 +139,14 @@ def get_preholiday_day(curent_day, hour, minute):
 
 
 def get_report_card(pk, RY=None, RM=None):
+    """
+
+    :param pk: УИН пользователя
+    :param RY: Год
+    :param RM: Месяц
+    :return:
+    """
+    # Устанавливаем период, и получаем первый и последний день месяца
     if RY and RM:
         try:
             sample_date = datetime.datetime(int(RY), int(RM), 1)
@@ -132,6 +154,7 @@ def get_report_card(pk, RY=None, RM=None):
             sample_date = datetime.datetime(2023, 1, 1)
         first_day = sample_date + relativedelta(day=1)
         last_day = sample_date + relativedelta(day=31)
+    # Иначе устанавливаем в качестве периода текущий месяц
     else:
         first_day = datetime.datetime.today() + relativedelta(day=1)
         last_day = datetime.datetime.today() + relativedelta(day=31)
@@ -141,9 +164,12 @@ def get_report_card(pk, RY=None, RM=None):
     for item in ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by(
         'report_card_day'):
+        # Если выходной словарь еще не заполнялся, то создаем пустой элемент с ключем (УИН пользователя)
         if not data_dict.get(str(item.employee)):
             data_dict[str(item.employee)] = []
+        # Получаем время прихода
         time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
+        # Получаем время ухода
         time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
         if item.report_card_day.weekday() in [0, 1, 2, 3]:
             time_3, end_time = get_preholiday_day(item.report_card_day, 8, 30)

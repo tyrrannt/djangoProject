@@ -211,6 +211,14 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
 
 
 def get_report_card_table(data_dict, total_score, first_day, last_day):
+    """
+
+    :param data_dict:
+    :param total_score:
+    :param first_day: Первый день запрашиваемого периода
+    :param last_day: Последний день запрашиваемого периода
+    :return:
+    """
     html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 380px; display: block; height: 700px; overflow: auto;">
                         <tbody>
