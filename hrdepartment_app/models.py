@@ -610,7 +610,8 @@ def create_report(sender, instance, **kwargs):
 
             msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy, ])
             msg.attach_alternative(html_content, "text/html")
-            msg.attach_file(str(file_name))
+            if instance.document.official_memo_type == '1':
+                msg.attach_file(str(file_name))
             try:
                 res = msg.send()
                 instance.email_send = True
