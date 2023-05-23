@@ -11,9 +11,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # migrations.RunSQL(
-        #     "UPDATE hrdepartment_app_documentsorder SET document_name = 1"
-        # ),
+        migrations.RunSQL(
+            "UPDATE hrdepartment_app_documentsorder SET document_name = 1"
+        ),
         migrations.AlterField(
             model_name='documentsorder',
             name='document_name',
