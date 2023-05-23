@@ -35,13 +35,7 @@
 
                                 </div>
                             </div>
-                            <style>
-                                tfoot input {
-                                    width: 100%;
-                                    padding: 3px;
-                                    box-sizing: border-box;
-                                }
-                            </style>
+
                             <table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
                                 <thead>
@@ -57,20 +51,7 @@
                                     <th width="10%">Приказ</th>
                                     <th width="18%">Примечание</th>
                                 </tr>
-                                <tfoot>
-                                <tr>
-                                    <th width="4%">Тип</th>
-                                    <th width="15%">Сотрудник</th>
-                                    <th width="10%">Должность</th>
-                                    <th width="10%">Куда</th>
-                                    <th width="15%">Цель</th>
-                                    <th width="10%">С</th>
-                                    <th width="10%">По</th>
-                                    <th width="8%">Проживание</th>
-                                    <th width="10%">Приказ</th>
-                                    <th width="18%">Примечание</th>
-                                </tr>
-                                </tfoot>
+
                                 </thead>
                             </table>
                             <hr class="solid mt-5 opacity-4">
@@ -106,25 +87,9 @@
     <script>
         $(document).ready(function () {
             // Setup - add a text input to each footer cell
-            $('#datatable-ecommerce-list tfoot th').each(function () {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
-            });
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
 
-                            $('input', this.footer()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
-                        });
-                },
+            var table = $('#datatable-ecommerce-list').DataTable({
+
                 "order": [[ 10, 'desc' ]],
                 "pageLength": 25,
                 "scrollX": true,
