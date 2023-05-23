@@ -841,6 +841,20 @@ def rename_jds_file_name(sender, instance, **kwargs):
 
 
 class ReportCard(models.Model):
+    type_of_report = [
+        ('1', 'Явка'),
+        ('2', 'Ежегодный'),
+        ('3', 'Дополнительный ежегодный отпуск'),
+        ('4', 'Отпуск за свой счет'),
+        ('5', 'Дополнительный учебный отпуск (оплачиваемый)'),
+        ('6', 'Отпуск по уходу за ребенком'),
+        ('7', 'Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС'),
+        ('8', 'Отпуск по беременности и родам'),
+        ('9', 'Отпуск без оплаты согласно ТК РФ'),
+        ('10', 'Дополнительный отпуск'),
+        ('11', 'Дополнительный оплачиваемый отпуск пострадавшим в '),
+        ('12', 'Основной'),
+    ]
     class Meta:
         verbose_name = 'Рабочее время'
         verbose_name_plural = 'Табель учета'
@@ -849,6 +863,11 @@ class ReportCard(models.Model):
     employee = models.ForeignKey(DataBaseUser, on_delete=models.SET_NULL, null=True, blank=True)
     start_time = models.TimeField(verbose_name='Дата и время прихода', null=True, blank=True)
     end_time = models.TimeField(verbose_name='Дата и время ухода', null=True, blank=True)
+    record_type = models.CharField(verbose_name='Тип записи', max_length=100, choices=type_of_report, default='', blank=True)
+    manual_input = models.BooleanField(verbose_name='Ручной ввод', default=False)
+    reason_adjustment = models.TextField(verbose_name='Причина ручной корректировки', blank=True)
+    doc_ref_key = models.CharField(verbose_name='Уникальный номер документа', max_length=37, default='', blank=True)
+
 
     def get_data(self):
         return {

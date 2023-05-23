@@ -5,12 +5,12 @@ from datetime import datetime
 from urllib.parse import urljoin
 
 import requests
+from decouple import config
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import FileSystemStorage
 from loguru import logger
 from administration_app.models import PortalProperty
-# from contracts_app.models import TypeContract, TypeProperty, Contract
-from customers_app.models import DataBaseUser, Counteragent, Division, HistoryChange, DataBaseUserWorkProfile
+from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
 from djangoProject.settings import BASE_DIR
 
@@ -124,7 +124,10 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
     source_url = url
     try:
-        response = requests.get(source_url)
+        if base_index == 0:
+            response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+        else:
+            response = requests.get(source_url, auth=(config('ACC_LOGIN'), config('ACC_PASS')))
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
@@ -157,7 +160,10 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
           f"&$filter={filter_obj}%20{logical_operation[logical]}%20guid'{filter_content}'"
     source_url = url
     try:
-        response = requests.get(source_url)
+        if base_index == 0:
+            response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+        else:
+            response = requests.get(source_url, auth=(config('ACC_LOGIN'), config('ACC_PASS')))
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
@@ -166,9 +172,12 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     return json.loads(response.text)
 
 
-def get_jsons(url):
+def get_jsons(url, base_index):
     source_url = url
-    response = requests.get(source_url)
+    if base_index == 0:
+        response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+    else:
+        response = requests.get(source_url, auth=(config('ACC_LOGIN'), config('ACC_PASS')))
     return json.loads(response.text)
 
 

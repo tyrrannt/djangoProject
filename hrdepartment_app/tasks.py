@@ -4,6 +4,7 @@ import json
 import pathlib
 
 import requests
+from decouple import config
 from django.db.models import Q
 from loguru import logger
 
@@ -160,7 +161,7 @@ def report_card_separator_loc():
     url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
     source_url = url
     try:
-        response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
+        response = requests.get(source_url, auth=(config('TC_LOGIN'), config('TC_PASS')))
     except Exception as _ex:
         return f"{_ex} ошибка"
     dicts = json.loads(response.text)

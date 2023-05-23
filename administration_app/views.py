@@ -5,7 +5,7 @@ from django.views.generic import ListView
 from loguru import logger
 
 from administration_app.models import PortalProperty
-from administration_app.utils import get_users_info, change_users_password
+from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data
 from customers_app.models import DataBaseUser, Groups, Job
 from hrdepartment_app.models import OfficialMemo
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc
@@ -64,7 +64,15 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 get_users_info()
             if request.GET.get('update') == '4':
                 change_users_password()
-            if request.GET.get('update') == '4':
-                report_card_separator_loc()
+            if request.GET.get('update') == '5':
+                dt = get_jsons_data('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 0)
+                for key in dt:
+                    view = list()
+                    for item in dt[key]:
+                        # if item['Сотрудник_Key'] == '72095054-970f-11e3-84fb-00e05301b4e4':
+                        #     print(item['Сотрудник_Key'], item['ДатаНачала'], item['ДатаОкончания'])
+                        # if item['Сотрудник_Key'] == '72095054-970f-11e3-84fb-00e05301b4e4':
+                        view.append(item['ВидОтпускаПредставление'])
+                    print(set(view))
 
         return super().get(request, *args, **kwargs)
