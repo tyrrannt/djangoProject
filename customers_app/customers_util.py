@@ -246,7 +246,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                                 <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span>
                                 </td>
                                 <td>9:30-{end_work_time}</td>"""
-            if end_time-start_time == 60.0:
+            if datetime.timedelta(hours=r3.hour, minutes=r3.minute)-datetime.timedelta(hours=r2.hour, minutes=r2.minute) == 60.0:
                 html_obj += f"""<td>На работе</td>
                             </tr>"""
             else:
