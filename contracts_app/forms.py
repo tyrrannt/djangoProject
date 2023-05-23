@@ -24,7 +24,7 @@ class ContractsAddForm(forms.ModelForm):
     parent_category = forms.ModelChoiceField(queryset=Contract.objects.all(), required=False)
     parent_category.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all())
+    type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
     type_property.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
 
