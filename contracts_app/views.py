@@ -40,9 +40,14 @@ class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return Contract.objects.filter(Q(allowed_placed=True)).order_by(self.item_sorted)
 
     def get(self, request, *args, **kwargs):
-        change_session_get(request, self)
-
-        return super(ContractList, self).get(self, request, *args, **kwargs)
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            contract_list = Contract.objects.all().order_by('pk').reverse()
+            data = [contract_item.get_data() for contract_item in contract_list]
+            response = {'data': data}
+            # report_card_separator()
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
 
 
 class ContractSearch(LoginRequiredMixin, PermissionRequiredMixin, ListView):

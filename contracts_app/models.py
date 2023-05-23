@@ -131,6 +131,7 @@ class ContractModel(models.Model):
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
                                null=True, default=5)
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
+    actuality = models.BooleanField(verbose_name='Актуальность', default=False)
 
     @property
     def is_past_due(self):
@@ -172,6 +173,18 @@ class Contract(ContractModel):
     class Meta:
         verbose_name = 'Договор'
         verbose_name_plural = 'Договора'
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'contract_number': self.contract_number,
+            'date_conclusion': self.date_conclusion.strftime("%d.%m.%Y"),
+            'type_of_document': str(self.type_of_document),
+            'type_of_contract': str(self.type_of_contract),
+            'parent_category': str(self.parent_category),
+            'contract_counteragent': str(self.contract_counteragent),
+            'actuality': 'Да' if self.actuality else 'Нет',
+        }
 
     def __init__(self, *args, **kwargs):
         super(Contract, self).__init__(*args, **kwargs)
