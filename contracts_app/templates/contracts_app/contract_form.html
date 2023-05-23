@@ -88,26 +88,20 @@
                                                 <label for="id_contract_number">Номер договора</label>
                                                 <input type="text" class="form-control form-control-modern"
                                                        name="contract_number"
-                                                       value="{% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
+                                                       value=""
                                                        id="id_contract_number"/>
                                             </div>
                                             <div class="col-md-4 date">
                                                 <label for="id_date_conclusion">Дата заключения</label>
-                                                <input type="text" class="form-control form-control-modern"
+                                                <input type="date" class="form-control form-control-modern"
                                                        name="date_conclusion"
-                                                       value="{{ object.date_conclusion }}" required
-                                                       data-plugin-datepicker
-                                                       data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
-                                                       id="id_date_conclusion"/>
+                                                       value="" id="id_date_conclusion"/>
                                             </div>
                                             <div class="col-md-4 date">
                                                 <label for="id_closing_date">Дата закрытия договора</label>
-                                                <input type="text" class="form-control form-control-modern"
+                                                <input type="date" class="form-control form-control-modern"
                                                        name="closing_date"
-                                                       value="{{ object.closing_date }}"
-                                                       data-plugin-datepicker
-                                                       data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
-                                                       id="id_closing_date"/>
+                                                       value="" id="id_closing_date"/>
                                             </div>
                                         </div>
                                     </div>
@@ -151,19 +145,13 @@
                                             <label for="id_cost">Стоимость</label>
                                             <input type="number" class="form-control form-control-modern"
                                                    name="cost"
-                                                   value="{{ object.cost }}" id="id_cost"/>
+                                                   value="" id="id_cost"/>
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="date_entry">Дата ввода информации</label>
-                                            <input type="text" class="form-control form-control-modern"
+                                            <input type="date" class="form-control form-control-modern"
                                                    name="date_entry"
-                                                   value="{{ object.date_entry }}" id="date_entry"/>
-                                        </div>
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="id_internal_number">Внутренний номер</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="internal_number"
-                                                   value="{{ object.internal_number }}" id="id_internal_number"/>
+                                                   value="" id="date_entry"/>
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="id_prolongation">Пролонгация</label>
@@ -200,7 +188,7 @@
                                             <div class="col-md-12 text-black-50">
                                                 <label for="id_doc_file">Файл документа:</label>
                                                 <input type="file" name="doc_file" class="form-control mb-4"
-                                                       id="id_doc_file" multiple>
+                                                       id="id_doc_file">
 
                                             </div>
                                         </div>

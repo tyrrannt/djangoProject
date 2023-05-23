@@ -65,83 +65,25 @@
                                     <div class="row text">
                                         <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_parent_category">Основной документ</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="parent_category"
-                                                    id="id_parent_category"
-                                                    data-plugin-selectTwo>
-                                                {% for item in all_contract.iterator %}
-                                                    {% if forloop.first %}
-                                                        <option value="" selected>Выберите значение...</option>
-                                                    {% endif %}
-                                                    {% if item.pk != object.pk %}
-                                                        {% if object.parent_category.pk == item.pk %}
-                                                            <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                        {% else %}
-                                                            <option value="{{ item.pk }}">{{ item }}</option>
-                                                        {% endif %}
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.parent_category }}
                                         </div>
                                         <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_contract_counteragent">Контрагент</label>
-                                            <select class="form-control mb-4 form-control-modern"
-                                                    name="contract_counteragent"
-                                                    id="id_contract_counteragent" required
-                                                    data-plugin-selectTwo>
-                                                {% for item in counteragent.iterator %}
-                                                    {% if item.pk == object.contract_counteragent.pk %}
-                                                        <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.contract_counteragent }}
                                         </div>
                                     </div>
                                     <div class="row text">
                                         <div class="col-md-4 col-sm-6 text">
                                             <label for="id_type_of_document">Тип документа</label>
-                                            <select class="form-control form-control-modern" name="type_of_document"
-                                                    id="id_type_of_document" required
-                                                    data-plugin-selectTwo>
-                                                {% for item in type_of_document.iterator %}
-                                                    {% if item.pk == contract.type_of_document.pk %}
-                                                        <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.type_of_document }}
                                         </div>
                                         <div class="col-md-4 col-sm-6 text-black-50">
                                             <label for="id_type_of_contract">Тип договора</label>
-                                            <select class="form-control form-control-modern" name="type_of_contract"
-                                                    id="id_type_of_contract" required
-                                                    data-plugin-selectTwo>
-                                                {% for item in type_contract.iterator %}
-                                                    {% if item.pk == object.type_of_contract.pk %}
-                                                        <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.type_of_contract }}
                                         </div>
                                         <div class="col-md-4 col-sm-6 text-black-50">
                                             <label for="id_employee">Ответственные лица</label>
-                                            <select class="form-control form-control-modern" name="employee"
-                                                    data-plugin-selectTwo multiple id="id_employee">
-                                                {% for item in employee.iterator %}
-
-                                                    {% if item in object.employee.iterator %}
-                                                        <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item }}</option>
-                                                    {% endif %}
-
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.employee }}
                                         </div>
                                     </div>
                                 </div>
@@ -151,30 +93,15 @@
                                     <div class="row">
                                         <div class="col-md-4 col-sm-6 text">
                                             <label for="id_contract_number">Номер договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="contract_number"
-                                                   value="
-
-                                                           {% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
-                                                   id="id_contract_number"/>
+                                            {{ form.contract_number }}
                                         </div>
                                         <div class="col-md-4 col-sm-6 date">
                                             <label for="id_date_conclusion">Дата заключения</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="date_conclusion"
-                                                   value="{{ object.date_conclusion|date:"c" }}" required
-                                                   data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-MM-dd"}'
-                                                   id="id_date_conclusion"/>
+                                            {{ form.date_conclusion }}
                                         </div>
                                         <div class="col-md-4 col-sm-6 date">
                                             <label for="id_closing_date">Дата закрытия договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="closing_date"
-                                                   value="{{ object.closing_date|date:"c" }}"
-                                                   data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
-                                                   id="id_closing_date"/>
+                                            {{ form.closing_date }}
                                         </div>
                                     </div>
                                 </div>
@@ -190,31 +117,12 @@
                                     <div class="row">
                                         <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_divisions">Подразделение</label>
-                                            <select class="form-control form-control-modern" id="id_divisions"
-                                                    name="divisions" data-plugin-selectTwo multiple>
-                                                {% for item in division.iterator %}
-                                                    {% if item in object.divisions.iterator %}
-                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item.name }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.divisions }}
 
                                         </div>
                                         <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_type_property">Тип имущества</label>
-                                            <select class="form-control form-control-modern" id="id_type_property"
-                                                    name="type_property" data-plugin-selectTwo multiple>
-                                                {% for item in type_property.iterator %}
-                                                    {% if item in object.type_property.iterator %}
-                                                        <option value="{{ item.pk }}"
-                                                                selected>{{ item.type_property }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item.type_property }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.type_property }}
                                         </div>
                                     </div>
                                 </div>
@@ -241,66 +149,23 @@
                                     <div class="row">
                                         <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_cost">Стоимость</label>
-                                            <input type="number" class="form-control form-control-modern"
-                                                   name="cost"
-                                                   value="{{ object.cost }}" id="id_cost"/>
-                                        </div>
-                                        <div class="col-md-3 col-sm-4 text-black-50">
-                                            <label for="date_entry">Дата ввода информации</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="date_entry"
-                                                   value="{{ object.date_entry }}" id="date_entry" disabled/>
-                                        </div>
-                                        <div class="col-md-3 col-sm-4 text-black-50">
-                                            <label for="id_internal_number">Внутренний номер</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="internal_number"
-                                                   value="{{ object.internal_number }}" id="id_internal_number"/>
+                                            {{ form.cost }}
                                         </div>
                                         <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_prolongation">Пролонгация</label>
-                                            <select class="form-control form-control-modern" id="id_prolongation"
-                                                    name="prolongation"
-                                                    data-plugin-selectTwo>
-                                                {% for key, value in prolongation %}
-                                                    {% if value == object.prolongation %}
-                                                        <option value="{{ key }}" selected>{{ value }}</option>
-                                                    {% else %}
-                                                        <option value="{{ key }}">{{ value }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.prolongation }}
                                         </div>
 
                                         <div class="col-md-3 col-sm-4 text-black-50">
                                             <label for="id_access">Уровень доступа к документу:</label>
-                                            <select name="access" class="form-control form-control-modern" required=""
-                                                    id="id_access">
-                                                {% for item in access.iterator %}
-                                                    {% if item == object.access %}
-                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
-                                                    {% else %}
-                                                        <option value="{{ item.pk }}">{{ item.name }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.access }}
                                         </div>
                                         <div class="col-md-3 col-sm-4 text-black-50">
-                                            <label for="id_executor">Исполнитель:</label>
-                                            <select name="executor" class="form-control  form-control-modern"
-                                                    required=""
-                                                    id="id_executor" data-plugin-selectTwo disabled>
-                                                <option value="{{ object.executor.pk }}">{{ object.executor }}</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3 col-sm-4 text-black-50">
-                                            <div class="row">
-
-                                                    <label for="id_allowed_placed">Разрешение на публикацию:</label>
-                                                    <input type="checkbox" id="id_allowed_placed" name="allowed_placed"
-                                                           {% if object.allowed_placed %}checked{% endif %}
-                                                           class="mt-3"/>
-
+                                            <div class="row checkbox-custom checkbox-default ib mt-4">
+                                                <input type="checkbox" id="id_allowed_placed"
+                                                       name="allowed_placed" class="todo-check"
+                                                       {% if object.allowed_placed %}checked="checked"{% endif %}/>
+                                                <label for="id_allowed_placed" class="todo-label">Разрешение на публикацию</label>
                                             </div>
                                         </div>
                                         <p>

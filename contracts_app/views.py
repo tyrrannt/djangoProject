@@ -134,7 +134,7 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
         content = QueryDict.copy(self.request.POST)
         if content['parent_category'] == content['contract_counteragent']:
-            self.form_invalid()
+            print(content['parent_category'], content['contract_counteragent'])
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
         if content['parent_category'] == 'none':
             content.setlist('parent_category', '')
@@ -150,23 +150,10 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить новый договор'
-        context['all_contract'] = Contract.objects.all()
-        context['all_counteragent'] = Counteragent.objects.all()
         return context
 
     def get(self, request, *args, **kwargs):
         return super(ContractAdd, self).get(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        files = self.request.FILES.getlist('doc_file')
-        for item in files:
-            paths = default_storage.save(pathlib.Path.joinpath(settings.MEDIA_URL, 'hr'), ContentFile(item.read()))
-            print("images path are", paths)
-        form.clean()
-        return super(ContractAdd, self).form_valid(form)
-
-    def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form))
 
 
 class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -201,7 +188,7 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
 class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Contract
     form_class = ContractsUpdateForm
-    template_name_suffix = '_form_update'
+    template_name = 'contracts_app/contract_form_update.html'
     permission_required = 'hrdepartment_app.change_contract'
 
     def post(self, request, *args, **kwargs):

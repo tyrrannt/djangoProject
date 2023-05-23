@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -72,27 +73,21 @@
                                             <label for="contract_number">Номер договора</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_number" disabled
-                                                   value="
-
-                                                           {% if object.contract_number %}{{ object.contract_number }}{% else %}без номера{% endif %}"
+                                                   value="{{ object.contract_number }}"
                                                    id="contract_number"/>
                                         </div>
                                         <div class="col-lg-3 col-md-4 date">
                                             <label for="date_conclusion">Дата заключения</label>
-                                            <input type="text" class="form-control form-control-modern"
+                                            <input type="date" class="form-control form-control-modern"
                                                    name="date_conclusion"
-                                                   value="{{ object.date_conclusion }}" disabled
-                                                   data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                   value="{{ object.date_conclusion | date:"c" }}" disabled
                                                    id="date_conclusion"/>
                                         </div>
                                         <div class="col-lg-3 col-md-4 date">
                                             <label for="closing_date">Дата закрытия договора</label>
-                                            <input type="text" class="form-control form-control-modern"
+                                            <input type="date" class="form-control form-control-modern"
                                                    name="closing_date"
-                                                   value="{{ object.closing_date }}" disabled
-                                                   data-plugin-datepicker
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'
+                                                   value="{{ object.closing_date | date:"c" }}" disabled
                                                    id="closing_date"/>
                                         </div>
                                     </div>
@@ -164,22 +159,20 @@
                                             <label for="cost">Стоимость</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="cost" disabled
-                                                   value="{% if object.cost %}{{ object.cost }}{% else %}0{% endif %}"
+                                                   value="{{ object.cost }}"
                                                    id="cost"/>
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="date_entry">Дата ввода информации</label>
-                                            <input type="text" class="form-control form-control-modern"
+                                            <input type="date" class="form-control form-control-modern"
                                                    name="date_entry"
-                                                   value="{{ object.date_entry }}" id="date_entry" disabled/>
+                                                   value="{{ object.date_entry | date:"c" }}" id="date_entry" disabled/>
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="prolongation">Пролонгация</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="prolongation" disabled
-                                                   value="
-
-                                                           {% for key, value in prolongation %}{% if key == object.prolongation %}{{ value }}{% endif %}{% endfor %}"
+                                                   value="{{ object.get_prolongation_display }}"
                                                    id="prolongation"/>
                                         </div>
                                     </div>
