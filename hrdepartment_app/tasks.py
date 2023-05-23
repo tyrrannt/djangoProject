@@ -155,3 +155,31 @@ def report_card_separator():
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
     return dicts
 
+def report_card_separator_loc():
+    current_data = datetime.datetime.date(datetime.datetime.today())
+    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
+    source_url = url
+    try:
+        response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
+    except Exception as _ex:
+        return f"{_ex} ошибка"
+    dicts = json.loads(response.text)
+    for item in dicts['data']:
+        usr = item['FULLNAME']
+        start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
+        end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
+        search_user = usr.split(' ')
+        try:
+            user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+                                                surname=search_user[2])
+            kwargs = {
+                'report_card_day': current_data,
+                'employee': user_obj,
+                'start_time': start_time,
+                'end_time': end_time,
+            }
+            ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj,
+                                                defaults=kwargs)
+        except Exception as _ex:
+            logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
+    return dicts

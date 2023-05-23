@@ -21,21 +21,28 @@
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
 
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:memo_add' %}"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить служебную записку </a>
-                                        </div>
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="{% url 'hrdepartment_app:memo_add' %}"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                            Добавить служебную записку </a>
+                                    </div>
 
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:bpmemo_add' %}"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Запустить процесс </a>
-                                        </div>
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="{% url 'hrdepartment_app:bpmemo_add' %}"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                            Запустить процесс </a>
+                                    </div>
 
                                 </div>
                             </div>
-
+                            <style>
+                                tfoot input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    round-clip: 5px;
+                                }
+                            </style>
                             <table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
 
@@ -51,6 +58,19 @@
                                     <th width="10%">Приказ</th>
                                     <th width="10%">Примечание</th>
                                 </tr>
+                                <tfoot>
+                                <tr>
+                                    <th width="20%">Документ</th>
+                                    <th width="10%">Исполнитель</th>
+                                    <th width="10%">Руководитель</th>
+                                    <th width="10%">Служба НО</th>
+                                    <th width="10%">Отдел кадров</th>
+                                    <th width="10%">Бухгалтерия</th>
+                                    <th width="10%">Проживание</th>
+                                    <th width="10%">Приказ</th>
+                                    <th width="10%">Примечание</th>
+                                </tr>
+                                </tfoot>
                                 </thead>
                             </table>
                             <hr class="solid mt-5 opacity-4">
@@ -82,8 +102,27 @@
 {% block custome_script %}
     <script>
         $(document).ready(function () {
+            // Setup - add a text input to each footer cell
+            $('#datatable-ecommerce-list tfoot th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
             var table = $('#datatable-ecommerce-list').DataTable({
-                "order": [[ 0, 'desc' ], [ 1, 'desc' ],],
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+
+                            $('input', this.footer()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "order": [[0, 'desc'], [1, 'desc'],],
                 "pageLength": 25,
                 "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
@@ -98,10 +137,10 @@
                     } else {
                         $(nRow).addClass('text-danger fs-6')
                     }
-                    if (aData['cancellation']){
+                    if (aData['cancellation']) {
                         $(nRow).addClass('text-decoration-line-through text-danger fs-6')
                     }
-                    if (aData['originals_received']){
+                    if (aData['originals_received']) {
                         $('td:eq(8)', nRow).addClass('text-info text-color-inherit');
                     }
                     $(nRow).attr("href", id + '/update/');
