@@ -27,7 +27,7 @@ class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     item_sorted = 'pk'
     sorted_list = ['pk', 'contract_counteragent', 'contract_number', 'date_conclusion',
                    'type_of_contract', 'divisions']
-    permission_required = 'hrdepartment_app.view_contract'
+    permission_required = 'contract_app.view_contract'
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
@@ -59,7 +59,7 @@ class ContractSearch(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'object'
     object_list = None
     paginate_by = 6
-    permission_required = 'hrdepartment_app.view_contract'
+    permission_required = 'contract_app.view_contract'
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()
@@ -128,7 +128,7 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Contract
     form_class = ContractsAddForm
     success_url = reverse_lazy('contracts_app:index')
-    permission_required = 'hrdepartment_app.add_contract'
+    permission_required = 'contract_app.add_contract'
 
     def post(self, request, *args, **kwargs):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
@@ -161,7 +161,7 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     Просмотр договора.
     """
     model = Contract
-    permission_required = 'hrdepartment_app.view_contract'
+    permission_required = 'contract_app.view_contract'
 
     def dispatch(self, request, *args, **kwargs):
         return super(ContractDetail, self).dispatch(request, *args, **kwargs)
@@ -189,7 +189,7 @@ class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Contract
     form_class = ContractsUpdateForm
     template_name = 'contracts_app/contract_form_update.html'
-    permission_required = 'hrdepartment_app.change_contract'
+    permission_required = 'contract_app.change_contract'
 
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
