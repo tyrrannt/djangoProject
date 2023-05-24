@@ -70,7 +70,7 @@ def get_approval_oficial_memo_process(request):
             # Получение списка сотрудников НО
             person_distributor_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=1) & Q(user_work_profile__job__right_to_approval=True))
             person_distributor = [item for item in person_distributor_list]
-            location_selected = ApprovalOficialMemoProcess.objects.filter(Q(location_selected=False) & Q(document_not_agreed=True)).exclude(cancellation=True)
+            location_selected = ApprovalOficialMemoProcess.objects.filter(Q(location_selected=False) & Q(document_not_agreed=True)).exclude(cancellation=True).exclude(docs__official_memo_type='3')
             # Получение списка сотрудников ОК
             person_department_staff_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
             person_department_staff = [item for item in person_department_staff_list]

@@ -160,6 +160,8 @@
                                             <label for="id_access">Уровень доступа к документу:</label>
                                             {{ form.access }}
                                         </div>
+                                    </div>
+                                    <div class="row">
                                         <div class="col-md-3 col-sm-4 text-black-50">
                                             <div class="row checkbox-custom checkbox-default ib mt-4">
                                                 <input type="checkbox" id="id_allowed_placed"
@@ -168,12 +170,21 @@
                                                 <label for="id_allowed_placed" class="todo-label">Разрешение на публикацию</label>
                                             </div>
                                         </div>
+                                        <div class="col-md-3 col-sm-4 text-black-50">
+                                            <div class="row checkbox-custom checkbox-default ib mt-4">
+                                                <input type="checkbox" id="id_allowed_placed"
+                                                       name="allowed_placed" class="todo-check"
+                                                       {% if object.allowed_placed %}checked="checked"{% endif %}/>
+                                                <label for="id_allowed_placed" class="todo-label">Разрешение на публикацию</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
                                         <p>
                                             <label for="id_doc_file">Файл документа:</label>
                                             <input type="file" name="doc_file" class="form-control mb-4"
                                                    id="id_doc_file">
                                         </p>
-
                                     </div>
                                 </div>
                             </div>
