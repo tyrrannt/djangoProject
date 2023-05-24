@@ -548,7 +548,10 @@ def create_report(sender, instance, **kwargs):
             place = []
         # Получаем ссылку на файл шаблона
         if instance.document.person.user_work_profile.job.type_of_job == '1':
-            filepath_name = 'sp.xlsx'
+            if instance.document.type_trip == '2':
+                filepath_name = 'spk.xlsx'
+            else:
+                filepath_name = 'sp.xlsx'
         else:
             filepath_name = 'sp2.xlsx'
         filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates'), filepath_name)
