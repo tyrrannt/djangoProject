@@ -208,9 +208,11 @@
                                         <thead>
                                         <tr>
                                             <th width="8%" class="ps-4">ID</th>
-                                            <th width="65%">Контрагент</th>
-                                            <th width="5%" class="text-end">Номер документа</th>
-                                            <th width="7%" class="text-end">Дата документа</th>
+                                            <th width="15%">Тип документа</th>
+                                            <th width="16%" class="text-end">Тип договора</th>
+                                            <th width="15%" class="text-end">Номер документа</th>
+                                            <th width="15%" class="text-end">Дата документа</th>
+                                            <th width="16%" class="text-end">Исполнитель</th>
                                             <th width="5%" class="text-end">Статус</th>
                                         </tr>
                                         </thead>
@@ -221,8 +223,9 @@
                                                         href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
                                                 </td>
                                                 <td>
-                                                    <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.contract_counteragent }}</strong></a>
+                                                    <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.type_of_document }}</strong></a>
                                                 </td>
+                                                <td class="text-end">{{ item.type_of_contract }}</td>
                                                 <td class="text-end">
                                                     {% if item.contract_number %}
                                                         {{ item.contract_number }}
@@ -231,6 +234,7 @@
                                                     {% endif %}
                                                 </td>
                                                 <td class="text-end">{{ item.date_conclusion }}</td>
+                                                <td class="text-end">{{ item.executor | FIO_format }}</td>
                                                 <td class="text-end">
                                                     {% if item.closing_date < now %}
                                                         Действующий
