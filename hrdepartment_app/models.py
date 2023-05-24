@@ -553,7 +553,10 @@ def create_report(sender, instance, **kwargs):
             else:
                 filepath_name = 'sp.xlsx'
         else:
-            filepath_name = 'sp2.xlsx'
+            if instance.document.type_trip == '2':
+                filepath_name = 'sp2k.xlsx'
+            else:
+                filepath_name = 'sp2.xlsx'
         filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates'), filepath_name)
         wb = load_workbook(filepath)
         ws = wb.active
