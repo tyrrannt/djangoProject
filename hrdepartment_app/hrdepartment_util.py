@@ -177,8 +177,8 @@ def get_report_card(pk, RY=None, RM=None):
             time_3, end_time = get_preholiday_day(item.report_card_day, 7, 30)
         else:
             time_3, end_time = get_preholiday_day(item.report_card_day, 0, 0)
-        if item.report_card_day == datetime.datetime.today().date():
-            time_4 = 0.0
+        if time_2.total_seconds() - time_1.total_seconds() == 60.0:
+            time_4 = time_2.total_seconds() - time_1.total_seconds()
         else:
             time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
         total_score += time_4

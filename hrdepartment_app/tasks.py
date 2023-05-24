@@ -4,6 +4,7 @@ import json
 import pathlib
 
 import requests
+from dateutil.relativedelta import relativedelta
 from decouple import config
 from django.db.models import Q
 from loguru import logger
@@ -168,7 +169,11 @@ def report_card_separator_loc():
     for item in dicts['data']:
         usr = item['FULLNAME']
         start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
-        end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
+        if item['ISGO'] == '0':
+            end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
+        else:
+            end_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time() + relativedelta(minutes=1)
+
         search_user = usr.split(' ')
         try:
             user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
