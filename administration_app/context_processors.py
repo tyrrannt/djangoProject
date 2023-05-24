@@ -74,7 +74,7 @@ def get_approval_oficial_memo_process(request):
             # Получение списка сотрудников ОК
             person_department_staff_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
             person_department_staff = [item for item in person_department_staff_list]
-            process_accepted = ApprovalOficialMemoProcess.objects.filter(Q(process_accepted=False) & Q(location_selected=True)).exclude(cancellation=True)
+            process_accepted = ApprovalOficialMemoProcess.objects.filter(Q(process_accepted=False) & Q(location_selected=True)).exclude(cancellation=True).exclude(docs__official_memo_type='3')
             # Выбор делопроизводителя
             clerk_list = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=clerk_job_list)]
             clerk_list_executor = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=clerk_job_list_executor)]
