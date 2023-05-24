@@ -157,7 +157,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
         context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()
         context['bpf'] = ApprovalOficialMemoProcess.objects.filter(cancellation=True).count()
-        context['contract'] = Contract.objects.all().count()
+        context['contract'] = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True),
+                                                      Q(type_of_document__type_document='Договор')).count()
         context['current_year'] = datetime.datetime.today().year
         context['current_month'] = datetime.datetime.today().month
         get_profile_fill(self, context)
@@ -191,7 +192,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     html_obj = ['', '', '']
                 return JsonResponse(html_obj, safe=False)
             if report_year and report_month:
-                data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk, RY=report_year, RM=report_month)
+                data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk, RY=report_year,
+                                                                              RM=report_month)
                 return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day), safe=False)
         return super().get(request, *args, **kwargs)
 
