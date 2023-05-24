@@ -42,7 +42,7 @@ class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            contract_list = Contract.objects.all().order_by('pk').reverse()
+            contract_list = Contract.objects.filter(type_of_document__type_document='Договор').order_by('pk').reverse()
             data = [contract_item.get_data() for contract_item in contract_list]
             response = {'data': data}
             # report_card_separator()

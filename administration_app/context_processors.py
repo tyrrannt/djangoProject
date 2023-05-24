@@ -62,8 +62,11 @@ def get_approval_oficial_memo_process(request):
             clerk_job_list = set(clerk_job_list_set)
             clerk_job_list_executor = set(clerk_job_list_executor_set)
             # Выбор согласующих лиц
-            person_executor_list = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_job_list)]
+            person_executor_list = list()
+            for item in DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_job_list):
+                person_executor_list.append(item)
             person_agreement = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__in=person_executor_list) & Q(document_not_agreed=False)).exclude(cancellation=True)
+
             # Получение списка сотрудников НО
             person_distributor_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=1) & Q(user_work_profile__job__right_to_approval=True))
             person_distributor = [item for item in person_distributor_list]
