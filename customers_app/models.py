@@ -83,6 +83,7 @@ class Job(models.Model):
         ('0', 'Общий состав'),
         ('1', 'Летный состав'),
         ('2', 'Инженерный состав'),
+        ('3', 'Транспортный отдел'),
     ]
 
     class Meta:
@@ -93,7 +94,7 @@ class Job(models.Model):
     code = models.CharField(verbose_name='Код должности', max_length=5, help_text='', default='')
     name = models.CharField(verbose_name='Должность', max_length=200, help_text='')
     type_of_job = models.CharField(verbose_name="Принадлежность", choices=job_type, null=True, blank=True,
-                                   max_length=17)
+                                   max_length=18)
     date_entry = models.DateField(verbose_name='Дата ввода', auto_now_add=True, null=True)
     date_exclusions = models.DateField(verbose_name='Дата исключения', auto_now_add=True, null=True)
     excluded_standard_spelling = models.BooleanField(verbose_name='Исключена из штатного расписания', default=True)
