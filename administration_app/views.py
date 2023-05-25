@@ -104,7 +104,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                             kwargs_obj = {
                                 'report_card_day': unit,
                                 'employee': usr_obj,
-                                'start_time': datetime.datetime.strptime('9:30:00', '%H:%M:%S').time(),
+                                'start_time': usr_obj.user_work_profile.personal_work_schedule_start,
                                 'end_time': end_time,
                                 'record_type': value[0],
                                 'reason_adjustment': item['Основание'],

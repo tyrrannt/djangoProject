@@ -141,7 +141,7 @@ def report_card_separator():
     dicts = json.loads(response.text)
     for item in dicts['data']:
         usr = item['FULLNAME']
-        current_data = item['STARTDATE']
+        current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y %H:%M:%S").date()
         start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
         end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
         search_user = usr.split(' ')
