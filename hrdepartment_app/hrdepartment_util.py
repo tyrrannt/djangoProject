@@ -106,7 +106,7 @@ def get_month(period):
     return get_month_obj
 
 
-def get_preholiday_day(curent_day, hour, minute):
+def get_preholiday_day(curent_day, hour, minute, user_start_time, user_end_time):
     """
     Проверка даты на предпраздничный день.
     :param curent_day: День
@@ -116,27 +116,27 @@ def get_preholiday_day(curent_day, hour, minute):
     предпраздничным, то возвращается время заданное в предпраздничном дне, иначе возвращается, то время, которое пришло.
     Также возвращается врорым аргументом время окончания рабочего времени
     """
-    start_time = datetime.timedelta(hours=9, minutes=30)
+    start_time = datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute)
     # Проверка на выходной. Если истина, то вернуть нулевое время
     holiday_day = WeekendDay.objects.filter(weekend_day=curent_day).exists()
 
     if holiday_day:
-        start_time += datetime.timedelta(hours=0, minutes=0)
-        return datetime.timedelta(hours=0, minutes=0), start_time
+        end_time = start_time + datetime.timedelta(hours=0, minutes=0)
+        return datetime.timedelta(hours=0, minutes=0), end_time
     try:
         pre_holiday_day = PreHolidayDay.objects.get(preholiday_day=curent_day)
         if hour == 0 and minute == 0:
-            start_time += datetime.timedelta(hours=hour, minutes=minute)
-            return datetime.timedelta(hours=hour, minutes=minute), start_time
+            end_time = start_time + datetime.timedelta(hours=hour, minutes=minute)
+            return datetime.timedelta(hours=hour, minutes=minute), end_time
         else:
-            start_time += datetime.timedelta(hours=pre_holiday_day.work_time.hour,
+            end_time = start_time + datetime.timedelta(hours=pre_holiday_day.work_time.hour,
                                              minutes=pre_holiday_day.work_time.minute)
             return datetime.timedelta(hours=pre_holiday_day.work_time.hour,
-                                      minutes=pre_holiday_day.work_time.minute), start_time
+                                      minutes=pre_holiday_day.work_time.minute), end_time
 
     except Exception as _ex:
-        start_time += datetime.timedelta(hours=hour, minutes=minute)
-        return datetime.timedelta(hours=hour, minutes=minute), start_time
+        end_time = start_time + datetime.timedelta(hours=hour, minutes=minute)
+        return datetime.timedelta(hours=hour, minutes=minute), end_time
 
 
 def get_report_card(pk, RY=None, RM=None):
@@ -161,6 +161,9 @@ def get_report_card(pk, RY=None, RM=None):
         last_day = datetime.datetime.today() + relativedelta(day=31)
     total_score = 0
     get_user = DataBaseUser.objects.get(pk=pk)
+    user_start_time = get_user.user_work_profile.personal_work_schedule_start
+    user_end_time = get_user.user_work_profile.personal_work_schedule_end
+    print(user_start_time, user_end_time)
     data_dict = dict()
     for item in ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by(
@@ -173,11 +176,11 @@ def get_report_card(pk, RY=None, RM=None):
         # Получаем время ухода
         time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
         if item.report_card_day.weekday() in [0, 1, 2, 3]:
-            time_3, end_time = get_preholiday_day(item.report_card_day, 8, 30)
+            time_3, end_time = get_preholiday_day(item.report_card_day, 8, 30, user_start_time, user_end_time)
         elif item.report_card_day.weekday() == 4:
-            time_3, end_time = get_preholiday_day(item.report_card_day, 7, 30)
+            time_3, end_time = get_preholiday_day(item.report_card_day, 7, 30, user_start_time, user_end_time)
         else:
-            time_3, end_time = get_preholiday_day(item.report_card_day, 0, 0)
+            time_3, end_time = get_preholiday_day(item.report_card_day, 0, 0, user_start_time, user_end_time)
         if time_2.total_seconds() - time_1.total_seconds() == 60.0:
             time_4 = time_2.total_seconds() - time_1.total_seconds()
         else:
@@ -187,4 +190,4 @@ def get_report_card(pk, RY=None, RM=None):
         time_delta = datetime.timedelta(seconds=abs(time_4))
         data_dict[str(item.employee)].append(
             [item.report_card_day, item.start_time, item.end_time, sign, time_delta, end_time])
-    return data_dict, total_score, first_day, last_day
+    return data_dict, total_score, first_day, last_day, user_start_time, user_end_time

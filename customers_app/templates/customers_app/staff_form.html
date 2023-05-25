@@ -347,6 +347,22 @@
                                                            value="{{ object.user_work_profile.internal_phone|empty_item }}"/>
                                                 </div>
                                             </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время прихода</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="time" class="form-control form-control-modern"
+                                                           name="personal_work_schedule_start" id="id_personal_work_schedule_start"
+                                                           value="{{ object.user_work_profile.personal_work_schedule_start | time:"H:i" }}"/>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время ухода</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <input type="time" class="form-control form-control-modern"
+                                                           name="personal_work_schedule_end" id="id_personal_work_schedule_end"
+                                                           value="{{ object.user_work_profile.personal_work_schedule_end | time:"H:i" }}"/>
+                                                </div>
+                                            </div>
                                             {% if user.is_superuser %}
                                                 <div class="form-group row align-items-center pb-3">
                                                     <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email

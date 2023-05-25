@@ -209,7 +209,7 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
     return result
 
 
-def get_report_card_table(data_dict, total_score, first_day, last_day):
+def get_report_card_table(data_dict, total_score, first_day, last_day, user_start_time, user_end_time):
     """
 
     :param data_dict:
@@ -247,7 +247,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                                 <td>{r1.strftime('%d-%m-%Y')}</td>
                                 <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span>
                                 </td>
-                                <td>9:30-{end_work_time}</td>"""
+                                <td>{user_start_time.strftime('%H:%M')}-{end_work_time}</td>"""
             if datetime.timedelta(hours=r3.hour, minutes=r3.minute).total_seconds()-datetime.timedelta(hours=r2.hour, minutes=r2.minute).total_seconds() == 60.0:
                 html_obj += f"""<td>На работе</td>
                             </tr>"""

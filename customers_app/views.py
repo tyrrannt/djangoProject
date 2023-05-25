@@ -192,9 +192,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     html_obj = ['', '', '']
                 return JsonResponse(html_obj, safe=False)
             if report_year and report_month:
-                data_dict, total_score, first_day, last_day = get_report_card(self.request.user.pk, RY=report_year,
+                data_dict, total_score, first_day, last_day, user_start_time, user_end_time = get_report_card(self.request.user.pk, RY=report_year,
                                                                               RM=report_month)
-                return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day), safe=False)
+                return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day, user_start_time, user_end_time), safe=False)
         return super().get(request, *args, **kwargs)
 
 
@@ -602,7 +602,9 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             work_kwargs = {
                 'date_of_employment': content['date_of_employment'] if content['date_of_employment'] != '' else None,
                 'internal_phone': content['internal_phone'],
-                'work_email_password': content['work_email_password']
+                'work_email_password': content['work_email_password'],
+                'personal_work_schedule_start': content['personal_work_schedule_start'],
+                'personal_work_schedule_end': content['personal_work_schedule_end'],
             }
             # Формируем словарь записей, которые будем записывать, поля citizenship и passport обрабатываем отдельно
             personal_kwargs = {
