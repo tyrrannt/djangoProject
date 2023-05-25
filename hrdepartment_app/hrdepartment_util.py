@@ -106,7 +106,7 @@ def get_month(period):
     return get_month_obj
 
 
-def get_preholiday_day(curent_day, hour, minute, user_start_time, user_end_time):
+def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
     """
     Проверка даты на предпраздничный день.
     :param curent_day: День
@@ -116,13 +116,17 @@ def get_preholiday_day(curent_day, hour, minute, user_start_time, user_end_time)
     предпраздничным, то возвращается время заданное в предпраздничном дне, иначе возвращается, то время, которое пришло.
     Также возвращается врорым аргументом время окончания рабочего времени
     """
+    curent_day = item.report_card_day
+    if item.record_type == '1':
+        pass
     start_time = datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute)
+    new_start_time = datetime.timedelta(hours=0, minutes=0)
     # Проверка на выходной. Если истина, то вернуть нулевое время
     holiday_day = WeekendDay.objects.filter(weekend_day=curent_day).exists()
 
     if holiday_day:
         end_time = start_time + datetime.timedelta(hours=0, minutes=0)
-        return datetime.timedelta(hours=0, minutes=0), end_time
+        return datetime.timedelta(hours=0, minutes=0), new_start_time, end_time
     try:
         pre_holiday_day = PreHolidayDay.objects.get(preholiday_day=curent_day)
         if hour == 0 and minute == 0:
@@ -163,7 +167,6 @@ def get_report_card(pk, RY=None, RM=None):
     get_user = DataBaseUser.objects.get(pk=pk)
     user_start_time = get_user.user_work_profile.personal_work_schedule_start
     user_end_time = get_user.user_work_profile.personal_work_schedule_end
-    print(user_start_time, user_end_time)
     data_dict = dict()
     for item in ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by(
@@ -176,11 +179,11 @@ def get_report_card(pk, RY=None, RM=None):
         # Получаем время ухода
         time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
         if item.report_card_day.weekday() in [0, 1, 2, 3]:
-            time_3, end_time = get_preholiday_day(item.report_card_day, 8, 30, user_start_time, user_end_time)
+            time_3, end_time = get_preholiday_day(item, 8, 30, user_start_time, user_end_time)
         elif item.report_card_day.weekday() == 4:
-            time_3, end_time = get_preholiday_day(item.report_card_day, 7, 30, user_start_time, user_end_time)
+            time_3, end_time = get_preholiday_day(item, 7, 30, user_start_time, user_end_time)
         else:
-            time_3, end_time = get_preholiday_day(item.report_card_day, 0, 0, user_start_time, user_end_time)
+            time_3, end_time = get_preholiday_day(item, 0, 0, user_start_time, user_end_time)
         if time_2.total_seconds() - time_1.total_seconds() == 60.0:
             time_4 = time_2.total_seconds() - time_1.total_seconds()
         else:

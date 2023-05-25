@@ -150,7 +150,7 @@ def report_card_separator():
                 'employee': user_obj,
                 'start_time': start_time,
                 'end_time': end_time,
-                'record_type': 1,
+                'record_type': '1',
             }
             ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj,
                                                 defaults=kwargs)
