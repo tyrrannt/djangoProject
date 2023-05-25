@@ -1022,7 +1022,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                         if unit[0] == '1':
                             place = unit[1].replace('"', "")
                             plase_short = ''  # unit[2]
-                            html_table_set += f'<td width="2%" style="background-color: #d2691e; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success"  title="{place}">{plase_short}</td>'
+                            html_table_set += f'<td width="2%" style="background-color: #d2691e; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
                         elif unit[0] == '2':
                             place = unit[1].replace('"', "")
                             plase_short = ''  # unit[2]
