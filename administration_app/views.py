@@ -94,10 +94,19 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         count_date = int(item['КоличествоДней']) + weekend_count
                         view = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
                         for unit in view:
-                            if unit.weekday() == 4:
-                                end_time = datetime.datetime.strptime('17:00:00', '%H:%M:%S').time()
+                            if unit.weekday() in [0,1,2,3]:
+                                delta_time = datetime.timedelta(
+                                    hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
+                                    minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute)
+                                end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
+                            elif unit.weekday() == 4:
+                                delta_time = datetime.timedelta(
+                                    hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
+                                    minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute) - \
+                                             datetime.timedelta(hours=1)
+                                end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
                             else:
-                                end_time = datetime.datetime.strptime('18:00:00', '%H:%M:%S').time()
+                                end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
 
                             value = [i for i in type_of_report if type_of_report[i] == item['ВидОтпускаПредставление']]
                             print(value[0])
