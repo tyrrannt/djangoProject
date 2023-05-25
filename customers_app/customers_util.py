@@ -218,6 +218,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
     :param last_day: Последний день запрашиваемого периода
     :return:
     """
+    print(total_score)
     html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 380px; display: block; height: 700px; overflow: auto;">
                         <tbody>
@@ -236,6 +237,8 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
                             <th>Факт</th>
                         </tr>"""
         for r1, r2, r3, r4, r5, r6 in data_dict[key]:
+            # r1 - Дата, r2 - Время начала, r3 - Время окончания,
+            # r4 - Знак, r5 - Разница времени, r6 - Окончание по графику
             end_work_time = datetime.datetime.strptime(str(r6), '%H:%M:%S').time().strftime('%H:%M')
             start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
             end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
@@ -255,7 +258,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day):
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>
-                            <th><span style="{' color: #ff0000;' if total_score < 0 else ''}">{'-' if total_score < 0 else ''}{datetime.datetime.strptime(str(datetime.timedelta(seconds=abs(total_score))), '%H:%M:%S').time().strftime('%H:%M')}</span></th>
+                            <th><span style="{' color: #ff0000;' if total_score < 0 else ''}">{'-' if total_score < 0 else ''}{datetime.timedelta(seconds=abs(total_score))}</span></th>
                             <th></th>
                             <th></th>
                             </tr>"""

@@ -1,13 +1,18 @@
+import datetime
+
+from dateutil import rrule
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import JsonResponse
 
 from django.views.generic import ListView
 from loguru import logger
 
 from administration_app.models import PortalProperty
-from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data
+from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
+    get_jsons_data_filter2
 from customers_app.models import DataBaseUser, Groups, Job
-from hrdepartment_app.models import OfficialMemo
+from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -65,14 +70,46 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '4':
                 change_users_password()
             if request.GET.get('update') == '5':
-                dt = get_jsons_data('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 0)
+                type_of_report = {
+                    '2': 'Ежегодный',
+                    '3': 'Дополнительный ежегодный отпуск',
+                    '4': 'Отпуск за свой счет',
+                    '5': 'Дополнительный учебный отпуск (оплачиваемый)',
+                    '6': 'Отпуск по уходу за ребенком',
+                    '7': 'Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС',
+                    '8': 'Отпуск по беременности и родам',
+                    '9': 'Отпуск без оплаты согласно ТК РФ',
+                    '10': 'Дополнительный отпуск',
+                    '11': 'Дополнительный оплачиваемый отпуск пострадавшим в ',
+                    '12': 'Основной',
+                }
+                dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 'Сотрудник_Key', '72095054-970f-11e3-84fb-00e05301b4e4', 'year(ДатаОкончания)', 2023, 0, 0)
                 for key in dt:
-                    view = list()
+
                     for item in dt[key]:
-                        # if item['Сотрудник_Key'] == '72095054-970f-11e3-84fb-00e05301b4e4':
-                        #     print(item['Сотрудник_Key'], item['ДатаНачала'], item['ДатаОкончания'])
-                        # if item['Сотрудник_Key'] == '72095054-970f-11e3-84fb-00e05301b4e4':
-                        view.append(item['ВидОтпускаПредставление'])
-                    print(set(view))
+                        usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
+                        start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
+                        end_date = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
+                        weekend_count = WeekendDay.objects.filter(Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(weekend_type='1')).count()
+                        count_date = int(item['КоличествоДней']) + weekend_count
+                        view = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
+                        for unit in view:
+                            if unit.weekday() == 4:
+                                end_time = datetime.datetime.strptime('17:00:00', '%H:%M:%S').time()
+                            else:
+                                end_time = datetime.datetime.strptime('18:00:00', '%H:%M:%S').time()
+
+                            value = [i for i in type_of_report if type_of_report[i] == item['ВидОтпускаПредставление']]
+                            print(value[0])
+                            kwargs_obj = {
+                                'report_card_day': unit,
+                                'employee': usr_obj,
+                                'start_time': datetime.datetime.strptime('9:30:00', '%H:%M:%S').time(),
+                                'end_time': end_time,
+                                'record_type': value[0],
+                                'reason_adjustment': item['Основание'],
+                                'doc_ref_key': item['ДокументОснование'],
+                            }
+                            ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj, defaults=kwargs_obj)
 
         return super().get(request, *args, **kwargs)

@@ -30,7 +30,6 @@ def get_history(self, model):
     return change_history
 
 
-
 # class GetAllObject:
 #
 #     @staticmethod
@@ -123,6 +122,7 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
     url = f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/" \
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
     source_url = url
+    print(url)
     try:
         if base_index == 0:
             response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
@@ -148,8 +148,8 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     :param object_name: Название объекта. Список можно посмотреть в конфигурации
     :param filter_obj: Ключ (поле), по которому фильтруем
     :param filter_content: Фильтр
-    :param logical: 1 - Равно, 2 - Не равно, 3 - Больше, 4 - Больше или равно, 5 - Меньше, 6 - Меньше или равно,
-                    7 - Логическое И, 8 - Логическое ИЛИ, 9 - Отрицание
+    :param logical: 0 - Равно, 1 - Не равно, 2 - Больше, 3 - Больше или равно, 4 - Меньше, 5 - Меньше или равно,
+                    6 - Логическое И, 7 - Логическое ИЛИ, 8 - Отрицание
     :param base_index: Индекс базы 1С. 0 - Зарплата, 1 - Бухгалтерия
     :return: Возвращает JSON объект, в виде словаря.
     """
@@ -158,6 +158,28 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     url = f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/" \
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata" \
           f"&$filter={filter_obj}%20{logical_operation[logical]}%20guid'{filter_content}'"
+    source_url = url
+    try:
+        if base_index == 0:
+            response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+        else:
+            response = requests.get(source_url, auth=(config('ACC_LOGIN'), config('ACC_PASS')))
+    except Exception as _ex:
+        logger.debug(f'{_ex}')
+        return {'value': ""}
+    logger.info(
+        f'Успешное получение данных: {object_type} {object_name} {filter_obj} {filter_content} {logical} {base_index}')
+    return json.loads(response.text)
+
+
+def get_jsons_data_filter2(object_type: str, object_name: str, filter_obj: str, filter_content: str, filter_obj2: str, filter_content2: str, logical: int,
+                          base_index: int) -> dict:
+    logical_operation = ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'or', 'and', 'not']
+    base = ['72095052-970f-11e3-84fb-00e05301b4e4', '59e20093-970f-11e3-84fb-00e05301b4e4']
+    url = f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/" \
+          f"{object_type}_{object_name}?$format=application/json;odata=nometadata" \
+          f"&$filter={filter_obj}%20{logical_operation[logical]}%20guid'{filter_content}'" \
+          f"and {filter_obj2}%20{logical_operation[logical]}%20{filter_content2}"
     source_url = url
     try:
         if base_index == 0:
@@ -273,10 +295,12 @@ def FIO_format(value, self=None):
         result = ''
     return result
 
+
 class CkeditorCustomStorage(FileSystemStorage):
     """
     Кастомное расположение для медиа файлов редактора
     """
+
     def get_folder_name(self):
         return datetime.now().strftime('%Y/%m/%d')
 
@@ -322,7 +346,8 @@ def get_users_info():
         spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for item in users_list:
             if item.email:
-                spamwriter.writerow([f'{item.last_name} {item.first_name} {item.surname}', f'{item.username}', f'{item.email}'])
+                spamwriter.writerow(
+                    [f'{item.last_name} {item.first_name} {item.surname}', f'{item.username}', f'{item.email}'])
             else:
                 spamwriter.writerow(
                     [f'{item.last_name} {item.first_name} {item.surname}', f'{item.username}', f'E-mail отсутствует'])

@@ -923,6 +923,9 @@ class BusinessProcessDirectionUpdate(LoginRequiredMixin, PermissionRequiredMixin
 
 
 class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """
+        Отчет по сотрудникам
+    """
     model = ApprovalOficialMemoProcess
     template_name = 'hrdepartment_app/reportapprovaloficialmemoprocess_list.html'
     permission_required = 'hrdepartment_app.view_approvaloficialmemoprocess'
@@ -957,7 +960,8 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by(
                     'document__responsible')
             dict_obj = dict()
-            for item in qs.all():
+            print(qs)
+            for item in qs.all().order_by('document__person__last_name'):
                 list_obj = []
                 person = FIO_format(str(item.document.person))
                 place = '; '.join([item.name for item in item.document.place_production_activity.all()])
@@ -1069,7 +1073,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                 & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
                 & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
         dict_obj = dict()
-        for item in qs.all():
+        for item in qs.all().order_by('document__person__last_name'):
             list_obj = []
             person = FIO_format(str(item.document.person))
             # Проверяем, заполнялся ли список по сотруднику
@@ -1113,6 +1117,9 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
 
 # Должностные инструкции
 class DocumentsJobDescriptionList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """
+        Должностные инструкции - список
+    """
     model = DocumentsJobDescription
     permission_required = 'hrdepartment_app.view_documentsjobdescription'
 
@@ -1135,6 +1142,9 @@ class DocumentsJobDescriptionList(LoginRequiredMixin, PermissionRequiredMixin, L
 
 
 class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """
+        Должностные инструкции - создание
+    """
     model = DocumentsJobDescription
     form_class = DocumentsJobDescriptionAddForm
     permission_required = 'hrdepartment_app.add_documentsjobdescription'
@@ -1146,6 +1156,9 @@ class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, Cr
 
 
 class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    """
+        Должностные инструкции - просмотр
+    """
     model = DocumentsJobDescription
     permission_required = 'hrdepartment_app.view_documentsjobdescription'
 
@@ -1174,6 +1187,9 @@ class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin,
 
 
 class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """
+        Должностные инструкции - редактирование
+    """
     template_name = 'hrdepartment_app/documentsjobdescription_update.html'
     model = DocumentsJobDescription
     form_class = DocumentsJobDescriptionUpdateForm
@@ -1238,6 +1254,7 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
 
 
 class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    # Приказ - просмотр
     model = DocumentsOrder
     permission_required = 'hrdepartment_app.view_documentsorder'
 
@@ -1266,6 +1283,7 @@ class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
 
 
 class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    # Приказ - изменение
     template_name = 'hrdepartment_app/documentsorder_update.html'
     model = DocumentsOrder
     form_class = DocumentsOrderUpdateForm
@@ -1289,6 +1307,7 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
 
 
 class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    # Места назначения - список
     model = PlaceProductionActivity
     permission_required = 'hrdepartment_app.view_placeproductionactivity'
 
@@ -1308,6 +1327,7 @@ class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, L
 
 
 class PlaceProductionActivityAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    # Места назначения - создание
     model = PlaceProductionActivity
     form_class = PlaceProductionActivityAddForm
     permission_required = 'hrdepartment_app.add_placeproductionactivity'
@@ -1319,6 +1339,7 @@ class PlaceProductionActivityAdd(LoginRequiredMixin, PermissionRequiredMixin, Cr
 
 
 class PlaceProductionActivityDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    # Места назначения - просмотр
     model = PlaceProductionActivity
     permission_required = 'hrdepartment_app.view_placeproductionactivity'
 
@@ -1329,6 +1350,7 @@ class PlaceProductionActivityDetail(LoginRequiredMixin, PermissionRequiredMixin,
 
 
 class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    # Места назначения - изменение
     model = PlaceProductionActivity
     template_name = 'hrdepartment_app/placeproductionactivity_form_update.html'
     form_class = PlaceProductionActivityUpdateForm
@@ -1364,6 +1386,7 @@ class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 
 class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
     permission_required = 'hrdepartment_app.add_reportcard'
     template_name = 'hrdepartment_app/reportcard_detail.html'

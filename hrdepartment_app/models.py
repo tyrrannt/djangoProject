@@ -898,12 +898,17 @@ class PreHolidayDay(models.Model):
 
 
 class WeekendDay(models.Model):
+    type_of_weekend = [
+        ('1', 'Праздник'),
+        ('2', 'Выходной'),
+    ]
     class Meta:
         verbose_name = 'Праздничный день'
         verbose_name_plural = 'Праздничные дни'
 
     weekend_day = models.DateField(verbose_name='Дата', null=True, blank=True)
     description = models.CharField(verbose_name='Описание', max_length=200, default='', blank=True)
+    weekend_type = models.CharField(verbose_name='Тип дня', max_length=8, choices=type_of_weekend, blank=True, null=True)
 
     def __str__(self):
         return str(self.weekend_day)
