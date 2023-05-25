@@ -91,7 +91,8 @@ def send_mail_change(counter, obj):
 def get_month(period):
     first_day = period + relativedelta(day=1)
     last_day = period + relativedelta(day=31)
-    weekend_days = [item.weekend_day for item in WeekendDay.objects.filter(Q(weekend_day__gte=first_day) & Q(weekend_day__lte=last_day))]
+    weekend_days = [item.weekend_day for item in
+                    WeekendDay.objects.filter(Q(weekend_day__gte=first_day) & Q(weekend_day__lte=last_day))]
     get_month_obj = []
     for item in range(first_day.day, last_day.day + 1):
         date_obj = first_day + datetime.timedelta(days=item - 1)
@@ -118,7 +119,9 @@ def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
     """
     curent_day = item.report_card_day
     if item.record_type == '1':
-        pass
+        print('1')
+    if item.record_type in ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']:
+        print('2-12')
     start_time = datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute)
     new_start_time = datetime.timedelta(hours=0, minutes=0)
     # Проверка на выходной. Если истина, то вернуть нулевое время
@@ -131,16 +134,16 @@ def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
         pre_holiday_day = PreHolidayDay.objects.get(preholiday_day=curent_day)
         if hour == 0 and minute == 0:
             end_time = start_time + datetime.timedelta(hours=hour, minutes=minute)
-            return datetime.timedelta(hours=hour, minutes=minute), end_time
+            return datetime.timedelta(hours=hour, minutes=minute), new_start_time, end_time
         else:
             end_time = start_time + datetime.timedelta(hours=pre_holiday_day.work_time.hour,
-                                             minutes=pre_holiday_day.work_time.minute)
+                                                       minutes=pre_holiday_day.work_time.minute)
             return datetime.timedelta(hours=pre_holiday_day.work_time.hour,
-                                      minutes=pre_holiday_day.work_time.minute), end_time
+                                      minutes=pre_holiday_day.work_time.minute), new_start_time, end_time
 
     except Exception as _ex:
         end_time = start_time + datetime.timedelta(hours=hour, minutes=minute)
-        return datetime.timedelta(hours=hour, minutes=minute), end_time
+        return datetime.timedelta(hours=hour, minutes=minute), new_start_time, end_time
 
 
 def get_report_card(pk, RY=None, RM=None):
@@ -179,11 +182,11 @@ def get_report_card(pk, RY=None, RM=None):
         # Получаем время ухода
         time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
         if item.report_card_day.weekday() in [0, 1, 2, 3]:
-            time_3, end_time = get_preholiday_day(item, 8, 30, user_start_time, user_end_time)
+            time_3, new_start_time, end_time = get_preholiday_day(item, 8, 30, user_start_time, user_end_time)
         elif item.report_card_day.weekday() == 4:
-            time_3, end_time = get_preholiday_day(item, 7, 30, user_start_time, user_end_time)
+            time_3, new_start_time, end_time = get_preholiday_day(item, 7, 30, user_start_time, user_end_time)
         else:
-            time_3, end_time = get_preholiday_day(item, 0, 0, user_start_time, user_end_time)
+            time_3, new_start_time, end_time = get_preholiday_day(item, 0, 0, user_start_time, user_end_time)
         if time_2.total_seconds() - time_1.total_seconds() == 60.0:
             time_4 = time_2.total_seconds() - time_1.total_seconds()
         else:

@@ -129,8 +129,10 @@ def happy_birthday():
 
 @app.task()
 def report_card_separator():
-    current_data = datetime.datetime.date(datetime.datetime.today())
-    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
+    # current_data = datetime.datetime.date(datetime.datetime.today())
+    current_data1 = datetime.datetime(2023, 1, 1)
+    current_data2 = datetime.datetime(2023, 5, 25)
+    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data1}&enddate={current_data2}"
     source_url = url
     try:
         response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
@@ -158,6 +160,7 @@ def report_card_separator():
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
     return dicts
 
+
 def report_card_separator_loc():
     current_data = datetime.datetime.date(datetime.datetime.today())
     url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
@@ -173,7 +176,8 @@ def report_card_separator_loc():
         if item['ISGO'] == '0':
             end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
         else:
-            end_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time() + relativedelta(minutes=1)
+            end_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time() + relativedelta(
+                minutes=1)
 
         search_user = usr.split(' ')
         try:
