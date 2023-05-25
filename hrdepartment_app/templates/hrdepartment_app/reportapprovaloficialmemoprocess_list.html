@@ -32,14 +32,9 @@
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                        <a href="{% url 'hrdepartment_app:bpmemo_report' %}"
-                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4 ws-normal">+
-                                            Текущий месяц </a>
-                                    </div>
-                                    <div class="col-sm-3 mb-1">
+                                    <div class="col-sm-12 col-lg-4 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
-                                                onchange="filter_date()" id="id_filter_month">
+                                                id="id_filter_month">
                                             <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
                                             </option>
                                             <option value="2" {% if current_month == 2 %}selected{% endif %}>Февраль
@@ -66,9 +61,9 @@
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-sm-3 mb-1">
+                                    <div class="col-sm-12 col-lg-4 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
-                                                onchange="filter_date()" id="id_filter_year">
+                                                id="id_filter_year">
                                             <option value="2023" {% if current_year == 2023 %}selected{% endif %}>2023
                                             </option>
                                             <option value="2024" {% if current_year == 2024 %}selected{% endif %}>2024
@@ -95,6 +90,9 @@
                                             </option>
                                         </select>
                                     </div>
+                                    <div class="col-sm-12 col-lg-4 mb-1">
+                                        <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">OK</button>
+                                    </div>
                                 </div>
                             </div>
                             <div id="id_tables" class="table-responsive">
@@ -108,22 +106,22 @@
                                         {% endfor %}
                                     </tr>
                                     </thead>
-                                    <tbody>
-                                    {% for key, value in table_set.items %}
-                                        <tr>
-                                            <td width="14%"><strong>{{ key }}</strong></td>
-                                            {% for unit in value %}
-                                                {% if unit == '1' %}
-                                                    <td width="2%" style="background-color: #d2691e; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success"></td>
-                                                {% elif unit == '2' %}
-                                                    <td width="2%" style="background-color: #2b8101; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success"></td>
-                                                {% else %}
-                                                    <td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
+{#                                    <tbody>#}
+{#                                    {% for key, value in table_set.items %}#}
+{#                                        <tr>#}
+{#                                            <td width="14%"><strong>{{ key }}</strong></td>#}
+{#                                            {% for unit1, unit2 in value.items %}#}
+{#                                                {% if unit == '1' %}#}
+{#                                                    <td width="2%" style="background-color: #d2691e; border-color:#4670ad;border-style:dashed;border-width:1px;" fio="{{ key }}" title="" class="position-4-success"></td>#}
+{#                                                {% elif unit == '2' %}#}
+{#                                                    <td width="2%" style="background-color: #2b8101; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success"></td>#}
+{#                                                {% else %}#}
+{#                                                    <td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>#}
+{#                                                {% endif %}#}
+{#                                            {% endfor %}#}
+{#                                        </tr>#}
+{#                                    {% endfor %}#}
+{#                                    </tbody>#}
                                 </table>
                             </div>
                             <hr class="solid mt-5 opacity-4">

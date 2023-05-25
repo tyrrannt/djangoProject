@@ -1092,20 +1092,20 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                 dict_obj[FIO_format(str(item.document.person))] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
                     curent_day = date_start + datetime.timedelta(days_count)
-                    print(list_obj, days_count, date_end, date_start)
+                    # print(list_obj, days_count, date_end, date_start)
                     if item.hr_accepted:
                         if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
-                            list_obj.append('2')
+                            list_obj.append(['2', ''])
                         else:
-                            list_obj.append('0')
+                            list_obj.append(['0', ''])
                     else:
                         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj.append('1')
+                            list_obj.append(['1', ''])
                         else:
-                            list_obj.append('0')
+                            list_obj.append(['0', ''])
 
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
-
+        print(dict_obj)
         content['table_set'] = dict_obj
         content['table_count'] = range(1, (date_end - date_start).days + 2)
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Отчет'
