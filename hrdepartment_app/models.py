@@ -335,7 +335,6 @@ class OfficialMemo(models.Model):
     title = models.CharField(verbose_name='Наименование', max_length=200, default='', blank=True)
 
     def __str__(self):
-        # print(self.docs.pk)
         return self.title
 
     def get_title(self):

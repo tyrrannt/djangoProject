@@ -33,7 +33,8 @@
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
-<link rel="stylesheet" href="{% static 'admin_templates/css/content-styles.css' %}"  type="text/css"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/css/content-styles.css' %}"  type="text/css"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}" />
 
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}" />
@@ -126,7 +127,6 @@
 <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>
-{#        <script src="{% static 'admin_templates/vendor/autosize/autosize.js' %}"></script>#}
 
 <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/dataTables.buttons.min.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/datatables/extras/TableTools/Buttons-1.4.2/js/buttons.bootstrap4.min.js' %}"></script>
@@ -139,6 +139,9 @@
 {% block custome_script %}
 {% endblock %}
 
+<!-- Specific Page Vendor -->
+<script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+
 <!-- Theme Base, Components and Settings -->
 <script src="{% static 'admin_templates/js/theme.js' %}"></script>
 
@@ -150,7 +153,8 @@
 
 <!-- Examples -->
 {#<script src="{% static 'admin_templates/js/examples/examples.header.menu.js' %}"></script>#}
-
+{% block SpecificPageVendor %}
+{% endblock %}
 
 </body>
 </html>
