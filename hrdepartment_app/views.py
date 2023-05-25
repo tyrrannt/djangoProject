@@ -1105,7 +1105,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                             list_obj.append(['0', ''])
 
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
-        print(dict_obj)
+
         content['table_set'] = dict_obj
         content['table_count'] = range(1, (date_end - date_start).days + 2)
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Отчет'
