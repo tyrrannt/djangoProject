@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import pathlib
 
@@ -254,6 +255,8 @@ class DataBaseUserProfile(models.Model):
     oms = models.CharField(verbose_name='Полис ОМС', max_length=24, blank=True, default='')
     inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='')
 
+def get_time(text):
+    return datetime.datetime.strptime(text, '%H:%M:%S').time()
 
 class DataBaseUserWorkProfile(models.Model):
     class Meta:
@@ -270,6 +273,8 @@ class DataBaseUserWorkProfile(models.Model):
                                   help_text='', blank=True)
     work_email_password = models.CharField(verbose_name='Пароль от корпоративной почты', max_length=50, blank=True,
                                            default='')
+    personal_work_schedule_start = models.TimeField(verbose_name='Начало рабочего времени', default=get_time('9:30:00'))
+    personal_work_schedule_end = models.TimeField(verbose_name='Окончание рабочего времени', default=get_time('18:00:00'))
 
 
 class DataBaseUser(AbstractUser):
