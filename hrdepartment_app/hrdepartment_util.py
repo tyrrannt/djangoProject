@@ -122,15 +122,13 @@ def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
         check = 0
     if item.record_type in ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']:
         check = 1
-        current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
-        current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
-        print(current_data1, current_data2)
     start_time = datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute)
     new_start_time = datetime.timedelta(hours=0, minutes=0)
     # Проверка на выходной. Если истина, то вернуть нулевое время
     holiday_day = WeekendDay.objects.filter(weekend_day=curent_day).exists()
     if check == 1:
-        end_time = start_time + datetime.timedelta(hours=0, minutes=0)
+        end_time = datetime.timedelta(hours=0, minutes=0)
+        new_start_time = datetime.timedelta(hours=0, minutes=0)
         return datetime.timedelta(hours=8, minutes=30), new_start_time, end_time
     if holiday_day:
         end_time = start_time + datetime.timedelta(hours=0, minutes=0)
