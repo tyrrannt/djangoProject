@@ -119,6 +119,7 @@ def get_preholiday_day(curent_day, hour, minute):
     start_time = datetime.timedelta(hours=9, minutes=30)
     # Проверка на выходной. Если истина, то вернуть нулевое время
     holiday_day = WeekendDay.objects.filter(weekend_day=curent_day).exists()
+
     if holiday_day:
         start_time += datetime.timedelta(hours=0, minutes=0)
         return datetime.timedelta(hours=0, minutes=0), start_time

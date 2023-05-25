@@ -40,6 +40,8 @@
                                     width: 100%;
                                     padding: 3px;
                                     box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
                                 }
                             </style>
                             <table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
@@ -121,7 +123,7 @@
                         });
                 },
                 "order": [[0, 'desc'], [1, 'desc'],],
-                "pageLength": 25,
+                "pageLength": 10,
                 "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
                 "ajax": "{% url 'hrdepartment_app:bpmemo_list' %}",
