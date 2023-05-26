@@ -219,7 +219,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
     :return:
     """
     html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 380px; display: block; height: 700px; overflow: auto;">
+                                   style="min-width: 420px; display: block; height: 700px; overflow: auto;">
                         <tbody>
                             <tr>
                                 <td colspan="5"><h4>Выполнение графика:</h4></td>
