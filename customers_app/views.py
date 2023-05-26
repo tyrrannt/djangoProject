@@ -28,7 +28,7 @@ from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from hrdepartment_app.hrdepartment_util import get_report_card
+from hrdepartment_app.hrdepartment_util import get_report_card, get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -192,9 +192,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     html_obj = ['', '', '']
                 return JsonResponse(html_obj, safe=False)
             if report_year and report_month:
-                data_dict, total_score, first_day, last_day, user_start_time, user_end_time = get_report_card(self.request.user.pk, RY=report_year,
-                                                                              RM=report_month)
-                return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day, user_start_time, user_end_time), safe=False)
+                # data_dict, total_score, first_day, last_day, user_start_time, user_end_time = get_report_card(self.request.user.pk, RY=report_year, RM=report_month)
+                data_dict, total_score, first_day, last_day = get_working_hours(self.request.user.pk, datetime.datetime(year=int(report_year), month=int(report_month), day=1))
+                # print(data_dict, total_score, first_day, last_day, user_start_time, user_end_time)
+                return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day), safe=False)
         return super().get(request, *args, **kwargs)
 
 

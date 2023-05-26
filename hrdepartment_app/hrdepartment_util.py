@@ -1,5 +1,6 @@
 import datetime
 
+from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
@@ -117,6 +118,7 @@ def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
     предпраздничным, то возвращается время заданное в предпраздничном дне, иначе возвращается, то время, которое пришло.
     Также возвращается врорым аргументом время окончания рабочего времени
     """
+    check = 0
     curent_day = item.report_card_day
     if item.record_type == '1':
         check = 0
@@ -129,7 +131,12 @@ def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
     if check == 1:
         end_time = datetime.timedelta(hours=0, minutes=0)
         new_start_time = datetime.timedelta(hours=0, minutes=0)
-        return datetime.timedelta(hours=8, minutes=30), new_start_time, end_time
+        if curent_day.weekday() in [0, 1, 2, 3]:
+            return datetime.timedelta(hours=8, minutes=30), new_start_time, end_time
+        elif curent_day.weekday() == 4:
+            return datetime.timedelta(hours=7, minutes=30), new_start_time, end_time
+        else:
+            return datetime.timedelta(hours=0, minutes=0), new_start_time, end_time
     if holiday_day:
         end_time = start_time + datetime.timedelta(hours=0, minutes=0)
         return datetime.timedelta(hours=0, minutes=0), new_start_time, end_time
@@ -169,10 +176,14 @@ def get_report_card(pk, RY=None, RM=None):
     else:
         first_day = datetime.datetime.today() + relativedelta(day=1)
         last_day = datetime.datetime.today() + relativedelta(day=31)
+
     total_score = 0
     get_user = DataBaseUser.objects.get(pk=pk)
     user_start_time = get_user.user_work_profile.personal_work_schedule_start
     user_end_time = get_user.user_work_profile.personal_work_schedule_end
+
+    print(get_working_hours(get_user, first_day))
+
     data_dict = dict()
     for item in ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by(
@@ -200,3 +211,119 @@ def get_report_card(pk, RY=None, RM=None):
         data_dict[str(item.employee)].append(
             [item.report_card_day, item.start_time, item.end_time, sign, time_delta, end_time])
     return data_dict, total_score, first_day, last_day, user_start_time, user_end_time
+
+
+# -------------------------------------------------------------------------------------------------------------------
+
+def check_day(date, time_start, time_end):
+    weekend = WeekendDay.objects.filter(weekend_day=date.date()).exists()
+    preholiday = PreHolidayDay.objects.filter(preholiday_day=date.date()).exists()
+    check_time_end = time_end
+    check_time_start = time_start
+    if not weekend:
+        if date.weekday() in [0, 1, 2, 3]:
+            if not preholiday:
+                check_time_end = datetime.timedelta(hours=time_end.hour, minutes=time_end.minute)
+            else:
+                preholiday_time = PreHolidayDay.objects.get(preholiday_day=date.date())
+                check_time_end = datetime.timedelta(hours=time_start.hour,
+                                                    minutes=time_start.minute) + \
+                                 datetime.timedelta(hours=preholiday_time.work_time.hour,
+                                                    minutes=preholiday_time.work_time.minute)
+        elif date.weekday() == 4:
+            if not preholiday:
+                check_time_end = datetime.timedelta(hours=time_end.hour, minutes=time_end.minute) - datetime.timedelta(
+                    hours=1)
+            else:
+                preholiday_time = PreHolidayDay.objects.get(preholiday_day=date.date())
+                check_time_end = datetime.timedelta(hours=time_start.hour,
+                                                    minutes=time_start.minute) + \
+                                 datetime.timedelta(hours=preholiday_time.work_time.hour,
+                                                    minutes=preholiday_time.work_time.minute)
+        else:
+            check_time_end = datetime.timedelta(hours=0, minutes=0)
+            check_time_start = datetime.timedelta(hours=0, minutes=0)
+    else:
+        check_time_end = datetime.timedelta(hours=0, minutes=0)
+        check_time_start = datetime.timedelta(hours=0, minutes=0)
+
+    return datetime.datetime.strptime(str(check_time_start), '%H:%M:%S').time(), datetime.datetime.strptime(str(check_time_end), '%H:%M:%S').time()
+
+
+def get_working_hours(pk, start_date):
+    type_of_report = {
+        '2': 'Ежегодный',
+        '3': 'Дополнительный ежегодный отпуск',
+        '4': 'Отпуск за свой счет',
+        '5': 'Дополнительный учебный отпуск (оплачиваемый)',
+        '6': 'Отпуск по уходу за ребенком',
+        '7': 'Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС',
+        '8': 'Отпуск по беременности и родам',
+        '9': 'Отпуск без оплаты согласно ТК РФ',
+        '10': 'Дополнительный отпуск',
+        '11': 'Дополнительный оплачиваемый отпуск пострадавшим в ',
+        '12': 'Основной',
+    }
+    user_id = DataBaseUser.objects.get(pk=pk)
+    cnt = start_date + relativedelta(day=31)
+    period = list(rrule.rrule(rrule.DAILY, count=cnt.day, dtstart=start_date.date()))
+    dict_obj = dict()
+    total_time = 0
+    for date in period:
+        if not dict_obj.get(str(user_id)):
+            dict_obj[str(user_id)] = []
+        report_record = ReportCard.objects.filter(employee=user_id, report_card_day=date).order_by('record_type').reverse()
+        total_day_time, start_time, end_time, record_type = 0, '', '', ''
+        user_start_time = user_id.user_work_profile.personal_work_schedule_start
+        user_end_time = user_id.user_work_profile.personal_work_schedule_end
+        for record in report_record:
+            if record.record_type == '1':
+                total_day_time += datetime.timedelta(
+                    hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
+                                  - datetime.timedelta(hours=record.start_time.hour,
+                                                       minutes=record.start_time.minute).total_seconds()
+                if start_time == '':
+                    start_time = record.start_time
+                else:
+                    if start_time == datetime.datetime.strptime('00:00:00', '%H:%M:%S').time():
+                        start_time = record.start_time
+                    if record.start_time < start_time and record.start_time != datetime.datetime.strptime('00:00:00', '%H:%M:%S').time():
+                        start_time = record.start_time
+                if end_time == '':
+                    end_time = record.end_time
+                else:
+                    if record.end_time > end_time:
+                        end_time = record.end_time
+                if record_type != 'О':
+                    record_type = 'Я'
+            else:
+                start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time() #.strftime('%H:%M')
+                end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time() #.strftime('%H:%M')
+                record_type = 'О'
+        if record_type != '':
+            if report_record.count() == 1:
+                merge_interval = False
+            else:
+                merge_interval = True
+            user_start_time, user_end_time = check_day(date, user_start_time, user_end_time)
+            if record_type == 'Я':
+                total_day_time -= datetime.timedelta(
+                    hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - \
+                                  datetime.timedelta(
+                    hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
+
+            if record_type == 'О' and report_record.count() == 1:
+                total_time += 0
+            if record_type == 'Я':
+                total_time += total_day_time
+            if record_type == 'О' and merge_interval:
+                total_time += total_day_time
+            sign = ''
+            if total_day_time < 0:
+                sign = '-'
+            """ Дата, Начало, Окончание, Тип записи, Начало по графику, 
+            Окончание по графику, Скалярное общее время за день , Знак,  Было ли объединение интервалов,
+             Начальная дата, конечная дата"""
+            dict_obj[str(user_id)].append([date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
+                                           user_end_time, record_type, merge_interval])
+    return dict_obj, total_time, start_date, cnt

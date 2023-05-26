@@ -209,7 +209,7 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
     return result
 
 
-def get_report_card_table(data_dict, total_score, first_day, last_day, user_start_time, user_end_time):
+def get_report_card_table(data_dict, total_score, first_day, last_day): # , user_start_time, user_end_time
     """
 
     :param data_dict:
@@ -218,15 +218,14 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
     :param last_day: Последний день запрашиваемого периода
     :return:
     """
-    print(total_score)
     html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 380px; display: block; height: 700px; overflow: auto;">
                         <tbody>
                             <tr>
-                                <td colspan="4"><h4>Выполнение графика:</h4></td>
+                                <td colspan="5"><h4>Выполнение графика:</h4></td>
                             </tr>
                             <tr>
-                                <td colspan="4">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
+                                <td colspan="5">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
                             </tr>"""
     for key in data_dict:
         html_obj += f"""                        
@@ -235,30 +234,37 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
                             <th>Нормы</th>
                             <th>Табель</th>
                             <th>Факт</th>
+                            <th>Статус</th>
                         </tr>"""
-        for r1, r2, r3, r4, r5, r6 in data_dict[key]:
+        for r1, r2, r3, r4, r5, r6, r7, r8, r9 in data_dict[key]:
             # r1 - Дата, r2 - Время начала, r3 - Время окончания,
-            # r4 - Знак, r5 - Разница времени, r6 - Окончание по графику
+            # r4 - Знак, r5 - Разница времени, r6 - Начало по графику, r7 - Окончание по графику, r8 - тип записи,
+            # r9 - Объединение
             end_work_time = datetime.datetime.strptime(str(r6), '%H:%M:%S').time().strftime('%H:%M')
             start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
             end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
-            delta = datetime.datetime.strptime(str(r5), '%H:%M:%S').time().strftime('%H:%M')
+            delta = datetime.datetime.strptime(str(datetime.timedelta(seconds=r5)), '%H:%M:%S').time().strftime('%H:%M')
             html_obj += f"""<tr>
                                 <td>{r1.strftime('%d-%m-%Y')}</td>
                                 <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span>
                                 </td>
-                                <td>{user_start_time.strftime('%H:%M')}-{end_work_time}</td>"""
+                                <td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
             if datetime.timedelta(hours=r3.hour, minutes=r3.minute).total_seconds()-datetime.timedelta(hours=r2.hour, minutes=r2.minute).total_seconds() == 60.0:
                 html_obj += f"""<td>На работе</td>
-                            </tr>"""
+                            """
             else:
                 html_obj += f"""
                                 <td>{start_time}-{end_time}</td>
-                            </tr>"""
+                            """
+            if r8 == 'Я':
+                html_obj += f"""<td>Работа</td></tr>"""
+            else:
+                html_obj += f"""<td>Отпуск</td></tr>"""
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>
                             <th><span style="{' color: #ff0000;' if total_score < 0 else ''}">{'-' if total_score < 0 else ''}{datetime.timedelta(seconds=abs(total_score))}</span></th>
+                            <th></th>
                             <th></th>
                             <th></th>
                             </tr>"""

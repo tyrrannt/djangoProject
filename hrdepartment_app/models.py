@@ -883,6 +883,9 @@ class ReportCard(models.Model):
             'end_time': str(self.end_time),
         }
 
+    def __str__(self):
+        return f'{self.employee}: {self.report_card_day} : {self.record_type}'
+
 
 class PreHolidayDay(models.Model):
     class Meta:

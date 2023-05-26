@@ -18,6 +18,7 @@ from hrdepartment_app.tasks import report_card_separator, report_card_separator_
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
 
+
 # Create your views here.
 
 def index(request):
@@ -83,42 +84,48 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     '11': 'Дополнительный оплачиваемый отпуск пострадавшим в ',
                     '12': 'Основной',
                 }
-                dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 'Сотрудник_Key', '72095054-970f-11e3-84fb-00e05301b4e4', 'year(ДатаОкончания)', 2023, 0, 0)
+                dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 'Сотрудник_Key',
+                                            '72095054-970f-11e3-84fb-00e05301b4e4', 'year(ДатаОкончания)', 2023, 0, 0)
                 for key in dt:
 
                     for item in dt[key]:
                         usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
                         start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
                         end_date = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
-                        weekend_count = WeekendDay.objects.filter(Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(weekend_type='1')).count()
+                        weekend_count = WeekendDay.objects.filter(
+                            Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(weekend_type='1')).count()
                         count_date = int(item['КоличествоДней']) + weekend_count
-                        view = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
-                        for unit in view:
-                            if unit.weekday() in [0,1,2,3]:
+                        period = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
+                        weekend = [item.weekend_day for item in WeekendDay.objects.filter(
+                            Q(weekend_day__gte=start_date.date()) & Q(weekend_day__lte=end_date.date()))]
+                        for unit in period:
+                            if unit.weekday() in [0, 1, 2, 3] and unit.date() not in weekend:
                                 delta_time = datetime.timedelta(
                                     hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
                                     minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute)
+                                start_time = usr_obj.user_work_profile.personal_work_schedule_start
                                 end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
-                            elif unit.weekday() == 4:
+                            elif unit.weekday() == 4 and unit not in weekend:
                                 delta_time = datetime.timedelta(
                                     hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
                                     minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute) - \
                                              datetime.timedelta(hours=1)
+                                start_time = usr_obj.user_work_profile.personal_work_schedule_start
                                 end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
                             else:
+                                start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
                                 end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
 
                             value = [i for i in type_of_report if type_of_report[i] == item['ВидОтпускаПредставление']]
-                            print(value[0])
                             kwargs_obj = {
                                 'report_card_day': unit,
                                 'employee': usr_obj,
-                                'start_time': usr_obj.user_work_profile.personal_work_schedule_start,
+                                'start_time': start_time,
                                 'end_time': end_time,
-                                'record_type': value[0],
                                 'reason_adjustment': item['Основание'],
                                 'doc_ref_key': item['ДокументОснование'],
                             }
-                            ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj, defaults=kwargs_obj)
+                            ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj, record_type=value[0],
+                                                                defaults=kwargs_obj)
 
         return super().get(request, *args, **kwargs)
