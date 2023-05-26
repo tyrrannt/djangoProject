@@ -246,6 +246,8 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
             delta = datetime.datetime.strptime(str(datetime.timedelta(seconds=r5)), '%H:%M:%S').time().strftime('%H:%M')
             if r8 == 'О':
                 style = 'color: #0c00ad'
+            else:
+                style = 'color: #000000'
             html_obj += f"""<tr style="{style}">
                                 <td>{r1.strftime('%d')}</td>
                                 <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span>
