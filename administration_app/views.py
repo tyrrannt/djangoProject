@@ -85,7 +85,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     '12': 'Основной',
                 }
                 dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 'Сотрудник_Key',
-                                            '72095054-970f-11e3-84fb-00e05301b4e4', 'year(ДатаОкончания)', 2023, 0, 0)
+                                            '65f47b56-970f-11e3-84fb-00e05301b4e4', 'year(ДатаОкончания)', 2023, 0, 0)
                 for key in dt:
 
                     for item in dt[key]:
