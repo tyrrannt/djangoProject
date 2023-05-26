@@ -1,5 +1,7 @@
 import datetime
+import json
 
+import requests
 from dateutil import rrule
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
@@ -69,7 +71,37 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '3':
                 get_users_info()
             if request.GET.get('update') == '4':
-                change_users_password()
+                # change_users_password()
+                # current_data = datetime.datetime.date(datetime.datetime.today())
+                current_data1 = datetime.datetime.date(datetime.datetime(2022, 1, 1))
+                current_data2 = datetime.datetime.date(datetime.datetime(2022, 12, 31))
+                url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data1}&enddate={current_data2}"
+                source_url = url
+                try:
+                    response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
+                except Exception as _ex:
+                    return f"{_ex} ошибка"
+                dicts = json.loads(response.text)
+                for item in dicts['data']:
+                    usr = item['FULLNAME']
+                    current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
+                    start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
+                    end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
+                    search_user = usr.split(' ')
+                    try:
+                        user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+                                                            surname=search_user[2])
+                        kwargs = {
+                            'report_card_day': current_data,
+                            'employee': user_obj,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'record_type': '1',
+                        }
+                        ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj,
+                                                            defaults=kwargs)
+                    except Exception as _ex:
+                        logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
             if request.GET.get('update') == '5':
                 type_of_report = {
                     '2': 'Ежегодный',
@@ -88,7 +120,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 for item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
                     print(item['ref_key'])
                     dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 'Сотрудник_Key',
-                                                item['ref_key'], 'year(ДатаОкончания)', 2022, 0, 0)
+                                                item['ref_key'], 'year(ДатаОкончания)', 2021, 0, 0)
                     for key in dt:
                         for item in dt[key]:
                             usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
