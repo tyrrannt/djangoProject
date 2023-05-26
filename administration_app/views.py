@@ -88,7 +88,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 for item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
                     print(item['ref_key'])
                     dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 'Сотрудник_Key',
-                                                item['ref_key'], 'year(ДатаОкончания)', 2023, 0, 0)
+                                                item['ref_key'], 'year(ДатаОкончания)', 2022, 0, 0)
                     for key in dt:
                         for item in dt[key]:
                             usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
