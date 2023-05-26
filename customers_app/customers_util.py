@@ -219,13 +219,13 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
     :return:
     """
     html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 420px; display: block; height: 700px; overflow: auto;">
+                                   style="min-width: 360px; display: block; height: 700px; overflow: auto;">
                         <tbody>
                             <tr>
-                                <td colspan="5"><h4>Выполнение графика:</h4></td>
+                                <td colspan="4"><h4>Выполнение графика:</h4></td>
                             </tr>
                             <tr>
-                                <td colspan="5">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
+                                <td colspan="4">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
                             </tr>"""
     for key in data_dict:
         html_obj += f"""                        
@@ -234,7 +234,6 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                             <th>Нормы</th>
                             <th>Табель</th>
                             <th>Факт</th>
-                            <th>Статус</th>
                         </tr>"""
         for r1, r2, r3, r4, r5, r6, r7, r8, r9 in data_dict[key]:
             # r1 - Дата, r2 - Время начала, r3 - Время окончания,
@@ -254,16 +253,12 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                                 </td>
                                 <td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
             if datetime.timedelta(hours=r3.hour, minutes=r3.minute).total_seconds()-datetime.timedelta(hours=r2.hour, minutes=r2.minute).total_seconds() == 60.0:
-                html_obj += f"""<td>На работе</td>
+                html_obj += f"""<td>На работе</td></tr>
                             """
             else:
                 html_obj += f"""
-                                <td>{start_time}-{end_time}</td>
+                                <td>{start_time}-{end_time}</td></tr>
                             """
-            if r8 == 'Я':
-                html_obj += f"""<td>Работа</td></tr>"""
-            else:
-                html_obj += f"""<td>Отпуск</td></tr>"""
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>
