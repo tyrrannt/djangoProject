@@ -244,8 +244,10 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
             start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
             end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
             delta = datetime.datetime.strptime(str(datetime.timedelta(seconds=r5)), '%H:%M:%S').time().strftime('%H:%M')
-            html_obj += f"""<tr>
-                                <td>{r1.strftime('%d-%m-%Y')}</td>
+            if r8 == 'О':
+                style = 'color: #0c00ad'
+            html_obj += f"""<tr style="{style}">
+                                <td>{r1.strftime('%d')}</td>
                                 <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span>
                                 </td>
                                 <td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
