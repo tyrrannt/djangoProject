@@ -218,7 +218,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
     :param last_day: Последний день запрашиваемого периода
     :return:
     """
-    html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+    html_obj = f"""<table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 330px; display: block; height: 700px; overflow: auto;">
                         <tbody>
                             <tr>
