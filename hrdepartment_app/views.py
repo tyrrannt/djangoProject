@@ -1467,17 +1467,23 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
         return context
 
+
 class ReportCardAdd(LoginRequiredMixin, CreateView):
     model = ReportCard
     form_class = ReportCardAddForm
 
     def form_valid(self, form):
         if form.is_valid():
-            # search_report = ReportCard.objects.filter(employee=)
+            search_report = ReportCard.objects.filter(
+                Q(employee=self.request.user) & Q(report_card_day=form.cleaned_data.get('report_card_day')))
+            print(search_report)
             refresh_form = form.save(commit=False)
             refresh_form.employee = self.request.user
             refresh_form.record_type = '13'
             refresh_form.manual_input = True
+            print(refresh_form.reason_adjustment)
             refresh_form.save()
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return reverse('customers_app:profile', args=(self.request.user.pk,))
