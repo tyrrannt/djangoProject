@@ -866,6 +866,7 @@ class ReportCard(models.Model):
         verbose_name_plural = 'Табель учета'
 
     report_card_day = models.DateField(verbose_name='Дата', null=True, blank=True)
+    rec_no = models.IntegerField(verbose_name='Номер записи', default=0, blank=True)
     employee = models.ForeignKey(DataBaseUser, on_delete=models.SET_NULL, null=True, blank=True)
     start_time = models.TimeField(verbose_name='Время прихода', null=True, blank=True)
     end_time = models.TimeField(verbose_name='Время ухода', null=True, blank=True)
