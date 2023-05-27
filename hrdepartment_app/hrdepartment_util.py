@@ -277,7 +277,7 @@ def get_working_hours(pk, start_date):
         user_start_time = user_id.user_work_profile.personal_work_schedule_start
         user_end_time = user_id.user_work_profile.personal_work_schedule_end
         for record in report_record:
-            if record.record_type == '1':
+            if record.record_type == '1' or record.record_type == '13':
                 total_day_time += datetime.timedelta(
                     hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
                                   - datetime.timedelta(hours=record.start_time.hour,

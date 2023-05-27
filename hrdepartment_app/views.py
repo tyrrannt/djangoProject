@@ -1475,8 +1475,9 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         if form.is_valid():
             search_report = ReportCard.objects.filter(
-                Q(employee=self.request.user) & Q(report_card_day=form.cleaned_data.get('report_card_day')))
-            print(search_report)
+                Q(employee=self.request.user) & Q(report_card_day=form.cleaned_data.get('report_card_day')) & Q(record_type='1'))
+            for item in search_report:
+                print(item.start_time, item.end_time)
             refresh_form = form.save(commit=False)
             refresh_form.employee = self.request.user
             refresh_form.record_type = '13'
