@@ -859,6 +859,7 @@ class ReportCard(models.Model):
         ('10', 'Дополнительный отпуск'),
         ('11', 'Дополнительный оплачиваемый отпуск пострадавшим в '),
         ('12', 'Основной'),
+        ('13', 'Ручной ввод'),
     ]
     class Meta:
         verbose_name = 'Рабочее время'
@@ -866,8 +867,8 @@ class ReportCard(models.Model):
 
     report_card_day = models.DateField(verbose_name='Дата', null=True, blank=True)
     employee = models.ForeignKey(DataBaseUser, on_delete=models.SET_NULL, null=True, blank=True)
-    start_time = models.TimeField(verbose_name='Дата и время прихода', null=True, blank=True)
-    end_time = models.TimeField(verbose_name='Дата и время ухода', null=True, blank=True)
+    start_time = models.TimeField(verbose_name='Время прихода', null=True, blank=True)
+    end_time = models.TimeField(verbose_name='Время ухода', null=True, blank=True)
     record_type = models.CharField(verbose_name='Тип записи', max_length=100, choices=type_of_report, default='', blank=True)
     manual_input = models.BooleanField(verbose_name='Ручной ввод', default=False)
     reason_adjustment = models.TextField(verbose_name='Причина ручной корректировки', blank=True)

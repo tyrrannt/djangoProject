@@ -20,7 +20,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
-    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm
+    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card, get_month
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
@@ -1466,3 +1466,18 @@ class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['tabel_month'] = first_day
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
         return context
+
+class ReportCardAdd(LoginRequiredMixin, CreateView):
+    model = ReportCard
+    form_class = ReportCardAddForm
+
+    def form_valid(self, form):
+        if form.is_valid():
+            # search_report = ReportCard.objects.filter(employee=)
+            refresh_form = form.save(commit=False)
+            refresh_form.employee = self.request.user
+            refresh_form.record_type = '13'
+            refresh_form.manual_input = True
+            refresh_form.save()
+        return super().form_valid(form)
+

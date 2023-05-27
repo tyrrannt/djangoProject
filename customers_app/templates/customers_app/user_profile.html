@@ -305,7 +305,7 @@
                         <div id="reportcard" class="tab-pane">
                             <div class="p-3">
                                 <div class="row">
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="report_month"
                                                 id="id_report_month">
                                             <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
@@ -334,7 +334,7 @@
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="report_year"
                                                 id="id_report_year">
                                             <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
@@ -347,8 +347,11 @@
                                             </option>
                                         </select>
                                     </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
                                         <button class="btn btn-primary" style="width: 100%" onclick="report_date()">OK</button>
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                        <button class="btn btn-primary" style="width: 100%" onclick="window.location.href='{% url 'hrdepartment_app:reportcard_add' %}';">Запись в журнал</button>
                                     </div>
                                 </div>
                                 <div class="row">

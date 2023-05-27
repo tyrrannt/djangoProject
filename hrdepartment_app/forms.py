@@ -9,7 +9,7 @@ from loguru import logger
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
-    ReasonForCancellation, OrderDescription
+    ReasonForCancellation, OrderDescription, ReportCard
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -455,3 +455,26 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
         fields = ('name', 'address', 'short_name')
+
+
+class ReportCardAddForm(forms.ModelForm):
+    class Meta:
+        model = ReportCard
+        fields = ('report_card_day', 'start_time', 'end_time', 'reason_adjustment')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        report_card_day = cleaned_data.get("report_card_day")
+        if report_card_day != datetime.datetime.today().date():
+            raise ValidationError("Ошибка! Дата может быть только текущей датой.")
+        start_time = cleaned_data.get("start_time")
+        if not start_time:
+            raise ValidationError("Ошибка! Не указано время начала!")
+        end_time = cleaned_data.get("end_time")
+        if not end_time:
+            raise ValidationError("Ошибка! Не указано время окончания!")
+        if end_time < start_time:
+            raise ValidationError("Ошибка! Указан не верный диапазон времени!")
+        reason_adjustment = cleaned_data.get("reason_adjustment")
+        if reason_adjustment == '':
+            raise ValidationError("Ошибка! Причина ручной корректировки не может быть пустой.")
