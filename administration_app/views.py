@@ -71,44 +71,44 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '3':
                 get_users_info()
             if request.GET.get('update') == '4':
+                # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
+                # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 26))
+                # del_obj = ReportCard.objects.filter(Q(record_type='1') & Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2))
+                # print(del_obj.count())
+                # for item in del_obj:
+                #     item.delete()
+                # change_users_password()
+                # current_data = datetime.datetime.date(datetime.datetime.today())
                 current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
                 current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 26))
-                del_obj = ReportCard.objects.filter(Q(record_type='1') & Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2))
-                print(del_obj.count())
-                for item in del_obj:
-                    item.delete()
-                # # change_users_password()
-                # # current_data = datetime.datetime.date(datetime.datetime.today())
-                # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
-                # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 27))
-                # url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data1}&enddate={current_data2}"
-                # source_url = url
-                # try:
-                #     response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
-                # except Exception as _ex:
-                #     return f"{_ex} ошибка"
-                # dicts = json.loads(response.text)
-                # for item in dicts['data']:
-                #     usr = item['FULLNAME']
-                #     current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
-                #     start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
-                #     end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
-                #     rec_no = int(item['rec_no'])
-                #     search_user = usr.split(' ')
-                #     try:
-                #         user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
-                #                                             surname=search_user[2])
-                #         kwargs = {
-                #             'report_card_day': current_data,
-                #             'employee': user_obj,
-                #             'start_time': start_time,
-                #             'end_time': end_time,
-                #             'record_type': '1',
-                #         }
-                #         ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj, rec_no=rec_no,
-                #                                             defaults=kwargs)
-                #     except Exception as _ex:
-                #         logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
+                url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data1}&enddate={current_data2}"
+                source_url = url
+                try:
+                    response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
+                except Exception as _ex:
+                    return f"{_ex} ошибка"
+                dicts = json.loads(response.text)
+                for item in dicts['data']:
+                    usr = item['FULLNAME']
+                    current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
+                    start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
+                    end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
+                    rec_no = int(item['rec_no'])
+                    search_user = usr.split(' ')
+                    try:
+                        user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+                                                            surname=search_user[2])
+                        kwargs = {
+                            'report_card_day': current_data,
+                            'employee': user_obj,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'record_type': '1',
+                        }
+                        ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj, rec_no=rec_no,
+                                                            defaults=kwargs)
+                    except Exception as _ex:
+                        logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
             if request.GET.get('update') == '5':
                 type_of_report = {
                     '2': 'Ежегодный',
