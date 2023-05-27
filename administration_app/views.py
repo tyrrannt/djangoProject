@@ -73,8 +73,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '4':
                 # change_users_password()
                 # current_data = datetime.datetime.date(datetime.datetime.today())
-                current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
-                current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 27))
+                current_data1 = datetime.datetime.date(datetime.datetime(2022, 1, 1))
+                current_data2 = datetime.datetime.date(datetime.datetime(2022, 12, 31))
                 url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data1}&enddate={current_data2}"
                 source_url = url
                 try:
