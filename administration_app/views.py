@@ -94,6 +94,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                                                             surname=search_user[2])
                         kwargs = {
                             'report_card_day': current_data,
+                            'rec_no': rec_no,
                             'employee': user_obj,
                             'start_time': start_time,
                             'end_time': end_time,
