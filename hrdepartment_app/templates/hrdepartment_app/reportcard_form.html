@@ -60,7 +60,7 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_report_card_day">Дата</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="date" id="id_report_card_day"
+                                            <input type="date" id="id_report_card_day" onchange="set_interval()"
                                                    class="form-control form-control-modern"
                                                    name="report_card_day" value="{{ object.report_card_day | date:"c" }}"/>
                                         </div>
@@ -70,7 +70,7 @@
                                                for="id_start_time">С:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="time" id="id_start_time"
-                                                   class="form-control form-control-modern"
+                                                   class="form-control form-control-modern" disabled="disabled"
                                                    name="start_time" value="{{ object.start_time | date:"%H:%b" }}"/>
                                         </div>
                                     </div>
@@ -79,7 +79,7 @@
                                                for="id_end_time">По:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <input type="time" id="id_end_time"
-                                                   class="form-control form-control-modern"
+                                                   class="form-control form-control-modern" disabled="disabled"
                                                    name="end_time" value="{{ object.end_time | date:"%H:%b" }}"/>
                                         </div>
                                     </div>
@@ -123,5 +123,39 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
+    <script type="text/javascript">
+        function set_interval() {
+            current_date = document.getElementById("id_report_card_day").value;
+            var start_time = document.getElementById("id_start_time");
+            var end_time = document.getElementById("id_end_time");
+            start_time.removeAttribute("disabled")
+            end_time.removeAttribute("disabled")
+            $("#id_start_time").trigger("create")
+            $("#id_end_time").trigger("create")
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:reportcard_add' %}',
+                data: {
+                    "interval": current_date,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    start_time.removeAttribute("min")
+                    start_time.setAttribute("min", data[0])
+                    $("#id_start_time").trigger("create")
+                    end_time.removeAttribute("max")
+                    end_time.setAttribute("max", data[1])
+                    $("#id_end_time").trigger("create")
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+    </script>
 
 {% endblock %}

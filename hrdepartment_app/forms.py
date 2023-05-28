@@ -465,8 +465,10 @@ class ReportCardAddForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         report_card_day = cleaned_data.get("report_card_day")
-        if report_card_day != datetime.datetime.today().date():
-            raise ValidationError("Ошибка! Дата может быть только текущей датой.")
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        if yesterday > report_card_day or report_card_day > tomorrow:
+            raise ValidationError("Ошибка! Дата может быть только из диапазона [Вчера, Сегодня, Завтра].")
         start_time = cleaned_data.get("start_time")
         if not start_time:
             raise ValidationError("Ошибка! Не указано время начала!")

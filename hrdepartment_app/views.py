@@ -1,6 +1,7 @@
 import datetime
 from calendar import monthrange
 
+from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
@@ -1472,17 +1473,50 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
     model = ReportCard
     form_class = ReportCardAddForm
 
+    def get(self, request, *args, **kwargs):
+        interval = request.GET.get('interval', None)
+        if interval:
+            personal_start = self.request.user.user_work_profile.personal_work_schedule_start
+            personal_end = self.request.user.user_work_profile.personal_work_schedule_end
+            if datetime.datetime.strptime(interval, '%Y-%m-%d').weekday() == 4:
+                personal_end = personal_end - datetime.timedelta(hours=1)
+            result = [personal_start, personal_end]
+            return JsonResponse(result, safe=False)
+        return super().get(request, *args, **kwargs)
+
     def form_valid(self, form):
         if form.is_valid():
             search_report = ReportCard.objects.filter(
                 Q(employee=self.request.user) & Q(report_card_day=form.cleaned_data.get('report_card_day')) & Q(record_type='1'))
+            dt = form.cleaned_data.get('report_card_day')
+            search_interval = list()
+            start_time = list()
+            end_time = list()
             for item in search_report:
-                print(item.start_time, item.end_time)
+                start_time.append(item.start_time.strftime("%H:%M"))
+                end_time.append(item.end_time.strftime("%H:%M"))
+                first_date1 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=item.start_time.hour,
+                                               minute=item.start_time.minute)
+                first_date2 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=item.end_time.hour,
+                                               minute=item.end_time.minute)
+                search_interval = list(rrule.rrule(rrule.MINUTELY, dtstart=first_date1, until=first_date2))
+            first_date3 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=form.cleaned_data.get('start_time').hour,
+                                            minute=form.cleaned_data.get('start_time').minute)
+            first_date4 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=form.cleaned_data.get('end_time').hour,
+                                            minute=form.cleaned_data.get('end_time').minute)
+            interval = list(rrule.rrule(rrule.MINUTELY, dtstart=first_date3, until=first_date4))
+            set1 = set(search_interval)
+            set2 = set(interval)
+            result = set2.intersection(set1)
+            if len(result) > 0:
+                form.add_error('start_time', f'Ошибка! Вы указали время с {form.cleaned_data.get("start_time").strftime("%H:%M")} по {form.cleaned_data.get("end_time").strftime("%H:%M")}, но на заданную дату По TimeControl у вас имеется интервал с {start_time} по {end_time}')
+                return super().form_invalid(form)
+
             refresh_form = form.save(commit=False)
             refresh_form.employee = self.request.user
             refresh_form.record_type = '13'
             refresh_form.manual_input = True
-            print(refresh_form.reason_adjustment)
+
             refresh_form.save()
         return super().form_valid(form)
 

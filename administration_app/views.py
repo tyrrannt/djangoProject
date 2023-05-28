@@ -73,7 +73,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '4':
                 current_data1 = datetime.datetime.date(datetime.datetime(2023, 5, 27))
                 current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 27))
-                del_obj = ReportCard.objects.filter(Q(record_type='1') & Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2))
+                del_obj = ReportCard.objects.filter(Q(record_type='13') & Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2))
                 print(del_obj.count())
                 for item in del_obj:
                     item.delete()
