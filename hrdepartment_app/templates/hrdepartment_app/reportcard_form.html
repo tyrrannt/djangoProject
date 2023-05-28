@@ -143,9 +143,17 @@
                     // any process in data
                     start_time.removeAttribute("min")
                     start_time.setAttribute("min", data[0])
+                    start_time.removeAttribute("max")
+                    start_time.setAttribute("max", data[1])
+                    start_time.removeAttribute("value")
+                    start_time.setAttribute("value", data[0])
                     $("#id_start_time").trigger("create")
+                    end_time.removeAttribute("min")
+                    end_time.setAttribute("min", data[0])
                     end_time.removeAttribute("max")
                     end_time.setAttribute("max", data[1])
+                    end_time.removeAttribute("value")
+                    end_time.setAttribute("value", data[1])
                     $("#id_end_time").trigger("create")
                     if (data === 'ok') {
                         console.log("success");
