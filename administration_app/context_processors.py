@@ -52,7 +52,6 @@ def get_approval_oficial_memo_process(request):
             person_executor_job_list = list()
             for item in business_process_direction_list:
                 person_executor_job_list = [items[0] for items in item.person_executor.values_list()]
-
             business_process_direction_list = BusinessProcessDirection.objects.filter(clerk=request.user.user_work_profile.job)
             clerk_job_list_set = list()
             clerk_job_list_executor_set = list()
@@ -78,12 +77,19 @@ def get_approval_oficial_memo_process(request):
             # Выбор делопроизводителя
             clerk_list = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=clerk_job_list)]
             clerk_list_executor = [item for item in DataBaseUser.objects.filter(user_work_profile__job__in=clerk_job_list_executor)]
-            clerk = ApprovalOficialMemoProcess.objects.filter(
-                Q(person_executor__in=clerk_list_executor) & Q(originals_received=False) & Q(process_accepted=True)).exclude(cancellation=True)
+            clerk = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__in=clerk_list_executor) & Q(originals_received=False) & Q(process_accepted=True)).exclude(cancellation=True).exclude(document__official_memo_type='2')
             # Получение списка сотрудников ОК 2
             person_hr_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
             person_hr = [item for item in person_hr_list]
-            hr_accepted = ApprovalOficialMemoProcess.objects.filter(Q(hr_accepted=False) & Q(originals_received=True)).exclude(cancellation=True)
+            hr_accepted = ApprovalOficialMemoProcess.objects.filter(Q(hr_accepted=False) & Q(originals_received=True)).exclude(cancellation=True).exclude(document__official_memo_type='2')
+            # Получение списка сотрудников ОК 2
+            accounting_list = DataBaseUser.objects.filter(
+                Q(user_work_profile__divisions__type_of_role=3) & Q(user_work_profile__job__right_to_approval=True))
+            accounting = [item for item in accounting_list]
+            accounting_accepted = ApprovalOficialMemoProcess.objects.filter(
+                Q(accepted_accounting=False) & Q(hr_accepted=True)).exclude(cancellation=True).exclude(
+                document__official_memo_type='2')
+
             return {
                 'person_agreement': person_agreement,
                 'document_not_agreed': person_agreement.count(),
@@ -99,6 +105,9 @@ def get_approval_oficial_memo_process(request):
                 'person_hr': person_hr,
                 'hr_accepted': hr_accepted,
                 'hr_accepted_count': hr_accepted.count,
+                'accounting': accounting,
+                'accounting_accepted': accounting_accepted,
+                'accounting_accepted_count': accounting_accepted.count,
             }
         except Exception as _ex:
             logger.error(_ex)
