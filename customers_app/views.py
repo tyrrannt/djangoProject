@@ -331,10 +331,11 @@ def validate_username(request):
     return JsonResponse(response)
 
 
-class PostsAddView(LoginRequiredMixin, CreateView):
+class PostsAddView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     template_name = 'customers_app/posts_add.html'
     form_class = PostsAddForm
     model = Posts
+    permission_required = 'customers_app_posts.add_posts'
 
     def get_context_data(self, **kwargs):
         context = super(PostsAddView, self).get_context_data()

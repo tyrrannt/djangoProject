@@ -41,6 +41,38 @@
                     {% endif %}
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
+                            <i class='bx bxs-report' aria-hidden="true"></i>
+                            <span>Отчеты</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <span>Учет рабочего времени</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">
+                                            Журнал разъездов
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <span>Служебные поездки</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_report' %}">
+                                            Отчет по сотрудникам
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
                             <i class="bx bx-book-content" aria-hidden="true"></i>
                             <span>Справочники</span>
                         </a>
@@ -104,7 +136,7 @@
                     </li>
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
-                            <i class="bx bx-file" aria-hidden="true"></i>
+                            <i class='bx bxs-book-content' aria-hidden="true"></i>
                             <span>База договоров</span>
                         </a>
                         <ul class="nav nav-children">
@@ -190,12 +222,6 @@
                                             Служебным запискам
                                         </a>
                                     </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_report' %}">
-                                            Отчет по сотрудникам
-                                        </a>
-                                    </li>
-
                                 </ul>
                             </li>
                             <li>

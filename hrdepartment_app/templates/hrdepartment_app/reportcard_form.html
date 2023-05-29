@@ -124,6 +124,17 @@
     </section>
     <!-- end: page -->
     <script type="text/javascript">
+        function printNumbers(from, to) {
+            let current = from;
+
+            let timerId = setInterval(function() {
+                alert(current);
+                if (current == to) {
+                    clearInterval(timerId);
+                }
+                current++;
+            }, 10000);
+        };
         function set_interval() {
             current_date = document.getElementById("id_report_card_day").value;
             var start_time = document.getElementById("id_start_time");

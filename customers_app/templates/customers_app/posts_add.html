@@ -191,43 +191,35 @@
                                 <section class="simple-compose-box mb-3">
                                     <form method="post" action="{% url 'customers_app:post_add' %}">
                                         {% csrf_token %}
-                                        <div class="form-group row align-items-center pb-3">
-                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                                   for="id_post_description">Сообщение</label>
-                                            <div class="col-lg-7 col-xl-6">
-                                            <textarea name="post_description" data-plugin-textarea-autosize
-                                                      placeholder="Добавить событие ..." rows="1"
-                                                      id="id_post_description"></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="form-group row align-items-center pb-3">
-                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                                   for="id_post_divisions">Подразделения</label>
-                                            <div class="col-lg-7 col-xl-6">
-                                                {{ form.post_divisions | attr:"multiple" }}
-                                            </div>
-                                        </div>
-                                        <div class="form-group row align-items-center pb-3">
-                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                                   for="id_post_date_start">Начало показа</label>
-                                            <div class="col-lg-7 col-xl-6">
-                                                <input type="date" id="id_post_date_start"
+                                        <div class="pb-3 input-daterange input-group mb-1">
+                                            <span class="input-group-text">C:</span>
+                                            <input type="date" id="id_post_date_start"
                                                        class="form-control form-control-modern"
                                                        name="post_date_start"
                                                        value="{{ object.post_date_start | date:'c' }}"/>
-                                            </div>
                                         </div>
-                                        <div class="form-group row align-items-center pb-3">
-                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                                   for="id_post_date_end">Окончание показа</label>
-                                            <div class="col-lg-7 col-xl-6">
-                                                <input type="date" id="id_post_date_end"
+                                        <div class="pb-3 input-daterange input-group">
+                                            <span class="input-group-text border-start-0 border-end-0 rounded-0">По:</span>
+                                            <input type="date" id="id_post_date_end"
                                                        class="form-control form-control-modern"
                                                        name="post_date_end"
                                                        value="{{ object.post_date_end | date:'c' }}"/>
+                                        </div>
+                                        <div class="row align-items-center pb-3">
+                                            <div class="pb-3">
+                                            <textarea name="post_description" data-plugin-textarea-autosize
+                                                      placeholder="Добавить событие ..." rows="5"
+                                                      id="id_post_description"></textarea>
                                             </div>
                                         </div>
-                                        <div class="form-group row align-items-center pb-3">
+                                        <div class="row align-items-center pb-3">
+                                            <label class="col-sm-12 control-label mb-0"
+                                                   for="id_post_divisions">Подразделения:</label>
+                                            <div class="col-sm-12">
+                                                {{ form.post_divisions | attr:"multiple" }}
+                                            </div>
+                                        </div>
+                                        <div class="row align-items-center pb-3">
                                             <input type="text" name="responsible"
                                                    value="{{ user.pk }}" hidden/>
                                         </div>

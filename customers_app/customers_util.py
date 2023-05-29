@@ -257,7 +257,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                                 </td>
                                 <td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
             if datetime.timedelta(hours=r3.hour, minutes=r3.minute).total_seconds()-datetime.timedelta(hours=r2.hour, minutes=r2.minute).total_seconds() == 60.0:
-                html_obj += f"""<td>На работе</td></tr>
+                html_obj += f"""<td>{start_time}-по н.в.</td></tr>
                             """
             else:
                 html_obj += f"""
