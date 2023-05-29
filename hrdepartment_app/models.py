@@ -874,6 +874,7 @@ class ReportCard(models.Model):
     manual_input = models.BooleanField(verbose_name='Ручной ввод', default=False)
     reason_adjustment = models.TextField(verbose_name='Причина ручной корректировки', blank=True)
     doc_ref_key = models.CharField(verbose_name='Уникальный номер документа', max_length=37, default='', blank=True)
+    current_intervals = models.BooleanField(verbose_name='Текущий интервал', default=True)
 
 
     def get_data(self):

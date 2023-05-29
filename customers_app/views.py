@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 
+from dateutil import rrule
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from loguru import logger
@@ -13,7 +14,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_queryset, change_session_context, FIO_format
+    change_session_get, change_session_queryset, change_session_context, FIO_format, get_year_interval
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table
@@ -151,7 +152,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         except Exception as _ex:
             message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
             logger.debug(message)
-
+        month_dict, year_dict = get_year_interval(2020)
+        context['year_dict'] = year_dict
+        context['month_dict'] = month_dict
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(FIO_format(user_obj))
         context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
         context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
@@ -160,7 +163,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         context['contract'] = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True),
                                                       Q(type_of_document__type_document='Договор')).count()
         context['current_year'] = datetime.datetime.today().year
-        context['current_month'] = datetime.datetime.today().month
+        context['current_month'] = str(datetime.datetime.today().month)
         get_profile_fill(self, context)
 
         # context.update(groups())

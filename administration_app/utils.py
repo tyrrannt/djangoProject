@@ -5,6 +5,7 @@ from datetime import datetime
 from urllib.parse import urljoin
 
 import requests
+from dateutil import rrule
 from decouple import config
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import FileSystemStorage
@@ -351,3 +352,15 @@ def get_users_info():
             else:
                 spamwriter.writerow(
                     [f'{item.last_name} {item.first_name} {item.surname}', f'{item.username}', f'E-mail отсутствует'])
+
+
+def get_year_interval(year):
+    month_dict = {'1': 'Январь', '2': 'Февраль', '3': 'Март',
+                  '4': 'Апрель', '5': 'Май', '6': 'Июнь',
+                  '7': 'Июль', '8': 'Август', '9': 'Сентябрь',
+                  '10': 'Октябрь', '11': 'Ноябрь', '12': 'Декабрь'}
+    year_dict = dict()
+    for item in list(rrule.rrule(rrule.YEARLY, dtstart=datetime(year=year, month=1, day=1),
+                                 until=datetime.today())):
+        year_dict[item.year] = item.year
+    return month_dict, year_dict

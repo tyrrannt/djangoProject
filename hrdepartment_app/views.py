@@ -13,7 +13,7 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
-    get_jsons_data, ending_day, get_history
+    get_jsons_data, ending_day, get_history, get_year_interval
 from customers_app.models import DataBaseUser, Counteragent
 from djangoProject.settings import DEBUG
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
@@ -1106,7 +1106,9 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                             list_obj.append(['0', ''])
 
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
-
+        month_dict, year_dict = get_year_interval(2020)
+        content['year_dict'] = year_dict
+        content['month_dict'] = month_dict
         content['table_set'] = dict_obj
         content['table_count'] = range(1, (date_end - date_start).days + 2)
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Отчет'
@@ -1382,6 +1384,11 @@ class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
+        month_dict, year_dict = get_year_interval(2020)
+        context['year_dict'] = year_dict
+        context['month_dict'] = month_dict
+        context['current_year'] = datetime.datetime.today().year
+        context['current_month'] = str(datetime.datetime.today().month)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
         return context
 
