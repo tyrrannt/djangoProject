@@ -226,7 +226,7 @@
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 id="id_filter_month">
                                             {% for key, value in month_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == value %}selected{% endif %}> {{ value }}
+                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
                                             </option>
                                             {% endfor %}
                                         </select>
@@ -235,7 +235,7 @@
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
                                                 id="id_filter_year">
                                             {% for key, value in year_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == value %}selected{% endif %}> {{ value }}
+                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
                                             </option>
                                             {% endfor %}
                                         </select>
@@ -285,7 +285,7 @@
                                         <select class="form-control select-style-1 filter-by" name="report_month"
                                                 id="id_report_month">
                                             {% for key, value in month_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == value %}selected{% endif %}> {{ value }}
+                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
                                             </option>
                                             {% endfor %}
                                         </select>
@@ -294,7 +294,7 @@
                                         <select class="form-control select-style-1 filter-by" name="report_year"
                                                 id="id_report_year">
                                             {% for key, value in year_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == value %}selected{% endif %}> {{ value }}
+                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
                                             </option>
                                             {% endfor %}
                                         </select>
