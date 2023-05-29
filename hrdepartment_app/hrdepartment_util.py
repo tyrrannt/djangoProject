@@ -276,12 +276,15 @@ def get_working_hours(pk, start_date):
         total_day_time, start_time, end_time, record_type = 0, '', '', ''
         user_start_time = user_id.user_work_profile.personal_work_schedule_start
         user_end_time = user_id.user_work_profile.personal_work_schedule_end
+        current_intervals = False
         for record in report_record:
+            current_intervals = record.current_intervals
             if record.record_type == '1' or record.record_type == '13':
-                total_day_time += datetime.timedelta(
-                    hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
-                                  - datetime.timedelta(hours=record.start_time.hour,
-                                                       minutes=record.start_time.minute).total_seconds()
+                if current_intervals:
+                    total_day_time += datetime.timedelta(
+                        hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
+                                      - datetime.timedelta(hours=record.start_time.hour,
+                                                           minutes=record.start_time.minute).total_seconds()
                 if start_time == '':
                     start_time = record.start_time
                 else:
@@ -307,10 +310,11 @@ def get_working_hours(pk, start_date):
                 merge_interval = True
             user_start_time, user_end_time = check_day(date, user_start_time, user_end_time)
             if record_type == 'Я':
-                total_day_time -= datetime.timedelta(
-                    hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - \
-                                  datetime.timedelta(
-                    hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
+                if current_intervals:
+                    total_day_time -= datetime.timedelta(
+                        hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - \
+                                      datetime.timedelta(
+                        hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
 
             if record_type == 'О' and report_record.count() == 1:
                 total_time += 0

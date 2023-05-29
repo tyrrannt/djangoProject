@@ -142,10 +142,14 @@ def report_card_separator():
     for item in dicts['data']:
         usr = item['FULLNAME']
         # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
-        start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
-        end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
-        rec_no = int(item['rec_no'])
         current_intervals = True if item['ISGO'] == '0' else False
+        start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
+        if current_intervals:
+            end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
+        else:
+            end_time = datetime.datetime.strptime("1900.1.1 00:00:00", "%d.%m.%Y %H:%M:%S").time()
+        rec_no = int(item['rec_no'])
+
         search_user = usr.split(' ')
         try:
             user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
