@@ -711,6 +711,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
         content['ending_day'] = ending_day(int(delta.days) + 1)
         content['change_history'] = get_history(self, ApprovalOficialMemoProcess)
         content['without_departure'] = False if document.document.official_memo_type == '3' else True
+        content['extension'] = False if document.document.official_memo_type == '2' else True
         # print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
         return content
 
