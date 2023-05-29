@@ -241,7 +241,10 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
             # r9 - Объединение
             end_work_time = datetime.datetime.strptime(str(r6), '%H:%M:%S').time().strftime('%H:%M')
             start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
-            end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
+            if r10:
+                end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
+            else:
+                end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time().strftime('%H:%M')
             delta = datetime.datetime.strptime(str(datetime.timedelta(seconds=r5)), '%H:%M:%S').time().strftime('%H:%M')
             style = ''
             if r9:
@@ -259,13 +262,10 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                 html_obj += f"""<td><span> --//-- </span></td>"""
 
             html_obj += f"""<td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
-            if datetime.timedelta(hours=r3.hour, minutes=r3.minute).total_seconds()-datetime.timedelta(hours=r2.hour, minutes=r2.minute).total_seconds() == 60.0:
-                html_obj += f"""<td>{start_time}-по н.в.</td></tr>
-                            """
+            if r10:
+                html_obj += f"""<td>{start_time}-{end_time}</td></tr>"""
             else:
-                html_obj += f"""
-                                <td>{start_time}-{end_time}</td></tr>
-                            """
+                html_obj += f"""<td>{start_time}-по н.в.</td></tr>"""
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>
