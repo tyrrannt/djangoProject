@@ -235,7 +235,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                             <th>Табель</th>
                             <th>Факт</th>
                         </tr>"""
-        for r1, r2, r3, r4, r5, r6, r7, r8, r9 in data_dict[key]:
+        for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10 in data_dict[key]:
             # r1 - Дата, r2 - Время начала, r3 - Время окончания,
             # r4 - Знак, r5 - Разница времени, r6 - Начало по графику, r7 - Окончание по графику, r8 - тип записи,
             # r9 - Объединение
@@ -252,10 +252,13 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                 else:
                     style = 'color: #000000'
             html_obj += f"""<tr style="{style}">
-                                <td>{r1.strftime('%d')}</td>
-                                <td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span>
-                                </td>
-                                <td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
+                                <td>{r1.strftime('%d')}</td>"""
+            if r10:
+                html_obj += f"""<td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span></td>"""
+            else:
+                html_obj += f"""<td><span> --//-- </span></td>"""
+
+            html_obj += f"""<td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
             if datetime.timedelta(hours=r3.hour, minutes=r3.minute).total_seconds()-datetime.timedelta(hours=r2.hour, minutes=r2.minute).total_seconds() == 60.0:
                 html_obj += f"""<td>{start_time}-по н.в.</td></tr>
                             """

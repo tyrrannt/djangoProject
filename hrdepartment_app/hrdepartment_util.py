@@ -247,7 +247,8 @@ def check_day(date, time_start, time_end):
         check_time_end = datetime.timedelta(hours=0, minutes=0)
         check_time_start = datetime.timedelta(hours=0, minutes=0)
 
-    return datetime.datetime.strptime(str(check_time_start), '%H:%M:%S').time(), datetime.datetime.strptime(str(check_time_end), '%H:%M:%S').time()
+    return datetime.datetime.strptime(str(check_time_start), '%H:%M:%S').time(), datetime.datetime.strptime(
+        str(check_time_end), '%H:%M:%S').time()
 
 
 def get_working_hours(pk, start_date):
@@ -272,13 +273,14 @@ def get_working_hours(pk, start_date):
     for date in period:
         if not dict_obj.get(str(user_id)):
             dict_obj[str(user_id)] = []
-        report_record = ReportCard.objects.filter(employee=user_id, report_card_day=date).order_by('record_type').reverse()
+        report_record = ReportCard.objects.filter(employee=user_id, report_card_day=date).order_by(
+            'record_type').reverse()
         total_day_time, start_time, end_time, record_type = 0, '', '', ''
         user_start_time = user_id.user_work_profile.personal_work_schedule_start
         user_end_time = user_id.user_work_profile.personal_work_schedule_end
-        current_intervals = False
+        current_intervals = True
         for record in report_record:
-            current_intervals = record.current_intervals
+            current_intervals = False if not current_intervals else record.current_intervals
             if record.record_type == '1' or record.record_type == '13':
                 if current_intervals:
                     total_day_time += datetime.timedelta(
@@ -290,7 +292,8 @@ def get_working_hours(pk, start_date):
                 else:
                     if start_time == datetime.datetime.strptime('00:00:00', '%H:%M:%S').time():
                         start_time = record.start_time
-                    if record.start_time < start_time and record.start_time != datetime.datetime.strptime('00:00:00', '%H:%M:%S').time():
+                    if record.start_time < start_time and record.start_time != datetime.datetime.strptime('00:00:00',
+                                                                                                          '%H:%M:%S').time():
                         start_time = record.start_time
                 if end_time == '':
                     end_time = record.end_time
@@ -300,8 +303,8 @@ def get_working_hours(pk, start_date):
                 if record_type != 'О':
                     record_type = 'Я'
             else:
-                start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time() #.strftime('%H:%M')
-                end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time() #.strftime('%H:%M')
+                start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()  # .strftime('%H:%M')
+                end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()  # .strftime('%H:%M')
                 record_type = 'О'
         if record_type != '':
             if report_record.count() == 1:
@@ -314,7 +317,7 @@ def get_working_hours(pk, start_date):
                     total_day_time -= datetime.timedelta(
                         hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - \
                                       datetime.timedelta(
-                        hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
+                                          hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
 
             if record_type == 'О' and report_record.count() == 1:
                 total_time += 0
@@ -328,6 +331,7 @@ def get_working_hours(pk, start_date):
             """ Дата, Начало, Окончание, Тип записи, Начало по графику, 
             Окончание по графику, Скалярное общее время за день , Знак,  Было ли объединение интервалов,
              Начальная дата, конечная дата"""
-            dict_obj[str(user_id)].append([date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
-                                           user_end_time, record_type, merge_interval])
+            dict_obj[str(user_id)].append(
+                [date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
+                 user_end_time, record_type, merge_interval, current_intervals])
     return dict_obj, total_time, start_date, cnt
