@@ -472,6 +472,6 @@ class HappyBirthdayGreetings(models.Model):
 
     def __str__(self):
         if self.age_from == self.age_to:
-            return f'{self.get_gender_display} на {self.age_to} летие'
+            return f'{self.get_gender_display()} на {self.age_to} летие'
         else:
-            return f'{self.get_gender_display} c {self.age_from} по {self.age_to}'
+            return f'{self.get_gender_display()} c {self.age_from} по {self.age_to}'
