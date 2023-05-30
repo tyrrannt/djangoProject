@@ -469,3 +469,9 @@ class HappyBirthdayGreetings(models.Model):
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
                               help_text='', default='')
     greetings = models.TextField(blank=True)
+
+    def __str__(self):
+        if self.age_from == self.age_to:
+            return f'{self.get_gender_display} на {self.age_to} летие'
+        else:
+            return f'{self.get_gender_display} c {self.age_from} по {self.age_to}'
