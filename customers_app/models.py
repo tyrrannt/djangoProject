@@ -452,3 +452,20 @@ class HistoryChange(models.Model):
 
     def __str__(self):
         return f"{str(self.content_type.name)} : {str(self.content_object)}"
+
+
+class HappyBirthdayGreetings(models.Model):
+    type_of_gender = [
+        ('male', 'мужской'),
+        ('female', 'женский')
+    ]
+
+    class Meta:
+        verbose_name = 'Поздравление'
+        verbose_name_plural = 'Поздравления'
+
+    age_from = models.IntegerField(verbose_name='', default=0)
+    age_to = models.IntegerField(verbose_name='', default=0)
+    gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
+                              help_text='', default='')
+    greetings = models.TextField(blank=True)

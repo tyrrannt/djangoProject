@@ -751,7 +751,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                     changed = True
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
-
+            
             return HttpResponseRedirect(reverse('hrdepartment_app:bpmemo_list'))
         else:
             logger.info(f'{form.errors}')
