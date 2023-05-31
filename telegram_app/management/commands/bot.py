@@ -9,4 +9,4 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS("Bot started"))
-        executor.start_polling(dp, skip_updates=True)
+        executor.start_polling(dp, skip_updates=False)
