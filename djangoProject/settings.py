@@ -285,4 +285,4 @@ CKEDITOR_5_FILE_STORAGE = 'administration_app.utils.CkeditorCustomStorage'
 
 API_TOKEN = config('TELEGRAM_TOKEN')
 WEBHOOK_PATH = API_TOKEN
-WEBHOOK_URL = f"corp.barkol.ru/{WEBHOOK_PATH}"
+WEBHOOK_URL = f"https://corp.barkol.ru/{WEBHOOK_PATH}"
