@@ -11,5 +11,5 @@ async def proceed_update(req: HttpRequest):
     upd = types.Update(**(json.loads(req.body)))
     Dispatcher.set_current(dp)
     Bot.set_current(bot)
-    logger.error(f'{req}')
+    logger.error(f'Webhook - {req}')
     await dp.process_update(upd)
