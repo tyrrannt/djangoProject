@@ -1366,9 +1366,8 @@ class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin,
         return context
 
 
-class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ReportCardList(LoginRequiredMixin, ListView):
     model = ReportCard
-    permission_required = 'hrdepartment_app.add_reportcard'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -1394,10 +1393,9 @@ class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class ReportCardDetail(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ReportCardDetail(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
-    permission_required = 'hrdepartment_app.add_reportcard'
     template_name = 'hrdepartment_app/reportcard_detail.html'
 
     def post(self, request):  # ***** this method required! ******
