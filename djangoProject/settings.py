@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
+import hashlib
 import pathlib
 from pathlib import Path
 # Для работы с переменными которые хранятся в файле .env
@@ -281,3 +282,7 @@ INTERNAL_IPS = [
 ]
 
 CKEDITOR_5_FILE_STORAGE = 'administration_app.utils.CkeditorCustomStorage'
+
+API_TOKEN = config('TELEGRAM_TOKEN')
+WEBHOOK_PATH = 'bklairlinkbot/' + hashlib.md5(API_TOKEN.encode()).hexdigest()
+WEBHOOK_URL = f"https://corp.barkol.ru/{WEBHOOK_PATH}"
