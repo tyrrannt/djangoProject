@@ -16,9 +16,9 @@ def telegram(request: HttpRequest):
     # if request.method == 'post':
     try:
         async_to_sync(proceed_update)(request)
-        logger.error(f'{request}')
+        logger.error(f'Функция telegram: {request}')
     except Exception as e:
-        logger.error(f'{e}')
+        logger.error(f'Функция telegram, исключение: {e}')
     return HttpResponse()
     # else:
     #     return HttpResponse(status=403)
