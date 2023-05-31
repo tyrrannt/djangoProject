@@ -1371,12 +1371,23 @@ class ReportCardList(LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        current_month = self.request.GET.get('report_month')
+        current_year = self.request.GET.get('report_year')
+        if current_month and current_year:
+            request.session['current_month'] = int(current_month)
+            request.session['current_year'] = int(current_year)
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             # if self.request.user.is_superuser:
             #     reportcard_list = ReportCard.objects.all()
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
-            reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
+            if request.session['current_month'] and request.session['current_year']:
+                start_date = datetime.date(year=int(request.session['current_year']), month=int(request.session['current_month']), day=1)
+                end_date = start_date + relativedelta(days=31)
+                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13') & Q(report_card_day__in=search_interval)).order_by('report_card_day')
+            else:
+                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)

@@ -296,6 +296,8 @@ def login(request):
                 logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
             request.session.set_expiry(portal_session)
             request.session['portal_paginator'] = portal_paginator
+            request.session['current_month'] = int(datetime.datetime.today().month)
+            request.session['current_year'] = int(datetime.datetime.today().year)
             # return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
             return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
     else:
