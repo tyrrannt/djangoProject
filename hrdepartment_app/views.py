@@ -21,7 +21,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
-    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm
+    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm, ReportCardUpdateForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card, get_month
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
@@ -1377,7 +1377,7 @@ class ReportCardList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             #     reportcard_list = ReportCard.objects.all()
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
-            reportcard_list = ReportCard.objects.all()
+            reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -1485,10 +1485,18 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
         interval = request.GET.get('interval', None)
         if interval:
             personal_start = self.request.user.user_work_profile.personal_work_schedule_start
+            personal_start = datetime.timedelta(hours=personal_start.hour,
+                                                minutes=personal_start.minute) - datetime.timedelta(hours=1)
             personal_end = self.request.user.user_work_profile.personal_work_schedule_end
+
             if datetime.datetime.strptime(interval, '%Y-%m-%d').weekday() == 4:
-                personal_end = personal_end - datetime.timedelta(hours=1)
-            result = [personal_start, personal_end]
+                personal_end = datetime.timedelta(hours=personal_end.hour, minutes=personal_end.minute)
+            else:
+                personal_end = datetime.timedelta(hours=personal_end.hour,
+                                                  minutes=personal_end.minute) + datetime.timedelta(hours=1)
+            result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'),
+                      datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
+            print(result, datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M'))
             return JsonResponse(result, safe=False)
         return super().get(request, *args, **kwargs)
 
@@ -1530,3 +1538,37 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse('customers_app:profile', args=(self.request.user.pk,))
+
+
+class ReportCardUpdate(LoginRequiredMixin, UpdateView):
+    model = ReportCard
+    form_class = ReportCardUpdateForm
+    template_name = 'hrdepartment_app/reportcard_form_update.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_obj = self.get_object()
+        context['min'] = user_obj.employee.user_work_profile.personal_work_schedule_start.strftime('%H:%M')
+        context['max'] = user_obj.employee.user_work_profile.personal_work_schedule_end.strftime('%H:%M')
+        return context
+
+    def get(self, request, *args, **kwargs):
+        interval = request.GET.get('interval', None)
+        if interval:
+            personal_start = self.request.user.user_work_profile.personal_work_schedule_start
+            personal_start = datetime.timedelta(hours=personal_start.hour,
+                                              minutes=personal_start.minute) - datetime.timedelta(hours=1)
+            personal_end = self.request.user.user_work_profile.personal_work_schedule_end
+
+            if datetime.datetime.strptime(interval, '%Y-%m-%d').weekday() == 4:
+                personal_end = datetime.timedelta(hours=personal_end.hour, minutes=personal_end.minute)
+            else:
+                personal_end = datetime.timedelta(hours=personal_end.hour,
+                                                  minutes=personal_end.minute) + datetime.timedelta(hours=1)
+            result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'), datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
+            print(result, datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M'))
+            return JsonResponse(result, safe=False)
+        return super().get(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('hrdepartment_app:reportcard_list')

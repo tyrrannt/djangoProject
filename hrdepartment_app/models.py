@@ -881,9 +881,9 @@ class ReportCard(models.Model):
         return {
             'pk': self.pk,
             'report_card_day': self.report_card_day,
-            'employee': self.employee.get_title(),
             'start_time': self.start_time,
             'end_time': str(self.end_time),
+            'reason_adjustment': self.reason_adjustment,
         }
 
     def __str__(self):

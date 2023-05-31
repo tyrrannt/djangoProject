@@ -480,3 +480,27 @@ class ReportCardAddForm(forms.ModelForm):
         reason_adjustment = cleaned_data.get("reason_adjustment")
         if reason_adjustment == '':
             raise ValidationError("Ошибка! Причина ручной корректировки не может быть пустой.")
+
+class ReportCardUpdateForm(forms.ModelForm):
+    class Meta:
+        model = ReportCard
+        fields = ('report_card_day', 'start_time', 'end_time', 'reason_adjustment')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        report_card_day = cleaned_data.get("report_card_day")
+        yesterday = datetime.date.today() - datetime.timedelta(days=3)
+        tomorrow = datetime.date.today() + datetime.timedelta(days=2)
+        if yesterday > report_card_day or report_card_day > tomorrow:
+            raise ValidationError(f"Ошибка! Дата может быть только из диапазона c {yesterday.strftime('%d.%m.%Y')} г. по {tomorrow.strftime('%d.%m.%Y')} г.")
+        start_time = cleaned_data.get("start_time")
+        if not start_time:
+            raise ValidationError("Ошибка! Не указано время начала!")
+        end_time = cleaned_data.get("end_time")
+        if not end_time:
+            raise ValidationError("Ошибка! Не указано время окончания!")
+        if end_time < start_time:
+            raise ValidationError("Ошибка! Указан не верный диапазон времени!")
+        reason_adjustment = cleaned_data.get("reason_adjustment")
+        if reason_adjustment == '':
+            raise ValidationError("Ошибка! Причина ручной корректировки не может быть пустой.")
