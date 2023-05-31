@@ -13,12 +13,12 @@ def home(request: HttpRequest):
 
 @csrf_exempt
 def telegram(request: HttpRequest):
-    # if request.method == 'post':
-    try:
-        async_to_sync(proceed_update)(request)
-        logger.error(f'Функция telegram: {request}')
-    except Exception as e:
-        logger.error(f'Функция telegram, исключение: {request}')
-    return HttpResponse()
-    # else:
-    #     return HttpResponse(status=403)
+    if request.method == 'post':
+        try:
+            async_to_sync(proceed_update)(request)
+            logger.error(f'Функция telegram: {request}')
+        except Exception as e:
+            logger.error(f'Функция telegram, исключение: {request}')
+        return HttpResponse()
+    else:
+        return HttpResponse(status=403)
