@@ -1398,8 +1398,8 @@ class ReportCardList(LoginRequiredMixin, ListView):
         month_dict, year_dict = get_year_interval(2020)
         context['year_dict'] = year_dict
         context['month_dict'] = month_dict
-        context['current_year'] = datetime.datetime.today().year
-        context['current_month'] = str(datetime.datetime.today().month)
+        context['current_year'] = self.request.session['current_year']
+        context['current_month'] = str(self.request.session['current_month'])
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
         return context
 
