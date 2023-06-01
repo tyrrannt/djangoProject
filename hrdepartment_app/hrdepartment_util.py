@@ -280,6 +280,7 @@ def get_working_hours(pk, start_date, state=0):
     all_days_count = 0
     all_vacation_days = 0
     all_vacation_time = 0
+    holiday_delta = 0
     for date in period:
         if not dict_obj.get(str(user_id)):
             dict_obj[str(user_id)] = []
@@ -343,6 +344,8 @@ def get_working_hours(pk, start_date, state=0):
             if record_type == 'Я':
                 total_time += total_day_time
                 all_total_time += time_worked
+                if user_end_time.hour == 0:
+                    holiday_delta += 1
             if record_type == 'О' and merge_interval:
                 total_time += total_day_time
                 all_total_time += time_worked
@@ -372,4 +375,4 @@ def get_working_hours(pk, start_date, state=0):
         return dict_obj, total_time, start_date, cnt
     else:
         result = dict_obj[str(user_id)]
-        return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time
+        return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time, holiday_delta

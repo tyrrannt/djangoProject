@@ -1473,7 +1473,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
 
             # absences = days_count - norm_time.number_working_days
 
-            data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time = get_working_hours(user_obj, current_day, state=1)
+            data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(user_obj, current_day, state=1)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
@@ -1482,6 +1482,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                 'time_count_hour': total_score / 3600 ,# (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
                 'absences': abs(absences) if absences < 0 else 0, # Количество неявок
                 'vacation_time': (all_vacation_time + total_score) / 3600,
+                'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
             }
 
         context['all_dict'] = all_dict
