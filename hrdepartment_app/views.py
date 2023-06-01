@@ -1451,7 +1451,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         for user_obj in users_obj_set:
             data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(user_obj, current_day, state=1)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
-            time_count_hour = (total_score / 3600) if (total_score / 3600) >= norm_time.get_norm_time() else f'{(total_score / 3600)} (-{norm_time.get_norm_time() - (total_score / 3600)})'
+            time_count_hour = f'{total_score / 3600}' if (total_score / 3600) >= norm_time.get_norm_time() else f'{(total_score / 3600)} (-{norm_time.get_norm_time() - (total_score / 3600)})'
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
                 'days_count': all_days_count, #days_count,
