@@ -337,7 +337,8 @@ def get_working_hours(pk, start_date, state=0):
             if record_type == 'О' and report_record.count() == 1:
                 total_time += 0
                 all_total_time += 0
-                all_vacation_days += 1
+                if user_end_time.hour > 0:
+                    all_vacation_days += 1
                 all_vacation_time += datetime.timedelta(hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
             if record_type == 'Я':
                 total_time += total_day_time
@@ -345,7 +346,8 @@ def get_working_hours(pk, start_date, state=0):
             if record_type == 'О' and merge_interval:
                 total_time += total_day_time
                 all_total_time += time_worked
-                all_vacation_days += 1
+                if user_end_time.hour > 0:
+                    all_vacation_days += 1
                 all_vacation_time += datetime.timedelta(hours=user_end_time.hour,
                                                         minutes=user_end_time.minute).total_seconds() - datetime.timedelta(
                     hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
