@@ -1449,32 +1449,9 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
         # Итерируемся по списку сотрудников
         for user_obj in users_obj_set:
-            dict_count = []
-            days_count = 0
-            time_count = datetime.timedelta(hours=0, minutes=0)
-            # Для каждого пользователя пробегаемся по месяцу
-            # for item in month_obj:
-            #     found = 0
-            #     for rec in report_obj_list:
-            #         find_obj = (item[0], user_obj)
-            #         if set(find_obj).issubset(rec):
-            #             found = 1
-            #             days_count += 1
-            #             if rec[3] == datetime.datetime(1, 1, 1, 0, 0).time():
-            #                 time_obj_raw = datetime.timedelta(hours=datetime.datetime(1, 1, 1, 0, 0).time().hour, minutes=datetime.datetime(1, 1, 1, 0, 0).time().minute)
-            #             else:
-            #                 time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute) - \
-            #                            datetime.timedelta(hours=rec[2].hour, minutes=rec[2].minute)
-            #             time_count += time_obj_raw
-            #             time_obj = datetime.datetime.strptime(str(time_obj_raw), '%H:%M:%S').time().strftime('%H:%M')
-            #             dict_count.append([item[0], item[1], time_obj])
-            #     if found == 0:
-            #         dict_count.append([item[0], item[1], '00:00'])
-
-            # absences = days_count - norm_time.number_working_days
-
             data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(user_obj, current_day, state=1)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
+            time_count_hour = (total_score / 3600) if (total_score / 3600) >= norm_time.get_norm_time() else f'{(total_score / 3600)} (-{norm_time.get_norm_time() - (total_score / 3600)})'
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
                 'days_count': all_days_count, #days_count,

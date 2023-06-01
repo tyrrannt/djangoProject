@@ -945,6 +945,10 @@ class ProductionCalendar(models.Model):
         return friday
 
     def get_norm_time(self):
+        """
+        Функция для подсчета количества рабочих часов в месяце
+        :return: Возвращает количество рабочих часов в месяце
+        """
         return (self.number_working_days * 8) + (self.number_working_days/2) - self.get_friday_count()
 
     def __str__(self):
