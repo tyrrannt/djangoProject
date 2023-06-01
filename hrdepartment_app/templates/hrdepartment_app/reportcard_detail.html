@@ -157,7 +157,7 @@
 
                                         <td style="{% if value.vacation_time < norm_time %}background-color:#ff0116;{% else %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;"
                                             rowspan="2">
-                                            {{ value.time_count_hour_format }}
+                                            {{ value.time_count_hour | safe }}
                                         </td>
                                         <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
                                             style="border-left-style:none;">
