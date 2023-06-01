@@ -171,21 +171,25 @@ def report_card_separator():
 
 def report_card_separator_loc():
     current_data = datetime.datetime.date(datetime.datetime.today())
+    # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
+    # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
     url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
     source_url = url
     try:
-        response = requests.get(source_url, auth=(config('TC_LOGIN'), config('TC_PASS')))
+        response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
     except Exception as _ex:
         return f"{_ex} ошибка"
     dicts = json.loads(response.text)
     for item in dicts['data']:
         usr = item['FULLNAME']
+        # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
+        current_intervals = True if item['ISGO'] == '0' else False
         start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
-        if item['ISGO'] == '0':
+        if current_intervals:
             end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
         else:
-            end_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time() + relativedelta(
-                minutes=1)
+            end_time = datetime.datetime(1, 1, 1, 0, 0).time()
+        rec_no = int(item['rec_no'])
 
         search_user = usr.split(' ')
         try:
@@ -196,9 +200,10 @@ def report_card_separator_loc():
                 'employee': user_obj,
                 'start_time': start_time,
                 'end_time': end_time,
-                'record_type': 1,
+                'record_type': '1',
+                'current_intervals': current_intervals,
             }
-            ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj,
+            ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj, rec_no=rec_no,
                                                 defaults=kwargs)
         except Exception as _ex:
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")

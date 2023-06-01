@@ -1457,9 +1457,13 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                     if set(find_obj).issubset(rec):
                         found = 1
                         days_count += 1
-                        time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute) - \
+                        if rec[3] == datetime.datetime(1, 1, 1, 0, 0).time():
+                            time_obj_raw = datetime.timedelta(hours=datetime.datetime(1, 1, 1, 0, 0).time().hour, minutes=datetime.datetime(1, 1, 1, 0, 0).time().minute)
+                        else:
+                            time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute) - \
                                        datetime.timedelta(hours=rec[2].hour, minutes=rec[2].minute)
                         time_count += time_obj_raw
+                        print(rec[3], rec[2], time_obj_raw)
                         time_obj = datetime.datetime.strptime(str(time_obj_raw), '%H:%M:%S').time().strftime('%H:%M')
                         dict_count.append([item[0], item[1], time_obj])
                 if found == 0:
