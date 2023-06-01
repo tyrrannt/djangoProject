@@ -279,6 +279,7 @@ def get_working_hours(pk, start_date, state=0):
     all_total_time = 0
     all_days_count = 0
     all_vacation_days = 0
+    all_vacation_time = 0
     for date in period:
         if not dict_obj.get(str(user_id)):
             dict_obj[str(user_id)] = []
@@ -337,6 +338,7 @@ def get_working_hours(pk, start_date, state=0):
                 total_time += 0
                 all_total_time += 0
                 all_vacation_days += 1
+                all_vacation_time += datetime.timedelta(hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
             if record_type == 'Я':
                 total_time += total_day_time
                 all_total_time += time_worked
@@ -344,6 +346,9 @@ def get_working_hours(pk, start_date, state=0):
                 total_time += total_day_time
                 all_total_time += time_worked
                 all_vacation_days += 1
+                all_vacation_time += datetime.timedelta(hours=user_end_time.hour,
+                                                        minutes=user_end_time.minute).total_seconds() - datetime.timedelta(
+                    hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
             sign = ''
             if total_day_time < 0:
                 sign = '-'
@@ -365,4 +370,4 @@ def get_working_hours(pk, start_date, state=0):
         return dict_obj, total_time, start_date, cnt
     else:
         result = dict_obj[str(user_id)]
-        return result, all_total_time, all_days_count, all_vacation_days
+        return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time
