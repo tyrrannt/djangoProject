@@ -1431,14 +1431,15 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
         report_obj_list = ReportCard.objects.filter(
-            Q(report_card_day__gte=first_day) &
-            Q(report_card_day__lte=last_day)).select_related('employee').values_list(
-            'report_card_day', 'employee', 'start_time', 'end_time'
-        )
+            Q(report_card_day__gte=first_day) & Q(record_type__in=['1', '13']) &
+            Q(report_card_day__lte=last_day)).values('employee')
+            # .select_related('employee').values_list(
+            # 'report_card_day', 'employee', 'start_time', 'end_time')
+
         users_obj_list = []
         for item in report_obj_list:
-            if item[1] not in users_obj_list:
-                users_obj_list.append(item[1])
+            if item['employee'] not in users_obj_list:
+                users_obj_list.append(item['employee'])
         users_obj_set = dict()
         for item in users_obj_list:
             users_obj_set[item] = DataBaseUser.objects.get(pk=item)

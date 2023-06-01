@@ -349,7 +349,6 @@ def get_working_hours(pk, start_date, state=0):
                  user_end_time, record_type, merge_interval, current_intervals, time_worked])
         else:
             time_worker = datetime.datetime(1, 1, 1, 0, 0).time().strftime('%H:%M') if time_worked == 0 else datetime.datetime.strptime(str(datetime.timedelta(seconds=time_worked)), '%H:%M:%S').time().strftime('%H:%M')
-            print(type(time_worker))
             dict_obj[str(user_id)].append(
                 [date.date(), record_type, time_worker])
     if state == 0:
