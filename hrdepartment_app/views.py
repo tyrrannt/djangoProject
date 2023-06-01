@@ -1471,13 +1471,13 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
             #     if found == 0:
             #         dict_count.append([item[0], item[1], '00:00'])
 
-            absences = days_count - norm_time.number_working_days
+            # absences = days_count - norm_time.number_working_days
 
-            data_dict, total_score, first_day, last_day = get_working_hours(user_obj, current_day, state=1)
-
+            data_dict, total_score, all_days_count, all_vacation_days = get_working_hours(user_obj, current_day, state=1)
+            absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
-                'days_count': days_count,
+                'days_count': all_days_count, #days_count,
                 'time_count_day': datetime.timedelta(seconds=total_score).days, #time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
                 'time_count_hour': total_score / 3600 ,# (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
                 'absences': abs(absences) if absences < 0 else 0, # Количество неявок
