@@ -1483,7 +1483,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                 'absences': abs(absences) if absences < 0 else 0, # Количество неявок
                 'vacation_time': (all_vacation_time + total_score) / 3600,
             }
-            print((all_vacation_time + total_score) / 3600)
+
         context['all_dict'] = all_dict
         context['month_obj'] = month_obj
         context['first_day'] = first_day
