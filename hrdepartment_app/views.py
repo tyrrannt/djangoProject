@@ -1478,8 +1478,8 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
                 'days_count': days_count,
-                'time_count_day': datetime.datetime.strptime(str(datetime.timedelta(seconds=total_score)), '%H:%M:%S').day, # Итого отмечено дней за месяц
-                'time_count_hour': datetime.datetime.strptime(str(datetime.timedelta(seconds=total_score)), '%H:%M:%S').hour ,# (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
+                'time_count_day': datetime.timedelta(seconds=total_score).days, #time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
+                'time_count_hour': total_score / 3600 ,# (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
                 'absences': abs(absences) if absences < 0 else 0, # Количество неявок
             }
         context['all_dict'] = all_dict
