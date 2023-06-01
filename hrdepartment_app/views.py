@@ -1459,7 +1459,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                 'days_count': all_days_count, #days_count,
                 'time_count_day': datetime.timedelta(seconds=total_score).days, #time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
                 'time_count_hour': total_score / 3600 ,# (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
-                'time_count_hour_format': total_score,
+                'time_count_hour_format': time_count_hour,
                 'absences': abs(absences) if absences < 0 else 0, # Количество неявок
                 'vacation_time': (all_vacation_time + total_score) / 3600,
                 'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
