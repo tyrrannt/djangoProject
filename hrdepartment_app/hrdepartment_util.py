@@ -90,6 +90,12 @@ def send_mail_change(counter, obj):
 
 
 def get_month(period):
+    """
+    Функция get_month, принимает в качестве аргумента переменную datetime, и на основании нее определяет первый и
+    последний день месяца. В качестве результата работы выдает список [[день, Я], [день, В]...]
+    :param period: Любой день месяца
+    :return: Список [[день, Я], [день, В]...]
+    """
     first_day = period + relativedelta(day=1)
     last_day = period + relativedelta(day=31)
     weekend_days = [item.weekend_day for item in
@@ -251,7 +257,7 @@ def check_day(date, time_start, time_end):
         str(check_time_end), '%H:%M:%S').time()
 
 
-def get_working_hours(pk, start_date):
+def get_working_hours(pk, start_date, state=0):
     type_of_report = {
         '2': 'Ежегодный',
         '3': 'Дополнительный ежегодный отпуск',
@@ -275,10 +281,11 @@ def get_working_hours(pk, start_date):
             dict_obj[str(user_id)] = []
         report_record = ReportCard.objects.filter(employee=user_id, report_card_day=date).order_by(
             'record_type').reverse()
-        total_day_time, start_time, end_time, record_type = 0, '', '', ''
+        total_day_time, start_time, end_time, record_type, sign, merge_interval, time_worked = 0, '', '', '', '', '', 0
         user_start_time = user_id.user_work_profile.personal_work_schedule_start
         user_end_time = user_id.user_work_profile.personal_work_schedule_end
         current_intervals = True
+
         for record in report_record:
             current_intervals = False if not current_intervals else record.current_intervals
             if record.record_type == '1' or record.record_type == '13':
@@ -290,10 +297,9 @@ def get_working_hours(pk, start_date):
                 if start_time == '':
                     start_time = record.start_time
                 else:
-                    if start_time == datetime.datetime.strptime('00:00:00', '%H:%M:%S').time():
+                    if start_time == datetime.datetime(1, 1, 1, 0, 0).time():
                         start_time = record.start_time
-                    if record.start_time < start_time and record.start_time != datetime.datetime.strptime('00:00:00',
-                                                                                                          '%H:%M:%S').time():
+                    if record.start_time < start_time and record.start_time != datetime.datetime(1, 1, 1, 0, 0).time():
                         start_time = record.start_time
                 if end_time == '':
                     end_time = record.end_time
@@ -303,9 +309,10 @@ def get_working_hours(pk, start_date):
                 if record_type != 'О':
                     record_type = 'Я'
             else:
-                start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()  # .strftime('%H:%M')
-                end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()  # .strftime('%H:%M')
+                start_time = datetime.datetime(1, 1, 1, 0, 0).time()  # .strftime('%H:%M')
+                end_time = datetime.datetime(1, 1, 1, 0, 0).time()  # .strftime('%H:%M')
                 record_type = 'О'
+
         if record_type != '':
             if report_record.count() == 1:
                 merge_interval = False
@@ -314,6 +321,8 @@ def get_working_hours(pk, start_date):
             user_start_time, user_end_time = check_day(date, user_start_time, user_end_time)
             if record_type == 'Я':
                 if current_intervals:
+                    time_worked = total_day_time
+                    # От отработанного времени отнимаем рабочее, чтоб получить дельту
                     total_day_time -= datetime.timedelta(
                         hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - \
                                       datetime.timedelta(
@@ -328,10 +337,23 @@ def get_working_hours(pk, start_date):
             sign = ''
             if total_day_time < 0:
                 sign = '-'
-            """ Дата, Начало, Окончание, Тип записи, Начало по графику, 
-            Окончание по графику, Скалярное общее время за день , Знак,  Было ли объединение интервалов,
-             Начальная дата, конечная дата"""
+            """ Дата, Начало, Окончание, Знак, Скалярное общее время за день, Начало по графику, 
+            Окончание по графику, Тип записи, Было ли объединение интервалов,
+             Начальная дата, Общее за день"""
+
+        start_time = start_time if start_time != '' else datetime.datetime(1, 1, 1, 0, 0).time()
+        end_time = end_time if end_time != '' else datetime.datetime(1, 1, 1, 0, 0).time()
+        if state == 0:
             dict_obj[str(user_id)].append(
                 [date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
-                 user_end_time, record_type, merge_interval, current_intervals])
-    return dict_obj, total_time, start_date, cnt
+                 user_end_time, record_type, merge_interval, current_intervals, time_worked])
+        else:
+            time_worker = datetime.datetime(1, 1, 1, 0, 0).time().strftime('%H:%M') if time_worked == 0 else datetime.datetime.strptime(str(datetime.timedelta(seconds=time_worked)), '%H:%M:%S').time().strftime('%H:%M')
+            print(type(time_worker))
+            dict_obj[str(user_id)].append(
+                [date.date(), record_type, time_worker])
+    if state == 0:
+        return dict_obj, total_time, start_date, cnt
+    else:
+        result = dict_obj[str(user_id)]
+        return result, total_time, start_date, cnt

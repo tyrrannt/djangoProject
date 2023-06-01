@@ -235,7 +235,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                             <th>Табель</th>
                             <th>Факт</th>
                         </tr>"""
-        for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10 in data_dict[key]:
+        for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 in data_dict[key]:
             # r1 - Дата, r2 - Время начала, r3 - Время окончания,
             # r4 - Знак, r5 - Разница времени, r6 - Начало по графику, r7 - Окончание по графику, r8 - тип записи,
             # r9 - Объединение

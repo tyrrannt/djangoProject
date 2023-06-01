@@ -22,7 +22,8 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
     PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm, ReportCardUpdateForm
-from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card, get_month
+from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card, get_month, \
+    get_working_hours
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
     ProductionCalendar
@@ -1445,36 +1446,41 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         month_obj = get_month(current_day)
         all_dict = dict()
         norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
-
+        # Итерируемся по списку сотрудников
         for user_obj in users_obj_set:
             dict_count = []
             days_count = 0
             time_count = datetime.timedelta(hours=0, minutes=0)
-            for item in month_obj:
-                found = 0
-                for rec in report_obj_list:
-                    find_obj = (item[0], user_obj)
-                    if set(find_obj).issubset(rec):
-                        found = 1
-                        days_count += 1
-                        if rec[3] == datetime.datetime(1, 1, 1, 0, 0).time():
-                            time_obj_raw = datetime.timedelta(hours=datetime.datetime(1, 1, 1, 0, 0).time().hour, minutes=datetime.datetime(1, 1, 1, 0, 0).time().minute)
-                        else:
-                            time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute) - \
-                                       datetime.timedelta(hours=rec[2].hour, minutes=rec[2].minute)
-                        time_count += time_obj_raw
-                        print(rec[3], rec[2], time_obj_raw)
-                        time_obj = datetime.datetime.strptime(str(time_obj_raw), '%H:%M:%S').time().strftime('%H:%M')
-                        dict_count.append([item[0], item[1], time_obj])
-                if found == 0:
-                    dict_count.append([item[0], item[1], '00:00'])
+            # Для каждого пользователя пробегаемся по месяцу
+            # for item in month_obj:
+            #     found = 0
+            #     for rec in report_obj_list:
+            #         find_obj = (item[0], user_obj)
+            #         if set(find_obj).issubset(rec):
+            #             found = 1
+            #             days_count += 1
+            #             if rec[3] == datetime.datetime(1, 1, 1, 0, 0).time():
+            #                 time_obj_raw = datetime.timedelta(hours=datetime.datetime(1, 1, 1, 0, 0).time().hour, minutes=datetime.datetime(1, 1, 1, 0, 0).time().minute)
+            #             else:
+            #                 time_obj_raw = datetime.timedelta(hours=rec[3].hour, minutes=rec[3].minute) - \
+            #                            datetime.timedelta(hours=rec[2].hour, minutes=rec[2].minute)
+            #             time_count += time_obj_raw
+            #             time_obj = datetime.datetime.strptime(str(time_obj_raw), '%H:%M:%S').time().strftime('%H:%M')
+            #             dict_count.append([item[0], item[1], time_obj])
+            #     if found == 0:
+            #         dict_count.append([item[0], item[1], '00:00'])
+
             absences = days_count - norm_time.number_working_days
+
+            data_dict, total_score, first_day, last_day = get_working_hours(user_obj, current_day, state=1)
+
+
             all_dict[users_obj_set[user_obj]] = {
-                'dict_count': dict_count,
-                'days_count': days_count,
-                'time_count_day': time_count.days,
+                'dict_count': data_dict,
+                'days_count': days_count, # Итого отмечено дней за месяц
+                'time_count_day': time_count.days, # Итого отмечено часов за месяц
                 'time_count_hour': (time_count.total_seconds() / 3600),
-                'absences': abs(absences) if absences < 0 else 0,
+                'absences': abs(absences) if absences < 0 else 0, # Количество неявок
             }
         context['all_dict'] = all_dict
         context['month_obj'] = month_obj
