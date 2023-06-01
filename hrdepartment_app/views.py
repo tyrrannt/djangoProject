@@ -1455,8 +1455,9 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
             if absences_delta < 0:
                 time_count_hour = '{0:6.2f}'.format((total_score / 3600))
             else:
-                hour, minute = divmod(absences_delta*60, 60)
-                time_count_hour = '{0:6.2f}<br>-{1:3.0f}&nbspч&nbsp{2:2.0f}&nbspм'.format((total_score / 3600), hour, minute)
+                hour1, minute1 = divmod(total_score / 60, 60)
+                hour2, minute2 = divmod(absences_delta*60, 60)
+                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм'.format(hour1, minute1, hour2, minute2)
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
                 'days_count': all_days_count, #days_count,
