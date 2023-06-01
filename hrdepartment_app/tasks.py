@@ -147,7 +147,7 @@ def report_card_separator():
         if current_intervals:
             end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
         else:
-            end_time = datetime.datetime.strptime("1900.1.1 00:00:00", "%d.%m.%Y %H:%M:%S").time()
+            end_time = datetime.datetime(1, 1, 1, 0, 0).time()
         rec_no = int(item['rec_no'])
 
         search_user = usr.split(' ')
