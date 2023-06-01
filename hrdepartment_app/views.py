@@ -1475,12 +1475,11 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
 
             data_dict, total_score, first_day, last_day = get_working_hours(user_obj, current_day, state=1)
 
-
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
-                'days_count': days_count, # Итого отмечено дней за месяц
-                'time_count_day': time_count.days, # Итого отмечено часов за месяц
-                'time_count_hour': (time_count.total_seconds() / 3600),
+                'days_count': days_count,
+                'time_count_day': datetime.datetime.strptime(str(datetime.timedelta(seconds=total_score)), '%H:%M:%S').day, # Итого отмечено дней за месяц
+                'time_count_hour': datetime.datetime.strptime(str(datetime.timedelta(seconds=total_score)), '%H:%M:%S').hour ,# (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
                 'absences': abs(absences) if absences < 0 else 0, # Количество неявок
             }
         context['all_dict'] = all_dict
