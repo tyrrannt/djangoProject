@@ -281,7 +281,7 @@ def get_working_hours(pk, start_date, state=0):
                     record_type = 'Я'
             else:
                 if record.record_type == '14' or record.record_type == '15':
-                    total_day_time += datetime.timedelta(
+                    total_day_time = datetime.timedelta(
                         hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
                                       - datetime.timedelta(hours=record.start_time.hour,
                                                            minutes=record.start_time.minute).total_seconds()
