@@ -1453,7 +1453,8 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             if absences_delta < 0:
-                time_count_hour = '{0:6.2f}'.format((total_score / 3600))
+                hour1, minute1 = divmod(total_score / 60, 60)
+                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм'.format(hour1, minute1)
             else:
                 hour1, minute1 = divmod(total_score / 60, 60)
                 hour2, minute2 = divmod(absences_delta*60, 60)
