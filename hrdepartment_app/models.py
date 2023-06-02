@@ -3,10 +3,12 @@ import pathlib
 import uuid
 
 import dateutil.relativedelta
+from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
@@ -429,6 +431,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         ('1', 'Квартира'),
         ('2', 'Гостиница')
     ]
+    # ref_key = models.CharField(default=uuid.uuid4, max_length=37, null=True, blank=True)
     document = models.OneToOneField(OfficialMemo, verbose_name='Документ', on_delete=models.CASCADE, null=True,
                                     related_name='docs')
     accommodation = models.CharField(verbose_name='Проживание', max_length=9, choices=type_of,
@@ -533,12 +536,42 @@ def create_xlsx(instance):
     filepath2 = pathlib.Path.joinpath(MEDIA_URL, 'wb-1.xlsx')
     ws.save(filepath2)
 
+@receiver(pre_save, sender=ApprovalOficialMemoProcess)
+def hr_accepted(sender, instance, **kwargs):
+    if instance.hr_accepted:
+        obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
+        interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.start_date_trip, until=instance.end_date_trip))
+        if obj_list.count() != len(interval):
+            for item in obj_list:
+                item.delete()
+            for date in interval:
+                if instance.document.type_trip == '1':
+                    record_type = '14'
+                else:
+                    record_type = '15'
+                start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(), datetime.datetime(1, 1, 1, 18, 0).time())
+                report_kwargs = {
+                    'report_card_day': date,
+                    'rec_no': instance.pk + instance.document.person.pk,
+                    'employee': instance.document.person,
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'record_type': record_type,
+                    'reason_adjustment': str(instance.document),
+                    'doc_ref_key': instance.pk,
+                }
+                ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=instance.pk, employee=instance.document.person, defaults=report_kwargs)
+    else:
+        obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
+        for item in obj_list:
+            item.delete()
+
 
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
 def create_report(sender, instance, **kwargs):
     type_of = ['Служебная квартира', 'Гостиница']
 
-    if instance.process_accepted:
+    if instance.process_accepted and not instance.email_send:
         from openpyxl import load_workbook
         delta = instance.document.period_for - instance.document.period_from
         try:
@@ -582,47 +615,46 @@ def create_report(sender, instance, **kwargs):
         output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
         file_name = convert(source=source, output_dir=output_dir, soft=0)
 
-        if not instance.email_send:
-            # from msoffice2pdf import convert
-            # source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-            # output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-            # file_name = convert(source=source, output_dir=output_dir, soft=0)
-            mail_to = instance.document.person.email
-            mail_to_copy = instance.person_executor.email
-            subject_mail = 'Направление'
+        # from msoffice2pdf import convert
+        # source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+        # output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+        # file_name = convert(source=source, output_dir=output_dir, soft=0)
+        mail_to = instance.document.person.email
+        mail_to_copy = instance.person_executor.email
+        subject_mail = 'Направление'
 
-            if instance.accommodation == '1':
-                accommodation = 'Квартира'
-            else:
-                accommodation = 'Гостиница'
-            current_context = {
-                'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
-                'person': str(instance.document.person),
-                'place': str(place).strip('[]'),
-                'purpose_trip': str(instance.document.purpose_trip),
-                'order_number': str(instance.order.document_number),
-                'order_date': str(instance.order.document_date),
-                'delta': str(ending_day(int(delta.days) + 1)),
-                'period_from': str(instance.document.period_from),
-                'period_for': str(instance.document.period_for),
-                'accommodation': accommodation,
-                'person_executor': str(instance.person_executor),
-                'person_distributor': str(instance.person_distributor),
-            }
-            logger.debug(f'Email string: {current_context}')
-            text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
-            html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+        if instance.accommodation == '1':
+            accommodation = 'Квартира'
+        else:
+            accommodation = 'Гостиница'
+        current_context = {
+            'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
+            'person': str(instance.document.person),
+            'place': str(place).strip('[]'),
+            'purpose_trip': str(instance.document.purpose_trip),
+            'order_number': str(instance.order.document_number),
+            'order_date': str(instance.order.document_date),
+            'delta': str(ending_day(int(delta.days) + 1)),
+            'period_from': str(instance.document.period_from),
+            'period_for': str(instance.document.period_for),
+            'accommodation': accommodation,
+            'person_executor': str(instance.person_executor),
+            'person_distributor': str(instance.person_distributor),
+        }
+        logger.debug(f'Email string: {current_context}')
+        text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+        html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
 
-            msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy, ])
-            msg.attach_alternative(html_content, "text/html")
-            if instance.document.official_memo_type == '1':
-                msg.attach_file(str(file_name))
-            try:
-                res = msg.send()
-                instance.email_send = True
-                instance.save()
-            except Exception as _ex:
-                logger.debug(f'Failed to send email. {_ex}')
+        msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, mail_to_copy, ])
+        msg.attach_alternative(html_content, "text/html")
+        if instance.document.official_memo_type == '1':
+            msg.attach_file(str(file_name))
+        try:
+            res = msg.send()
+            instance.email_send = True
+            instance.save()
+        except Exception as _ex:
+            logger.debug(f'Failed to send email. {_ex}')
 
 
 class BusinessProcessDirection(models.Model):
@@ -860,6 +892,8 @@ class ReportCard(models.Model):
         ('11', 'Дополнительный оплачиваемый отпуск пострадавшим в '),
         ('12', 'Основной'),
         ('13', 'Ручной ввод'),
+        ('14', 'Служебная поездка'),
+        ('15', 'Командировка'),
     ]
     class Meta:
         verbose_name = 'Рабочее время'
@@ -953,3 +987,39 @@ class ProductionCalendar(models.Model):
 
     def __str__(self):
         return str(self.calendar_month)
+
+
+def check_day(date, time_start, time_end):
+    weekend = WeekendDay.objects.filter(weekend_day=date.date()).exists()
+    preholiday = PreHolidayDay.objects.filter(preholiday_day=date.date()).exists()
+    check_time_end = time_end
+    check_time_start = time_start
+    if not weekend:
+        if date.weekday() in [0, 1, 2, 3]:
+            if not preholiday:
+                check_time_end = datetime.timedelta(hours=time_end.hour, minutes=time_end.minute)
+            else:
+                preholiday_time = PreHolidayDay.objects.get(preholiday_day=date.date())
+                check_time_end = datetime.timedelta(hours=time_start.hour,
+                                                    minutes=time_start.minute) + \
+                                 datetime.timedelta(hours=preholiday_time.work_time.hour,
+                                                    minutes=preholiday_time.work_time.minute)
+        elif date.weekday() == 4:
+            if not preholiday:
+                check_time_end = datetime.timedelta(hours=time_end.hour, minutes=time_end.minute) - datetime.timedelta(
+                    hours=1)
+            else:
+                preholiday_time = PreHolidayDay.objects.get(preholiday_day=date.date())
+                check_time_end = datetime.timedelta(hours=time_start.hour,
+                                                    minutes=time_start.minute) + \
+                                 datetime.timedelta(hours=preholiday_time.work_time.hour,
+                                                    minutes=preholiday_time.work_time.minute)
+        else:
+            check_time_end = datetime.timedelta(hours=0, minutes=0)
+            check_time_start = datetime.timedelta(hours=0, minutes=0)
+    else:
+        check_time_end = datetime.timedelta(hours=0, minutes=0)
+        check_time_start = datetime.timedelta(hours=0, minutes=0)
+
+    return datetime.datetime.strptime(str(check_time_start), '%H:%M:%S').time(), datetime.datetime.strptime(
+        str(check_time_end), '%H:%M:%S').time()

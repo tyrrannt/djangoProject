@@ -10,7 +10,7 @@ from loguru import logger
 from administration_app.utils import get_jsons_data
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
 from djangoProject.settings import EMAIL_HOST_USER, DEBUG
-from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay, WeekendDay
+from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay, WeekendDay, check_day
 
 
 def get_medical_documents():
@@ -221,42 +221,6 @@ def get_report_card(pk, RY=None, RM=None):
 
 # -------------------------------------------------------------------------------------------------------------------
 
-def check_day(date, time_start, time_end):
-    weekend = WeekendDay.objects.filter(weekend_day=date.date()).exists()
-    preholiday = PreHolidayDay.objects.filter(preholiday_day=date.date()).exists()
-    check_time_end = time_end
-    check_time_start = time_start
-    if not weekend:
-        if date.weekday() in [0, 1, 2, 3]:
-            if not preholiday:
-                check_time_end = datetime.timedelta(hours=time_end.hour, minutes=time_end.minute)
-            else:
-                preholiday_time = PreHolidayDay.objects.get(preholiday_day=date.date())
-                check_time_end = datetime.timedelta(hours=time_start.hour,
-                                                    minutes=time_start.minute) + \
-                                 datetime.timedelta(hours=preholiday_time.work_time.hour,
-                                                    minutes=preholiday_time.work_time.minute)
-        elif date.weekday() == 4:
-            if not preholiday:
-                check_time_end = datetime.timedelta(hours=time_end.hour, minutes=time_end.minute) - datetime.timedelta(
-                    hours=1)
-            else:
-                preholiday_time = PreHolidayDay.objects.get(preholiday_day=date.date())
-                check_time_end = datetime.timedelta(hours=time_start.hour,
-                                                    minutes=time_start.minute) + \
-                                 datetime.timedelta(hours=preholiday_time.work_time.hour,
-                                                    minutes=preholiday_time.work_time.minute)
-        else:
-            check_time_end = datetime.timedelta(hours=0, minutes=0)
-            check_time_start = datetime.timedelta(hours=0, minutes=0)
-    else:
-        check_time_end = datetime.timedelta(hours=0, minutes=0)
-        check_time_start = datetime.timedelta(hours=0, minutes=0)
-
-    return datetime.datetime.strptime(str(check_time_start), '%H:%M:%S').time(), datetime.datetime.strptime(
-        str(check_time_end), '%H:%M:%S').time()
-
-
 def get_working_hours(pk, start_date, state=0):
     type_of_report = {
         '2': 'Ежегодный',
@@ -292,7 +256,9 @@ def get_working_hours(pk, start_date, state=0):
         current_intervals = True
 
         for record in report_record:
+            # Выбираем только завершенные записи, если человек не отметился на выход, то current_intervals = False
             current_intervals = False if not current_intervals else record.current_intervals
+            print(current_intervals)
             if record.record_type == '1' or record.record_type == '13':
                 if current_intervals:
                     total_day_time += datetime.timedelta(
@@ -311,12 +277,24 @@ def get_working_hours(pk, start_date, state=0):
                 else:
                     if record.end_time > end_time:
                         end_time = record.end_time
-                if record_type != 'О':
+                if record_type not in ['О', 'СП', 'К']:
                     record_type = 'Я'
             else:
-                start_time = datetime.datetime(1, 1, 1, 0, 0).time()  # .strftime('%H:%M')
-                end_time = datetime.datetime(1, 1, 1, 0, 0).time()  # .strftime('%H:%M')
-                record_type = 'О'
+                if record.record_type == '14' or record.record_type == '15':
+                    total_day_time += datetime.timedelta(
+                        hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
+                                      - datetime.timedelta(hours=record.start_time.hour,
+                                                           minutes=record.start_time.minute).total_seconds()
+                    start_time = record.start_time
+                    end_time = record.end_time
+                    if record.record_type == '14' and record_type != 'О':
+                        record_type = 'СП'
+                    if record.record_type == '15' and record_type != 'О':
+                        record_type = 'К'
+                else:
+                    start_time = datetime.datetime(1, 1, 1, 0, 0).time()
+                    end_time = datetime.datetime(1, 1, 1, 0, 0).time()
+                    record_type = 'О'
 
         if record_type != '':
             if report_record.count() == 1:
@@ -324,17 +302,25 @@ def get_working_hours(pk, start_date, state=0):
             else:
                 merge_interval = True
             user_start_time, user_end_time = check_day(date, user_start_time, user_end_time)
+            # Если только явка или ручной ввод
             if record_type == 'Я':
                 all_days_count += 1
                 if current_intervals:
                     time_worked = total_day_time
-
                     # От отработанного времени отнимаем рабочее, чтоб получить дельту
                     total_day_time -= datetime.timedelta(
                         hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - \
                                       datetime.timedelta(
                                           hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
-
+            if record_type == 'СП' or record_type == 'К':
+                all_days_count += 1
+                time_worked = total_day_time
+                # От отработанного времени отнимаем рабочее, чтоб получить дельту
+                total_day_time -= datetime.timedelta(
+                    hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - \
+                                  datetime.timedelta(
+                                      hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
+            # Если только отпуск
             if record_type == 'О' and report_record.count() == 1:
                 total_time += 0
                 all_total_time += 0
@@ -342,6 +328,11 @@ def get_working_hours(pk, start_date, state=0):
                     all_vacation_days += 1
                 all_vacation_time += datetime.timedelta(hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
             if record_type == 'Я':
+                total_time += total_day_time
+                all_total_time += time_worked
+                if user_end_time.hour == 0:
+                    holiday_delta += 1
+            if record_type == 'СП' or record_type == 'К':
                 total_time += total_day_time
                 all_total_time += time_worked
                 if user_end_time.hour == 0:

@@ -1433,8 +1433,6 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         report_obj_list = ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(record_type__in=['1', '13']) &
             Q(report_card_day__lte=last_day)).values('employee')
-            # .select_related('employee').values_list(
-            # 'report_card_day', 'employee', 'start_time', 'end_time')
 
         users_obj_list = []
         for item in report_obj_list:
