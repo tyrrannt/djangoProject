@@ -22,11 +22,11 @@
                         <h2 class="card-title">Основной</h2>
                     </header>
                     <div class="card-body">
-
-
+                        <div class="row">
+                        <div class="col-lg-9">
                         <form action="{% url 'hrdepartment_app:reportcard_list' %}" method="get">
                         <div class="row">
-                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                            <div class="col-sm-12 col-lg-3 mb-1">
                                 <select class="form-control select-style-1 filter-by" name="report_month"
                                         id="id_report_month">
                                     {% for key, value in month_dict.items %}
@@ -35,7 +35,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                            <div class="col-sm-12 col-lg-3 mb-1">
                                 <select class="form-control select-style-1 filter-by" name="report_year"
                                         id="id_report_year">
                                     {% for key, value in year_dict.items %}
@@ -44,17 +44,18 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                            <div class="col-sm-12 col-lg-3 mb-1">
                                 <button type="submit" class="btn btn-primary" style="width: 100%" onclick="report_date()">OK</button>
                             </div>
                         </div>
                         </form>
-                        <div class="row">
-                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="col-sm-12 mb-1">
                                 <button class="btn btn-primary" style="width: 100%" onclick="window.location.href='{% url 'hrdepartment_app:reportcard_add' %}';">Запись в журнал</button>
                             </div>
                         </div>
-
+                        </div>
                         <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
                             <div class="row">
 
