@@ -1432,7 +1432,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         last_day = current_day + relativedelta(day=31)
         report_obj_list = ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(record_type__in=['1', '13']) &
-            Q(report_card_day__lte=last_day)).values('employee')
+            Q(report_card_day__lte=last_day)).values('employee').order_by('employee__last_name')
 
         users_obj_list = []
         for item in report_obj_list:
