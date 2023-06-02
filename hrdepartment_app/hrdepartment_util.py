@@ -292,6 +292,7 @@ def get_working_hours(pk, start_date, state=0):
                     if record.record_type == '15' and record_type != 'О':
                         record_type = 'К'
                 else:
+
                     start_time = datetime.datetime(1, 1, 1, 0, 0).time()
                     end_time = datetime.datetime(1, 1, 1, 0, 0).time()
                     total_day_time += 0
