@@ -258,7 +258,6 @@ def get_working_hours(pk, start_date, state=0):
         for record in report_record:
             # Выбираем только завершенные записи, если человек не отметился на выход, то current_intervals = False
             current_intervals = False if not current_intervals else record.current_intervals
-            print(current_intervals)
             if (record.record_type == '1' or record.record_type == '13') and record_type not in ['СП', 'К']:
                 if current_intervals:
                     total_day_time += datetime.timedelta(
@@ -292,7 +291,6 @@ def get_working_hours(pk, start_date, state=0):
                     if record.record_type == '15' and record_type != 'О':
                         record_type = 'К'
                 else:
-
                     start_time = datetime.datetime(1, 1, 1, 0, 0).time()
                     end_time = datetime.datetime(1, 1, 1, 0, 0).time()
                     total_day_time += 0
@@ -340,6 +338,7 @@ def get_working_hours(pk, start_date, state=0):
                 if user_end_time.hour == 0:
                     holiday_delta += 1
             if record_type == 'О' and merge_interval:
+                time_worked = total_day_time
                 total_time += total_day_time
                 all_total_time += time_worked
                 if user_end_time.hour > 0:
