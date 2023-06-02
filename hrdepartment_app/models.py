@@ -499,8 +499,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
 
             current_context = {
                 'title': self.document.title,
-                'order_number': str(self.order.document_number),
-                'order_date': str(self.order.document_date),
+                'order_number': str(self.order.document_number) if self.order else '--//--',
+                'order_date': str(self.order.document_date) if self.order else '--//--',
                 'reason_cancellation': self.document.reason_cancellation.get_title(),
                 'person_executor': str(self.person_executor),
                 'person_distributor': str(self.person_distributor),
