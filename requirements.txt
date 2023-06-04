@@ -17,7 +17,7 @@ click-plugins==1.1.1
 click-repl==0.2.0
 colorclass==2.2.2
 convertdate==2.4.0
-Django==4.2
+Django==4.2.1
 django-ckeditor-5==0.2.4
 django-debug-toolbar==4.0.0
 django-widget-tweaks==1.4.12

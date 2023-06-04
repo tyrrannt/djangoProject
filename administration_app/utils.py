@@ -182,6 +182,7 @@ def get_jsons_data_filter2(object_type: str, object_name: str, filter_obj: str, 
           f"&$filter={filter_obj}%20{logical_operation[logical]}%20guid'{filter_content}'" \
           f"and {filter_obj2}%20{logical_operation[logical]}%20{filter_content2}"
     source_url = url
+    print(url)
     try:
         if base_index == 0:
             response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))

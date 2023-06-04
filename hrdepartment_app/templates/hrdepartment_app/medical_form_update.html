@@ -109,16 +109,24 @@
                                             {{ form.harmful }}
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_medical_direction">Файл направления</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <a href="
-                                                    {% if object.medical_direction %}{{ object.medical_direction.url }}{% else %}#{% endif %}"
-                                               target="_blank">Открыть
-                                                документ</a>
+                                    {% if object.medical_direction %}
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                                   for="id_medical_direction">Файл ПМО</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <a href="{{ object.medical_direction.url }}"target="_blank">Открыть документ</a>
+                                            </div>
                                         </div>
-                                    </div>
+                                    {% endif %}
+                                    {% if object.medical_direction2 %}
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                                   for="id_medical_direction2">Файл ПО</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <a href="{{ object.medical_direction2.url }}"target="_blank">Открыть документ</a>
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

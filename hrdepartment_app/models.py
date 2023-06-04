@@ -123,7 +123,7 @@ class MedicalOrganisation(models.Model):
         }
 
 
-def Med(obj_model, filepath, filename, request):
+def Med(obj_model, filepath, filename_pmo, filename_po, request):
     inspection_type = [
         ('1', 'Предварительный'),
         ('2', 'Периодический'),
@@ -133,6 +133,7 @@ def Med(obj_model, filepath, filename, request):
         doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med.docx'))
     else:
         doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med2.docx'))
+    doc2 = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/med3.docx'))
     if obj_model.person.gender == 'male':
         gender = 'муж.'
     else:
@@ -166,15 +167,26 @@ def Med(obj_model, filepath, filename, request):
                    'address': obj_model.organisation.address,
                    'div_address': div_address,
                    }
+        context2 = {'gender': gender,
+                   'number': obj_model.number,
+                   'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
+                   'division': obj_model.person.user_work_profile.divisions,
+                   'job': obj_model.person.user_work_profile.job,
+                   'FIO': obj_model.person,
+                   'snils': obj_model.person.user_profile.snils,
+                   'oms': obj_model.person.user_profile.oms,
+                   }
     except Exception as _ex:
         DataBaseUser.objects.get(pk=request)
-        logger.debug(f'Ошибка заполнения файла {filename}: {DataBaseUser.objects.get(pk=request)} {_ex}')
+        logger.debug(f'Ошибка заполнения файла {filename_pmo}: {DataBaseUser.objects.get(pk=request)} {_ex}')
         context = {}
     doc.render(context)
+    doc2.render(context2)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
     if not path_obj.exists():
         path_obj.mkdir(parents=True)
-    doc.save(pathlib.Path.joinpath(path_obj, filename))
+    doc.save(pathlib.Path.joinpath(path_obj, filename_pmo))
+    doc2.save(pathlib.Path.joinpath(path_obj, filename_po))
     # ToDo: Попытка конвертации docx в pdf в Linux. Не работает
     # convert(filename, (filename[:-4]+'pdf'))
     # convert(filepath)
@@ -214,7 +226,8 @@ class Medical(models.Model):
                                        help_text='', blank=True, default='')
     type_inspection = models.CharField(verbose_name='Тип осмотра', max_length=15, choices=inspection_type,
                                        help_text='', blank=True, default='')
-    medical_direction = models.FileField(verbose_name='Файл документа', upload_to=contract_directory_path, blank=True)
+    medical_direction = models.FileField(verbose_name='Файл ПМО', upload_to=contract_directory_path, blank=True)
+    medical_direction2 = models.FileField(verbose_name='Файл ПО', upload_to=contract_directory_path, blank=True)
     harmful = models.ManyToManyField(HarmfulWorkingConditions, verbose_name='Вредные условия труда')
 
     def get_data(self):
@@ -236,13 +249,20 @@ class Medical(models.Model):
 @receiver(post_save, sender=Medical)
 def rename_file_name(sender, instance, **kwargs):
     try:
+        change = 0
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
         uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
         user_uid = '0' * (7 - len(str(instance.person.pk))) + str(instance.person.pk)
-        filename = f'MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}.docx'
-        Med(instance, f'media/hr/medical/{user_uid}', filename, user_uid)
-        if f'hr/medical/{user_uid}/{filename}' != instance.medical_direction:
-            instance.medical_direction = f'hr/medical/{user_uid}/{filename}'
+        filename_pmo = f'MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}.docx'
+        filename_po = f'MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}PO.docx'
+        Med(instance, f'media/hr/medical/{user_uid}', filename_pmo, filename_po, user_uid)
+        if f'hr/medical/{user_uid}/{filename_pmo}' != instance.medical_direction:
+            change = 1
+            instance.medical_direction = f'hr/medical/{user_uid}/{filename_pmo}'
+        if f'hr/medical/{user_uid}/{filename_po}' != instance.medical_direction2:
+            change = 1
+            instance.medical_direction2 = f'hr/medical/{user_uid}/{filename_po}'
+        if change == 1:
             instance.save()
     except Exception as _ex:
         logger.error(f'Ошибка при переименовании файла {_ex}')
