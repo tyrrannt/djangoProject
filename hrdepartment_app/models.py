@@ -168,14 +168,15 @@ def Med(obj_model, filepath, filename_pmo, filename_po, request):
                    'div_address': div_address,
                    }
         context2 = {'gender': gender,
-                   'number': obj_model.number,
-                   'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
-                   'division': obj_model.person.user_work_profile.divisions,
-                   'job': obj_model.person.user_work_profile.job,
-                   'FIO': obj_model.person,
-                   'snils': obj_model.person.user_profile.snils,
-                   'oms': obj_model.person.user_profile.oms,
-                   }
+                    'number': obj_model.number,
+                    'birthday': obj_model.person.birthday.strftime("%d.%m.%Y"),
+                    'division': obj_model.person.user_work_profile.divisions,
+                    'job': obj_model.person.user_work_profile.job,
+                    'FIO': obj_model.person,
+                    'snils': obj_model.person.user_profile.snils,
+                    'oms': obj_model.person.user_profile.oms,
+                    'div_address': div_address,
+                    }
     except Exception as _ex:
         DataBaseUser.objects.get(pk=request)
         logger.debug(f'Ошибка заполнения файла {filename_pmo}: {DataBaseUser.objects.get(pk=request)} {_ex}')
@@ -556,6 +557,7 @@ def create_xlsx(instance):
     filepath2 = pathlib.Path.joinpath(MEDIA_URL, 'wb-1.xlsx')
     ws.save(filepath2)
 
+
 @receiver(pre_save, sender=ApprovalOficialMemoProcess)
 def hr_accepted(sender, instance, **kwargs):
     if instance.hr_accepted:
@@ -569,7 +571,8 @@ def hr_accepted(sender, instance, **kwargs):
                     record_type = '14'
                 else:
                     record_type = '15'
-                start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(), datetime.datetime(1, 1, 1, 18, 0).time())
+                start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
+                                                 datetime.datetime(1, 1, 1, 18, 0).time())
                 report_kwargs = {
                     'report_card_day': date,
                     'rec_no': instance.pk + instance.document.person.pk,
@@ -580,7 +583,8 @@ def hr_accepted(sender, instance, **kwargs):
                     'reason_adjustment': str(instance.document),
                     'doc_ref_key': instance.pk,
                 }
-                ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=instance.pk, employee=instance.document.person, defaults=report_kwargs)
+                ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=instance.pk,
+                                                    employee=instance.document.person, defaults=report_kwargs)
     else:
         obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
         for item in obj_list:
@@ -915,6 +919,7 @@ class ReportCard(models.Model):
         ('14', 'Служебная поездка'),
         ('15', 'Командировка'),
     ]
+
     class Meta:
         verbose_name = 'Рабочее время'
         verbose_name_plural = 'Табель учета'
@@ -924,12 +929,12 @@ class ReportCard(models.Model):
     employee = models.ForeignKey(DataBaseUser, on_delete=models.SET_NULL, null=True, blank=True)
     start_time = models.TimeField(verbose_name='Время прихода', null=True, blank=True)
     end_time = models.TimeField(verbose_name='Время ухода', null=True, blank=True)
-    record_type = models.CharField(verbose_name='Тип записи', max_length=100, choices=type_of_report, default='', blank=True)
+    record_type = models.CharField(verbose_name='Тип записи', max_length=100, choices=type_of_report, default='',
+                                   blank=True)
     manual_input = models.BooleanField(verbose_name='Ручной ввод', default=False)
     reason_adjustment = models.TextField(verbose_name='Причина ручной корректировки', blank=True)
     doc_ref_key = models.CharField(verbose_name='Уникальный номер документа', max_length=37, default='', blank=True)
     current_intervals = models.BooleanField(verbose_name='Текущий интервал', default=True)
-
 
     def get_data(self):
         return {
@@ -961,13 +966,15 @@ class WeekendDay(models.Model):
         ('1', 'Праздник'),
         ('2', 'Выходной'),
     ]
+
     class Meta:
         verbose_name = 'Праздничный день'
         verbose_name_plural = 'Праздничные дни'
 
     weekend_day = models.DateField(verbose_name='Дата', null=True, blank=True)
     description = models.CharField(verbose_name='Описание', max_length=200, default='', blank=True)
-    weekend_type = models.CharField(verbose_name='Тип дня', max_length=8, choices=type_of_weekend, blank=True, null=True)
+    weekend_type = models.CharField(verbose_name='Тип дня', max_length=8, choices=type_of_weekend, blank=True,
+                                    null=True)
 
     def __str__(self):
         return str(self.weekend_day)
@@ -1003,7 +1010,7 @@ class ProductionCalendar(models.Model):
         Функция для подсчета количества рабочих часов в месяце
         :return: Возвращает количество рабочих часов в месяце
         """
-        return (self.number_working_days * 8) + (self.number_working_days/2) - self.get_friday_count()
+        return (self.number_working_days * 8) + (self.number_working_days / 2) - self.get_friday_count()
 
     def __str__(self):
         return str(self.calendar_month)
