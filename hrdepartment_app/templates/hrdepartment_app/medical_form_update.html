@@ -109,7 +109,7 @@
                                             {{ form.harmful }}
                                         </div>
                                     </div>
-                                    {% if object.medical_direction %}
+                                    {% if object.medical_direction == '1' %}
                                         <div class="form-group row align-items-center pb-3">
                                             <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                    for="id_medical_direction">Файл ПМО</label>
@@ -118,7 +118,7 @@
                                             </div>
                                         </div>
                                     {% endif %}
-                                    {% if object.medical_direction2 %}
+                                    {% if object.view_inspection == '2' %}
                                         <div class="form-group row align-items-center pb-3">
                                             <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                    for="id_medical_direction2">Файл ПО</label>
