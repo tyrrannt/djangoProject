@@ -288,6 +288,12 @@ def ending_day(value):
 
 
 def FIO_format(value, self=None):
+    """
+    Форматирование ФИО человека, до вида Фамилия И.О.
+    :param value: Строка с ФИО
+    :param self: принимает объект, чтоб в результате ошибки вывести в логах, где произошла ошибка
+    :return: возвращает форматированную строку
+    """
     try:
         string_obj = str(value)
         list_obj = string_obj.split(' ')
@@ -319,6 +325,11 @@ class CkeditorCustomStorage(FileSystemStorage):
 
 
 def change_users_password():
+    """
+    Функция смены паролей пользователей. В качестве списка принимает файл eggs.csv. Который состоит из записей вида:
+    ФИО;username;email;password
+    :return: Возврат не предусмотрен. В качестве результата работы функции - смена всех паролей пользователей на сайте.
+    """
     users_list = DataBaseUser.objects.all()
     error_list = list()
     import csv
@@ -355,7 +366,13 @@ def get_users_info():
                     [f'{item.last_name} {item.first_name} {item.surname}', f'{item.username}', f'E-mail отсутствует'])
 
 
-def get_year_interval(year):
+def get_year_interval(year=2020):
+    """
+    Возвращает два словаря, месяца и года, для полей SELECT в формах на текущую дату. В качестве генератора списка
+    используется rrule, где dtstart - начальный год, until - дата до которой следует составить список.
+    :param year: Год по умолчанию = 2020-й, с него начинается статистика на сайте
+    :return: Словарь месяцев - month_dict, Словарь лет - year_dict
+    """
     month_dict = {'1': 'Январь', '2': 'Февраль', '3': 'Март',
                   '4': 'Апрель', '5': 'Май', '6': 'Июнь',
                   '7': 'Июль', '8': 'Август', '9': 'Сентябрь',
