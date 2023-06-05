@@ -1063,3 +1063,6 @@ class TypesUserworktime(models.Model):
     description = models.CharField(verbose_name='Наименование', max_length=150, default='') # поле в 1с: Description
     letter_code = models.CharField(verbose_name='Буквенный код', max_length=5, default='') # поле в 1с: БуквенныйКод
     active = models.BooleanField(verbose_name='Используется', default=False) # поле в 1с: БуквенныйКод
+
+    def __str__(self):
+        return self.description

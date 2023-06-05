@@ -182,7 +182,6 @@ def get_jsons_data_filter2(object_type: str, object_name: str, filter_obj: str, 
           f"&$filter={filter_obj}%20{logical_operation[logical]}%20guid'{filter_content}'" \
           f"and {filter_obj2}%20{logical_operation[logical]}%20{filter_content2}"
     source_url = url
-    print(url)
     try:
         if base_index == 0:
             response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
@@ -382,3 +381,16 @@ def get_year_interval(year=2020):
                                  until=datetime.today())):
         year_dict[item.year] = item.year
     return month_dict, year_dict
+
+
+def get_types_userworktime():
+    url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/" \
+          f"Catalog_ВидыИспользованияРабочегоВремени?$format=application/json;odata=nometadata"
+    source_url = url
+    try:
+        response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+    except Exception as _ex:
+        logger.debug(f'{_ex}')
+        return {'value': ""}
+
+    return json.loads(response.text)

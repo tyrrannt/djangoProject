@@ -12,9 +12,9 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
-    get_jsons_data_filter2
+    get_jsons_data_filter2, get_types_userworktime
 from customers_app.models import DataBaseUser, Groups, Job
-from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard
+from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -71,7 +71,17 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '3':
                 get_users_info()
             if request.GET.get('update') == '4':
-                report_card_separator_loc()
+                # report_card_separator_loc()
+                dt = get_types_userworktime()
+                for item in dt['value']:
+                    # print(value)
+                    kwargs_obj = {
+                        'ref_key': item['Ref_Key'],
+                        'description': item['Description'],
+                        'letter_code': item['БуквенныйКод'],
+                        'active': False,
+                    }
+                    TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
                 type_of_report = {
                     '2': 'Ежегодный',
