@@ -1050,3 +1050,16 @@ def check_day(date, time_start, time_end):
 
     return datetime.datetime.strptime(str(check_time_start), '%H:%M:%S').time(), datetime.datetime.strptime(
         str(check_time_end), '%H:%M:%S').time()
+
+class TypesUserworktime(models.Model):
+    """
+    url = /odata/standard.odata/Catalog_ВидыИспользованияРабочегоВремени?$format=application/json;odata=nometadata
+    """
+    class Meta:
+        verbose_name = 'Вид использования рабочего времени'
+        verbose_name_plural = 'Виды использования рабочего времени'
+
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='') # поле в 1с: Ref_Key
+    description = models.CharField(verbose_name='Наименование', max_length=150, default='') # поле в 1с: Description
+    letter_code = models.CharField(verbose_name='Буквенный код', max_length=5, default='') # поле в 1с: БуквенныйКод
+    active = models.BooleanField(verbose_name='Используется', default=False) # поле в 1с: БуквенныйКод

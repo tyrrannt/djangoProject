@@ -192,8 +192,8 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     reason_for_approval.widget.attrs.update({'class': 'form-control form-control-modern'})
     order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all(), required=False)
     order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    number_business_trip_days = forms.DateField(required=False)
-    number_flight_days = forms.DateField(required=False)
+    number_business_trip_days = forms.IntegerField(required=False)
+    number_flight_days = forms.IntegerField(required=False)
     prepaid_expense_summ = forms.DecimalField(required=False)
 
     class Meta:
