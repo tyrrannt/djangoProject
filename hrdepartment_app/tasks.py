@@ -170,6 +170,10 @@ def report_card_separator():
 
 
 def report_card_separator_loc():
+    user_obj = DataBaseUser.objects.get(username='0231_elistratova_av')
+    rec_obj = ReportCard.objects.filter(employee=user_obj)
+    for item in rec_obj:
+        item.delete()
     current_data = datetime.datetime.date(datetime.datetime.today())
     # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
     # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
