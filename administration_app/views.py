@@ -3,6 +3,7 @@ import json
 
 import requests
 from dateutil import rrule
+from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
@@ -25,6 +26,33 @@ logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotat
 
 def index(request):
     pass
+
+
+def get_sick_leave(year):
+    """
+    Получение больничных листов в 1с
+    :param year: Год, за который запрашиваем информацию.
+    :return:
+    """
+    url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27'
+    source_url = url
+    try:
+        response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+        dt = json.loads(response.text)
+        for item in dt['value']:
+            if item['Recorder_Type'] == 'StandardODATA.Document_БольничныйЛист':
+
+                print(item)
+                kwargs_obj = {
+                    'Сотрудник_Key': item['Сотрудник_Key'],
+                    'ДокументОснование': item['ДокументОснование'],
+                    'Начало': item['Начало'],
+                    'active': False,
+                }
+    except Exception as _ex:
+        logger.debug(f'{_ex}')
+        return {'value': ""}
+
 
 
 class PortalPropertyList(LoginRequiredMixin, ListView):
@@ -69,7 +97,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     if item.title == '':
                         item.save()
             if request.GET.get('update') == '3':
-                get_users_info()
+                get_sick_leave(2023)
             if request.GET.get('update') == '4':
                 # report_card_separator_loc()
                 dt = get_types_userworktime()

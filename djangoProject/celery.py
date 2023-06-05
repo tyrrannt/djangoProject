@@ -16,7 +16,7 @@ app.conf.beat_schedule = {
     },
     'report_card_separator_daily': {
         'task': 'hrdepartment_app.tasks.report_card_separator_daily',
-        'schedule': crontab(hour=23, minute=45),
+        'schedule': crontab(hour=23, minute=47),
     },
     'birthday_gift': {
         'task': 'hrdepartment_app.tasks.happy_birthday',
