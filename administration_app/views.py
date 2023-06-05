@@ -47,7 +47,7 @@ def get_sick_leave(year):
                     'Сотрудник_Key': item['Сотрудник_Key'],
                     'ДокументОснование': item['ДокументОснование'],
                     'Начало': item['Начало'],
-                    'active': False,
+                    'Окончание': item['Окончание'],
                 }
     except Exception as _ex:
         logger.debug(f'{_ex}')

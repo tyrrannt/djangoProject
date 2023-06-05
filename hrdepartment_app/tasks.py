@@ -174,6 +174,7 @@ def report_card_separator_daily():
     current_data = datetime.datetime.date(datetime.datetime.today())
     rec_obj = ReportCard.objects.filter(Q(report_card_day=current_data) & Q(record_type='1'))
     for item in rec_obj:
+        print(item)
         item.delete()
     # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
     # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
