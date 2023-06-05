@@ -183,7 +183,7 @@ def report_card_separator_loc():
     dicts = json.loads(response.text)
     for item in dicts['data']:
         usr = item['FULLNAME']
-        # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
+        current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
         current_intervals = True if item['ISGO'] == '0' else False
         start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
         if current_intervals:
