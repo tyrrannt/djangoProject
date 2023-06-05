@@ -169,16 +169,15 @@ def report_card_separator():
     return dicts
 
 
-def report_card_separator_loc():
-    user_obj = DataBaseUser.objects.get(username='0231_elistratova_av')
-    rec_obj = ReportCard.objects.filter(employee=user_obj)
+@app.task()
+def report_card_separator_daily():
+    current_data = datetime.datetime.date(datetime.datetime.today())
+    rec_obj = ReportCard.objects.filter(Q(report_card_day=current_data) & Q(record_type='1'))
     for item in rec_obj:
         item.delete()
-    current_data = datetime.datetime.date(datetime.datetime.today())
     # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
     # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
-    # url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
-    url = 'http://192.168.10.233:5053/api/time/intervals?startdate=2020-01-01&enddate=2023-06-04&FULLNAME=Елистратова'
+    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
     source_url = url
     try:
         response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
@@ -187,7 +186,53 @@ def report_card_separator_loc():
     dicts = json.loads(response.text)
     for item in dicts['data']:
         usr = item['FULLNAME']
-        current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
+        # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
+        current_intervals = True if item['ISGO'] == '0' else False
+        start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
+        if current_intervals:
+            end_time = datetime.datetime.strptime(item['ENDTIME'], "%d.%m.%Y %H:%M:%S").time()
+        else:
+            end_time = datetime.datetime(1, 1, 1, 0, 0).time()
+        rec_no = int(item['rec_no'])
+
+        search_user = usr.split(' ')
+        try:
+            user_obj = DataBaseUser.objects.get(last_name=search_user[0], first_name=search_user[1],
+                                                surname=search_user[2])
+            kwargs = {
+                'report_card_day': current_data,
+                'employee': user_obj,
+                'start_time': start_time,
+                'end_time': end_time,
+                'record_type': '1',
+                'current_intervals': current_intervals,
+            }
+            ReportCard.objects.update_or_create(report_card_day=current_data, employee=user_obj, rec_no=rec_no,
+                                                defaults=kwargs)
+        except Exception as _ex:
+            logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
+    return dicts
+
+
+def report_card_separator_loc():
+    # user_obj = DataBaseUser.objects.get(username='0231_elistratova_av')
+    # rec_obj = ReportCard.objects.filter(employee=user_obj)
+    # for item in rec_obj:
+    #     item.delete()
+    current_data = datetime.datetime.date(datetime.datetime.today())
+    # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
+    # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
+    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
+    # url = 'http://192.168.10.233:5053/api/time/intervals?startdate=2020-01-01&enddate=2023-06-04&FULLNAME=Елистратова'
+    source_url = url
+    try:
+        response = requests.get(source_url, auth=('proxmox', 'PDO#rLv@Server'))
+    except Exception as _ex:
+        return f"{_ex} ошибка"
+    dicts = json.loads(response.text)
+    for item in dicts['data']:
+        usr = item['FULLNAME']
+        # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
         current_intervals = True if item['ISGO'] == '0' else False
         start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
         if current_intervals:
