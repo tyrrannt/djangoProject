@@ -17,19 +17,8 @@
             position: -webkit-sticky;
             position: sticky;
             top: -3px; // при нуле в chrome остаётся странный зазор
-            z-index: 2;}
-        tr>th:first-child,tr>td:first-child {
-            position: sticky;
-            left: 0;
-            }
-
-        tr:nth-child(odd) td {
-            background: #ffffff;
-            }
-
-        tr:nth-child(even) td {
-            background: gray;
-            }
+            z-index: 2;
+        }
         </style>
         {% include 'library_app/breadcrumb.html' %}
 
@@ -110,16 +99,16 @@
                                         </th>
                                     {% endfor %}
                                     <th style="border-style:solid; border-width: 1px;width:26pt;">
-                                        Итого дней за месяц
+                                        Итого дней
                                     </th>
                                     <th style="border-style:solid; border-width: 1px;width:36pt;">
-                                        Итого часов за месяц
+                                        Итого часов
                                     </th>
                                     <th style="border-style:solid; border-width: 1px;width:37pt;">
-                                        Количество неявок, дней (часов);
+                                        Неявки, дней (часов)
                                     </th>
                                     <th style="border-style:solid; border-width: 1px;width:63pt;">
-                                        Количество выходных и праздничных дней
+                                        Количество ВХ и ПР дней
                                     </th>
                                 </tr>
 {#                                <tr>#}
