@@ -525,7 +525,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 'title': self.document.title,
                 'order_number': str(self.order.document_number) if self.order else '--//--',
                 'order_date': str(self.order.document_date) if self.order else '--//--',
-                'reason_cancellation': self.document.reason_cancellation.get_title(),
+                'reason_cancellation': self.reason_cancellation.get_title(),
                 'person_executor': str(self.person_executor),
                 'person_distributor': str(self.person_distributor),
                 'person_department_staff': str(self.person_department_staff)
