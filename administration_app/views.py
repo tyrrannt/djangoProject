@@ -28,20 +28,29 @@ def index(request):
     pass
 
 
-def get_sick_leave(year):
+def get_sick_leave(year, triger):
     """
-    Получение больничных листов в 1с
+    Получение неявок на рабочее место.
     :param year: Год, за который запрашиваем информацию.
+    :param triger: 1 - больничные, 2 - мед осмотры.
     :return:
     """
-    url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27'
+    if triger == 1:
+        url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27'
+        triger_type = 'StandardODATA.Document_БольничныйЛист'
+        record_type = '16'
+    if triger == 2:
+        url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27'
+        triger_type = 'StandardODATA.Document_ОплатаПоСреднемуЗаработку'
+        record_type = '17'
+
     source_url = url
     try:
         response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
         dt = json.loads(response.text)
         rec_number_count = 0
         for item in dt['value']:
-            if item['Recorder_Type'] == 'StandardODATA.Document_БольничныйЛист':
+            if item['Recorder_Type'] == triger_type and item['Active'] == True:
                 interval = get_date_interval(datetime.datetime.strptime(item['Начало'][:10], "%Y-%m-%d"),
                                              datetime.datetime.strptime(item['Окончание'][:10], "%Y-%m-%d"))
                 rec_list = ReportCard.objects.filter(doc_ref_key=item['ДокументОснование'])
@@ -58,7 +67,7 @@ def get_sick_leave(year):
                             'employee': user_obj,
                             'rec_no': rec_number_count,
                             'doc_ref_key': item['ДокументОснование'],
-                            'record_type': '16',
+                            'record_type': record_type,
                             'reason_adjustment': 'Запись введена автоматически из 1С ЗУП',
                             'start_time': start_time,
                             'end_time': end_time,
@@ -71,7 +80,6 @@ def get_sick_leave(year):
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
-
 
 
 class PortalPropertyList(LoginRequiredMixin, ListView):
@@ -116,7 +124,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     if item.title == '':
                         item.save()
             if request.GET.get('update') == '3':
-                get_sick_leave(2023)
+                get_sick_leave(2020, 2)
             if request.GET.get('update') == '4':
                 # report_card_separator_loc()
                 dt = get_types_userworktime()
@@ -146,7 +154,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 exclude_list = ['proxmox', 'shakirov']
                 for item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
                     print(item['ref_key'])
-                    dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника', 'Сотрудник_Key',
+                    dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника',
+                                                'Сотрудник_Key',
                                                 item['ref_key'], 'year(ДатаОкончания)', 2020, 0, 0)
                     for key in dt:
                         for item in dt[key]:
@@ -154,7 +163,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                             start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
                             end_date = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
                             weekend_count = WeekendDay.objects.filter(
-                                Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(weekend_type='1')).count()
+                                Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(
+                                    weekend_type='1')).count()
                             count_date = int(item['КоличествоДней']) + weekend_count
                             period = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
                             weekend = [item.weekend_day for item in WeekendDay.objects.filter(
@@ -177,7 +187,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                                     start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
                                     end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
 
-                                value = [i for i in type_of_report if type_of_report[i] == item['ВидОтпускаПредставление']]
+                                value = [i for i in type_of_report if
+                                         type_of_report[i] == item['ВидОтпускаПредставление']]
                                 kwargs_obj = {
                                     'report_card_day': unit,
                                     'employee': usr_obj,
@@ -186,7 +197,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                                     'reason_adjustment': item['Основание'],
                                     'doc_ref_key': item['ДокументОснование'],
                                 }
-                                ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj, record_type=value[0],
+                                ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj,
+                                                                    record_type=value[0],
                                                                     defaults=kwargs_obj)
 
         return super().get(request, *args, **kwargs)
