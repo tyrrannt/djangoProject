@@ -309,6 +309,8 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
         # Получаем объект
+        obj_item = self.get_object()
+        obj_list = OfficialMemo.objects.filter(Q(person=obj_item.person) & Q(official_memo_type='1'))
         # Получаем разницу в днях, для определения количества дней СП
         delta = (self.object.period_for - self.object.period_from)
         # Передаем количество дней в контекст
@@ -326,6 +328,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                 filter_string["period"] = item.period_for
 
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
+        content['form'].fields['document_extension'].queryset = obj_list
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}'
         content['change_history'] = get_history(self, OfficialMemo)
         return content
