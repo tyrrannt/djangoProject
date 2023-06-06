@@ -124,7 +124,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     if item.title == '':
                         item.save()
             if request.GET.get('update') == '3':
-                get_sick_leave(2022, 2)
+                get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
                 # report_card_separator_loc()
                 dt = get_types_userworktime()
