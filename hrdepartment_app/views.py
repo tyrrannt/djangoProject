@@ -185,7 +185,8 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 memo_list = OfficialMemo.objects.all()
             else:
                 memo_list = OfficialMemo.objects.filter(
-                    responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
+                    Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job) &
+                Q(docs__accepted_accounting=False))
 
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
@@ -306,7 +307,6 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
     permission_required = 'hrdepartment_app.change_officialmemo'
 
     def get_context_data(self, **kwargs):
-
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
         # Получаем объект
         obj_item = self.get_object()
