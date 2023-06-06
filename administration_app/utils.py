@@ -383,6 +383,17 @@ def get_year_interval(year=2020):
     return month_dict, year_dict
 
 
+def get_date_interval(dtstart: datetime, until: datetime):
+    """
+    Возвращает список дат. В качестве генератора списка
+    используется rrule, где dtstart - начальный дата, until - дата до которой следует составить список.
+    :param dtstart: Дата начала
+    :param until: Дата окончания
+    :return: Список дат
+    """
+    return list(rrule.rrule(rrule.DAILY, dtstart=dtstart, until=until))
+
+
 def get_types_userworktime():
     url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/" \
           f"Catalog_ВидыИспользованияРабочегоВремени?$format=application/json;odata=nometadata"

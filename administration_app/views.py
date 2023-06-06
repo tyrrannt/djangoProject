@@ -13,9 +13,9 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
-    get_jsons_data_filter2, get_types_userworktime
+    get_jsons_data_filter2, get_types_userworktime, get_date_interval
 from customers_app.models import DataBaseUser, Groups, Job
-from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime
+from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -39,16 +39,35 @@ def get_sick_leave(year):
     try:
         response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
         dt = json.loads(response.text)
+        rec_number_count = 0
         for item in dt['value']:
             if item['Recorder_Type'] == 'StandardODATA.Document_БольничныйЛист':
-
-                print(item)
-                kwargs_obj = {
-                    'Сотрудник_Key': item['Сотрудник_Key'],
-                    'ДокументОснование': item['ДокументОснование'],
-                    'Начало': item['Начало'],
-                    'Окончание': item['Окончание'],
-                }
+                interval = get_date_interval(datetime.datetime.strptime(item['Начало'][:10], "%Y-%m-%d"),
+                                             datetime.datetime.strptime(item['Окончание'][:10], "%Y-%m-%d"))
+                rec_list = ReportCard.objects.filter(doc_ref_key=item['ДокументОснование'])
+                for record in rec_list:
+                    record.delete()
+                try:
+                    user_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
+                    for date in interval:
+                        rec_number_count += 1
+                        start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
+                                                         datetime.datetime(1, 1, 1, 18, 0).time())
+                        kwargs_obj = {
+                            'report_card_day': date,
+                            'employee': user_obj,
+                            'rec_no': rec_number_count,
+                            'doc_ref_key': item['ДокументОснование'],
+                            'record_type': '16',
+                            'reason_adjustment': 'Запись введена автоматически из 1С ЗУП',
+                            'start_time': start_time,
+                            'end_time': end_time,
+                        }
+                        ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=item['ДокументОснование'],
+                                                            defaults=kwargs_obj)
+                        print(kwargs_obj)
+                except Exception as _ex:
+                    logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
@@ -97,7 +116,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     if item.title == '':
                         item.save()
             if request.GET.get('update') == '3':
-                get_sick_leave(2023)
+                get_sick_leave(2020)
             if request.GET.get('update') == '4':
                 # report_card_separator_loc()
                 dt = get_types_userworktime()

@@ -902,6 +902,20 @@ def rename_jds_file_name(sender, instance, **kwargs):
 
 
 class ReportCard(models.Model):
+    """
+    Атрибуты:
+    _________
+    report_card_day: Дата;
+    rec_no = Номер записи;
+    employee = Сотрудник;
+    start_time = Время прихода;
+    end_time = Время ухода';
+    record_type = Тип записи;
+    manual_input = Ручной ввод;
+    reason_adjustment = Причина ручной корректировки;
+    doc_ref_key = Уникальный номер документа;
+    current_intervals = Текущий интервал;
+    """
     type_of_report = [
         ('1', 'Явка'),
         ('2', 'Ежегодный'),
@@ -918,6 +932,7 @@ class ReportCard(models.Model):
         ('13', 'Ручной ввод'),
         ('14', 'Служебная поездка'),
         ('15', 'Командировка'),
+        ('16', 'Больничный'),
     ]
 
     class Meta:
@@ -1016,7 +1031,14 @@ class ProductionCalendar(models.Model):
         return str(self.calendar_month)
 
 
-def check_day(date, time_start, time_end):
+def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime.time):
+    """
+    Функция определяющая время начала и окончания рабочего дня на заданную дату
+    :param date: дата
+    :param time_start: время начала
+    :param time_end: время окончания
+    :return: два значения: время начала и время окончания
+    """
     weekend = WeekendDay.objects.filter(weekend_day=date.date()).exists()
     preholiday = PreHolidayDay.objects.filter(preholiday_day=date.date()).exists()
     check_time_end = time_end
