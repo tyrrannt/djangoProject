@@ -110,40 +110,40 @@
                                 </tr>
                                 <tr>
                                     {% for key, value in month_obj %}
-                                        <td style="border-style:solid; border-width: 1px;height:48.75pt;width:18pt;">
+                                        <th style="border-style:solid; border-width: 1px;height:48.75pt;width:18pt;">
                                             {{ key | date:"d" }}
-                                        </td>
+                                        </th>
                                     {% endfor %}
 
-                                    <td style="border-style:solid; border-width: 1px;width:26pt;">
+                                    <th style="border-style:solid; border-width: 1px;width:26pt;">
                                         дней
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;width:36pt;">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;width:36pt;">
                                         часов
-                                    </td>
+                                    </th>
                                 </tr>
                                 <tr>
-                                    <td style="border-style:solid; border-width: 1px;height:11.1pt;">
+                                    <th style="border-style:solid; border-width: 1px;height:11.1pt;">
                                         1
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;border-top-style:none;">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;border-top-style:none;">
                                         2
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;" colspan="{{ last_day }}">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;" colspan="{{ last_day }}">
                                         3
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;">
                                         4
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;">
                                         5
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;">
                                         6
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;">
                                         7
-                                    </td>
+                                    </th>
                                 </tr>
                                 {% for key, value in all_dict.items %}
                                     <tr>
