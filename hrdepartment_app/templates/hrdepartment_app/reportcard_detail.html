@@ -80,46 +80,34 @@
                 </div>
                 <div class="card card-modern">
                     <div class="card-body">
+                        <h5>Табель учета рабочего времени за {{ tabel_month | date:"M Y" }} г. (Норма дней: {{ norm_day }}; Норма часов: {{ norm_time }})</h5>
                         <div id="id_tables" class="table-responsive">
                             <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
                                    style="min-width: 1000px; display: block; height: 700px; overflow: auto;">
                                 <tbody>
                                 <tr>
-                                    <th style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;"
-                                        rowspan="2">
+                                    <th style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;">
                                         №
                                     </th>
-                                    <th style="border-style:solid; border-width: 1px;width:144pt;" rowspan="2">
+                                    <th style="border-style:solid; border-width: 1px;width:144pt;">
                                         ФИО
                                     </th>
-
-                                    <td style="border-style:solid; border-width: 1px;border-left-style:none;width:651pt;"
-                                        colspan="{{ last_day }}">
-                                        Табель учета рабочего времени за {{ tabel_month | date:"M Y" }} г. (Норма дней: {{ norm_day }};
-                                        Норма часов: {{ norm_time }})
-                                    </td>
-                                    <th style="border-style:solid; border-width: 1px;width:62pt;" colspan="2">
-                                        Итого за месяц
-                                    </th>
-                                    <th style="border-style:solid; border-width: 1px;width:37pt;" rowspan="2">
-                                        Количество неявок, дней (часов);
-                                    </th>
-                                    <th style="border-style:solid; border-width: 1px;width:63pt;" rowspan="2">
-                                        Количество выходных и праздничных дней
-                                    </th>
-                                </tr>
-                                <tr>
                                     {% for key, value in month_obj %}
                                         <th style="border-style:solid; border-width: 1px;height:48.75pt;width:18pt; background-color: #ffffff">
                                             {{ key | date:"d" }}
                                         </th>
                                     {% endfor %}
-
                                     <th style="border-style:solid; border-width: 1px;width:26pt;">
-                                        дней
+                                        Итого дней за месяц
                                     </th>
                                     <th style="border-style:solid; border-width: 1px;width:36pt;">
-                                        часов
+                                        Итого часов за месяц
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;width:37pt;">
+                                        Количество неявок, дней (часов);
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;width:63pt;">
+                                        Количество выходных и праздничных дней
                                     </th>
                                 </tr>
 {#                                <tr>#}
