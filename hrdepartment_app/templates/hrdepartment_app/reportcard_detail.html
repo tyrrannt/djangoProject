@@ -18,10 +18,18 @@
             position: sticky;
             top: -3px; // при нуле в chrome остаётся странный зазор
             z-index: 2;}
-        .fixed {
-    position: absolute;
-    background: #aaa;
-}
+        tr>th:first-child,tr>td:first-child {
+            position: sticky;
+            left: 0;
+            }
+
+        tr:nth-child(odd) td {
+            background: #ffffff;
+            }
+
+        tr:nth-child(even) td {
+            background: gray;
+            }
         </style>
         {% include 'library_app/breadcrumb.html' %}
 
@@ -93,7 +101,7 @@
 {#                                    <th style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;">#}
 {#                                        №#}
 {#                                    </th>#}
-                                    <th style="border-style:solid; border-width: 1px;width:144pt;" class="fixed" style="left: 0px">
+                                    <th style="border-style:solid; border-width: 1px;width:144pt;">
                                         ФИО
                                     </th>
                                     {% for key, value in month_obj %}
@@ -142,7 +150,7 @@
 {#                                        <td style="border-style:solid; border-width: 1px;height:22.5pt;" rowspan="2">#}
 {#                                            {{ forloop.counter }}#}
 {#                                        </td>#}
-                                        <td style="border-style:solid; border-width: 1px;width:144pt;  background-color: #ffffff" rowspan="2" class="fixed" style="left: 0px">
+                                        <td style="border-style:solid; border-width: 1px;width:144pt;  background-color: #ffffff" rowspan="2">
                                             {{ key }}
                                         </td>
                                         {% for item1, item2, item3 in value.dict_count %}
