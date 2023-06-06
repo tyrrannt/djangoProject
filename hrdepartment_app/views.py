@@ -239,7 +239,7 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         memo_type = request.GET.get('memo_type', None)
         if memo_type and employee:
             if memo_type == '2':
-                memo_list = OfficialMemo.objects.filter(person=employee).exclude(cancellation=True)
+                memo_list = OfficialMemo.objects.filter(Q(person=employee) & Q(official_memo_type='1')).exclude(cancellation=True)
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
