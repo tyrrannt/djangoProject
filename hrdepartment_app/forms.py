@@ -2,6 +2,7 @@ import datetime
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.forms import SelectDateWidget
 from django_ckeditor_5.widgets import CKEditor5Widget
 from loguru import logger
@@ -375,7 +376,7 @@ type_of_order = [
 
 
 class DocumentsOrderAddForm(forms.ModelForm):
-    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(order=None).exclude(cancellation=True).exclude(official_memo_type='3'), required=False)
+    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(Q(order=None) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(official_memo_type='3'), required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
