@@ -81,7 +81,7 @@ def get_approval_oficial_memo_process(request):
             # Получение списка сотрудников ОК 2
             person_hr_list = DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=2) & Q(user_work_profile__job__right_to_approval=True))
             person_hr = [item for item in person_hr_list]
-            hr_accepted = ApprovalOficialMemoProcess.objects.filter(Q(hr_accepted=False) & Q(originals_received=True)).exclude(cancellation=True).exclude(document__official_memo_type='2')
+            hr_accepted = ApprovalOficialMemoProcess.objects.filter(Q(hr_accepted=False) & Q(originals_received=True) & Q(date_transfer_hr__isnull=False)).exclude(cancellation=True).exclude(document__official_memo_type='2')
             # Получение списка сотрудников ОК 2
             accounting_list = DataBaseUser.objects.filter(
                 Q(user_work_profile__divisions__type_of_role=3) & Q(user_work_profile__job__right_to_approval=True))
