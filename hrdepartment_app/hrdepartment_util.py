@@ -258,7 +258,7 @@ def get_working_hours(pk, start_date, state=0):
         for record in report_record:
             # Выбираем только завершенные записи, если человек не отметился на выход, то current_intervals = False
             current_intervals = False if not current_intervals else record.current_intervals
-            if (record.record_type == '1' or record.record_type == '13') and record_type not in ['СП', 'К']:
+            if (record.record_type == '1' or record.record_type == '13') and record_type not in ['СП', 'К', 'Б', ]:
                 if current_intervals:
                     total_day_time += datetime.timedelta(
                         hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
@@ -290,6 +290,8 @@ def get_working_hours(pk, start_date, state=0):
                         record_type = 'СП'
                     if record.record_type == '15' and record_type != 'О':
                         record_type = 'К'
+                elif record.record_type == '16':
+                    pass
                 else:
                     start_time = datetime.datetime(1, 1, 1, 0, 0).time()
                     end_time = datetime.datetime(1, 1, 1, 0, 0).time()
