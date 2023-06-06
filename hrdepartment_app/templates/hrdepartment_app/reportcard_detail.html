@@ -9,11 +9,11 @@
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
         <style>
-        .table-responsive {
+        .table-ecommerce-simple {
             overflow-x: auto;
             position: relative;
         }
-        .table-responsive th: {
+        .table-ecommerce-simple th: {
             position: -webkit-sticky;
             position: sticky;
             top: -3px; // при нуле в chrome остаётся странный зазор
@@ -85,28 +85,28 @@
                                    style="min-width: 1000px; display: block; height: 700px; overflow: auto;">
                                 <tbody>
                                 <tr>
-                                    <td style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;"
+                                    <th style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;"
                                         rowspan="2">
                                         №
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;width:144pt;" rowspan="2">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;width:144pt;" rowspan="2">
                                         ФИО
-                                    </td>
+                                    </th>
 
-                                    <td style="border-style:solid; border-width: 1px;border-left-style:none;width:651pt;"
+                                    <th style="border-style:solid; border-width: 1px;border-left-style:none;width:651pt;"
                                         colspan="{{ last_day }}">
                                         Табель учета рабочего времени за {{ tabel_month | date:"M Y" }} г. (Норма дней: {{ norm_day }};
                                         Норма часов: {{ norm_time }})
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;width:62pt;" colspan="2">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;width:62pt;" colspan="2">
                                         Итого за месяц
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;width:37pt;" rowspan="2">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;width:37pt;" rowspan="2">
                                         Количество неявок, дней (часов);
-                                    </td>
-                                    <td style="border-style:solid; border-width: 1px;width:63pt;" rowspan="2">
+                                    </th>
+                                    <th style="border-style:solid; border-width: 1px;width:63pt;" rowspan="2">
                                         Количество выходных и праздничных дней
-                                    </td>
+                                    </th>
                                 </tr>
                                 <tr>
                                     {% for key, value in month_obj %}
