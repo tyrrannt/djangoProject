@@ -239,7 +239,7 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         memo_type = request.GET.get('memo_type', None)
         if memo_type and employee:
             if memo_type == '2':
-                memo_list = OfficialMemo.objects.filter(Q(person=employee) & Q(official_memo_type='1')).exclude(cancellation=True)
+                memo_list = OfficialMemo.objects.filter(Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(cancellation=True)
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
@@ -310,7 +310,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
         # Получаем объект
         obj_item = self.get_object()
-        obj_list = OfficialMemo.objects.filter(Q(person=obj_item.person) & Q(official_memo_type='1'))
+        obj_list = OfficialMemo.objects.filter(Q(person=obj_item.person) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False))
         # Получаем разницу в днях, для определения количества дней СП
         delta = (self.object.period_for - self.object.period_from)
         # Передаем количество дней в контекст
@@ -328,7 +328,10 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                 filter_string["period"] = item.period_for
 
         content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
-        content['form'].fields['document_extension'].queryset = obj_list
+        if obj_item.official_memo_type == '2':
+            content['form'].fields['document_extension'].queryset = obj_list
+        else:
+            content['form'].fields['document_extension'].queryset = OfficialMemo.objects.filter(pk=0)
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}'
         content['change_history'] = get_history(self, OfficialMemo)
         return content
@@ -431,7 +434,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         memo_type = request.GET.get('memo_type', None)
         if memo_type and employee:
             if memo_type == '2':
-                memo_list = OfficialMemo.objects.filter(person=employee).exclude(pk=self.get_object().pk)
+                memo_list = OfficialMemo.objects.filter(Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(pk=self.get_object().pk)
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
