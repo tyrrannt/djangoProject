@@ -221,7 +221,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
     :return:
     """
     html_obj = f"""<table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 330px; display: block; height: 700px; overflow: auto;">
+                                   style="min-width: 300px; display: block; height: 600px; overflow: auto;">
                         <tbody>
                             
                             <tr>
