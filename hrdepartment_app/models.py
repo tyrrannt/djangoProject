@@ -571,7 +571,7 @@ def hr_accepted(sender, instance, **kwargs):
                     record_type = '14'
                 else:
                     record_type = '15'
-                start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
+                start_time, end_time, type_of_day = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
                                                  datetime.datetime(1, 1, 1, 18, 0).time())
                 report_kwargs = {
                     'report_card_day': date,
