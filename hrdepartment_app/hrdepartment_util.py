@@ -188,7 +188,7 @@ def get_report_card(pk, RY=None, RM=None):
     user_start_time = get_user.user_work_profile.personal_work_schedule_start
     user_end_time = get_user.user_work_profile.personal_work_schedule_end
 
-    print(get_working_hours(get_user, first_day))
+    # print(get_working_hours(get_user, first_day))
 
     data_dict = dict()
     for item in ReportCard.objects.filter(
@@ -279,6 +279,7 @@ def get_working_hours(pk, start_date, state=0):
         user_start_time = user_id.user_work_profile.personal_work_schedule_start
         user_end_time = user_id.user_work_profile.personal_work_schedule_end
         current_intervals = True
+        dayly_interval = []
         # получаем рабочее время и тип дня
         user_start_time, user_end_time, type_of_day = check_day(date, user_start_time, user_end_time)
         for record in report_record:
@@ -286,10 +287,13 @@ def get_working_hours(pk, start_date, state=0):
             current_intervals = False if not current_intervals else record.current_intervals
             if (record.record_type == '1' or record.record_type == '13') and record_type not in ['СП', 'К', 'Б', 'М', ]:
                 if current_intervals:
-                    total_day_time += datetime.timedelta(
-                        hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
-                                      - datetime.timedelta(hours=record.start_time.hour,
-                                                           minutes=record.start_time.minute).total_seconds()
+                    dayly_interval += list(rrule.rrule(rrule.MINUTELY,
+                                                       dtstart=datetime.datetime(1, 1, 1, record.start_time.hour, record.start_time.minute),
+                                                       until=datetime.datetime(1, 1, 1, record.end_time.hour, record.end_time.minute)))
+                    # total_day_time += datetime.timedelta(
+                    #     hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
+                    #                   - datetime.timedelta(hours=record.start_time.hour,
+                    #                                        minutes=record.start_time.minute).total_seconds()
                 if start_time == '':
                     start_time = record.start_time
                 else:
@@ -308,8 +312,8 @@ def get_working_hours(pk, start_date, state=0):
                 if (record.record_type == '14' or record.record_type == '15') and record_type not in ['Б', 'М', ]:
                     total_day_time = datetime.timedelta(
                         hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
-                                      - datetime.timedelta(hours=record.start_time.hour,
-                                                           minutes=record.start_time.minute).total_seconds()
+                                     - datetime.timedelta(hours=record.start_time.hour,
+                                                          minutes=record.start_time.minute).total_seconds()
                     start_time = record.start_time
                     end_time = record.end_time
                     if record.record_type == '14' and record_type != 'О':
@@ -330,13 +334,16 @@ def get_working_hours(pk, start_date, state=0):
                     total_day_time += 0
                     if record_type not in ['Б', 'М', ]:
                         record_type = 'О'
+        if record_type not in ['СП', 'К', 'Б', 'М', ]:
+            dayly_interval_set = set(dayly_interval)
+            total_day_time = ((len(dayly_interval_set)-1) * 60) if len(dayly_interval_set)>0 else 0
 
         if record_type != '':
             if report_record.count() == 1:
                 merge_interval = False
             else:
                 merge_interval = True
-            #user_start_time, user_end_time, type_of_day = check_day(date, user_start_time, user_end_time)
+            # user_start_time, user_end_time, type_of_day = check_day(date, user_start_time, user_end_time)
             # Если только явка или ручной ввод
             if record_type == 'Я':
                 all_days_count += 1
@@ -361,7 +368,9 @@ def get_working_hours(pk, start_date, state=0):
                 all_total_time += 0
                 if user_end_time.hour > 0:
                     all_vacation_days += 1
-                all_vacation_time += datetime.timedelta(hours=user_end_time.hour, minutes=user_end_time.minute).total_seconds() - datetime.timedelta(hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
+                all_vacation_time += datetime.timedelta(hours=user_end_time.hour,
+                                                        minutes=user_end_time.minute).total_seconds() - datetime.timedelta(
+                    hours=user_start_time.hour, minutes=user_start_time.minute).total_seconds()
             if record_type == 'Я':
                 total_time += total_day_time
                 all_total_time += time_worked
@@ -396,17 +405,17 @@ def get_working_hours(pk, start_date, state=0):
         start_time = start_time if start_time != '' else datetime.datetime(1, 1, 1, 0, 0).time()
         end_time = end_time if end_time != '' else datetime.datetime(1, 1, 1, 0, 0).time()
         if state == 0:
-            print(record_type, type_of_day)
             if record_type == '':
                 record_type = type_of_day
             dict_obj[str(user_id)].append(
                 [date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
                  user_end_time, record_type, merge_interval, current_intervals, time_worked])
         else:
-            print(record_type, type_of_day)
             if record_type == '':
                 record_type = type_of_day
-            time_worker = datetime.datetime(1, 1, 1, 0, 0).time().strftime('%H:%M') if time_worked == 0 else datetime.datetime.strptime(str(datetime.timedelta(seconds=time_worked)), '%H:%M:%S').time().strftime('%H:%M')
+            time_worker = datetime.datetime(1, 1, 1, 0, 0).time().strftime(
+                '%H:%M') if time_worked == 0 else datetime.datetime.strptime(
+                str(datetime.timedelta(seconds=time_worked)), '%H:%M:%S').time().strftime('%H:%M')
             dict_obj[str(user_id)].append(
                 [date.date(), record_type, time_worker])
     if state == 0:
