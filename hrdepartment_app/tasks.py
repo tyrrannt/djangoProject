@@ -220,10 +220,14 @@ def report_card_separator_loc():
     # rec_obj = ReportCard.objects.filter(employee=user_obj)
     # for item in rec_obj:
     #     item.delete()
-    current_data = datetime.datetime.date(datetime.datetime.today())
-    # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
-    # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
-    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
+    # current_data = datetime.datetime.date(datetime.datetime.today())
+    current_data1 = datetime.datetime.date(datetime.datetime(2023, 6, 1))
+    current_data2 = datetime.datetime.date(datetime.datetime(2023, 6, 6))
+    rec_obj = ReportCard.objects.filter(Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2) & Q(record_type='1'))
+    for item in rec_obj:
+        print(item)
+        item.delete()
+    url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data1}&enddate={current_data2}"
     # url = 'http://192.168.10.233:5053/api/time/intervals?startdate=2020-01-01&enddate=2023-06-04&FULLNAME=Елистратова'
     source_url = url
     try:
@@ -233,7 +237,7 @@ def report_card_separator_loc():
     dicts = json.loads(response.text)
     for item in dicts['data']:
         usr = item['FULLNAME']
-        # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
+        current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
         current_intervals = True if item['ISGO'] == '0' else False
         start_time = datetime.datetime.strptime(item['STARTTIME'], "%d.%m.%Y %H:%M:%S").time()
         if current_intervals:

@@ -186,7 +186,7 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             else:
                 memo_list = OfficialMemo.objects.filter(
                     Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job) &
-                Q(docs__accepted_accounting=False))
+                    Q(docs__accepted_accounting=False))
 
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
@@ -240,7 +240,9 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         memo_type = request.GET.get('memo_type', None)
         if memo_type and employee:
             if memo_type == '2':
-                memo_list = OfficialMemo.objects.filter(Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(cancellation=True)
+                memo_list = OfficialMemo.objects.filter(
+                    Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(
+                    cancellation=True)
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
@@ -310,7 +312,8 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
         # Получаем объект
         obj_item = self.get_object()
-        obj_list = OfficialMemo.objects.filter(Q(person=obj_item.person) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False))
+        obj_list = OfficialMemo.objects.filter(
+            Q(person=obj_item.person) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False))
         # Получаем разницу в днях, для определения количества дней СП
         delta = (self.object.period_for - self.object.period_from)
         # Передаем количество дней в контекст
@@ -434,7 +437,9 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         memo_type = request.GET.get('memo_type', None)
         if memo_type and employee:
             if memo_type == '2':
-                memo_list = OfficialMemo.objects.filter(Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(pk=self.get_object().pk)
+                memo_list = OfficialMemo.objects.filter(
+                    Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(
+                    pk=self.get_object().pk)
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
@@ -758,7 +763,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                     changed = True
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
-            
+
             return HttpResponseRedirect(reverse('hrdepartment_app:bpmemo_list'))
         else:
             logger.info(f'{form.errors}')
@@ -1389,12 +1394,15 @@ class ReportCardList(LoginRequiredMixin, ListView):
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
             if request.session['current_month'] and request.session['current_year']:
-                start_date = datetime.date(year=int(request.session['current_year']), month=int(request.session['current_month']), day=1)
+                start_date = datetime.date(year=int(request.session['current_year']),
+                                           month=int(request.session['current_month']), day=1)
                 end_date = start_date + relativedelta(days=31)
                 search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13') & Q(report_card_day__in=search_interval)).order_by('report_card_day')
+                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13') & Q(
+                    report_card_day__in=search_interval)).order_by('report_card_day')
             else:
-                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
+                reportcard_list = ReportCard.objects.filter(
+                    Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -1453,7 +1461,8 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
         # Итерируемся по списку сотрудников
         for user_obj in users_obj_set:
-            data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(user_obj, current_day, state=1)
+            data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(
+                user_obj, current_day, state=1)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             if absences_delta < 0:
@@ -1461,14 +1470,17 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                 time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм'.format(hour1, minute1)
             else:
                 hour1, minute1 = divmod(total_score / 60, 60)
-                hour2, minute2 = divmod(absences_delta*60, 60)
-                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм'.format(hour1, minute1, hour2, minute2)
+                hour2, minute2 = divmod(absences_delta * 60, 60)
+                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм'.format(
+                    hour1, minute1, hour2, minute2)
             all_dict[users_obj_set[user_obj]] = {
                 'dict_count': data_dict,
-                'days_count': all_days_count, #days_count,
-                'time_count_day': datetime.timedelta(seconds=total_score).days, #time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
-                'time_count_hour': time_count_hour,# (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
-                'absences': abs(absences) if absences < 0 else 0, # Количество неявок
+                'days_count': all_days_count,  # days_count,
+                'time_count_day': datetime.timedelta(seconds=total_score).days,
+                # time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
+                'time_count_hour': time_count_hour,
+                # (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
+                'absences': abs(absences) if absences < 0 else 0,  # Количество неявок
                 'vacation_time': (all_vacation_time + total_score) / 3600,
                 'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
             }
@@ -1513,7 +1525,8 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         if form.is_valid():
             search_report = ReportCard.objects.filter(
-                Q(employee=self.request.user) & Q(report_card_day=form.cleaned_data.get('report_card_day')) & Q(record_type='1'))
+                Q(employee=self.request.user) & Q(report_card_day=form.cleaned_data.get('report_card_day')) & Q(
+                    record_type='1'))
             dt = form.cleaned_data.get('report_card_day')
             search_interval = list()
             start_time = list()
@@ -1522,20 +1535,23 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
                 start_time.append(item.start_time.strftime("%H:%M"))
                 end_time.append(item.end_time.strftime("%H:%M"))
                 first_date1 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=item.start_time.hour,
-                                               minute=item.start_time.minute)
+                                                minute=item.start_time.minute)
                 first_date2 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=item.end_time.hour,
-                                               minute=item.end_time.minute)
+                                                minute=item.end_time.minute)
                 search_interval = list(rrule.rrule(rrule.MINUTELY, dtstart=first_date1, until=first_date2))
-            first_date3 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=form.cleaned_data.get('start_time').hour,
+            first_date3 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day,
+                                            hour=form.cleaned_data.get('start_time').hour,
                                             minute=form.cleaned_data.get('start_time').minute)
-            first_date4 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=form.cleaned_data.get('end_time').hour,
+            first_date4 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day,
+                                            hour=form.cleaned_data.get('end_time').hour,
                                             minute=form.cleaned_data.get('end_time').minute)
             interval = list(rrule.rrule(rrule.MINUTELY, dtstart=first_date3, until=first_date4))
             set1 = set(search_interval)
             set2 = set(interval)
             result = set2.intersection(set1)
             if len(result) > 0:
-                form.add_error('start_time', f'Ошибка! Вы указали время с {form.cleaned_data.get("start_time").strftime("%H:%M")} по {form.cleaned_data.get("end_time").strftime("%H:%M")}, но на заданную дату По TimeControl у вас имеется интервал с {start_time} по {end_time}')
+                form.add_error('start_time',
+                               f'Ошибка! Вы указали время с {form.cleaned_data.get("start_time").strftime("%H:%M")} по {form.cleaned_data.get("end_time").strftime("%H:%M")}, но на заданную дату По TimeControl у вас имеется интервал с {start_time} по {end_time}')
                 return super().form_invalid(form)
 
             refresh_form = form.save(commit=False)
@@ -1567,7 +1583,7 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
         if interval:
             personal_start = self.request.user.user_work_profile.personal_work_schedule_start
             personal_start = datetime.timedelta(hours=personal_start.hour,
-                                              minutes=personal_start.minute) - datetime.timedelta(hours=1)
+                                                minutes=personal_start.minute) - datetime.timedelta(hours=1)
             personal_end = self.request.user.user_work_profile.personal_work_schedule_end
 
             if datetime.datetime.strptime(interval, '%Y-%m-%d').weekday() == 4:
@@ -1575,7 +1591,8 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
             else:
                 personal_end = datetime.timedelta(hours=personal_end.hour,
                                                   minutes=personal_end.minute) + datetime.timedelta(hours=1)
-            result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'), datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
+            result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'),
+                      datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
             print(result, datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M'))
             return JsonResponse(result, safe=False)
         return super().get(request, *args, **kwargs)

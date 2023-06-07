@@ -126,17 +126,19 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '3':
                 get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
-                # report_card_separator_loc()
-                dt = get_types_userworktime()
-                for item in dt['value']:
-                    # print(value)
-                    kwargs_obj = {
-                        'ref_key': item['Ref_Key'],
-                        'description': item['Description'],
-                        'letter_code': item['БуквенныйКод'],
-                        'active': False,
-                    }
-                    TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
+                report_card_separator_loc()
+
+                # Получение видов рабочего времени с 1с
+                # dt = get_types_userworktime()
+                # for item in dt['value']:
+                #     # print(value)
+                #     kwargs_obj = {
+                #         'ref_key': item['Ref_Key'],
+                #         'description': item['Description'],
+                #         'letter_code': item['БуквенныйКод'],
+                #         'active': False,
+                #     }
+                #     TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
                 type_of_report = {
                     '2': 'Ежегодный',
