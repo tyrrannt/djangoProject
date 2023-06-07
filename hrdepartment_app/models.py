@@ -562,10 +562,10 @@ def create_xlsx(instance):
 def hr_accepted(sender, instance, **kwargs):
     if instance.hr_accepted:
         obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
+        for item in obj_list:
+            item.delete()
         interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.start_date_trip, until=instance.end_date_trip))
-        if obj_list.count() != len(interval):
-            for item in obj_list:
-                item.delete()
+        if len(interval) > 0:
             for date in interval:
                 if instance.document.type_trip == '1':
                     record_type = '14'

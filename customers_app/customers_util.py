@@ -251,7 +251,9 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
                 if r9:
                     style = 'background-color: #b0ffd5'
                 else:
-                    if r8 == 'В':
+                    if r8 == 'Р':
+                        style = 'color: red'
+                    elif r8 == 'В':
                         style = 'color: #afafaf'
                     elif r8 == 'О':
                         style = 'color: #0c00ad'
@@ -267,7 +269,10 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
                     html_obj += f"""<td>{start_time}-{end_time}</td>"""
                 else:
                     html_obj += f"""<td>{start_time}-по н.в.</td>"""
-                html_obj += f"""<td>{r8}</td></tr>"""
+                if r8 == 'Р':
+                    html_obj += f"""<td>Н</td></tr>"""
+                else:
+                    html_obj += f"""<td>{r8}</td></tr>"""
 
         html_obj += f"""
                          <tr>
