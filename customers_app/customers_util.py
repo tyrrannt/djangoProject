@@ -209,7 +209,7 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
     return result
 
 
-def get_report_card_table(data_dict, total_score, first_day, last_day): # , user_start_time, user_end_time
+def get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end): # , user_start_time, user_end_time
     """
 
     :param data_dict: {'сотрудник': [r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день,
@@ -228,7 +228,7 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                                 <td colspan="4">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
                             </tr>
                             <tr>
-                                <td colspan="4">{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>
+                                <td colspan="4">Ваше рабочее время с {user_start.strftime('%H:%M')} по {user_end.strftime('%H:%M')}</td>
                             </tr>"""
     for key in data_dict:
         html_obj += f"""                        

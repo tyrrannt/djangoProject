@@ -219,8 +219,8 @@ def get_working_hours(pk, start_date, state=0):
             'record_type').reverse()
         total_day_time, time_worked = 0, 0
         start_time, end_time, record_type, sign, merge_interval, type_of_day = '', '', '', '', '', ''
-        user_start_time = user_id.user_work_profile.personal_work_schedule_start
-        user_end_time = user_id.user_work_profile.personal_work_schedule_end
+        user_start_time = user_start = user_id.user_work_profile.personal_work_schedule_start
+        user_end_time = user_end = user_id.user_work_profile.personal_work_schedule_end
         current_intervals = True
         dayly_interval = []
         # получаем рабочее время и тип дня
@@ -364,7 +364,7 @@ def get_working_hours(pk, start_date, state=0):
             dict_obj[str(user_id)].append(
                 [date.date(), record_type, time_worker])
     if state == 0:
-        return dict_obj, total_time, start_date, cnt
+        return dict_obj, total_time, start_date, cnt, user_start, user_end
     else:
         result = dict_obj[str(user_id)]
         return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time, holiday_delta
