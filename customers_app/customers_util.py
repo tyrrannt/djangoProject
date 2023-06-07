@@ -238,10 +238,13 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
                             <th>Факт</th>
                             <th>Статус</th>
                         </tr>"""
-        for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 in data_dict[key]:
+        table_time = 0
+        for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12 in data_dict[key]:
             """r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день, r6-Начало по графику, 
             r7-Окончание по графику, r8-Тип записи, r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день"""
             if r1 <= datetime.datetime.today().date():
+                if r8 not in ['О', 'Б', 'М', ]:
+                    table_time += r12
                 start_time = timedelta_to_time(r2, 1)
                 if r10:
                     end_time = timedelta_to_time(r3, 1)
@@ -273,11 +276,11 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
                     html_obj += f"""<td>Н</td></tr>"""
                 else:
                     html_obj += f"""<td>{r8}</td></tr>"""
-
+        table_time_delta = total_score - table_time
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>
-                            <th><span style="{' color: #ff0000;' if total_score < 0 else ''}">{'-' if total_score < 0 else ''}{datetime.timedelta(seconds=abs(total_score))}</span></th>
+                            <th><span style="{' color: #ff0000;' if table_time_delta < 0 else ''}">{'-' if table_time_delta < 0 else ''}{datetime.timedelta(seconds=abs(table_time_delta))}</span></th>
                             <th></th>
                             <th></th>
                             <th></th>

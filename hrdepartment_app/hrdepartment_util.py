@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.template.loader import render_to_string
 from loguru import logger
 
-from administration_app.utils import get_jsons_data
+from administration_app.utils import get_jsons_data, time_difference
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
 from djangoProject.settings import EMAIL_HOST_USER, DEBUG
 from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay, WeekendDay, check_day
@@ -174,7 +174,8 @@ def get_working_hours(pk, start_date, state=0):
             Если state = 0:
             dict_obj = {'сотрудник': [r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день,
                                       r6-Начало по графику, r7-Окончание по графику, r8-Тип записи,
-                                      r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день]},
+                                      r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день,
+                                      r12-Общее по табелю]},
             total_time = Общее время за интервал,
             start_date = Начальная дата,
             cnt = Конечная дата
@@ -225,7 +226,7 @@ def get_working_hours(pk, start_date, state=0):
         dayly_interval = []
         # получаем рабочее время и тип дня
         user_start_time, user_end_time, type_of_day = check_day(date, user_start_time, user_end_time)
-
+        table_total_time = time_difference(user_start_time, user_end_time)
         for record in report_record:
             # Выбираем только завершенные записи, если человек не отметился на выход, то current_intervals = False
             current_intervals = False if not current_intervals else record.current_intervals
@@ -236,10 +237,7 @@ def get_working_hours(pk, start_date, state=0):
                                                                                  record.start_time.minute),
                                                        until=datetime.datetime(1, 1, 1, record.end_time.hour,
                                                                                record.end_time.minute)))
-                    # total_day_time += datetime.timedelta(
-                    #     hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
-                    #                   - datetime.timedelta(hours=record.start_time.hour,
-                    #                                        minutes=record.start_time.minute).total_seconds()
+
                 if start_time == '':
                     start_time = record.start_time
                 else:
@@ -256,10 +254,7 @@ def get_working_hours(pk, start_date, state=0):
                     record_type = 'Я'
             else:
                 if (record.record_type == '14' or record.record_type == '15') and record_type not in ['Б', 'М', ]:
-                    total_day_time = datetime.timedelta(
-                        hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
-                                     - datetime.timedelta(hours=record.start_time.hour,
-                                                          minutes=record.start_time.minute).total_seconds()
+                    total_day_time = time_difference(record.start_time, record.end_time)
                     start_time = record.start_time
                     end_time = record.end_time
                     if record.record_type == '14' and record_type != 'О':
@@ -355,7 +350,7 @@ def get_working_hours(pk, start_date, state=0):
                 record_type = type_of_day
             dict_obj[str(user_id)].append(
                 [date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
-                 user_end_time, record_type, merge_interval, current_intervals, time_worked])
+                 user_end_time, record_type, merge_interval, current_intervals, time_worked, table_total_time])
         else:
             if record_type == '':
                 record_type = type_of_day

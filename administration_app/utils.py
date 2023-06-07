@@ -1,7 +1,7 @@
 import json
 import os
 import pathlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
 import requests
@@ -394,6 +394,19 @@ def timedelta_to_time(time, trigger=0):
         return datetime.strptime(str(time), '%H:%M:%S').time()
     if trigger == 1:
         return datetime.strptime(str(time), '%H:%M:%S').time().strftime('%H:%M')
+
+
+def time_difference(start_time: datetime.time, end_time: datetime.time):
+    """
+    Получение разности времени
+    :param start_time: время начала
+    :param end_time: время окончания
+    :return: количество секунд между start_time и end_time
+    """
+    result = timedelta(hours=end_time.hour, minutes=end_time.minute).total_seconds() - \
+             timedelta(hours=start_time.hour, minutes=start_time.minute).total_seconds()
+    return result
+
 
 def get_date_interval(dtstart: datetime, until: datetime):
     """
