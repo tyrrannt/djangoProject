@@ -241,33 +241,32 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
         for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 in data_dict[key]:
             """r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день, r6-Начало по графику, 
             r7-Окончание по графику, r8-Тип записи, r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день"""
-            end_work_time = datetime.datetime.strptime(str(r6), '%H:%M:%S').time().strftime('%H:%M')
-            start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
-            if r10:
-                end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
-            else:
-                end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time().strftime('%H:%M')
-            delta = datetime.datetime.strptime(str(datetime.timedelta(seconds=r5)), '%H:%M:%S').time().strftime('%H:%M')
-            style = ''
-            if r9:
-                style = 'background-color: #b0ffd5'
-            else:
-                if r8 == 'О':
-                    style = 'color: #0c00ad'
+            if r1 <= datetime.datetime.today().date():
+                start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
+                if r10:
+                    end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
                 else:
-                    style = 'color: #000000'
-            html_obj += f"""<tr style="{style}">
-                                <td>{r1.strftime('%d')}</td>"""
-            if r10:
-                html_obj += f"""<td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span></td>"""
-            else:
-                html_obj += f"""<td><span> --//-- </span></td>"""
-            if r10:
-                html_obj += f"""<td>{start_time}-{end_time}</td>"""
-            else:
-                html_obj += f"""<td>{start_time}-по н.в.</td>"""
-            # html_obj += f"""<td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
-            html_obj += f"""<td>{r8}</td></tr>"""
+                    end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time().strftime('%H:%M')
+                delta = datetime.datetime.strptime(str(datetime.timedelta(seconds=r5)), '%H:%M:%S').time().strftime('%H:%M')
+                if r9:
+                    style = 'background-color: #b0ffd5'
+                else:
+                    if r8 == 'О':
+                        style = 'color: #0c00ad'
+                    else:
+                        style = 'color: #000000'
+                html_obj += f"""<tr style="{style}">
+                                    <td>{r1.strftime('%d')}</td>"""
+                if r10:
+                    html_obj += f"""<td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span></td>"""
+                else:
+                    html_obj += f"""<td><span> --//-- </span></td>"""
+                if r10:
+                    html_obj += f"""<td>{start_time}-{end_time}</td>"""
+                else:
+                    html_obj += f"""<td>{start_time}-по н.в.</td>"""
+                html_obj += f"""<td>{r8}</td></tr>"""
+
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>

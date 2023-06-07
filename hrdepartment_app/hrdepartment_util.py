@@ -364,7 +364,8 @@ def get_working_hours(pk, start_date, state=0):
             dict_obj[str(user_id)].append(
                 [date.date(), record_type, time_worker])
     if state == 0:
-        return dict_obj, total_time, start_date, cnt, user_start, user_end
+        # return dict_obj, total_time, start_date, cnt, user_start, user_end
+        return dict_obj, all_total_time, start_date, cnt, user_start, user_end
     else:
         result = dict_obj[str(user_id)]
         return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time, holiday_delta
