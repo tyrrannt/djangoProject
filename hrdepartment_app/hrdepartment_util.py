@@ -288,8 +288,10 @@ def get_working_hours(pk, start_date, state=0):
             if (record.record_type == '1' or record.record_type == '13') and record_type not in ['СП', 'К', 'Б', 'М', ]:
                 if current_intervals:
                     dayly_interval += list(rrule.rrule(rrule.MINUTELY,
-                                                       dtstart=datetime.datetime(1, 1, 1, record.start_time.hour, record.start_time.minute),
-                                                       until=datetime.datetime(1, 1, 1, record.end_time.hour, record.end_time.minute)))
+                                                       dtstart=datetime.datetime(1, 1, 1, record.start_time.hour,
+                                                                                 record.start_time.minute),
+                                                       until=datetime.datetime(1, 1, 1, record.end_time.hour,
+                                                                               record.end_time.minute)))
                     # total_day_time += datetime.timedelta(
                     #     hours=record.end_time.hour, minutes=record.end_time.minute).total_seconds() \
                     #                   - datetime.timedelta(hours=record.start_time.hour,
@@ -336,7 +338,7 @@ def get_working_hours(pk, start_date, state=0):
                         record_type = 'О'
         if record_type not in ['СП', 'К', 'Б', 'М', ]:
             dayly_interval_set = set(dayly_interval)
-            total_day_time = ((len(dayly_interval_set)-1) * 60) if len(dayly_interval_set)>0 else 0
+            total_day_time = ((len(dayly_interval_set) - 1) * 60) if len(dayly_interval_set) > 0 else 0
 
         if record_type != '':
             if report_record.count() == 1:
