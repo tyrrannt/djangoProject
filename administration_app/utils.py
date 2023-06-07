@@ -383,14 +383,17 @@ def get_year_interval(year=2020):
     return month_dict, year_dict
 
 
-def timedelta_to_time(time: datetime.time):
+def timedelta_to_time(time, trigger=0):
     """
     Перевод времени timedelta в time
-    :param time: время в формате timedelta
+    :param trigger: в зависимости от переключателя, меняется формат вывода 0 - time, 1 - str
+    :param time: время в формате timedelta или в формате строки '00:00:00'
     :return: время в формате datetime.time
     """
-    return datetime.strptime(str(time), '%H:%M:%S').time()
-
+    if trigger == 0:
+        return datetime.strptime(str(time), '%H:%M:%S').time()
+    if trigger == 1:
+        return datetime.strptime(str(time), '%H:%M:%S').time().strftime('%H:%M')
 
 def get_date_interval(dtstart: datetime, until: datetime):
     """

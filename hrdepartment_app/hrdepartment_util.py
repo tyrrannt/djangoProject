@@ -225,6 +225,7 @@ def get_working_hours(pk, start_date, state=0):
         dayly_interval = []
         # получаем рабочее время и тип дня
         user_start_time, user_end_time, type_of_day = check_day(date, user_start_time, user_end_time)
+
         for record in report_record:
             # Выбираем только завершенные записи, если человек не отметился на выход, то current_intervals = False
             current_intervals = False if not current_intervals else record.current_intervals

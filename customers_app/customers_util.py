@@ -2,7 +2,7 @@ import datetime
 
 from loguru import logger
 
-from administration_app.utils import get_jsons_data_filter, get_jsons, get_jsons_data, transliterate
+from administration_app.utils import get_jsons_data_filter, get_jsons, get_jsons_data, transliterate, timedelta_to_time
 from customers_app.models import DataBaseUser, Job, Division, DataBaseUserWorkProfile, DataBaseUserProfile, \
     IdentityDocuments
 
@@ -242,16 +242,18 @@ def get_report_card_table(data_dict, total_score, first_day, last_day, user_star
             """r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день, r6-Начало по графику, 
             r7-Окончание по графику, r8-Тип записи, r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день"""
             if r1 <= datetime.datetime.today().date():
-                start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
+                start_time = timedelta_to_time(r2, 1)
                 if r10:
-                    end_time = datetime.datetime.strptime(str(r3), '%H:%M:%S').time().strftime('%H:%M')
+                    end_time = timedelta_to_time(r3, 1)
                 else:
-                    end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time().strftime('%H:%M')
-                delta = datetime.datetime.strptime(str(datetime.timedelta(seconds=r5)), '%H:%M:%S').time().strftime('%H:%M')
+                    end_time = timedelta_to_time('00:00:00', 1)
+                delta = timedelta_to_time(datetime.timedelta(seconds=r5), 1)
                 if r9:
                     style = 'background-color: #b0ffd5'
                 else:
-                    if r8 == 'О':
+                    if r8 == 'В':
+                        style = 'color: #afafaf'
+                    elif r8 == 'О':
                         style = 'color: #0c00ad'
                     else:
                         style = 'color: #000000'
