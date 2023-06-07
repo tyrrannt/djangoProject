@@ -212,7 +212,9 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
 def get_report_card_table(data_dict, total_score, first_day, last_day): # , user_start_time, user_end_time
     """
 
-    :param data_dict:
+    :param data_dict: {'сотрудник': [r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день,
+                                      r6-Начало по графику, r7-Окончание по графику, r8-Тип записи,
+                                      r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день]}
     :param total_score:
     :param first_day: Первый день запрашиваемого периода
     :param last_day: Последний день запрашиваемого периода
@@ -236,9 +238,8 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                             <th>Факт</th>
                         </tr>"""
         for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 in data_dict[key]:
-            # r1 - Дата, r2 - Время начала, r3 - Время окончания,
-            # r4 - Знак, r5 - Разница времени, r6 - Начало по графику, r7 - Окончание по графику, r8 - тип записи,
-            # r9 - Объединение
+            """r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день, r6-Начало по графику, 
+            r7-Окончание по графику, r8-Тип записи, r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день"""
             end_work_time = datetime.datetime.strptime(str(r6), '%H:%M:%S').time().strftime('%H:%M')
             start_time = datetime.datetime.strptime(str(r2), '%H:%M:%S').time().strftime('%H:%M')
             if r10:

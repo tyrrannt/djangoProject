@@ -222,6 +222,30 @@ def get_report_card(pk, RY=None, RM=None):
 # -------------------------------------------------------------------------------------------------------------------
 
 def get_working_hours(pk, start_date, state=0):
+    """
+    Вывод табеля по сотруднику, за заданный интервал, с выводом всех состояний (явка, отпуск, больничный ...)
+    :param pk: уин пользователя в базе данных
+    :param start_date: начальная дата (как правило начало месяца)
+    :param state: переключатель, в зависимости от которого меняется выходные данные
+    :return: в зависимости от state.
+            Если state = 0:
+            dict_obj = {'сотрудник': [r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день,
+                                      r6-Начало по графику, r7-Окончание по графику, r8-Тип записи,
+                                      r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день]},
+            total_time = Общее время за интервал,
+            start_date = Начальная дата,
+            cnt = Конечная дата
+            Если state = 1:
+            dict_obj = {'сотрудник': [r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день,
+                                      r6-Начало по графику, r7-Окончание по графику, r8-Тип записи,
+                                      r9-Было ли объединение интервалов, r10-Текущий интервал, r11-Общее за день]},
+            all_total_time = Общее время за интервал,
+            all_days_count = Общее количество дней за интервал,
+            all_vacation_days = Количество дней в отпуске,
+            all_vacation_time = Количество часов в отпуске,
+            holiday_delta = Количество выходных и праздников
+    """
+
     type_of_report = {
         '2': 'Ежегодный',
         '3': 'Дополнительный ежегодный отпуск',
@@ -250,11 +274,13 @@ def get_working_hours(pk, start_date, state=0):
             dict_obj[str(user_id)] = []
         report_record = ReportCard.objects.filter(employee=user_id, report_card_day=date).order_by(
             'record_type').reverse()
-        total_day_time, start_time, end_time, record_type, sign, merge_interval, time_worked = 0, '', '', '', '', '', 0
+        total_day_time, time_worked = 0, 0
+        start_time, end_time, record_type, sign, merge_interval, type_of_day = '', '', '', '', '', ''
         user_start_time = user_id.user_work_profile.personal_work_schedule_start
         user_end_time = user_id.user_work_profile.personal_work_schedule_end
         current_intervals = True
-
+        # получаем рабочее время и тип дня
+        user_start_time, user_end_time, type_of_day = check_day(date, user_start_time, user_end_time)
         for record in report_record:
             # Выбираем только завершенные записи, если человек не отметился на выход, то current_intervals = False
             current_intervals = False if not current_intervals else record.current_intervals
@@ -310,7 +336,7 @@ def get_working_hours(pk, start_date, state=0):
                 merge_interval = False
             else:
                 merge_interval = True
-            user_start_time, user_end_time = check_day(date, user_start_time, user_end_time)
+            #user_start_time, user_end_time, type_of_day = check_day(date, user_start_time, user_end_time)
             # Если только явка или ручной ввод
             if record_type == 'Я':
                 all_days_count += 1
@@ -367,17 +393,19 @@ def get_working_hours(pk, start_date, state=0):
             sign = ''
             if total_day_time < 0:
                 sign = '-'
-            """ Дата, Начало, Окончание, Знак, Скалярное общее время за день, Начало по графику, 
-            Окончание по графику, Тип записи, Было ли объединение интервалов,
-             Начальная дата, Общее за день"""
-
         start_time = start_time if start_time != '' else datetime.datetime(1, 1, 1, 0, 0).time()
         end_time = end_time if end_time != '' else datetime.datetime(1, 1, 1, 0, 0).time()
         if state == 0:
+            print(record_type, type_of_day)
+            if record_type == '':
+                record_type = type_of_day
             dict_obj[str(user_id)].append(
                 [date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
                  user_end_time, record_type, merge_interval, current_intervals, time_worked])
         else:
+            print(record_type, type_of_day)
+            if record_type == '':
+                record_type = type_of_day
             time_worker = datetime.datetime(1, 1, 1, 0, 0).time().strftime('%H:%M') if time_worked == 0 else datetime.datetime.strptime(str(datetime.timedelta(seconds=time_worked)), '%H:%M:%S').time().strftime('%H:%M')
             dict_obj[str(user_id)].append(
                 [date.date(), record_type, time_worker])

@@ -383,6 +383,15 @@ def get_year_interval(year=2020):
     return month_dict, year_dict
 
 
+def timedelta_to_time(time: datetime.time):
+    """
+    Перевод времени timedelta в time
+    :param time: время в формате timedelta
+    :return: время в формате datetime.time
+    """
+    return datetime.strptime(str(time), '%H:%M:%S').time()
+
+
 def get_date_interval(dtstart: datetime, until: datetime):
     """
     Возвращает список дат. В качестве генератора списка

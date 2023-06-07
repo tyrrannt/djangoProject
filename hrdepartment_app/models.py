@@ -17,7 +17,7 @@ from django_ckeditor_5.fields import CKEditor5Field
 from docxtpl import DocxTemplate
 from loguru import logger
 
-from administration_app.utils import ending_day, FIO_format
+from administration_app.utils import ending_day, FIO_format, timedelta_to_time
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job, AccessLevel, \
     HistoryChange
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
@@ -978,6 +978,11 @@ class PreHolidayDay(models.Model):
 
 
 class WeekendDay(models.Model):
+    """
+    Праздничные дни и выходные дни в связи с праздником
+    Атрибуты:
+    weekend_day - Дата, description - Описание, weekend_type - Тип дня (1 - Праздник, 2 - Выходной)
+    """
     type_of_weekend = [
         ('1', 'Праздник'),
         ('2', 'Выходной'),
@@ -997,6 +1002,18 @@ class WeekendDay(models.Model):
 
 
 class ProductionCalendar(models.Model):
+    """
+    Месяц в производственном календаре.
+    Атрибуты:
+    ____________
+    calendar_month - Месяц, number_calendar_days - Количество календарных дней,
+    number_working_days - Количество рабочих дней,
+    number_days_off_and_holidays - Количество выходных и празднечных дней, description - Описание
+    Методы:
+    ____________
+    get_friday_count - Подсчитывает количество пятниц в месяце
+    get_norm_time - Подсчет количества рабочих часов в месяце
+    """
     class Meta:
         verbose_name = 'Месяц в производственом календаре'
         verbose_name_plural = 'Производственный календарь'
@@ -1011,6 +1028,10 @@ class ProductionCalendar(models.Model):
     description = models.CharField(verbose_name='Описание', max_length=200, default='', blank=True)
 
     def get_friday_count(self):
+        """
+        Подсчитывает количество пятниц в месяце
+        :return: количество пятниц
+        """
         first_day = self.calendar_month + relativedelta(day=1)
         last_day = self.calendar_month + relativedelta(day=31)
         friday = 0
@@ -1023,8 +1044,8 @@ class ProductionCalendar(models.Model):
 
     def get_norm_time(self):
         """
-        Функция для подсчета количества рабочих часов в месяце
-        :return: Возвращает количество рабочих часов в месяце
+        Подсчет количества рабочих часов в месяце
+        :return: количество рабочих часов в месяце
         """
         return (self.number_working_days * 8) + (self.number_working_days / 2) - self.get_friday_count()
 
@@ -1038,8 +1059,9 @@ def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime
     :param date: дата
     :param time_start: время начала
     :param time_end: время окончания
-    :return: два значения: время начала и время окончания
+    :return: три значения: время начала, время окончания и тип дня (Р - рабочий, В - выходной, П - праздник)
     """
+    type_of_day = ''
     weekend = WeekendDay.objects.filter(weekend_day=date.date()).exists()
     preholiday = PreHolidayDay.objects.filter(preholiday_day=date.date()).exists()
     check_time_end = time_end
@@ -1054,6 +1076,7 @@ def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime
                                                     minutes=time_start.minute) + \
                                  datetime.timedelta(hours=preholiday_time.work_time.hour,
                                                     minutes=preholiday_time.work_time.minute)
+            type_of_day = 'Р'
         elif date.weekday() == 4:
             if not preholiday:
                 check_time_end = datetime.timedelta(hours=time_end.hour, minutes=time_end.minute) - datetime.timedelta(
@@ -1064,15 +1087,17 @@ def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime
                                                     minutes=time_start.minute) + \
                                  datetime.timedelta(hours=preholiday_time.work_time.hour,
                                                     minutes=preholiday_time.work_time.minute)
+            type_of_day = 'Р'
         else:
             check_time_end = datetime.timedelta(hours=0, minutes=0)
             check_time_start = datetime.timedelta(hours=0, minutes=0)
+            type_of_day = 'В'
     else:
         check_time_end = datetime.timedelta(hours=0, minutes=0)
         check_time_start = datetime.timedelta(hours=0, minutes=0)
+        type_of_day = 'П'
 
-    return datetime.datetime.strptime(str(check_time_start), '%H:%M:%S').time(), datetime.datetime.strptime(
-        str(check_time_end), '%H:%M:%S').time()
+    return timedelta_to_time(check_time_start), timedelta_to_time(check_time_end), type_of_day
 
 class TypesUserworktime(models.Model):
     """
