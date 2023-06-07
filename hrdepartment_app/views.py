@@ -22,7 +22,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
     PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm, ReportCardUpdateForm
-from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_report_card, get_month, \
+from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_month, \
     get_working_hours
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \

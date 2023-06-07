@@ -223,19 +223,20 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
     html_obj = f"""<table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 330px; display: block; height: 700px; overflow: auto;">
                         <tbody>
-                            <tr>
-                                <td colspan="4"><h4>Выполнение графика:</h4></td>
-                            </tr>
+                            
                             <tr>
                                 <td colspan="4">За период с: {first_day.strftime('%d-%m-%Y')} по: {last_day.strftime('%d-%m-%Y')}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4">{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>
                             </tr>"""
     for key in data_dict:
         html_obj += f"""                        
                         <tr>
                             <th>Дата</th>
-                            <th>+/-</th>
-                            <th>Табель</th>
+                            <th>+/-</th>                            
                             <th>Факт</th>
+                            <th>Статус</th>
                         </tr>"""
         for r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11 in data_dict[key]:
             """r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день, r6-Начало по графику, 
@@ -261,12 +262,12 @@ def get_report_card_table(data_dict, total_score, first_day, last_day): # , user
                 html_obj += f"""<td><span style="{' color: #ff0000;' if r4 == '-' else ''}">{r4}{delta}</span></td>"""
             else:
                 html_obj += f"""<td><span> --//-- </span></td>"""
-
-            html_obj += f"""<td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
             if r10:
-                html_obj += f"""<td>{start_time}-{end_time}</td></tr>"""
+                html_obj += f"""<td>{start_time}-{end_time}</td>"""
             else:
-                html_obj += f"""<td>{start_time}-по н.в.</td></tr>"""
+                html_obj += f"""<td>{start_time}-по н.в.</td>"""
+            # html_obj += f"""<td>{r6.strftime('%H:%M')}-{r7.strftime('%H:%M')}</td>"""
+            html_obj += f"""<td>{r8}</td></tr>"""
         html_obj += f"""
                          <tr>
                             <th>Итого:</th>

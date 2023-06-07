@@ -162,63 +162,6 @@ def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
         return datetime.timedelta(hours=hour, minutes=minute), new_start_time, end_time
 
 
-def get_report_card(pk, RY=None, RM=None):
-    """
-
-    :param pk: УИН пользователя
-    :param RY: Год
-    :param RM: Месяц
-    :return:
-    """
-    # Устанавливаем период, и получаем первый и последний день месяца
-    if RY and RM:
-        try:
-            sample_date = datetime.datetime(int(RY), int(RM), 1)
-        except TypeError:
-            sample_date = datetime.datetime(2023, 1, 1)
-        first_day = sample_date + relativedelta(day=1)
-        last_day = sample_date + relativedelta(day=31)
-    # Иначе устанавливаем в качестве периода текущий месяц
-    else:
-        first_day = datetime.datetime.today() + relativedelta(day=1)
-        last_day = datetime.datetime.today() + relativedelta(day=31)
-
-    total_score = 0
-    get_user = DataBaseUser.objects.get(pk=pk)
-    user_start_time = get_user.user_work_profile.personal_work_schedule_start
-    user_end_time = get_user.user_work_profile.personal_work_schedule_end
-
-    # print(get_working_hours(get_user, first_day))
-
-    data_dict = dict()
-    for item in ReportCard.objects.filter(
-            Q(report_card_day__gte=first_day) & Q(report_card_day__lte=last_day) & Q(employee=get_user)).order_by(
-        'report_card_day'):
-        # Если выходной словарь еще не заполнялся, то создаем пустой элемент с ключем (УИН пользователя)
-        if not data_dict.get(str(item.employee)):
-            data_dict[str(item.employee)] = []
-        # Получаем время прихода
-        time_1 = datetime.timedelta(hours=item.start_time.hour, minutes=item.start_time.minute)
-        # Получаем время ухода
-        time_2 = datetime.timedelta(hours=item.end_time.hour, minutes=item.end_time.minute)
-        if item.report_card_day.weekday() in [0, 1, 2, 3]:
-            time_3, new_start_time, end_time = get_preholiday_day(item, 8, 30, user_start_time, user_end_time)
-        elif item.report_card_day.weekday() == 4:
-            time_3, new_start_time, end_time = get_preholiday_day(item, 7, 30, user_start_time, user_end_time)
-        else:
-            time_3, new_start_time, end_time = get_preholiday_day(item, 0, 0, user_start_time, user_end_time)
-        if time_2.total_seconds() - time_1.total_seconds() == 60.0:
-            time_4 = time_2.total_seconds() - time_1.total_seconds()
-        else:
-            time_4 = (time_2.total_seconds() - time_1.total_seconds()) - time_3.total_seconds()
-        total_score += time_4
-        sign = '-' if time_4 < 0 else ''
-        time_delta = datetime.timedelta(seconds=abs(time_4))
-        data_dict[str(item.employee)].append(
-            [item.report_card_day, item.start_time, item.end_time, sign, time_delta, end_time])
-    return data_dict, total_score, first_day, last_day, user_start_time, user_end_time
-
-
 # -------------------------------------------------------------------------------------------------------------------
 
 def get_working_hours(pk, start_date, state=0):
