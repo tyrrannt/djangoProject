@@ -348,6 +348,8 @@ def get_working_hours(pk, start_date, state=0):
         if state == 0:
             if record_type == '':
                 record_type = type_of_day
+            if not current_intervals:
+                table_total_time = 0
             dict_obj[str(user_id)].append(
                 [date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
                  user_end_time, record_type, merge_interval, current_intervals, time_worked, table_total_time])
