@@ -1427,6 +1427,85 @@ class ReportCardList(LoginRequiredMixin, ListView):
         return context
 
 
+class ReportCardList(LoginRequiredMixin, ListView):
+    model = ReportCard
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        current_month = self.request.GET.get('report_month')
+        current_year = self.request.GET.get('report_year')
+        if current_month and current_year:
+            request.session['current_month'] = int(current_month)
+            request.session['current_year'] = int(current_year)
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # if self.request.user.is_superuser:
+            #     reportcard_list = ReportCard.objects.all()
+            # else:
+            #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
+            if request.session['current_month'] and request.session['current_year']:
+                start_date = datetime.date(year=int(request.session['current_year']),
+                                           month=int(request.session['current_month']), day=1)
+                end_date = start_date + relativedelta(days=31)
+                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13') & Q(
+                    report_card_day__in=search_interval)).order_by('report_card_day')
+            else:
+                reportcard_list = ReportCard.objects.filter(
+                    Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
+            data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        month_dict, year_dict = get_year_interval(2020)
+        context['year_dict'] = year_dict
+        context['month_dict'] = month_dict
+        context['current_year'] = self.request.session['current_year']
+        context['current_month'] = str(self.request.session['current_month'])
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
+        return context
+
+
+
+class ReportCardDetailFact(LoginRequiredMixin, ListView):
+    # Табель учета рабочего времени - таблица по месяцам
+    model = ReportCard
+    template_name = 'hrdepartment_app/reportcard_detail_fact.html'
+
+    def post(self, request):  # ***** this method required! ******
+        self.object_list = self.get_queryset()
+        return HttpResponseRedirect(reverse('hrdepartment_app:reportcard_detail'))
+
+    def get_queryset(self):
+        queryset = ReportCard.objects.all()
+        return queryset
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        month = self.request.GET.get('report_month', None)
+        year = self.request.GET.get('report_year', None)
+
+        if month and year:
+            current_day = datetime.datetime(int(year), int(month), 1)
+        else:
+            current_day = datetime.datetime.today() + relativedelta(day=1)
+
+        first_day = current_day + relativedelta(day=1)
+        last_day = current_day + relativedelta(day=31)
+        month_dict, year_dict = get_year_interval(2020)
+        context['year_dict'] = year_dict
+        context['month_dict'] = month_dict
+        context['first_day'] = first_day
+        context['last_day'] = last_day
+        context['current_year'] = datetime.datetime.today().year
+        context['current_month'] = str(datetime.datetime.today().month)
+        context['tabel_month'] = first_day
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени (факт)'
+        return context
+
+
 class ReportCardDetail(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
@@ -1492,7 +1571,9 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                 'vacation_time': (all_vacation_time + total_score) / 3600,
                 'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
             }
-
+        month_dict, year_dict = get_year_interval(2020)
+        context['year_dict'] = year_dict
+        context['month_dict'] = month_dict
         context['all_dict'] = all_dict
         context['month_obj'] = month_obj
         context['first_day'] = first_day
@@ -1501,7 +1582,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         context['holidays'] = norm_time.number_days_off_and_holidays
         context['last_day'] = last_day
         context['current_year'] = datetime.datetime.today().year
-        context['current_month'] = datetime.datetime.today().month
+        context['current_month'] = str(datetime.datetime.today().month)
         context['tabel_month'] = first_day
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
         return context

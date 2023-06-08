@@ -55,6 +55,18 @@
                                             Журнал разъездов
                                         </a>
                                     </li>
+                                    {% if user.is_superuser %}
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
+                                            Табель РВ
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail_fact' %}">
+                                            Табель РВ (факт)
+                                        </a>
+                                    </li>
+                                    {% endif %}
                                 </ul>
                             </li>
                             <li class="nav-parent">
@@ -193,11 +205,7 @@
                                             Приказы
                                         </a>
                                     </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
-                                            Табель рабочего времени
-                                        </a>
-                                    </li>
+
 {#                                    <li>#}
 {#                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">#}
 {#                                            Табель рабочего времени (список)#}
