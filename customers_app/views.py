@@ -293,7 +293,7 @@ def login(request):
             try:
                 portal_paginator = portal.first().portal_paginator
             except Exception as _ex:
-                portal_paginator = 900
+                portal_paginator = 10
                 logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
             request.session.set_expiry(portal_session)
             request.session['portal_paginator'] = portal_paginator
