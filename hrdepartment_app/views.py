@@ -834,6 +834,14 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             document.save()
         return super().post(request, *args, **kwargs)
 
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get('send') == '0':
+            obj_item = self.get_object()
+            obj_item.send_mail(title='Повторное уведомление о направлении', trigger=1)
+            # return redirect('hrdepartment_app:bpmemo_update', obj_item.pk)
+        return super().get(request, *args, **kwargs)
+
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:bpmemo_list')
 

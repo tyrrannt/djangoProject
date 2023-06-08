@@ -513,8 +513,9 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     def get_absolute_url():
         return reverse('hrdepartment_app:bpmemo_list')
 
-    def send_mail(self, title):
-        if not self.cancellation:
+    def send_mail(self, title, trigger=0):
+        # Отмена
+        if not self.cancellation and trigger == 0:
             mail_to = self.document.person.email
             mail_to_copy_first = self.person_executor.email
             mail_to_copy_second = self.person_distributor.email
@@ -546,6 +547,88 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 second_msg.send()
             except Exception as _ex:
                 logger.debug(f'Failed to send email. {_ex}')
+        if trigger == 1:
+            type_of = ['Служебная квартира', 'Гостиница']
+
+            if self.process_accepted:
+                from openpyxl import load_workbook
+                delta = self.document.period_for - self.document.period_from
+                try:
+                    place = [item.name for item in self.document.place_production_activity.all()]
+                except Exception as _ex:
+                    place = []
+                # Получаем ссылку на файл шаблона
+                if self.document.person.user_work_profile.job.type_of_job == '1':
+                    if self.document.type_trip == '2':
+                        filepath_name = 'spk.xlsx'
+                    else:
+                        filepath_name = 'sp.xlsx'
+                else:
+                    if self.document.type_trip == '2':
+                        filepath_name = 'sp2k.xlsx'
+                    else:
+                        filepath_name = 'sp2.xlsx'
+                filepath = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates'), filepath_name)
+                wb = load_workbook(filepath)
+                ws = wb.active
+                ws['C3'] = str(self.document.person)
+                ws['M3'] = str(self.document.person.service_number)
+                ws['C4'] = str(self.document.person.user_work_profile.job)
+                ws['C5'] = str(self.document.person.user_work_profile.divisions)
+                ws['C6'] = 'Приказ № ' + str(self.order.document_number)
+                ws['F6'] = self.order.document_date.strftime("%d.%m.%y")
+                ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
+                ws['L6'] = self.document.period_from.strftime("%d.%m.%y")
+                ws['O6'] = self.document.period_for.strftime("%d.%m.%y")
+                ws['C8'] = str(place).strip('[]')
+                ws['C9'] = str(self.document.purpose_trip)
+                ws['A90'] = str(self.person_agreement.user_work_profile.job) + ', ' + FIO_format(
+                    self.person_agreement)
+
+                wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+                wb.close()
+                # Конвертируем xlsx в pdf
+                # Удалить
+                from msoffice2pdf import convert
+                source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+                output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+                file_name = convert(source=source, output_dir=output_dir, soft=0)
+                mail_to = self.document.person.email
+                # mail_to_copy = self.person_executor.email
+                subject_mail = 'Направление'
+
+                if self.accommodation == '1':
+                    accommodation = 'Квартира'
+                else:
+                    accommodation = 'Гостиница'
+                current_context = {
+                    'greetings': 'Уважаемый' if self.document.person.gender == 'male' else 'Уважаемая',
+                    'person': str(self.document.person),
+                    'place': str(place).strip('[]'),
+                    'purpose_trip': str(self.document.purpose_trip),
+                    'order_number': str(self.order.document_number),
+                    'order_date': str(self.order.document_date),
+                    'delta': str(ending_day(int(delta.days) + 1)),
+                    'period_from': str(self.document.period_from),
+                    'period_for': str(self.document.period_for),
+                    'accommodation': accommodation,
+                    'person_executor': str(self.person_executor),
+                    'person_distributor': str(self.person_distributor),
+                }
+                logger.debug(f'Email string: {current_context}')
+                text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+                html_content = render_to_string('hrdepartment_app/email_template.html', current_context)
+
+                msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER, [mail_to, ])
+                msg.attach_alternative(html_content, "text/html")
+                if self.document.official_memo_type == '1':
+                    msg.attach_file(str(file_name))
+                try:
+                    res = msg.send()
+                    self.email_send = True
+                    self.save()
+                except Exception as _ex:
+                    logger.debug(f'Failed to send email. {_ex}')
 
 
 def create_xlsx(instance):
