@@ -593,7 +593,7 @@
                 {% if user == object.person_executor or user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="{% url 'hrdepartment_app:bpmemo_update' object.pk %}?send=0"
-                           class="delete-button btn btn-warning btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                           class="submit-button btn btn-warning btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
                             <i class='bx bx-calendar-x text-4 me-2'></i> Повторное уведомление </a>
                     </div>
                 {% endif %}
