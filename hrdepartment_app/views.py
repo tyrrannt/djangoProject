@@ -1279,8 +1279,14 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             order_list = [item.document_number for item in
                           DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
                               cancellation=True)]
+            cancel_order = [item.document_number for item in
+                            DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').filter(
+                                cancellation=True)]
             if len(order_list) > 0:
-                result = 'Крайний: ' + str(order_list[-1])
+                if len(cancel_order) > 0:
+                    result = 'Крайний: ' + str(order_list[-1]) + '; Отмененные: ' + '; '.join(cancel_order)
+                else:
+                    result = 'Крайний: ' + str(order_list[-1])
             else:
                 result = 'За этот день нет приказов.'
             dict_obj = {'document_date': result}
