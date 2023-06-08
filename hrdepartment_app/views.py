@@ -1239,7 +1239,7 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            documents_order_list = DocumentsOrder.objects.all().order_by("document_date").reverse()
+            documents_order_list = DocumentsOrder.objects.all().order_by("document_date", "document_number").reverse()
             data = [documents_order_item.get_data() for documents_order_item in documents_order_list]
             response = {'data': data}
             # report_card_separator()
