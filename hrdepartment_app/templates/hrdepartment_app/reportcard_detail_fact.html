@@ -109,7 +109,7 @@
                                     {% for key, value in all_dict.items %}
                                         <tr>
                                             <td rowspan="2">{{ key | FIO_format }}</td>
-                                            <td rowspan="2">приход<br>уход<br>отраб</td>
+                                            <td rowspan="2">приход<br>уход<br>отраб<br>-------<br>приход<br>уход<br>отраб</td>
                                             {% for r1, r2, r3 in value.dict_count %}
                                                 {% if forloop.counter < 16 %}
                                                 <td>{{ r1 }}<br>{{ r2 }}<br>{{ r3 }}</td>
