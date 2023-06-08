@@ -129,7 +129,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
                 pass
-                # report_card_separator_loc()
+                report_card_separator_loc()
 
                 # Получение видов рабочего времени с 1с
                 # dt = get_types_userworktime()

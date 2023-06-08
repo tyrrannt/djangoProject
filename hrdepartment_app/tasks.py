@@ -222,7 +222,7 @@ def report_card_separator_loc():
     #     item.delete()
     # current_data = datetime.datetime.date(datetime.datetime.today())
     current_data1 = datetime.datetime.date(datetime.datetime(2023, 6, 1))
-    current_data2 = datetime.datetime.date(datetime.datetime(2023, 6, 6))
+    current_data2 = datetime.datetime.date(datetime.datetime(2023, 6, 7))
     rec_obj = ReportCard.objects.filter(Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2) & Q(record_type='1'))
     for item in rec_obj:
         print(item)
