@@ -1553,6 +1553,8 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
                 'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
             }
         month_dict, year_dict = get_year_interval(2020)
+        context['range'] = [item for item in range(1, 17)]
+        context['range2'] = [item for item in range(16, 32)]
         context['year_dict'] = year_dict
         context['month_dict'] = month_dict
         context['all_dict'] = all_dict
@@ -1636,6 +1638,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                 'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
             }
         month_dict, year_dict = get_year_interval(2020)
+
         context['year_dict'] = year_dict
         context['month_dict'] = month_dict
         context['all_dict'] = all_dict

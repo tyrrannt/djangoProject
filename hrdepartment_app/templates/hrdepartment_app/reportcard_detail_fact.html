@@ -64,64 +64,42 @@
                             дней: {{ norm_day }}; Норма часов: {{ norm_time }})</h5>
                         <div id="id_tables" class="table-responsive">
                             <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable_head">
-                                <thead>
+                                <thead style="border: 1px; border-style: solid">
                                     <tr>
-                                        <th rowspan="2">ФИО, Должность</th>
-                                        <th rowspan="2">Событие</th>
-                                        <th>01</th>
-                                        <th>02</th>
-                                        <th>03</th>
-                                        <th>04</th>
-                                        <th>05</th>
-                                        <th>06</th>
-                                        <th>07</th>
-                                        <th>08</th>
-                                        <th>09</th>
-                                        <th>10</th>
-                                        <th>11</th>
-                                        <th>12</th>
-                                        <th>13</th>
-                                        <th>14</th>
-                                        <th>15</th>
-                                        <th>X</th>
-                                        <th rowspan="2">Итого за месяц:<br>дней,<br>часов,<br>+/-<br>неявки</th>
+                                        <th rowspan="2" style="text-align: center; vertical-align: middle; border: 1px; border-style: solid">ФИО</th>
+                                        <th rowspan="2" style="text-align: center; vertical-align: middle; border: 1px; border-style: solid">Событие</th>
+                                        {% for n in range %}
+                                            {% if forloop.last %}
+                                        <th style="text-align: center; vertical-align: middle; border: 1px; border-style: dashed; border-color: #afafaf; border-bottom-style: solid; border-bottom-color: #000000">X</th>
+                                            {% else %}
+                                                <th style="text-align: center; vertical-align: middle; border: 1px; border-style: dashed; border-color: #afafaf; border-bottom-style: solid; border-bottom-color: #000000">{{ n }}</th>
+                                            {% endif %}
+                                        {% endfor %}
+                                        <th rowspan="2" style="text-align: center; vertical-align: middle; border: 1px; border-style: solid">Итого за месяц:<br>дней,<br>часов,<br>+/-<br>неявки</th>
                                     </tr>
                                     <tr>
-                                        <th>16</th>
-                                        <th>17</th>
-                                        <th>18</th>
-                                        <th>19</th>
-                                        <th>20</th>
-                                        <th>21</th>
-                                        <th>22</th>
-                                        <th>23</th>
-                                        <th>24</th>
-                                        <th>25</th>
-                                        <th>26</th>
-                                        <th>27</th>
-                                        <th>28</th>
-                                        <th>29</th>
-                                        <th>30</th>
-                                        <th>31</th>
+                                        {% for n in range2 %}
+                                        <th style="text-align: center; vertical-align: middle; border: 1px; border-style: dashed; border-color: #afafaf; border-bottom-style: solid; border-bottom-color: #000000">{{ n }}</th>
+                                        {% endfor %}
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody style="border: 1px; border-style: solid">
                                     {% for key, value in all_dict.items %}
                                         <tr>
-                                            <td rowspan="2">{{ key | FIO_format }}</td>
-                                            <td rowspan="2">приход<br>уход<br>отраб<br>-------<br>приход<br>уход<br>отраб</td>
+                                            <td rowspan="2" style="text-align: center; vertical-align: middle; border: 1px; border-style: solid">{{ key | FIO_format }}</td>
+                                            <td rowspan="2" style="text-align: center; vertical-align: middle; border: 1px; border-style: solid">приход<br>уход<br>отраб<br>-------<br>приход<br>уход<br>отраб</td>
                                             {% for r1, r2, r3 in value.dict_count %}
                                                 {% if forloop.counter < 16 %}
-                                                <td>{{ r1 }}<br>{{ r2 }}<br>{{ r3 }}</td>
+                                                <td style="text-align: center; vertical-align: middle; border: 1px; border-style: dashed; border-color: #afafaf">{{ r1 }}<br>{{ r2 }}<br>{{ r3 }}</td>
                                                 {% endif %}
                                             {% endfor %}
-                                            <td>X</td>
-                                            <td rowspan="2">{{ value.days_count }}<br>{{ value.time_count_hour | safe }}<br>{{ value.absences }}</td>
+                                            <td style="text-align: center; vertical-align: middle; border: 1px; border-style: dashed; border-color: #afafaf">X</td>
+                                            <td rowspan="2" style="text-align: center; vertical-align: middle; border: 1px; border-style: solid">{{ value.days_count }}<br>{{ value.time_count_hour | safe }}<br>{{ value.absences }}</td>
                                         </tr>
                                         <tr>
                                             {% for r1, r2, r3 in value.dict_count %}
                                                 {% if forloop.counter > 15 %}
-                                                <td>{{ r1 }}<br>{{ r2 }}<br>{{ r3 }}</td>
+                                                <td style="text-align: center; vertical-align: middle; border: 1px; border-style: dashed; border-color: #afafaf; border-bottom-style: solid; border-bottom-color: #000000">{{ r1 }}<br>{{ r2 }}<br>{{ r3 }}</td>
                                                 {% endif %}
                                             {% endfor %}
                                         </tr>
