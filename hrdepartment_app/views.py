@@ -1272,8 +1272,20 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             dict_obj = {'period_from': datetime.datetime.strftime(memo_obj.period_from, '%Y-%m-%d'),
                         'period_for': datetime.datetime.strftime(memo_obj.period_for, '%Y-%m-%d'),
                         'document_date': datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')}
-
             return JsonResponse(dict_obj, safe=False)
+        document_date = request.GET.get('document_date', None)
+        if document_date:
+            print(document_date)
+            document_date = datetime.datetime.strptime(document_date, '%Y-%m-%d')
+            order_list = [item.document_number for item in
+                          DocumentsOrder.objects.filter(document_date=document_date).exclude(cancellation=True)]
+            if len(order_list)>0:
+                result = 'Введены: ' + '; '.join(order_list)
+            else:
+                result = 'За этот день нет приказов.'
+            dict_obj = {'document_date': result}
+            return JsonResponse(dict_obj, safe=False)
+
         return super().get(request, *args, **kwargs)
 
 

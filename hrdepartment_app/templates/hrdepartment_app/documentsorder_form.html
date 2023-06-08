@@ -68,7 +68,7 @@
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_date">Дата документа</label>
-                                            <input type="date" class="form-control form-control-modern"
+                                            <input type="date" class="form-control form-control-modern" onchange="DocumentsDateChange()"
                                                    name="document_date" value="" id="id_document_date"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
@@ -219,6 +219,30 @@
                     document_date.removeAttribute("value")
                     document_date.setAttribute("value", data['document_date'])
                     $("#id_document_date").trigger("create")
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+        function DocumentsDateChange() {
+            document_date = document.getElementById("id_document_date").value;
+            var document_number = document.getElementById("id_document_number");
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:order_add' %}',
+                data: {
+                    "document_date": document_date,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    document_number.removeAttribute("placeholder")
+                    document_number.setAttribute("placeholder", data['document_date'])
+                    $("#id_document_number").trigger("create")
                     if (data === 'ok') {
                         console.log("success");
                     }
