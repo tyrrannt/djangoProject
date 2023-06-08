@@ -58,7 +58,8 @@
     <script>
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
-                "order": [[ 1, 'desc' ],],
+                {#"order": [[ 2, 'desc' ],],#}
+                "ordering": false,
                 "pageLength": 25,
                 "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
@@ -66,6 +67,7 @@
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
+
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
                     if (aData['approved'] === 'Действует'){
