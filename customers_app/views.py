@@ -544,7 +544,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            baseusers = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
+            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(is_active=False)
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
             return JsonResponse(response)
