@@ -353,17 +353,26 @@ def get_working_hours(pk, start_date, state=0):
             dict_obj[str(user_id)].append(
                 [date.date(), start_time, end_time, sign, abs(total_day_time), user_start_time,
                  user_end_time, record_type, merge_interval, current_intervals, time_worked, table_total_time])
+        elif state == 2:
+            if record_type == '':
+                record_type = type_of_day
+            time_worker = datetime.datetime(1, 1, 1, 0, 0).time().strftime(
+                '%H:%M') if time_worked == 0 else datetime.datetime.strptime(
+                str(datetime.timedelta(seconds=time_worked)), '%H:%M:%S').time().strftime('%H:%M')
+            dict_obj[str(user_id)].append([start_time, end_time, time_worker])
         else:
             if record_type == '':
                 record_type = type_of_day
             time_worker = datetime.datetime(1, 1, 1, 0, 0).time().strftime(
                 '%H:%M') if time_worked == 0 else datetime.datetime.strptime(
                 str(datetime.timedelta(seconds=time_worked)), '%H:%M:%S').time().strftime('%H:%M')
-            dict_obj[str(user_id)].append(
-                [date.date(), record_type, time_worker])
+            dict_obj[str(user_id)].append([date.date(), record_type, time_worker])
     if state == 0:
         # return dict_obj, total_time, start_date, cnt, user_start, user_end
         return dict_obj, all_total_time, start_date, cnt, user_start, user_end
+    elif state == 1:
+        result = dict_obj[str(user_id)]
+        return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time, holiday_delta
     else:
         result = dict_obj[str(user_id)]
         return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time, holiday_delta

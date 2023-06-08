@@ -1512,13 +1512,16 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
         # Выбираем пользователей, кто отмечался в течении интервала
-        report_obj_list2 = [item.employee for item in ReportCard.objects.filter(
+        report_obj_list = ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(record_type__in=['1', '13']) &
-            Q(report_card_day__lte=last_day)).order_by('employee__last_name')]
+            Q(report_card_day__lte=last_day)).values('employee').order_by('employee__last_name')
+        users_obj_list = []
+        for item in report_obj_list:
+            if item['employee'] not in users_obj_list:
+                users_obj_list.append(item['employee'])
         users_obj_set = dict()
-        # Оставляем только уникальные записи
-        for item in set(report_obj_list2):
-            users_obj_set[item.pk] = item
+        for item in users_obj_list:
+            users_obj_set[item] = DataBaseUser.objects.get(pk=item)
 
         month_obj = get_month(current_day)
         all_dict = dict()
@@ -1526,7 +1529,8 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         # Итерируемся по списку сотрудников
         for user_obj in users_obj_set:
             data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(
-                user_obj, current_day, state=1)
+                user_obj, current_day, state=2)
+            print(data_dict)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             if absences_delta < 0:
@@ -1591,13 +1595,16 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
         # Выбираем пользователей, кто отмечался в течении интервала
-        report_obj_list2 = [item.employee for item in ReportCard.objects.filter(
+        report_obj_list = ReportCard.objects.filter(
             Q(report_card_day__gte=first_day) & Q(record_type__in=['1', '13']) &
-            Q(report_card_day__lte=last_day)).order_by('employee__last_name')]
+            Q(report_card_day__lte=last_day)).values('employee').order_by('employee__last_name')
+        users_obj_list = []
+        for item in report_obj_list:
+            if item['employee'] not in users_obj_list:
+                users_obj_list.append(item['employee'])
         users_obj_set = dict()
-        # Оставляем только уникальные записи
-        for item in sorted(set(report_obj_list2)):
-            users_obj_set[item.pk] = item
+        for item in users_obj_list:
+            users_obj_set[item] = DataBaseUser.objects.get(pk=item)
 
         month_obj = get_month(current_day)
         all_dict = dict()
@@ -1606,6 +1613,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         for user_obj in users_obj_set:
             data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(
                 user_obj, current_day, state=1)
+            print(data_dict)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             if absences_delta < 0:
