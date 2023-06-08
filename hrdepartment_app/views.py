@@ -1280,8 +1280,8 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                           DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
                               cancellation=True)]
             cancel_order = [item.document_number for item in
-                            DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').filter(
-                                cancellation=True)]
+                            DocumentsOrder.objects.filter(Q(document_date=document_date) &
+                                                          Q(cancellation=True)).order_by('document_date')]
             if len(order_list) > 0:
                 if len(cancel_order) > 0:
                     result = 'Крайний: ' + str(order_list[-1]) + '; Отмененные: ' + '; '.join(cancel_order)
