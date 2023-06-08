@@ -834,7 +834,6 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             document.save()
         return super().post(request, *args, **kwargs)
 
-
     def get(self, request, *args, **kwargs):
         if request.GET.get('send') == '0':
             obj_item = self.get_object()
@@ -1278,9 +1277,10 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             print(document_date)
             document_date = datetime.datetime.strptime(document_date, '%Y-%m-%d')
             order_list = [item.document_number for item in
-                          DocumentsOrder.objects.filter(document_date=document_date).exclude(cancellation=True)]
-            if len(order_list)>0:
-                result = 'Введены: ' + '; '.join(order_list)
+                          DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
+                              cancellation=True)]
+            if len(order_list) > 0:
+                result = 'Крайний: ' + '; '.join(order_list[:-1])
             else:
                 result = 'За этот день нет приказов.'
             dict_obj = {'document_date': result}
@@ -1478,7 +1478,6 @@ class ReportCardList(LoginRequiredMixin, ListView):
         context['current_month'] = str(self.request.session['current_month'])
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
         return context
-
 
 
 class ReportCardDetailFact(LoginRequiredMixin, ListView):
