@@ -89,6 +89,7 @@
         $(document).ready(function () {
             var table = $('#datatable-ecommerce-list').DataTable({
                 "sDom": 'T<"clear">lfrtip',
+                "ordering": false,
                 "scrollX": true,
                 "ajax": "{% url 'hrdepartment_app:medical_list' %}",
                 "language": {

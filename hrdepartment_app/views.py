@@ -124,7 +124,7 @@ class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         change_session_get(self.request, self)
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            medical_list = Medical.objects.all()
+            medical_list = Medical.objects.all().order_by("date_entry").reverse()
             data = [medical_item.get_data() for medical_item in medical_list]
             response = {'data': data}
             return JsonResponse(response)
