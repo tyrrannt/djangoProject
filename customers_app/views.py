@@ -288,7 +288,7 @@ def login(request):
             try:
                 portal_session = portal.first().portal_session
             except Exception as _ex:
-                portal_session = 900
+                portal_session = 3600
                 logger.info(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
             try:
                 portal_paginator = portal.first().portal_paginator
