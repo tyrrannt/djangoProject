@@ -1596,7 +1596,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
             Q(report_card_day__lte=last_day)).order_by('employee__last_name')]
         users_obj_set = dict()
         # Оставляем только уникальные записи
-        for item in set(report_obj_list2):
+        for item in sorted(set(report_obj_list2)):
             users_obj_set[item.pk] = item
 
         month_obj = get_month(current_day)
