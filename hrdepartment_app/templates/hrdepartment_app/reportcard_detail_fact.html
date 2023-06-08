@@ -9,16 +9,17 @@
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
         <style>
-        .table-ecommerce-simple {
-            overflow-x: auto;
-            position: relative;
-        }
-        .table-ecommerce-simple th{
-            position: -webkit-sticky;
-            position: sticky;
-            top: -3px; // при нуле в chrome остаётся странный зазор
-            z-index: 2;
-        }
+            .table-ecommerce-simple {
+                overflow-x: auto;
+                position: relative;
+            }
+
+            .table-ecommerce-simple th {
+                position: -webkit-sticky;
+                position: sticky;
+                top: -3px;
+            / / при нуле в chrome остаётся странный зазор z-index: 2;
+            }
         </style>
         {% include 'library_app/breadcrumb.html' %}
 
@@ -26,54 +27,32 @@
         <div class="row">
             <div class="col">
                 <div class="card card-modern">
-                    <form action="{% url 'hrdepartment_app:reportcard_detail' %}" method="get">
+                    <form action="{% url 'hrdepartment_app:reportcard_detail_fact' %}" method="get">
                         <div class="row">
-                            <div class="col-sm-12 col-md-6 col-lg-3">
+                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
                                 <select class="form-control select-style-1 filter-by" name="report_month"
                                         id="id_report_month">
-                                    <option value="1" {% if current_month == 1 %}selected{% endif %}>Январь
-                                    </option>
-                                    <option value="2" {% if current_month == 2 %}selected{% endif %}>Февраль
-                                    </option>
-                                    <option value="3" {% if current_month == 3 %}selected{% endif %}>Март
-                                    </option>
-                                    <option value="4" {% if current_month == 4 %}selected{% endif %}>Апрель
-                                    </option>
-                                    <option value="5" {% if current_month == 5 %}selected{% endif %}>Май
-                                    </option>
-                                    <option value="6" {% if current_month == 6 %}selected{% endif %}>Июнь
-                                    </option>
-                                    <option value="7" {% if current_month == 7 %}selected{% endif %}>Июль
-                                    </option>
-                                    <option value="8" {% if current_month == 8 %}selected{% endif %}>Август
-                                    </option>
-                                    <option value="9" {% if current_month == 9 %}selected{% endif %}>Сентябрь
-                                    </option>
-                                    <option value="10" {% if current_month == 10 %}selected{% endif %}>Октябрь
-                                    </option>
-                                    <option value="11" {% if current_month == 11 %}selected{% endif %}>Ноябрь
-                                    </option>
-                                    <option value="12" {% if current_month == 12 %}selected{% endif %}>Декабрь
-                                    </option>
+                                    {% for key, value in month_dict.items %}
+                                        <option value="{{ key }}"
+                                                {% if current_month == key %}selected{% endif %}> {{ value }}
+                                        </option>
+                                    {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-sm-12 col-md-6 col-lg-3">
+                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
                                 <select class="form-control select-style-1 filter-by" name="report_year"
                                         id="id_report_year">
-                                    <option value="2020" {% if current_year == 2020 %}selected{% endif %}>2020
-                                    </option>
-                                    <option value="2021" {% if current_year == 2021 %}selected{% endif %}>2021
-                                    </option>
-                                    <option value="2022" {% if current_year == 2022 %}selected{% endif %}>2022
-                                    </option>
-                                    <option value="2023" {% if current_year == 2023 %}selected{% endif %}>2023
-                                    </option>
+                                    {% for key, value in year_dict.items %}
+                                        <option value="{{ key }}"
+                                                {% if current_year == key %}selected{% endif %}> {{ value }}
+                                        </option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-sm-12 col-md-6 col-lg-3">
                                 <input type="submit"
-                                   class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
-                                   value="Сформировать"/>
+                                       class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                       value="Сформировать"/>
                             </div>
                         </div>
 
@@ -81,106 +60,195 @@
                 </div>
                 <div class="card card-modern">
                     <div class="card-body">
-                        <h5>Табель учета рабочего времени за {{ tabel_month | date:"M Y" }} г. (Норма дней: {{ norm_day }}; Норма часов: {{ norm_time }})</h5>
+                        <h5>Табель учета рабочего времени за {{ tabel_month | date:"M Y" }} г. (Норма
+                            дней: {{ norm_day }}; Норма часов: {{ norm_time }})</h5>
                         <div id="id_tables" class="table-responsive">
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
-                                   style="min-width: 1000px; display: block; height: 700px; overflow: auto;">
+                            <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable_head">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">ФИО, Должность</th>
+                                        <th rowspan="2">Событие</th>
+                                        <th>01</th>
+                                        <th>02</th>
+                                        <th>03</th>
+                                        <th>04</th>
+                                        <th>05</th>
+                                        <th>06</th>
+                                        <th>07</th>
+                                        <th>08</th>
+                                        <th>09</th>
+                                        <th>10</th>
+                                        <th>11</th>
+                                        <th>12</th>
+                                        <th>13</th>
+                                        <th>14</th>
+                                        <th>15</th>
+                                        <th>X</th>
+                                        <th rowspan="2">Итого за месяц (дней, часов, смен, перераб.)</th>
+                                    </tr>
+                                    <tr>
+                                        <th>16</th>
+                                        <th>17</th>
+                                        <th>18</th>
+                                        <th>19</th>
+                                        <th>20</th>
+                                        <th>21</th>
+                                        <th>22</th>
+                                        <th>23</th>
+                                        <th>24</th>
+                                        <th>25</th>
+                                        <th>26</th>
+                                        <th>27</th>
+                                        <th>28</th>
+                                        <th>29</th>
+                                        <th>30</th>
+                                        <th>31</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                <tr>
-{#                                    <th style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;">#}
-{#                                        №#}
-{#                                    </th>#}
-                                    <th style="border-style:solid; border-width: 1px;width:144pt;">
-                                        ФИО
-                                    </th>
-                                    {% for key, value in month_obj %}
-                                        <th style="border-style:solid; border-width: 1px;height:48.75pt;width:18pt; background-color: #ffffff">
-                                            {{ key | date:"d" }}
-                                        </th>
+                                    {% for key, value in all_dict.items %}
+                                        <tr>
+                                            <td rowspan="2"></td>
+                                            <td rowspan="2"></td>
+                                            <td>01</td>
+                                            <td>02</td>
+                                            <td>03</td>
+                                            <td>04</td>
+                                            <td>05</td>
+                                            <td>06</td>
+                                            <td>07</td>
+                                            <td>08</td>
+                                            <td>09</td>
+                                            <td>10</td>
+                                            <td>11</td>
+                                            <td>12</td>
+                                            <td>13</td>
+                                            <td>14</td>
+                                            <td>15</td>
+                                            <td>X</td>
+                                            <td rowspan="2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td>16</td>
+                                            <td>17</td>
+                                            <td>18</td>
+                                            <td>19</td>
+                                            <td>20</td>
+                                            <td>21</td>
+                                            <td>22</td>
+                                            <td>23</td>
+                                            <td>24</td>
+                                            <td>25</td>
+                                            <td>26</td>
+                                            <td>27</td>
+                                            <td>28</td>
+                                            <td>29</td>
+                                            <td>30</td>
+                                            <td>31</td>
+                                        </tr>
                                     {% endfor %}
-                                    <th style="border-style:solid; border-width: 1px;width:26pt;">
-                                        Итого дней
-                                    </th>
-                                    <th style="border-style:solid; border-width: 1px;width:36pt;">
-                                        Итого часов
-                                    </th>
-                                    <th style="border-style:solid; border-width: 1px;width:37pt;">
-                                        Неявки, дней (часов)
-                                    </th>
-                                    <th style="border-style:solid; border-width: 1px;width:63pt;">
-                                        Количество ВХ и ПР дней
-                                    </th>
-                                </tr>
-{#                                <tr>#}
-{#                                    <th style="border-style:solid; border-width: 1px;height:11.1pt;">#}
-{#                                        1#}
-{#                                    </th>#}
-{#                                    <th style="border-style:solid; border-width: 1px;border-top-style:none;">#}
-{#                                        2#}
-{#                                    </th>#}
-{#                                    <th style="border-style:solid; border-width: 1px;" colspan="{{ last_day }}">#}
-{#                                        3#}
-{#                                    </th>#}
-{#                                    <th style="border-style:solid; border-width: 1px;">#}
-{#                                        4#}
-{#                                    </th>#}
-{#                                    <th style="border-style:solid; border-width: 1px;">#}
-{#                                        5#}
-{#                                    </th>#}
-{#                                    <th style="border-style:solid; border-width: 1px;">#}
-{#                                        6#}
-{#                                    </th>#}
-{#                                    <th style="border-style:solid; border-width: 1px;">#}
-{#                                        7#}
-{#                                    </th>#}
-{#                                </tr>#}
-                                {% for key, value in all_dict.items %}
-                                    <tr>
-{#                                        <td style="border-style:solid; border-width: 1px;height:22.5pt;" rowspan="2">#}
-{#                                            {{ forloop.counter }}#}
-{#                                        </td>#}
-                                        <td style="border-style:solid; border-width: 1px;width:144pt;  background-color: #ffffff" rowspan="2">
-                                            {{ key }}
-                                        </td>
-                                        {% for item1, item2, item3 in value.dict_count %}
-                                            <td style="{% if item2 == 'В' %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;">
-                                                {{ item2 }}
-                                            </td>
-                                        {% endfor %}
-
-
-                                        <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
-                                            rowspan="2">
-                                            {{ value.days_count }}
-                                        </td>
-
-                                        <td style="{% if value.vacation_time < norm_time %}background-color:#ff0116;{% else %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;"
-                                            rowspan="2">
-                                            {{ value.time_count_hour | safe }}
-                                        </td>
-                                        <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
-                                            style="border-left-style:none;">
-                                            {{ value.absences }}
-                                        </td>
-                                        <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
-                                            rowspan="2">
-                                            {{ value.holidays }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        {% for item1, item2, item3 in value.dict_count %}
-                                            <td style="border-style:solid; border-width: 1px;height:11.25pt;">
-                                                {{ item3 }}
-                                            </td>
-                                        {% endfor %}
-
-                                        <td style="border-style:solid; border-width: 1px;">
-                                            {{ value.absences | multiply:8 }}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
                                 </tbody>
                             </table>
+
+{#                            <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"#}
+                            {#                                   style="min-width: 1000px; display: block; height: 700px; overflow: auto;">#}
+                            {#                                <tbody>#}
+                            {#                                <tr>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;height:90.75pt;width:22pt;">#}
+                            {#                                        №#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;width:144pt;">#}
+                            {#                                        ФИО#}
+                            {#                                    </th>#}
+                            {#                                    {% for key, value in month_obj %}#}
+                            {#                                        <th style="border-style:solid; border-width: 1px;height:48.75pt;width:18pt; background-color: #ffffff">#}
+                            {#                                            {{ key | date:"d" }}#}
+                            {#                                        </th>#}
+                            {#                                    {% endfor %}#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;width:26pt;">#}
+                            {#                                        Итого дней#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;width:36pt;">#}
+                            {#                                        Итого часов#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;width:37pt;">#}
+                            {#                                        Неявки, дней (часов)#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;width:63pt;">#}
+                            {#                                        Количество ВХ и ПР дней#}
+                            {#                                    </th>#}
+                            {#                                </tr>#}
+                            {#                                <tr>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;height:11.1pt;">#}
+                            {#                                        1#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;border-top-style:none;">#}
+                            {#                                        2#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;" colspan="{{ last_day }}">#}
+                            {#                                        3#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;">#}
+                            {#                                        4#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;">#}
+                            {#                                        5#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;">#}
+                            {#                                        6#}
+                            {#                                    </th>#}
+                            {#                                    <th style="border-style:solid; border-width: 1px;">#}
+                            {#                                        7#}
+                            {#                                    </th>#}
+                            {#                                </tr>#}
+                            {#                                {% for key, value in all_dict.items %}#}
+                            {#                                    <tr>#}
+                            {#                                        <td style="border-style:solid; border-width: 1px;height:22.5pt;" rowspan="2">#}
+                            {#                                            {{ forloop.counter }}#}
+                            {#                                        </td>#}
+                            {#                                        <td style="border-style:solid; border-width: 1px;width:144pt;  background-color: #ffffff"#}
+                            {#                                            rowspan="2">#}
+                            {#                                            {{ key }}#}
+                            {#                                        </td>#}
+                            {#                                        {% for item1, item2, item3 in value.dict_count %}#}
+                            {#                                            <td style="{% if item2 == 'В' %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;">#}
+                            {#                                                {{ item2 }}#}
+                            {#                                            </td>#}
+                            {#                                        {% endfor %}#}
+                            {##}
+                            {##}
+                            {#                                        <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"#}
+                            {#                                            rowspan="2">#}
+                            {#                                            {{ value.days_count }}#}
+                            {#                                        </td>#}
+                            {##}
+                            {#                                        <td style="{% if value.vacation_time < norm_time %}background-color:#ff0116;{% else %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;"#}
+                            {#                                            rowspan="2">#}
+                            {#                                            {{ value.time_count_hour | safe }}#}
+                            {#                                        </td>#}
+                            {#                                        <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"#}
+                            {#                                            style="border-left-style:none;">#}
+                            {#                                            {{ value.absences }}#}
+                            {#                                        </td>#}
+                            {#                                        <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"#}
+                            {#                                            rowspan="2">#}
+                            {#                                            {{ value.holidays }}#}
+                            {#                                        </td>#}
+                            {#                                    </tr>#}
+                            {#                                    <tr>#}
+                            {#                                        {% for item1, item2, item3 in value.dict_count %}#}
+                            {#                                            <td style="border-style:solid; border-width: 1px;height:11.25pt;">#}
+                            {#                                                {{ item3 }}#}
+                            {#                                            </td>#}
+                            {#                                        {% endfor %}#}
+                            {##}
+                            {#                                        <td style="border-style:solid; border-width: 1px;">#}
+                            {#                                            {{ value.absences | multiply:8 }}#}
+                            {#                                        </td>#}
+                            {#                                    </tr>#}
+                            {#                                {% endfor %}#}
+                            {#                                </tbody>#}
+                            {#                            </table>#}
                             <hr class="solid mt-5 opacity-4">
                         </div>
                     </div>
