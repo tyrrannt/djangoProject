@@ -221,7 +221,8 @@
                     $("#id_document_date").trigger("create")
                     if (data === 'ok') {
                         console.log("success");
-                    }
+                    };
+                    DocumentsDateChange();
                 },
                 failure: function (data) {
                     console.log("failure");
@@ -231,6 +232,7 @@
         function DocumentsDateChange() {
             document_date = document.getElementById("id_document_date").value;
             var document_number = document.getElementById("id_document_number");
+            var access = document.getElementById("id_access");
             $.ajax({
                 type: "GET",
                 url: '{% url 'hrdepartment_app:order_add' %}',
@@ -240,6 +242,8 @@
                 dataType: "json",
                 success: function (data) {
                     // any process in data
+                    $('#id_access option[value=4]').prop('selected', true);
+                    $("#id_access").trigger("create")
                     document_number.removeAttribute("placeholder")
                     document_number.setAttribute("placeholder", data['document_date'])
                     $("#id_document_number").trigger("create")
