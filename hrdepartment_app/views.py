@@ -492,7 +492,6 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                 dict_obj.append(max_date)
             else:
                 dict_obj.append(period_for_value)
-            print(period_for_value, dict_obj)
             return JsonResponse(dict_obj, safe=False)
         return super(OfficialMemoUpdate, self).get(request, *args, **kwargs)
 
@@ -981,7 +980,6 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by(
                     'document__responsible')
             dict_obj = dict()
-            print(qs)
             for item in qs.all().order_by('document__person__last_name'):
                 list_obj = []
                 person = FIO_format(str(item.document.person))
@@ -1274,7 +1272,6 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             return JsonResponse(dict_obj, safe=False)
         document_date = request.GET.get('document_date', None)
         if document_date:
-            print(document_date)
             document_date = datetime.datetime.strptime(document_date, '%Y-%m-%d')
             order_list = [item.document_number for item in
                           DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
@@ -1535,7 +1532,6 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         for user_obj in users_obj_set:
             data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(
                 user_obj, current_day, state=2)
-            print(data_dict)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             if absences_delta < 0:
@@ -1620,7 +1616,6 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         for user_obj in users_obj_set:
             data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(
                 user_obj, current_day, state=1)
-            print(data_dict)
             absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
             absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             if absences_delta < 0:
@@ -1679,7 +1674,6 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
                                                   minutes=personal_end.minute) + datetime.timedelta(hours=1)
             result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'),
                       datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
-            print(result, datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M'))
             return JsonResponse(result, safe=False)
         return super().get(request, *args, **kwargs)
 
@@ -1754,7 +1748,6 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
                                                   minutes=personal_end.minute) + datetime.timedelta(hours=1)
             result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'),
                       datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
-            print(result, datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M'))
             return JsonResponse(result, safe=False)
         return super().get(request, *args, **kwargs)
 
