@@ -1469,7 +1469,12 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
                 reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
                                                             Q(report_card_day__in=search_interval)).order_by('report_card_day').reverse()
             else:
-                reportcard_list = ReportCard.objects.filter(record_type='13').order_by('report_card_day').reverse()
+                start_date = datetime.date(year=datetime.datetime.today().year,
+                                           month=datetime.datetime.today().month, day=1)
+                end_date = start_date + relativedelta(days=31)
+                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+                reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
+                                                            Q(report_card_day__in=search_interval)).order_by('report_card_day').reverse()
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
