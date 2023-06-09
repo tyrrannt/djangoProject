@@ -72,7 +72,7 @@
                                             <label for="id_document_date">Дата документа</label>
                                             <input type="date" class="form-control form-control-modern"
                                                    name="document_date" value="{{ object.document_date | date:'c' }}"
-                                                   id="id_document_date"/>
+                                                   id="id_document_date" onchange="DocumentsDateChange()"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_number">Номер документа</label>
