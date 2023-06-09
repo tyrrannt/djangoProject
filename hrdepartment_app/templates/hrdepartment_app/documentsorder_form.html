@@ -229,6 +229,10 @@
                 }
             });
         };
+        /**
+         * ChangeSelect - изменяет поля Select в приказе: id_access - Общий доступ;
+         * id_document_order_type - Личный состав; id_employee - Кирюшкина Ирина Алексеевна
+         */
         function ChangeSelect () {
             $('#id_access').val(4).change();
             $('#id_document_order_type').val(2).change();
@@ -236,6 +240,11 @@
             var index = $('#id_employee option:contains('+text+')').val();
             $('#id_employee').val(index).change();
         };
+        /**
+         * DocumentsDateChange - отправляет на сервер значение даты документа, и получает последний номер приказа
+         * за этот день, и номера отмененных приказов.
+         * Изменяет placeholder поля document_number, на полученные данные, и вызывает функцию ChangeSelect
+         */
         function DocumentsDateChange() {
             document_date = document.getElementById("id_document_date").value;
             var document_number = document.getElementById("id_document_number");
@@ -248,9 +257,6 @@
                 },
                 dataType: "json",
                 success: function (data) {
-                    // any process in data
-                    // $('select[name="access"] > option[value="0"]').prop(selected, false);
-                    // $('select[name="access"] > option[value="1"]').prop(selected, true);
                     ChangeSelect();
                     document_number.removeAttribute("placeholder")
                     document_number.setAttribute("placeholder", data['document_date'])

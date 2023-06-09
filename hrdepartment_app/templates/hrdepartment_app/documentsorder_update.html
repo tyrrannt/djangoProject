@@ -216,7 +216,7 @@
             //var document_date = document.getElementById("id_document_date");
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:order_add' %}',
+                url: '{% url 'hrdepartment_app:order_update' %}',
                 data: {
                     "document_foundation": document_foundation,
                 },
@@ -232,6 +232,48 @@
                     {#document_date.removeAttribute("value")#}
                     {#document_date.setAttribute("value", data['document_date'])#}
                     {#$("#id_document_date").trigger("create")#}
+                    if (data === 'ok') {
+                        console.log("success");
+                    };
+                    DocumentsDateChange();
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+        /**
+         * ChangeSelect - изменяет поля Select в приказе: id_access - Общий доступ;
+         * id_document_order_type - Личный состав; id_employee - Кирюшкина Ирина Алексеевна
+         */
+        function ChangeSelect () {
+            $('#id_access').val(4).change();
+            $('#id_document_order_type').val(2).change();
+            var text = 'Кирюшкина Ирина Алексеевна';
+            var index = $('#id_employee option:contains('+text+')').val();
+            $('#id_employee').val(index).change();
+        };
+        /**
+         * DocumentsDateChange - отправляет на сервер значение даты документа, и получает последний номер приказа
+         * за этот день, и номера отмененных приказов.
+         * Изменяет placeholder поля document_number, на полученные данные, и вызывает функцию ChangeSelect
+         */
+        function DocumentsDateChange() {
+            document_date = document.getElementById("id_document_date").value;
+            var document_number = document.getElementById("id_document_number");
+            var access = document.getElementById("id_access");
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:order_add' %}',
+                data: {
+                    "document_date": document_date,
+                },
+                dataType: "json",
+                success: function (data) {
+                    ChangeSelect();
+                    document_number.removeAttribute("placeholder")
+                    document_number.setAttribute("placeholder", data['document_date'])
+                    $("#id_document_number").trigger("create")
                     if (data === 'ok') {
                         console.log("success");
                     }

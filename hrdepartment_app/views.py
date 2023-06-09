@@ -1342,6 +1342,24 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
                         'document_date': datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')}
 
             return JsonResponse(dict_obj, safe=False)
+        document_date = request.GET.get('document_date', None)
+        if document_date:
+            document_date = datetime.datetime.strptime(document_date, '%Y-%m-%d')
+            order_list = [item.document_number for item in
+                          DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
+                              cancellation=True)]
+            cancel_order = [item.document_number for item in
+                            DocumentsOrder.objects.filter(Q(document_date=document_date) &
+                                                          Q(cancellation=True)).order_by('document_date')]
+            if len(order_list) > 0:
+                if len(cancel_order) > 0:
+                    result = 'Крайний: ' + str(order_list[-1]) + '; Отмененные: ' + '; '.join(cancel_order)
+                else:
+                    result = 'Крайний: ' + str(order_list[-1])
+            else:
+                result = 'За этот день нет приказов.'
+            dict_obj = {'document_date': result}
+            return JsonResponse(dict_obj, safe=False)
         return super().get(request, *args, **kwargs)
 
 
