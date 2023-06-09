@@ -728,7 +728,8 @@ def create_report(sender, instance, **kwargs):
         # file_name = convert(source=source, output_dir=output_dir, soft=0)
         mail_to = instance.document.person.email
         mail_to_copy = instance.person_executor.email
-        subject_mail = 'Направление'
+        type_trip = 'поездку' if instance.document.type_trip == '1' else 'командировку'
+        subject_mail = 'Направление в служебную ' + type_trip
 
         if instance.accommodation == '1':
             accommodation = 'Квартира'
@@ -739,15 +740,18 @@ def create_report(sender, instance, **kwargs):
             'person': str(instance.document.person),
             'place': str(place).strip('[]'),
             'type_trip': 'поездку' if instance.document.type_trip == '1' else 'командировку',
+            'type_trip_second': 'поездки' if instance.document.type_trip == '1' else 'командировки',
             'purpose_trip': str(instance.document.purpose_trip),
             'order_number': str(instance.order.document_number),
-            'order_date': str(instance.order.document_date),
+            'order_date': instance.order.document_date.strftime('%d.%m.%Y'),
             'delta': str(ending_day(int(delta.days) + 1)),
-            'period_from': str(instance.document.period_from),
-            'period_for': str(instance.document.period_for),
+            'period_from': instance.document.period_from.strftime('%d.%m.%Y'),
+            'period_for': instance.document.period_for.strftime('%d.%m.%Y'),
             'accommodation': accommodation,
-            'person_executor': str(instance.person_executor),
-            'person_distributor': str(instance.person_distributor),
+            'person_executor': FIO_format(instance.person_executor),
+            'mail_to_copy': str(instance.person_executor.email),
+            'person_distributor': FIO_format(instance.person_distributor),
+            'Year': str(datetime.datetime.today().year),
         }
         logger.debug(f'Email string: {current_context}')
         text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
