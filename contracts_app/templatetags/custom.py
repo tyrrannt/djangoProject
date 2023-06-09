@@ -32,7 +32,12 @@ def multiply(first, second, *args, **kwargs):
     # you would need to do any localization of the result here
     return first * second
 
+@register.filter(name='has_group')
+def has_group(user, group_name):
+    return user.groups.filter(name=group_name).exists()
 
+
+register.filter('has_group', has_group)
 register.filter('multiply', multiply)
 register.filter('FIO_format', FIO_format)
 register.filter('empty_item', empty_item)

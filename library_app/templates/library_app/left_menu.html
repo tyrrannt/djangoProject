@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom %}
 <!-- start: sidebar -->
 <aside id="sidebar-left" class="sidebar-left">
     <div class="sidebar-header">
@@ -55,7 +56,7 @@
                                             Журнал разъездов
                                         </a>
                                     </li>
-                                    {% if user.is_superuser %}
+                                    {% if user|has_group:"Отчеты РВ" %}
                                     <li>
                                         <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
                                             Табель РВ
