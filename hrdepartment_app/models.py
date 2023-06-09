@@ -1038,9 +1038,10 @@ class ReportCard(models.Model):
     def get_data(self):
         return {
             'pk': self.pk,
-            'report_card_day': self.report_card_day,
-            'start_time': self.start_time,
-            'end_time': str(self.end_time),
+            'employee': FIO_format(self.employee.get_title()),
+            'report_card_day': self.report_card_day.strftime('%d.%m.%Y'),
+            'start_time': self.start_time.strftime('%H:%M'),
+            'end_time': self.end_time.strftime('%H:%M'),
             'reason_adjustment': self.reason_adjustment,
         }
 

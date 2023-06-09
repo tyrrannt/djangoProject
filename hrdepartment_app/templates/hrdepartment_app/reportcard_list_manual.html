@@ -24,7 +24,7 @@
                     <div class="card-body">
                         <div class="row">
                         <div class="col-lg-9">
-                        <form action="{% url 'hrdepartment_app:reportcard_list' %}" method="get">
+                        <form action="{% url 'hrdepartment_app:reportcard_listmanual' %}" method="get">
                         <div class="row">
                             <div class="col-sm-12 col-lg-3 mb-1">
                                 <select class="form-control select-style-1 filter-by" name="report_month"
@@ -50,11 +50,6 @@
                         </div>
                         </form>
                         </div>
-                        <div class="col-lg-3">
-                            <div class="col-sm-12 mb-1">
-                                <button class="btn btn-primary" style="width: 100%" onclick="window.location.href='{% url 'hrdepartment_app:reportcard_add' %}';">Запись в журнал</button>
-                            </div>
-                        </div>
                         </div>
                         <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
                             <div class="row">
@@ -68,6 +63,11 @@
                                             rowspan="1" colspan="1" aria-sort="ascending"
                                             aria-label="Rendering engine: activate to sort column descending"
                                             style="width: 185.391px;">Дата
+                                        </th>
+                                        <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
+                                            rowspan="1" colspan="1" aria-sort="ascending"
+                                            aria-label="Rendering engine: activate to sort column descending"
+                                            style="width: 185.391px;">ФИО
                                         </th>
                                         <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
                                             rowspan="1" colspan="1" aria-sort="ascending"
@@ -123,21 +123,13 @@
                 "ordering": false,
                 "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
-                "ajax": "{% url 'hrdepartment_app:reportcard_list' %}",
+                "ajax": "{% url 'hrdepartment_app:reportcard_listmanual' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
-                    $(nRow).attr("href", '/hr/report/' + id + '/update/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
-                    });
-                },
                 "columns": [
                     {"data": "report_card_day"},
+                    {"data": "employee"},
                     {"data": "start_time"},
                     {"data": "end_time"},
                     {"data": "reason_adjustment"},

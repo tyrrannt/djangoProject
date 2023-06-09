@@ -1425,10 +1425,10 @@ class ReportCardList(LoginRequiredMixin, ListView):
                 end_date = start_date + relativedelta(days=31)
                 search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
                 reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13') & Q(
-                    report_card_day__in=search_interval)).order_by('report_card_day')
+                    report_card_day__in=search_interval)).order_by('report_card_day').reverse()
             else:
                 reportcard_list = ReportCard.objects.filter(
-                    Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
+                    Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day').reverse()
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -1447,6 +1447,7 @@ class ReportCardList(LoginRequiredMixin, ListView):
 
 class ReportCardListManual(LoginRequiredMixin, ListView):
     model = ReportCard
+    template_name = 'hrdepartment_app/reportcard_list_manual.html'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -1465,11 +1466,10 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
                                            month=int(request.session['current_month']), day=1)
                 end_date = start_date + relativedelta(days=31)
                 search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13') & Q(
-                    report_card_day__in=search_interval)).order_by('report_card_day')
+                reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
+                                                            Q(report_card_day__in=search_interval)).order_by('report_card_day').reverse()
             else:
-                reportcard_list = ReportCard.objects.filter(
-                    Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day')
+                reportcard_list = ReportCard.objects.filter(record_type='13').order_by('report_card_day').reverse()
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
