@@ -738,6 +738,7 @@ def create_report(sender, instance, **kwargs):
             'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
             'person': str(instance.document.person),
             'place': str(place).strip('[]'),
+            'type_trip': 'поездку' if instance.document.type_trip == '1' else 'командировку',
             'purpose_trip': str(instance.document.purpose_trip),
             'order_number': str(instance.order.document_number),
             'order_date': str(instance.order.document_date),
