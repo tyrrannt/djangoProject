@@ -1344,7 +1344,6 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
             return JsonResponse(dict_obj, safe=False)
         document_date = request.GET.get('document_date', None)
         if document_date:
-            print(document_date)
             document_date = datetime.datetime.strptime(document_date, '%Y-%m-%d')
             order_list = [item.document_number for item in
                           DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
