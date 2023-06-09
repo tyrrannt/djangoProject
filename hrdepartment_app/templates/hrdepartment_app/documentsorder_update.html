@@ -216,7 +216,7 @@
             //var document_date = document.getElementById("id_document_date");
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:order_update' %}',
+                url: '{% url 'hrdepartment_app:order_update' object.pk %}',
                 data: {
                     "document_foundation": document_foundation,
                 },
@@ -264,7 +264,7 @@
             var access = document.getElementById("id_access");
             $.ajax({
                 type: "GET",
-                url: '{% url 'hrdepartment_app:order_add' %}',
+                url: '{% url 'hrdepartment_app:order_update' object.pk %}',
                 data: {
                     "document_date": document_date,
                 },
