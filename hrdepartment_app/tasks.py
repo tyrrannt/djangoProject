@@ -7,9 +7,11 @@ from random import randrange
 import requests
 from dateutil.relativedelta import relativedelta
 from decouple import config
+from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from loguru import logger
 
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
@@ -37,6 +39,13 @@ def send_email():
     print('It is work!')
 
 
+def change_sign():
+    list_obj = HappyBirthdayGreetings.objects.all()
+    for item in list_obj:
+        item.sign = 'Генеральный директор<br>ООО Авиакомпания "БАРКОЛ"<br>Бархотов В.С.<br>и весь коллектив!!!'
+        item.save()
+
+
 def send_mail(person: DataBaseUser, age: int, record: Posts):
     if not record.email_send:
         mail_to = person.email
@@ -57,11 +66,12 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
         logger.debug(f'Email string: {current_context}')
         text_content = render_to_string('hrdepartment_app/happy_birthday.html', current_context)
         html_content = render_to_string('hrdepartment_app/happy_birthday.html', current_context)
-        first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
-                                           [mail_to, ])
-        first_msg.attach_alternative(html_content, "text/html")
+        plain_message = strip_tags(html_content)
+        # first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
+        #                                    [mail_to, ])
+        # first_msg.attach_alternative(html_content, "text/html")
         try:
-            first_msg.send()
+            mail.send_mail(subject_mail, plain_message, EMAIL_HOST_USER, [mail_to], html_message=html_content)
             record.email_send = True
             record.save()
         except Exception as _ex:

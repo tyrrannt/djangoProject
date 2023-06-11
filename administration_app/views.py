@@ -16,7 +16,7 @@ from administration_app.utils import get_users_info, change_users_password, get_
     get_jsons_data_filter2, get_types_userworktime, get_date_interval
 from customers_app.models import DataBaseUser, Groups, Job
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day
-from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc
+from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -130,7 +130,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '4':
                 # pass
                 # report_card_separator_loc()
-                happy_birthday_loc()
+                change_sign()
                 # Получение видов рабочего времени с 1с
                 # dt = get_types_userworktime()
                 # for item in dt['value']:

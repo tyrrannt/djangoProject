@@ -470,7 +470,7 @@ class HappyBirthdayGreetings(models.Model):
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
                               help_text='', default='')
     greetings = models.TextField(blank=True)
-    sign = models.TextField(verbose_name='Подпись', default='Генеральный директор ООО Авиакомпания "БАРКОЛ" Бархотов В.С. и весь коллектив!')
+    sign = models.TextField(verbose_name='Подпись', default='Генеральный директор<br>ООО Авиакомпания "БАРКОЛ"<br>Бархотов В.С.<br>и весь коллектив!!!')
 
     def __str__(self):
         if self.age_from == self.age_to:
