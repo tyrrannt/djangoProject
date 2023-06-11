@@ -110,7 +110,7 @@ def happy_birthday():
     today = datetime.datetime.today()
     posts_dict = dict()
     division = [item.pk for item in Division.objects.filter(active=True)]
-    list_birthday_people = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month))
+    list_birthday_people = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month)).exclude(is_active=False)
     description = ''
     for item in list_birthday_people:
         age = today.year - item.birthday.year
