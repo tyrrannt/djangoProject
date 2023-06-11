@@ -130,7 +130,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '4':
                 # pass
                 # report_card_separator_loc()
-                change_sign()
+                happy_birthday_loc()
                 # Получение видов рабочего времени с 1с
                 # dt = get_types_userworktime()
                 # for item in dt['value']:

@@ -51,7 +51,7 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
         mail_to = person.email
         gender = person.gender
         print(age)
-        subject_mail = 'Поздравление с днем рождения!'
+        subject_mail = f'{person.first_name} {person.surname} поздравляем Вас с днем рождения!'
         greet = HappyBirthdayGreetings.objects.filter(Q(gender=gender) & Q(age_from__lte=age) & Q(age_to__gte=age))
         print(len(greet))
         rec_no = randrange(len(greet))
@@ -71,7 +71,7 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
         #                                    [mail_to, ])
         # first_msg.attach_alternative(html_content, "text/html")
         try:
-            mail.send_mail(subject_mail, plain_message, EMAIL_HOST_USER, [mail_to], html_message=html_content)
+            mail.send_mail(subject_mail, plain_message, EMAIL_HOST_USER, [mail_to, EMAIL_HOST_USER, ], html_message=html_content)
             record.email_send = True
             record.save()
         except Exception as _ex:
@@ -125,11 +125,13 @@ def happy_birthday():
         post, created = Posts.objects.update_or_create(post_description=description, defaults=posts_dict)
 
         if created:
-            send_mail(item, age, post.pk)
             post.post_divisions.add(*division)
             post.save()
+            if not post.email_send:
+                send_mail(item, age, post)
         else:
-            send_mail(item, age, Posts.objects.filter(description=description).first())
+            if not post.email_send:
+                send_mail(item, age, Posts.objects.filter(post_description=description).first())
 
 
 # @app.task()
