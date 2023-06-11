@@ -429,6 +429,7 @@ class Posts(models.Model):
                                     null=True, related_name='responsible_person')
     post_date_start = models.DateField(verbose_name='Дата начала отображения', blank=True, null=True)
     post_date_end = models.DateField(verbose_name='Дата окончания отображения', blank=True, null=True)
+    email_send = models.BooleanField(verbose_name='Письмо отправлено', default=False)
 
     def __str__(self):
         return f'{self.creation_date} / {self.pk}'
@@ -469,6 +470,7 @@ class HappyBirthdayGreetings(models.Model):
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
                               help_text='', default='')
     greetings = models.TextField(blank=True)
+    sign = models.TextField(verbose_name='Подпись', default='Генеральный директор<br>ООО Авиакомпания "БАРКОЛ"<br>Бархотов В.С. и весь коллектив!')
 
     def __str__(self):
         if self.age_from == self.age_to:

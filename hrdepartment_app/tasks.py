@@ -2,16 +2,19 @@
 import datetime
 import json
 import pathlib
+from random import randrange
 
 import requests
 from dateutil.relativedelta import relativedelta
 from decouple import config
+from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
+from django.template.loader import render_to_string
 from loguru import logger
 
-from customers_app.models import DataBaseUser, Division, Posts
+from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
 from djangoProject.celery import app
-from djangoProject.settings import BASE_DIR
+from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER
 from hrdepartment_app.models import ReportCard
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -34,15 +37,46 @@ def send_email():
     print('It is work!')
 
 
-@app.task()
-def happy_birthday():
+def send_mail(person: DataBaseUser, age: int, record: Posts):
+    if not record.email_send:
+        mail_to = person.email
+        gender = person.gender
+        print(age)
+        subject_mail = 'Поздравление с днем рождения!'
+        greet = HappyBirthdayGreetings.objects.filter(Q(gender=gender) & Q(age_from__lte=age) & Q(age_to__gte=age))
+        print(len(greet))
+        rec_no = randrange(len(greet))
+        print(greet[rec_no])
+        text = greet[rec_no].greetings
+        current_context = {
+            'name': person.first_name,
+            'surname': person.surname,
+            'text': greet[rec_no].greetings,
+            'sign': greet[rec_no].sign,
+        }
+        logger.debug(f'Email string: {current_context}')
+        text_content = render_to_string('hrdepartment_app/happy_birthday.html', current_context)
+        html_content = render_to_string('hrdepartment_app/happy_birthday.html', current_context)
+        first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
+                                           [mail_to, ])
+        first_msg.attach_alternative(html_content, "text/html")
+        try:
+            first_msg.send()
+            record.email_send = True
+            record.save()
+        except Exception as _ex:
+            logger.debug(f'Failed to send email. {_ex}')
+
+
+def happy_birthday_loc():
     today = datetime.datetime.today()
     posts_dict = dict()
     division = [item.pk for item in Division.objects.filter(active=True)]
     list_birthday_people = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month))
     description = ''
     for item in list_birthday_people:
-        description = f'Сегодня {item} празднует свой {today.year - item.birthday.year}-й день рождения!'
+        age = today.year - item.birthday.year
+        description = f'Сегодня {item} празднует свой {age}-й день рождения!'
         posts_dict = {
             'post_description': description,
             'allowed_placed': True,
@@ -51,9 +85,41 @@ def happy_birthday():
             'post_date_end': datetime.datetime.today(),
         }
         post, created = Posts.objects.update_or_create(post_description=description, defaults=posts_dict)
+
         if created:
             post.post_divisions.add(*division)
             post.save()
+            if not post.email_send:
+                send_mail(item, age, post)
+        else:
+            if not post.email_send:
+                send_mail(item, age, Posts.objects.filter(post_description=description).first())
+
+@app.task()
+def happy_birthday():
+    today = datetime.datetime.today()
+    posts_dict = dict()
+    division = [item.pk for item in Division.objects.filter(active=True)]
+    list_birthday_people = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month))
+    description = ''
+    for item in list_birthday_people:
+        age = today.year - item.birthday.year
+        description = f'Сегодня {item} празднует свой {age}-й день рождения!'
+        posts_dict = {
+            'post_description': description,
+            'allowed_placed': True,
+            'responsible': DataBaseUser.objects.get(pk=1),
+            'post_date_start': datetime.datetime.today(),
+            'post_date_end': datetime.datetime.today(),
+        }
+        post, created = Posts.objects.update_or_create(post_description=description, defaults=posts_dict)
+
+        if created:
+            send_mail(item, age, post.pk)
+            post.post_divisions.add(*division)
+            post.save()
+        else:
+            send_mail(item, age, Posts.objects.filter(description=description).first())
 
 
 # @app.task()
