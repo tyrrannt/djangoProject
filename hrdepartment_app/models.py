@@ -514,7 +514,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         return reverse('hrdepartment_app:bpmemo_list')
 
     def send_mail(self, title, trigger=0):
-        # Отмена
+        # Отмена СП или СК
         if not self.cancellation and trigger == 0:
             mail_to = self.document.person.email
             mail_to_copy_first = self.person_executor.email
@@ -548,6 +548,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             except Exception as _ex:
                 logger.debug(f'Failed to send email. {_ex}')
         if trigger == 1:
+            # Повторное уведомление об СП или СК
             type_of = ['Служебная квартира', 'Гостиница']
 
             if self.process_accepted:
@@ -595,7 +596,24 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 file_name = convert(source=source, output_dir=output_dir, soft=0)
                 mail_to = self.document.person.email
                 # mail_to_copy = self.person_executor.email
-                subject_mail = 'Направление'
+                type_trip = 'поездку' if self.document.type_trip == '1' else 'командировку'
+
+                official_memo_type = self.document.official_memo_type
+                if official_memo_type == '1':
+                    subject_mail = 'Направление в служебную ' + type_trip
+                    type_trip_title = 'Вы направляетесь в служебную ' + type_trip
+                    type_trip_variant = 'направлении в служебную ' + type_trip
+                    type_trip_variant_second = 'направление в служебную ' + type_trip
+                    type_trip_extension = ''
+                else:
+                    subject_mail = 'Продление служебной ' + type_trip[0:-1] + 'и: с ' + \
+                                   str(self.document.period_from.strftime('%d.%m.%Y')) + ' г. по ' + \
+                                   str(self.document.period_for.strftime('%d.%m.%Y')) + ' г. ' + \
+                                   str(self.document.document_extension.order)
+                    type_trip_title = 'Вам продлена служебная ' + type_trip[0:-1] + 'а'
+                    type_trip_variant = 'продлении служебной ' + type_trip[0:-1] + 'и'
+                    type_trip_variant_second = 'продление служебной ' + type_trip[0:-1] + 'и'
+                    type_trip_extension = 'Внимание! При продлении служебной поездки или служебной командировки, новое служебное задание не высылается. Отметки и печати о выбытии и прибытии в пункты назначения проставляются в основном служебном задании.'
 
                 if self.accommodation == '1':
                     accommodation = 'Квартира'
@@ -605,15 +623,22 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                     'greetings': 'Уважаемый' if self.document.person.gender == 'male' else 'Уважаемая',
                     'person': str(self.document.person),
                     'place': str(place).strip('[]'),
+                    'type_trip': type_trip_title,
+                    'type_trip_variant': type_trip_variant,
+                    'type_trip_variant_second': type_trip_variant_second,
+                    'type_trip_second': 'поездки' if self.document.type_trip == '1' else 'командировки',
                     'purpose_trip': str(self.document.purpose_trip),
                     'order_number': str(self.order.document_number),
-                    'order_date': str(self.order.document_date),
+                    'order_date': self.order.document_date.strftime('%d.%m.%Y'),
                     'delta': str(ending_day(int(delta.days) + 1)),
-                    'period_from': str(self.document.period_from),
-                    'period_for': str(self.document.period_for),
+                    'period_from': self.document.period_from.strftime('%d.%m.%Y'),
+                    'period_for': self.document.period_for.strftime('%d.%m.%Y'),
                     'accommodation': accommodation,
-                    'person_executor': str(self.person_executor),
-                    'person_distributor': str(self.person_distributor),
+                    'person_executor': FIO_format(self.person_executor),
+                    'mail_to_copy': str(self.person_executor.email),
+                    'person_distributor': FIO_format(self.person_distributor),
+                    'Year': str(datetime.datetime.today().year),
+                    'type_trip_extension': type_trip_extension,
                 }
                 logger.debug(f'Email string: {current_context}')
                 text_content = render_to_string('hrdepartment_app/email_template.html', current_context)
@@ -720,7 +745,7 @@ def create_report(sender, instance, **kwargs):
         from msoffice2pdf import convert
         source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
         output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-        file_name = convert(source=source, output_dir=output_dir, soft=0)
+        file_name = convert(source=source, output_dir=output_dir)
 
         # from msoffice2pdf import convert
         # source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
@@ -729,7 +754,23 @@ def create_report(sender, instance, **kwargs):
         mail_to = instance.document.person.email
         mail_to_copy = instance.person_executor.email
         type_trip = 'поездку' if instance.document.type_trip == '1' else 'командировку'
-        subject_mail = 'Направление в служебную ' + type_trip
+
+        official_memo_type = instance.document.official_memo_type
+        if official_memo_type == '1':
+            subject_mail = 'Направление в служебную ' + type_trip
+            type_trip_title = 'Вы направляетесь в служебную ' + type_trip
+            type_trip_variant = 'направлении в служебную ' + type_trip
+            type_trip_variant_second = 'направление в служебную ' + type_trip
+            type_trip_extension = ''
+        else:
+            subject_mail = 'Продление служебной ' + type_trip[0:-1] + 'и: с ' + \
+                           str(instance.document.period_from.strftime('%d.%m.%Y')) + ' г. по ' + \
+                           str(instance.document.period_for.strftime('%d.%m.%Y')) + ' г. Приказ:  ' + \
+                               str(instance.document.order)
+            type_trip_title = 'Вам продлена служебная ' + type_trip[0:-1] + 'а'
+            type_trip_variant = 'продлении служебной ' + type_trip[0:-1] + 'и'
+            type_trip_variant_second = 'продление служебной ' + type_trip[0:-1] + 'и'
+            type_trip_extension = 'Внимание! При продлении служебной поездки или служебной командировки, новое служебное задание не высылается. Отметки и печати о выбытии и прибытии в пункты назначения проставляются в основном служебном задании.'
 
         if instance.accommodation == '1':
             accommodation = 'Квартира'
@@ -739,7 +780,9 @@ def create_report(sender, instance, **kwargs):
             'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
             'person': str(instance.document.person),
             'place': str(place).strip('[]'),
-            'type_trip': 'поездку' if instance.document.type_trip == '1' else 'командировку',
+            'type_trip': type_trip_title,
+            'type_trip_variant': type_trip_variant,
+            'type_trip_variant_second': type_trip_variant_second,
             'type_trip_second': 'поездки' if instance.document.type_trip == '1' else 'командировки',
             'purpose_trip': str(instance.document.purpose_trip),
             'order_number': str(instance.order.document_number),
@@ -752,6 +795,7 @@ def create_report(sender, instance, **kwargs):
             'mail_to_copy': str(instance.person_executor.email),
             'person_distributor': FIO_format(instance.person_distributor),
             'Year': str(datetime.datetime.today().year),
+            'type_trip_extension': type_trip_extension,
         }
         logger.debug(f'Email string: {current_context}')
         text_content = render_to_string('hrdepartment_app/email_template.html', current_context)

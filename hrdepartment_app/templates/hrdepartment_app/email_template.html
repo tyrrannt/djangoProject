@@ -267,27 +267,30 @@
                                     style="color: #888888; font-size: 16px; font-family: 'Work Sans', Calibri, sans-serif; line-height: 24px;">
                                     <!-- section text ======-->
                                     <p style="line-height: 24px; margin-bottom:15px;">
-                                        Вы направляетесь в служебную {{ type_trip }} в: <strong>{{ place }}</strong>
+                                        {{ type_trip }} в: <strong>{{ place }}</strong>
                                     </p>
                                     <p style="line-height: 24px;margin-bottom:15px;">
                                         С целью: <strong>{{ purpose_trip }}</strong>
                                     </p>
                                     <p style="line-height: 24px; margin-bottom:20px;">
-                                        Номер приказа о направлении в служебную {{ type_trip }} №
+                                        Номер приказа о {{ type_trip_variant }} №
                                         <strong>{{ order_number }}</strong> от <strong>{{ order_date }} г.</strong>
                                     </p>
                                     <p style="line-height: 24px; margin-bottom:20px;">
-                                        На <strong>{{ delta }}</strong> с <strong>{{ period_from }}</strong> по
-                                        <strong>{{ period_for }}</strong>
+                                        На <strong>{{ delta }}</strong> с <strong>{{ period_from }} г.</strong> по
+                                        <strong>{{ period_for }} г.</strong>
                                     </p>
                                     <p style="line-height: 24px; margin-bottom:20px;">
                                         Место проживания: <strong>{{ accommodation }}</strong>
                                     </p>
                                     <p style="line-height: 24px">
                                         Ответственные лица:</br>
-                                        За направления в служебную {{ type_trip }}:
+                                        За {{ type_trip_variant_second }}:
                                         <strong>{{ person_executor }}</strong></br>
                                         За место проживания: <strong>{{ person_distributor }}</strong></br>
+                                    </p></br>
+                                    <p style="line-height: 24px; color: #0c00ad">
+                                        <strong>{{ type_trip_extension }}</strong></br>
                                     </p>
                                 </td>
                             </tr>
