@@ -581,25 +581,25 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
                 ws['L6'] = self.document.period_from.strftime("%d.%m.%y")
                 ws['O6'] = self.document.period_for.strftime("%d.%m.%y")
-                ws['C8'] = str(place).strip('[]')
+                ws['C8'] = ', '.join(place)
                 ws['C9'] = str(self.document.purpose_trip)
                 ws['A90'] = str(self.person_agreement.user_work_profile.job) + ', ' + FIO_format(
                     self.person_agreement)
 
                 wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
                 wb.close()
-                # Конвертируем xlsx в pdf
-                # Удалить
-                from msoffice2pdf import convert
-                source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-                output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-                file_name = convert(source=source, output_dir=output_dir, soft=0)
+
                 mail_to = self.document.person.email
                 # mail_to_copy = self.person_executor.email
                 type_trip = 'поездку' if self.document.type_trip == '1' else 'командировку'
-
                 official_memo_type = self.document.official_memo_type
                 if official_memo_type == '1':
+                    # Конвертируем xlsx в pdf
+                    # Удалить
+                    from msoffice2pdf import convert
+                    source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+                    output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+                    file_name = convert(source=source, output_dir=output_dir, soft=0)
                     subject_mail = 'Направление в служебную ' + type_trip
                     type_trip_title = 'Вы направляетесь в служебную ' + type_trip
                     type_trip_variant = 'направлении в служебную ' + type_trip
@@ -619,10 +619,11 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                     accommodation = 'Квартира'
                 else:
                     accommodation = 'Гостиница'
+                print(str(place).strip("['']"), place)
                 current_context = {
                     'greetings': 'Уважаемый' if self.document.person.gender == 'male' else 'Уважаемая',
                     'person': str(self.document.person),
-                    'place': str(place).strip('[]'),
+                    'place': ', '.join(place),
                     'type_trip': type_trip_title,
                     'type_trip_variant': type_trip_variant,
                     'type_trip_variant_second': type_trip_variant_second,
@@ -680,7 +681,7 @@ def hr_accepted(sender, instance, **kwargs):
                 else:
                     record_type = '15'
                 start_time, end_time, type_of_day = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
-                                                 datetime.datetime(1, 1, 1, 18, 0).time())
+                                                              datetime.datetime(1, 1, 1, 18, 0).time())
                 report_kwargs = {
                     'report_card_day': date,
                     'rec_no': instance.pk + instance.document.person.pk,
@@ -733,30 +734,26 @@ def create_report(sender, instance, **kwargs):
         ws['H6'] = 'на ' + ending_day(int(delta.days) + 1)
         ws['L6'] = instance.document.period_from.strftime("%d.%m.%y")
         ws['O6'] = instance.document.period_for.strftime("%d.%m.%y")
-        ws['C8'] = str(place).strip('[]')
+        ws['C8'] = ', '.join(place)
         ws['C9'] = str(instance.document.purpose_trip)
         ws['A90'] = str(instance.person_agreement.user_work_profile.job) + ', ' + FIO_format(
             instance.person_agreement)
 
         wb.save(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
         wb.close()
-        # Конвертируем xlsx в pdf
-        # Удалить
-        from msoffice2pdf import convert
-        source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-        output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-        file_name = convert(source=source, output_dir=output_dir)
 
-        # from msoffice2pdf import convert
-        # source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
-        # output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
-        # file_name = convert(source=source, output_dir=output_dir, soft=0)
         mail_to = instance.document.person.email
         mail_to_copy = instance.person_executor.email
         type_trip = 'поездку' if instance.document.type_trip == '1' else 'командировку'
 
         official_memo_type = instance.document.official_memo_type
         if official_memo_type == '1':
+            # Конвертируем xlsx в pdf
+            # Удалить
+            from msoffice2pdf import convert
+            source = str(pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, 'media'), filepath_name))
+            output_dir = str(pathlib.Path.joinpath(BASE_DIR, 'media'))
+            file_name = convert(source=source, output_dir=output_dir, soft=0)
             subject_mail = 'Направление в служебную ' + type_trip
             type_trip_title = 'Вы направляетесь в служебную ' + type_trip
             type_trip_variant = 'направлении в служебную ' + type_trip
@@ -766,7 +763,7 @@ def create_report(sender, instance, **kwargs):
             subject_mail = 'Продление служебной ' + type_trip[0:-1] + 'и: с ' + \
                            str(instance.document.period_from.strftime('%d.%m.%Y')) + ' г. по ' + \
                            str(instance.document.period_for.strftime('%d.%m.%Y')) + ' г. Приказ:  ' + \
-                               str(instance.document.order)
+                           str(instance.document.order)
             type_trip_title = 'Вам продлена служебная ' + type_trip[0:-1] + 'а'
             type_trip_variant = 'продлении служебной ' + type_trip[0:-1] + 'и'
             type_trip_variant_second = 'продление служебной ' + type_trip[0:-1] + 'и'
@@ -779,7 +776,7 @@ def create_report(sender, instance, **kwargs):
         current_context = {
             'greetings': 'Уважаемый' if instance.document.person.gender == 'male' else 'Уважаемая',
             'person': str(instance.document.person),
-            'place': str(place).strip('[]'),
+            'place': ', '.join(place),
             'type_trip': type_trip_title,
             'type_trip_variant': type_trip_variant,
             'type_trip_variant_second': type_trip_variant_second,
@@ -855,7 +852,7 @@ def order_doc(obj_model, filepath, filename, request):
                        'ServiceNum': obj_model.document_foundation.person.service_number,
                        'Division': obj_model.document_foundation.person.user_work_profile.divisions,
                        'Job': obj_model.document_foundation.person.user_work_profile.job,
-                       'Place': str(place).strip('[]').replace("'", ""),
+                       'Place': ', '.join(place),
                        'DateCount': str(int(delta.days) + 1),
                        'DateFrom': f'{obj_model.document_foundation.period_from.strftime("%d.%m.%Y")} г.',
                        'DateFor': f'{obj_model.document_foundation.period_for.strftime("%d.%m.%Y")} г.',
@@ -1147,6 +1144,7 @@ class ProductionCalendar(models.Model):
     get_friday_count - Подсчитывает количество пятниц в месяце
     get_norm_time - Подсчет количества рабочих часов в месяце
     """
+
     class Meta:
         verbose_name = 'Месяц в производственом календаре'
         verbose_name_plural = 'Производственный календарь'
@@ -1232,18 +1230,20 @@ def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime
 
     return timedelta_to_time(check_time_start), timedelta_to_time(check_time_end), type_of_day
 
+
 class TypesUserworktime(models.Model):
     """
     url = /odata/standard.odata/Catalog_ВидыИспользованияРабочегоВремени?$format=application/json;odata=nometadata
     """
+
     class Meta:
         verbose_name = 'Вид использования рабочего времени'
         verbose_name_plural = 'Виды использования рабочего времени'
 
-    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='') # поле в 1с: Ref_Key
-    description = models.CharField(verbose_name='Наименование', max_length=150, default='') # поле в 1с: Description
-    letter_code = models.CharField(verbose_name='Буквенный код', max_length=5, default='') # поле в 1с: БуквенныйКод
-    active = models.BooleanField(verbose_name='Используется', default=False) # поле в 1с: БуквенныйКод
+    ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')  # поле в 1с: Ref_Key
+    description = models.CharField(verbose_name='Наименование', max_length=150, default='')  # поле в 1с: Description
+    letter_code = models.CharField(verbose_name='Буквенный код', max_length=5, default='')  # поле в 1с: БуквенныйКод
+    active = models.BooleanField(verbose_name='Используется', default=False)  # поле в 1с: БуквенныйКод
 
     def __str__(self):
         return self.description
