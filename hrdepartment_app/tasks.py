@@ -50,7 +50,10 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
     if not record.email_send:
         mail_to = person.email
         gender = person.gender
-        print(age)
+        if gender == 'male':
+            color = '#b5e0ff'
+        else:
+            color = '#ffc0cb'
         subject_mail = f'{person.first_name} {person.surname} поздравляем Вас с днем рождения!'
         greet = HappyBirthdayGreetings.objects.filter(Q(gender=gender) & Q(age_from__lte=age) & Q(age_to__gte=age))
         print(len(greet))
@@ -62,6 +65,7 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
             'surname': person.surname,
             'text': greet[rec_no].greetings,
             'sign': greet[rec_no].sign,
+            'color': color,
         }
         logger.debug(f'Email string: {current_context}')
         text_content = render_to_string('hrdepartment_app/happy_birthday.html', current_context)

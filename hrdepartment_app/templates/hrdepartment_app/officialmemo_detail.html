@@ -121,8 +121,7 @@
                                             <textarea type="text" id="id_place_production_activity"
                                                       class="form-control form-control-modern"
                                                       name="place_production_activity"
-                                                      value="">{% for item in object.place_production_activity.all %}
-                                                {{ item }}&nbsp;{% endfor %}</textarea>
+                                                      value="">{% for item in object.place_production_activity.all %}{{ item }}&nbsp;{% endfor %}</textarea>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
