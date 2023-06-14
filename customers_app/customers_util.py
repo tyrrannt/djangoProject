@@ -458,7 +458,8 @@ def get_vacation_days(self, dates):
             if item['ВидЕжегодногоОтпуска_Key'] not in exclude_vacation:
                 if datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d") > date_admission:
                     days += int(item['Количество'])
-                    print(int(item['Количество']))
+
     dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission_correct, until=datetime.datetime.strptime(dates, '%Y-%m-%d'))]
+    print(((len(dates) - 1) * (28 / 12)), days)
     return round(((len(dates) - 1) * (28 / 12)) - days)
 
