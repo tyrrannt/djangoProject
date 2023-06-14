@@ -347,6 +347,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
     def form_valid(self, form):
         critical_change = 0
+        warning_change = 0
 
         def person_finder(object_item, item, instanse_obj):
             person_list = ['Сотрудник']
@@ -378,6 +379,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                 critical_change = 1
                 message += f'Место назначения: <strike>{place_old}</strike> -> {place_new}\n'
                 changed = True
+            # Доработать замену СЗ
             for k in diffkeys:
                 if k != '_state':
                     if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
@@ -385,13 +387,20 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                     if object_item._meta.get_field(k).verbose_name == 'Дата начала':
                         if new_instance[k] < old_instance[k]:
                             critical_change = 1
+                    if object_item._meta.get_field(k).verbose_name == 'Дата окончания':
+                        print(new_instance[k], old_instance[k], object_item.purpose_trip)
+                        if (new_instance[k] != old_instance[k]) and (str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
+                            warning_change = 1
+                            print('1111111')
                     message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
                     changed = True
+            get_obj = self.get_object()
 
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
+                if warning_change == 1:
+                    send_mail_change(3, get_obj)
             if critical_change == 1:
-                get_obj = self.get_object()
                 try:
                     get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
                     if object_item.order:
@@ -435,6 +444,12 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         employee = request.GET.get('employee', None)
         period_from = request.GET.get('period_from', None)
         memo_type = request.GET.get('memo_type', None)
+        """
+        Функция memo_type_change() в officialmemo_form_update.html. Если в качестве типа служебной записки указывается
+        продление, то происходит выборка служебных записок с полями Сотрудник = Сотрудник, Тип СЗ = направление
+        и поле Принят в бухгалтерию у бизнес процесса по этим СЗ не равно Истина. Поле документ основание заполняется 
+        и в форме появляется возможность выбора
+        """
         if memo_type and employee:
             if memo_type == '2':
                 memo_list = OfficialMemo.objects.filter(

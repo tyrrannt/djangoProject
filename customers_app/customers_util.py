@@ -1,8 +1,12 @@
 import datetime
+from unicodedata import decimal
 
+from dateutil import rrule
+from dateutil.relativedelta import relativedelta
 from loguru import logger
 
-from administration_app.utils import get_jsons_data_filter, get_jsons, get_jsons_data, transliterate, timedelta_to_time
+from administration_app.utils import get_jsons_data_filter, get_jsons, get_jsons_data, transliterate, timedelta_to_time, \
+    get_json_vacation
 from customers_app.models import DataBaseUser, Job, Division, DataBaseUserWorkProfile, DataBaseUserProfile, \
     IdentityDocuments
 
@@ -427,3 +431,16 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     </table>'''
     html_obj = [accrued_table_set, withheld_table_set, paid_table_set]
     return html_obj
+
+
+def get_vacation_days(self, dates):
+    date_admission, vacation = get_json_vacation(self.request.user.ref_key)
+    days = 0
+    for item in vacation['value']:
+        if item['Active'] and not item['Компенсация']:
+            if item['ВидЕжегодногоОтпуска_Key'] == 'ebbd9c67-cfaf-11e6-bad8-902b345cadc2':
+                if datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d") > date_admission:
+                    days += int(item['Количество'])
+    dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission, until=datetime.datetime.strptime(dates, '%Y-%m-%d'))]
+    return round(((len(dates) - 1) * (28 / 12)) - days)
+

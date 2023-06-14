@@ -79,11 +79,17 @@ def send_mail_change(counter, obj):
             second_msg.attach_alternative(html_content, "text/html")
             first_msg.send()
             second_msg.send()
-        else:
+        if counter == 2:
             first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
                                                [mail_to_copy_first, mail_to_copy_second])
             first_msg.attach_alternative(html_content, "text/html")
             first_msg.send()
+        if counter == 3:
+            first_msg = EmailMultiAlternatives(subject_mail, text_content, EMAIL_HOST_USER,
+                                               [mail_to, mail_to_copy_third])
+            first_msg.attach_alternative(html_content, "text/html")
+            first_msg.send()
+            print(current_context)
 
     except Exception as _ex:
         logger.debug(f'Failed to send email. {_ex}')

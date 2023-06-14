@@ -17,7 +17,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_queryset, change_session_context, FIO_format, get_year_interval
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
-    get_settlement_sheet, get_report_card_table
+    get_settlement_sheet, get_report_card_table, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -177,6 +177,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             report_year = self.request.GET.get('RY')
             report_month = self.request.GET.get('RM')
             current_passphrase = self.request.GET.get('PX')
+            get_date = self.request.GET.get('GD')
             if current_month and current_year:
                 try:
                     if len(current_month) == 1:
@@ -200,6 +201,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # print(data_dict, total_score, first_day, last_day, user_start_time, user_end_time)
                 return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end), safe=False)
+            if get_date:
+                html = f"<label class='form-control form-control-modern'>{get_vacation_days(self, get_date)}</label>"
+
+                return JsonResponse(html, safe=False)
         return super().get(request, *args, **kwargs)
 
 

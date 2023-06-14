@@ -56,9 +56,7 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
             color = '#ffc0cb'
         subject_mail = f'{person.first_name} {person.surname} поздравляем Вас с днем рождения!'
         greet = HappyBirthdayGreetings.objects.filter(Q(gender=gender) & Q(age_from__lte=age) & Q(age_to__gte=age))
-        print(len(greet))
         rec_no = randrange(len(greet))
-        print(greet[rec_no])
         text = greet[rec_no].greetings
         current_context = {
             'name': person.first_name,

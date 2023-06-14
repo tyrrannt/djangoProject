@@ -173,8 +173,27 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     return json.loads(response.text)
 
 
-def get_jsons_data_filter2(object_type: str, object_name: str, filter_obj: str, filter_content: str, filter_obj2: str, filter_content2: str, logical: int,
-                          base_index: int) -> dict:
+def get_json_vacation(ref_key):
+    url_date_admission = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ТекущиеКадровыеДанныеСотрудников?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27'
+    url_vacation = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ФактическиеОтпуска_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27'
+    date_admission = datetime(1, 1, 1, 0, 0)
+    try:
+        response_date_admission = requests.get(url_date_admission, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+        response_vacation = requests.get(url_vacation, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+
+        json_date_admission = json.loads(response_date_admission.text)
+        for item in json_date_admission['value']:
+            date_admission = datetime.strptime(item['ДатаПриема'][:10], "%Y-%m-%d")
+    except Exception as _ex:
+        logger.debug(f'{_ex}')
+        return {'value': ""}
+    # logger.info(f'Успешное получение данных: {response.text}')
+    return [date_admission, json.loads(response_vacation.text)]
+
+
+def get_jsons_data_filter2(object_type: str, object_name: str, filter_obj: str, filter_content: str, filter_obj2: str,
+                           filter_content2: str, logical: int,
+                           base_index: int) -> dict:
     logical_operation = ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'or', 'and', 'not']
     base = ['72095052-970f-11e3-84fb-00e05301b4e4', '59e20093-970f-11e3-84fb-00e05301b4e4']
     url = f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/" \
