@@ -202,7 +202,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # print(data_dict, total_score, first_day, last_day, user_start_time, user_end_time)
                 return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end), safe=False)
             if get_date:
-                html = f"<label class='form-control form-control-modern'>{get_vacation_days(self, get_date)}</label>"
+                html = f"<label class='form-control form-control-modern'>Остаток отпуска: {get_vacation_days(self, get_date)} дн.</label>"
 
                 return JsonResponse(html, safe=False)
         return super().get(request, *args, **kwargs)
