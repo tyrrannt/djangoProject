@@ -438,7 +438,24 @@ def get_vacation_days(self, dates):
     days = 0
     for item in vacation['value']:
         if item['Active'] and not item['Компенсация']:
-            if item['ВидЕжегодногоОтпуска_Key'] == 'ebbd9c67-cfaf-11e6-bad8-902b345cadc2':
+            """
+            "Ref_Key": "ebbd9c67-cfaf-11e6-bad8-902b345cadc2" - Основной
+            --------------------------------------------------------------------------------------------------------------------
+            "Ref_Key": "dd940e62-cfaf-11e6-bad8-902b345cadc2" - Отпуск за свой счет
+            "Ref_Key": "b51bdb10-8fb9-11e9-80cc-309c23d346b4" - Дополнительный оплачиваемый отпуск пострадавшим на ЧАЭС
+            "Ref_Key": "c3e8c3e8-cfb6-11e6-bad8-902b345cadc2" - Дополнительный неоплачиваемый отпуск пострадавшим на ЧАЭС
+            "Ref_Key": "c3e8c3e7-cfb6-11e6-bad8-902b345cadc2" - Дополнительный учебный отпуск (оплачиваемый)
+            "Ref_Key": "dd940e63-cfaf-11e6-bad8-902b345cadc2" - Дополнительный учебный отпуск без оплаты
+            "Ref_Key": "6f4631a7-df12-11e6-950a-0cc47a7917f4" - Дополнительный отпуск КЛО, ЗКЛО, начальник ИБП
+            "Ref_Key": "56f643c6-bf49-11e9-a3dc-0cc47a7917f4" - Дополнительный оплачиваемый отпуск пострадавшим в аварии на ЧАЭС
+            "Ref_Key": "dd940e60-cfaf-11e6-bad8-902b345cadc2" - Дополнительный ежегодный отпуск
+            
+            """
+            exclude_vacation = ['dd940e62-cfaf-11e6-bad8-902b345cadc2', 'b51bdb10-8fb9-11e9-80cc-309c23d346b4',
+                                'c3e8c3e8-cfb6-11e6-bad8-902b345cadc2', 'c3e8c3e7-cfb6-11e6-bad8-902b345cadc2',
+                                'dd940e63-cfaf-11e6-bad8-902b345cadc2', '6f4631a7-df12-11e6-950a-0cc47a7917f4',
+                                '56f643c6-bf49-11e9-a3dc-0cc47a7917f4', 'dd940e60-cfaf-11e6-bad8-902b345cadc2']
+            if item['ВидЕжегодногоОтпуска_Key'] not in exclude_vacation:
                 if datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d") > date_admission:
                     days += int(item['Количество'])
     dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission, until=datetime.datetime.strptime(dates, '%Y-%m-%d'))]

@@ -204,6 +204,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             if get_date:
                 html = f"<label class='form-control form-control-modern'>Остаток отпуска: {get_vacation_days(self, get_date)} дн.</label>"
 
+
                 return JsonResponse(html, safe=False)
         return super().get(request, *args, **kwargs)
 
