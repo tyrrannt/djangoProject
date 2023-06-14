@@ -174,6 +174,15 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
 
 
 def get_json_vacation(ref_key):
+    exclude_vacation = {'dd940e62-cfaf-11e6-bad8-902b345cadc2': 'Отпуск за свой счет',
+                        'b51bdb10-8fb9-11e9-80cc-309c23d346b4': 'Дополнительный оплачиваемый отпуск пострадавшим на ЧАЭС',
+                        'c3e8c3e8-cfb6-11e6-bad8-902b345cadc2': 'Дополнительный неоплачиваемый отпуск пострадавшим на ЧАЭС',
+                        'c3e8c3e7-cfb6-11e6-bad8-902b345cadc2': 'Дополнительный учебный отпуск (оплачиваемый)',
+                        'dd940e63-cfaf-11e6-bad8-902b345cadc2': 'Дополнительный учебный отпуск без оплаты',
+                        '6f4631a7-df12-11e6-950a-0cc47a7917f4': 'Дополнительный отпуск КЛО, ЗКЛО, начальник ИБП',
+                        '56f643c6-bf49-11e9-a3dc-0cc47a7917f4': 'Дополнительный оплачиваемый отпуск пострадавшим в аварии на ЧАЭС',
+                        'dd940e60-cfaf-11e6-bad8-902b345cadc2': 'Дополнительный ежегодный отпуск',
+                        'ebbd9c67-cfaf-11e6-bad8-902b345cadc2': 'Основной'}
     url_date_admission = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ТекущиеКадровыеДанныеСотрудников?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27'
     url_vacation = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ФактическиеОтпуска_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27'
     url_children = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ПериодыОтпусков_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27'
@@ -185,17 +194,21 @@ def get_json_vacation(ref_key):
         response_children = requests.get(url_children, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
         json_date_admission = json.loads(response_date_admission.text)
         json_children = json.loads(response_children.text)
+        json_vacation = json.loads(response_vacation.text)
         for item in json_date_admission['value']:
             date_admission = datetime.strptime(item['ДатаПриема'][:10], "%Y-%m-%d")
         for item in json_children['value']:
             if item['Состояние'] == 'ОтпускПоУходуЗаРебенком':
                 children_days += int(item['КоличествоДней'])
-        date_admission = (date_admission + relativedelta.relativedelta(days=children_days))
+        date_admission_correct = (date_admission + relativedelta.relativedelta(days=children_days))
+        # for item in json_vacation['value']:
+        #     print(datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d"), exclude_vacation[item['ВидЕжегодногоОтпуска_Key']], item['Количество'])
+        #     print(item['Количество'])
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
     # logger.info(f'Успешное получение данных: {response.text}')
-    return [date_admission, json.loads(response_vacation.text)]
+    return [date_admission, date_admission_correct, json.loads(response_vacation.text)]
 
 
 def get_jsons_data_filter2(object_type: str, object_name: str, filter_obj: str, filter_content: str, filter_obj2: str,

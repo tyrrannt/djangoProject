@@ -434,7 +434,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
 
 
 def get_vacation_days(self, dates):
-    date_admission, vacation = get_json_vacation(self.request.user.ref_key)
+    date_admission, date_admission_correct, vacation = get_json_vacation(self.request.user.ref_key)
     days = 0
     for item in vacation['value']:
         if item['Active'] and not item['Компенсация']:
@@ -458,6 +458,7 @@ def get_vacation_days(self, dates):
             if item['ВидЕжегодногоОтпуска_Key'] not in exclude_vacation:
                 if datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d") > date_admission:
                     days += int(item['Количество'])
-    dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission, until=datetime.datetime.strptime(dates, '%Y-%m-%d'))]
+                    print(int(item['Количество']))
+    dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission_correct, until=datetime.datetime.strptime(dates, '%Y-%m-%d'))]
     return round(((len(dates) - 1) * (28 / 12)) - days)
 
