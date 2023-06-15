@@ -998,14 +998,14 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
                 qs = ApprovalOficialMemoProcess.objects.filter(
-                    (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by(
+                    (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                    & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
                     'document__responsible')
             else:
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                    & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                    & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by(
+                    & (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                    & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
                     'document__responsible')
             dict_obj = dict()
             for item in qs.all().order_by('document__person__last_name'):
@@ -1112,13 +1112,13 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
         #     document__period_for__gte=date_start)).order_by('document__period_from')
         if self.request.user.user_work_profile.divisions.type_of_role == '2':
             qs = ApprovalOficialMemoProcess.objects.filter(
-                (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
+                (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
         else:
             qs = ApprovalOficialMemoProcess.objects.filter(
                 Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                & (Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end))
-                & Q(document__period_for__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
+                & (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
         dict_obj = dict()
         for item in qs.all().order_by('document__person__last_name'):
             list_obj = []
