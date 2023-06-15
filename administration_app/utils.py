@@ -472,6 +472,11 @@ def get_types_userworktime():
 
 
 def change_approval_status(self):
+    """
+    Изменение статуса документа
+    :param self: экземпляр класса
+    :return:
+    """
     change_status = 0
     comments = 'Документооборот начат'
     document_accepted = False
