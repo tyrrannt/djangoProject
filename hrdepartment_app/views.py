@@ -387,7 +387,8 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
                             critical_change = 1
                     if object_item._meta.get_field(k).verbose_name == 'Дата окончания':
                         print(new_instance[k], old_instance[k], object_item.purpose_trip)
-                        if (new_instance[k] != old_instance[k]) and (str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
+                        if (new_instance[k] != old_instance[k]) and (
+                                str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
                             warning_change = 1
                             print('1111111')
                     message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
@@ -829,37 +830,6 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             if accommodation:
                 document.accommodation = accommodation
                 change_status = 1
-        if request.POST.get('submit_for_approval'):
-            document.comments = 'Передан на согласование'
-            change_status = 1
-        else:
-            document.comments = 'Документооборот начат'
-            change_status = 1
-        if request.POST.get('document_not_agreed'):
-            document.comments = 'Документ согласован'
-            change_status = 1
-        if request.POST.get('location_selected'):
-            document.comments = 'Утверждено место проживания'
-            change_status = 1
-        if request.POST.get('process_accepted'):
-            document.comments = 'Создан приказ'
-            change_status = 1
-        if request.POST.get('originals_received') and request.POST.get('date_receipt_original'):
-            document.comments = 'Получены оригиналы'
-            change_status = 1
-        if request.POST.get('originals_received') and request.POST.get('date_transfer_hr'):
-            document.comments = 'Передано в ОК'
-            change_status = 1
-        if request.POST.get('hr_accepted'):
-            document.comments = 'Передано в бухгалтерию'
-            change_status = 1
-        else:
-            document.document_accepted = False
-            change_status = 1
-        if request.POST.get('accepted_accounting'):
-            document.comments = 'Документооборот завершен'
-            document.document_accepted = True
-            change_status = 1
 
         if change_status > 0:
             if document.cancellation:
@@ -1516,14 +1486,16 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
                 end_date = start_date + relativedelta(day=31)
                 search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
                 reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
-                                                            Q(report_card_day__in=search_interval)).order_by('report_card_day').reverse()
+                                                            Q(report_card_day__in=search_interval)).order_by(
+                    'report_card_day').reverse()
             else:
                 start_date = datetime.date(year=datetime.datetime.today().year,
                                            month=datetime.datetime.today().month, day=1)
                 end_date = start_date + relativedelta(day=31)
                 search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
                 reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
-                                                            Q(report_card_day__in=search_interval)).order_by('report_card_day').reverse()
+                                                            Q(report_card_day__in=search_interval)).order_by(
+                    'report_card_day').reverse()
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)

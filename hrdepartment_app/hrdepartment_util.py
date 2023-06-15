@@ -382,3 +382,5 @@ def get_working_hours(pk, start_date, state=0):
     else:
         result = dict_obj[str(user_id)]
         return result, all_total_time, all_days_count, all_vacation_days, all_vacation_time, holiday_delta
+
+

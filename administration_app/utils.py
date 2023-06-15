@@ -469,3 +469,39 @@ def get_types_userworktime():
         return {'value': ""}
 
     return json.loads(response.text)
+
+
+def change_approval_status(self):
+    change_status = 0
+    comments = 'Документооборот начат'
+    document_accepted = False
+    if self.submit_for_approval:
+        comments = 'Передан на согласование'
+        change_status = 1
+    if self.document_not_agreed:
+        comments = 'Документ согласован'
+        change_status = 1
+    if self.location_selected:
+        comments = 'Утверждено место проживания'
+        change_status = 1
+    if self.process_accepted:
+        comments = 'Создан приказ'
+        change_status = 1
+    if self.originals_received and self.date_receipt_original:
+        comments = 'Получены оригиналы'
+        change_status = 1
+    if self.originals_received and self.date_transfer_hr:
+        comments = 'Передано в ОК'
+        change_status = 1
+    if self.hr_accepted:
+        comments = 'Передано в бухгалтерию'
+        change_status = 1
+    if self.accepted_accounting:
+        comments = 'Документооборот завершен'
+        document_accepted = True
+        change_status = 1
+    if change_status == 1:
+        self.document.comments = comments
+        self.document.document_accepted = document_accepted
+        self.document.save()
+    return ''

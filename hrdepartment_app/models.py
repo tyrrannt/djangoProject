@@ -17,7 +17,7 @@ from django_ckeditor_5.fields import CKEditor5Field
 from docxtpl import DocxTemplate
 from loguru import logger
 
-from administration_app.utils import ending_day, FIO_format, timedelta_to_time
+from administration_app.utils import ending_day, FIO_format, timedelta_to_time, change_approval_status
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job, AccessLevel, \
     HistoryChange
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
@@ -702,6 +702,7 @@ def hr_accepted(sender, instance, **kwargs):
 
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
 def create_report(sender, instance, **kwargs):
+    change_approval_status(instance)
     type_of = ['Служебная квартира', 'Гостиница']
 
     if instance.process_accepted and not instance.email_send:
