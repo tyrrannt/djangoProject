@@ -116,7 +116,10 @@ def happy_birthday():
     description = ''
     for item in list_birthday_people:
         age = today.year - item.birthday.year
-        description = f'Сегодня {item} празднует свой {age}-й день рождения!'
+        if item.gender == 'male':
+            description = f'Сегодня {item} празднует свой {age}-й день рождения!'
+        else:
+            description = f'Сегодня {item} празднует свой 18-й день рождения!'
         posts_dict = {
             'post_description': description,
             'allowed_placed': True,
