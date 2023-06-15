@@ -992,6 +992,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
             current_year = int(self.request.GET.get('CY'))
             current_month = int(self.request.GET.get('CM'))
             html_obj = ''
+            report = []
             from calendar import monthrange
             days = monthrange(current_year, current_month)[1]
             date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
@@ -1001,6 +1002,12 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
                     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
                     'document__responsible')
+
+                for item in range(0, 4):
+                    report.append(ApprovalOficialMemoProcess.objects.filter(
+                    (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                    & Q(end_date_trip__gte=date_start) & Q(document__person__user_work_profile__job__type_of_job=str(item))).exclude(cancellation=True).order_by(
+                    'document__responsible').count())
             else:
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
