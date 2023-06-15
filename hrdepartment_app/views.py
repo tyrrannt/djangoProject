@@ -184,8 +184,7 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 memo_list = OfficialMemo.objects.all()
             else:
                 memo_list = OfficialMemo.objects.filter(
-                    Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job) &
-                    Q(docs__accepted_accounting=False))
+                    Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(comments='Документооборот завершен')
 
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
