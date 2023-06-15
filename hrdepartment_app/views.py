@@ -765,7 +765,27 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             old_instance = object_item.__dict__
             form.save()
             object_item = self.get_object()
-            print(object_item.document.extension.all())
+            """
+            Если проверено отделом бухгалтерией и документооборот завершен, то выбираем все продления и также 
+            закрываем их.
+            """
+            if object_item.accepted_accounting:
+                doc_list = object_item.document.extension.all()
+                for item in doc_list:
+                    try:
+                        approval_process_item = ApprovalOficialMemoProcess.objects.get(document=item)
+                        approval_process_item.hr_accepted = object_item.hr_accepted
+                        approval_process_item.accepted_accounting = object_item.accepted_accounting
+                        approval_process_item.person_hr = object_item.person_hr
+                        approval_process_item.person_accounting = object_item.person_accounting
+                        approval_process_item.start_date_trip = object_item.start_date_trip
+                        approval_process_item.end_date_trip = object_item.end_date_trip
+                        document = approval_process_item.document
+                        document.comments = 'Документооборот завершен'
+                        document.save()
+                        approval_process_item.save()
+                    except Exception as _ex:
+                        logger.warning(f'{_ex}: Документ - {object_item}')
             # в new_instance сохраняем новые значения записи
             new_instance = object_item.__dict__
             changed = False
