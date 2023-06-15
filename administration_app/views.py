@@ -16,7 +16,8 @@ from administration_app.models import PortalProperty
 from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
     get_jsons_data_filter2, get_types_userworktime, get_date_interval, get_json_vacation
 from customers_app.models import DataBaseUser, Groups, Job
-from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day
+from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
+    ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
@@ -129,18 +130,20 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
-                date_admission, vacation = get_json_vacation(self.request.user.ref_key)
-                days = 0
-                for item in vacation['value']:
-                    if item['Active'] and not item['Компенсация']:
-                        if item['ВидЕжегодногоОтпуска_Key'] == 'ebbd9c67-cfaf-11e6-bad8-902b345cadc2':
-                            if datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d") > date_admission:
-                                days += int(item['Количество'])
-                year = relativedelta(datetime.datetime.today(), date_admission).years
-                month = relativedelta(datetime.datetime.today(), date_admission).months
-                dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission, until=datetime.datetime.today())]
-                print(((len(dates)-1)*(28/12)) - days)
-
+                # date_admission, vacation = get_json_vacation(self.request.user.ref_key)
+                # days = 0
+                # for item in vacation['value']:
+                #     if item['Active'] and not item['Компенсация']:
+                #         if item['ВидЕжегодногоОтпуска_Key'] == 'ebbd9c67-cfaf-11e6-bad8-902b345cadc2':
+                #             if datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d") > date_admission:
+                #                 days += int(item['Количество'])
+                # year = relativedelta(datetime.datetime.today(), date_admission).years
+                # month = relativedelta(datetime.datetime.today(), date_admission).months
+                # dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission, until=datetime.datetime.today())]
+                # print(((len(dates)-1)*(28/12)) - days)
+                object_item = ApprovalOficialMemoProcess.objects.filter(document__official_memo_type='2')
+                for item in object_item:
+                    item.save()
                 # pass
                 # report_card_separator_loc()
                 # happy_birthday_loc()
