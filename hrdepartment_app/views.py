@@ -765,6 +765,7 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
             old_instance = object_item.__dict__
             form.save()
             object_item = self.get_object()
+            print(object_item.document.extension.all())
             # в new_instance сохраняем новые значения записи
             new_instance = object_item.__dict__
             changed = False
