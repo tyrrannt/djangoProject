@@ -1085,8 +1085,21 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
 
+                job_type = {
+                    '0': 'Общий состав',
+                    '1': 'Летный состав',
+                    '2': 'Инженерный состав',
+                    '3': 'Транспортный отдел',
+                }
+                report_item_obj = '<td>'
+                counter = 0
+                for report_item in report:
+                    report_item_obj += f'{job_type[counter]}: {report_item};&nbsp;'
+                    counter += 1
+                report_item_obj = '</td>'
                 html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; height: 500px; overflow: auto;">
                                 <thead>
+                                <tr colspan="{table_count+1}">{report_item_obj}</tr>
                                 <tr>
                                     <th width="14%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">ФИО</span></th>
                                     {html_table_count}
