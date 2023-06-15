@@ -175,14 +175,13 @@ class MedicalExaminationUpdate(LoginRequiredMixin, PermissionRequiredMixin, Upda
 
 class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = OfficialMemo
-    paginate_by = 6
     permission_required = 'hrdepartment_app.view_officialmemo'
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
-                memo_list = OfficialMemo.objects.filter(Q(docs__accepted_accounting=False))
+                memo_list = OfficialMemo.objects.all()
             else:
                 memo_list = OfficialMemo.objects.filter(
                     Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job) &
