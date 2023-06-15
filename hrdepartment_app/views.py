@@ -759,10 +759,27 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                     return instanse_obj[item]
 
         if form.is_valid():
-            # в old_instance сохраняем старые значения записи
             object_item = self.get_object()
+            # в old_instance сохраняем старые значения записи
             old_instance = object_item.__dict__
-            form.save()
+            if object_item.document.official_memo_type == '2':
+                refresh_form = form.save(commit=False)
+                refresh_form.hr_accepted = object_item.hr_accepted
+                refresh_form.person_accounting = object_item.person_accounting
+                refresh_form.accepted_accounting = object_item.accepted_accounting
+                refresh_form.date_receipt_original = object_item.date_receipt_original
+                refresh_form.submitted_for_signature = object_item.submitted_for_signature
+                refresh_form.date_transfer_hr = object_item.date_transfer_hr
+                refresh_form.number_business_trip_days = object_item.number_business_trip_days
+                refresh_form.number_flight_days = object_item.number_flight_days
+                refresh_form.person_hr = object_item.person_hr
+                refresh_form.start_date_trip = object_item.start_date_trip
+                refresh_form.end_date_trip = object_item.end_date_trip
+                refresh_form.date_transfer_accounting = object_item.date_transfer_accounting
+                refresh_form.prepaid_expense_summ = object_item.prepaid_expense_summ
+                refresh_form.save()
+            else:
+                form.save()
             object_item = self.get_object()
             """
             Если проверено отделом бухгалтерией и документооборот завершен, то выбираем все продления и также 
@@ -774,11 +791,18 @@ class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMix
                     try:
                         approval_process_item = ApprovalOficialMemoProcess.objects.get(document=item)
                         approval_process_item.hr_accepted = object_item.hr_accepted
-                        approval_process_item.accepted_accounting = object_item.accepted_accounting
-                        approval_process_item.person_hr = object_item.person_hr
                         approval_process_item.person_accounting = object_item.person_accounting
-                        approval_process_item.start_date_trip = object_item.start_date_trip
+                        approval_process_item.accepted_accounting = object_item.accepted_accounting
+                        approval_process_item.date_receipt_original = object_item.date_receipt_original
+                        approval_process_item.submitted_for_signature = object_item.submitted_for_signature
+                        approval_process_item.date_transfer_hr = object_item.date_transfer_hr
+                        approval_process_item.number_business_trip_days = object_item.number_business_trip_days
+                        approval_process_item.number_flight_days = object_item.number_flight_days
+                        approval_process_item.person_hr = object_item.person_hr
+                        approval_process_item.start_date_trip = item.period_from
                         approval_process_item.end_date_trip = object_item.end_date_trip
+                        approval_process_item.date_transfer_accounting = object_item.date_transfer_accounting
+                        approval_process_item.prepaid_expense_summ = object_item.prepaid_expense_summ
                         document = approval_process_item.document
                         document.comments = 'Документооборот завершен'
                         document.save()
