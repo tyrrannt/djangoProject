@@ -1004,10 +1004,11 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     'document__responsible')
 
                 for item in range(0, 4):
-                    report.append(ApprovalOficialMemoProcess.objects.filter(
+                    count_obj = ApprovalOficialMemoProcess.objects.filter(
                     (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
                     & Q(end_date_trip__gte=date_start) & Q(document__person__user_work_profile__job__type_of_job=str(item))).exclude(cancellation=True).order_by(
-                    'document__responsible').count())
+                    'document__responsible').count()
+                    report.append(count_obj)
             else:
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
@@ -1091,15 +1092,16 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
                     '2': 'Инженерный состав',
                     '3': 'Транспортный отдел',
                 }
-                report_item_obj = '<td>'
+                report_item_obj = f'<td colspan="{len(table_count)+1}"><h4>'
                 counter = 0
                 for report_item in report:
-                    report_item_obj += f'{job_type[counter]}: {report_item};&nbsp;'
+                    report_item_obj += f'{job_type[str(counter)]}: {report_item};&nbsp;'
                     counter += 1
-                report_item_obj = '</td>'
+                report_item_obj += '</h4></td>'
+                print(f'<tr>{report_item_obj}</tr>')
                 html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; height: 500px; overflow: auto;">
                                 <thead>
-                                <tr colspan="{table_count+1}">{report_item_obj}</tr>
+                                <tr>{report_item_obj}</tr>
                                 <tr>
                                     <th width="14%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">ФИО</span></th>
                                     {html_table_count}
