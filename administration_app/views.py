@@ -141,7 +141,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # month = relativedelta(datetime.datetime.today(), date_admission).months
                 # dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission, until=datetime.datetime.today())]
                 # print(((len(dates)-1)*(28/12)) - days)
-                object_item = ApprovalOficialMemoProcess.objects.filter(document__official_memo_type='2')
+                object_item = ApprovalOficialMemoProcess.objects.filter(document__official_memo_type='1')
                 for item in object_item:
                     item.save()
                 # pass
