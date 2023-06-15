@@ -530,10 +530,10 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
-                approvalmemo_list = ApprovalOficialMemoProcess.objects.all()
+                approvalmemo_list = ApprovalOficialMemoProcess.objects.all().order_by('document__period_from').reverse()
             else:
                 approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(
-                    person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)
+                    person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job).order_by('document__period_from').reverse()
             data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
             response = {'data': data}
             return JsonResponse(response)
