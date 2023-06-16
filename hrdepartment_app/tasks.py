@@ -5,6 +5,7 @@ import pathlib
 from random import randrange
 
 import requests
+from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from decouple import config
 from django.core import mail
@@ -14,10 +15,11 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from loguru import logger
 
+from administration_app.utils import get_jsons_data_filter2
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
 from djangoProject.celery import app
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER
-from hrdepartment_app.models import ReportCard
+from hrdepartment_app.models import ReportCard, WeekendDay
 
 logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
            serialize=True)
@@ -251,6 +253,73 @@ def report_card_separator():
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
     return dicts
 
+
+@app.task()
+def get_vacation():
+    type_of_report = {
+        '2': 'Ежегодный',
+        '3': 'Дополнительный ежегодный отпуск',
+        '4': 'Отпуск за свой счет',
+        '5': 'Дополнительный учебный отпуск (оплачиваемый)',
+        '6': 'Отпуск по уходу за ребенком',
+        '7': 'Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС',
+        '8': 'Отпуск по беременности и родам',
+        '9': 'Отпуск без оплаты согласно ТК РФ',
+        '10': 'Дополнительный отпуск',
+        '11': 'Дополнительный оплачиваемый отпуск пострадавшим в ',
+        '12': 'Основной',
+    }
+    exclude_list = ['proxmox', 'shakirov']
+    for rec_item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
+        print(rec_item['ref_key'])
+        dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника',
+                                    'Сотрудник_Key',
+                                    rec_item['ref_key'], 'year(ДатаОкончания)', 2023, 0, 0)
+        for key in dt:
+            for item in dt[key]:
+                for report_record in ReportCard.objects.filter(doc_ref_key=item['ДокументОснование']):
+                    report_record.delete()
+                usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
+                start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
+                end_date = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
+                weekend_count = WeekendDay.objects.filter(
+                    Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(
+                        weekend_type='1')).count()
+                count_date = int(item['КоличествоДней']) + weekend_count
+                period = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
+                weekend = [item.weekend_day for item in WeekendDay.objects.filter(
+                    Q(weekend_day__gte=start_date.date()) & Q(weekend_day__lte=end_date.date()))]
+                for unit in period:
+                    if unit.weekday() in [0, 1, 2, 3] and unit.date() not in weekend:
+                        delta_time = datetime.timedelta(
+                            hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
+                            minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute)
+                        start_time = usr_obj.user_work_profile.personal_work_schedule_start
+                        end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
+                    elif unit.weekday() == 4 and unit not in weekend:
+                        delta_time = datetime.timedelta(
+                            hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
+                            minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute) - \
+                                     datetime.timedelta(hours=1)
+                        start_time = usr_obj.user_work_profile.personal_work_schedule_start
+                        end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
+                    else:
+                        start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
+                        end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
+
+                    value = [i for i in type_of_report if
+                             type_of_report[i] == item['ВидОтпускаПредставление']]
+                    kwargs_obj = {
+                        'report_card_day': unit,
+                        'employee': usr_obj,
+                        'start_time': start_time,
+                        'end_time': end_time,
+                        'reason_adjustment': item['Основание'],
+                        'doc_ref_key': item['ДокументОснование'],
+                    }
+                    ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj,
+                                                        record_type=value[0],
+                                                        defaults=kwargs_obj)
 
 @app.task()
 def report_card_separator_daily():
