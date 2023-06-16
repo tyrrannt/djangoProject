@@ -269,6 +269,7 @@ def get_vacation():
         '11': 'Дополнительный оплачиваемый отпуск пострадавшим в ',
         '12': 'Основной',
     }
+    all_records = 0
     exclude_list = ['proxmox', 'shakirov']
     for rec_item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
         print(rec_item['ref_key'])
@@ -317,10 +318,12 @@ def get_vacation():
                         'reason_adjustment': item['Основание'],
                         'doc_ref_key': item['ДокументОснование'],
                     }
-                    ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj,
+                    rec_obj, counter = ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj,
                                                         record_type=value[0],
                                                         defaults=kwargs_obj)
-
+                    if counter:
+                        all_records += 1
+    return f'Создано {all_records} записей'
 @app.task()
 def report_card_separator_daily():
     current_data = datetime.datetime.date(datetime.datetime.today())
