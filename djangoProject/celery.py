@@ -20,7 +20,7 @@ app.conf.beat_schedule = {
     },
     'get_vacation': {
         'task': 'hrdepartment_app.tasks.get_vacation',
-        'schedule': crontab(hour='23', day_of_week=[0, 1, 2, 3, 4, 5, 6]),
+        'schedule': crontab(hour='23', day_of_week=[0, 1, 2, 3, 4]),
     },
     'birthday_gift': {
         'task': 'hrdepartment_app.tasks.happy_birthday',
