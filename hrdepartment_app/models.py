@@ -2,9 +2,9 @@ import datetime
 import pathlib
 import uuid
 
-import dateutil.relativedelta
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from decouple import config
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
@@ -22,23 +22,29 @@ from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingCondi
     HistoryChange
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
-           serialize=True)
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 # Create your models here.
 def contract_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     return f'hr/medical/{filename}'
 
 
 def jds_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     return f'docs/JDS/{instance.document_division.code}/{filename}'
 
 
+def ins_directory_path(instance, filename):
+    return f'docs/INS/{instance.date_entry.year}/{filename}'
+
+
+def prv_directory_path(instance, filename):
+    return f'docs/PRV/{instance.date_entry.year}/{filename}'
+
+
 def ord_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     year = instance.document_date
     return f'docs/ORD/{year.year}/{filename}'
 
@@ -55,7 +61,7 @@ class Documents(models.Model):
                                  null=True, related_name='%(app_label)s_%(class)s_executor')
     document_date = models.DateField(verbose_name='Дата документа', default=datetime.datetime.now)
     document_name = models.CharField(verbose_name='Наименование документа', max_length=200, default='')
-    document_number = models.CharField(verbose_name='Номер документа', max_length=10, default='')
+    document_number = models.CharField(verbose_name='Номер документа', max_length=18, default='')
 
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
                                null=True, default=5)
@@ -66,6 +72,8 @@ class Documents(models.Model):
     validity_period_end = models.DateField(verbose_name='Документ действует по', blank=True, null=True)
     actuality = models.BooleanField(verbose_name='Актуальность', default=False)
     previous_document = models.URLField(verbose_name='Предшествующий документ', blank=True)
+    applying_for_job = models.BooleanField(verbose_name='Обязательно к ознакомлению при приеме на работу',
+                                           default=False)
 
     def __str__(self):
         return f'№ {self.document_number} от {self.document_date.strftime("%d.%m.%Y")}'
@@ -235,7 +243,7 @@ class Medical(models.Model):
         return {
             'pk': self.pk,
             'number': self.number,
-            'date_entry': self.date_entry.strftime("%d.%m.%Y"),
+            'date_entry': f'{self.date_entry:%d.%m.%Y} г.', # .strftime(""),
             'person': self.person.get_title(),
             'organisation': self.organisation.get_title(),
             'working_status': self.get_working_status_display(),
@@ -385,8 +393,8 @@ class OfficialMemo(models.Model):
             'job': str(self.person.user_work_profile.job),
             'place_production_activity': '; '.join(place),
             'purpose_trip': str(self.purpose_trip),
-            'period_from': self.period_from.strftime("%d.%m.%Y"),
-            'period_for': self.period_for.strftime("%d.%m.%Y"),
+            'period_from': f'{self.period_from:%d.%m.%Y} г.', # .strftime(""),
+            'period_for': f'{self.period_for:%d.%m.%Y} г.', # .strftime(""),
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
@@ -933,7 +941,7 @@ class DocumentsOrder(Documents):
         return {
             'pk': self.pk,
             'document_number': self.document_number,
-            'document_date': self.document_date.strftime("%d.%m.%Y"),
+            'document_date': f'{self.document_date:%d.%m.%Y} г.', # .strftime(""),
             'document_name': self.document_name.name,
             'person': FIO_format(self.document_foundation.person.get_title()) if self.document_foundation else '',
             'approved': status,
@@ -992,7 +1000,7 @@ class DocumentsJobDescription(Documents):
         return {
             'pk': self.pk,
             'document_number': self.document_number,
-            'document_date': self.document_date.strftime("%d.%m.%Y"),
+            'document_date': f'{self.document_date:%d.%m.%Y} г.', # .strftime(""),
             'document_job': str(self.document_job),
             'document_division': str(self.document_division),
             'document_order': str(self.document_order),
@@ -1086,9 +1094,9 @@ class ReportCard(models.Model):
         return {
             'pk': self.pk,
             'employee': FIO_format(self.employee.get_title()),
-            'report_card_day': self.report_card_day.strftime('%d.%m.%Y'),
-            'start_time': self.start_time.strftime('%H:%M'),
-            'end_time': self.end_time.strftime('%H:%M'),
+            'report_card_day': f'{self.report_card_day:%d.%m.%Y} г.', # .strftime(''),
+            'start_time': f'{self.start_time:%H:%M}', # .strftime(''),
+            'end_time': f'{self.end_time:%H:%M}', # .strftime(''),
             'reason_adjustment': self.reason_adjustment,
         }
 
@@ -1248,3 +1256,57 @@ class TypesUserworktime(models.Model):
 
     def __str__(self):
         return self.description
+
+
+class Instructions(Documents):
+    class Meta:
+        verbose_name = 'Инструкция'
+        verbose_name_plural = 'Инструкции'
+
+    doc_file = models.FileField(verbose_name='Файл документа', upload_to=ins_directory_path, blank=True)
+    scan_file = models.FileField(verbose_name='Скан документа', upload_to=ins_directory_path, blank=True)
+    storage_location_division = models.ForeignKey(Division, verbose_name='Подразделение где хранится оригинал',
+                                                  on_delete=models.SET_NULL, null=True,
+                                                  related_name='instruction_location_division')
+    document_division = models.ManyToManyField(Division, verbose_name='Подразделения',
+                                               related_name='instruction_document_division')
+    document_order = models.ForeignKey(DocumentsOrder, verbose_name='Приказ', on_delete=models.SET_NULL, null=True)
+
+@receiver(post_save, sender=Instructions)
+def rename_file_name_instructions(sender, instance, **kwargs):
+    try:
+        change = 0
+        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+        uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
+        user_uid = '0' * (7 - len(str(instance.executor.pk))) + str(instance.executor.pk)
+        filename_draft = f'INS-{uid}-{instance.date_entry}-DRAFT-{user_uid}.docx'
+        filename_scan = f'INS-{uid}-{instance.date_entry}-SCAN-{user_uid}.pdf'
+        Med(instance, f'media/docs/INS/{instance.date_entry.year}', filename_draft, filename_scan)
+        print(instance.doc_file, instance.scan_file)
+        if instance.doc_file:
+            print(filename_draft)
+        # if f'media/docs/INS/{instance.date_entry.year}/{filename_draft}' != instance.doc_file:
+        #     change = 1
+        #     instance.doc_file = f'media/docs/INS/{instance.date_entry.year}/{filename_draft}'
+        # if f'media/docs/INS/{instance.date_entry.year}/{filename_scan}' != instance.scan_file:
+        #     change = 1
+        #     instance.scan_file = f'media/docs/INS/{instance.date_entry.year}/{filename_scan}'
+        # if change == 1:
+        #     instance.save()
+    except Exception as _ex:
+        logger.error(f'Ошибка при переименовании файла {_ex}')
+
+
+class Provisions(Documents):
+    class Meta:
+        verbose_name = 'Положение'
+        verbose_name_plural = 'Положения'
+
+    doc_file = models.FileField(verbose_name='Файл документа', upload_to=prv_directory_path, blank=True)
+    scan_file = models.FileField(verbose_name='Скан документа', upload_to=prv_directory_path, blank=True)
+    storage_location_division = models.ForeignKey(Division, verbose_name='Подразделение где хранится оригинал',
+                                                  on_delete=models.SET_NULL, null=True,
+                                                  related_name='provisions_location_division')
+    document_division = models.ManyToManyField(Division, verbose_name='Подразделения',
+                                               related_name='provisions_document_division')
+    document_order = models.ForeignKey(DocumentsOrder, verbose_name='Приказ', on_delete=models.SET_NULL, null=True)

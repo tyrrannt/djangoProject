@@ -1,7 +1,7 @@
 import datetime
 import hashlib
 
-from dateutil import rrule
+from decouple import config
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from loguru import logger
@@ -32,8 +32,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from hrdepartment_app.hrdepartment_util import get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
-           serialize=True)
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):

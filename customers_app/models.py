@@ -1,5 +1,4 @@
 import datetime
-import hashlib
 import pathlib
 
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -9,7 +8,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
-from django.utils import timezone
 
 from contracts_app.templatetags.custom import empty_item
 from djangoProject.settings import BASE_DIR

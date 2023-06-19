@@ -1,21 +1,23 @@
-import pathlib
+from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.db.models import Q
 from django.http import QueryDict, JsonResponse
-from django.shortcuts import HttpResponseRedirect, redirect
+from django.shortcuts import HttpResponseRedirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
+from loguru import logger
 
 from administration_app.models import PortalProperty
-from administration_app.utils import int_validate, change_session_get, change_session_queryset, change_session_context
+from administration_app.utils import int_validate, change_session_queryset, change_session_context
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm
 from django.urls import reverse, reverse_lazy
 
-from customers_app.models import DataBaseUser, Counteragent
-from djangoProject import settings
+from customers_app.models import DataBaseUser
+
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):

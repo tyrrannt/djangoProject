@@ -1,10 +1,9 @@
 import datetime
 
+from decouple import config
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.forms import SelectDateWidget
-from django_ckeditor_5.widgets import CKEditor5Widget
 from loguru import logger
 
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
@@ -12,8 +11,9 @@ from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOfic
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
     ReasonForCancellation, OrderDescription, ReportCard
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
-           serialize=True)
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 def present_or_future_date(value):

@@ -1,14 +1,18 @@
 import datetime
-from unicodedata import decimal
 
 from dateutil import rrule
-from dateutil.relativedelta import relativedelta
+from decouple import config
 from loguru import logger
 
 from administration_app.utils import get_jsons_data_filter, get_jsons, get_jsons_data, transliterate, timedelta_to_time, \
     get_json_vacation
 from customers_app.models import DataBaseUser, Job, Division, DataBaseUserWorkProfile, DataBaseUserProfile, \
     IdentityDocuments
+
+
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 def get_database_user_profile(ref_key):

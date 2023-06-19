@@ -3,6 +3,7 @@ from calendar import monthrange
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
@@ -15,7 +16,6 @@ from administration_app.models import PortalProperty
 from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
     get_jsons_data, ending_day, get_history, get_year_interval
 from customers_app.models import DataBaseUser, Counteragent
-from djangoProject.settings import DEBUG
 from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
     OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
@@ -28,8 +28,9 @@ from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoPr
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
     ProductionCalendar
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
-           serialize=True)
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 # Create your views here.

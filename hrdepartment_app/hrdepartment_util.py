@@ -2,6 +2,7 @@ import datetime
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from decouple import config
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -9,8 +10,12 @@ from loguru import logger
 
 from administration_app.utils import get_jsons_data, time_difference
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
-from djangoProject.settings import EMAIL_HOST_USER, DEBUG
+from djangoProject.settings import EMAIL_HOST_USER
 from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay, WeekendDay, check_day
+
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 def get_medical_documents():

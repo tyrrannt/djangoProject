@@ -178,10 +178,10 @@ class Contract(ContractModel):
         return {
             'pk': self.pk,
             'contract_number': self.contract_number,
-            'date_conclusion': self.date_conclusion.strftime("%d.%m.%Y"),
+            'date_conclusion': f'{self.date_conclusion:%d.%m.%Y} г.', #  self.date_conclusion.strftime("%d.%m.%Y"),
             'type_of_document': str(self.type_of_document),
             'type_of_contract': str(self.type_of_contract),
-            'parent_category': str(self.parent_category),
+            'parent_category': str(self.parent_category) if self.parent_category else '--//--',
             'contract_counteragent': str(self.contract_counteragent),
             'actuality': 'Да' if self.actuality else 'Нет',
         }

@@ -20,8 +20,9 @@ from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesU
     ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign
 
-logger.add("debug.json", format="{time} {level} {message}", level="DEBUG", rotation="10 MB", compression="zip",
-           serialize=True)
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 # Create your views here.
