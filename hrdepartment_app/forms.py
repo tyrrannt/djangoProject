@@ -376,7 +376,9 @@ type_of_order = [
 
 
 class DocumentsOrderAddForm(forms.ModelForm):
-    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(Q(order=None) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(official_memo_type='3'), required=False)
+    document_foundation = forms.ModelChoiceField(
+        queryset=OfficialMemo.objects.filter(Q(order=None) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(
+            official_memo_type='3'), required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
@@ -412,7 +414,9 @@ class DocumentsOrderAddForm(forms.ModelForm):
 
 
 class DocumentsOrderUpdateForm(forms.ModelForm):
-    document_foundation = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(Q(order=None) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(official_memo_type='3'), required=False)
+    document_foundation = forms.ModelChoiceField(
+        queryset=OfficialMemo.objects.filter(Q(order=None) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(
+            official_memo_type='3'), required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
@@ -469,10 +473,12 @@ class ReportCardAddForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         report_card_day = cleaned_data.get("report_card_day")
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        yesterday = datetime.date.today() - datetime.timedelta(days=3)
+        tomorrow = datetime.date.today() + datetime.timedelta(days=2)
         if yesterday > report_card_day or report_card_day > tomorrow:
-            raise ValidationError("Ошибка! Дата может быть только из диапазона [Вчера, Сегодня, Завтра].")
+            raise ValidationError(
+                f"Ошибка! Дата может быть только из диапазона c {yesterday.strftime('%d.%m.%Y')} г. "
+                f"по {tomorrow.strftime('%d.%m.%Y')} г.")
         start_time = cleaned_data.get("start_time")
         if not start_time:
             raise ValidationError("Ошибка! Не указано время начала!")
@@ -485,6 +491,7 @@ class ReportCardAddForm(forms.ModelForm):
         if reason_adjustment == '':
             raise ValidationError("Ошибка! Причина ручной корректировки не может быть пустой.")
 
+
 class ReportCardUpdateForm(forms.ModelForm):
     class Meta:
         model = ReportCard
@@ -496,7 +503,9 @@ class ReportCardUpdateForm(forms.ModelForm):
         yesterday = datetime.date.today() - datetime.timedelta(days=3)
         tomorrow = datetime.date.today() + datetime.timedelta(days=2)
         if yesterday > report_card_day or report_card_day > tomorrow:
-            raise ValidationError(f"Ошибка! Дата может быть только из диапазона c {yesterday.strftime('%d.%m.%Y')} г. по {tomorrow.strftime('%d.%m.%Y')} г.")
+            raise ValidationError(
+                f"Ошибка! Дата может быть только из диапазона c {yesterday.strftime('%d.%m.%Y')} г. "
+                f"по {tomorrow.strftime('%d.%m.%Y')} г.")
         start_time = cleaned_data.get("start_time")
         if not start_time:
             raise ValidationError("Ошибка! Не указано время начала!")

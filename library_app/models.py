@@ -17,13 +17,16 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
            serialize=config('LOG_SERIALIZE'))
 
+
 def draft_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     return f'blank/draft/{filename}'
 
+
 def scan_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     return f'blank/scan/{filename}'
+
 
 class HashTag(models.Model):
     class Meta:
@@ -96,6 +99,7 @@ class DocumentForm(models.Model):
 
     def __str__(self):
         return self.title
+
 
 @receiver(post_save, sender=DocumentForm)
 def rename_file_name(sender, instance, **kwargs):
