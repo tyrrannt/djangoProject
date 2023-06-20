@@ -87,6 +87,10 @@ class DocumentForm(models.Model):
     draft = models.FileField(verbose_name='Черновик', upload_to=draft_directory_path, blank=True)
     scan = models.FileField(verbose_name='Скан копия', upload_to=scan_directory_path, blank=True)
     sample = models.URLField(verbose_name='Образец заполнения', blank=True)
+    executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
+                                 null=True, related_name='%(app_label)s_%(class)s_executor')
+    employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True,
+                                      related_name='%(app_label)s_%(class)s_employee')
 
     def get_data(self):
         return {
@@ -136,4 +140,4 @@ def rename_file_name(sender, instance, **kwargs):
         if change == 1:
             instance.save()
     except Exception as _ex:
-        logger.error(f'Ошибка при переименовании файла {_ex}')
+        logger.exception(f'Ошибка при переименовании файла {_ex}')

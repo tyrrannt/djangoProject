@@ -124,10 +124,20 @@ class DocumentFormAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return reverse_lazy('library_app:blank_list')
         # return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
 
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'user': self.request.user.pk})
+        return kwargs
+
 
 class DocumentFormUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = DocumentForm
     form_class = DocumentFormUpdateForm
+    template_name = 'library_app/documentform_form_update.html'
     permission_required = 'library_app.change_documentform'
 
     def get_context_data(self, **kwargs):
@@ -137,4 +147,12 @@ class DocumentFormUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
     def get_success_url(self):
         return reverse('library_app:blank', kwargs={'pk': self.object.pk})
-        # return reverse_lazy('library_app:blank', f'{self.object.pk}/')
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'user': self.request.user.pk})
+        return kwargs

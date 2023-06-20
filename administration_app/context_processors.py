@@ -112,7 +112,7 @@ def get_approval_oficial_memo_process(request):
                 'accounting_accepted_count': accounting_accepted.count,
             }
         except Exception as _ex:
-            logger.error(_ex)
+            logger.exception(_ex)
             return {}
     else:
         return {}

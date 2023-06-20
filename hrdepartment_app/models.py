@@ -21,6 +21,7 @@ from administration_app.utils import ending_day, FIO_format, timedelta_to_time, 
 from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingConditions, Division, Job, AccessLevel, \
     HistoryChange
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
+from library_app.models import DocumentForm
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -1271,30 +1272,47 @@ class Instructions(Documents):
     document_division = models.ManyToManyField(Division, verbose_name='Подразделения',
                                                related_name='instruction_document_division')
     document_order = models.ForeignKey(DocumentsOrder, verbose_name='Приказ', on_delete=models.SET_NULL, null=True)
+    document_form = models.ManyToManyField(DocumentForm, verbose_name='Бланки документов')
 
 @receiver(post_save, sender=Instructions)
 def rename_file_name_instructions(sender, instance, **kwargs):
     try:
         change = 0
-        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
         uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
         user_uid = '0' * (7 - len(str(instance.executor.pk))) + str(instance.executor.pk)
-        filename_draft = f'INS-{uid}-{instance.date_entry}-DRAFT-{user_uid}.docx'
-        filename_scan = f'INS-{uid}-{instance.date_entry}-SCAN-{user_uid}.pdf'
-        Med(instance, f'media/docs/INS/{instance.date_entry.year}', filename_draft, filename_scan)
-        print(instance.doc_file, instance.scan_file)
         if instance.doc_file:
-            print(filename_draft)
-        # if f'media/docs/INS/{instance.date_entry.year}/{filename_draft}' != instance.doc_file:
-        #     change = 1
-        #     instance.doc_file = f'media/docs/INS/{instance.date_entry.year}/{filename_draft}'
-        # if f'media/docs/INS/{instance.date_entry.year}/{filename_scan}' != instance.scan_file:
-        #     change = 1
-        #     instance.scan_file = f'media/docs/INS/{instance.date_entry.year}/{filename_scan}'
-        # if change == 1:
-        #     instance.save()
+            # Получаем имя сохраненного файла
+            draft_file_name = pathlib.Path(instance.doc_file.name).name
+            # Получаем путь к файлу
+            draft_path_name = pathlib.Path(instance.doc_file.name).parent
+            # Получаем расширение файла
+            draft_ext = draft_file_name.split('.')[-1]
+            filename_draft = f'INS-{uid}-{instance.date_entry}-DRAFT-{user_uid}.{draft_ext}'
+            if draft_file_name != filename_draft:
+                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, draft_file_name),
+                                    pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, filename_draft))
+                instance.doc_file = f'{draft_path_name}/{filename_draft}'
+                change = 1
+
+        if instance.scan_file:
+            # Получаем имя сохраненного файла
+            scan_file_name = pathlib.Path(instance.scan_file.name).name
+            # Получаем путь к файлу
+            scan_path_name = pathlib.Path(instance.scan_file.name).parent
+            # Получаем расширение файла
+            scan_ext = scan_file_name.split('.')[-1]
+            filename_scan = f'INS-{uid}-{instance.date_entry}-SCAN-{user_uid}.{scan_ext}'
+            if scan_file_name != filename_scan:
+                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, scan_file_name),
+                                    pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, filename_scan))
+                instance.scan_file = f'{scan_path_name}/{filename_scan}'
+                change = 1
+
+        if change == 1:
+            instance.save()
     except Exception as _ex:
         logger.error(f'Ошибка при переименовании файла {_ex}')
+
 
 
 class Provisions(Documents):
@@ -1310,3 +1328,44 @@ class Provisions(Documents):
     document_division = models.ManyToManyField(Division, verbose_name='Подразделения',
                                                related_name='provisions_document_division')
     document_order = models.ForeignKey(DocumentsOrder, verbose_name='Приказ', on_delete=models.SET_NULL, null=True)
+    document_form = models.ManyToManyField(DocumentForm, verbose_name='Бланки документов')
+
+
+@receiver(post_save, sender=Provisions)
+def rename_file_name_provisions(sender, instance, **kwargs):
+    try:
+        change = 0
+        uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
+        user_uid = '0' * (7 - len(str(instance.executor.pk))) + str(instance.executor.pk)
+        if instance.doc_file:
+            # Получаем имя сохраненного файла
+            draft_file_name = pathlib.Path(instance.doc_file.name).name
+            # Получаем путь к файлу
+            draft_path_name = pathlib.Path(instance.doc_file.name).parent
+            # Получаем расширение файла
+            draft_ext = draft_file_name.split('.')[-1]
+            filename_draft = f'PRV-{uid}-{instance.date_entry}-DRAFT-{user_uid}.{draft_ext}'
+            if draft_file_name != filename_draft:
+                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, draft_file_name),
+                                    pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, filename_draft))
+                instance.doc_file = f'{draft_path_name}/{filename_draft}'
+                change = 1
+
+        if instance.scan_file:
+            # Получаем имя сохраненного файла
+            scan_file_name = pathlib.Path(instance.scan_file.name).name
+            # Получаем путь к файлу
+            scan_path_name = pathlib.Path(instance.scan_file.name).parent
+            # Получаем расширение файла
+            scan_ext = scan_file_name.split('.')[-1]
+            filename_scan = f'PRV-{uid}-{instance.date_entry}-SCAN-{user_uid}.{scan_ext}'
+            if scan_file_name != filename_scan:
+                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, scan_file_name),
+                                    pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, filename_scan))
+                instance.scan_file = f'{scan_path_name}/{filename_scan}'
+                change = 1
+
+        if change == 1:
+            instance.save()
+    except Exception as _ex:
+        logger.error(f'Ошибка при переименовании файла {_ex}')

@@ -38,24 +38,39 @@ class HelpItemUpdateForm(forms.ModelForm):
 
 
 class DocumentFormAddForm(forms.ModelForm):
-    # hash_tag = forms.ModelMultipleChoiceField(queryset=HashTag.objects.all(), label='Хэштег')
-    # hash_tag.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    # category = forms.ModelChoiceField(queryset=HelpCategory.objects.all(), label='Категория')
-    # category.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().only('pk'), label='Ответственные лица')
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    # executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all().only('pk'), label='Исполнитель')
+    # executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     sample = forms.URLField(required=False)
     class Meta:
         model = DocumentForm
-        fields = ('title', 'draft', 'scan', 'sample')
+        fields = ('title', 'draft', 'scan', 'sample', 'employee', 'executor')
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop('user')
+        super(DocumentFormAddForm, self).__init__(*args, **kwargs)
+        self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['employee'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['executor'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
 
 
 
 class DocumentFormUpdateForm(forms.ModelForm):
-    # hash_tag = forms.ModelMultipleChoiceField(queryset=HashTag.objects.all(), label='Хэштег')
-    # hash_tag.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    # category = forms.ModelChoiceField(queryset=HelpCategory.objects.all(), label='Категория')
-    # category.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     sample = forms.URLField(required=False)
     class Meta:
         model = DocumentForm
-        fields = ('title', 'draft', 'scan', 'sample')
+        fields = ('title', 'draft', 'scan', 'sample', 'employee')
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user')
+        super(DocumentFormUpdateForm, self).__init__(*args, **kwargs)
+        self.fields['employee'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
