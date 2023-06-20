@@ -138,7 +138,7 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
 
-                                            {% if object.doc_file %}
+                                            {% if object.doc_file and user == object.executor %}
                                                 <div class="col-sm-6 text-black-50 mt-2 pb-4">
                                                     <label for="id_doc_file">Файл бланка: </label>
                                                     {% if object.doc_file %}
