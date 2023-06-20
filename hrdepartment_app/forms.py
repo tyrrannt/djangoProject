@@ -415,7 +415,7 @@ class DocumentsOrderAddForm(forms.ModelForm):
 
 class DocumentsOrderUpdateForm(forms.ModelForm):
     document_foundation = forms.ModelChoiceField(
-        queryset=OfficialMemo.objects.filter(Q(order=None) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(
+        queryset=OfficialMemo.objects.filter(Q(docs__isnull=False)).exclude(cancellation=True).exclude(
             official_memo_type='3'), required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
