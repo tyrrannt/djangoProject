@@ -1335,10 +1335,10 @@ class Provisions(Documents):
             'pk': self.pk,
             'document_number': self.document_number,
             'document_date': f'{self.document_date:%d.%m.%Y} г.', # .strftime(""),
-            'document_division': str(self.document_division),
+            'document_division': str(self.storage_location_division),
             'document_order': str(self.document_order),
             'actuality': 'Да' if self.actuality else 'Нет',
-            'executor': str(self.executor),
+            'executor': FIO_format(self.executor),
         }
 
     def get_absolute_url(self):
