@@ -433,11 +433,11 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.id = kwargs.pop('id')
-        super(DocumentsOrderUpdateForm).__init__(*args, **kwargs)
+        super(DocumentsOrderUpdateForm, self).__init__(*args, **kwargs)
         # self.fields["description"].required = False
         self.fields['description'].widget.attrs.update({'class': 'form-control django_ckeditor_5'})
         self.fields['description'].required = False
-        self.fields['document_foundation'].queryset = OfficialMemo.objects.filter((Q(order=self.id) | Q(order=None)) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(official_memo_type='3')
+        self.fields['document_foundation'].queryset = OfficialMemo.objects.filter((Q(order_id=self.id) | Q(order=None)) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(official_memo_type='3')
 
     class Meta:
         model = DocumentsOrder

@@ -1403,8 +1403,9 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
         Передаем в форму текущего пользователя. В форме переопределяем метод __init__
         :return: PK текущего пользователя
         """
+        obj_item = self.get_object()
         kwargs = super().get_form_kwargs()
-        kwargs.update({'id': self.object})
+        kwargs.update({'id': obj_item.pk})
         return kwargs
 
     def get_context_data(self, *, object_list=None, **kwargs):
