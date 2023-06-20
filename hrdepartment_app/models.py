@@ -1333,8 +1333,9 @@ class Provisions(Documents):
     def get_data(self):
         return {
             'pk': self.pk,
+            'document_name': self.document_name,
             'document_number': self.document_number,
-            'document_date': f'{self.document_date:%d.%m.%Y} г.', # .strftime(""),
+            'document_date': f'{self.document_date:%d.%m.%Y} г.',
             'document_division': str(self.storage_location_division),
             'document_order': str(self.document_order),
             'actuality': 'Да' if self.actuality else 'Нет',
