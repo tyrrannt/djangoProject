@@ -415,8 +415,7 @@ class DocumentsOrderAddForm(forms.ModelForm):
 
 class DocumentsOrderUpdateForm(forms.ModelForm):
     document_foundation = forms.ModelChoiceField(
-        queryset=OfficialMemo.objects.filter(Q(docs__isnull=False)).exclude(cancellation=True).exclude(
-            official_memo_type='3'), required=False)
+        queryset=OfficialMemo.objects.all(), required=False)
     document_foundation.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
@@ -433,10 +432,12 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
     validity_period_end = forms.DateField(required=False)
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        self.id = kwargs.pop('id')
+        super(DocumentsOrderUpdateForm).__init__(*args, **kwargs)
         # self.fields["description"].required = False
         self.fields['description'].widget.attrs.update({'class': 'form-control django_ckeditor_5'})
         self.fields['description'].required = False
+        self.fields['document_foundation'].queryset = OfficialMemo.objects.filter((Q(order=self.id) | Q(order=None)) & Q(docs__isnull=False)).exclude(cancellation=True).exclude(official_memo_type='3')
 
     class Meta:
         model = DocumentsOrder

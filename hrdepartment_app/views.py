@@ -1398,6 +1398,15 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
     form_class = DocumentsOrderUpdateForm
     permission_required = 'hrdepartment_app.change_documentsorder'
 
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'id': self.object})
+        return kwargs
+
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
