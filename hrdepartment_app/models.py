@@ -1330,6 +1330,23 @@ class Provisions(Documents):
     document_order = models.ForeignKey(DocumentsOrder, verbose_name='Приказ', on_delete=models.SET_NULL, null=True)
     document_form = models.ManyToManyField(DocumentForm, verbose_name='Бланки документов')
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'document_number': self.document_number,
+            'document_date': f'{self.document_date:%d.%m.%Y} г.', # .strftime(""),
+            'document_division': str(self.document_division),
+            'document_order': str(self.document_order),
+            'actuality': 'Да' if self.actuality else 'Нет',
+            'executor': str(self.executor),
+        }
+
+    def get_absolute_url(self):
+        return reverse('hrdepartment_app:provisions_list')
+
+    def __str__(self):
+        return f'Положение {self.document_name} №{self.document_number} от {self.document_date.strftime("%d.%m.%Y")}'
+
 
 @receiver(post_save, sender=Provisions)
 def rename_file_name_provisions(sender, instance, **kwargs):

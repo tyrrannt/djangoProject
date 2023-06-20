@@ -9,7 +9,7 @@ from loguru import logger
 from customers_app.models import Division, DataBaseUser, Job, HarmfulWorkingConditions, AccessLevel
 from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOficialMemoProcess, \
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
-    ReasonForCancellation, OrderDescription, ReportCard
+    ReasonForCancellation, OrderDescription, ReportCard, Provisions
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -517,3 +517,64 @@ class ReportCardUpdateForm(forms.ModelForm):
         reason_adjustment = cleaned_data.get("reason_adjustment")
         if reason_adjustment == '':
             raise ValidationError("Ошибка! Причина ручной корректировки не может быть пустой.")
+
+
+class ProvisionsAddForm(forms.ModelForm):
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+
+    class Meta:
+        model = Provisions
+        fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
+                  'storage_location_division', 'employee', 'allowed_placed', 'validity_period_start', 'document_order',
+                  'validity_period_end', 'actuality', 'previous_document', 'document_name')
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop('user')
+        super(ProvisionsAddForm, self).__init__(*args, **kwargs)
+        self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['employee'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['executor'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+
+class ProvisionsUpdateForm(forms.ModelForm):
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
+    class Meta:
+        model = Provisions
+        fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
+                  'storage_location_division', 'employee', 'validity_period_start', 'validity_period_end', 'previous_document',
+                  'allowed_placed', 'actuality', 'document_name', 'document_order')
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop('user')
+        super(ProvisionsUpdateForm, self).__init__(*args, **kwargs)
+        self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['employee'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['executor'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})

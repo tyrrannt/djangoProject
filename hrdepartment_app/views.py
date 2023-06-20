@@ -21,12 +21,13 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
-    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm, ReportCardUpdateForm
+    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm, ReportCardUpdateForm, \
+    ProvisionsUpdateForm, ProvisionsAddForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_month, \
     get_working_hours
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
-    ProductionCalendar
+    ProductionCalendar, Provisions
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -1226,6 +1227,15 @@ class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, Cr
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить должностную инструкцию'
         return content
 
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'user': self.request.user.pk})
+        return kwargs
+
 
 class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     """
@@ -1239,7 +1249,7 @@ class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin,
             # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = int(self.get_object().access.level)
             # Получаем уровень доступа к документам у пользователя
-            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).access_level.documents_access_view.level
+            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).user_access.level
             # Сравниваем права доступа
             if detail_obj < user_obj:
                 # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
@@ -1271,6 +1281,15 @@ class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin,
         context = super().get_context_data(object_list=None, **kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'user': self.request.user.pk})
+        return kwargs
 
 
 # Приказы
@@ -1824,3 +1843,103 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('hrdepartment_app:reportcard_list')
+
+# Положения
+class ProvisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """
+        Должностные инструкции - список
+    """
+    model = Provisions
+    permission_required = 'hrdepartment_app.view_provisions'
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            provisions_list = Provisions.objects.all()
+            data = [provisions_item.get_data() for provisions_item in provisions_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Положения'
+        return context
+
+
+class ProvisionsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """
+        Положения - создание
+    """
+    model = Provisions
+    form_class = ProvisionsAddForm
+    permission_required = 'hrdepartment_app.add_provisions'
+
+    def get_context_data(self, **kwargs):
+        content = super(ProvisionsAdd, self).get_context_data(**kwargs)
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить положение'
+        return content
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'user': self.request.user.pk})
+        return kwargs
+
+
+class ProvisionsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    """
+        Положения - просмотр
+    """
+    model = Provisions
+    permission_required = 'hrdepartment_app.view_provisions'
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).user_access.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy('hrdepartment_app:provisions_list')
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy('hrdepartment_app:provisions_list')
+            return redirect(url_match)
+        return super(ProvisionsDetail, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
+
+
+class ProvisionsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """
+        Положения - редактирование
+    """
+    template_name = 'hrdepartment_app/provisions_form_update.html'
+    model = Provisions
+    form_class = ProvisionsUpdateForm
+    permission_required = 'hrdepartment_app.change_provisions'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'user': self.request.user.pk})
+        return kwargs
