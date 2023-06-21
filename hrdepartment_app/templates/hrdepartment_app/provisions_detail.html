@@ -84,7 +84,7 @@
                                             <input type="text" class="form-control form-control-modern"
                                                    name="validity_period_end" id="id_validity_period_end"
                                                    disabled data-plugin-datepicker
-                                                   value="{{ object.validity_period_end }}"
+                                                   value="{% if object.validity_period_end %}{{ object.validity_period_end }}{% endif %}"
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
 
                                         </div>
