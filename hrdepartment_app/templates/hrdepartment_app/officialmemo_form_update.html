@@ -65,14 +65,14 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-12 col-lg-6">
                                             <label class="col control-label mb-0"
-                                                   for="id_official_memo_type">Тип служебной поездки</label>
+                                                   for="id_official_memo_type">Тип служебной поездки:</label>
                                             <div class="col">
                                                 {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()"}}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-lg-6">
                                             <label class="col control-label mb-0"
-                                                   for="id_document_extension">Документ основания</label>
+                                                   for="id_document_extension">Документ основания:</label>
                                             <div class="col">
                                                 {{ form.document_extension | add_class:"form-control form-control-modern" }}
                                             </div>
@@ -81,7 +81,7 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-12 col-lg-6">
                                             <label class="col control-label mb-0"
-                                                   for="id_type_trip">Вид служебной поездки</label>
+                                                   for="id_type_trip">Вид служебной поездки:</label>
                                             <div class="col">
                                                 {{ form.type_trip | add_class:"form-control form-control-modern" }}
                                             </div>
@@ -89,7 +89,7 @@
                                         <div class="col-sm-12 col-lg-6">
                                             <div class="col-sm-12 col-lg-6">
                                                 <label class="col control-label mb-0"
-                                                       for="id_person">Сотрудник</label>
+                                                       for="id_person">Сотрудник:</label>
                                                 <div class="col">
                                                     <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
                                                 </div>
@@ -98,37 +98,45 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-12 col-lg-6">
-                                            <label class="col control-label mb-0"
-                                                   for="id_period_from">Дата начала</label>
-                                            <div class="col" id="period_from_id">
+                                            <label class="col-lg-3 control-label text-lg-end pt-2">Дата начала:</label>
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </span>
                                                 <input type="date" id="id_period_from"
                                                        class="form-control form-control-modern"
                                                        onclick=minimumPeriodFor()
                                                        name="period_from" value="{{ object.period_from | date:'c' }}"/>
                                             </div>
                                         </div>
+                                        </div>
                                         <div class="col-sm-12 col-lg-6">
-                                            <label class="col control-label mb-0"
-                                                   for="id_period_for">Дата окончания</label>
-                                            <div class="col" id="period_for_id">
+                                            <label class="col-lg-3 control-label text-lg-end pt-2">Дата окончания:</label>
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </span>
                                                 <input type="date" id="id_period_for"
                                                        class="form-control form-control-modern "
                                                        onclick=minimumPeriodFor()
                                                        name="period_for" value="{{ object.period_for | date:'c' }}"/>
                                             </div>
                                         </div>
+                                        </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-12 col-lg-6">
                                             <label class="col control-label mb-0"
-                                                   for="id_place_departure">Место отправления</label>
+                                                   for="id_place_departure">Место отправления:</label>
                                             <div class="col">
                                                 <span>{{ form.place_departure }}</span>
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-lg-6">
                                             <label class="col control-label mb-0"
-                                                   for="id_place_production_activity">Место назначения</label>
+                                                   for="id_place_production_activity">Место назначения:</label>
                                             <div class="col">
                                                 <div class="col">
                                                     {{ form.place_production_activity | attr:"multiple" | add_class:"input-group-text input-group-lg" }}
@@ -139,14 +147,14 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-12 col-lg-6">
                                             <label class="col control-label mb-0"
-                                                   for="id_purpose_trip">Цель</label>
+                                                   for="id_purpose_trip">Цель:</label>
                                             <div class="col">
                                                 <span>{{ form.purpose_trip }}</span>
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-lg-6">
                                             <label class="col control-label mb-0"
-                                                   for="id_accommodation">Ответственный</label>
+                                                   for="id_accommodation">Ответственный:</label>
                                             <div class="col">
                                                 <span>{{ object.responsible }}, создан: {{ object.date_of_creation }}</span>
                                             </div>

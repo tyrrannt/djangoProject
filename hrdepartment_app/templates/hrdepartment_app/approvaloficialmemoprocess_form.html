@@ -1,4 +1,4 @@
-{% extends 'contracts_app/main.html' %}
+{% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
@@ -86,22 +86,10 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-3">
-                                            <label class="col"
-                                                   for="id_submit_for_approval">Передан на согласование</label>
-                                            {% if object.document_not_agreed %}
-                                                <input type="text" hidden
-                                                       class="form-control form-control-modern"
-                                                       name="submit_for_approval"
-                                                       value="Передан"
-                                                       id="id_submit_for_approval"/>
-                                                <input type="text" disabled
-                                                       class="form-control form-control-modern"
-                                                       value="Передан"/>
-                                            {% else %}
-                                                <div class="col">
-                                                    <span>{{ form.submit_for_approval | add_class:"form-control-modern" }}</span>
-                                                </div>
-                                            {% endif %}
+                                            <div class="switch switch-sm switch-success text-black-50 mt-3">
+                                                <label for="id_submit_for_approval">Передан на согласование:</label>
+                                                {{ form.submit_for_approval }}
+                                            </div>
                                         </div>
                                         <div class="col-sm-9">
                                             <label class="col"

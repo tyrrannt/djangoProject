@@ -205,16 +205,16 @@
                                                 </td>
                                                 <td class="text-end">
                                                     {% if item.scan %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% else %}
                                                         <i class='bx bx-check'></i>
+                                                    {% else %}
+                                                        <i class='bx bx-x'></i>
                                                     {% endif %}
                                                 </td>
                                                 <td class="text-end">
-                                                    {% if item.sample %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% else %}
+                                                    {% if item.sample != '' %}
                                                         <i class='bx bx-check'></i>
+                                                    {% else %}
+                                                        <i class='bx bx-x'></i>
                                                     {% endif %}
                                                 </td>
                                                 <td class="text-end">{{ item.executor | FIO_format }}</td>

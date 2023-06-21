@@ -80,53 +80,61 @@
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person">Сотрудник</label>
+                                               for="id_person">Сотрудник:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_official_memo_type">Тип служебной поездки</label>
+                                               for="id_official_memo_type">Тип служебной поездки:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()"}}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_document_extension">Документ основания</label>
+                                               for="id_document_extension">Документ основания:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.document_extension | add_class:"form-control form-control-modern" | attr:"disabled"}}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_type_trip">Вид служебной поездки</label>
+                                               for="id_type_trip">Вид служебной поездки:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.type_trip | add_class:"form-control form-control-modern" }}
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_period_from">Дата начала</label>
-                                        <div class="col-lg-7 col-xl-6" id="period_from_id">
-                                            <input type="date" id="id_period_from"
+                                    <div class="form-group row pb-3">
+                                        <label class="col-lg-3 control-label text-lg-end pt-2">Дата начала:</label>
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </span>
+                                                <input type="date" id="id_period_from"
                                                    class="form-control form-control-modern" onchange=minimumPeriodFor()
                                                    name="period_from" value="{{ object.period_from | date:'c' }}"/>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_period_for">Дата окончания</label>
-                                        <div class="col-lg-7 col-xl-6" id="period_for_id">
-                                            <input type="date" id="id_period_for"
+                                    <div class="form-group row pb-3">
+                                        <label class="col-lg-3 control-label text-lg-end pt-2">Дата окончания:</label>
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </span>
+                                                <input type="date" id="id_period_for"
                                                    class="form-control form-control-modern "
                                                    name="period_for" value="{{ object.period_for | date:'c' }}"/>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_place_departure">Место отправления</label>
+                                               for="id_place_departure">Место отправления:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <span>{{ form.place_departure }}</span>
                                         </div>
@@ -134,7 +142,7 @@
 
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_place_production_activity">Место назначения</label>
+                                               for="id_place_production_activity">Место назначения:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <div class="input-group">
                                                 <div class="col-11">
@@ -150,14 +158,14 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_purpose_trip">Цель</label>
+                                               for="id_purpose_trip">Цель:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <span>{{ form.purpose_trip }}</span>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_accommodation">Ответственный</label>
+                                               for="id_accommodation">Ответственный:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <select class="form-control form-control-modern" name="responsible"
                                                     id="id_responsible" data-plugin-selectTwo>

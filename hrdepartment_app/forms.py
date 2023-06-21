@@ -148,10 +148,10 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
         ('1', 'Квартира'),
         ('2', 'Гостиница')
     ]
-    person_executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
-    person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    # person_executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
+    # person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    # person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
+    # person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(docs__isnull=True))
     document.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True, 'type': 'date'})
@@ -160,6 +160,21 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
         model = ApprovalOficialMemoProcess
         fields = ('document', 'person_executor', 'submit_for_approval', 'comments_for_approval', 'person_agreement',
                   'start_date_trip', 'end_date_trip')
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        # self.user = kwargs.pop('user')
+        super(ApprovalOficialMemoProcessAddForm, self).__init__(*args, **kwargs)
+        self.fields['submit_for_approval'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['person_executor'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['person_agreement'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['person_agreement'].required = False
+
 
 
 class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
