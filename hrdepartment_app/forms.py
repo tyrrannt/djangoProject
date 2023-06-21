@@ -535,7 +535,7 @@ class ProvisionsAddForm(forms.ModelForm):
         model = Provisions
         fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'storage_location_division', 'employee', 'allowed_placed', 'validity_period_start', 'document_order',
-                  'validity_period_end', 'actuality', 'previous_document', 'document_name')
+                  'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_form')
 
     def __init__(self, *args, **kwargs):
         """
@@ -547,6 +547,9 @@ class ProvisionsAddForm(forms.ModelForm):
         self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['employee'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['document_form'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['document_form'].required = False
         self.fields['executor'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
@@ -565,7 +568,7 @@ class ProvisionsUpdateForm(forms.ModelForm):
         model = Provisions
         fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'storage_location_division', 'employee', 'validity_period_start', 'validity_period_end', 'previous_document',
-                  'allowed_placed', 'actuality', 'document_name', 'document_order')
+                  'allowed_placed', 'actuality', 'document_name', 'document_order', 'document_form')
 
     def __init__(self, *args, **kwargs):
         """
@@ -577,5 +580,8 @@ class ProvisionsUpdateForm(forms.ModelForm):
         self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['employee'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['document_form'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['document_form'].required = False
         self.fields['executor'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
