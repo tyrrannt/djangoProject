@@ -521,8 +521,8 @@ class ReportCardUpdateForm(forms.ModelForm):
 
 
 class ProvisionsAddForm(forms.ModelForm):
-    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
-    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
     access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
@@ -535,7 +535,7 @@ class ProvisionsAddForm(forms.ModelForm):
         model = Provisions
         fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'storage_location_division', 'employee', 'allowed_placed', 'validity_period_start', 'document_order',
-                  'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_form')
+                  'validity_period_end', 'actuality', 'previous_document', 'document_name', 'document_form', 'applying_for_job')
 
     def __init__(self, *args, **kwargs):
         """
@@ -546,17 +546,22 @@ class ProvisionsAddForm(forms.ModelForm):
         super(ProvisionsAddForm, self).__init__(*args, **kwargs)
         self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['employee'].widget.attrs.update(
-            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+            {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
+             'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
         self.fields['document_form'].widget.attrs.update(
-            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+            {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
+             'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
         self.fields['document_form'].required = False
         self.fields['executor'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['allowed_placed'].widget.attrs.update({'class': 'todo-check'})
+        self.fields['actuality'].widget.attrs.update({'class': 'todo-check'})
+        self.fields['applying_for_job'].widget.attrs.update({'class': 'todo-check'})
 
 
 class ProvisionsUpdateForm(forms.ModelForm):
-    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
-    employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
     access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
@@ -568,7 +573,7 @@ class ProvisionsUpdateForm(forms.ModelForm):
         model = Provisions
         fields = ('document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'storage_location_division', 'employee', 'validity_period_start', 'validity_period_end', 'previous_document',
-                  'allowed_placed', 'actuality', 'document_name', 'document_order', 'document_form')
+                  'allowed_placed', 'actuality', 'document_name', 'document_order', 'document_form', 'applying_for_job')
 
     def __init__(self, *args, **kwargs):
         """
@@ -579,9 +584,12 @@ class ProvisionsUpdateForm(forms.ModelForm):
         super(ProvisionsUpdateForm, self).__init__(*args, **kwargs)
         # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['employee'].widget.attrs.update(
-            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+            {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
+             'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
         self.fields['document_form'].widget.attrs.update(
-            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+            {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
+             'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
         self.fields['document_form'].required = False
-        # self.fields['executor'].widget.attrs.update(
-        #     {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['allowed_placed'].widget.attrs.update({'class': 'todo-check'})
+        self.fields['actuality'].widget.attrs.update({'class': 'todo-check'})
+        self.fields['applying_for_job'].widget.attrs.update({'class': 'todo-check'})
