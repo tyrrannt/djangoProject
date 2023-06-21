@@ -56,33 +56,63 @@
                                     <p class="card-big-info-desc">Ручная регистрация события</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_report_card_day">Дата</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="date" id="id_report_card_day" onchange="set_interval()"
+                                    <div class="form-group row pb-3">
+                                        <label class="col-lg-3 control-label text-lg-end pt-2">Дата:</label>
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </span>
+                                                <input type="date" id="id_report_card_day" onchange="set_interval()"
                                                    class="form-control form-control-modern"
                                                    name="report_card_day" value="{{ object.report_card_day | date:"c" }}"/>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_start_time">С:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="time" id="id_start_time"
+                                    <div class="form-group row pb-2">
+                                        <label class="col-lg-3 control-label text-lg-end pt-2">C:</label>
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="far fa-clock"></i>
+                                                </span>
+                                                <input type="time" id="id_start_time"
                                                    class="form-control form-control-modern" min="{{ min }}"
                                                    name="start_time" value="{{ object.start_time | date:"c" }}"/>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_end_time">По:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="time" id="id_end_time"
+                                    <div class="form-group row pb-2">
+                                        <label class="col-lg-3 control-label text-lg-end pt-2">По:</label>
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="far fa-clock"></i>
+                                                </span>
+                                                <input type="time" id="id_end_time"
                                                    class="form-control form-control-modern" max="{{ max }}"
                                                    name="end_time" value="{{ object.end_time | date:"c" }}"/>
+                                            </div>
                                         </div>
                                     </div>
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_start_time">С:</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <input type="time" id="id_start_time"#}
+{#                                                   class="form-control form-control-modern" min="{{ min }}"#}
+{#                                                   name="start_time" value="{{ object.start_time | date:"c" }}"/>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_end_time">По:</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <input type="time" id="id_end_time"#}
+{#                                                   class="form-control form-control-modern" max="{{ max }}"#}
+{#                                                   name="end_time" value="{{ object.end_time | date:"c" }}"/>#}
+{#                                        </div>#}
+{#                                    </div>#}
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_reason_adjustment">Причина:</label>
