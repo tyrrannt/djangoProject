@@ -566,7 +566,7 @@ class ProvisionsUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Provisions
-        fields = ('executor', 'document_date', 'document_number', 'doc_file', 'scan_file', 'access',
+        fields = ('document_date', 'document_number', 'doc_file', 'scan_file', 'access',
                   'storage_location_division', 'employee', 'validity_period_start', 'validity_period_end', 'previous_document',
                   'allowed_placed', 'actuality', 'document_name', 'document_order', 'document_form')
 
@@ -577,11 +577,11 @@ class ProvisionsUpdateForm(forms.ModelForm):
         """
         self.user = kwargs.pop('user')
         super(ProvisionsUpdateForm, self).__init__(*args, **kwargs)
-        self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['employee'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
         self.fields['document_form'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
         self.fields['document_form'].required = False
-        self.fields['executor'].widget.attrs.update(
-            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        # self.fields['executor'].widget.attrs.update(
+        #     {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
