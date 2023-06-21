@@ -554,9 +554,9 @@ class ProvisionsAddForm(forms.ModelForm):
         self.fields['document_form'].required = False
         self.fields['executor'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-        self.fields['allowed_placed'].widget.attrs.update({'class': 'todo-check'})
-        self.fields['actuality'].widget.attrs.update({'class': 'todo-check'})
-        self.fields['applying_for_job'].widget.attrs.update({'class': 'todo-check'})
+        self.fields['allowed_placed'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['actuality'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['applying_for_job'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
 
 
 class ProvisionsUpdateForm(forms.ModelForm):
@@ -590,6 +590,6 @@ class ProvisionsUpdateForm(forms.ModelForm):
             {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
              'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
         self.fields['document_form'].required = False
-        self.fields['allowed_placed'].widget.attrs.update({'class': 'todo-check'})
-        self.fields['actuality'].widget.attrs.update({'class': 'todo-check'})
-        self.fields['applying_for_job'].widget.attrs.update({'class': 'todo-check'})
+        self.fields['allowed_placed'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['actuality'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['applying_for_job'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})

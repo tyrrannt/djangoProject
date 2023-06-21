@@ -116,20 +116,20 @@
                                         </div>
                                     </div>
                                     <div class="row text">
-                                        <div class="col-md-4 text-black-50 mt-3">
+                                        <div class="switch switch-sm switch-success col-md-4 text-black-50 mt-3">
                                             <label for="id_allowed_placed">Разрешение на публикацию:</label>
                                             <input type="checkbox" name="allowed_placed" id="id_allowed_placed"
-                                                   {% if object.allowed_placed %}checked{% endif %}>
+                                                   {% if object.allowed_placed %}checked{% endif %} data-plugin-ios-switch>
                                         </div>
-                                        <div class="col-md-4 text-black-50 mt-3">
+                                        <div class="switch switch-sm switch-success col-md-4 text-black-50 mt-3">
                                             <label for="id_actuality">Актуальность:</label>
                                             <input type="checkbox" name="actuality" id="id_actuality"
-                                                   {% if object.actuality %}checked{% endif %}>
+                                                   {% if object.actuality %}checked{% endif %} data-plugin-ios-switch>
                                         </div>
-                                        <div class="col-md-4 text-black-50 mt-3">
+                                        <div class="switch switch-sm switch-success col-md-4 text-black-50 mt-3">
                                             <label for="id_applying_for_job">Обязательно к ознакомлению при приеме на работу:</label>
                                             <input type="checkbox" name="applying_for_job" id="id_applying_for_job"
-                                                   {% if object.applying_for_job %}checked{% endif %}>
+                                                   {% if object.applying_for_job %}checked{% endif %} data-plugin-ios-switch>
                                         </div>
                                     </div>
                                 </div>
