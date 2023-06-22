@@ -222,6 +222,22 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                   'end_date_trip', 'date_transfer_hr', 'date_transfer_accounting', 'date_receipt_original',
                   'originals_docs_comment', 'prepaid_expense_summ', 'submitted_for_signature')
 
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        # self.user = kwargs.pop('user')
+        super(ApprovalOficialMemoProcessUpdateForm, self).__init__(*args, **kwargs)
+        self.fields['accepted_accounting'].widget.attrs.update({'class': 'mobileToggle'})
+        self.fields['hr_accepted'].widget.attrs.update({'class': 'mobileToggle'})
+        self.fields['originals_received'].widget.attrs.update({'class': 'mobileToggle'})
+        self.fields['process_accepted'].widget.attrs.update({'class': 'mobileToggle'})
+        self.fields['location_selected'].widget.attrs.update({'class': 'mobileToggle'})
+        self.fields['document_not_agreed'].widget.attrs.update({'class': 'mobileToggle'})
+        self.fields['submit_for_approval'].widget.attrs.update({'class': 'mobileToggle'})
+
+
     def clean(self):
         cleaned_data = super().clean()
         person_agreement = cleaned_data.get("person_agreement")
@@ -270,13 +286,25 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
 
 
 class ApprovalOficialMemoProcessChangeForm(forms.ModelForm):
-    reason_cancellation = forms.ModelChoiceField(queryset=ReasonForCancellation.objects.all(), required=False)
-    reason_cancellation.widget.attrs.update(
-        {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    # reason_cancellation = forms.ModelChoiceField(queryset=ReasonForCancellation.objects.all(), required=False)
+    # reason_cancellation.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
     class Meta:
         model = ApprovalOficialMemoProcess
         fields = ('cancellation', 'reason_cancellation')
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        # self.user = kwargs.pop('user')
+        super(ApprovalOficialMemoProcessChangeForm, self).__init__(*args, **kwargs)
+        self.fields['cancellation'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['reason_cancellation'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+        self.fields['reason_cancellation'].required = False
 
     def clean(self):
         cleaned_data = super().clean()

@@ -526,9 +526,9 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         # Отмена СП или СК
         if not self.cancellation and trigger == 0:
             mail_to = self.document.person.email
-            mail_to_copy_first = self.person_executor.email
-            mail_to_copy_second = self.person_distributor.email
-            mail_to_copy_third = self.person_department_staff.email
+            mail_to_copy_first = self.person_executor.email if self.person_executor else ''
+            mail_to_copy_second = self.person_distributor.email if self.person_distributor else ''
+            mail_to_copy_third = self.person_department_staff.email if self.person_department_staff else ''
             subject_mail = title
 
             current_context = {

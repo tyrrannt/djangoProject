@@ -1,4 +1,4 @@
-{% extends 'contracts_app/main.html' %}
+{% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
@@ -63,7 +63,7 @@
                                          style="border:1px solid #a6b3ff;">
                                         <div class="col-sm-12 col-lg-4">
                                             <label class="col"
-                                                   for="id_person_executor">Исполнитель</label>
+                                                   for="id_person_executor">Исполнитель:</label>
                                             <div class="col ">
                                                 {% if object.submit_for_approval %}
                                                     <select class="form-control form-control-modern"
@@ -78,7 +78,7 @@
                                         </div>
                                         <div class="col-sm-12 col-lg-4">
                                             <label class="col"
-                                                   for="id_submit_for_approval">Передан на согласование</label>
+                                                   for="id_submit_for_approval">Передан на согласование:</label>
                                             {% if object.document_not_agreed %}
                                                 <input type="checkbox" id="id_submit_for_approval"
                                                        name="submit_for_approval"
@@ -99,7 +99,7 @@
                                         </div>
                                         <div class="col-sm-12 col-lg-4">
                                             <label class="col"
-                                                   for="id_comments_for_approval">Комментарий для согласования</label>
+                                                   for="id_comments_for_approval">Комментарий для согласования:</label>
                                             <div class="col">
                                                 {% if object.submit_for_approval or user.pk != object.person_executor.pk %}
                                                     <span>{{ form.comments_for_approval | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
@@ -113,7 +113,7 @@
                                          style="border:1px solid #8bfd8b;">
                                         <div class="col-sm-12 col-lg-4">
                                             <label class="col"
-                                                   for="id_person_agreement">Руководитель</label>
+                                                   for="id_person_agreement">Руководитель:</label>
                                             <div class="col">
                                                 {% if object.document_not_agreed %}
                                                     <select class="form-control form-control-modern"
@@ -128,7 +128,7 @@
                                         </div>
                                         <div class="col-sm-12 col-lg-4">
                                             <label class="col"
-                                                   for="id_document_not_agreed">Документ согласован</label>
+                                                   for="id_document_not_agreed">Документ согласован:</label>
                                             {% if object.location_selected %}
                                                 <input type="checkbox" id="id_document_not_agreed"
                                                        name="document_not_agreed"
@@ -147,7 +147,7 @@
                                         </div>
                                         <div class="col-sm-12 col-lg-4">
                                             <label class="col"
-                                                   for="id_reason_for_approval">Примечание к согласованию</label>
+                                                   for="id_reason_for_approval">Примечание к согласованию:</label>
                                             <div class="col">
                                                 {% if user.pk in list_agreement and not object.document_not_agreed %}
                                                     <span>{{ form.reason_for_approval | add_class:"form-control form-control-modern" }}</span>
@@ -163,7 +163,7 @@
                                             <div class="col-sm-12 col-lg-4">
                                                 <label class="col"
                                                        for="id_person_distributor">Отдел организации наземного
-                                                    обслуживания</label>
+                                                    обслуживания:</label>
                                                 <div class="col">
                                                     {% if object.location_selected %}
                                                         <select class="form-control form-control-modern"
@@ -178,17 +178,17 @@
                                                     {% endif %}
                                                 </div>
                                             </div>
-                                            <div class="col-sm-12 col-lg-4">
+                                            <div class="col-sm-12 col-lg-4 toggleWrapper">
                                                 <label class="col"
-                                                       for="id_location_selected">Место проживания: </label>
+                                                       for="id_location_selected">Место проживания:</label>
                                                 {% if object.process_accepted %}
                                                     <input type="checkbox" id="id_location_selected"
-                                                           name="location_selected"
+                                                           name="location_selected" class="mobileToggle"
                                                            {% if object.location_selected %}checked="checked"{% endif %}
                                                            onclick="javascript: return false;"/>
                                                 {% elif user not in list_distributor %}
                                                     <input type="checkbox" id="id_location_selected"
-                                                           name="location_selected"
+                                                           name="location_selected" class="mobileToggle"
                                                            {% if object.location_selected %}checked="checked"{% endif %}
                                                            onclick="javascript: return false;"/>
                                                 {% else %}
@@ -199,7 +199,7 @@
                                             </div>
                                             <div class="col-sm-12 col-lg-4">
                                                 <label class="col"
-                                                       for="id_accommodation">Место проживания</label>
+                                                       for="id_accommodation">Место проживания:</label>
                                                 <div class="col">
                                                     {% if object.location_selected %}
                                                         <select class="form-control form-control-modern"
@@ -217,7 +217,7 @@
                                              style="border:1px solid #8bfd8b;">
                                             <div class="col-sm-12 col-lg-4">
                                                 <label class="col"
-                                                       for="id_person_department_staff">Отдел кадров</label>
+                                                       for="id_person_department_staff">Отдел кадров:</label>
                                                 <div class="col">
                                                     {% if object.process_accepted %}
                                                         <select class="form-control form-control-modern"
@@ -233,12 +233,12 @@
                                                     {% endif %}
                                                 </div>
                                             </div>
-                                            <div class="col-sm-12 col-lg-4">
+                                            <div class="col-sm-12 col-lg-4 toggleWrapper">
                                                 <label class="col"
-                                                       for="id_process_accepted">Документ принят в ОК</label>
+                                                       for="id_process_accepted">Документ принят в ОК:</label>
                                                 {% if user not in list_department_staff %}
                                                     <input type="checkbox" id="id_process_accepted"
-                                                           name="process_accepted"
+                                                           name="process_accepted" class="mobileToggle"
                                                            {% if object.process_accepted %}checked="checked"{% endif %}
                                                            onclick="javascript: return false;"/>
                                                 {% elif object.location_selected %}
@@ -247,14 +247,14 @@
                                                     </div>
                                                 {% else %}
                                                     <input type="checkbox" id="id_process_accepted"
-                                                           name="process_accepted"
+                                                           name="process_accepted" class="mobileToggle"
                                                            {% if object.process_accepted %}checked="checked"{% endif %}
                                                            onclick="javascript: return false;"/>
                                                 {% endif %}
                                             </div>
                                             <div class="col-sm-12 col-lg-4">
                                                 <label class="col"
-                                                       for="id_order_number">Приказ</label>
+                                                       for="id_order_number">Приказ:</label>
                                                 <div class="col">
                                                     {% if object.process_accepted %}
                                                         <select class="form-control form-control-modern" id="id_order"
@@ -275,7 +275,7 @@
                                             <div class="row">
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
-                                                           for="id_person_clerk">Делопроизводитель</label>
+                                                           for="id_person_clerk">Делопроизводитель:</label>
                                                     <div class="col">
                                                         {% if object.originals_received %}
                                                             <select class="form-control form-control-modern"
@@ -292,7 +292,7 @@
                                                 </div>
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
-                                                           for="id_originals_received">Получены оригиналы</label>
+                                                           for="id_originals_received">Получены оригиналы:</label>
                                                     {% if user not in list_clerk %}
                                                         <input type="checkbox" id="id_originals_received"
                                                                name="originals_received"
@@ -317,7 +317,7 @@
                                                 </div>
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
-                                                           for="id_date_receipt_original">Дата получения документов</label>
+                                                           for="id_date_receipt_original">Дата получения документов:</label>
                                                     <input type="date" id="id_date_receipt_original"
                                                            class="form-control form-control-modern"
                                                            name="date_receipt_original"
@@ -328,7 +328,7 @@
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
                                                            for="id_submitted_for_signature">Документы переданы на
-                                                        подпись</label>
+                                                        подпись:</label>
                                                     <input type="date" id="id_submitted_for_signature"
                                                            class="form-control form-control-modern"
                                                            name="submitted_for_signature"
@@ -337,7 +337,7 @@
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
                                                            for="id_date_transfer_hr">Документы переданы в
-                                                        ОК</label>
+                                                        ОК:</label>
                                                     <input type="date" id="id_date_transfer_hr"
                                                            class="form-control form-control-modern"
                                                            name="date_transfer_hr"
@@ -345,7 +345,7 @@
                                                 </div>
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
-                                                           for="id_originals_docs_comment">Примечание</label>
+                                                           for="id_originals_docs_comment">Примечание:</label>
                                                     <div class="col">
                                                         {{ form.originals_docs_comment | add_class:"form-control form-control-modern" }}
                                                     </div>
@@ -357,7 +357,7 @@
                                             <div class="row">
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
-                                                           for="id_person_hr">Сотрудник ОК</label>
+                                                           for="id_person_hr">Сотрудник ОК:</label>
                                                     <div class="col">
                                                         {% if object.hr_accepted %}
                                                             <select class="form-control form-control-modern"
@@ -375,7 +375,7 @@
                                                 </div>
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
-                                                           for="id_hr_accepted">Документы проверены</label>
+                                                           for="id_hr_accepted">Документы проверены:</label>
                                                     {% if user not in list_hr %}
                                                         <input type="checkbox" id="id_hr_accepted" name="hr_accepted"
                                                                {% if object.hr_accepted %}checked="checked"{% endif %}
@@ -393,7 +393,7 @@
                                                 <div class="col-sm-12 col-lg-4">
                                                     <label class="col"
                                                            for="id_date_transfer_accounting">Документы переданы в
-                                                        бухгалтерию</label>
+                                                        бухгалтерию:</label>
                                                     <input type="date" id="id_date_transfer_accounting"
                                                            class="form-control form-control-modern"
                                                            name="date_transfer_accounting"
@@ -403,7 +403,7 @@
                                             <div class="row">
                                                 <div class="col-sm-12 col-lg-3">
                                                     <label class="col"
-                                                           for="id_start_date_trip">Начало по СЗ</label>
+                                                           for="id_start_date_trip">Начало по СЗ:</label>
                                                     <input type="date" id="id_start_date_trip"
                                                            class="form-control form-control-modern"
                                                            name="start_date_trip"
@@ -411,7 +411,7 @@
                                                 </div>
                                                 <div class="col-sm-12 col-lg-3">
                                                     <label class="col"
-                                                           for="id_end_date_trip">Окончание по СЗ</label>
+                                                           for="id_end_date_trip">Окончание по СЗ:</label>
                                                     <input type="date" id="id_end_date_trip"
                                                            class="form-control form-control-modern"
                                                            name="end_date_trip"
@@ -419,7 +419,7 @@
                                                 </div>
                                                 <div class="col-sm-12 col-lg-3">
                                                     <label class="col"
-                                                           for="id_number_business_trip_days">Дни СП</label>
+                                                           for="id_number_business_trip_days">Дни СП:</label>
                                                     <input type="number" id="id_number_business_trip_days"
                                                            class="form-control form-control-modern"
                                                            name="number_business_trip_days"
@@ -427,7 +427,7 @@
                                                 </div>
                                                 <div class="col-sm-12 col-lg-3">
                                                     <label class="col"
-                                                           for="id_number_flight_days">Дни ЛД</label>
+                                                           for="id_number_flight_days">Дни ЛД:</label>
                                                     <input type="number" id="id_number_flight_days"
                                                            class="form-control form-control-modern"
                                                            name="number_flight_days"
@@ -439,7 +439,7 @@
                                              style="border:1px solid #a6b3ff;">
                                             <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
-                                                       for="id_person_accounting">Бухгалтерия</label>
+                                                       for="id_person_accounting">Бухгалтерия:</label>
                                                 <div class="col">
                                                     {% if object.accepted_accounting %}
                                                         <select class="form-control form-control-modern"
@@ -456,7 +456,7 @@
                                             </div>
                                             <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
-                                                       for="id_accepted_accounting">Принят в бухгалтерии</label>
+                                                       for="id_accepted_accounting">Принят в бухгалтерии:</label>
                                                 {% if user not in list_accounting %}
                                                     <input type="checkbox" id="id_accepted_accounting"
                                                            name="accepted_accounting"
@@ -475,7 +475,7 @@
                                             </div>
                                             <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
-                                                       for="id_prepaid_expense_summ">Сумма по авансовому отчету</label>
+                                                       for="id_prepaid_expense_summ">Сумма по авансовому отчету:</label>
                                                 <div class="col">
                                                     {% if user in list_accounting %}
                                                         {{ form.prepaid_expense_summ | add_class:"form-control form-control-modern" }}
@@ -486,7 +486,7 @@
                                             </div>
                                             <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
-                                                       for="id_prepaid_expense">Примечание</label>
+                                                       for="id_prepaid_expense">Примечание:</label>
                                                 <div class="col">
                                                     {% if user in list_accounting %}
                                                         {{ form.prepaid_expense | add_class:"form-control form-control-modern" }}
@@ -507,31 +507,31 @@
                                                 <div class="form-row">
                                                     <div class="row">
                                                         <div class="col-sm-4"><label for="d1">Тип служебной
-                                                            поездки</label>
+                                                            поездки:</label>
                                                             <input class="form-control form-control-modern" id="d1" name="official_memo_type"
                                                                    value="{{ object.document.get_official_memo_type_display }}"
                                                                    disabled/></div>
                                                         <div class="col-sm-4"><label for="d1">Вид служебной
-                                                            поездки</label>
+                                                            поездки:</label>
                                                             <input class="form-control form-control-modern" id="d2"
                                                                    value="{{ object.document.get_type_trip_display }}"
                                                                    disabled/></div>
-                                                        <div class="col-sm-4"><label for="d1">Дата начала</label>
+                                                        <div class="col-sm-4"><label for="d1">Дата начала:</label>
                                                             <input class="form-control form-control-modern" id="d3"
                                                                    value="{{ object.document.period_from | date:'c' }}"
                                                                    disabled type="date"/></div>
-                                                        <div class="col-sm-4"><label for="d1">Дата окончания</label>
+                                                        <div class="col-sm-4"><label for="d1">Дата окончания:</label>
                                                             <input class="form-control form-control-modern" id="d4"
                                                                    value="{{ object.document.period_for | date:'c' }}"
                                                                    disabled type="date"/></div>
-                                                        <div class="col-sm-4"><label for="d1">Сотрудник</label>
+                                                        <div class="col-sm-4"><label for="d1">Сотрудник:</label>
                                                             <input class="form-control form-control-modern" id="d5"
                                                                    value="{{ object.document.person }}" disabled/></div>
-                                                        <div class="col-sm-4"><label for="d1">Цель</label>
+                                                        <div class="col-sm-4"><label for="d1">Цель:</label>
                                                             <input class="form-control form-control-modern" id="d6"
                                                                    value="{{ object.document.purpose_trip }}" disabled/>
                                                         </div>
-                                                        <div class="col-sm-12"><label for="d1">Место назначения</label>
+                                                        <div class="col-sm-12"><label for="d1">Место назначения:</label>
                                                             <input class="form-control form-control-modern" id="d7"
                                                                    value="{% for item in object.document.place_production_activity.all %}{{ item }}, {% endfor %}"
                                                                    disabled/>

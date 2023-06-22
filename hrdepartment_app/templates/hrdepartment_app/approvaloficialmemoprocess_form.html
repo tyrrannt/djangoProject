@@ -58,14 +58,14 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-6">
                                             <label class="col"
-                                                   for="id_person_executor">Исполнитель</label>
+                                                   for="id_person_executor">Исполнитель:</label>
                                             <div class="col">
                                                 {{ form.person_executor }}
                                             </div>
                                         </div>
                                         <div class="col-sm-6">
                                             <label class="col"
-                                                   for="id_person_agreement">Руководитель</label>
+                                                   for="id_person_agreement">Руководитель:</label>
                                             <div class="col">
                                                 <span>{{ form.person_agreement }}</span>
                                             </div>
@@ -74,7 +74,7 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <div class="col-sm-12">
                                             <label class="col"
-                                                   for="id_comments_for_approval">Комментарий для согласования</label>
+                                                   for="id_comments_for_approval">Комментарий для согласования:</label>
                                             <div class="col">
                                                 {% if object.submit_for_approval %}
                                                     <span>{{ form.comments_for_approval | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
@@ -93,7 +93,7 @@
                                         </div>
                                         <div class="col-sm-9">
                                             <label class="col"
-                                                   for="id_document">Служебная записка</label>
+                                                   for="id_document">Служебная записка:</label>
                                             <div class="col">
                                                 <span>{{ form.document }}</span>
                                             </div>
