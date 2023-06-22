@@ -131,6 +131,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
+                for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
+                    report_record.delete()
                 # date_admission, vacation = get_json_vacation(self.request.user.ref_key)
                 # days = 0
                 # for item in vacation['value']:
@@ -142,9 +144,9 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # month = relativedelta(datetime.datetime.today(), date_admission).months
                 # dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission, until=datetime.datetime.today())]
                 # print(((len(dates)-1)*(28/12)) - days)
-                object_item = ApprovalOficialMemoProcess.objects.filter(document__official_memo_type='1')
-                for item in object_item:
-                    item.save()
+                # object_item = ApprovalOficialMemoProcess.objects.filter(document__official_memo_type='1')
+                # for item in object_item:
+                #     item.save()
                 # pass
                 # report_card_separator_loc()
                 # happy_birthday_loc()
