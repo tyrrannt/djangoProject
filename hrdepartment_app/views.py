@@ -1588,6 +1588,52 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
         return context
 
 
+class ReportCardListAdmin(LoginRequiredMixin, ListView):
+    model = ReportCard
+    template_name = 'hrdepartment_app/reportcard_list_admin.html'
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        current_month = self.request.GET.get('report_month')
+        current_year = self.request.GET.get('report_year')
+        if current_month and current_year:
+            request.session['current_month'] = int(current_month)
+            request.session['current_year'] = int(current_year)
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # if self.request.user.is_superuser:
+            #     reportcard_list = ReportCard.objects.all()
+            # else:
+            #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
+            if request.session['current_month'] and request.session['current_year']:
+                start_date = datetime.date(year=int(request.session['current_year']),
+                                           month=int(request.session['current_month']), day=1)
+                end_date = start_date + relativedelta(day=31)
+                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+                reportcard_list = ReportCard.objects.filter(Q(report_card_day__in=search_interval)).order_by(
+                    'report_card_day').reverse()
+            else:
+                start_date = datetime.date(year=datetime.datetime.today().year,
+                                           month=datetime.datetime.today().month, day=1)
+                end_date = start_date + relativedelta(day=31)
+                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+                reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
+                                                            Q(report_card_day__in=search_interval)).order_by(
+                    'report_card_day').reverse()
+            data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        month_dict, year_dict = get_year_interval(2020)
+        context['year_dict'] = year_dict
+        context['month_dict'] = month_dict
+        context['current_year'] = self.request.session['current_year']
+        context['current_month'] = str(self.request.session['current_month'])
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
+        return context
+
 class ReportCardDetailFact(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard

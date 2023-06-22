@@ -63,6 +63,13 @@
                                         </a>
                                     </li>
                                     {% endif %}
+                                    {% if user.is_superuser %}
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_listadmin' %}">
+                                            Список разъездов (admin)
+                                        </a>
+                                    </li>
+                                    {% endif %}
                                     {% if user|has_group:"Отчеты РВ" %}
                                     <li>
                                         <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
