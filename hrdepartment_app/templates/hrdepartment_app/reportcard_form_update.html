@@ -124,10 +124,10 @@
                                     {% if user.is_superuser %}
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_reason_adjustment">Вид:</label>
+                                               for="id_record_type">Вид:</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <textarea class="form-control form-control-modern" name="reason_adjustment"
-                                                      rows="6" id="id_reason_adjustment">{{ object.get_record_type_display }}</textarea>
+                                            <textarea class="form-control form-control-modern" name="record_type"
+                                                      rows="6" id="id_record_type">{{ object.get_record_type_display }}</textarea>
                                         </div>
                                     </div>
                                     {% endif %}
