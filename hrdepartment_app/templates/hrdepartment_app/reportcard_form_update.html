@@ -1,4 +1,4 @@
-{% extends 'contracts_app/main.html' %}
+{% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
 {% block custome_css %}
@@ -153,7 +153,7 @@
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
+                        <a href="{% url 'hrdepartment_app:reportcard_delete' object.pk %}"
                            class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
                     </div>

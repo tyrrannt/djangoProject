@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView
 from loguru import logger
 
 from administration_app.models import PortalProperty
@@ -1632,6 +1632,12 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
         context['current_month'] = str(self.request.session['current_month'])
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
         return context
+
+
+class ReportCardDelete(LoginRequiredMixin, DeleteView):
+    model = ReportCard
+    success_url = '/hr/report/'
+
 
 class ReportCardDetailFact(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
