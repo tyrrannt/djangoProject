@@ -137,6 +137,10 @@ def main_bot(tok):
 
     bot.infinity_polling()
 
+def send_message_tg():
+    bot = telebot.TeleBot(API_TOKEN)
+    bot.send_message('823040035', f'Ахтунг', parse_mode='HTML')
+    return 'Ok'
 
 class Command(BaseCommand):
     help = 'Запускет бота'

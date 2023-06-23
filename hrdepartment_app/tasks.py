@@ -18,6 +18,7 @@ from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGre
 from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
 from hrdepartment_app.models import ReportCard, WeekendDay
+from telegram_app.management.commands.bot import send_message_tg
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -110,6 +111,7 @@ def happy_birthday_loc():
 
 @app.task()
 def happy_birthday():
+    print(send_message_tg())
     today = datetime.datetime.today()
     posts_dict = dict()
     division = [item.pk for item in Division.objects.filter(active=True)]
@@ -366,8 +368,7 @@ def report_card_separator_daily():
                                                 defaults=kwargs)
         except Exception as _ex:
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
-    bot = telebot.TeleBot(API_TOKEN)
-    bot.send_message('823040035', f'Ахтунг', parse_mode='HTML')
+
     return dicts
 
 
