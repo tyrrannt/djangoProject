@@ -58,8 +58,11 @@ def main_bot(tok):
                     bot.send_message(call.message.chat.id, 'Не очень то мы и огорчились!')
                 if call.data == 'Количество':
                     msg = DataBaseUser.objects.all()
-
-                    message_to_user = f'Количество пользователей = {msg.count()}</a>, '
+                    message_to_user = f'Количество пользователей = {msg.count()}'
+                    bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
+                if call.data == 'Топ 5':
+                    msg = DataBaseUser.objects.all()
+                    message_to_user = f'Количество пользователей = {msg.count()}'
                     bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
                 # if call.data == 'Топ 5':
                 #     msg = DataBaseUser.objects.all()
