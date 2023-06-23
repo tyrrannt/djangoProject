@@ -29,7 +29,16 @@
 
                                 </div>
                             </div>
-
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
                             <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
                                 <thead>
@@ -52,9 +61,26 @@
 {% block custome_script %}
     <script>
         $(document).ready(function () {
+            $('#datatable-ecommerce-list thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
             var table = $('#datatable-ecommerce-list').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
                 "scrollX": true,
-                "sDom": 'T<"clear">lfrtip',
+                "sDom": 'T<"clear">lrtip',
                 "ajax": "{% url 'contracts_app:typepropertys_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"

@@ -56,10 +56,21 @@
                             </div>
                         </div>
                         </div>
+
                         <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
                             <div class="row">
                             </div>
                             <div class="table-responsive">
+                                <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
                                 <table class="table table-bordered table-striped mb-0 dataTable no-footer"
                                        id="datatable-editable" role="grid">
                                     <thead>
@@ -119,10 +130,27 @@
 {% block custome_script %}
     <script>
         $(document).ready(function () {
+            $('#datatable-editable thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
             var table = $('#datatable-editable').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
                 "ordering": false,
                 "scrollX": true,
-                "sDom": 'T<"clear">lfrtip',
+                "sDom": 'T<"clear">lrtip',
                 "ajax": "{% url 'hrdepartment_app:reportcard_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
