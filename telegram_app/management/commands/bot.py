@@ -140,10 +140,10 @@ def main_bot(tok):
     bot.infinity_polling()
 
 def send_message_tg():
-    bot = telebot.TeleBot(API_TOKEN)
-    user_count = DataBaseUser.objects.all().exclude(is_active=False).count()
-    bot.send_message('823040035', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
-    bot.send_message('1325250637', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
+    # bot = telebot.TeleBot(API_TOKEN)
+    # user_count = DataBaseUser.objects.all().exclude(is_active=False).count()
+    # bot.send_message('823040035', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
+    # bot.send_message('1325250637', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
     return 'Ok'
 
 class Command(BaseCommand):
