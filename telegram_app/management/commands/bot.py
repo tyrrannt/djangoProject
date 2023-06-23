@@ -1,6 +1,8 @@
 # This is a sample Python script.
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import datetime
+
 from django.core.management import BaseCommand
 import telebot
 from email.utils import parseaddr
@@ -139,8 +141,9 @@ def main_bot(tok):
 
 def send_message_tg():
     bot = telebot.TeleBot(API_TOKEN)
-    user_obj = DataBaseUser.objects.get(username='0112_isaichev_ds')
-    bot.send_message('823040035', f'Ахтунг {user_obj}', parse_mode='HTML')
+    user_count = DataBaseUser.objects.all().exclude(is_active=False).count()
+    bot.send_message('823040035', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
+    bot.send_message('1325250637', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
     return 'Ok'
 
 class Command(BaseCommand):
