@@ -10,7 +10,7 @@ from customers_app.models import DataBaseUser
 from djangoProject.settings import API_TOKEN
 
 action = ['Да', 'Нет']
-author_action = ['Лидер', 'Топ 5']
+author_action = ['Количество', 'Топ 5']
 article_action = []
 # for item in Hub.objects.all():
 #     article_action.append(str(item))
@@ -20,7 +20,7 @@ def main_bot(tok):
     bot = telebot.TeleBot(tok)
 
     keyboard = telebot.types.ReplyKeyboardMarkup(True)
-    keyboard.row('топ авторы', 'статьи', 'подписка')
+    keyboard.row('пользователи', 'статьи', 'подписка')
     subscribe_button, author_button, article_button = [], [], []
 
     otvet = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -56,15 +56,11 @@ def main_bot(tok):
                     bot.send_message(call.message.chat.id, 'Ёпта! Да не вопрос, шли e-mail в формате @ваш_email')
                 if call.data == 'Нет':
                     bot.send_message(call.message.chat.id, 'Не очень то мы и огорчились!')
-                # if call.data == 'Лидер':
-                #     msg = DataBaseUser.objects.all()
-                #     top = msg[0]
-                #     for item in msg:
-                #         if GeekHubUser.get_total_user_rating(top) < GeekHubUser.get_total_user_rating(item):
-                #             top = item
-                #     message_to_user = f'Никнейм = <a href="https://reqsoft.ru/auth/user/{top.pk}/">{top}</a>, ' \
-                #                       f'Рейтинг = {GeekHubUser.get_total_user_rating(top)}'
-                #     bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
+                if call.data == 'Количество':
+                    msg = DataBaseUser.objects.all()
+
+                    message_to_user = f'Количество пользователей = {msg.count()}</a>, '
+                    bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
                 # if call.data == 'Топ 5':
                 #     msg = DataBaseUser.objects.all()
                 #     author_list = list()
