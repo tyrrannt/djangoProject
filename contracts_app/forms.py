@@ -21,7 +21,7 @@ class ContractsAddForm(forms.ModelForm):
     contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
     contract_counteragent.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    parent_category = forms.ModelChoiceField(queryset=Contract.objects.all(), required=False)
+    parent_category = forms.ModelChoiceField(queryset=Contract.objects.filter(parent_category__isnull=True), required=False)
     parent_category.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
@@ -61,7 +61,7 @@ class ContractsUpdateForm(forms.ModelForm):
     contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
     contract_counteragent.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    parent_category = forms.ModelChoiceField(queryset=Contract.objects.all(), required=False)
+    parent_category = forms.ModelChoiceField(queryset=Contract.objects.filter(parent_category__isnull=True), required=False)
     parent_category.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
