@@ -124,9 +124,7 @@
                                     <div class="row">
                                         <div class="col-md-12 text-black-50">
                                             <label for="id_subject_contract">Предмет договора</label>
-                                            <textarea class="form-control form-control-modern" name="subject_contract"
-                                                      rows="6"
-                                                      id="id_subject_contract">{{ object.subject_contract }}</textarea>
+                                            {{ form.subject_contract }}
                                         </div>
                                     </div>
                                 </div>
@@ -136,9 +134,7 @@
                                     <div class="row">
                                         <div class="col-md-3 text-black-50">
                                             <label for="id_cost">Стоимость</label>
-                                            <input type="number" class="form-control form-control-modern"
-                                                   name="cost"
-                                                   value="" id="id_cost"/>
+                                            {{ form.cost }}
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="date_entry">Дата ввода информации</label>
@@ -167,15 +163,11 @@
                                         </p>
                                         <p>
                                             <label for="id_executor">Исполнитель:</label>
-                                            <select name="executor" class="form-control mb-4" required=""
-                                                    id="id_executor">
-                                                <option value="{{ user.pk }}">{{ user }}</option>
-                                            </select>
+                                            {{ form.executor }}
                                         </p>
                                         <p>
                                             <label for="id_comment">Примечание:</label>
-                                            <textarea name="comment" cols="40" rows="10" class="form-control mb-4"
-                                                      id="id_comment"></textarea>
+                                            {{ form.comment }}
                                         </p>
                                         <div class="form-group row align-items-center">
                                             <div class="col-md-12 text-black-50">

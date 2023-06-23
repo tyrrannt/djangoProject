@@ -161,8 +161,8 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         """
         parent = self.request.GET.get('parent', None)
         kwargs = super().get_form_kwargs()
-        if parent:
-            kwargs.update({'parent': parent})
+        kwargs.update({'parent': parent})
+        kwargs.update({'executor': self.request.user.pk})
         return kwargs
 
     def get(self, request, *args, **kwargs):
