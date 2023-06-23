@@ -94,7 +94,7 @@ def main_bot(tok):
 
     @bot.message_handler(content_types=["text"])
     def commands(message):
-        if message.text.lower() == "топ авторы":
+        if message.text.lower() == "пользователи":
             bot.send_message(message.chat.id, 'Выберите вариант: ', reply_markup=author_otvet)
 
         if message.text.lower() == "статьи":

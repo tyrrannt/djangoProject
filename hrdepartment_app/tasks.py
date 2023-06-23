@@ -4,6 +4,7 @@ import json
 from random import randrange
 
 import requests
+import telebot
 from dateutil import rrule
 from decouple import config
 from django.core import mail
@@ -15,7 +16,7 @@ from loguru import logger
 from administration_app.utils import get_jsons_data_filter2
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
 from djangoProject.celery import app
-from djangoProject.settings import EMAIL_HOST_USER
+from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
 from hrdepartment_app.models import ReportCard, WeekendDay
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -365,6 +366,8 @@ def report_card_separator_daily():
                                                 defaults=kwargs)
         except Exception as _ex:
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
+    bot = telebot.TeleBot(API_TOKEN)
+    bot.send_message('823040035', f'{dicts}', parse_mode='HTML')
     return dicts
 
 
