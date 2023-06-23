@@ -1,9 +1,14 @@
+from decouple import config
 from django.forms import CheckboxSelectMultiple, SelectMultiple, ClearableFileInput
+from loguru import logger
 
 from customers_app.models import Division, DataBaseUser, Counteragent
 from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract
 from django import forms
 
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 class ContractsAddForm(forms.ModelForm):
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
@@ -39,8 +44,36 @@ class ContractsAddForm(forms.ModelForm):
         # }
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        self.parent = kwargs.pop('parent')
+        try:
+            initial = kwargs.get('initial', {})
+            get_obj = Contract.objects.get(pk=self.parent)
+            initial['contract_number'] = get_obj.contract_number
+            initial['date_conclusion'] = get_obj.date_conclusion
+            initial['closing_date'] = get_obj.closing_date
+            initial['contract_counteragent'] = get_obj.contract_counteragent
+            initial['type_of_contract'] = get_obj.type_of_contract
+            initial['prolongation'] = get_obj.prolongation
+            initial['type_property'] = get_obj.type_property.all()
+            initial['divisions'] = get_obj.divisions.all()
+            initial['employee'] = get_obj.employee.all()
+            initial['cost'] = get_obj.cost
+            initial['access'] = get_obj.access
+            initial['parent_category'] = get_obj
+            kwargs['initial'] = initial
+        except Exception as _ex:
+            logger.error(_ex)
+        super(ContractsAddForm, self).__init__(*args, **kwargs)
         self.fields['contract_counteragent'].widget.attrs.update({
+            'class': 'form-control mb-4 form-control-modern',
+        })
+        self.fields['contract_number'].widget.attrs.update({
+            'class': 'form-control mb-4 form-control-modern',
+        })
+        self.fields['date_conclusion'].widget.attrs.update({
+            'class': 'form-control mb-4 form-control-modern',
+        })
+        self.fields['closing_date'].widget.attrs.update({
             'class': 'form-control mb-4 form-control-modern',
         })
 

@@ -154,7 +154,19 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить новый договор'
         return context
 
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        parent = self.request.GET.get('parent', None)
+        kwargs = super().get_form_kwargs()
+        if parent:
+            kwargs.update({'parent': parent})
+        return kwargs
+
     def get(self, request, *args, **kwargs):
+
         return super(ContractAdd, self).get(request, *args, **kwargs)
 
 
@@ -180,7 +192,9 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             cn = self.object.contract_number
         else:
             cn = '(без номера)'
-        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Просмотр договора №' + cn + ' от ' + str(self.object.date_conclusion)
+        context[
+            'title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Просмотр договора №' + cn + ' от ' + str(
+            self.object.date_conclusion)
         # Передаем найденные записи в контекст
         context['posts'] = post
         context['slaves'] = slaves
@@ -246,7 +260,9 @@ class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             cn = self.object.contract_number
         else:
             cn = '(без номера)'
-        context['title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Изменить договор №' + cn + ' от ' + str(self.object.date_conclusion)
+        context[
+            'title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Изменить договор №' + cn + ' от ' + str(
+            self.object.date_conclusion)
 
         return context
 

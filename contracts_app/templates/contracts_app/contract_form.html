@@ -86,22 +86,15 @@
                                         <div class="row">
                                             <div class="col-md-4 text">
                                                 <label for="id_contract_number">Номер договора</label>
-                                                <input type="text" class="form-control form-control-modern"
-                                                       name="contract_number"
-                                                       value=""
-                                                       id="id_contract_number"/>
+                                                {{ form.contract_number }}
                                             </div>
                                             <div class="col-md-4 date">
                                                 <label for="id_date_conclusion">Дата заключения</label>
-                                                <input type="date" class="form-control form-control-modern"
-                                                       name="date_conclusion"
-                                                       value="" id="id_date_conclusion"/>
+                                                {{ form.date_conclusion }}
                                             </div>
                                             <div class="col-md-4 date">
                                                 <label for="id_closing_date">Дата закрытия договора</label>
-                                                <input type="date" class="form-control form-control-modern"
-                                                       name="closing_date"
-                                                       value="" id="id_closing_date"/>
+                                                {{ form.closing_date }}
                                             </div>
                                         </div>
                                     </div>
