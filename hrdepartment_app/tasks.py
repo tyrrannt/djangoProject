@@ -367,7 +367,7 @@ def report_card_separator_daily():
         except Exception as _ex:
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
     bot = telebot.TeleBot(API_TOKEN)
-    bot.send_message('823040035', f'{dicts}', parse_mode='HTML')
+    bot.send_message('823040035', f'Ахтунг', parse_mode='HTML')
     return dicts
 
 
