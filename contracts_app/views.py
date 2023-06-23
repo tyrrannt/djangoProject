@@ -196,6 +196,8 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             'title'] = title = f'{PortalProperty.objects.all().last().portal_name} // Просмотр договора №' + cn + ' от ' + str(
             self.object.date_conclusion)
         # Передаем найденные записи в контекст
+        if not self.object.parent_category:
+            context['not_parent'] = True
         context['posts'] = post
         context['slaves'] = slaves
         return context

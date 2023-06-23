@@ -286,5 +286,5 @@ CKEDITOR_5_FILE_STORAGE = 'administration_app.utils.CkeditorCustomStorage'
 API_TOKEN = config('TELEGRAM_TOKEN')
 WEBHOOK_PATH = API_TOKEN
 WEBHOOK_URL = f"https://corp.barkol.ru/{WEBHOOK_PATH}"
-# WEBHOOK_SSL_CERT = config.CERTIFICATE_PEM_PATH       # Путь к сертификату
-# WEBHOOK_SSL_PRIV = config.KEY_PEM_PATH               # Путь к приватному ключу
+WEBHOOK_SSL_CERTIFICATE = pathlib.Path.joinpath(BASE_DIR, config('CERTIFICATE_PEM_PATH'))       # Путь к сертификату
+WEBHOOK_SSL_PRIVATE = pathlib.Path.joinpath(BASE_DIR, config('KEY_PEM_PATH'))               # Путь к приватному ключу

@@ -79,7 +79,7 @@ class Estate(models.Model):
         verbose_name = 'Имущество'
         verbose_name_plural = 'Имущество'
 
-    type_property = models.ForeignKey(TypeProperty, on_delete=models.SET_NULL, null=True)
+    type_property = models.ForeignKey(TypeProperty, verbose_name='Тип имущества', on_delete=models.SET_NULL, null=True)
     registration_number = models.CharField(verbose_name='Номер машины', max_length=100, default='', blank=True)
     release_date = models.DateField(verbose_name='Дата выпуска')
     factory_number = models.CharField(verbose_name='Заводской номер', max_length=100, default='', blank=True)
