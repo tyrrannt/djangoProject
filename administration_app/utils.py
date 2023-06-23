@@ -120,6 +120,7 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
     :param base_index: Индекс базы 1С. 0 - Зарплата, 1 - Бухгалтерия
     :return: Возвращает JSON объект, в виде словаря.
     """
+    'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Catalog_Сотрудники?$format=application/json;odata=nometadata'
     base = ['72095052-970f-11e3-84fb-00e05301b4e4', '59e20093-970f-11e3-84fb-00e05301b4e4']
     url = f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/" \
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata"

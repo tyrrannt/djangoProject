@@ -241,7 +241,7 @@ def get_working_hours(pk, start_date, state=0):
         for record in report_record:
             # Выбираем только завершенные записи, если человек не отметился на выход, то current_intervals = False
             current_intervals = False if not current_intervals else record.current_intervals
-            if (record.record_type == '1' or record.record_type == '13') and record_type not in ['СП', 'К', 'Б', 'М', ]:
+            if (record.record_type in ['1', '13']) and (record_type not in ['СП', 'К', 'Б', 'М', ]):
                 if current_intervals:
                     dayly_interval += list(rrule.rrule(rrule.MINUTELY,
                                                        dtstart=datetime.datetime(1, 1, 1, record.start_time.hour,
@@ -264,7 +264,7 @@ def get_working_hours(pk, start_date, state=0):
                 if record_type not in ['О', 'СП', 'К', 'Б', 'М', ]:
                     record_type = 'Я'
             else:
-                if (record.record_type == '14' or record.record_type == '15') and record_type not in ['Б', 'М', ]:
+                if (record.record_type in ['14', '15']) and record_type not in ['Б', 'М', ]:
                     total_day_time = time_difference(record.start_time, record.end_time)
                     start_time = record.start_time
                     end_time = record.end_time

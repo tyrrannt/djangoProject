@@ -1099,6 +1099,7 @@ class ReportCard(models.Model):
             'start_time': f'{self.start_time:%H:%M}', # .strftime(''),
             'end_time': f'{self.end_time:%H:%M}', # .strftime(''),
             'reason_adjustment': self.reason_adjustment,
+            'record_type': self.get_record_type_display(),
         }
 
     def __str__(self):

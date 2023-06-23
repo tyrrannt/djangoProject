@@ -1636,7 +1636,7 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
 
 class ReportCardDelete(LoginRequiredMixin, DeleteView):
     model = ReportCard
-    success_url = '/hr/report/'
+    success_url = '/hr/report/admin/'
 
 
 class ReportCardDetailFact(LoginRequiredMixin, ListView):

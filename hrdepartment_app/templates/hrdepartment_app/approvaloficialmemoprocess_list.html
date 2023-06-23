@@ -36,7 +36,7 @@
                                 </div>
                             </div>
                             <style>
-                                tfoot input {
+                                thead input {
                                     width: 100%;
                                     padding: 3px;
                                     box-sizing: border-box;
@@ -59,19 +59,6 @@
                                     <th width="10%">Приказ</th>
                                     <th width="10%">Примечание</th>
                                 </tr>
-                                <tfoot>
-                                <tr>
-                                    <th width="20%">Документ</th>
-                                    <th width="10%">Исполнитель</th>
-                                    <th width="10%">Руководитель</th>
-                                    <th width="10%">Отдел ОНО</th>
-                                    <th width="10%">Отдел кадров</th>
-                                    <th width="10%">Бухгалтерия</th>
-                                    <th width="10%">Проживание</th>
-                                    <th width="10%">Приказ</th>
-                                    <th width="10%">Примечание</th>
-                                </tr>
-                                </tfoot>
                                 </thead>
                             </table>
                             <hr class="solid mt-5 opacity-4">
@@ -104,7 +91,7 @@
     <script>
         $(document).ready(function () {
             // Setup - add a text input to each footer cell
-            $('#datatable-ecommerce-list tfoot th').each(function () {
+            $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
                 $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
             });
@@ -115,7 +102,7 @@
                         .columns()
                         .every(function () {
                             var that = this;
-                            $('input', this.footer()).on('keyup change clear', function () {
+                            $('input', this.header()).on('keyup change clear', function () {
                                 if (that.search() !== this.value) {
                                     that.search(this.value).draw();
                                 }

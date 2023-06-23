@@ -54,6 +54,16 @@
                         <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
                             <div class="row">
                             </div>
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
                             <div class="table-responsive">
                                 <table class="table table-bordered table-striped mb-0 dataTable no-footer"
                                        id="datatable-editable" role="grid">
@@ -80,9 +90,12 @@
                                         </th>
                                         <th class="sorting" tabindex="0" aria-controls="datatable-editable" rowspan="1"
                                             colspan="1" aria-label="Platform(s): activate to sort column ascending"
+                                            style="width: 234.75px;">Тип записи
+                                        </th>
+                                        <th class="sorting" tabindex="0" aria-controls="datatable-editable" rowspan="1"
+                                            colspan="1" aria-label="Platform(s): activate to sort column ascending"
                                             style="width: 234.75px;">Причина
                                         </th>
-
                                     </tr>
                                     </thead>
                                 </table>
@@ -119,7 +132,24 @@
 {% block custome_script %}
     <script>
         $(document).ready(function () {
+            $('#datatable-editable thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
             var table = $('#datatable-editable').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
                 "ordering": false,
                 "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
@@ -141,6 +171,7 @@
                     {"data": "employee"},
                     {"data": "start_time"},
                     {"data": "end_time"},
+                    {"data": "record_type"},
                     {"data": "reason_adjustment"},
                 ],
             });
