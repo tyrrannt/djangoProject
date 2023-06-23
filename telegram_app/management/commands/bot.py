@@ -139,7 +139,8 @@ def main_bot(tok):
 
 def send_message_tg():
     bot = telebot.TeleBot(API_TOKEN)
-    bot.send_message('823040035', f'Ахтунг', parse_mode='HTML')
+    user_obj = DataBaseUser.objects.get(username='0112_isaichev_ds')
+    bot.send_message('823040035', f'Ахтунг {user_obj}', parse_mode='HTML')
     return 'Ok'
 
 class Command(BaseCommand):
