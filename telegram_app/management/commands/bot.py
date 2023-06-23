@@ -12,7 +12,7 @@ from customers_app.models import DataBaseUser
 from djangoProject.settings import API_TOKEN
 
 action = ['Да', 'Нет']
-author_action = ['Количество', 'Топ 5']
+author_action = ['Количество']
 article_action = []
 # for item in Hub.objects.all():
 #     article_action.append(str(item))
@@ -22,7 +22,7 @@ def main_bot(tok):
     bot = telebot.TeleBot(tok)
 
     keyboard = telebot.types.ReplyKeyboardMarkup(True)
-    keyboard.row('пользователи', 'статьи', 'подписка')
+    keyboard.row('пользователи', 'подписка')
     subscribe_button, author_button, article_button = [], [], []
 
     otvet = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -62,10 +62,10 @@ def main_bot(tok):
                     msg = DataBaseUser.objects.all()
                     message_to_user = f'Количество пользователей = {msg.count()}'
                     bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
-                if call.data == 'Топ 5':
-                    msg = DataBaseUser.objects.all()
-                    message_to_user = f'Количество пользователей = {msg.count()}'
-                    bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
+                # if call.data == 'Топ 5':
+                #     msg = DataBaseUser.objects.all()
+                #     message_to_user = f'Количество пользователей = {msg.count()}'
+                #     bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
                 # if call.data == 'Топ 5':
                 #     msg = DataBaseUser.objects.all()
                 #     author_list = list()
@@ -101,6 +101,9 @@ def main_bot(tok):
 
         if message.text.lower() == "статьи":
             bot.send_message(message.chat.id, 'Выберите категорию: ', reply_markup=article_otvet)
+
+        if message.text.lower() == "подписка":
+            bot.send_message(message.chat.id, 'Пока в разработке ', reply_markup=otvet)
 
         # if message.text.lower() == "подписка":
         #     registered_users = TelegramUsers.objects.filter(users_id=message.chat.id)
