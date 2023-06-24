@@ -18,4 +18,4 @@ class TelegramNotification(models.Model):
     message = models.CharField(verbose_name='Сообщение', max_length=256, default='', blank=True)
     document_url = models.URLField(verbose_name='Ссылка документ', blank=True)
     document_id = models.CharField(verbose_name='UIN документа', default='', max_length=37, null=True, blank=True)
-    sending_counter = models.IntegerField(verbose_name='Счетчик отправок', default=0)
+    sending_counter = models.IntegerField(verbose_name='Счетчик отправок', default=3)

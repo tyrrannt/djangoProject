@@ -22,6 +22,7 @@ from customers_app.models import DataBaseUser, Counteragent, HarmfulWorkingCondi
     HistoryChange
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 from library_app.models import DocumentForm
+from telegram_app.models import TelegramNotification, ChatID
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -713,8 +714,55 @@ def hr_accepted(sender, instance, **kwargs):
 def create_report(sender, instance, **kwargs):
     change_approval_status(instance)
     type_of = ['Служебная квартира', 'Гостиница']
-
+    if instance.submit_for_approval and not instance.document_not_agreed:
+        business_process = BusinessProcessDirection.objects.filter(
+            person_executor=instance.person_executor.user_work_profile.job)
+        person_agreement_job_list = []
+        person_agreement_list = []
+        for item in business_process:
+            for job in item.person_agreement.all():
+                person_agreement_job_list.append(job)
+        for item in DataBaseUser.objects.filter(user_work_profile__job__name__in=set(person_agreement_job_list)):
+            if item.telegram_id:
+                person_agreement_list.append(ChatID.objects.filter(chat_id=item.telegram_id).first())
+        kwargs_obj = {
+            'message': f'Необходимо согласовать документ: {instance.document}',
+            'document_url': f'https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/',
+            'document_id': f'{instance.pk}',
+            'sending_counter': 3,
+        }
+        tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
+        tn.respondents.set(person_agreement_list)
+    if instance.document_not_agreed and not instance.location_selected:
+        person_agreement_list = []
+        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) & Q(is_superuser=False)):
+            if item.telegram_id:
+                person_agreement_list.append(ChatID.objects.filter(chat_id=item.telegram_id).first())
+        kwargs_obj = {
+            'message': f'Необходимо утвердить место проживания: {instance.document}',
+            'document_url': f'https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/',
+            'document_id': f'{instance.pk}',
+            'sending_counter': 3,
+        }
+        tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
+        tn.respondents.set(person_agreement_list)
+    if instance.location_selected and not instance.process_accepted:
+        person_agreement_list = []
+        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) & Q(is_superuser=False)):
+            if item.telegram_id:
+                person_agreement_list.append(ChatID.objects.filter(chat_id=item.telegram_id).first())
+        kwargs_obj = {
+            'message': f'Необходимо издать приказ: {instance.document}',
+            'document_url': f'https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/',
+            'document_id': f'{instance.pk}',
+            'sending_counter': 3,
+        }
+        tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
+        tn.respondents.set(person_agreement_list)
     if instance.process_accepted and not instance.email_send:
+        tn = TelegramNotification.objects.filter(document_id=instance.pk)
+        for item in tn:
+            item.delete()
         from openpyxl import load_workbook
         delta = instance.document.period_for - instance.document.period_from
         try:
