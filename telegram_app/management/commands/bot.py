@@ -170,7 +170,7 @@ def send_message_tg():
         for chat_id in item.respondents.all():
             if item.sending_counter != 0:
                 bot.send_message(chat_id.chat_id,
-                                 f'Уведомление: {item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
+                                 f'{item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
                                  parse_mode='HTML')
                 result.append(f'Сообщение для {chat_id.chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
         item.sending_counter -= 1
