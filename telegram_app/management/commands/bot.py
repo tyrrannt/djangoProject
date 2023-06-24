@@ -7,22 +7,24 @@ from django.core.management import BaseCommand
 import telebot
 from email.utils import parseaddr
 
-
 from customers_app.models import DataBaseUser
 from djangoProject.settings import API_TOKEN
+from telegram_app.models import ChatID, TelegramNotification
 
-action = ['Да', 'Нет']
+action = ['ПОДПИСАТЬСЯ', 'ПРОВЕРИТЬ']
 author_action = ['Количество']
 article_action = []
+
+
 # for item in Hub.objects.all():
 #     article_action.append(str(item))
 
 
 def main_bot(tok):
-    bot = telebot.TeleBot(tok)
+    bot = telebot.TeleBot(tok, skip_pending=True)
 
     keyboard = telebot.types.ReplyKeyboardMarkup(True)
-    keyboard.row('пользователи', 'подписка')
+    keyboard.row('ПОЛЬЗОВАТЕЛИ', 'ПОДПИСКА')
     subscribe_button, author_button, article_button = [], [], []
 
     otvet = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -48,19 +50,25 @@ def main_bot(tok):
     @bot.message_handler(commands=["start"])
     def start_message(message):
         print(message.chat.id)
-        bot.send_message(message.chat.id, f"Привет!!! {message.from_user.first_name}", reply_markup=keyboard)
+        bot.send_message(message.chat.id,
+                         f"Здравствуйте {message.from_user.first_name}, для продолжения воспользуйтесь меню.",
+                         reply_markup=keyboard)
 
     @bot.callback_query_handler(func=lambda call: True)
     def callback_inline(call):
         try:
             if call.message:
-                if call.data == 'Да':
-                    bot.send_message(call.message.chat.id, 'Ёпта! Да не вопрос, шли e-mail в формате @ваш_email')
-                if call.data == 'Нет':
-                    bot.send_message(call.message.chat.id, 'Не очень то мы и огорчились!')
+                if call.data == 'ПОДПИСАТЬСЯ':
+                    bot.send_message(call.message.chat.id, 'Отправь УИН из своего профиля')
+                if call.data == 'ПРОВЕРИТЬ':
+                    if DataBaseUser.objects.filter(telegram_id=call.message.chat.id):
+                        bot.send_message(call.message.chat.id, 'Вы успешно подписаны на уведомления! ')
+                    else:
+                        bot.send_message(call.message.chat.id,
+                                         'Не нашел вас в списке пользователей! Пройдите процес подписки на уведомления.')
                 if call.data == 'Количество':
-                    msg = DataBaseUser.objects.all()
-                    message_to_user = f'Количество пользователей = {msg.count()}'
+                    msg = DataBaseUser.objects.all().exclude(telegram_id='')
+                    message_to_user = f'Количество подписанных пользователей = {msg.count()}'
                     bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
                 # if call.data == 'Топ 5':
                 #     msg = DataBaseUser.objects.all()
@@ -96,6 +104,15 @@ def main_bot(tok):
 
     @bot.message_handler(content_types=["text"])
     def commands(message):
+        if len(message.text) == 36:
+            if DataBaseUser.objects.filter(person_ref_key=message.text):
+                user_obj = DataBaseUser.objects.get(person_ref_key=message.text)
+                ChatID.objects.update_or_create(chat_id=message.chat.id, ref_key=user_obj.person_ref_key)
+                user_obj.telegram_id = message.chat.id
+                user_obj.save()
+                bot.send_message(message.chat.id, 'Вы успешно подписаны на уведомления! ')
+            else:
+                bot.send_message(message.chat.id, 'Не нашел вас в списке пользователей! ')
         if message.text.lower() == "пользователи":
             bot.send_message(message.chat.id, 'Выберите вариант: ', reply_markup=author_otvet)
 
@@ -104,6 +121,8 @@ def main_bot(tok):
 
         if message.text.lower() == "подписка":
             bot.send_message(message.chat.id, 'Пока в разработке ', reply_markup=otvet)
+
+        # if message.text.lower() == "проверить":
 
         # if message.text.lower() == "подписка":
         #     registered_users = TelegramUsers.objects.filter(users_id=message.chat.id)
@@ -142,12 +161,22 @@ def main_bot(tok):
 
     bot.infinity_polling()
 
+
 def send_message_tg():
-    # bot = telebot.TeleBot(API_TOKEN)
-    # user_count = DataBaseUser.objects.all().exclude(is_active=False).count()
-    # bot.send_message('823040035', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
-    # bot.send_message('1325250637', f'Ахтунг {datetime.datetime.today()} -  {user_count}', parse_mode='HTML')
-    return 'Ok'
+    bot = telebot.TeleBot(API_TOKEN)
+    notify_list = TelegramNotification.objects.all()
+    result = list()
+    for item in notify_list:
+        for chat_id in item.respondents.all():
+            if item.sending_counter < 3:
+                bot.send_message(chat_id,
+                                 f'Уведомление: {item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
+                                 parse_mode='HTML')
+                result.append(f'Сообщение для {chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
+        item.sending_counter += 1
+        item.save()
+    return result
+
 
 class Command(BaseCommand):
     help = 'Запускет бота'
