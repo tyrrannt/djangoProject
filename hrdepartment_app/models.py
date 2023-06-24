@@ -735,7 +735,7 @@ def create_report(sender, instance, **kwargs):
         tn.respondents.set(person_agreement_list)
     if instance.document_not_agreed and not instance.location_selected:
         person_agreement_list = []
-        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) & Q(is_superuser=False)):
+        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True)):
             if item.telegram_id:
                 person_agreement_list.append(ChatID.objects.filter(chat_id=item.telegram_id).first())
         kwargs_obj = {
@@ -748,7 +748,7 @@ def create_report(sender, instance, **kwargs):
         tn.respondents.set(person_agreement_list)
     if instance.location_selected and not instance.process_accepted:
         person_agreement_list = []
-        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) & Q(is_superuser=False)):
+        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True)):
             if item.telegram_id:
                 person_agreement_list.append(ChatID.objects.filter(chat_id=item.telegram_id).first())
         kwargs_obj = {
