@@ -22,6 +22,7 @@ from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesU
     ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign
 from telegram_app.management.commands import bot
+from telegram_app.management.commands.bot import send_message_tg
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -125,7 +126,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         logger.info(f"У пользователя {user_obj} отсутствуют группы!")
                         # Установка общих прав пользователя наследованием из групп
             if request.GET.get('update') == '2':
-                pass
+                send_message_tg()
                 # memo_list = OfficialMemo.objects.all()
                 # for item in memo_list:
                 #     if item.title == '':
