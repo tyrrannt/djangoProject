@@ -120,7 +120,7 @@ def main_bot(tok):
             bot.send_message(message.chat.id, 'Выберите категорию: ', reply_markup=article_otvet)
 
         if message.text.lower() == "подписка":
-            bot.send_message(message.chat.id, 'Пока в разработке ', reply_markup=otvet)
+            bot.send_message(message.chat.id, 'Выберите вариант:', reply_markup=otvet)
 
         # if message.text.lower() == "проверить":
 
@@ -163,7 +163,6 @@ def main_bot(tok):
 
 
 def send_message_tg():
-    bot = telebot.TeleBot(API_TOKEN)
     notify_list = TelegramNotification.objects.all()
     result = list()
     for item in notify_list:
