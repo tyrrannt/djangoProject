@@ -109,9 +109,13 @@ def happy_birthday_loc():
             if not post.email_send:
                 send_mail(item, age, Posts.objects.filter(post_description=description).first())
 
+
+@app.task()
+def send_telegram_notify():
+    print(send_message_tg())
+
 @app.task()
 def happy_birthday():
-    print(send_message_tg())
     today = datetime.datetime.today()
     posts_dict = dict()
     division = [item.pk for item in Division.objects.filter(active=True)]

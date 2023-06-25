@@ -22,7 +22,6 @@ bot_fork = ''
 
 def main_bot(tok):
     bot = telebot.TeleBot(tok, skip_pending=True)
-    bot_fork = bot
     keyboard = telebot.types.ReplyKeyboardMarkup(True)
     keyboard.row('ПОЛЬЗОВАТЕЛИ', 'ПОДПИСКА')
     subscribe_button, author_button, article_button = [], [], []
@@ -163,12 +162,13 @@ def main_bot(tok):
 
 
 def send_message_tg():
+    bot = telebot.TeleBot(API_TOKEN, skip_pending=True)
     notify_list = TelegramNotification.objects.all()
     result = list()
     for item in notify_list:
         for chat_id in item.respondents.all():
             if item.sending_counter != 0:
-                bot_fork.send_message(chat_id.chat_id,
+                bot.send_message(chat_id.chat_id,
                                  f'{item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
                                  parse_mode='HTML')
                 result.append(
