@@ -15,14 +15,14 @@ action = ['ПОДПИСАТЬСЯ', 'ПРОВЕРИТЬ']
 author_action = ['Количество']
 article_action = []
 
+bot_fork = ''
 
 # for item in Hub.objects.all():
 #     article_action.append(str(item))
 
-
 def main_bot(tok):
     bot = telebot.TeleBot(tok, skip_pending=True)
-
+    bot_fork = bot
     keyboard = telebot.types.ReplyKeyboardMarkup(True)
     keyboard.row('ПОЛЬЗОВАТЕЛИ', 'ПОДПИСКА')
     subscribe_button, author_button, article_button = [], [], []
@@ -168,10 +168,11 @@ def send_message_tg():
     for item in notify_list:
         for chat_id in item.respondents.all():
             if item.sending_counter != 0:
-                bot.send_message(chat_id.chat_id,
+                bot_fork.send_message(chat_id.chat_id,
                                  f'{item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
                                  parse_mode='HTML')
-                result.append(f'Сообщение для {chat_id.chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
+                result.append(
+                    f'Сообщение для {chat_id.chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
         item.sending_counter -= 1
         item.save()
     return result
