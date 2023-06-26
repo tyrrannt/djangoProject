@@ -167,7 +167,7 @@ def send_message_tg():
     result = list()
     for item in notify_list:
         for chat_id in item.respondents.all():
-            if item.sending_counter != 0:
+            if item.sending_counter > 0:
                 bot.send_message(chat_id.chat_id,
                                  f'{item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
                                  parse_mode='HTML')
