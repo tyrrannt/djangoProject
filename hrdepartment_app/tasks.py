@@ -113,6 +113,12 @@ def happy_birthday_loc():
 @app.task()
 def send_telegram_notify():
     print(send_message_tg())
+    dt = datetime.datetime.now()
+    if dt.hour == 23 and dt.minute == 40:
+        report_card_separator_daily()
+    if dt.hour == 23 and dt.minute == 50:
+        get_vacation()
+
 
 @app.task()
 def happy_birthday():
