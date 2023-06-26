@@ -334,15 +334,17 @@ def FIO_format(value, self=None):
     :param self: принимает объект, чтоб в результате ошибки вывести в логах, где произошла ошибка
     :return: возвращает форматированную строку
     """
-    try:
-        string_obj = str(value)
-        list_obj = string_obj.split(' ')
-        result = f'{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}.'
-    except Exception as _ex:
-        logger.error(f'Ошибка при сокращении ФИО, Значение: {str(value)}; Документ: {self}; Ошибка: {_ex}')
-        result = ''
-    return result
-
+    if value:
+        try:
+            string_obj = str(value)
+            list_obj = string_obj.split(' ')
+            result = f'{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}.'
+        except Exception as _ex:
+            logger.error(f'Ошибка при сокращении ФИО, Значение: {str(value)}; Документ: {self}; Ошибка: {_ex}')
+            result = ''
+        return result
+    else:
+        return ''
 
 class CkeditorCustomStorage(FileSystemStorage):
     """

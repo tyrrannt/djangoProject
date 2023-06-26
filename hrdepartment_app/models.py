@@ -414,7 +414,7 @@ def fill_title(sender, instance, **kwargs):
         type_memo = "(СП+):" if instance.type_trip == "1" else "(К+):"
     else:
         type_memo = "(БВ)"
-    instance.title = f'{type_memo} {FIO_format(instance.person)} с {instance.period_from.strftime("%d.%m.%Y")} по {instance.period_for.strftime("%d.%m.%Y")}'
+    instance.title = f'{type_memo} {FIO_format(instance.person) if instance.person else "None"} с {instance.period_from.strftime("%d.%m.%Y")} по {instance.period_for.strftime("%d.%m.%Y")}'
 
 
 class ApprovalProcess(models.Model):

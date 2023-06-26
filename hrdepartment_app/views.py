@@ -885,17 +885,20 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
             official_memo = obj_item.document
             order = obj_item.order
             form.save()
-            if official_memo:
-                official_memo.cancellation = True
-                official_memo.reason_cancellation = obj_item.reason_cancellation
-                official_memo.comments = 'Документ отменен'
-                official_memo.save()
-            if order:
-                order.cancellation = True
-                order.reason_cancellation = obj_item.reason_cancellation
-                order.save()
+            try:
+                if official_memo:
+                    official_memo.cancellation = True
+                    official_memo.reason_cancellation = obj_item.reason_cancellation
+                    official_memo.comments = 'Документ отменен'
+                    official_memo.save()
+                if order:
+                    order.cancellation = True
+                    order.reason_cancellation = obj_item.reason_cancellation
+                    order.save()
+                obj_item.send_mail(title='Уведомление об отмене')
+            except Exception as _ex:
+                print(_ex)
 
-            obj_item.send_mail(title='Уведомление об отмене')
         return super().form_valid(form)
 
 
