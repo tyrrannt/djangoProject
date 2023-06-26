@@ -3,9 +3,12 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import datetime
 
+from decouple import config
 from django.core.management import BaseCommand
 import telebot
 from email.utils import parseaddr
+
+from loguru import logger
 
 from customers_app.models import DataBaseUser
 from djangoProject.settings import API_TOKEN
@@ -15,10 +18,10 @@ action = ['ПОДПИСАТЬСЯ', 'ПРОВЕРИТЬ']
 author_action = ['Количество']
 article_action = []
 
-bot_fork = ''
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
-# for item in Hub.objects.all():
-#     article_action.append(str(item))
 
 def main_bot(tok):
     bot = telebot.TeleBot(tok, skip_pending=True)
@@ -69,34 +72,6 @@ def main_bot(tok):
                     msg = DataBaseUser.objects.all().exclude(telegram_id='')
                     message_to_user = f'Количество подписанных пользователей = {msg.count()}'
                     bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
-                # if call.data == 'Топ 5':
-                #     msg = DataBaseUser.objects.all()
-                #     message_to_user = f'Количество пользователей = {msg.count()}'
-                #     bot.send_message(call.message.chat.id, message_to_user, parse_mode='HTML')
-                # if call.data == 'Топ 5':
-                #     msg = DataBaseUser.objects.all()
-                #     author_list = list()
-                #     for item in msg:
-                #         rating = GeekHubUser.get_total_user_rating(item)
-                #         author_list.append([rating, [str(item), str(item.pk)]])
-                #     author_list.sort(key=lambda x: x[0])
-                #     author_list.reverse()
-                #
-                #     message_list = 'Топ 5 авторов:\n'
-                #     for item in range(0, 5):
-                #         message_list += f'Никнейм = <a href="https://reqsoft.ru/auth/user/' \
-                #                         f'{author_list[item][1][1]}/">{author_list[item][1][0]}</a>, ' \
-                #                         f'Рейтинг = {author_list[item][0]}\n'
-                #     bot.send_message(call.message.chat.id, message_list, parse_mode='HTML')
-                # for item in range(0, len(article_action)):
-                #     if call.data == article_action[item]:
-                #         hub_item = Hub.objects.get(name=article_action[item])
-                #         article_list = Article.objects.filter(hub=hub_item.pk).order_by('publication_date')[:5]
-                #         message_article_list = 'Последние 5 статей в данной категории:\n\n'
-                #         for item in range(0, len(article_list)):
-                #             message_article_list += f'<a href="https://reqsoft.ru/article/{article_list[item].pk}/">' \
-                #                                     f'{article_list[item].title}</a>\n\n'
-                #         bot.send_message(call.message.chat.id, message_article_list, parse_mode='HTML')
 
         except Exception as e:
             print(repr(e))
@@ -120,27 +95,6 @@ def main_bot(tok):
 
         if message.text.lower() == "подписка":
             bot.send_message(message.chat.id, 'Выберите вариант:', reply_markup=otvet)
-
-        # if message.text.lower() == "проверить":
-
-        # if message.text.lower() == "подписка":
-        #     registered_users = TelegramUsers.objects.filter(users_id=message.chat.id)
-        #     if not registered_users:
-        #         msg = TelegramUsers(users_id=message.chat.id)
-        #         msg.save()
-        #         try:
-        #             bot.send_message(message.chat.id, "Вы успешно подписаны на наши новости."
-        #                                               "Хотите привязать аккаунт Телеграма к аккаунту на сайте?",
-        #                              reply_markup=otvet)
-        #         except Exception as ex:
-        #             print(ex)
-        #     else:
-        #         try:
-        #             bot.send_message(message.chat.id, "Ёпта! Да Вы уже подписаны на наши новости!!!"
-        #                                               "Хотите привязать аккаунт Телеграма к аккаунту на сайте?",
-        #                              reply_markup=otvet)
-        #         except Exception as ex:
-        #             print(ex)
 
         if message.text.lower()[:1] == "@":
             check_email = parseaddr(message.text.lower()[1:])
@@ -173,6 +127,8 @@ def send_message_tg():
                                  parse_mode='HTML')
                 result.append(
                     f'Сообщение для {chat_id.chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
+                logger.info(
+                    f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}. Ссылка: {item.document_url}')
         item.sending_counter -= 1
         item.save()
     return result
