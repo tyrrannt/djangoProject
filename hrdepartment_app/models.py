@@ -733,6 +733,7 @@ def create_report(sender, instance, **kwargs):
             'document_url': f'https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/',
             'document_id': f'{instance.pk}',
             'sending_counter': 3,
+            'send_time': datetime.datetime.now() + relativedelta(minutes=1),
         }
         tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
         tn.respondents.set(person_agreement_list)
@@ -746,6 +747,7 @@ def create_report(sender, instance, **kwargs):
             'document_url': f'https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/',
             'document_id': f'{instance.pk}',
             'sending_counter': 3,
+            'send_time': datetime.datetime.now() + relativedelta(minutes=1),
         }
         tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
         tn.respondents.set(person_agreement_list)
@@ -759,6 +761,7 @@ def create_report(sender, instance, **kwargs):
             'document_url': f'https://corp.barkol.ru/hr/bpmemo/{instance.pk}/update/',
             'document_id': f'{instance.pk}',
             'sending_counter': 3,
+            'send_time': datetime.datetime.now() + relativedelta(minutes=1),
         }
         tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
         tn.respondents.set(person_agreement_list)

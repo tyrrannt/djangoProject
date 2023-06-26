@@ -3,11 +3,13 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import datetime
 
+from dateutil.relativedelta import relativedelta
 from decouple import config
 from django.core.management import BaseCommand
 import telebot
 from email.utils import parseaddr
 
+from django.db.models import Q
 from loguru import logger
 
 from customers_app.models import DataBaseUser
@@ -116,8 +118,10 @@ def main_bot(tok):
 
 
 def send_message_tg():
+    time_list = [0, 15, 5]
     bot = telebot.TeleBot(API_TOKEN, skip_pending=True)
-    notify_list = TelegramNotification.objects.all()
+    dt = datetime.datetime.now()
+    notify_list = TelegramNotification.objects.filter(Q(send_time__hour=dt.hour) & Q(send_time__minute=dt.minute))
     result = list()
     for item in notify_list:
         for chat_id in item.respondents.all():
@@ -130,6 +134,7 @@ def send_message_tg():
                 logger.info(
                     f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}. Ссылка: {item.document_url}')
         item.sending_counter -= 1
+        item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
         item.save()
     return result
 
