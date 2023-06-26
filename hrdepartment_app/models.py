@@ -554,9 +554,12 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             try:
                 # send_mass_mail((first_msg, second_msg), fail_silently=False)
                 first_msg.send()
+            except Exception as _ex:
+                logger.debug(f'Failed to send first email to: {mail_to} {mail_to_copy_first}. {_ex}')
+            try:
                 second_msg.send()
             except Exception as _ex:
-                logger.debug(f'Failed to send email. {_ex}')
+                logger.debug(f'Failed to send second email to {mail_to_copy_second} {mail_to_copy_third}. {_ex}')
         if trigger == 1:
             # Повторное уведомление об СП или СК
             type_of = ['Служебная квартира', 'Гостиница']

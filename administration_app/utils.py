@@ -134,7 +134,6 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
-    logger.info(f'Успешное получение данных: {object_type} {object_name} {base_index}')
     return json.loads(response.text)
 
 
@@ -170,8 +169,6 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
-    logger.info(
-        f'Успешное получение данных: {object_type} {object_name} {filter_obj} {filter_content} {logical} {base_index}')
     return json.loads(response.text)
 
 
@@ -231,8 +228,6 @@ def get_jsons_data_filter2(object_type: str, object_name: str, filter_obj: str, 
     except Exception as _ex:
         logger.debug(f'{_ex}')
         return {'value': ""}
-    logger.info(
-        f'Успешное получение данных: {object_type} {object_name} {filter_obj} {filter_content} {logical} {base_index}')
     return json.loads(response.text)
 
 
