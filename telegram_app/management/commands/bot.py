@@ -126,13 +126,18 @@ def send_message_tg():
     for item in notify_list:
         for chat_id in item.respondents.all():
             if item.sending_counter > 0:
-                bot.send_message(chat_id.chat_id,
-                                 f'{item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
-                                 parse_mode='HTML')
-                result.append(
-                    f'Сообщение для {chat_id.chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
-                logger.info(
-                    f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}. Ссылка: {item.document_url}')
+                if item.document_url:
+                    bot.send_message(chat_id.chat_id,
+                                     f'{item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
+                                     parse_mode='HTML')
+                    result.append(
+                        f'Сообщение для {chat_id.chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
+                    logger.info(
+                        f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}. Ссылка: {item.document_url}')
+                else:
+                    bot.send_message(chat_id.chat_id, f'{item.message}', parse_mode='HTML')
+                    result.append(f'Сообщение для {chat_id.chat_id}: {item.message}.')
+                    logger.info(f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}.')
         item.sending_counter -= 1
         item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
         item.save()

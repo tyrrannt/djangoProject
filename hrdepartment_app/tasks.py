@@ -19,6 +19,7 @@ from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
 from hrdepartment_app.models import ReportCard, WeekendDay
 from telegram_app.management.commands.bot import send_message_tg
+from telegram_app.models import TelegramNotification
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -145,6 +146,17 @@ def happy_birthday():
         if created:
             post.post_divisions.add(*division)
             post.save()
+            person_list = DataBaseUser.objects.filter(telegram_id__isnull=False)
+            kwargs_obj = {
+                'message': description,
+                'document_url': '',
+                'document_id': post.pk,
+                'sending_counter': 1,
+                'send_time': datetime.datetime(1, 1, 1, 9, 30),
+            }
+            tn, created = TelegramNotification.objects.update_or_create(document_id=post.pk,
+                                                                        defaults=kwargs_obj)
+            tn.respondents.set(person_list)
             if not post.email_send:
                 send_mail(item, age, post)
         else:
