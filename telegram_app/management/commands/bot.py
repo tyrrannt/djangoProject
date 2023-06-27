@@ -113,11 +113,8 @@ def main_bot(tok):
                 # send_mail(title, email_message, settings.EMAIL_HOST_USER, [check_email[1]], fail_silently=False,
                 #           auth_user=settings.EMAIL_HOST_USER, auth_password=settings.EMAIL_HOST_PASSWORD)
                 bot.send_message(message.chat.id, f"{bot_message}")
-    while True:
-        try:
-            bot.infinity_polling()
-        except Exception as _ex:
-            print(f'Ошибка бота, {_ex}')
+
+    bot.infinity_polling()
 
 
 def send_message_tg():

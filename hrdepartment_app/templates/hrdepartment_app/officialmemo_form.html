@@ -127,7 +127,7 @@
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
                                                 <input type="date" id="id_period_for"
-                                                   class="form-control form-control-modern "
+                                                   class="form-control form-control-modern "  onchange="employee_change()"
                                                    name="period_for" value="{{ object.period_for | date:'c' }}"/>
                                             </div>
                                         </div>
@@ -207,8 +207,6 @@
     <script type="text/javascript">
         function minimumPeriodFor() {
             period_from = document.getElementById("id_period_from").value;
-
-
             var period_for = document.getElementById("id_period_for");
             period_for.removeAttribute("min")
             period_for.setAttribute("min", period_from)
