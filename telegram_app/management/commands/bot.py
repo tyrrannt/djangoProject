@@ -114,7 +114,7 @@ def main_bot(tok):
                 #           auth_user=settings.EMAIL_HOST_USER, auth_password=settings.EMAIL_HOST_PASSWORD)
                 bot.send_message(message.chat.id, f"{bot_message}")
 
-    bot.infinity_polling()
+    bot.infinity_polling(timeout=10, long_polling_timeout=5)
 
 
 def send_message_tg():
