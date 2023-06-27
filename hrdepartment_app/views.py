@@ -902,6 +902,72 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
+class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
+    """
+    Контроль закрытых служебных поездок
+    """
+    model = ApprovalOficialMemoProcess
+    template_name = 'hrdepartment_app/approvaloficialmemoprocess_report_list.html'
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        current_month = self.request.GET.get('report_month')
+        current_year = self.request.GET.get('report_year')
+        if current_month and current_year:
+            request.session['current_month'] = int(current_month)
+            request.session['current_year'] = int(current_year)
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # if self.request.user.is_superuser:
+            #     reportcard_list = ReportCard.objects.all()
+            # else:
+            #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
+            if request.session['current_month'] and request.session['current_year']:
+                start_date = datetime.date(year=int(request.session['current_year']),
+                                           month=int(request.session['current_month']), day=1)
+                end_date = start_date + relativedelta(day=31)
+                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+
+                if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
+                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
+                        Q(document__period_for__in=search_interval)).exclude(
+                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+                else:
+                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
+                        Q(document__period_for__in=search_interval) &
+                        Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
+                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+
+
+            else:
+                start_date = datetime.date(year=datetime.datetime.today().year,
+                                           month=datetime.datetime.today().month, day=1)
+                end_date = start_date + relativedelta(day=31)
+                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+                if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
+                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
+                        Q(document__period_for__in=search_interval)).exclude(
+                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+                else:
+                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
+                        Q(document__period_for__in=search_interval) &
+                        Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
+                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+            data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        month_dict, year_dict = get_year_interval(2020)
+        context['year_dict'] = year_dict
+        context['month_dict'] = month_dict
+        context['current_year'] = self.request.session['current_year']
+        context['current_month'] = str(self.request.session['current_month'])
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Бизнес процессы списком'
+        return context
+
+
 class PurposeList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Purpose
     permission_required = 'hrdepartment_app.view_purpose'

@@ -1,0 +1,166 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+                <section class="card">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
+                        </div>
+                        <h2 class="card-title">Основной</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="row">
+                        <div class="col-lg-9">
+                        <form action="{% url 'hrdepartment_app:bpmemo_month_report' %}" method="get">
+                        <div class="row">
+                            <div class="col-sm-12 col-lg-3 mb-1">
+                                <select class="form-control select-style-1 filter-by" name="report_month"
+                                        id="id_report_month">
+                                    {% for key, value in month_dict.items %}
+                                    <option value="{{ key }}" {% if current_month == key %}selected{% endif %}> {{ value }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-12 col-lg-3 mb-1">
+                                <select class="form-control select-style-1 filter-by" name="report_year"
+                                        id="id_report_year">
+                                    {% for key, value in year_dict.items %}
+                                    <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-12 col-lg-3 mb-1">
+                                <button type="submit" class="btn btn-primary" style="width: 100%" onclick="report_date()">OK</button>
+                            </div>
+                        </div>
+                        </form>
+                        </div>
+                        </div>
+                        <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                            <div class="row">
+                            </div>
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped mb-0 dataTable no-footer"
+                                       id="datatable-editable" role="grid">
+                                    <thead>
+                                    <tr role="row">
+                                        <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
+                                            rowspan="1" colspan="1" aria-sort="ascending"
+                                            aria-label="Rendering engine: activate to sort column descending"
+                                            style="width: 185.391px;">Документ
+                                        </th>
+                                        <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
+                                            rowspan="1" colspan="1" aria-sort="ascending"
+                                            aria-label="Rendering engine: activate to sort column descending"
+                                            style="width: 185.391px;">Приказ
+                                        </th>
+                                        <th class="sorting_asc" tabindex="0" aria-controls="datatable-editable"
+                                            rowspan="1" colspan="1" aria-sort="ascending"
+                                            aria-label="Rendering engine: activate to sort column descending"
+                                            style="width: 185.391px;">Примечание
+                                        </th>
+
+                                    </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            {#                            <div class="datatable-header">#}
+                            {#                                <div class="row align-items-center mb-3">#}
+                            {#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+                            {#                                            <a href="{% url 'hrdepartment_app:reportcard_detail' %}"#}
+                            {#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
+                            {#                                                Сводная таблица по месяцам </a>#}
+                            {#                                        </div>#}
+                            {#                                </div>#}
+                            {#                            </div>#}
+
+                            <hr class="solid mt-5 opacity-4">
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            $('#datatable-editable thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
+            var table = $('#datatable-editable').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "ordering": false,
+                "scrollX": true,
+                "sDom": 'T<"clear">lrtip',
+                "ajax": "{% url 'hrdepartment_app:bpmemo_month_report' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", '/hr/bpmemo/' + id + '/update/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "document"},
+                    {"data": "order"},
+                    {"data": "comments"},
+                ],
+            });
+        });
+    </script>
+{% endblock %}

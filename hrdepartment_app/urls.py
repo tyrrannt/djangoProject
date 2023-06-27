@@ -11,7 +11,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     PlaceProductionActivityUpdate, ReportCardList, OfficialMemoDetail, \
     ApprovalOficialMemoProcessCancel, ReportCardDetail, ReportCardAdd, ReportCardUpdate, ReportCardDetailFact, \
     ReportCardListManual, ProvisionsList, ProvisionsAdd, ProvisionsDetail, ProvisionsUpdate, ReportCardListAdmin, \
-    ReportCardDelete
+    ReportCardDelete, ApprovalOficialMemoProcessReportList
 
 app_name = 'hrdepartment_app'
 
@@ -31,6 +31,7 @@ urlpatterns = [
     path('bpmemo/add/', ApprovalOficialMemoProcessAdd.as_view(), name='bpmemo_add'),
     path('bpmemo/<int:pk>/update/', ApprovalOficialMemoProcessUpdate.as_view(), name='bpmemo_update'),
     path('bpmemo/report/', ReportApprovalOficialMemoProcessList.as_view(), name='bpmemo_report'),
+    path('bpmemo/month-report/', ApprovalOficialMemoProcessReportList.as_view(), name='bpmemo_month_report'),
     path('bpmemo/<int:pk>/cancel/', ApprovalOficialMemoProcessCancel.as_view(), name='bpmemo_cancel'),
     path('bptrip/', BusinessProcessDirectionList.as_view(), name='bptrip_list'),
     path('bptrip/add/', BusinessProcessDirectionAdd.as_view(), name='bptrip_add'),
