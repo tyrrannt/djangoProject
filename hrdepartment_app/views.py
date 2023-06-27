@@ -260,7 +260,12 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 logger.info(
                     f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
             if filters.count() > 0:
-                html = filter_string + datetime.timedelta(days=1)
+                # html = filter_string + datetime.timedelta(days=1)
+                label = 'Внимание, в заданный интервал имеются другие СЗ:'
+                for item in filters:
+                    label += ' ' + str(item) + ';'
+                html = label
+                print(html)
                 return JsonResponse(html, safe=False)
         # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
         interval = request.GET.get('interval', None)

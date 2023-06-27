@@ -129,6 +129,7 @@
                                                 <input type="date" id="id_period_for"
                                                    class="form-control form-control-modern "  onchange="employee_change()"
                                                    name="period_for" value="{{ object.period_for | date:'c' }}"/>
+                                                <label id="id_check_date" for="check_date" style="color: #ff000e"></label>
                                             </div>
                                         </div>
                                     </div>
@@ -253,14 +254,17 @@
                 dataType: "json",
                 success: function (data) {
                     // any process in data
-                    var period_from = document.getElementById("id_period_from");
-                    var period_for = document.getElementById("id_period_for");
-                    period_from.removeAttribute("min")
-                    period_from.setAttribute("min", data)
-                    $("#id_period_from").trigger("create")
-                    period_for.removeAttribute("min")
-                    period_for.setAttribute("min", data)
-                    $("#id_period_for").trigger("create")
+                    // var period_from = document.getElementById("id_period_from");
+                    // var period_for = document.getElementById("id_period_for");
+                    // period_from.removeAttribute("min")
+                    // period_from.setAttribute("min", data)
+                    // $("#id_period_from").trigger("create")
+                    // period_for.removeAttribute("min")
+                    // period_for.setAttribute("min", data)
+                    // $("#id_period_for").trigger("create")
+                    var check_date = document.getElementById("id_check_date");
+                    console.log(data);
+                    $("label[for='check_date']").text(data);
                     if (data === 'ok') {
                         console.log("success");
                     }
