@@ -265,7 +265,6 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 for item in filters:
                     label += ' ' + str(item) + ';'
                 html = label
-                print(html)
                 return JsonResponse(html, safe=False)
         # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
         interval = request.GET.get('interval', None)
