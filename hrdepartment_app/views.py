@@ -930,12 +930,12 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                 if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval)).exclude(
-                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК']).order_by('document__period_for').reverse()
                 else:
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval) &
                         Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
-                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК']).order_by('document__period_for').reverse()
 
 
             else:
@@ -946,12 +946,12 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                 if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval)).exclude(
-                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК']).order_by('document__period_for').reverse()
                 else:
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval) &
                         Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
-                        document__comments='Документооборот завершен').order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК']).order_by('document__period_for').reverse()
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
