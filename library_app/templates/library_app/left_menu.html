@@ -57,30 +57,33 @@
                                         </a>
                                     </li>
                                     {% if user|has_group:"Журнал разъездов" %}
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_listmanual' %}">
-                                            Список разъездов
-                                        </a>
-                                    </li>
+                                        <li>
+                                            <a class="nav-link"
+                                               href="{% url 'hrdepartment_app:reportcard_listmanual' %}">
+                                                Список разъездов
+                                            </a>
+                                        </li>
                                     {% endif %}
                                     {% if user.is_superuser %}
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_listadmin' %}">
-                                            Список разъездов (admin)
-                                        </a>
-                                    </li>
+                                        <li>
+                                            <a class="nav-link"
+                                               href="{% url 'hrdepartment_app:reportcard_listadmin' %}">
+                                                Список разъездов (admin)
+                                            </a>
+                                        </li>
                                     {% endif %}
                                     {% if user|has_group:"Отчеты РВ" %}
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
-                                            Табель РВ
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail_fact' %}">
-                                            Табель РВ (факт)
-                                        </a>
-                                    </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
+                                                Табель РВ
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link"
+                                               href="{% url 'hrdepartment_app:reportcard_detail_fact' %}">
+                                                Табель РВ (факт)
+                                            </a>
+                                        </li>
                                     {% endif %}
                                 </ul>
                             </li>
@@ -169,7 +172,7 @@
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class='bx bxs-book-content' aria-hidden="true"></i>
-                            <span>База договоров</span>
+                            <span>Договора</span>
                         </a>
                         <ul class="nav nav-children">
                             <li>
@@ -177,11 +180,38 @@
                                     Общий список договоров
                                 </a>
                             </li>
-{#                            <li>#}
-{#                                <a class="nav-link" href="{% url 'contracts_app:search' %}">#}
-{#                                    Поиск договоров#}
-{#                                </a>#}
-{#                            </li>#}
+                            {#                            <li>#}
+                            {#                                <a class="nav-link" href="{% url 'contracts_app:search' %}">#}
+                            {#                                    Поиск договоров#}
+                            {#                                </a>#}
+                            {#                            </li>#}
+                        </ul>
+                    </li>
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class='bx bx-task' aria-hidden="true"></i>
+                            <span>ЭДО</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <span>Служебные задания</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:memo_list' %}">
+                                            Служебная записка <br>
+                                            на служебную поездку
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_list' %}">
+                                            Бизнес-процесс по <br>
+                                            Служебным запискам
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                         </ul>
                     </li>
                     <li class="nav-parent">
@@ -226,30 +256,11 @@
                                         </a>
                                     </li>
 
-{#                                    <li>#}
-{#                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">#}
-{#                                            Табель рабочего времени (список)#}
-{#                                        </a>#}
-{#                                    </li>#}
-                                </ul>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    ЭДО
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:memo_list' %}">
-                                            Служебная записка <br>
-                                            на служебную поездку
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_list' %}">
-                                            Бизнес-процесс по <br>
-                                            Служебным запискам
-                                        </a>
-                                    </li>
+                                    {#                                    <li>#}
+                                    {#                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">#}
+                                    {#                                            Табель рабочего времени (список)#}
+                                    {#                                        </a>#}
+                                    {#                                    </li>#}
                                 </ul>
                             </li>
                             <li>
@@ -264,12 +275,12 @@
                             </li>
                         </ul>
                     </li>
-                        <li>
-                            <a class="nav-link" href="{% url 'library_app:help_list' %}">
-                                <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                <span>Справка</span>
-                            </a>
-                        </li>
+                    <li>
+                        <a class="nav-link" href="{% url 'library_app:help_list' %}">
+                            <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                            <span>Справка</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             <hr class="separator"/>
