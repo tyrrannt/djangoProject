@@ -66,8 +66,6 @@ class DataBaseUserAddForm(UserChangeForm):
 
 class PostsAddForm(forms.ModelForm):
     post_divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
-    post_divisions.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     post_date_start = forms.DateField(required=False)
     post_date_end = forms.DateField(required=False)
 
@@ -78,10 +76,16 @@ class PostsAddForm(forms.ModelForm):
                   'post_date_start', 'post_date_end')
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control mb-4'
-            field.help_text = ''
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        super(PostsAddForm, self).__init__(*args, **kwargs)
+        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['post_divisions'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
+             'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
+
 
     def clean(self):
         clean_data = super().clean()
