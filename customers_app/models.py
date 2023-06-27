@@ -328,6 +328,7 @@ class DataBaseUser(AbstractUser):
             'phone': str(self.user_work_profile.internal_phone),
             'email': self.email,
             'password': str(self.user_work_profile.work_email_password),
+            'telegram_id': str(self.telegram_id)
         }
 
     def get_absolute_url(self):
