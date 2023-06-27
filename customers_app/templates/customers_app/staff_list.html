@@ -191,6 +191,7 @@
                     {"data": "email"},
                     {% if user.is_superuser or user.is_stuff %}
                         {"data": "password"},
+                        {"data": "telegram_id"},
                     {% endif %}
                 ],
             });
