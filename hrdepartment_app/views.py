@@ -901,7 +901,7 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
                     order.save()
                 obj_item.send_mail(title='Уведомление об отмене')
             except Exception as _ex:
-                print(_ex)
+                logger.error(f'Ошибка при отмене БП {_ex}')
 
         return super().form_valid(form)
 
