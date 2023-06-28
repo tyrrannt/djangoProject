@@ -42,96 +42,20 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-                                        <div class="col-lg-12 text-black-50">
-                                            <label for="id_document_name">Наименование:</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="document_name" value="{{ object.document_name }}" id="id_document_name"/>
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_document_date">Дата документа:</label>
-                                            <input type="date" class="form-control form-control-modern" disabled
-                                                   name="document_date" value="{{ object.document_date | date:"c" }}" id="id_document_date"/>
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_document_number">Номер документа:</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="document_number" value="{{ object.document_number }}" id="id_document_number"/>
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_previous_document">Предшествующий документ:</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="previous_document" value="{{ object.previous_document }}" id="id_previous_document"/>
-                                        </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_access">Уровень доступа</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="access" value="{{ object.access }}" id="id_access"/>
+                                        <h4>{{ object.document_name }}, №: {{ object.document_number }}
+                                            от: {{ object.document_date | date:"c" }} г.</h4>
+                                        <h4>Действителен с: {{ object.validity_period_start }} г.
+                                            {% if object.validity_period_end %}по:
+                                                {{ object.validity_period_end }}{% endif %}</h4>
+                                        <h4>Место хранения оригинала: {{ object.storage_location_division }}.
+                                            Исполнитель: {{ object.executor | FIO_format }}</h4>
+                                        <h4>Ответственные лица:
+                                            {% for item in object.employee.iterator %}{% if forloop.last %}
+                                                {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
+                                            {% endif %}{% endfor %}</h4>
 
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_validity_period_start">Действителен с:</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="validity_period_start" id="id_validity_period_start"
-                                                   disabled data-plugin-datepicker
-                                                   value="{{ object.validity_period_start }}"
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                    </div>
 
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_validity_period_end">Действителен по:</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="validity_period_end" id="id_validity_period_end"
-                                                   disabled data-plugin-datepicker
-                                                   value="{% if object.validity_period_end %}{{ object.validity_period_end }}{% endif %}"
-                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
-
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    <section class="toggle">
-                        <label>Служебная информация</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_storage_location_division">Место хранения оригинала:</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="executor" value="{{ object.storage_location_division }}" id="id_executor"/>
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_executor">Исполнитель</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="executor" value="{{ object.executor | FIO_format}}" id="id_executor"/>
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_employee">Ответственное лицо</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="employee" value="{% for item in object.employee.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }}, {% endif %}{% endfor %}" id="id_employee"/>
-                                        </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="switch switch-sm switch-success col-md-4 text-black-50 mt-3">
-                                            <label for="id_allowed_placed">Разрешение на публикацию:</label>
-                                            <input type="checkbox" name="allowed_placed" id="id_allowed_placed"
-                                                   {% if object.allowed_placed %}checked{% endif %} data-plugin-ios-switch>
-                                        </div>
-                                        <div class="switch switch-sm switch-success col-md-4 text-black-50 mt-3">
-                                            <label for="id_actuality">Актуальность:</label>
-                                            <input type="checkbox" name="actuality" id="id_actuality"
-                                                   {% if object.actuality %}checked{% endif %} data-plugin-ios-switch>
-                                        </div>
-                                        <div class="switch switch-sm switch-success col-md-4 text-black-50 mt-3">
-                                            <label for="id_applying_for_job">Обязательно к ознакомлению при приеме на работу:</label>
-                                            <input type="checkbox" name="applying_for_job" id="id_applying_for_job"
-                                                   {% if object.applying_for_job %}checked{% endif %} data-plugin-ios-switch>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -142,91 +66,85 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-
-                                            {% if object.doc_file and user == object.executor %}
-                                                <div class="col-sm-6 text-black-50 mt-2 pb-4">
-                                                    <label for="id_doc_file">Файл бланка: </label>
-                                                    {% if object.doc_file %}
-                                                        <span id="id_doc_file"><a href="{{ object.doc_file.url }}"
-                                                                               target="_blank"><img
-                                                                src="{% static 'Extension/docx.png' %}"></a></span>
-                                                    {% endif %}
-                                                </div>
-                                            {% endif %}
-                                            {% if object.scan_file %}
-                                                <div class="col-sm-6 text-black-50 mt-2 pb-4">
-                                                    <label for="id_scan_file">Скан бланка: </label>
-                                                    {% if object.scan_file %}
-                                                        <span id="id_scan_file"><a
-                                                                href="{{ object.scan_file.url }}"
-                                                                target="_blank"><img
-                                                                src="{% static 'Extension/pdf.png' %}"></a></span>
-                                                    {% endif %}
-                                                </div>
-                                            {% endif %}
-
+                                        {% if object.scan_file %}
+                                            <a href="{{ object.scan_file.url }}" target="_blank">Открыть документ</a>
+                                            <object data="{{ object.scan_file.url }}" type="application/pdf"
+                                                    width="750px"
+                                                    height="750px">
+                                                <embed src="{{ object.scan_file.url }}" type="application/pdf">
+                                                <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
+                                                    PDF-файл, чтобы
+                                                    просмотреть его: <a
+                                                            href="{{ object.scan_file.url }}">Скачать PDF.</a>.</p>
+                                                </embed>
+                                            </object>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </section>
                     <section class="toggle">
-                            <label>Бланки документов</label>
-                            <div class="toggle-content">
-                                <div class="table-responsive">
-                                    <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
-                                           style="min-width: 380px;">
-                                        <thead>
+                        <label>Бланки документов</label>
+                        <div class="toggle-content">
+                            <div class="table-responsive">
+                                <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
+                                       style="min-width: 380px;">
+                                    <thead>
+                                    <tr>
+                                        <th width="8%" class="ps-4">ID</th>
+                                        <th width="30%">Наименование</th>
+                                        <th width="10%" class="text-end">Черновик</th>
+                                        <th width="10%" class="text-end">Скан копия</th>
+                                        <th width="10%" class="text-end">Образец</th>
+                                        <th width="20%" class="text-end">Исполнитель</th>
+                                        <th width="20%" class="text-end">Ответственное лицо</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for item in object.document_form.all %}
                                         <tr>
-                                            <th width="8%" class="ps-4">ID</th>
-                                            <th width="30%">Наименование</th>
-                                            <th width="10%" class="text-end">Черновик</th>
-                                            <th width="10%" class="text-end">Скан копия</th>
-                                            <th width="10%" class="text-end">Образец</th>
-                                            <th width="20%" class="text-end">Исполнитель</th>
-                                            <th width="20%" class="text-end">Ответственное лицо</th>
+                                            <td class="ps-4"><a
+                                                    href="{% url 'library_app:blank' item.pk %}"
+                                                    target="_blank"><strong>{{ item.pk }}</strong></a>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'library_app:blank' item.pk %}"
+                                                   target="_blank"><strong>{{ item.title }}</strong></a>
+                                            </td>
+                                            <td class="text-end">
+                                                {% if item.draft %}
+                                                    <i class='bx bx-check'></i>
+                                                {% else %}
+                                                    <i class='bx bx-x'></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if item.scan %}
+                                                    <i class='bx bx-check'></i>
+                                                {% else %}
+                                                    <i class='bx bx-x'></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if item.sample != '' %}
+                                                    <i class='bx bx-check'></i>
+                                                {% else %}
+                                                    <i class='bx bx-x'></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">{{ item.executor | FIO_format }}</td>
+                                            <td class="text-end">
+                                                {% for user_obj in item.employee.all %}{{ user_obj | FIO_format }}
+                                                    ; {% endfor %}
+                                            </td>
                                         </tr>
-                                        </thead>
-                                        <tbody>
-                                        {% for item in object.document_form.all %}
-                                            <tr>
-                                                <td class="ps-4"><a
-                                                        href="{% url 'library_app:blank' item.pk %}" target="_blank"><strong>{{ item.pk }}</strong></a>
-                                                </td>
-                                                <td>
-                                                    <a href="{% url 'library_app:blank' item.pk %}" target="_blank"><strong>{{ item.title }}</strong></a>
-                                                </td>
-                                                <td class="text-end">
-                                                    {% if item.draft %}
-                                                        <i class='bx bx-check'></i>
-                                                    {% else %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">
-                                                    {% if item.scan %}
-                                                        <i class='bx bx-check'></i>
-                                                    {% else %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">
-                                                    {% if item.sample != '' %}
-                                                        <i class='bx bx-check'></i>
-                                                    {% else %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">{{ item.executor | FIO_format }}</td>
-                                                <td class="text-end">{% for user_obj in item.employee.all %}{{ user_obj | FIO_format }}; {% endfor %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
-                        </section>
+                        </div>
+                    </section>
                 </div>
             </div>
             <div class="row action-buttons">
