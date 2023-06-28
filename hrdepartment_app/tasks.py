@@ -147,6 +147,7 @@ def happy_birthday():
             post.post_divisions.add(*division)
             post.save()
             person_list = DataBaseUser.objects.filter(telegram_id__isnull=False)
+            person_tg_list = [item.telegram_id for item in person_list]
             kwargs_obj = {
                 'message': description,
                 'document_url': '',
@@ -156,7 +157,7 @@ def happy_birthday():
             }
             tn, created = TelegramNotification.objects.update_or_create(document_id=post.pk,
                                                                         defaults=kwargs_obj)
-            tn.respondents.set(person_list)
+            tn.respondents.set(person_tg_list)
             if not post.email_send:
                 send_mail(item, age, post)
         else:
