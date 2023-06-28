@@ -16,7 +16,7 @@ from loguru import logger
 from administration_app.models import PortalProperty
 from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
     get_jsons_data_filter2, get_types_userworktime, get_date_interval, get_json_vacation
-from customers_app.models import DataBaseUser, Groups, Job
+from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
 from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
@@ -126,7 +126,11 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         logger.info(f"У пользователя {user_obj} отсутствуют группы!")
                         # Установка общих прав пользователя наследованием из групп
             if request.GET.get('update') == '2':
-                send_message_tg()
+                users_list = DataBaseUser.objects.all().exclude(is_superuser=True)
+                user_access = AccessLevel.objects.get(level=3)
+                for item in users_list:
+                    item.user_access = user_access
+                    item.save()
                 # memo_list = OfficialMemo.objects.all()
                 # for item in memo_list:
                 #     if item.title == '':
