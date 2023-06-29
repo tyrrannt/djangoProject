@@ -717,7 +717,7 @@ def hr_accepted(sender, instance, **kwargs):
 def create_report(sender, instance, **kwargs):
     change_approval_status(instance)
     type_of = ['Служебная квартира', 'Гостиница']
-    if instance.submit_for_approval and not instance.document_not_agreed:
+    if instance.submit_for_approval and not instance.document_not_agreed and not instance.email_send:
         business_process = BusinessProcessDirection.objects.filter(
             person_executor=instance.person_executor.user_work_profile.job)
         person_agreement_job_list = []
@@ -737,7 +737,7 @@ def create_report(sender, instance, **kwargs):
         }
         tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
         tn.respondents.set(person_agreement_list)
-    if instance.document_not_agreed and not instance.location_selected:
+    if instance.document_not_agreed and not instance.location_selected and not instance.email_send:
         person_agreement_list = []
         for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True)):
             if item.telegram_id:
@@ -751,7 +751,7 @@ def create_report(sender, instance, **kwargs):
         }
         tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
         tn.respondents.set(person_agreement_list)
-    if instance.location_selected and not instance.process_accepted:
+    if instance.location_selected and not instance.process_accepted and not instance.email_send:
         person_agreement_list = []
         for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True)):
             if item.telegram_id:
