@@ -1953,8 +1953,12 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user_obj = self.get_object()
-        context['min'] = user_obj.employee.user_work_profile.personal_work_schedule_start.strftime('%H:%M')
-        context['max'] = user_obj.employee.user_work_profile.personal_work_schedule_end.strftime('%H:%M')
+        if self.request.user.is_superuser:
+            context['min'] = datetime.datetime(1, 1, 1, 1, 0).strftime('%H:%M')
+            context['max'] = datetime.datetime(1, 1, 1, 23, 0).strftime('%H:%M')
+        else:
+            context['min'] = user_obj.employee.user_work_profile.personal_work_schedule_start.strftime('%H:%M')
+            context['max'] = user_obj.employee.user_work_profile.personal_work_schedule_end.strftime('%H:%M')
         return context
 
     def get(self, request, *args, **kwargs):
