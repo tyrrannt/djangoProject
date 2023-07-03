@@ -1982,6 +1982,15 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
         return reverse('hrdepartment_app:reportcard_list')
 
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'user': self.request.user.pk})
+        return kwargs
+
 # Положения
 class ProvisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """

@@ -541,15 +541,25 @@ class ReportCardUpdateForm(forms.ModelForm):
         model = ReportCard
         fields = ('report_card_day', 'start_time', 'end_time', 'reason_adjustment')
 
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop('user')
+        super(ReportCardUpdateForm, self).__init__(*args, **kwargs)
+
     def clean(self):
         cleaned_data = super().clean()
         report_card_day = cleaned_data.get("report_card_day")
         yesterday = datetime.date.today() - datetime.timedelta(days=3)
         tomorrow = datetime.date.today() + datetime.timedelta(days=2)
-        if yesterday > report_card_day or report_card_day > tomorrow:
-            raise ValidationError(
-                f"Ошибка! Дата может быть только из диапазона c {yesterday.strftime('%d.%m.%Y')} г. "
-                f"по {tomorrow.strftime('%d.%m.%Y')} г.")
+        user_obj = DataBaseUser.objects.get(pk=self.user)
+        if not user_obj.is_superuser:
+            if yesterday > report_card_day or report_card_day > tomorrow:
+                raise ValidationError(
+                    f"Ошибка! Дата может быть только из диапазона c {yesterday.strftime('%d.%m.%Y')} г. "
+                    f"по {tomorrow.strftime('%d.%m.%Y')} г.")
         start_time = cleaned_data.get("start_time")
         if not start_time:
             raise ValidationError("Ошибка! Не указано время начала!")
