@@ -16,19 +16,19 @@ class CustomUserAdmin(UserAdmin):
     """
     fieldsets = (
         *UserAdmin.fieldsets,
-        # (
-        #     'Данные для активации',
-        #     {
-        #         'fields': (
-        #             'activate_key', 'activate_key_expires',
-        #         ),
-        #     },
-        # ),
+        (
+            'Личные данные',
+            {
+                'fields': (
+                    'surname', 'title', 'birthday',
+                ),
+            },
+        ),
         (
             'Профиль',
             {
                 'fields': (
-                    'surname', 'avatar', 'birthday', 'address', 'type_users', 'service_number', 'user_access',
+                    'avatar', 'address', 'type_users', 'service_number', 'user_access',
                     'personal_phone', 'gender', 'user_work_profile', 'user_profile', 'ref_key', 'person_ref_key',
                     'passphrase', 'telegram_id',
                 ),

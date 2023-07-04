@@ -37,7 +37,7 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            serialize=config('LOG_SERIALIZE'))
 
 
-class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class GroupListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Groups
     template_name = 'customers_app/group_list.html'
     success_url = reverse_lazy('customers_app:group_list')
@@ -58,7 +58,7 @@ class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class GroupCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Groups
     form_class = GroupAddForm
     template_name = 'customers_app/group_form.html'
@@ -198,13 +198,15 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 return JsonResponse(html_obj, safe=False)
             if report_year and report_month:
                 # data_dict, total_score, first_day, last_day, user_start_time, user_end_time = get_report_card(self.request.user.pk, RY=report_year, RM=report_month)
-                data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(self.request.user.pk, datetime.datetime(year=int(report_year), month=int(report_month), day=1))
+                data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(
+                    self.request.user.pk, datetime.datetime(year=int(report_year), month=int(report_month), day=1))
 
                 # print(data_dict, total_score, first_day, last_day, user_start_time, user_end_time)
-                return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end), safe=False)
+                return JsonResponse(
+                    get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end),
+                    safe=False)
             if get_date:
                 html = f"<label class='form-control form-control-modern'>Остаток отпуска: {get_vacation_days(self, get_date)} дн.</label>"
-
 
                 return JsonResponse(html, safe=False)
         return super().get(request, *args, **kwargs)
@@ -222,7 +224,7 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
     template_name = 'customers_app/change_avatar.html'
 
 
-# class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+# class DataBaseUserUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 #     model = DataBaseUser
 #     template_name = 'customers_app/user_profile_update.html'
 #     form_class = DataBaseUserUpdateForm
@@ -396,7 +398,7 @@ class PostsUpdateView(LoginRequiredMixin, UpdateView):
         return reverse("customers_app:post_list")
 
 
-class CounteragentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class CounteragentListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     # template_name = 'customers_app/counteragent_list.html'  # Совпадает с именем по умолчании
     model = Counteragent
     paginate_by = 6
@@ -443,7 +445,7 @@ class CounteragentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         return context
 
 
-class CounteragentAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class CounteragentAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Counteragent
     form_class = CounteragentAddForm
     template_name = 'customers_app/counteragent_add.html'
@@ -475,13 +477,13 @@ class CounteragentAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class CounteragentDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class CounteragentDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     # template_name = 'customers_app/counteragent_detail.html'  # Совпадает с именем по умолчании
     model = Counteragent
     permission_required = 'customers_app.view_counteragent'
 
 
-class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class CounteragentUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     # template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
     model = Counteragent
     form_class = CounteragentUpdateForm
@@ -515,7 +517,7 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class StaffListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     template_name = 'customers_app/staff_list.html'
     model = DataBaseUser
     paginate_by = 6
@@ -551,7 +553,8 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(is_active=False)
+            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(
+                is_active=False)
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
             return JsonResponse(response)
@@ -559,7 +562,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return super(StaffListView, self).get(request, *args, **kwargs)
 
 
-class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class StaffDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     template_name = 'customers_app/staff_detail.html'  # Совпадает с именем по умолчании
     model = DataBaseUser
     permission_required = 'customers_app.view_databaseuser'
@@ -573,7 +576,7 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             raise PermissionDenied
 
 
-class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class StaffUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     template_name = 'customers_app/staff_form.html'
     model = DataBaseUser
     form_class = StaffUpdateForm
@@ -701,7 +704,7 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 """
 
 
-class DivisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class DivisionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Division
     template_name = 'customers_app/divisions_list.html'
     permission_required = 'customers_app.view_division'
@@ -760,7 +763,7 @@ class DivisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class DivisionsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class DivisionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Division
     form_class = DivisionsAddForm
     template_name = 'customers_app/divisions_add.html'
@@ -792,13 +795,13 @@ class DivisionsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class DivisionsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class DivisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = Division
     template_name = 'customers_app/divisions_detail.html'
     permission_required = 'customers_app.view_division'
 
 
-class DivisionsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class DivisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Division
     template_name = 'customers_app/divisions_update.html'
     form_class = DivisionsUpdateForm
@@ -838,7 +841,7 @@ class DivisionsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 """
 
 
-class JobsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class JobsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Job
     template_name = 'customers_app/jobs_list.html'
     paginate_by = 6
@@ -898,7 +901,7 @@ class JobsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class JobsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class JobsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Job
     form_class = JobsAddForm
     template_name = 'customers_app/jobs_add.html'
@@ -921,13 +924,13 @@ class JobsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class JobsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class JobsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = Job
     template_name = 'customers_app/jobs_detail.html'
     permission_required = 'customers_app.view_job'
 
 
-class JobsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class JobsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Job
     template_name = 'customers_app/jobs_update.html'
     form_class = JobsUpdateForm
@@ -958,7 +961,7 @@ class JobsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 """
 
 
-class HarmfulWorkingConditionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class HarmfulWorkingConditionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = HarmfulWorkingConditions
     permission_required = 'customers_app.view_harmfulworkingconditions'
 

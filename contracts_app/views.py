@@ -20,7 +20,7 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            serialize=config('LOG_SERIALIZE'))
 
 
-class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
     Отображение списка договоров
     """
@@ -52,7 +52,7 @@ class ContractList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class ContractSearch(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ContractSearch(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
     Поиск договоров в базе
     ToDo: Не работает пагинация при прямом открытии списка. Разобраться почему!!! После нажатия кнопки поиска, все норм.
@@ -123,7 +123,7 @@ class ContractSearch(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
     Создание нового договора
     """
@@ -170,7 +170,7 @@ class ContractAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return super(ContractAdd, self).get(request, *args, **kwargs)
 
 
-class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
     Просмотр договора.
     """
@@ -203,7 +203,7 @@ class ContractDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Contract
     form_class = ContractsUpdateForm
     template_name = 'contracts_app/contract_form_update.html'
@@ -275,7 +275,7 @@ class ContractUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class ContractPostAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class ContractPostAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
     Добавление записи к договору.
     """
@@ -293,7 +293,7 @@ class ContractPostAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return reverse("contracts_app:detail", kwargs={"pk": pk})
 
 
-class ContractPostList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ContractPostList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
     Вывод списка записей, относящихся к конкретному договору
     """
@@ -313,7 +313,7 @@ class ContractPostList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return qs
 
 
-class ContractPostDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class ContractPostDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     """
     Удаление записи
     """
@@ -326,7 +326,7 @@ class ContractPostDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView
 """
 
 
-class TypeDocumentsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class TypeDocumentsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_list.html'
     permission_required = 'hrdepartment_app.view_typedocuments'
@@ -346,7 +346,7 @@ class TypeDocumentsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class TypeDocumentsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class TypeDocumentsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = TypeDocuments
     form_class = TypeDocumentsAddForm
     template_name = 'contracts_app/typedocuments_add.html'
@@ -369,7 +369,7 @@ class TypeDocumentsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
 
-class TypeDocumentsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class TypeDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_detail.html'
     permission_required = 'hrdepartment_app.view_typedocuments'
@@ -380,7 +380,7 @@ class TypeDocumentsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
         return context
 
 
-class TypeDocumentsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class TypeDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = TypeDocuments
     template_name = 'contracts_app/typedocuments_update.html'
     form_class = TypeDocumentsUpdateForm
@@ -408,7 +408,7 @@ class TypeDocumentsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
 """
 
 
-class TypeContractsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class TypeContractsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_list.html'
     permission_required = 'hrdepartment_app.view_typecontract'
@@ -428,7 +428,7 @@ class TypeContractsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class TypeContractsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class TypeContractsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = TypeContract
     form_class = TypeContractsAddForm
     template_name = 'contracts_app/typecontracts_add.html'
@@ -451,7 +451,7 @@ class TypeContractsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
 
-class TypeContractsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class TypeContractsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_detail.html'
     permission_required = 'hrdepartment_app.view_typecontract'
@@ -462,7 +462,7 @@ class TypeContractsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
         return context
 
 
-class TypeContractsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class TypeContractsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = TypeContract
     template_name = 'contracts_app/typecontracts_update.html'
     form_class = TypeContractsUpdateForm
@@ -490,7 +490,7 @@ class TypeContractsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
 """
 
 
-class TypePropertysList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class TypePropertysList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_list.html'
     permission_required = 'hrdepartment_app.view_typeproperty'
@@ -510,7 +510,7 @@ class TypePropertysList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class TypePropertysAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class TypePropertysAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = TypeProperty
     form_class = TypePropertysAddForm
     template_name = 'contracts_app/typepropertys_add.html'
@@ -533,7 +533,7 @@ class TypePropertysAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
 
-class TypePropertysDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class TypePropertysDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_detail.html'
     permission_required = 'hrdepartment_app.view_typeproperty'
@@ -544,7 +544,7 @@ class TypePropertysDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
         return context
 
 
-class TypePropertysUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class TypePropertysUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = TypeProperty
     template_name = 'contracts_app/typepropertys_update.html'
     form_class = TypePropertysUpdateForm

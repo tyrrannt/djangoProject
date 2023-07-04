@@ -35,7 +35,7 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 
 
 # Create your views here.
-class MedicalOrganisationList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class MedicalOrganisationList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = MedicalOrganisation
     permission_required = 'customers_app.view_medicalorganisation'
 
@@ -70,7 +70,7 @@ class MedicalOrganisationList(LoginRequiredMixin, PermissionRequiredMixin, ListV
         return context
 
 
-class MedicalOrganisationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class MedicalOrganisationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = MedicalOrganisation
     form_class = MedicalOrganisationAddForm
     permission_required = 'customers_app.add_medicalorganisation'
@@ -81,7 +81,7 @@ class MedicalOrganisationAdd(LoginRequiredMixin, PermissionRequiredMixin, Create
         return context
 
 
-class MedicalOrganisationUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class MedicalOrganisationUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = MedicalOrganisation
     form_class = MedicalOrganisationUpdateForm
     permission_required = 'customers_app.change_medicalorganisation'
@@ -92,7 +92,7 @@ class MedicalOrganisationUpdate(LoginRequiredMixin, PermissionRequiredMixin, Upd
         return context
 
 
-class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Medical
     permission_required = 'hrdepartment_app.view_medical'
 
@@ -141,7 +141,7 @@ class MedicalExamination(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     #     return JsonResponse(response)
 
 
-class MedicalExaminationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class MedicalExaminationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Medical
     form_class = MedicalExaminationAddForm
     permission_required = 'hrdepartment_app.add_medical'
@@ -160,7 +160,7 @@ class MedicalExaminationAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         # return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
 
 
-class MedicalExaminationUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class MedicalExaminationUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Medical
     form_class = MedicalExaminationUpdateForm
     template_name = 'hrdepartment_app/medical_form_update.html'
@@ -175,7 +175,7 @@ class MedicalExaminationUpdate(LoginRequiredMixin, PermissionRequiredMixin, Upda
         return reverse_lazy('hrdepartment_app:medical_list')
 
 
-class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = OfficialMemo
     permission_required = 'hrdepartment_app.view_officialmemo'
 
@@ -207,7 +207,7 @@ class OfficialMemoList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = OfficialMemo
     form_class = OfficialMemoAddForm
     permission_required = 'hrdepartment_app.add_officialmemo'
@@ -296,7 +296,7 @@ class OfficialMemoAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
 
-class OfficialMemoDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class OfficialMemoDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = OfficialMemo
     permission_required = 'hrdepartment_app.view_officialmemo'
 
@@ -306,7 +306,7 @@ class OfficialMemoDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView
         return content
 
 
-class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
     template_name = 'hrdepartment_app/officialmemo_form_update.html'
@@ -516,7 +516,7 @@ class OfficialMemoUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
         return super(OfficialMemoUpdate, self).get(request, *args, **kwargs)
 
 
-class ApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
     permission_required = 'hrdepartment_app.view_approvaloficialmemoprocess'
 
@@ -551,7 +551,7 @@ class ApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin
         return context
 
 
-class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class ApprovalOficialMemoProcessAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessAddForm
     permission_required = 'hrdepartment_app.add_approvaloficialmemoprocess'
@@ -596,7 +596,7 @@ class ApprovalOficialMemoProcessAdd(LoginRequiredMixin, PermissionRequiredMixin,
         return super().form_valid(form)
 
 
-class ApprovalOficialMemoProcessUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class ApprovalOficialMemoProcessUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessUpdateForm
     template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_update.html'
@@ -972,7 +972,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
         return context
 
 
-class PurposeList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class PurposeList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Purpose
     permission_required = 'hrdepartment_app.view_purpose'
 
@@ -991,7 +991,7 @@ class PurposeList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class PurposeAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class PurposeAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Purpose
     form_class = PurposeAddForm
     permission_required = 'hrdepartment_app.add_purpose'
@@ -1002,7 +1002,7 @@ class PurposeAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
 
-class PurposeUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class PurposeUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Purpose
     form_class = PurposeUpdateForm
     permission_required = 'hrdepartment_app.change_purpose'
@@ -1013,7 +1013,7 @@ class PurposeUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return context
 
 
-class BusinessProcessDirectionList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class BusinessProcessDirectionList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = BusinessProcessDirection
     permission_required = 'hrdepartment_app.view_businessprocessdirection'
 
@@ -1023,7 +1023,7 @@ class BusinessProcessDirectionList(LoginRequiredMixin, PermissionRequiredMixin, 
         return context
 
 
-class BusinessProcessDirectionAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class BusinessProcessDirectionAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionAddForm
     permission_required = 'hrdepartment_app.add_businessprocessdirection'
@@ -1034,7 +1034,7 @@ class BusinessProcessDirectionAdd(LoginRequiredMixin, PermissionRequiredMixin, C
         return context
 
 
-class BusinessProcessDirectionUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class BusinessProcessDirectionUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionUpdateForm
     permission_required = 'hrdepartment_app.change_businessprocessdirection'
@@ -1045,7 +1045,7 @@ class BusinessProcessDirectionUpdate(LoginRequiredMixin, PermissionRequiredMixin
         return context
 
 
-class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
         Отчет по сотрудникам
     """
@@ -1262,7 +1262,7 @@ class ReportApprovalOficialMemoProcessList(LoginRequiredMixin, PermissionRequire
 
 
 # Должностные инструкции
-class DocumentsJobDescriptionList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class DocumentsJobDescriptionList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
         Должностные инструкции - список
     """
@@ -1287,7 +1287,7 @@ class DocumentsJobDescriptionList(LoginRequiredMixin, PermissionRequiredMixin, L
         return context
 
 
-class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class DocumentsJobDescriptionAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
         Должностные инструкции - создание
     """
@@ -1310,7 +1310,7 @@ class DocumentsJobDescriptionAdd(LoginRequiredMixin, PermissionRequiredMixin, Cr
         return kwargs
 
 
-class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class DocumentsJobDescriptionDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
         Должностные инструкции - просмотр
     """
@@ -1341,7 +1341,7 @@ class DocumentsJobDescriptionDetail(LoginRequiredMixin, PermissionRequiredMixin,
         return context
 
 
-class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class DocumentsJobDescriptionUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
         Должностные инструкции - редактирование
     """
@@ -1366,7 +1366,7 @@ class DocumentsJobDescriptionUpdate(LoginRequiredMixin, PermissionRequiredMixin,
 
 
 # Приказы
-class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class DocumentsOrderList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
         Список приказов
     """
@@ -1392,7 +1392,7 @@ class DocumentsOrderList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class DocumentsOrderAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
     Добавление приказа
     """
@@ -1435,7 +1435,7 @@ class DocumentsOrderAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         return super().get(request, *args, **kwargs)
 
 
-class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     # Приказ - просмотр
     model = DocumentsOrder
     permission_required = 'hrdepartment_app.view_documentsorder'
@@ -1464,7 +1464,7 @@ class DocumentsOrderDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
         return context
 
 
-class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class DocumentsOrderUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     # Приказ - изменение
     template_name = 'hrdepartment_app/documentsorder_update.html'
     model = DocumentsOrder
@@ -1516,7 +1516,7 @@ class DocumentsOrderUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateVi
         return super().get(request, *args, **kwargs)
 
 
-class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class PlaceProductionActivityList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     # Места назначения - список
     model = PlaceProductionActivity
     permission_required = 'hrdepartment_app.view_placeproductionactivity'
@@ -1536,7 +1536,7 @@ class PlaceProductionActivityList(LoginRequiredMixin, PermissionRequiredMixin, L
         return context
 
 
-class PlaceProductionActivityAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class PlaceProductionActivityAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     # Места назначения - создание
     model = PlaceProductionActivity
     form_class = PlaceProductionActivityAddForm
@@ -1548,7 +1548,7 @@ class PlaceProductionActivityAdd(LoginRequiredMixin, PermissionRequiredMixin, Cr
         return context
 
 
-class PlaceProductionActivityDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class PlaceProductionActivityDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     # Места назначения - просмотр
     model = PlaceProductionActivity
     permission_required = 'hrdepartment_app.view_placeproductionactivity'
@@ -1559,7 +1559,7 @@ class PlaceProductionActivityDetail(LoginRequiredMixin, PermissionRequiredMixin,
         return context
 
 
-class PlaceProductionActivityUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class PlaceProductionActivityUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     # Места назначения - изменение
     model = PlaceProductionActivity
     template_name = 'hrdepartment_app/placeproductionactivity_form_update.html'
@@ -1992,7 +1992,7 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
         return kwargs
 
 # Положения
-class ProvisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ProvisionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
         Должностные инструкции - список
     """
@@ -2014,7 +2014,7 @@ class ProvisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class ProvisionsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class ProvisionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
         Положения - создание
     """
@@ -2037,7 +2037,7 @@ class ProvisionsAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return kwargs
 
 
-class ProvisionsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
         Положения - просмотр
     """
@@ -2068,7 +2068,7 @@ class ProvisionsDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class ProvisionsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
         Положения - редактирование
     """

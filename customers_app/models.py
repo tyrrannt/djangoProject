@@ -253,8 +253,10 @@ class DataBaseUserProfile(models.Model):
     oms = models.CharField(verbose_name='Полис ОМС', max_length=24, blank=True, default='')
     inn = models.CharField(verbose_name='ИНН', max_length=12, blank=True, default='')
 
+
 def get_time(text):
     return datetime.datetime.strptime(text, '%H:%M:%S').time()
+
 
 class DataBaseUserWorkProfile(models.Model):
     class Meta:
@@ -272,7 +274,8 @@ class DataBaseUserWorkProfile(models.Model):
     work_email_password = models.CharField(verbose_name='Пароль от корпоративной почты', max_length=50, blank=True,
                                            default='')
     personal_work_schedule_start = models.TimeField(verbose_name='Начало рабочего времени', default=get_time('9:30:00'))
-    personal_work_schedule_end = models.TimeField(verbose_name='Окончание рабочего времени', default=get_time('18:00:00'))
+    personal_work_schedule_end = models.TimeField(verbose_name='Окончание рабочего времени',
+                                                  default=get_time('18:00:00'))
 
 
 class DataBaseUser(AbstractUser):
@@ -290,6 +293,7 @@ class DataBaseUser(AbstractUser):
         ('female', 'женский')
     ]
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='')
+    title = models.CharField(verbose_name='Наименование', max_length=200, default='', blank=True)
     person_ref_key = models.CharField(verbose_name='Уникальный номер физ лица', max_length=37, default='')
     service_number = models.CharField(verbose_name='Табельный номер', max_length=10, default='', blank=True)
     surname = models.CharField(verbose_name='Отчество', max_length=40, blank=True, default='', help_text='')
@@ -297,7 +301,7 @@ class DataBaseUser(AbstractUser):
     birthday = models.DateField(verbose_name='День рождения', blank=True, null=True, help_text='')
 
     user_access = models.ForeignKey(AccessLevel, verbose_name='Права доступа', help_text='',
-                                        blank=True, on_delete=models.SET_NULL, null=True)
+                                    blank=True, on_delete=models.SET_NULL, null=True)
     address = models.TextField(verbose_name='Адрес', null=True, blank=True)
     type_users = models.CharField(verbose_name='Тип пользователя', max_length=40, choices=type_of, help_text='',
                                   blank=True, default='')
@@ -358,6 +362,9 @@ def rename(file_name, path_name, instance, pfx):
 
 @receiver(post_save, sender=DataBaseUser)
 def change_filename(sender, instance, **kwargs):
+    if instance.title != f'{empty_item(instance.last_name)} {empty_item(instance.first_name)} {empty_item(instance.surname)}':
+        instance.title = f'{empty_item(instance.last_name)} {empty_item(instance.first_name)} {empty_item(instance.surname)}'
+        instance.save()
     try:
         # Получаем имя сохраненного файла
         file_name = pathlib.Path(instance.avatar.name).name
@@ -444,7 +451,8 @@ class HistoryChange(models.Model):
         verbose_name_plural = 'Список истории'
 
     date_add = models.DateTimeField(verbose_name='Время добавления', auto_now_add=True)
-    author = models.ForeignKey(DataBaseUser, verbose_name='Автор', on_delete=models.SET_NULL, null=True, blank=True, related_name='author_changes')
+    author = models.ForeignKey(DataBaseUser, verbose_name='Автор', on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name='author_changes')
     body = models.TextField(blank=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
@@ -469,7 +477,8 @@ class HappyBirthdayGreetings(models.Model):
     gender = models.CharField(verbose_name='Пол', max_length=7, blank=True, choices=type_of_gender,
                               help_text='', default='')
     greetings = models.TextField(blank=True)
-    sign = models.TextField(verbose_name='Подпись', default='Генеральный директор<br>ООО Авиакомпания "БАРКОЛ"<br>Бархотов В.С.<br>и весь коллектив!!!')
+    sign = models.TextField(verbose_name='Подпись',
+                            default='Генеральный директор<br>ООО Авиакомпания "БАРКОЛ"<br>Бархотов В.С.<br>и весь коллектив!!!')
 
     def __str__(self):
         if self.age_from == self.age_to:

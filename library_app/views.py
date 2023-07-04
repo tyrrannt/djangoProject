@@ -11,9 +11,10 @@ from library_app.forms import HelpItemAddForm, HelpItemUpdateForm, DocumentFormA
 from library_app.models import HelpTopic, HelpCategory, DocumentForm
 
 # Create your views here.
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'), 
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
            serialize=config('LOG_SERIALIZE'))
+
 
 def index(request):
     # return render(request, 'library_app/base.html')
@@ -47,7 +48,7 @@ class HelpList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class HelpItem(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class HelpItem(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = HelpTopic
     permission_required = 'library_app.view_helptopic'
 
@@ -57,11 +58,10 @@ class HelpItem(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class HelpItemAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class HelpItemAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = HelpTopic
     form_class = HelpItemAddForm
     permission_required = 'library_app.add_helptopic'
-
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -69,7 +69,7 @@ class HelpItemAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
 
-class HelpItemUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class HelpItemUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = HelpTopic
     form_class = HelpItemUpdateForm
     permission_required = 'library_app.change_helptopic'
@@ -99,7 +99,7 @@ class DocumentFormList(LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
-class DocumentFormItem(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class DocumentFormItem(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = DocumentForm
     permission_required = 'library_app.view_documentform'
 
@@ -109,11 +109,10 @@ class DocumentFormItem(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class DocumentFormAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class DocumentFormAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = DocumentForm
     form_class = DocumentFormAddForm
     permission_required = 'library_app.add_documentform'
-
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -134,7 +133,7 @@ class DocumentFormAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return kwargs
 
 
-class DocumentFormUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class DocumentFormUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = DocumentForm
     form_class = DocumentFormUpdateForm
     template_name = 'library_app/documentform_form_update.html'
