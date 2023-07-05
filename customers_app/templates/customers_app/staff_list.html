@@ -189,7 +189,7 @@
                     {"data": "job"},
                     {"data": "phone"},
                     {"data": "email"},
-                    {% if user.is_superuser or user.is_stuff %}
+                    {% if user.is_superuser or user.is_staff %}
                         {"data": "password"},
                         {"data": "telegram_id"},
                     {% endif %}
