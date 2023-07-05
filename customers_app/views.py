@@ -133,7 +133,7 @@ class DataBaseUserProfileDetail(PermissionRequiredMixin, LoginRequiredMixin, Det
     @method_decorator(user_passes_test(lambda u: u.is_active))
     def dispatch(self, request, *args, **kwargs):
         user_object = self.get_object()
-        user_groups = user_object.groups.filter(name='Пользователи').exists()
+        user_groups = request.user.groups.filter(name='Пользователи').exists()
         if request.user.pk == user_object.pk or request.user.is_superuser or user_groups:
             return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
         else:
@@ -574,7 +574,7 @@ class StaffDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
 
     def dispatch(self, request, *args, **kwargs):
         user_object = self.get_object()
-        user_groups = user_object.groups.filter(name='Пользователи').exists()
+        user_groups = request.user.groups.filter(name='Пользователи').exists()
         if request.user.pk == user_object.pk or request.user.is_superuser or user_groups:
             return super().dispatch(request, *args, **kwargs)
         else:
@@ -590,7 +590,7 @@ class StaffUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         user_object = self.get_object()
-        user_groups = user_object.groups.filter(name='Пользователи').exists()
+        user_groups = request.user.groups.filter(name='Пользователи').exists()
         if request.user.pk == user_object.pk or request.user.is_superuser or user_groups:
             return super().dispatch(request, *args, **kwargs)
         else:
