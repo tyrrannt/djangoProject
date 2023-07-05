@@ -53,6 +53,10 @@ class AccessLevel(models.Model):
 
 
 class HarmfulWorkingConditions(models.Model):
+    """
+    Вредные условия труда
+    """
+
     class Meta:
         verbose_name = 'Вредные условия труда'
         verbose_name_plural = 'Вредные условия труда'
@@ -78,6 +82,9 @@ class HarmfulWorkingConditions(models.Model):
 
 
 class Job(models.Model):
+    """
+    Класс должностей
+    """
     job_type = [
         ('0', 'Общий состав'),
         ('1', 'Летный состав'),
@@ -162,7 +169,7 @@ class Category(models.Model):
         for item in range(0, len(data['value'])):
             if data['value'][item]['DeletionMark'] == False:
                 print(data['value'][item])
-        """
+    """
 
     ref_key = models.CharField(verbose_name='Уникальный номер', max_length=37, default='', help_text='')
     parent_category = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
@@ -213,6 +220,10 @@ class Division(Category):
 
 
 class Citizenships(models.Model):
+    """
+    Класс Citizenship - содержит гражданство пользователя
+    """
+
     class Meta:
         verbose_name = 'Гражданство пользователя'
         verbose_name_plural = 'Гражданства пользователей'
@@ -224,6 +235,10 @@ class Citizenships(models.Model):
 
 
 class IdentityDocuments(models.Model):
+    """
+    Класс IdentityDocuments - содержит документы пользователя
+    """
+
     class Meta:
         verbose_name = 'Паспорт пользователя'
         verbose_name_plural = 'Паспорта пользователей'
@@ -259,6 +274,10 @@ def get_time(text):
 
 
 class DataBaseUserWorkProfile(models.Model):
+    """
+    Модель рабочего профиля пользователя
+    """
+
     class Meta:
         verbose_name = 'Рабочий профиль пользователя'
         verbose_name_plural = 'Рабочие профили пользователей'
@@ -279,6 +298,10 @@ class DataBaseUserWorkProfile(models.Model):
 
 
 class DataBaseUser(AbstractUser):
+    """
+    Класс DataBaseUser - модель пользователя
+    """
+
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
@@ -317,12 +340,20 @@ class DataBaseUser(AbstractUser):
     telegram_id = models.CharField(verbose_name='Telegram ID', max_length=20, blank=True)
 
     def __str__(self):
-        return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
+        return self.title
 
     def get_title(self):
-        return f'{empty_item(self.last_name)} {empty_item(self.first_name)} {empty_item(self.surname)}'
+        """
+        Возвращает наименование пользователя
+        :return:
+        """
+        return self.title
 
     def get_data(self):
+        """
+        Получение данных пользователя для таблицы
+        :return:
+        """
         return {
             'pk': self.pk,
             'number': self.service_number,
@@ -340,6 +371,14 @@ class DataBaseUser(AbstractUser):
 
 
 def rename(file_name, path_name, instance, pfx):
+    """
+    Функция для переименования файлов
+    :param file_name:
+    :param path_name:
+    :param instance:
+    :param pfx:
+    :return:
+    """
     try:
         if instance.avatar:
             # Получаем расширение файла
@@ -377,6 +416,10 @@ def change_filename(sender, instance, **kwargs):
 
 
 class Counteragent(models.Model):
+    """
+    Контрагенты
+    """
+
     class Meta:
         verbose_name = 'Контрагент'
         verbose_name_plural = 'Контрагенты'
@@ -422,7 +465,14 @@ class Counteragent(models.Model):
 
 
 class Posts(models.Model):
+    """
+    Класс для хранения постов
+    """
+
     class Meta:
+        """
+        Meta class: определяет метаданные модели
+        """
         verbose_name = 'Новость'
         verbose_name_plural = 'Сообщения'
 
@@ -463,6 +513,9 @@ class HistoryChange(models.Model):
 
 
 class HappyBirthdayGreetings(models.Model):
+    """
+    Класс для хранения сообщений дня рождения
+    """
     type_of_gender = [
         ('male', 'мужской'),
         ('female', 'женский')

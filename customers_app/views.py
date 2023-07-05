@@ -121,15 +121,20 @@ def index(request):
     return render(request, 'customers_app/customers.html', context={'types_count': types_count})
 
 
-class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
+class DataBaseUserProfileDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """
+    Просмотр личной информации пользователя
+    """
     context = {}
     model = DataBaseUser
     template_name = 'customers_app/user_profile.html'
+    permission_required = 'customers_app.view_databaseuser'
 
     @method_decorator(user_passes_test(lambda u: u.is_active))
     def dispatch(self, request, *args, **kwargs):
         user_object = self.get_object()
-        if request.user.pk == user_object.pk or request.user.is_superuser:
+        user_groups = user_object.groups.filter(name='Пользователи').exists()
+        if request.user.pk == user_object.pk or request.user.is_superuser or user_groups:
             return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
         else:
             raise PermissionDenied
