@@ -186,7 +186,8 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                 memo_list = OfficialMemo.objects.all().order_by('date_of_creation').reverse()
             else:
                 memo_list = OfficialMemo.objects.filter(
-                    Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(comments='Документооборот завершен').order_by('date_of_creation').reverse()
+                    Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
+                    comments='Документооборот завершен').order_by('date_of_creation').reverse()
 
             data = [memo_item.get_data() for memo_item in memo_list]
             response = {'data': data}
@@ -415,13 +416,14 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                     if get_order_obj != '':
                         # ToDo: Сделать обработку отправки письма
                         send_mail_change(1, get_obj)
-                        get_bpmemo_obj.location_selected = False
+                        if get_obj.period_for < datetime.datetime.now().date():
+                            get_bpmemo_obj.location_selected = False
+                            get_bpmemo_obj.accommodation = ''
+                            get_obj.accommodation = ''
                         get_bpmemo_obj.process_accepted = False
                         get_bpmemo_obj.email_send = False
-                        get_bpmemo_obj.accommodation = ''
                         get_bpmemo_obj.order = None
                         get_order_obj.cancellation = True
-                        get_obj.accommodation = ''
                         get_obj.document_accepted = False
                         get_obj.order = None
                         get_obj.comments = 'Документ согласован'
@@ -539,7 +541,8 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
                 approvalmemo_list = ApprovalOficialMemoProcess.objects.all().order_by('document__period_from').reverse()
             else:
                 approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(
-                    person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job).order_by('document__period_from').reverse()
+                    person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job).order_by(
+                    'document__period_from').reverse()
             data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -934,12 +937,18 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                 if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК', 'Передано в бухгалтерию']).exclude(document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
+                                                'Передано в бухгалтерию']).exclude(
+                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
+                        'document__period_for').reverse()
                 else:
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval) &
                         Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК', 'Передано в бухгалтерию']).exclude(document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
+                                                'Передано в бухгалтерию']).exclude(
+                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
+                        'document__period_for').reverse()
 
 
             else:
@@ -950,12 +959,18 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                 if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК', 'Передано в бухгалтерию']).exclude(document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
+                                                'Передано в бухгалтерию']).exclude(
+                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
+                        'document__period_for').reverse()
                 else:
                     reportcard_list = ApprovalOficialMemoProcess.objects.filter(
                         Q(document__period_for__in=search_interval) &
                         Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК', 'Передано в бухгалтерию']).exclude(document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by('document__period_for').reverse()
+                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
+                                                'Передано в бухгалтерию']).exclude(
+                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
+                        'document__period_for').reverse()
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
             response = {'data': data}
             return JsonResponse(response)
@@ -1080,9 +1095,11 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
 
                 for item in range(0, 4):
                     count_obj = ApprovalOficialMemoProcess.objects.filter(
-                    (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                    & Q(end_date_trip__gte=date_start) & Q(document__person__user_work_profile__job__type_of_job=str(item))).exclude(cancellation=True).order_by(
-                    'document__responsible').count()
+                        (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                        & Q(end_date_trip__gte=date_start) & Q(
+                            document__person__user_work_profile__job__type_of_job=str(item))).exclude(
+                        cancellation=True).order_by(
+                        'document__responsible').count()
                     report.append(count_obj)
             else:
                 qs = ApprovalOficialMemoProcess.objects.filter(
@@ -1167,7 +1184,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                     '2': 'Инженерный состав',
                     '3': 'Транспортный отдел',
                 }
-                report_item_obj = f'<td colspan="{len(table_count)+1}"><h4>'
+                report_item_obj = f'<td colspan="{len(table_count) + 1}"><h4>'
                 counter = 0
                 for report_item in report:
                     report_item_obj += f'{job_type[str(counter)]}: {report_item};&nbsp;'
@@ -1990,6 +2007,7 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs.update({'user': self.request.user.pk})
         return kwargs
+
 
 # Положения
 class ProvisionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
