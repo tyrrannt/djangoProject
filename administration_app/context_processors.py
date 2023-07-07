@@ -53,7 +53,8 @@ def get_approval_oficial_memo_process(request):
             business_process_direction_list = BusinessProcessDirection.objects.filter(person_agreement=request.user.user_work_profile.job)
             person_executor_job_list = list()
             for item in business_process_direction_list:
-                person_executor_job_list = [items[0] for items in item.person_executor.values_list()]
+                person_executor_job_list += [items[0] for items in item.person_executor.values_list()]
+            print(person_executor_job_list)
             business_process_direction_list = BusinessProcessDirection.objects.filter(clerk=request.user.user_work_profile.job)
             clerk_job_list_set = list()
             clerk_job_list_executor_set = list()

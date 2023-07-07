@@ -38,6 +38,9 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 
 
 class GroupListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Просмотр списка групп
+    """
     model = Groups
     template_name = 'customers_app/group_list.html'
     success_url = reverse_lazy('customers_app:group_list')
@@ -59,6 +62,9 @@ class GroupListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
 
 class GroupCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """
+    Создание группы
+    """
     model = Groups
     form_class = GroupAddForm
     template_name = 'customers_app/group_form.html'
@@ -67,6 +73,9 @@ class GroupCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
 
 class GroupUpdateView(LoginRequiredMixin, UpdateView):
+    """
+    Обновление группы
+    """
     model = Groups
     form_class = GroupUpdateForm
     template_name = 'customers_app/group_form.html'
@@ -218,12 +227,18 @@ class DataBaseUserProfileDetail(PermissionRequiredMixin, LoginRequiredMixin, Det
 
 
 class ChangePassPraseUpdate(LoginRequiredMixin, UpdateView):
+    """
+    Обновление парольной фразы пользователя
+    """
     model = DataBaseUser
     form_class = ChangePassPraseUpdateForm
     template_name = 'customers_app/change_passphrase.html'
 
 
 class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
+    """
+    Обновление аватара пользователя
+    """
     model = DataBaseUser
     form_class = ChangeAvatarUpdateForm
     template_name = 'customers_app/change_avatar.html'
@@ -326,6 +341,11 @@ def login(request):
 
 
 def logout(request):
+    """
+    Очистка сессии пользователя
+    :param request:
+    :return:
+    """
     auth.logout(request)
     return HttpResponseRedirect(reverse('customers_app:login'))
 
