@@ -294,6 +294,10 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
                 dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
             return JsonResponse(dict_obj, safe=False)
+        if employee:
+            person = DataBaseUser.objects.get(pk=employee)
+            html = str(person.user_work_profile.divisions)
+            return JsonResponse(html, safe=False)
         return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
 

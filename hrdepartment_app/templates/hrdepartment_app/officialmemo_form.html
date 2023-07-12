@@ -78,10 +78,11 @@
                                     <p class="card-big-info-desc" id="testof">Служебная записка на служебную поездку</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
+                                    <div class="form-group row align-items-center pb-3" id="employee_divisions">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_person">Сотрудник:</label>
                                         <div class="col-lg-7 col-xl-6">
+                                            <label for="employee_divisions"></label>
                                             <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
                                         </div>
                                     </div>
@@ -243,6 +244,7 @@
             employee = document.getElementById("id_person").value;
             period_from = document.getElementById("id_period_from").value;
             memo_type = document.getElementById("id_official_memo_type").value;
+
             $.ajax({
                 type: "GET",
                 url: '{% url 'hrdepartment_app:memo_add' %}',
@@ -263,7 +265,9 @@
                     // period_for.setAttribute("min", data)
                     // $("#id_period_for").trigger("create")
                     var check_date = document.getElementById("id_check_date");
-                    $("label[for='check_date']").text(data);
+                    var employee_divisions = document.getElementById("employee_divisions");
+                    $("label[for='employee_divisions']").text(data);
+                    employee_divisions.refresh;
                     if (data === 'ok') {
                         console.log("success");
                     }
