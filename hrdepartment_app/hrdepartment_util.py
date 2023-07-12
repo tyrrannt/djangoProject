@@ -76,7 +76,7 @@ def send_mail_change(counter, obj, message=''):
     current_context = {
         'title': obj.get_title(),
         'order_number': str(obj.order.document_number) if obj.order else '',
-        'order_date': str(obj.order.document_date) if obj.order else '',
+        'order_date': str(obj.order.document_date.strftime('%d.%m.%Y')) if obj.order else '',
         'message': message,
         'person_executor': obj.responsible,
         'mail_to_copy': check_email(obj.responsible),

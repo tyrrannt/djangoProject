@@ -364,10 +364,15 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         critical_change = 0
         warning_change = 0
 
-        def person_finder(object_item, item, instanse_obj):
-            person_list = ['Сотрудник']
-            if object_item._meta.get_field(k).verbose_name in person_list:
+        def person_finder(item, instanse_obj):
+            person_list = ['person_id']
+            date_field = ['period_from', 'period_for']
+            if item in person_list:
                 return DataBaseUser.objects.get(pk=instanse_obj[item])
+            if item in date_field:
+                return instanse_obj[item].strftime('%d.%m.%Y')
+            if item == 'purpose_trip_id':
+                return Purpose.objects.get(pk=instanse_obj[item])
             else:
                 return instanse_obj[item]
 
@@ -389,15 +394,15 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             changed = False
             # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
-            message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
+            message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:<br>'
             # print(diffkeys)
             if place_old != place_new:
                 critical_change = 1
-                message += f'Место назначения: <strike>{place_old}</strike> -> {place_new}\n'
+                message += f'Место назначения: <strike>{place_old}</strike> -> {place_new}<br>'
                 changed = True
             # Доработать замену СЗ
             for k in diffkeys:
-                # print(k)
+                print(k)
                 if k != '_state':
                     # if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
                     #     critical_change = 1
@@ -426,7 +431,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                         warning_change = 1
                     if k == 'purpose_trip_id':
                         warning_change = 1
-                    message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
+                    message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(k, old_instance)}</strike> -> {person_finder(k, new_instance)}<br>'
                     changed = True
             get_obj = self.get_object()
 
