@@ -59,18 +59,27 @@ def get_medical_documents():
     return ''
 
 
-def send_mail_change(counter, obj):
-    mail_to = obj.person.email
-    mail_to_copy_first = obj.responsible.email
-    mail_to_copy_second = obj.docs.person_distributor.email
-    mail_to_copy_third = obj.docs.person_department_staff.email
-    subject_mail = obj.title
+def check_email(obj):
+    if obj:
+        return obj.email
+    else:
+        return ''
+
+
+def send_mail_change(counter, obj, message=''):
+    mail_to = check_email(obj.person)
+    mail_to_copy_first = check_email(obj.responsible)
+    mail_to_copy_second = check_email(obj.docs.person_distributor)
+    mail_to_copy_third = check_email(obj.docs.person_department_staff)
+    subject_mail = obj.get_title()
+
     current_context = {
         'title': obj.get_title(),
-        'order_number': str(obj.order.document_number),
-        'order_date': str(obj.order.document_date),
+        'order_number': str(obj.order.document_number) if obj.order else '',
+        'order_date': str(obj.order.document_date) if obj.order else '',
+        'message': message,
     }
-    logger.debug(f'Email string: {current_context}')
+
     text_content = render_to_string('hrdepartment_app/email_change_bpmemo.html', current_context)
     html_content = render_to_string('hrdepartment_app/email_change_bpmemo.html', current_context)
 
@@ -94,7 +103,6 @@ def send_mail_change(counter, obj):
                                                [mail_to, mail_to_copy_third])
             first_msg.attach_alternative(html_content, "text/html")
             first_msg.send()
-            print(current_context)
 
     except Exception as _ex:
         logger.debug(f'Failed to send email. {_ex}')

@@ -380,24 +380,37 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
+            print(diffkeys)
             if place_old != place_new:
                 critical_change = 1
                 message += f'Место назначения: <strike>{place_old}</strike> -> {place_new}\n'
                 changed = True
             # Доработать замену СЗ
             for k in diffkeys:
+                print(k)
                 if k != '_state':
-                    if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
+                    # if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
+                    #     critical_change = 1
+                    # if object_item._meta.get_field(k).verbose_name == 'Дата начала':
+                    #     if new_instance[k] < old_instance[k]:
+                    #         critical_change = 1
+                    #     else:
+                    #         warning_change = 1
+                    # if object_item._meta.get_field(k).verbose_name == 'Дата окончания':
+                    #     if (new_instance[k] != old_instance[k]) and (
+                    #             str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
+                    #         warning_change = 1
+                    if k == 'person_id':
                         critical_change = 1
-                    if object_item._meta.get_field(k).verbose_name == 'Дата начала':
+                    if k == 'period_from':
                         if new_instance[k] < old_instance[k]:
                             critical_change = 1
-                    if object_item._meta.get_field(k).verbose_name == 'Дата окончания':
-                        print(new_instance[k], old_instance[k], object_item.purpose_trip)
+                        else:
+                            warning_change = 1
+                    if k == 'period_for':
                         if (new_instance[k] != old_instance[k]) and (
                                 str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
                             warning_change = 1
-                            print('1111111')
                     message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
                     changed = True
             get_obj = self.get_object()
@@ -405,7 +418,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
                 if warning_change == 1:
-                    send_mail_change(3, get_obj)
+                    send_mail_change(3, get_obj, message)
             if critical_change == 1:
                 try:
                     get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
@@ -415,7 +428,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                         get_order_obj = ''
                     if get_order_obj != '':
                         # ToDo: Сделать обработку отправки письма
-                        send_mail_change(1, get_obj)
+                        send_mail_change(1, get_obj, message)
                         if get_obj.period_for < datetime.datetime.now().date():
                             get_bpmemo_obj.location_selected = False
                             get_bpmemo_obj.accommodation = ''
@@ -432,7 +445,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                         get_order_obj.save()
                     else:
                         # ToDo: Сделать обработку отправки письма
-                        send_mail_change(2, get_obj)
+                        send_mail_change(2, get_obj, message)
                         get_bpmemo_obj.location_selected = False
                         get_bpmemo_obj.accommodation = ''
                         get_obj.comments = 'Документ согласован'
