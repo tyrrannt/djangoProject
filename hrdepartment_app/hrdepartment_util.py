@@ -78,6 +78,11 @@ def send_mail_change(counter, obj, message=''):
         'order_number': str(obj.order.document_number) if obj.order else '',
         'order_date': str(obj.order.document_date) if obj.order else '',
         'message': message,
+        'person_executor': obj.responsible,
+        'mail_to_copy': check_email(obj.responsible),
+        'person_department_staff': str(obj.docs.person_department_staff) if obj.docs.person_department_staff else '',
+        'person_distributor': str(obj.docs.person_distributor) if obj.docs.person_distributor else '',
+
     }
 
     text_content = render_to_string('hrdepartment_app/email_change_bpmemo.html', current_context)
