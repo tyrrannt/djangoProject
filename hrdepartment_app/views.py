@@ -380,14 +380,14 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
-            print(diffkeys)
+            # print(diffkeys)
             if place_old != place_new:
                 critical_change = 1
                 message += f'Место назначения: <strike>{place_old}</strike> -> {place_new}\n'
                 changed = True
             # Доработать замену СЗ
             for k in diffkeys:
-                print(k)
+                # print(k)
                 if k != '_state':
                     # if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
                     #     critical_change = 1
@@ -410,49 +410,55 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                     if k == 'period_for':
                         if (new_instance[k] != old_instance[k]) and (
                                 str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
-                            warning_change = 1
+                            critical_change = 1
+                        warning_change = 1
+                    if k == 'type_trip':
+                        warning_change = 1
+                    if k == 'purpose_trip_id':
+                        warning_change = 1
                     message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
                     changed = True
             get_obj = self.get_object()
 
             if changed:
                 object_item.history_change.create(author=self.request.user, body=message)
-                if warning_change == 1:
-                    send_mail_change(3, get_obj, message)
-            if critical_change == 1:
-                try:
-                    get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
-                    if object_item.order:
-                        get_order_obj = object_item.order
-                    else:
-                        get_order_obj = ''
-                    if get_order_obj != '':
-                        # ToDo: Сделать обработку отправки письма
-                        send_mail_change(1, get_obj, message)
-                        if get_obj.period_for < datetime.datetime.now().date():
+                if critical_change == 1:
+                    try:
+                        get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
+                        if object_item.order:
+                            get_order_obj = object_item.order
+                        else:
+                            get_order_obj = ''
+                        if get_order_obj != '':
+                            # ToDo: Сделать обработку отправки письма
+                            send_mail_change(1, get_obj, message)
+                            if get_obj.period_for < datetime.datetime.now().date():
+                                get_bpmemo_obj.location_selected = False
+                                get_bpmemo_obj.accommodation = ''
+                                get_obj.accommodation = ''
+                            get_bpmemo_obj.process_accepted = False
+                            get_bpmemo_obj.email_send = False
+                            get_bpmemo_obj.order = None
+                            get_order_obj.cancellation = True
+                            get_obj.document_accepted = False
+                            get_obj.order = None
+                            get_obj.comments = 'Документ согласован'
+                            get_obj.save()
+                            get_bpmemo_obj.save()
+                            get_order_obj.save()
+                        else:
+                            # ToDo: Сделать обработку отправки письма
+                            send_mail_change(2, get_obj, message)
                             get_bpmemo_obj.location_selected = False
                             get_bpmemo_obj.accommodation = ''
-                            get_obj.accommodation = ''
-                        get_bpmemo_obj.process_accepted = False
-                        get_bpmemo_obj.email_send = False
-                        get_bpmemo_obj.order = None
-                        get_order_obj.cancellation = True
-                        get_obj.document_accepted = False
-                        get_obj.order = None
-                        get_obj.comments = 'Документ согласован'
-                        get_obj.save()
-                        get_bpmemo_obj.save()
-                        get_order_obj.save()
-                    else:
-                        # ToDo: Сделать обработку отправки письма
-                        send_mail_change(2, get_obj, message)
-                        get_bpmemo_obj.location_selected = False
-                        get_bpmemo_obj.accommodation = ''
-                        get_obj.comments = 'Документ согласован'
-                        get_obj.save()
-                        get_bpmemo_obj.save()
-                except Exception as _ex:
-                    print(_ex)
+                            get_obj.comments = 'Документ согласован'
+                            get_obj.save()
+                            get_bpmemo_obj.save()
+                    except Exception as _ex:
+                        print(_ex)
+                else:
+                    if warning_change == 1:
+                        send_mail_change(3, get_obj, message)
             return HttpResponseRedirect(reverse('hrdepartment_app:memo_list'))
 
         else:
