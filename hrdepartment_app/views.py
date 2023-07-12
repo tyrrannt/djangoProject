@@ -402,7 +402,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 changed = True
             # Доработать замену СЗ
             for k in diffkeys:
-                print(k)
+                # print(k)
                 if k != '_state':
                     # if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
                     #     critical_change = 1
