@@ -271,6 +271,7 @@
                     if (data === 'ok') {
                         console.log("success");
                     }
+                    memo_type_change();
                 },
                 failure: function (data) {
                     console.log("failure");
@@ -290,9 +291,12 @@
                 dataType: "json",
                 success: function (data) {
                     // any process in data
+                    var employee_divisions = document.getElementById("employee_divisions");
+                    $("label[for='employee_divisions']").text(data['employee']);
+                    employee_divisions.refresh;
                     var document_extension = $("#id_document_extension");
                     document_extension.empty();
-                    $.each(data, function(key,value) {
+                    $.each(data['memo_type'], function(key,value) {
                         document_extension.append($("<option selected></option>")
                         .attr("value", value).text(key));
                     });

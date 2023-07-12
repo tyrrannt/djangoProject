@@ -239,7 +239,13 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         employee = request.GET.get('employee', None)
         period_from = request.GET.get('period_from', None)
         memo_type = request.GET.get('memo_type', None)
+        try:
+            person = DataBaseUser.objects.get(pk=employee)
+            division = str(person.user_work_profile.divisions)
+        except DataBaseUser.DoesNotExist:
+            pass
         if memo_type and employee:
+            html = {'employee': '', 'memo_type': ''}
             if memo_type == '2':
                 memo_list = OfficialMemo.objects.filter(
                     Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(
@@ -247,7 +253,9 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
-                return JsonResponse(memo_obj_list)
+                html['memo_type'] = memo_obj_list
+                html['employee'] = division
+                return JsonResponse(html)
         if employee and period_from:
             check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
             filters = OfficialMemo.objects.filter(
@@ -295,9 +303,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
             return JsonResponse(dict_obj, safe=False)
         if employee:
-            person = DataBaseUser.objects.get(pk=employee)
-            html = str(person.user_work_profile.divisions)
-            return JsonResponse(html, safe=False)
+            return JsonResponse(division, safe=False)
         return super(OfficialMemoAdd, self).get(request, *args, **kwargs)
 
 
