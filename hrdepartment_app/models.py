@@ -897,53 +897,7 @@ class BusinessProcessDirection(models.Model):
         return reverse('hrdepartment_app:bptrip_list')
 
 
-def order_doc(obj_model, filepath, filename, request):
-    if obj_model.document_foundation:
-        if obj_model.document_foundation.type_trip == '1':
-            if 'Командир воздушного судна' in obj_model.document_foundation.person.user_work_profile.job.get_title():
-                doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom2.docx'))
-            else:
-                doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom.docx'))
-        else:
-            doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom3.docx'))
 
-        delta = obj_model.document_foundation.period_for - obj_model.document_foundation.period_from
-        place = [item.name for item in obj_model.document_foundation.place_production_activity.all()]
-        try:
-            context = {'Number': obj_model.document_number,
-                       'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
-                       'FIO': obj_model.document_foundation.person,
-                       'ServiceNum': obj_model.document_foundation.person.service_number,
-                       'Division': obj_model.document_foundation.person.user_work_profile.divisions,
-                       'Job': obj_model.document_foundation.person.user_work_profile.job,
-                       'Place': ', '.join(place),
-                       'DateCount': str(int(delta.days) + 1),
-                       'DateFrom': f'{obj_model.document_foundation.period_from.strftime("%d.%m.%Y")} г.',
-                       'DateFor': f'{obj_model.document_foundation.period_for.strftime("%d.%m.%Y")} г.',
-                       'Purpose': obj_model.document_foundation.purpose_trip,
-                       'DateAcquaintance': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
-                       }
-        except Exception as _ex:
-            # DataBaseUser.objects.get(pk=request)
-            logger.debug(f'Ошибка заполнения файла {filename}: {_ex}')
-            context = {}
-    else:
-        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/ord.docx'))
-        try:
-            context = {'Number': obj_model.document_number,
-                       'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
-                       'Title': obj_model.document_name,
-                       'Description': '',
-                       }
-        except Exception as _ex:
-            # DataBaseUser.objects.get(pk=request)
-            logger.debug(f'Ошибка заполнения файла {filename}: {_ex}')
-            context = {}
-    doc.render(context)
-    path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
-    if not path_obj.exists():
-        path_obj.mkdir(parents=True)
-    doc.save(pathlib.Path.joinpath(path_obj, filename))
 
 
 class OrderDescription(models.Model):
@@ -1009,6 +963,59 @@ class DocumentsOrder(Documents):
     def __str__(self):
         return f'Пр. № {self.document_number} от {self.document_date.strftime("%d.%m.%Y")} г.'
 
+
+def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
+    if obj_model.document_foundation:
+        if obj_model.document_foundation.type_trip == '1':
+            if 'Командир воздушного судна' in obj_model.document_foundation.person.user_work_profile.job.get_title():
+                doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom2.docx'))
+            else:
+                doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom.docx'))
+        else:
+            doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/aom3.docx'))
+
+        delta = obj_model.document_foundation.period_for - obj_model.document_foundation.period_from
+        place = [item.name for item in obj_model.document_foundation.place_production_activity.all()]
+        try:
+            context = {'Number': obj_model.document_number,
+                       'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
+                       'FIO': obj_model.document_foundation.person,
+                       'ServiceNum': obj_model.document_foundation.person.service_number,
+                       'Division': obj_model.document_foundation.person.user_work_profile.divisions,
+                       'Job': obj_model.document_foundation.person.user_work_profile.job,
+                       'Place': ', '.join(place),
+                       'DateCount': str(int(delta.days) + 1),
+                       'DateFrom': f'{obj_model.document_foundation.period_from.strftime("%d.%m.%Y")} г.',
+                       'DateFor': f'{obj_model.document_foundation.period_for.strftime("%d.%m.%Y")} г.',
+                       'Purpose': obj_model.document_foundation.purpose_trip,
+                       'DateAcquaintance': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
+                       }
+        except Exception as _ex:
+            # DataBaseUser.objects.get(pk=request)
+            logger.debug(f'Ошибка заполнения файла {filename}: {_ex}')
+            context = {}
+    else:
+        doc = DocxTemplate(pathlib.Path.joinpath(BASE_DIR, 'static/DocxTemplates/ord.docx'))
+        try:
+            context = {'Number': obj_model.document_number,
+                       'DateDoc': f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
+                       'Title': obj_model.document_name,
+                       'Description': '',
+                       }
+        except Exception as _ex:
+            # DataBaseUser.objects.get(pk=request)
+            logger.debug(f'Ошибка заполнения файла {filename}: {_ex}')
+            context = {}
+    doc.render(context)
+    path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
+    if not path_obj.exists():
+        path_obj.mkdir(parents=True)
+    doc.save(pathlib.Path.joinpath(path_obj, filename))
+    from msoffice2pdf import convert
+    try:
+        convert(source=str(pathlib.Path.joinpath(path_obj, filename)), output_dir=path_obj, soft=0)
+    except Exception as _ex:
+        logger.error(f'Ошибка сохранения файла в pdf {filename}: {_ex}')
 
 @receiver(post_save, sender=DocumentsOrder)
 def rename_order_file_name(sender, instance, **kwargs):
