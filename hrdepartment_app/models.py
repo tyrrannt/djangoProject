@@ -1014,6 +1014,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     from msoffice2pdf import convert
     try:
         convert(source=str(pathlib.Path.joinpath(path_obj, filename)), output_dir=str(path_obj), soft=0)
+        logger.debug(f'Файл: {str(pathlib.Path.joinpath(path_obj, filename))}, Путь: {str(path_obj)}')
     except Exception as _ex:
         logger.error(f'Ошибка сохранения файла в pdf {filename}: {_ex}')
 
