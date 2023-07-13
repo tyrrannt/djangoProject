@@ -932,7 +932,7 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
                 if order:
                     DocumentsOrder.objects.filter(pk=order.pk).update(cancellation=True, reason_cancellation=obj_item.reason_cancellation)
                     print('Отменен')
-                # obj_item.send_mail(title='Уведомление об отмене')
+                obj_item.send_mail(title='Уведомление об отмене')
             except Exception as _ex:
                 logger.error(f'Ошибка при отмене БП {_ex}')
 
