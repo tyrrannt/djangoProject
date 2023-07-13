@@ -525,7 +525,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
 
     def send_mail(self, title, trigger=0):
         # Отмена СП или СК
-        if not self.cancellation and trigger == 0:
+        if self.cancellation and trigger == 0:
             mail_to = self.document.person.email
             mail_to_copy_first = self.person_executor.email if self.person_executor else ''
             mail_to_copy_second = self.person_distributor.email if self.person_distributor else ''
@@ -536,10 +536,11 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 'title': self.document.title,
                 'order_number': str(self.order.document_number) if self.order else '--//--',
                 'order_date': str(self.order.document_date) if self.order else '--//--',
-                'reason_cancellation': str(self.reason_cancellation.get_title()),
-                'person_executor': str(self.person_executor),
-                'person_distributor': str(self.person_distributor),
-                'person_department_staff': str(self.person_department_staff)
+                'reason_cancellation': str(self.reason_cancellation),
+                'person_executor': str(self.person_executor) if self.person_executor else '',
+                'person_distributor': str(self.person_distributor) if self.person_distributor else '',
+                'person_department_staff': str(self.person_department_staff) if self.person_department_staff else '',
+                'mail_to_copy': str(self.person_executor.email) if self.person_executor else '',
             }
             logger.debug(f'Email string: {current_context}')
             text_content = render_to_string('hrdepartment_app/email_cancel_bpmemo.html', current_context)
@@ -1019,32 +1020,33 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
         logger.error(f'Ошибка сохранения файла в pdf {filename}: {_ex}')
 
 @receiver(post_save, sender=DocumentsOrder)
-def rename_order_file_name(sender, instance, **kwargs):
-    try:
-        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
+    if not instance.cancellation:
+        try:
+            # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
 
-        # ext_scan = str(instance.scan_file).split('.')[-1]
-        uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
-        filename = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.docx'
-        scanname = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.pdf'
-        date_doc = instance.document_date
-        order_doc(instance, f'media/docs/ORD/{date_doc.year}/{date_doc.month}', filename, instance.document_order_type)
-        scan_name = pathlib.Path(instance.scan_file.name).name
-        if f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}' != instance.doc_file:
-            DocumentsOrder.objects.filter(pk=instance.pk).update(
-                doc_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}')
-        if f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}' != instance.scan_file:
-            try:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scan_name),
-                    pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scanname))
-            except Exception as _ex0:
-                logger.error(f'Ошибка переименования файла: {_ex0}')
-            DocumentsOrder.objects.filter(pk=instance.pk).update(
-                scan_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}')
+            # ext_scan = str(instance.scan_file).split('.')[-1]
+            uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
+            filename = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.docx'
+            scanname = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.pdf'
+            date_doc = instance.document_date
+            order_doc(instance, f'media/docs/ORD/{date_doc.year}/{date_doc.month}', filename, instance.document_order_type)
+            scan_name = pathlib.Path(instance.scan_file.name).name
+            if f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}' != instance.doc_file:
+                DocumentsOrder.objects.filter(pk=instance.pk).update(
+                    doc_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}')
+            if f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}' != instance.scan_file:
+                try:
+                    pathlib.Path.rename(
+                        pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scan_name),
+                        pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scanname))
+                except Exception as _ex0:
+                    logger.error(f'Ошибка переименования файла: {_ex0}')
+                DocumentsOrder.objects.filter(pk=instance.pk).update(
+                    scan_file=f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}')
 
-    except Exception as _ex:
-        logger.error(f'Ошибка при переименовании файла {_ex}')
+        except Exception as _ex:
+            logger.error(f'Ошибка при переименовании файла {_ex}')
 
 
 class DocumentsJobDescription(Documents):

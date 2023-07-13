@@ -505,7 +505,8 @@ def change_approval_status(self):
         document_accepted = True
         change_status = 1
     if change_status == 1:
-        self.document.comments = comments
-        self.document.document_accepted = document_accepted
-        self.document.save()
+        if not self.cancellation:
+            self.document.comments = comments
+            self.document.document_accepted = document_accepted
+            self.document.save()
     return ''

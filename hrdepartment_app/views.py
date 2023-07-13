@@ -922,21 +922,17 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         if form.is_valid():
+            form.save()
             obj_item = self.get_object()
             official_memo = obj_item.document
             order = obj_item.order
-            form.save()
             try:
                 if official_memo:
-                    official_memo.cancellation = True
-                    official_memo.reason_cancellation = obj_item.reason_cancellation
-                    official_memo.comments = 'Документ отменен'
-                    official_memo.save()
+                    OfficialMemo.objects.filter(pk=official_memo.pk).update(cancellation=True, reason_cancellation=obj_item.reason_cancellation, comments='Документ отменен')
                 if order:
-                    order.cancellation = True
-                    order.reason_cancellation = obj_item.reason_cancellation
-                    order.save()
-                obj_item.send_mail(title='Уведомление об отмене')
+                    DocumentsOrder.objects.filter(pk=order.pk).update(cancellation=True, reason_cancellation=obj_item.reason_cancellation)
+                    print('Отменен')
+                # obj_item.send_mail(title='Уведомление об отмене')
             except Exception as _ex:
                 logger.error(f'Ошибка при отмене БП {_ex}')
 
