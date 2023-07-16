@@ -146,7 +146,7 @@ def happy_birthday():
         if created:
             post.post_divisions.add(*division)
             post.save()
-            person_list = DataBaseUser.objects.filter(telegram_id__isnull=False)
+            person_list = DataBaseUser.objects.filter(telegram_id__regex=r'^\d')
             person_tg_list = [item.telegram_id for item in person_list]
             kwargs_obj = {
                 'message': description,

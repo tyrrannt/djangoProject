@@ -928,9 +928,12 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
             order = obj_item.order
             try:
                 if official_memo:
-                    OfficialMemo.objects.filter(pk=official_memo.pk).update(cancellation=True, reason_cancellation=obj_item.reason_cancellation, comments='Документ отменен')
+                    OfficialMemo.objects.filter(pk=official_memo.pk).update(cancellation=True,
+                                                                            reason_cancellation=obj_item.reason_cancellation,
+                                                                            comments='Документ отменен')
                 if order:
-                    DocumentsOrder.objects.filter(pk=order.pk).update(cancellation=True, reason_cancellation=obj_item.reason_cancellation)
+                    DocumentsOrder.objects.filter(pk=order.pk).update(cancellation=True,
+                                                                      reason_cancellation=obj_item.reason_cancellation)
                     print('Отменен')
                 obj_item.send_mail(title='Уведомление об отмене')
             except Exception as _ex:
@@ -1108,6 +1111,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
 
     def get(self, request, *args, **kwargs):
         # Получаем выборку из базы данных, если был изменен один из параметров
+
         if self.request.GET:
             current_year = int(self.request.GET.get('CY'))
             current_month = int(self.request.GET.get('CM'))
@@ -1220,7 +1224,6 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                     report_item_obj += f'{job_type[str(counter)]}: {report_item};&nbsp;'
                     counter += 1
                 report_item_obj += '</h4></td>'
-                print(f'<tr>{report_item_obj}</tr>')
                 html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; height: 500px; overflow: auto;">
                                 <thead>
                                 <tr>{report_item_obj}</tr>

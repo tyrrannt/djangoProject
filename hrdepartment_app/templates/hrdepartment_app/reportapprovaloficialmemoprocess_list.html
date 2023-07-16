@@ -36,7 +36,7 @@
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 id="id_filter_month">
                                             {% for key, value in month_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == value %}selected{% endif %}> {{ value }}
+                                            <option value="{{ key }}" {% if current_month == value %}selected{% endif %}> {{ value }}
                                             </option>
                                             {% endfor %}
                                         </select>
