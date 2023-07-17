@@ -259,7 +259,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         if employee and period_from:
             check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
             filters = OfficialMemo.objects.filter(
-                Q(person__pk=employee) & Q(period_for__gte=check_date))
+                Q(person__pk=employee) & Q(period_for__gte=check_date)).exclude(cancellation=True)
             try:
                 filter_string = datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
                 for item in filters:
@@ -317,6 +317,18 @@ class OfficialMemoDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         return content
 
 
+class OfficialMemoCancel(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    model = OfficialMemo
+    permission_required = 'hrdepartment_app.change_officialmemo'
+    template_name = 'hrdepartment_app/officialmemo_form_cancel.html'
+
+    def get_context_data(self, **kwargs):
+        content = super().get_context_data(**kwargs)
+        content['change_history'] = get_history(self, OfficialMemo)
+        return content
+
+
+
 class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
@@ -334,7 +346,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         # Передаем количество дней в контекст
         content['period'] = int(delta.days) + 1
         # Получаем все служебные записки по человеку, исключая текущую
-        filters = OfficialMemo.objects.filter(person=self.object.person).exclude(pk=self.object.pk)
+        filters = OfficialMemo.objects.filter(person=self.object.person).exclude(pk=self.object.pk).exclude(cancellation=True)
         filter_string = {
             "pk": 0,
             "period": datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
@@ -349,7 +361,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         if obj_item.official_memo_type == '2':
             content['form'].fields['document_extension'].queryset = obj_list
         else:
-            content['form'].fields['document_extension'].queryset = OfficialMemo.objects.filter(pk=0)
+            content['form'].fields['document_extension'].queryset = OfficialMemo.objects.filter(pk=0).exclude(cancellation=True)
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}'
         content['change_history'] = get_history(self, OfficialMemo)
         return content
@@ -495,7 +507,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             if memo_type == '2':
                 memo_list = OfficialMemo.objects.filter(
                     Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(
-                    pk=self.get_object().pk)
+                    pk=self.get_object().pk).exclude(cancelation=True)
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
@@ -503,7 +515,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         if employee and period_from:
             check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
             filters = OfficialMemo.objects.filter(
-                Q(person__pk=employee) & Q(period_for__gte=check_date))
+                Q(person__pk=employee) & Q(period_for__gte=check_date)).exclude(cancelation=True)
             try:
                 filter_string = datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
                 for item in filters:

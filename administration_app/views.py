@@ -136,6 +136,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
+                get_sick_leave(2023, 1)
+                get_sick_leave(2023, 2)
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
