@@ -57,7 +57,7 @@ def get_sick_leave(year, triger):
         dt = json.loads(response.text)
         rec_number_count = 0
         for item in dt['value']:
-            if item['Recorder_Type'] == triger_type and item['Active'] == True:
+            if item['Recorder_Type'] == triger_type and item['Active']:
                 interval = get_date_interval(datetime.datetime.strptime(item['Начало'][:10], "%Y-%m-%d"),
                                              datetime.datetime.strptime(item['Окончание'][:10], "%Y-%m-%d"))
                 rec_list = ReportCard.objects.filter(doc_ref_key=item['ДокументОснование'])
@@ -65,6 +65,7 @@ def get_sick_leave(year, triger):
                     record.delete()
                 try:
                     user_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
+
                     for date in interval:
                         rec_number_count += 1
                         start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
@@ -79,6 +80,7 @@ def get_sick_leave(year, triger):
                             'start_time': start_time,
                             'end_time': end_time,
                         }
+                        print(kwargs_obj)
                         ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=item['ДокументОснование'],
                                                             defaults=kwargs_obj)
                         print(kwargs_obj)
@@ -137,11 +139,13 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #         item.save()
             if request.GET.get('update') == '3':
                 get_sick_leave(2023, 1)
-                get_sick_leave(2023, 2)
+                # get_sick_leave(2023, 2)
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
-                for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
+                for report_record in ReportCard.objects.filter(
+                        Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(
+                                record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
                     report_record.delete()
                 # date_admission, vacation = get_json_vacation(self.request.user.ref_key)
                 # days = 0
