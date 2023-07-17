@@ -597,7 +597,7 @@ class ApprovalOficialMemoProcessAdd(PermissionRequiredMixin, LoginRequiredMixin,
         global person_agreement_list
         content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
         content['form'].fields['document'].queryset = OfficialMemo.objects.filter(
-            Q(docs__isnull=True) & Q(responsible=self.request.user))
+            Q(docs__isnull=True) & Q(responsible=self.request.user)).exclude(cancellation=True)
         business_process = BusinessProcessDirection.objects.filter(
             person_executor=self.request.user.user_work_profile.job)
         users_list = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
