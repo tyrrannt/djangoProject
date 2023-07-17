@@ -14,6 +14,7 @@ from django.utils.html import strip_tags
 from loguru import logger
 
 from administration_app.utils import get_jsons_data_filter2
+from administration_app.views import get_sick_leave
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
 from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
@@ -115,6 +116,10 @@ def happy_birthday_loc():
 def send_telegram_notify():
     print(send_message_tg())
     dt = datetime.datetime.now()
+    if dt.hour == 23 and dt.minute == 30:
+        get_sick_leave(2023, 1)
+    if dt.hour == 23 and dt.minute == 35:
+        get_sick_leave(2023, 2)
     if dt.hour == 23 and dt.minute == 40:
         report_card_separator_daily()
     if dt.hour == 23 and dt.minute == 50:
@@ -443,3 +448,5 @@ def report_card_separator_loc():
         except Exception as _ex:
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
     return dicts
+
+
