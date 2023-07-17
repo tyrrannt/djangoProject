@@ -152,7 +152,7 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
     # person_executor.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     # person_agreement = forms.ModelChoiceField(queryset=DataBaseUser.objects.all(), required=False)
     # person_agreement.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    document = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(docs__isnull=True))
+    document = forms.ModelChoiceField(queryset=OfficialMemo.objects.filter(docs__isnull=True).exclude(cancellation=True))
     document.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True, 'type': 'date'})
 
