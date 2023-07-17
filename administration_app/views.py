@@ -63,13 +63,17 @@ def get_sick_leave(year, triger):
                 rec_list = ReportCard.objects.filter(doc_ref_key=item['ДокументОснование'])
                 for record in rec_list:
                     record.delete()
+                user_obj = ''
+
                 try:
                     user_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
-
+                except Exception as _ex:
+                    logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
+                if user_obj != '':
                     for date in interval:
                         rec_number_count += 1
-                        start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
-                                                         datetime.datetime(1, 1, 1, 18, 0).time())
+                        start_time, end_time, type_of_day = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
+                                                                      datetime.datetime(1, 1, 1, 18, 0).time())
                         kwargs_obj = {
                             'report_card_day': date,
                             'employee': user_obj,
@@ -80,14 +84,12 @@ def get_sick_leave(year, triger):
                             'start_time': start_time,
                             'end_time': end_time,
                         }
-                        print(kwargs_obj)
-                        ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=item['ДокументОснование'],
-                                                            defaults=kwargs_obj)
-                        print(kwargs_obj)
-                except Exception as _ex:
-                    logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
+                        ReportCard.objects.update_or_create(report_card_day=date,
+                                                            doc_ref_key=item['ДокументОснование'], defaults=kwargs_obj)
+
+
     except Exception as _ex:
-        logger.debug(f'{_ex}')
+        logger.debug(f'654654654 {_ex}')
         return {'value': ""}
 
 
@@ -139,13 +141,13 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #         item.save()
             if request.GET.get('update') == '3':
                 get_sick_leave(2023, 1)
-                # get_sick_leave(2023, 2)
+                get_sick_leave(2023, 2)
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
                 for report_record in ReportCard.objects.filter(
                         Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(
-                                record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
+                            record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
                     report_record.delete()
                 # date_admission, vacation = get_json_vacation(self.request.user.ref_key)
                 # days = 0
