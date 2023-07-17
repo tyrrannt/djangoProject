@@ -116,10 +116,10 @@ def happy_birthday_loc():
 def send_telegram_notify():
     print(send_message_tg())
     dt = datetime.datetime.now()
-    if dt.hour == 23 and dt.minute == 30:
-        get_sick_leave(2023, 1)
-    if dt.hour == 23 and dt.minute == 35:
-        get_sick_leave(2023, 2)
+    # if dt.hour == 23 and dt.minute == 30:
+    #     get_sick_leave(2023, 1)
+    # if dt.hour == 23 and dt.minute == 35:
+    #     get_sick_leave(2023, 2)
     if dt.hour == 23 and dt.minute == 40:
         report_card_separator_daily()
     if dt.hour == 23 and dt.minute == 50:
