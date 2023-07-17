@@ -14,7 +14,7 @@ from django.utils.html import strip_tags
 from loguru import logger
 
 from administration_app.utils import get_jsons_data_filter2
-from administration_app.views import get_sick_leave
+
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
 from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
