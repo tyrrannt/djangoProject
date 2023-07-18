@@ -116,7 +116,7 @@ def happy_birthday_loc():
 def send_telegram_notify():
     print(send_message_tg())
     dt = datetime.datetime.now()
-    if dt.hour == 22 and dt.minute == 29:
+    if dt.hour == 22 and dt.minute == 43:
         try:
             qs = ApprovalOficialMemoProcess.objects.all().exclude(cancellation=True)
             for item in qs:
