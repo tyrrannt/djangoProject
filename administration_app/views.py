@@ -82,7 +82,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
-                qs = ApprovalOficialMemoProcess.objects.all()
+                qs = ReportCard.objects.all(record_type__in=['14', '15', ])
                 for item in qs:
                     item.save()
                 pass

@@ -116,14 +116,14 @@ def happy_birthday_loc():
 def send_telegram_notify():
     print(send_message_tg())
     dt = datetime.datetime.now()
-    # if dt.hour == 22 and dt.minute == 43:
-    #     try:
-    #         qs = ApprovalOficialMemoProcess.objects.all().exclude(cancellation=True)
-    #         for item in qs:
-    #             item.save()
-    #             logger.error(f"Saved")
-    #     except Exception as _ex:
-    #         logger.error(f"{_ex}")
+    if dt.hour == 23 and dt.minute == 5:
+        try:
+            qs = ApprovalOficialMemoProcess.objects.all().exclude(cancellation=True)
+            for item in qs:
+                item.save()
+                logger.error(f"Saved")
+        except Exception as _ex:
+            logger.error(f"{_ex}")
     if dt.hour == 23 and dt.minute == 30:
         get_sick_leave(2023, 1)
     if dt.hour == 23 and dt.minute == 35:
