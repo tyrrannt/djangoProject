@@ -687,7 +687,10 @@ def hr_accepted(sender, instance, **kwargs):
     for item in obj_list:
         item.delete()
     if not instance.cancellation:
-        interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.start_date_trip, until=instance.end_date_trip))
+        if instance.start_date_trip and instance.end_date_trip:
+            interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.start_date_trip, until=instance.end_date_trip))
+        else:
+            interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.document.period_from, until=instance.document.period_for))
         if len(interval) > 0:
             for date in interval:
                 if instance.document.type_trip == '1':
