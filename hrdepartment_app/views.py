@@ -1194,7 +1194,8 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                             trigger = '2' if obj.confirmed else '1'
                             list_obj.append([trigger, place, obj.record_type])
                         else:
-                            place = ''
+                            for item in selected_record.filter(report_card_day=curent_day.date()):
+                                place += item.record_type + '; '
                             trigger = '3'
                             list_obj.append([trigger, place, ''])
                     else:
