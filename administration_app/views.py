@@ -84,7 +84,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '3':
                 qs = ReportCard.objects.filter(record_type__in=['14', '15', ])
                 for item in qs:
-                    item.save()
+                    item.delete()
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
