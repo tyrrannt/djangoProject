@@ -157,12 +157,17 @@ class OficialMemoCancelForm(forms.ModelForm):
         :param args:
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
-        # self.user = kwargs.pop('user')
+        self.cancel = kwargs.pop('cancel')
         super(OficialMemoCancelForm, self).__init__(*args, **kwargs)
         self.fields['cancellation'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
         self.fields['reason_cancellation'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
         self.fields['reason_cancellation'].required = False
+
+    def clean(self):
+        if not self.cancel:
+            msg = 'Невозможно отменить служебную записку по которой запущен бизнес процесс. Воспользуйтесь отменой записи в документе бизнес процесса.'
+            self.add_error(None, msg)
 
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):

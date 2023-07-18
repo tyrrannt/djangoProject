@@ -331,6 +331,20 @@ class OfficialMemoCancel(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     def get_success_url(self):
         return reverse_lazy('hrdepartment_app:memo_list')
 
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        try:
+            if self.object.docs:
+                cancel = False
+        except ApprovalOficialMemoProcess.DoesNotExist:
+            cancel = True
+        kwargs.update({'cancel': cancel})
+        return kwargs
+
 
 
 class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
