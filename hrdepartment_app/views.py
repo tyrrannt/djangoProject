@@ -1193,6 +1193,10 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                             place = '; '.join([item.name for item in obj.place_report_card.all()])
                             trigger = '2' if obj.confirmed else '1'
                             list_obj.append([trigger, place, obj.record_type])
+                        else:
+                            place = ''
+                            trigger = '3'
+                            list_obj.append([trigger, place, ''])
                     else:
                         list_obj.append(['0', '', ''])
 
@@ -1265,7 +1269,12 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                             place = unit[1].replace('"', "")
                             plase_short = ''  # unit[2]
                             html_table_set += f'<td width="2%" style="background-color: #2b8101; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
-                        else:
+                        elif unit[0] == '3':
+                            place = unit[1].replace('"', "")
+                            plase_short = ''  # unit[2]
+                            html_table_set += f'<td width="2%" style="background-color: #ff0000; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+
+                    else:
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
 
