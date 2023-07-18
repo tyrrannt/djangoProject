@@ -18,7 +18,7 @@ from administration_app.utils import get_jsons_data_filter2, get_date_interval
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
 from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
-from hrdepartment_app.models import ReportCard, WeekendDay, check_day
+from hrdepartment_app.models import ReportCard, WeekendDay, check_day, ApprovalOficialMemoProcess
 from telegram_app.management.commands.bot import send_message_tg
 from telegram_app.models import TelegramNotification
 
@@ -116,6 +116,11 @@ def happy_birthday_loc():
 def send_telegram_notify():
     print(send_message_tg())
     dt = datetime.datetime.now()
+    if dt.hour == 22 and dt.minute == 10:
+        qs = ApprovalOficialMemoProcess.objects.all().exclude(cancellation=True)
+        for item in qs:
+            item.save()
+            print(item)
     if dt.hour == 23 and dt.minute == 30:
         get_sick_leave(2023, 1)
     if dt.hour == 23 and dt.minute == 35:
