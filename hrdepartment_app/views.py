@@ -1186,6 +1186,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 if person not in dict_obj:
                     dict_obj[person] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
+                    place = ''
                     curent_day = date_start + datetime.timedelta(days_count)
                     if selected_record.filter(report_card_day=curent_day.date()).exists():
                         if selected_record.filter(report_card_day=curent_day.date()).count() == 1:
@@ -1195,7 +1196,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                             list_obj.append([trigger, place, obj.record_type])
                         else:
                             for item in selected_record.filter(report_card_day=curent_day.date()):
-                                place += item.record_type + '; '
+                                place += item.get_record_type_display + '; '
                             trigger = '3'
                             list_obj.append([trigger, place, ''])
                     else:
