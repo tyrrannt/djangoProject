@@ -707,8 +707,10 @@ def hr_accepted(sender, instance, **kwargs):
                     'doc_ref_key': instance.pk,
                     'confirmed': True if instance.hr_accepted else False,
                 }
-                obj, created = ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=instance.pk,
-                                                    employee=instance.document.person, defaults=report_kwargs)
+                obj, created = ReportCard.objects.update_or_create(report_card_day=date,
+                                                                   doc_ref_key=instance.pk,
+                                                                   employee=instance.document.person,
+                                                                   defaults=report_kwargs)
                 obj.place_report_card.set(instance.document.place_production_activity.all())
                 obj.save()
 
