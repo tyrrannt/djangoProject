@@ -82,7 +82,9 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
-
+                qs = ApprovalOficialMemoProcess.objects.all()
+                for item in qs:
+                    item.save()
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
