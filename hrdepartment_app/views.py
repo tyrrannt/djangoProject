@@ -346,7 +346,6 @@ class OfficialMemoCancel(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         return kwargs
 
 
-
 class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
@@ -364,7 +363,8 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         # Передаем количество дней в контекст
         content['period'] = int(delta.days) + 1
         # Получаем все служебные записки по человеку, исключая текущую
-        filters = OfficialMemo.objects.filter(person=self.object.person).exclude(pk=self.object.pk).exclude(cancellation=True)
+        filters = OfficialMemo.objects.filter(person=self.object.person).exclude(pk=self.object.pk).exclude(
+            cancellation=True)
         filter_string = {
             "pk": 0,
             "period": datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
@@ -379,7 +379,8 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         if obj_item.official_memo_type == '2':
             content['form'].fields['document_extension'].queryset = obj_list
         else:
-            content['form'].fields['document_extension'].queryset = OfficialMemo.objects.filter(pk=0).exclude(cancellation=True)
+            content['form'].fields['document_extension'].queryset = OfficialMemo.objects.filter(pk=0).exclude(
+                cancellation=True)
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}'
         content['change_history'] = get_history(self, OfficialMemo)
         return content
@@ -1151,13 +1152,14 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             days = monthrange(current_year, current_month)[1]
             date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
-            print(date_start, date_end)
+
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
                     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
                     'document__responsible')
-
+                report_query = ReportCard.objects.filter(
+                    Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end))
                 for item in range(0, 4):
                     count_obj = ApprovalOficialMemoProcess.objects.filter(
                         (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
@@ -1172,38 +1174,62 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                     & (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
                     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
                     'document__responsible')
+                report_query = ReportCard.objects.filter(
+                    Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
+                    'employee__last_name')
             dict_obj = dict()
-            for item in qs.all().order_by('document__person__last_name'):
+            dist = report_query.values('employee__title').distinct()
+            for rec in dist:
                 list_obj = []
-                person = FIO_format(str(item.document.person))
-                place = '; '.join([item.name for item in item.document.place_production_activity.all()])
-                place_short = '; '.join([item.short_name for item in item.document.place_production_activity.all()])
+                selected_record = report_query.filter(employee__title=rec['employee__title'])
+                person = FIO_format(rec['employee__title'])
+                if person not in dict_obj:
+                    dict_obj[person] = []
+                for days_count in range(0, (date_end - date_start).days + 1):
+                    curent_day = date_start + datetime.timedelta(days_count)
+                    if selected_record.filter(report_card_day=curent_day.date()).exists():
+                        if selected_record.filter(report_card_day=curent_day.date()).count() == 1:
+                            obj = selected_record.filter(report_card_day=curent_day.date()).first()
+                            place = '; '.join([item.name for item in obj.place_report_card.all()])
+                            trigger = '2' if obj.confirmed else '1'
+                            list_obj.append([trigger, place, obj.record_type])
+                    else:
+                        list_obj.append(['0', '', ''])
 
-                if person in dict_obj:
-                    list_obj = dict_obj[person]
-                    for days_count in range(0, (date_end - date_start).days + 1):
-                        curent_day = date_start + datetime.timedelta(days_count)
-                        if item.hr_accepted:
-                            if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
-                                list_obj[days_count] = ['2', place, place_short]
-                        else:
-                            if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                                list_obj[days_count] = ['1', place, place_short]
-                    dict_obj[FIO_format(str(item.document.person))] = list_obj
-                else:
-                    dict_obj[FIO_format(str(item.document.person))] = []
-                    for days_count in range(0, (date_end - date_start).days + 1):
-                        curent_day = date_start + datetime.timedelta(days_count)
-                        if item.hr_accepted:
-                            if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
-                                list_obj.append(['2', place, place_short])
-                            else:
-                                list_obj.append(['0', place, place_short])
-                        else:
-                            if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                                list_obj.append(['1', place, place_short])
-                            else:
-                                list_obj.append(['0', ''])
+                dict_obj[person] = list_obj
+
+
+            # for item in qs.all().order_by('document__person__last_name'):
+            #     list_obj = []
+            #     person = FIO_format(str(item.document.person))
+            #     place = '; '.join([item.name for item in item.document.place_production_activity.all()])
+            #     place_short = '; '.join([item.short_name for item in item.document.place_production_activity.all()])
+            #
+            #     if person in dict_obj:
+            #         list_obj = dict_obj[person]
+            #         for days_count in range(0, (date_end - date_start).days + 1):
+            #             curent_day = date_start + datetime.timedelta(days_count)
+            #             if item.hr_accepted:
+            #                 if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
+            #                     list_obj[days_count] = ['2', place, place_short]
+            #             else:
+            #                 if item.document.period_from <= curent_day.date() <= item.document.period_for:
+            #                     list_obj[days_count] = ['1', place, place_short]
+            #         dict_obj[FIO_format(str(item.document.person))] = list_obj
+            #     else:
+            #         dict_obj[FIO_format(str(item.document.person))] = []
+            #         for days_count in range(0, (date_end - date_start).days + 1):
+            #             curent_day = date_start + datetime.timedelta(days_count)
+            #             if item.hr_accepted:
+            #                 if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
+            #                     list_obj.append(['2', place, place_short])
+            #                 else:
+            #                     list_obj.append(['0', place, place_short])
+            #             else:
+            #                 if item.document.period_from <= curent_day.date() <= item.document.period_for:
+            #                     list_obj.append(['1', place, place_short])
+            #                 else:
+            #                     list_obj.append(['0', ''])
 
                     # if person in dict_obj:
                     #     list_obj = dict_obj[person]
@@ -1220,8 +1246,8 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                     #             list_obj.append(['1', place, place_short])
                     #         else:
                     #             list_obj.append(['0', ''])
-                    dict_obj[FIO_format(str(item.document.person))] = list_obj
-                print(dict_obj)
+                    # dict_obj[FIO_format(str(item.document.person))] = list_obj
+                # print(dict_obj)
                 table_set = dict_obj
                 html_table_count = ''
                 table_count = range(1, (date_end - date_start).days + 2)
