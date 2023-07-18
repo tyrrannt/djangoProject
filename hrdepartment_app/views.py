@@ -1151,6 +1151,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             days = monthrange(current_year, current_month)[1]
             date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
+            print(date_start, date_end)
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
                 qs = ApprovalOficialMemoProcess.objects.filter(
                     (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
@@ -1220,7 +1221,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                     #         else:
                     #             list_obj.append(['0', ''])
                     dict_obj[FIO_format(str(item.document.person))] = list_obj
-
+                print(dict_obj)
                 table_set = dict_obj
                 html_table_count = ''
                 table_count = range(1, (date_end - date_start).days + 2)

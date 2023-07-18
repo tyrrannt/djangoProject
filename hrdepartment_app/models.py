@@ -683,10 +683,10 @@ def create_xlsx(instance):
 
 @receiver(pre_save, sender=ApprovalOficialMemoProcess)
 def hr_accepted(sender, instance, **kwargs):
-    if instance.hr_accepted:
-        obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
-        for item in obj_list:
-            item.delete()
+    obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
+    for item in obj_list:
+        item.delete()
+    if not instance.cancellation:
         interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.start_date_trip, until=instance.end_date_trip))
         if len(interval) > 0:
             for date in interval:
@@ -705,14 +705,12 @@ def hr_accepted(sender, instance, **kwargs):
                     'record_type': record_type,
                     'reason_adjustment': str(instance.document),
                     'doc_ref_key': instance.pk,
+                    'confirmed': True if instance.hr_accepted else False,
                 }
-                ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=instance.pk,
+                obj, created = ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=instance.pk,
                                                     employee=instance.document.person, defaults=report_kwargs)
-    else:
-        obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
-        for item in obj_list:
-            item.delete()
-
+                obj.place_report_card.set(instance.document.place_production_activity.all())
+                obj.save()
 
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
 def create_report(sender, instance, **kwargs):
@@ -1154,6 +1152,10 @@ class ReportCard(models.Model):
     reason_adjustment = models.TextField(verbose_name='Причина ручной корректировки', blank=True)
     doc_ref_key = models.CharField(verbose_name='Уникальный номер документа', max_length=37, default='', blank=True)
     current_intervals = models.BooleanField(verbose_name='Текущий интервал', default=True)
+    confirmed = models.BooleanField(verbose_name='Подтвержденная СП', default=False)
+    place_report_card = models.ManyToManyField(PlaceProductionActivity, verbose_name='МПД',
+                                                       related_name='place_report_card')
+
 
     def get_data(self):
         return {
