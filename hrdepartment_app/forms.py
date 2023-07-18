@@ -143,7 +143,7 @@ class OfficialMemoUpdateForm(forms.ModelForm):
                 f"Ошибка проверки времени: {self.cleaned_data.get('period_for')} {self.cleaned_data.get('period_from')} {_ex}")
 
 
-class OficialMemoCanceleForm(forms.ModelForm):
+class OficialMemoCancelForm(forms.ModelForm):
     # reason_cancellation = forms.ModelChoiceField(queryset=ReasonForCancellation.objects.all(), required=False)
     # reason_cancellation.widget.attrs.update(
     #     {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
@@ -158,24 +158,11 @@ class OficialMemoCanceleForm(forms.ModelForm):
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
         # self.user = kwargs.pop('user')
-        super(OficialMemoCanceleForm, self).__init__(*args, **kwargs)
+        super(OficialMemoCancelForm, self).__init__(*args, **kwargs)
         self.fields['cancellation'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
         self.fields['reason_cancellation'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
         self.fields['reason_cancellation'].required = False
-
-    def clean(self):
-        cleaned_data = super().clean()
-        cancellation = cleaned_data.get("cancellation")
-        reason_cancellation = cleaned_data.get("reason_cancellation")
-        if not cancellation:
-            raise ValidationError(
-                "Ошибка! Не установлен переключатель отмены документа"
-            )
-        if not reason_cancellation:
-            raise ValidationError(
-                "Ошибка! Не выбрана причина отмены"
-            )
 
 
 class ApprovalOficialMemoProcessAddForm(forms.ModelForm):

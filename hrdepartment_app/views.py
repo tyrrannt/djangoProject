@@ -22,7 +22,7 @@ from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExamination
     MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
     DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
     PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm, ReportCardUpdateForm, \
-    ProvisionsUpdateForm, ProvisionsAddForm
+    ProvisionsUpdateForm, ProvisionsAddForm, OficialMemoCancelForm
 from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_month, \
     get_working_hours
 from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
@@ -321,11 +321,15 @@ class OfficialMemoCancel(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     model = OfficialMemo
     permission_required = 'hrdepartment_app.change_officialmemo'
     template_name = 'hrdepartment_app/officialmemo_form_cancel.html'
+    form_class = OficialMemoCancelForm
 
     def get_context_data(self, **kwargs):
         content = super().get_context_data(**kwargs)
         content['change_history'] = get_history(self, OfficialMemo)
         return content
+
+    def get_success_url(self):
+        return reverse_lazy('hrdepartment_app:memo_list')
 
 
 
