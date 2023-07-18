@@ -1274,7 +1274,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                             plase_short = ''  # unit[2]
                             html_table_set += f'<td width="2%" style="background-color: #ff0000; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
 
-                    else:
+                        else:
                             html_table_set += '<td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
 
