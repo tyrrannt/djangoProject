@@ -1154,26 +1154,27 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
 
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
-                qs = ApprovalOficialMemoProcess.objects.filter(
-                    (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                    & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
-                    'document__responsible')
+                # qs = ApprovalOficialMemoProcess.objects.filter(
+                #     (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                #     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
+                #     'document__responsible')
                 report_query = ReportCard.objects.filter(
-                    Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end))
-                for item in range(0, 4):
-                    count_obj = ApprovalOficialMemoProcess.objects.filter(
-                        (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                        & Q(end_date_trip__gte=date_start) & Q(
-                            document__person__user_work_profile__job__type_of_job=str(item))).exclude(
-                        cancellation=True).order_by(
-                        'document__responsible').count()
-                    report.append(count_obj)
+                    Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
+                    'employee__last_name')
+                # for item in range(0, 4):
+                #     count_obj = ApprovalOficialMemoProcess.objects.filter(
+                #         (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                #         & Q(end_date_trip__gte=date_start) & Q(
+                #             document__person__user_work_profile__job__type_of_job=str(item))).exclude(
+                #         cancellation=True).order_by(
+                #         'document__responsible').count()
+                #     report.append(count_obj)
             else:
-                qs = ApprovalOficialMemoProcess.objects.filter(
-                    Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                    & (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                    & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
-                    'document__responsible')
+                # qs = ApprovalOficialMemoProcess.objects.filter(
+                #     Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
+                #     & (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
+                #     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
+                #     'document__responsible')
                 report_query = ReportCard.objects.filter(
                     Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
                     'employee__last_name')
