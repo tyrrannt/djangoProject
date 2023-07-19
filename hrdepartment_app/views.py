@@ -1154,10 +1154,6 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
 
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
-                # qs = ApprovalOficialMemoProcess.objects.filter(
-                #     (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                #     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
-                #     'document__responsible')
                 report_query = ReportCard.objects.filter(
                     Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
                     'employee__last_name')
@@ -1170,11 +1166,6 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 #         'document__responsible').count()
                 #     report.append(count_obj)
             else:
-                # qs = ApprovalOficialMemoProcess.objects.filter(
-                #     Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                #     & (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                #     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
-                #     'document__responsible')
                 report_query = ReportCard.objects.filter(
                     Q(employee__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
                     & Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
@@ -1194,6 +1185,8 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                         if selected_record.filter(report_card_day=curent_day.date()).count() == 1:
                             obj = selected_record.filter(report_card_day=curent_day.date()).first()
                             place = '; '.join([item.name for item in obj.place_report_card.all()])
+                            if place == '':
+                                place = obj.get_record_type_display()
                             trigger = '2' if obj.confirmed else '1'
                             list_obj.append([trigger, place, obj.record_type])
                         else:
@@ -1206,56 +1199,6 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
 
                 dict_obj[person] = list_obj
 
-
-            # for item in qs.all().order_by('document__person__last_name'):
-            #     list_obj = []
-            #     person = FIO_format(str(item.document.person))
-            #     place = '; '.join([item.name for item in item.document.place_production_activity.all()])
-            #     place_short = '; '.join([item.short_name for item in item.document.place_production_activity.all()])
-            #
-            #     if person in dict_obj:
-            #         list_obj = dict_obj[person]
-            #         for days_count in range(0, (date_end - date_start).days + 1):
-            #             curent_day = date_start + datetime.timedelta(days_count)
-            #             if item.hr_accepted:
-            #                 if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
-            #                     list_obj[days_count] = ['2', place, place_short]
-            #             else:
-            #                 if item.document.period_from <= curent_day.date() <= item.document.period_for:
-            #                     list_obj[days_count] = ['1', place, place_short]
-            #         dict_obj[FIO_format(str(item.document.person))] = list_obj
-            #     else:
-            #         dict_obj[FIO_format(str(item.document.person))] = []
-            #         for days_count in range(0, (date_end - date_start).days + 1):
-            #             curent_day = date_start + datetime.timedelta(days_count)
-            #             if item.hr_accepted:
-            #                 if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
-            #                     list_obj.append(['2', place, place_short])
-            #                 else:
-            #                     list_obj.append(['0', place, place_short])
-            #             else:
-            #                 if item.document.period_from <= curent_day.date() <= item.document.period_for:
-            #                     list_obj.append(['1', place, place_short])
-            #                 else:
-            #                     list_obj.append(['0', ''])
-
-                    # if person in dict_obj:
-                    #     list_obj = dict_obj[person]
-                    #     for days_count in range(0, (date_end - date_start).days + 1):
-                    #         curent_day = date_start + datetime.timedelta(days_count)
-                    #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                    #             list_obj[days_count] = ['1', place, place_short]
-                    #     dict_obj[FIO_format(str(item.document.person))] = list_obj
-                    # else:
-                    #     dict_obj[FIO_format(str(item.document.person))] = []
-                    #     for days_count in range(0, (date_end - date_start).days + 1):
-                    #         curent_day = date_start + datetime.timedelta(days_count)
-                    #         if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                    #             list_obj.append(['1', place, place_short])
-                    #         else:
-                    #             list_obj.append(['0', ''])
-                    # dict_obj[FIO_format(str(item.document.person))] = list_obj
-                # print(dict_obj)
                 table_set = dict_obj
                 html_table_count = ''
                 table_count = range(1, (date_end - date_start).days + 2)
