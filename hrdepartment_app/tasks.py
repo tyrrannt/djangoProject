@@ -77,7 +77,11 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
         #                                    [mail_to, ])
         # first_msg.attach_alternative(html_content, "text/html")
         try:
-            mail.send_mail(subject_mail, plain_message, EMAIL_HOST_USER, [mail_to, EMAIL_HOST_USER, ], html_message=html_content)
+            mail.send_mail(subject_mail,
+                           plain_message,
+                           EMAIL_HOST_USER,
+                           [mail_to, EMAIL_HOST_USER, ],
+                           html_message=html_content)
             record.email_send = True
             record.save()
         except Exception as _ex:
@@ -139,7 +143,8 @@ def happy_birthday():
     today = datetime.datetime.today()
     posts_dict = dict()
     division = [item.pk for item in Division.objects.filter(active=True)]
-    list_birthday_people = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month)).exclude(is_active=False)
+    list_birthday_people = DataBaseUser.objects.filter(
+        Q(birthday__day=today.day) & Q(birthday__month=today.month)).exclude(is_active=False)
     description = ''
     for item in list_birthday_people:
         age = today.year - item.birthday.year
@@ -416,7 +421,8 @@ def report_card_separator_loc():
     # current_data = datetime.datetime.date(datetime.datetime.today())
     current_data1 = datetime.datetime.date(datetime.datetime(2023, 6, 1))
     current_data2 = datetime.datetime.date(datetime.datetime(2023, 6, 7))
-    rec_obj = ReportCard.objects.filter(Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2) & Q(record_type='1'))
+    rec_obj = ReportCard.objects.filter(
+        Q(report_card_day__gte=current_data1) & Q(report_card_day__lte=current_data2) & Q(record_type='1'))
     for item in rec_obj:
         print(item)
         item.delete()

@@ -686,7 +686,7 @@ def hr_accepted(sender, instance, **kwargs):
     obj_list = ReportCard.objects.filter(Q(doc_ref_key=instance.pk) & Q(employee=instance.document.person))
     for item in obj_list:
         item.delete()
-    if not instance.cancellation:
+    if not instance.cancellation and instance.pk:
         if instance.start_date_trip and instance.end_date_trip:
             interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.start_date_trip, until=instance.end_date_trip))
         else:
