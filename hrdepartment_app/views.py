@@ -1176,7 +1176,8 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 #     & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by(
                 #     'document__responsible')
                 report_query = ReportCard.objects.filter(
-                    Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
+                    Q(employee__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
+                    & Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
                     'employee__last_name')
             dict_obj = dict()
             dist = report_query.values('employee__title').distinct()
