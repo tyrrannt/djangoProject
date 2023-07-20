@@ -1179,7 +1179,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 if person not in dict_obj:
                     dict_obj[person] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
-                    place = ''
+                    place, plase_short = '', ''
                     curent_day = date_start + datetime.timedelta(days_count)
                     if selected_record.filter(report_card_day=curent_day.date()).exists():
                         if selected_record.filter(report_card_day=curent_day.date()).count() == 1:
@@ -1192,8 +1192,9 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                         else:
                             for item in selected_record.filter(report_card_day=curent_day.date()):
                                 place += item.get_record_type_display() + '; '
+                                plase_short += item.record_type + '; '
                             trigger = '3'
-                            list_obj.append([trigger, place, ''])
+                            list_obj.append([trigger, place, plase_short])
                     else:
                         list_obj.append(['0', '', ''])
 
@@ -1205,7 +1206,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 for item in table_count:
                     html_table_count += f'<th width="2%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">{item}</span></th>'
                 html_table_set = ''
-                color = ['f5f5dc', '49c144', 'ff0000', 'a0dfbd', 'FFCC00', 'ffff00', '9d76f5', 'ff8fa2', '808080', '76e3f5', '46aef2', 'e8ef2a']
+                color = ['f5f5dc', '49c144', 'ff0000', 'a0dfbd', 'FFCC00', 'ffff00', '9d76f5', 'ff8fa2', '808080', '76e3f5', '46aef2', 'e8ef2a', 'fafafa']
                 for key, value in table_set.items():
                     html_table_set += f'<tr><td width="14%" style="position: -webkit-sticky;  position: sticky;"><strong>{key}</strong></td>'
                     for unit in value:
@@ -1215,13 +1216,13 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 match unit[2]:
                                     case '1':
                                         plase_short = 'Я'
-                                        cnt = 9
+                                        cnt = 12
                                     case '4':
-                                        plase_short = 'БС>'
+                                        plase_short = 'БС'
                                         cnt = 11
                                     case '13':
                                         plase_short = 'Р'
-                                        cnt = 10
+                                        cnt = 12
                                     case '14':
                                         plase_short = 'СП'
                                         cnt = 3
@@ -1256,8 +1257,14 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{plase_short}</strong></td>'
                             case '3':
                                 place = unit[1].replace('"', "")
-                                plase_short = ''  # unit[2]
-                                html_table_set += f'<td width="2%" style="background-color: #{color[2]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+                                plase_short = ''
+                                match unit[2]:
+                                    case '1; 13;' | '13; 1;':
+                                        plase_short = 'Я'
+                                        cnt = 12
+                                    case _:
+                                        cnt = 2
+                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
                             case _:
                                 html_table_set += f'<td width="2%" style="background-color: #{color[0]}; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
