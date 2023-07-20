@@ -306,6 +306,7 @@ def login(request):
     content = {'title': 'вход'}
     login_form = DataBaseUserLoginForm(data=request.POST)
     content['login_form'] = login_form
+    valuenext = request.POST.get('next', None)
     if request.method == 'POST' and login_form.is_valid():
         username = request.POST['username']
         password = request.POST['password']
@@ -329,7 +330,10 @@ def login(request):
             request.session['current_month'] = int(datetime.datetime.today().month)
             request.session['current_year'] = int(datetime.datetime.today().year)
             # return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
-            return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
+            if valuenext:
+                return redirect(valuenext)
+            else:
+                return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
     else:
         try:
             logger.error(f'Ошибка авторизации!!! {request.POST["username"]}, IP: {get_client_ip(request)}')
