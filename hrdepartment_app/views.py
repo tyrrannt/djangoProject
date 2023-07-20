@@ -1205,7 +1205,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 for item in table_count:
                     html_table_count += f'<th width="2%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">{item}</span></th>'
                 html_table_set = ''
-                color = ['f5f5dc', '49c144', 'ff0000', 'a0dfbd', 'FFCC00', 'ffff00', '000000', 'ff8fa2', '808080', '76c3f5']
+                color = ['f5f5dc', '49c144', 'ff0000', 'a0dfbd', 'FFCC00', 'ffff00', '9d76f5', 'ff8fa2', '808080', '76e3f5']
                 for key, value in table_set.items():
                     html_table_set += f'<tr><td width="14%" style="position: -webkit-sticky;  position: sticky;"><strong>{key}</strong></td>'
                     for unit in value:
