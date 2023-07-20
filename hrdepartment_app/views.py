@@ -1219,7 +1219,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                         cnt = 12
                                     case '4':
                                         plase_short = 'БС'
-                                        cnt = 11
+                                        cnt = 10
                                     case '13':
                                         plase_short = 'Р'
                                         cnt = 12
@@ -1231,10 +1231,10 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                         cnt = 3
                                     case '2':
                                         plase_short = 'О'
-                                        cnt = 4
+                                        cnt = 9
                                     case '3' | '5' | '7' | '10' | '11':
                                         plase_short = 'ДО'
-                                        cnt = 5
+                                        cnt = 10
                                     case '16':
                                         plase_short = 'Б'
                                         cnt = 6
