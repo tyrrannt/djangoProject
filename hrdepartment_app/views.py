@@ -1240,10 +1240,10 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 match unit[2]:
                                     case '14':
                                         plase_short = 'СП'
-                                        cnt = 3
+                                        cnt = 1
                                     case '15':
                                         plase_short = 'К'
-                                        cnt = 3
+                                        cnt = 1
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{plase_short}</strong></td>'
                             case '3':
                                 place = unit[1].replace('"', "")
