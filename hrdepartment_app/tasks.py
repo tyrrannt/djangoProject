@@ -313,14 +313,17 @@ def get_vacation():
     }
     all_records = 0
     exclude_list = ['proxmox', 'shakirov']
+    year = datetime.datetime.today().year
     for rec_item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
         print(rec_item['ref_key'])
         dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника',
                                     'Сотрудник_Key',
-                                    rec_item['ref_key'], 'year(ДатаОкончания)', 2023, 0, 0)
+                                    rec_item['ref_key'], 'year(ДатаОкончания)', year, 0, 0)
         for key in dt:
             for item in dt[key]:
-                for report_record in ReportCard.objects.filter(doc_ref_key=item['ДокументОснование']):
+                for report_record in ReportCard.objects.filter(
+                        Q(report_card_day__year=year) &
+                        Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'])):
                     report_record.delete()
                 usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
                 start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")

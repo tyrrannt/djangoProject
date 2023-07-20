@@ -54,7 +54,7 @@
 
 </head>
 <body class="loading-overlay-showing" data-loading-overlay>
-<div class="loading-overlay">
+<div class="loading-overlay" id="LoadingOverlayApi">
     <div class="bounce-loader">
         <div class="bounce1"></div>
         <div class="bounce2"></div>
@@ -162,7 +162,7 @@
 
 <!-- Examples -->
 {#<script src="{% static 'admin_templates/js/examples/examples.header.menu.js' %}"></script>#}
-<script src="{% static 'admin_templates/js/examples/examples.loading.overlay.js' %}"></script>
+<script id="myAdminSpinnerScript" src="{% static 'admin_templates/js/examples/examples.loading.overlay.js' %}"></script>
 {% block SpecificPageVendor %}
 {% endblock %}
 

@@ -12,6 +12,7 @@
             overflow-x: auto;
             position: relative;
         }
+
         .table-responsive th:first-child,
         .table-responsive td:first-child {
             position: sticky;
@@ -36,55 +37,57 @@
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 id="id_filter_month">
                                             {% for key, value in month_dict.items %}
-                                    <option value="{{ key }}" {% if current_month == key %}selected{% endif %}> {{ value }}
-                                    </option>
-                                    {% endfor %}
+                                                <option value="{{ key }}"
+                                                        {% if current_month == key %}selected{% endif %}> {{ value }}
+                                                </option>
+                                            {% endfor %}
                                         </select>
                                     </div>
                                     <div class="col-sm-12 col-lg-3 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
                                                 id="id_filter_year">
                                             {% for key, value in year_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
-                                            </option>
+                                                <option value="{{ key }}"
+                                                        {% if current_year == key %}selected{% endif %}> {{ value }}
+                                                </option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                     <div class="col-sm-12 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">Сформировать</button>
+                                        <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">
+                                            Сформировать
+                                        </button>
                                     </div>
                                     <div class="col-sm-12 col-lg-3 mb-1">
                                         <button class="btn btn-primary" id="print">Печать таблицы</button>
                                     </div>
                                 </div>
                             </div>
+                            <style>
+                                #ajaxSpinnerImage {
+                                    display: none;
+                                }
+                            </style>
+
+                            <div id="ajaxSpinnerContainer" style="align-items:center;">
+                                <img src="{% static 'admin/img/spinner.gif' %}" id="ajaxSpinnerImage"
+                                     title="working..."/>
+                            </div>
                             <div id="id_tables" class="table-responsive">
                                 <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
                                        style="min-width: 1000px; display: block; overflow: auto;">
                                     <thead>
                                     <tr>
-                                        <th width="14%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be;">ФИО</span></th>
+                                        <th width="14%"
+                                            style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff">
+                                            <span style="color: #0a53be;">ФИО</span></th>
                                         {% for item in table_count %}
-                                            <th width="2%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">{{ item }}</span></th>
+                                            <th width="2%"
+                                                style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff">
+                                                <span style="color: #0a53be">{{ item }}</span></th>
                                         {% endfor %}
                                     </tr>
                                     </thead>
-{#                                    <tbody>#}
-{#                                    {% for key, value in table_set.items %}#}
-{#                                        <tr>#}
-{#                                            <td width="14%"><strong>{{ key }}</strong></td>#}
-{#                                            {% for unit1, unit2 in value.items %}#}
-{#                                                {% if unit == '1' %}#}
-{#                                                    <td width="2%" style="background-color: #d2691e; border-color:#4670ad;border-style:dashed;border-width:1px;" fio="{{ key }}" title="" class="position-4-success"></td>#}
-{#                                                {% elif unit == '2' %}#}
-{#                                                    <td width="2%" style="background-color: #2b8101; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success"></td>#}
-{#                                                {% else %}#}
-{#                                                    <td width="2%" style="background-color: #f5f5dc; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>#}
-{#                                                {% endif %}#}
-{#                                            {% endfor %}#}
-{#                                        </tr>#}
-{#                                    {% endfor %}#}
-{#                                    </tbody>#}
                                 </table>
                             </div>
                             <hr class="solid mt-5 opacity-4">
@@ -112,16 +115,22 @@
     </section>
 
     <script type="text/javascript">
+
+
         function reloadScript() {
             console.log('Перезагрузка')
             $('#myAdminOrderScript').remove();
-            $.getScript("{% static 'admin_templates/js/examples/report_card.js' %}", function() {
+            $.getScript("{% static 'admin_templates/js/examples/report_card.js' %}", function () {
                 $('script:last').attr('id', 'myAdminOrderScript');
             });
         };
+
         function filter_date() {
             current_year = $("#id_filter_year").val();
             current_month = $("#id_filter_month").val();
+
+            var $el = $('#LoadingOverlayApi');
+
             $.ajax({
                 type: "GET",
                 url: '{% url 'hrdepartment_app:bpmemo_report' %}',
@@ -130,13 +139,18 @@
                     "CM": current_month,
                 },
                 dataType: "json",
-                success: function (data) {
+                beforeSend: function () {
+                    $("#ajaxSpinnerImage").show();
                     var ref = $('#id_tables').html('');
+                },
+                success: function (data) {
+                    // var ref = $('#id_tables').html('');
                     var ref = $('#id_tables').html(data);
                     if (data === 'ok') {
                         console.log("success");
                     }
                     reloadScript();
+                    $("#ajaxSpinnerImage").hide();
                 },
                 failure: function (data) {
                     console.log("failure");
@@ -148,19 +162,20 @@
 
 {% block SpecificPageVendor %}
     <script id="myAdminOrderScript" src="{% static 'admin_templates/js/examples/report_card.js' %}"></script>
-{#    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>#}
-{#    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>#}
+    {#    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>#}
+    {#    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>#}
     <script>
         function printData() {
-          var divToPrint = document.getElementById("id_datatable");
-          newWin = window.open("");
-          newWin.document.write(divToPrint.outerHTML);
-          newWin.print();
-          newWin.close();
+            var divToPrint = document.getElementById("id_datatable");
+            newWin = window.open("");
+            newWin.document.write(divToPrint.outerHTML);
+            newWin.print();
+            newWin.close();
         }
-        $('#print').on('click', function() {
-          printData();
-          window.location = '/hr/bpmemo/report/';
+
+        $('#print').on('click', function () {
+            printData();
+            window.location = '/hr/bpmemo/report/';
         })
     </script>
 {% endblock %}
