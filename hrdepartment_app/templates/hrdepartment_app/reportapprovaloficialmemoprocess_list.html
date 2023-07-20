@@ -32,7 +32,7 @@
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-                                    <div class="col-sm-12 col-lg-4 mb-1">
+                                    <div class="col-sm-12 col-lg-3 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 id="id_filter_month">
                                             {% for key, value in month_dict.items %}
@@ -41,7 +41,7 @@
                                     {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-sm-12 col-lg-4 mb-1">
+                                    <div class="col-sm-12 col-lg-3 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
                                                 id="id_filter_year">
                                             {% for key, value in year_dict.items %}
@@ -50,8 +50,11 @@
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-sm-12 col-lg-4 mb-1">
+                                    <div class="col-sm-12 col-lg-3 mb-1">
                                         <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">Сформировать</button>
+                                    </div>
+                                    <div class="col-sm-12 col-lg-3 mb-1">
+                                        <button class="btn btn-primary" id="print">Печать таблицы</button>
                                     </div>
                                 </div>
                             </div>
@@ -107,6 +110,7 @@
         </div>
         <!-- end: page -->
     </section>
+
     <script type="text/javascript">
         function reloadScript() {
             console.log('Перезагрузка')
@@ -146,5 +150,17 @@
     <script id="myAdminOrderScript" src="{% static 'admin_templates/js/examples/report_card.js' %}"></script>
 {#    <script src="{% static 'admin_templates/vendor/datatables/media/js/jquery.dataTables.min.js' %}"></script>#}
 {#    <script src="{% static 'admin_templates/vendor/datatables/media/js/dataTables.bootstrap5.min.js' %}"></script>#}
-
+    <script>
+        function printData() {
+          var divToPrint = document.getElementById("id_datatable");
+          newWin = window.open("");
+          newWin.document.write(divToPrint.outerHTML);
+          newWin.print();
+          newWin.close();
+        }
+        $('#print').on('click', function() {
+          printData();
+          window.location = '/hr/bpmemo/report/';
+        })
+    </script>
 {% endblock %}
