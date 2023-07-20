@@ -66,10 +66,14 @@
                             <style>
                                 #ajaxSpinnerImage {
                                     display: none;
+                                    width: auto;
+                                    height : auto;
+                                    max-height: 100%;
+                                    max-width: 100%;
                                 }
                             </style>
 
-                            <div id="ajaxSpinnerContainer" style="align-items:center;">
+                            <div id="ajaxSpinnerContainer" style="align-items:center; justify-content: center;">
                                 <img src="{% static 'admin/img/spinner.gif' %}" id="ajaxSpinnerImage"
                                      title="working..."/>
                             </div>
