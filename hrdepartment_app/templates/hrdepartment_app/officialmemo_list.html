@@ -20,20 +20,16 @@
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'hrdepartment_app:memo_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4 hvr-curl-top-left">
                                                 + Добавить служебную записку</a>
                                         </div>
-
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'hrdepartment_app:bpmemo_add' %}"
                                                class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4 hvr-curl-top-left">
                                                 + Запустить процесс </a>
                                         </div>
-                                        <div id="myQRCode"></div>
-
                                 </div>
                             </div>
                             <style>
@@ -93,7 +89,6 @@
 {% endblock %}
 
 {% block custome_script %}
-
     <script>
         $(document).ready(function () {
             // Setup - add a text input to each footer cell
