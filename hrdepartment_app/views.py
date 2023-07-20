@@ -1212,7 +1212,6 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                         match unit[0]:
                             case '1':
                                 place = unit[1].replace('"', "")
-
                                 match unit[2]:
                                     case '14':
                                         plase_short = 'СП'
@@ -1238,8 +1237,14 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
                             case '2':
                                 place = unit[1].replace('"', "")
-                                plase_short = ''  # unit[2]
-                                html_table_set += f'<td width="2%" style="background-color: #{color[1]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+                                match unit[2]:
+                                    case '14':
+                                        plase_short = 'СП'
+                                        cnt = 3
+                                    case '15':
+                                        plase_short = 'К'
+                                        cnt = 3
+                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{plase_short}</strong></td>'
                             case '3':
                                 place = unit[1].replace('"', "")
                                 plase_short = ''  # unit[2]
