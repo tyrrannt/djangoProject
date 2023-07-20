@@ -1212,17 +1212,25 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                         match unit[0]:
                             case '1':
                                 place = unit[1].replace('"', "")
-                                plase_short = ''
+
                                 match unit[2]:
-                                    case '14' | '15':
+                                    case '14':
+                                        plase_short = 'СП'
+                                        cnt = 3
+                                    case '15':
+                                        plase_short = 'К'
                                         cnt = 3
                                     case '2':
+                                        plase_short = 'О'
                                         cnt = 4
                                     case '3' | '5' | '7' | '10' | '11':
+                                        plase_short = 'ДО'
                                         cnt = 5
                                     case '16':
+                                        plase_short = 'Б'
                                         cnt = 6
                                     case '17':
+                                        plase_short = 'М'
                                         cnt = 7
                                     case _:
                                         cnt = 8
