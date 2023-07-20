@@ -1265,7 +1265,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                         cnt = 12
                                     case _:
                                         cnt = 2
-                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{plase_short}</strong></td>'
                             case _:
                                 html_table_set += f'<td width="2%" style="background-color: #{color[0]}; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
