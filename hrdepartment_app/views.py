@@ -1233,6 +1233,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                         plase_short = 'М'
                                         cnt = 7
                                     case _:
+                                        plase_short = ''
                                         cnt = 8
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
                             case '2':
