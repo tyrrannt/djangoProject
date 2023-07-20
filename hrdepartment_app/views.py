@@ -1282,7 +1282,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                     report_item_obj += f'{job_type[str(counter)]}: {report_item};&nbsp;'
                     counter += 1
                 report_item_obj += '</h4></td>'
-                html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; height: 500px; overflow: auto;">
+                html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; overflow: auto;">
                                 <thead>
                                 <tr>{report_item_obj}</tr>
                                 <tr>
