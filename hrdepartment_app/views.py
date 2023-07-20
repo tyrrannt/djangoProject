@@ -1195,6 +1195,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 plase_short += item.record_type + '; '
                             trigger = '3'
                             list_obj.append([trigger, place, plase_short])
+                            print(plase_short)
                     else:
                         list_obj.append(['0', '', ''])
 
@@ -1259,7 +1260,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 place = unit[1].replace('"', "")
                                 plase_short = ''
                                 match unit[2]:
-                                    case '1; 13;' | '13; 1;':
+                                    case '1; 13; ' | '13; 1; ':
                                         plase_short = 'Я'
                                         cnt = 12
                                     case _:
