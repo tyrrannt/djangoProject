@@ -1209,33 +1209,34 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 for key, value in table_set.items():
                     html_table_set += f'<tr><td width="14%" style="position: -webkit-sticky;  position: sticky;"><strong>{key}</strong></td>'
                     for unit in value:
-                        if unit[0] == '1':
-                            place = unit[1].replace('"', "")
-                            plase_short = ''
-                            if unit[2] in ['14', '15']:
-                                cnt = 3
-                            elif unit[2] in ['2']:
-                                cnt = 4
-                            elif unit[2] in ['3', '5', '7', '10', '11']:
-                                cnt = 5
-                            elif unit[2] in ['16']:
-                                cnt = 6
-                            elif unit[2] in ['17']:
-                                cnt = 7
-                            else:
-                                cnt = 8
-                            html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
-                        elif unit[0] == '2':
-                            place = unit[1].replace('"', "")
-                            plase_short = ''  # unit[2]
-                            html_table_set += f'<td width="2%" style="background-color: #{color[1]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
-                        elif unit[0] == '3':
-                            place = unit[1].replace('"', "")
-                            plase_short = ''  # unit[2]
-                            html_table_set += f'<td width="2%" style="background-color: #{color[2]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
-
-                        else:
-                            html_table_set += f'<td width="2%" style="background-color: #{color[0]}; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
+                        match unit[0]:
+                            case '1':
+                                place = unit[1].replace('"', "")
+                                plase_short = ''
+                                match unit[2]:
+                                    case '14' | '15':
+                                        cnt = 3
+                                    case '2':
+                                        cnt = 4
+                                    case '3' | '5' | '7' | '10' | '11':
+                                        cnt = 5
+                                    case '16':
+                                        cnt = 6
+                                    case '17':
+                                        cnt = 7
+                                    case _:
+                                        cnt = 8
+                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+                            case '2':
+                                place = unit[1].replace('"', "")
+                                plase_short = ''  # unit[2]
+                                html_table_set += f'<td width="2%" style="background-color: #{color[1]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+                            case '3':
+                                place = unit[1].replace('"', "")
+                                plase_short = ''  # unit[2]
+                                html_table_set += f'<td width="2%" style="background-color: #{color[2]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+                            case _:
+                                html_table_set += f'<td width="2%" style="background-color: #{color[0]}; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
 
                 job_type = {
