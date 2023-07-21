@@ -1263,6 +1263,9 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                     case '1; 13; ' | '13; 1; ' | '1; 2; ' | '2; 1; ':
                                         place_short = 'Я'
                                         cnt = 12
+                                    case '17; 14; ' | '17; 15; ' | '15; 17; ' | '14; 17; ':
+                                        place_short = 'М'
+                                        cnt = 7
                                     case '1; 14; ' | '14; 1; ':
                                         place_short = 'СП'
                                         cnt = 1
