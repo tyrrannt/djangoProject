@@ -69,12 +69,10 @@ class PostsAddForm(forms.ModelForm):
     post_date_start = forms.DateField(required=False)
     post_date_end = forms.DateField(required=False)
 
-
     class Meta:
         model = Posts
         fields = ('post_description', 'post_divisions', 'allowed_placed', 'responsible',
                   'post_date_start', 'post_date_end')
-
 
     def __init__(self, *args, **kwargs):
         """
@@ -87,7 +85,6 @@ class PostsAddForm(forms.ModelForm):
         self.fields['post_divisions'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
              'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
-
 
     def clean(self):
         clean_data = super().clean()
@@ -105,8 +102,6 @@ class PostsAddForm(forms.ModelForm):
 
 class PostsUpdateForm(forms.ModelForm):
     post_divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.all())
-    post_divisions.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     post_date_start = forms.DateField(required=False)
     post_date_start.widget.attrs.update(
         {'class': 'form-control form-control-modern'})
@@ -119,10 +114,16 @@ class PostsUpdateForm(forms.ModelForm):
         fields = ('post_description', 'post_divisions', 'allowed_placed', 'post_date_start', 'post_date_end')
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control mb-4'
-            field.help_text = ''
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        super(PostsUpdateForm, self).__init__(*args, **kwargs)
+        self.fields['post_description'].widget.attrs.update({'class': 'form-control django_ckeditor_5'})
+        self.fields['post_description'].required = False
+        self.fields['post_divisions'].widget.attrs.update(
+            {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
+             'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
 
     def clean(self):
         clean_data = super().clean()
@@ -135,7 +136,6 @@ class PostsUpdateForm(forms.ModelForm):
     #     clean_data = self.cleaned_data['post_description']
     #     if clean_data == '':
     #         raise ValidationError('Сообщение не может быть пустым!')
-
 
 
 class CounteragentUpdateForm(forms.ModelForm):
@@ -163,6 +163,7 @@ class CounteragentAddForm(forms.ModelForm):
 class DivisionsAddForm(forms.ModelForm):
     parent_category = forms.ModelChoiceField(queryset=Division.objects.all(), required=False)
     parent_category.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+
     class Meta:
         model = Division
         fields = ('parent_category', 'name', 'description', 'history', 'address', 'active', 'destination_point',
@@ -213,7 +214,6 @@ class JobsUpdateForm(forms.ModelForm):
 
 
 class StaffUpdateForm(forms.ModelForm):
-
     class Meta:
         model = DataBaseUser
         fields = (
