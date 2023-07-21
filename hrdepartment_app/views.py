@@ -615,7 +615,7 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // БП по служебным поездкам'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Бизнес процесс по служебным поездкам'
         return context
 
 
@@ -649,7 +649,7 @@ class ApprovalOficialMemoProcessAdd(PermissionRequiredMixin, LoginRequiredMixin,
         # content['form'].fields['person_department_staff'].queryset = users_list.filter(
         #     Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
         #     Q(is_superuser=False))
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить БП по СП'
+        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить бизнес процесс'
         return content
 
     def get_success_url(self):
@@ -1109,7 +1109,7 @@ class BusinessProcessDirectionAdd(PermissionRequiredMixin, LoginRequiredMixin, C
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить направление БП'
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить направление бизнес процесса'
         return context
 
 
