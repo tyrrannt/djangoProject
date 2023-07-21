@@ -43,9 +43,7 @@
             {% endif %}
         </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed"
-              action="#" method="post"
-              enctype="multipart/form-data">
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{ form.media }}
             <div class="col-lg-12">
@@ -71,8 +69,8 @@
                         </div>
                         <div class="row text">
                             <div class="col-sm-12 text-black-50 mt-3">
-                                <label for="post_description">Содержание:</label>
-                                <div class="ck ck-content">
+                                <label for="id_post_description">Содержание:</label>
+                                <div class="ck-content">
                                     {{ form.post_description | safe }}
                                 </div>
                             </div>

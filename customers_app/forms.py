@@ -3,7 +3,7 @@ import hashlib
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
-
+from django_ckeditor_5.widgets import CKEditor5Widget
 from .models import DataBaseUser, Posts, Counteragent, Division, Job, Groups, HarmfulWorkingConditions
 from django import forms
 
@@ -109,21 +109,25 @@ class PostsUpdateForm(forms.ModelForm):
     post_date_end.widget.attrs.update(
         {'class': 'form-control form-control-modern'})
 
-    class Meta:
-        model = Posts
-        fields = ('post_description', 'post_divisions', 'allowed_placed', 'post_date_start', 'post_date_end')
-
     def __init__(self, *args, **kwargs):
         """
         :param args:
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
         super(PostsUpdateForm, self).__init__(*args, **kwargs)
-        self.fields['post_description'].widget.attrs.update({'class': 'form-control django_ckeditor_5'})
         self.fields['post_description'].required = False
         self.fields['post_divisions'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
              'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})
+
+    class Meta:
+        model = Posts
+        fields = ('post_description', 'post_divisions', 'allowed_placed', 'post_date_start', 'post_date_end')
+        widgets = {
+            "post_description": CKEditor5Widget(
+                attrs={"class": "django_ckeditor_5"}, config_name="extends"
+            )
+        }
 
     def clean(self):
         clean_data = super().clean()
