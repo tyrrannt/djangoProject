@@ -181,7 +181,7 @@
                                                             {% else %}
                                                                 <p class="text-muted mb-0">{{ item.creation_date }}</p>
                                                             {% endif %}
-                                                            <p>{{ item.post_description }}</p>
+                                                            <p>{{ item.post_description | safe }}</p>
                                                             <p class="text-danger mb-0">
                                                                 Ответственный: {{ item.responsible }}</p>
                                                             {% if user == item.responsible %}
