@@ -37,103 +37,103 @@
                     {% include 'customers_app/block_personal_info.html' %}
                 </section>
                 {% if user.is_superuser %}
-                    <section class="card">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>
-                            </div>
-
-                            <h2 class="card-title">
-                                <span class="badge badge-primary label-sm font-weight-normal va-middle me-3">298</span>
-                                <span class="va-middle">Friends</span>
-                            </h2>
-                        </header>
-                        <div class="card-body">
-                            <div class="content">
-                                <ul class="simple-user-list">
-                                    <li>
-                                        <figure class="image rounded">
-                                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"
-                                                 alt="Joseph Doe Junior" class="rounded-circle">
-                                        </figure>
-                                        <span class="title">Joseph Doe Junior</span>
-                                        <span class="message truncate">Lorem ipsum dolor sit.</span>
-                                    </li>
-                                </ul>
-                                <hr class="dotted short">
-                                <div class="text-end">
-                                    <a class="text-uppercase text-muted" href="#">(View All)</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="s" id="s" placeholder="Поиск...">
-                                <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="card">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>
-                            </div>
-
-                            <h2 class="card-title">Popular Posts</h2>
-                        </header>
-                        <div class="card-body">
-                            <ul class="simple-post-list">
-                                <li>
-                                    <div class="post-image">
-                                        <div class="img-thumbnail">
-                                            <a href="#">
-                                                <img src="{% static 'admin_templates/img/post-thumb-1.jpg' %}" alt="">
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="post-info">
-                                        <a href="#">Nullam Vitae Nibh Un Odiosters</a>
-                                        <div class="post-meta">
-                                            Jan 10, 2021
-                                        </div>
-                                    </div>
-                                </li>
-                                <li>
-                                    <div class="post-image">
-                                        <div class="img-thumbnail">
-                                            <a href="#">
-                                                <img src="{% static 'admin_templates/img/post-thumb-2.jpg' %}" alt="">
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="post-info">
-                                        <a href="#">Vitae Nibh Un Odiosters</a>
-                                        <div class="post-meta">
-                                            Jan 10, 2021
-                                        </div>
-                                    </div>
-                                </li>
-                                <li>
-                                    <div class="post-image">
-                                        <div class="img-thumbnail">
-                                            <a href="#">
-                                                <img src="{% static 'admin_templates/img/post-thumb-3.jpg' %}" alt="">
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="post-info">
-                                        <a href="#">Odiosters Nullam Vitae</a>
-                                        <div class="post-meta">
-                                            Jan 10, 2021
-                                        </div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                    </section>
+{#                    <section class="card">#}
+{#                        <header class="card-header">#}
+{#                            <div class="card-actions">#}
+{#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
+{#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
+{#                            </div>#}
+{##}
+{#                            <h2 class="card-title">#}
+{#                                <span class="badge badge-primary label-sm font-weight-normal va-middle me-3">298</span>#}
+{#                                <span class="va-middle">Friends</span>#}
+{#                            </h2>#}
+{#                        </header>#}
+{#                        <div class="card-body">#}
+{#                            <div class="content">#}
+{#                                <ul class="simple-user-list">#}
+{#                                    <li>#}
+{#                                        <figure class="image rounded">#}
+{#                                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"#}
+{#                                                 alt="Joseph Doe Junior" class="rounded-circle">#}
+{#                                        </figure>#}
+{#                                        <span class="title">Joseph Doe Junior</span>#}
+{#                                        <span class="message truncate">Lorem ipsum dolor sit.</span>#}
+{#                                    </li>#}
+{#                                </ul>#}
+{#                                <hr class="dotted short">#}
+{#                                <div class="text-end">#}
+{#                                    <a class="text-uppercase text-muted" href="#">(View All)</a>#}
+{#                                </div>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                        <div class="card-footer">#}
+{#                            <div class="input-group">#}
+{#                                <input type="text" class="form-control" name="s" id="s" placeholder="Поиск...">#}
+{#                                <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>#}
+{#                            </div>#}
+{#                        </div>#}
+{#                    </section>#}
+{##}
+{#                    <section class="card">#}
+{#                        <header class="card-header">#}
+{#                            <div class="card-actions">#}
+{#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
+{#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
+{#                            </div>#}
+{##}
+{#                            <h2 class="card-title">Popular Posts</h2>#}
+{#                        </header>#}
+{#                        <div class="card-body">#}
+{#                            <ul class="simple-post-list">#}
+{#                                <li>#}
+{#                                    <div class="post-image">#}
+{#                                        <div class="img-thumbnail">#}
+{#                                            <a href="#">#}
+{#                                                <img src="{% static 'admin_templates/img/post-thumb-1.jpg' %}" alt="">#}
+{#                                            </a>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="post-info">#}
+{#                                        <a href="#">Nullam Vitae Nibh Un Odiosters</a>#}
+{#                                        <div class="post-meta">#}
+{#                                            Jan 10, 2021#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </li>#}
+{#                                <li>#}
+{#                                    <div class="post-image">#}
+{#                                        <div class="img-thumbnail">#}
+{#                                            <a href="#">#}
+{#                                                <img src="{% static 'admin_templates/img/post-thumb-2.jpg' %}" alt="">#}
+{#                                            </a>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="post-info">#}
+{#                                        <a href="#">Vitae Nibh Un Odiosters</a>#}
+{#                                        <div class="post-meta">#}
+{#                                            Jan 10, 2021#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </li>#}
+{#                                <li>#}
+{#                                    <div class="post-image">#}
+{#                                        <div class="img-thumbnail">#}
+{#                                            <a href="#">#}
+{#                                                <img src="{% static 'admin_templates/img/post-thumb-3.jpg' %}" alt="">#}
+{#                                            </a>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="post-info">#}
+{#                                        <a href="#">Odiosters Nullam Vitae</a>#}
+{#                                        <div class="post-meta">#}
+{#                                            Jan 10, 2021#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                </li>#}
+{#                            </ul>#}
+{#                        </div>#}
+{#                    </section>#}
                 {% endif %}
             </div>
             <div class="col-lg-8 col-xl-6">
