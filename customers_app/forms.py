@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, User
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 
-from .models import DataBaseUser, Posts, Counteragent, Division, Job, Groups
+from .models import DataBaseUser, Posts, Counteragent, Division, Job, Groups, HarmfulWorkingConditions
 from django import forms
 
 
@@ -159,6 +159,8 @@ class CounteragentAddForm(forms.ModelForm):
 
 
 class DivisionsAddForm(forms.ModelForm):
+    parent_category = forms.ModelChoiceField(queryset=Division.objects.all(), required=False)
+    parent_category.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     class Meta:
         model = Division
         fields = ('parent_category', 'name', 'description', 'history', 'address', 'active', 'destination_point',
@@ -168,6 +170,8 @@ class DivisionsAddForm(forms.ModelForm):
 class DivisionsUpdateForm(forms.ModelForm):
     type_of_role = forms.ChoiceField(choices=Division.type_of)
     type_of_role.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    parent_category = forms.ModelChoiceField(queryset=Division.objects.all(), required=False)
+    parent_category.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
     class Meta:
         model = Division
@@ -184,6 +188,8 @@ class DivisionsUpdateForm(forms.ModelForm):
 class JobsAddForm(forms.ModelForm):
     group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all())
     group.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    harmful = forms.ModelMultipleChoiceField(queryset=HarmfulWorkingConditions.objects.all(), required=False)
+    harmful.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
     class Meta:
         model = Job
@@ -195,6 +201,8 @@ class JobsUpdateForm(forms.ModelForm):
     type_of_job.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     group = forms.ModelMultipleChoiceField(queryset=Groups.objects.all(), required=False)
     group.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    harmful = forms.ModelMultipleChoiceField(queryset=HarmfulWorkingConditions.objects.all(), required=False)
+    harmful.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
 
     class Meta:
         model = Job

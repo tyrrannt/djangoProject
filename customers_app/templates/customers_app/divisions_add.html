@@ -60,13 +60,7 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_parent_category">Головное подразделение</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            <select name="parent_category" id="id_parent_category"
-                                                    class="form-control form-control-modern">
-                                                <option value="none" selected>-------</option>
-                                                {% for item in all_divisions %}
-                                                    <option value="{{ item.pk }}">{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.parent_category }}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">

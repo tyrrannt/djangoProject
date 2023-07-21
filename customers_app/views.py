@@ -254,49 +254,6 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
         return context
 
 
-# class DataBaseUserUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
-#     model = DataBaseUser
-#     template_name = 'customers_app/user_profile_update.html'
-#     form_class = DataBaseUserUpdateForm
-#     permission_required = 'customers_app.change_databaseuser'
-#
-#     def get_context_data(self, **kwargs):
-#         context = super(DataBaseUserUpdate, self).get_context_data(**kwargs)
-#         user_obj = DataBaseUser.objects.get(pk=self.request.user.pk)
-#         try:
-#             post = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by(
-#                 'creation_date').reverse()
-#             context['posts'] = post
-#         except Exception as _ex:
-#             message = f'{user_obj}, Ошибка получения записей. У пользователя |{user_obj.username}| отсутствует подразделение!!!: {_ex}'
-#             logger.error(message)
-#
-#         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль пользователя'
-#
-#         context['sp'] = OfficialMemo.objects.all().count()
-#         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
-#         context['contract'] = Contract.objects.all().count()
-#         get_profile_fill(self, context)
-#         return context
-#
-#     def get_success_url(self):
-#         pk = self.request.user.pk
-#         return reverse("customers_app:profile", kwargs={"pk": pk})
-#
-#     def get(self, request, *args, **kwargs):
-#         """
-#         Проверка пользователя, при попытке отредактировать профиль другого пользователя путем подстановки в адресной
-#         строке чужого ID, будет произведено перенаправление пользователя на свою страницу с профилем.
-#         :param request: Передаваемый запрос
-#         :param kwargs: Получаем передаваемый ID пользователя из строки в браузере
-#         :return: В случае подмены ID выполняет редирект 302
-#         """
-#         if self.request.user.pk != self.kwargs['pk']:
-#             url_match = reverse('customers_app:profile', kwargs={"pk": self.request.user.pk})
-#             return redirect(url_match)
-#         return super(DataBaseUserUpdate, self).get(request, *args, **kwargs)
-
-
 def get_client_ip(request):
     # x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     # if x_forwarded_for:
@@ -839,7 +796,6 @@ class DivisionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(DivisionsAdd, self).get_context_data(**kwargs)
-        content['all_divisions'] = Division.objects.all()
         return content
 
     def get(self, request, *args, **kwargs):
@@ -897,7 +853,6 @@ class DivisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super(DivisionsUpdate, self).get_context_data(**kwargs)
-        context['all_divisions'] = Division.objects.all()
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение подразделения'
         return context
 
@@ -983,7 +938,6 @@ class JobsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(JobsAdd, self).get_context_data(**kwargs)
-        context['harmful'] = HarmfulWorkingConditions.objects.all()
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавление должности'
         return context
 
@@ -1021,7 +975,6 @@ class JobsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super(JobsUpdate, self).get_context_data(**kwargs)
-        context['harmful'] = HarmfulWorkingConditions.objects.all()
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение должности'
         return context
 
