@@ -25,10 +25,10 @@
 {#            {% else %}#}
 {##}
 {#        {% endif %}>#}
-    <div class="breadcrumbs" style="display: flex; justify-content: center; align-items: center;">
+    <div class="breadcrumbs col-sm-12 mobile-hide" style="display: flex; justify-content: center; align-items: center;">
         {#        <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>#}
 {#        {% block crumbs %}#}
-            {% if title %} &rsaquo; <span><strong>{{ title }}</strong></span>{% endif %}
+            {% if title %} &rsaquo; <span style="align-content: center; width: auto"><h4>{{ title }}</h4></span>{% endif %}
 {#        {% endblock %}#}
     </div>
 </header>
