@@ -1179,7 +1179,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 if person not in dict_obj:
                     dict_obj[person] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
-                    place, plase_short = '', ''
+                    place, place_short = '', ''
                     curent_day = date_start + datetime.timedelta(days_count)
                     if selected_record.filter(report_card_day=curent_day.date()).exists():
                         if selected_record.filter(report_card_day=curent_day.date()).count() == 1:
@@ -1192,10 +1192,10 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                         else:
                             for item in selected_record.filter(report_card_day=curent_day.date()):
                                 place += item.get_record_type_display() + '; '
-                                plase_short += item.record_type + '; '
+                                place_short += item.record_type + '; '
                             trigger = '3'
-                            list_obj.append([trigger, place, plase_short])
-                            print(plase_short)
+                            list_obj.append([trigger, place, place_short])
+                            print(place_short)
                     else:
                         list_obj.append(['0', '', ''])
 
@@ -1216,59 +1216,56 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 place = unit[1].replace('"', "")
                                 match unit[2]:
                                     case '1':
-                                        plase_short = 'Я'
+                                        place_short = 'Я'
                                         cnt = 12
                                     case '4':
-                                        plase_short = 'БС'
+                                        place_short = 'БС'
                                         cnt = 10
                                     case '13':
-                                        plase_short = 'Р'
+                                        place_short = 'Р'
                                         cnt = 12
                                     case '14':
-                                        plase_short = 'СП'
+                                        place_short = 'СП'
                                         cnt = 3
                                     case '15':
-                                        plase_short = 'К'
+                                        place_short = 'К'
                                         cnt = 3
                                     case '2':
-                                        plase_short = 'О'
+                                        place_short = 'О'
                                         cnt = 9
                                     case '3' | '5' | '7' | '10' | '11':
-                                        plase_short = 'ДО'
+                                        place_short = 'ДО'
                                         cnt = 10
                                     case '16':
-                                        plase_short = 'Б'
+                                        place_short = 'Б'
                                         cnt = 6
                                     case '17':
-                                        plase_short = 'М'
+                                        place_short = 'М'
                                         cnt = 7
                                     case _:
-                                        plase_short = ''
+                                        place_short = ''
                                         cnt = 8
-                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{plase_short}</td>'
+                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{place_short}</td>'
                             case '2':
                                 place = unit[1].replace('"', "")
                                 match unit[2]:
                                     case '14':
-                                        plase_short = 'СП'
+                                        place_short = 'СП'
                                         cnt = 1
                                     case '15':
-                                        plase_short = 'К'
+                                        place_short = 'К'
                                         cnt = 1
-                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{plase_short}</strong></td>'
+                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{place_short}</strong></td>'
                             case '3':
                                 place = unit[1].replace('"', "")
-                                plase_short = ''
+                                place_short = ''
                                 match unit[2]:
-                                    case '1; 13; ' | '13; 1; ':
-                                        plase_short = 'Я'
-                                        cnt = 12
-                                    case '1; 2; ' | '2; 1; ':
-                                        plase_short = 'Я'
-                                        cnt = 12
+                                    case '1; 13; ' | '13; 1; ' | '1; 2; ' | '2; 1; ' | '1; 15; ' | '1; 14; ' | '15; 1; ' | '14; 1; ':
+                                        place_short = 'Я'
+                                        cnt = 12                                    
                                     case _:
                                         cnt = 2
-                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{plase_short}</strong></td>'
+                                html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{place_short}</strong></td>'
                             case _:
                                 html_table_set += f'<td width="2%" style="background-color: #{color[0]}; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
                     html_table_set += '</tr>'
