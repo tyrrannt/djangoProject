@@ -53,9 +53,7 @@
                                             {% for item in object.employee.iterator %}{% if forloop.last %}
                                                 {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
                                             {% endif %}{% endfor %}</h4>
-
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -84,6 +82,7 @@
                             </div>
                         </div>
                     </section>
+                    {% if object.document_form.exists %}
                     <section class="toggle">
                         <label>Бланки документов</label>
                         <div class="toggle-content">
@@ -145,6 +144,7 @@
                             </div>
                         </div>
                     </section>
+                    {% endif %}
                 </div>
             </div>
             <div class="row action-buttons">
