@@ -75,13 +75,15 @@ class PostsAddForm(forms.ModelForm):
         fields = ('post_description', 'post_divisions', 'allowed_placed', 'responsible',
                   'post_date_start', 'post_date_end')
 
+
     def __init__(self, *args, **kwargs):
         """
         :param args:
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
         super(PostsAddForm, self).__init__(*args, **kwargs)
-        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['post_description'].widget.attrs.update({'class': 'form-control django_ckeditor_5'})
+        self.fields['post_description'].required = False
         self.fields['post_divisions'].widget.attrs.update(
             {'class': 'form-control form-control-modern', 'data-plugin-multiselect': True, 'multiple': 'multiple',
              'data-plugin-options': '{ "maxHeight": 200, "includeSelectAllOption": true }'})

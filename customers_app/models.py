@@ -8,6 +8,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
+from django_ckeditor_5.fields import CKEditor5Field
 
 from contracts_app.templatetags.custom import empty_item
 from djangoProject.settings import BASE_DIR
@@ -477,7 +478,7 @@ class Posts(models.Model):
         verbose_name_plural = 'Сообщения'
 
     creation_date = models.DateField(verbose_name='Дата создания', auto_now_add=True)
-    post_description = models.TextField(verbose_name='Текст сообщения', blank=True, default='')
+    post_description = CKEditor5Field('Содержание', config_name='extends', blank=True)
     post_divisions = models.ManyToManyField(Division, verbose_name='Подразделения поста', )
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
     responsible = models.ForeignKey(DataBaseUser, verbose_name='Ответственное лицо',
