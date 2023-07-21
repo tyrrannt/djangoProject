@@ -25,4 +25,10 @@
 {#            {% else %}#}
 {##}
 {#        {% endif %}>#}
+    <div class="breadcrumbs" style="display: flex; justify-content: center; align-items: center;">
+        {#        <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>#}
+{#        {% block crumbs %}#}
+            {% if title %} &rsaquo; <span><strong>{{ title }}</strong></span>{% endif %}
+{#        {% endblock %}#}
+    </div>
 </header>
