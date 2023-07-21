@@ -1260,9 +1260,15 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 place = unit[1].replace('"', "")
                                 place_short = ''
                                 match unit[2]:
-                                    case '1; 13; ' | '13; 1; ' | '1; 2; ' | '2; 1; ' | '1; 15; ' | '1; 14; ' | '15; 1; ' | '14; 1; ':
+                                    case '1; 13; ' | '13; 1; ' | '1; 2; ' | '2; 1; ':
                                         place_short = 'Я'
-                                        cnt = 12                                    
+                                        cnt = 12
+                                    case '1; 14; ' | '14; 1; ':
+                                        place_short = 'СП'
+                                        cnt = 1
+                                    case '1; 15; ' | '15; 1; ':
+                                        place_short = 'К'
+                                        cnt = 1
                                     case _:
                                         cnt = 2
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{place_short}</strong></td>'
