@@ -20,7 +20,8 @@ from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
 from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
-from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign
+from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
+    get_vacation
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
 
@@ -82,9 +83,10 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
-                qs = ReportCard.objects.filter(record_type__in=['14', '15', ])
-                for item in qs:
-                    item.delete()
+                # qs = ReportCard.objects.filter(record_type__in=['14', '15', ])
+                # for item in qs:
+                #     item.delete()
+                get_vacation()
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
