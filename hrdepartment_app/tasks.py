@@ -314,6 +314,10 @@ def get_vacation():
     all_records = 0
     exclude_list = ['proxmox', 'shakirov']
     year = datetime.datetime.today().year
+    for report_record in ReportCard.objects.filter(
+            Q(report_card_day__year=year) &
+            Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'])):
+        report_record.delete()
     for rec_item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
         print(rec_item['ref_key'])
         dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника',
@@ -321,10 +325,6 @@ def get_vacation():
                                     rec_item['ref_key'], 'year(ДатаОкончания)', year, 0, 0)
         for key in dt:
             for item in dt[key]:
-                for report_record in ReportCard.objects.filter(
-                        Q(report_card_day__year=year) &
-                        Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'])):
-                    report_record.delete()
                 usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
                 start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
                 end_date = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
@@ -363,12 +363,16 @@ def get_vacation():
                         'reason_adjustment': item['Основание'],
                         'doc_ref_key': item['ДокументОснование'],
                     }
-                    rec_obj, counter = ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj,
+                    try:
+                        rec_obj, counter = ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj,
                                                         record_type=value[0],
                                                         defaults=kwargs_obj)
-                    if counter:
-                        all_records += 1
-    return f'Создано {all_records} записей'
+                        if counter:
+                            all_records += 1
+                    except Exception as _ex:
+                        logger.error(f"Ошибка синхронизации записей отпуска {_ex}")
+
+    return logger.info(f'Создано {all_records} записей')
 @app.task()
 def report_card_separator_daily():
     current_data = datetime.datetime.date(datetime.datetime.today())
