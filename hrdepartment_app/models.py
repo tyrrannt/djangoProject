@@ -909,7 +909,7 @@ class OrderDescription(models.Model):
         verbose_name = 'Наименование приказа'
         verbose_name_plural = 'Наименования приказов'
 
-    name = models.CharField(verbose_name='', max_length=150)
+    name = models.CharField(verbose_name='', max_length=250)
 
     def __str__(self):
         return self.name
