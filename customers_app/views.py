@@ -234,6 +234,11 @@ class ChangePassPraseUpdate(LoginRequiredMixin, UpdateView):
     form_class = ChangePassPraseUpdateForm
     template_name = 'customers_app/change_passphrase.html'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение парольной фразы'
+        return context
+
 
 class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
     """
@@ -242,6 +247,11 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
     model = DataBaseUser
     form_class = ChangeAvatarUpdateForm
     template_name = 'customers_app/change_avatar.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение фотографии'
+        return context
 
 
 # class DataBaseUserUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
@@ -406,10 +416,20 @@ class PostsListView(LoginRequiredMixin, ListView):
         qs = Posts.objects.filter(post_divisions__pk=user_obj.user_work_profile.divisions.pk).order_by('pk').reverse()
         return qs
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список сообщений'
+        return context
+
 
 class PostsDetailView(LoginRequiredMixin, DetailView):
     template_name = 'customers_app/posts_detail.html'
     model = Posts
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр сообщения'
+        return context
 
 
 class PostsUpdateView(LoginRequiredMixin, UpdateView):
@@ -425,6 +445,11 @@ class PostsUpdateView(LoginRequiredMixin, UpdateView):
                """
         # pk = self.request.user.pk
         return reverse("customers_app:post_list")
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение сообщения'
+        return context
 
 
 class CounteragentListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
@@ -511,6 +536,11 @@ class CounteragentDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
     model = Counteragent
     permission_required = 'customers_app.view_counteragent'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр контрагента'
+        return context
+
 
 class CounteragentUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     # template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
@@ -524,6 +554,7 @@ class CounteragentUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     def get_context_data(self, **kwargs):
         context = super(CounteragentUpdate, self).get_context_data(**kwargs)
         context['counteragent_users'] = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение контрагента'
         return context
 
     def post(self, request, *args, **kwargs):
@@ -605,6 +636,11 @@ class StaffDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
             raise PermissionDenied
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр пользователя'
+        return context
+
 
 class StaffUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     template_name = 'customers_app/staff_form.html'
@@ -634,6 +670,7 @@ class StaffUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         context['all_job'] = Job.objects.all()
         context['all_access'] = AccessLevel.objects.all().reverse()
         context['all_citizenship'] = Citizenships.objects.all()
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение пользователя'
         return context
 
     def post(self, request, *args, **kwargs):
@@ -831,6 +868,11 @@ class DivisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     template_name = 'customers_app/divisions_detail.html'
     permission_required = 'customers_app.view_division'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр подразделения'
+        return context
+
 
 class DivisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Division
@@ -846,17 +888,18 @@ class DivisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def post(self, request, *args, **kwargs):
         if request.method == 'POST':
-            content = QueryDict.copy(self.request.POST)
-            content['active'] = boolean_return(request, 'active')
-            if content['parent_category'] == 'none':
-                content.setlist('parent_category', '')
-            self.request.POST = content
+            context = QueryDict.copy(self.request.POST)
+            context['active'] = boolean_return(request, 'active')
+            if context['parent_category'] == 'none':
+                context.setlist('parent_category', '')
+            self.request.POST = context
         return super(DivisionsUpdate, self).post(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        content = super(DivisionsUpdate, self).get_context_data(**kwargs)
-        content['all_divisions'] = Division.objects.all()
-        return content
+        context = super(DivisionsUpdate, self).get_context_data(**kwargs)
+        context['all_divisions'] = Division.objects.all()
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение подразделения'
+        return context
 
     def form_valid(self, form):
         if form.is_valid():
@@ -939,9 +982,10 @@ class JobsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     permission_required = 'customers_app.add_job'
 
     def get_context_data(self, **kwargs):
-        content = super(JobsAdd, self).get_context_data(**kwargs)
-        content['harmful'] = HarmfulWorkingConditions.objects.all()
-        return content
+        context = super(JobsAdd, self).get_context_data(**kwargs)
+        context['harmful'] = HarmfulWorkingConditions.objects.all()
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавление должности'
+        return context
 
     def get(self, request, *args, **kwargs):
         return super(JobsAdd, self).get(request, *args, **kwargs)
@@ -960,6 +1004,11 @@ class JobsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     template_name = 'customers_app/jobs_detail.html'
     permission_required = 'customers_app.view_job'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр должности'
+        return context
+
 
 class JobsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Job
@@ -971,9 +1020,10 @@ class JobsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         return super(JobsUpdate, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        content = super(JobsUpdate, self).get_context_data(**kwargs)
-        content['harmful'] = HarmfulWorkingConditions.objects.all()
-        return content
+        context = super(JobsUpdate, self).get_context_data(**kwargs)
+        context['harmful'] = HarmfulWorkingConditions.objects.all()
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Изменение должности'
+        return context
 
     def get(self, request, *args, **kwargs):
         return super(JobsUpdate, self).get(request, *args, **kwargs)
