@@ -1242,6 +1242,9 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                     case '17':
                                         place_short = 'М'
                                         cnt = 7
+                                    case '18':
+                                        place_short = 'ГРФ'
+                                        cnt = 4
                                     case _:
                                         place_short = ''
                                         cnt = 8

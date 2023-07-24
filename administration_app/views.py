@@ -86,7 +86,43 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # qs = ReportCard.objects.filter(record_type__in=['14', '15', ])
                 # for item in qs:
                 #     item.delete()
-                get_vacation()
+                graph_vacacion = get_jsons_data('Document', 'ГрафикОтпусков', 0)
+                get_jsons_data_filter('Document', 'ГрафикОтпусков', 'Number', '710-лс', 0, 0)
+                year = datetime.datetime.today().year
+                for report_record in ReportCard.objects.filter(
+                        Q(report_card_day__year=year) &
+                        Q(record_type='18')):
+                    report_record.delete()
+                docs = graph_vacacion['value'][0]['Ref_Key']
+                counter = 1
+                for item in graph_vacacion['value'][0]['Сотрудники']:
+                    if datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d") >= datetime.datetime.today():
+                        if DataBaseUser.objects.filter(ref_key=item['Сотрудник_Key']).exists():
+                            del item['Ref_Key']
+                            del item['LineNumber']
+                            del item['ФизическоеЛицо_Key']
+                            usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
+                            item['Сотрудник_Key'] = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key']).title
+                            item['ДатаНачала'] = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
+                            item['ДатаОкончания'] = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
+                            period = list(rrule.rrule(rrule.DAILY, count=item['КоличествоДней'], dtstart=item['ДатаНачала']))
+                            for unit in period:
+                                kwargs_obj = {
+                                    'report_card_day': unit,
+                                    'employee': usr_obj,
+                                    'start_time': datetime.datetime(1, 1, 1, 9, 30),
+                                    'end_time': datetime.datetime(1, 1, 1, 18, 00),
+                                    'reason_adjustment': 'График отпусков',
+                                    'doc_ref_key': docs,
+                                }
+                                counter += 1
+                                try:
+                                    rec_obj, counter = ReportCard.objects.update_or_create(report_card_day=unit,
+                                                                                           employee=usr_obj,
+                                                                                           record_type='18',
+                                                                                           defaults=kwargs_obj)
+                                except Exception as _ex:
+                                    pass
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
