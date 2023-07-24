@@ -20,7 +20,7 @@ from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
 from hrdepartment_app.models import ReportCard, WeekendDay, check_day, ApprovalOficialMemoProcess
 from telegram_app.management.commands.bot import send_message_tg
-from telegram_app.models import TelegramNotification
+from telegram_app.models import TelegramNotification, ChatID
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -166,6 +166,7 @@ def happy_birthday():
             post.save()
             person_list = DataBaseUser.objects.filter(telegram_id__regex=r'^\d')
             person_tg_list = [item.telegram_id for item in person_list]
+            person_tg_list_chat_id = ChatID.objects.filter(chat_id__in=person_tg_list)
             kwargs_obj = {
                 'message': description,
                 'document_url': '',
@@ -175,7 +176,7 @@ def happy_birthday():
             }
             tn, created = TelegramNotification.objects.update_or_create(document_id=post.pk,
                                                                         defaults=kwargs_obj)
-            tn.respondents.set(person_tg_list)
+            tn.respondents.set(person_tg_list_chat_id)
             if not post.email_send:
                 send_mail(item, age, post)
         else:
