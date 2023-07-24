@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -270,6 +271,14 @@
                                                            value="{{ object.user_work_profile.personal_work_schedule_end | time:"H:i" }}"/>
                                                 </div>
                                             </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Права доступа</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        <input type="text" class="form-control form-control-modern"
+                                                               disabled name="user_access" id="id_user_access"
+                                                               value="{{ object.user_access.name }}"/>
+                                                    </div>
+                                                </div>
                                             {% if user.is_superuser %}
                                                 <div class="form-group row align-items-center pb-3">
                                                     <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email
