@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, User
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django_ckeditor_5.widgets import CKEditor5Widget
-from .models import DataBaseUser, Posts, Counteragent, Division, Job, Groups, HarmfulWorkingConditions
+from .models import DataBaseUser, Posts, Counteragent, Division, Job, Groups, HarmfulWorkingConditions, AccessLevel
 from django import forms
 
 
@@ -218,20 +218,25 @@ class JobsUpdateForm(forms.ModelForm):
 
 
 class StaffUpdateForm(forms.ModelForm):
+    user_access = forms.ModelChoiceField(queryset=AccessLevel.objects.all(), required=False)
+    user_access.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     class Meta:
         model = DataBaseUser
         fields = (
             # 'username', 'first_name', 'last_name', 'email', 'birthday', 'password',  'access_right',
             #  'phone', 'works', 'access_level',  'surname'
-            'last_name', 'first_name', 'surname', 'email', 'birthday',
-            'personal_phone', 'address', 'gender', 'type_users', 'avatar',
+            'last_name', 'first_name', 'surname', 'email', 'birthday', 'user_access', 'is_active',
+            'personal_phone', 'address', 'gender', 'type_users', 'avatar', 'is_staff', 'is_superuser'
         )
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(StaffUpdateForm, self).__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-modern'
             field.help_text = ''
+        self.fields['is_active'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['is_staff'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
+        self.fields['is_superuser'].widget.attrs.update({'class': 'todo-check', 'data-plugin-ios-switch': True})
 
 
 class ChangeAvatarUpdateForm(forms.ModelForm):
