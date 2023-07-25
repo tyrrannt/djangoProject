@@ -319,8 +319,9 @@ def get_vacation():
             Q(report_card_day__year=year) &
             Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'])):
         report_record.delete()
+    report_card_list = list()
     for rec_item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
-        print(rec_item['ref_key'])
+
         dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника',
                                     'Сотрудник_Key',
                                     rec_item['ref_key'], 'year(ДатаОкончания)', year, 0, 0)
@@ -361,19 +362,17 @@ def get_vacation():
                         'employee': usr_obj,
                         'start_time': start_time,
                         'end_time': end_time,
+                        'record_type': value[0],
                         'reason_adjustment': item['Основание'],
                         'doc_ref_key': item['ДокументОснование'],
                     }
-                    try:
-                        rec_obj, counter = ReportCard.objects.update_or_create(report_card_day=unit, employee=usr_obj,
-                                                                               record_type=value[0],
-                                                                               defaults=kwargs_obj)
-                        if counter:
-                            all_records += 1
-                    except Exception as _ex:
-                        logger.error(f"Ошибка синхронизации записей отпуска {_ex}")
+                    report_card_list.append(kwargs_obj)
+    try:
+        objs = ReportCard.objects.bulk_create([ReportCard(**q) for q in report_card_list])
+    except Exception as _ex:
+        logger.error(f"Ошибка синхронизации записей отпуска {_ex}")
 
-    return logger.info(f'Создано {all_records} записей')
+    return logger.info(f'Создано {len(objs)} записей')
 
 
 @app.task()
@@ -411,6 +410,7 @@ def vacation_schedule():
         report_record.delete()
     docs = graph_vacacion['value'][0]['Ref_Key']
     counter = 1
+    report_card_list = list()
     for item in vacation_list:
         if datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d") >= datetime.datetime.today():
             if DataBaseUser.objects.filter(ref_key=item['Сотрудник_Key']).exists():
@@ -429,17 +429,18 @@ def vacation_schedule():
                         'employee': usr_obj,
                         'start_time': datetime.datetime(1, 1, 1, 9, 30),
                         'end_time': datetime.datetime(1, 1, 1, 18, 00),
+                        'record_type': '18',
                         'reason_adjustment': 'График отпусков' if item['Примечание'] == '' else item['Примечание'],
                         'doc_ref_key': docs,
                     }
+                    report_card_list.append(kwargs_obj)
                     counter += 1
-                    try:
-                        rec_obj, counter = ReportCard.objects.update_or_create(report_card_day=unit,
-                                                                               employee=usr_obj,
-                                                                               record_type='18',
-                                                                               defaults=kwargs_obj)
-                    except Exception as _ex:
-                        pass
+
+    try:
+        objs = ReportCard.objects.bulk_create([ReportCard(**q) for q in report_card_list])
+    except Exception as _ex:
+        logger.error(f"Ошибка синхронизации графика отпусков {_ex}")
+    return logger.info(f'Создано {len(objs)} записей')
 
 @app.task()
 def report_card_separator_daily():

@@ -163,7 +163,6 @@ def get_jsons_data_filter(object_type: str, object_name: str, filter_obj: str, f
           f"{object_type}_{object_name}?$format=application/json;odata=nometadata" \
           f"&$filter={filter_obj}%20{logical_operation[logical]}%20{guid_attribute}{separator_attribute}{filter_content}{separator_attribute}"
     source_url = url
-    print(url)
     try:
         if base_index == 0:
             response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
