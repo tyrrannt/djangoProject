@@ -83,11 +83,32 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
-                # qs = ReportCard.objects.filter(record_type__in=['14', '15', ])
-                # for item in qs:
-                #     item.delete()
-                graph_vacacion = get_jsons_data('Document', 'ГрафикОтпусков', 0)
-                get_jsons_data_filter('Document', 'ГрафикОтпусков', 'Number', '710-лс', 0, 0)
+                def search_vacation(name, people):
+                    return [element for element in people if element['Сотрудник_Key'] == name]
+
+                vacation_list = list()
+                graph_vacacion = get_jsons_data_filter('Document', 'ГрафикОтпусков', 'Number', '710-лс', 0, 0, False,
+                                                       True)
+                postponement_of_vacation = get_jsons_data_filter('Document', 'ПереносОтпуска',
+                                                                 'year(ИсходнаяДатаНачала)', 2023, 0,
+                                                                 0, False, False)
+                for item in graph_vacacion['value'][0]['Сотрудники']:
+                    postponement_list = search_vacation(item['Сотрудник_Key'], postponement_of_vacation['value'])
+                    finded = 0
+                    if len(postponement_list) == 0:
+                        vacation_list.append(item)
+                    else:
+                        for unit in postponement_list:
+                            if unit['ИсходнаяДатаНачала'] == item['ДатаНачала']:
+                                for slice_element in unit['Переносы']:
+                                    item['ДатаНачала'] = slice_element['ДатаНачала']
+                                    item['ДатаОкончания'] = slice_element['ДатаОкончания']
+                                    item['КоличествоДней'] = slice_element['КоличествоДней']
+                                    item['Примечание'] = 'Перенос отпуска №: ' + unit['Number']
+                                    vacation_list.append(item)
+                                    finded = 1
+                            if finded == 0:
+                                vacation_list.append(item)
                 year = datetime.datetime.today().year
                 for report_record in ReportCard.objects.filter(
                         Q(report_card_day__year=year) &
@@ -95,7 +116,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     report_record.delete()
                 docs = graph_vacacion['value'][0]['Ref_Key']
                 counter = 1
-                for item in graph_vacacion['value'][0]['Сотрудники']:
+                for item in vacation_list:
                     if datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d") >= datetime.datetime.today():
                         if DataBaseUser.objects.filter(ref_key=item['Сотрудник_Key']).exists():
                             del item['Ref_Key']
@@ -104,15 +125,16 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                             usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
                             item['Сотрудник_Key'] = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key']).title
                             item['ДатаНачала'] = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
-                            item['ДатаОкончания'] = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
-                            period = list(rrule.rrule(rrule.DAILY, count=item['КоличествоДней'], dtstart=item['ДатаНачала']))
+                            # item['ДатаОкончания'] = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
+                            period = list(
+                                rrule.rrule(rrule.DAILY, count=item['КоличествоДней'], dtstart=item['ДатаНачала']))
                             for unit in period:
                                 kwargs_obj = {
                                     'report_card_day': unit,
                                     'employee': usr_obj,
                                     'start_time': datetime.datetime(1, 1, 1, 9, 30),
                                     'end_time': datetime.datetime(1, 1, 1, 18, 00),
-                                    'reason_adjustment': 'График отпусков',
+                                    'reason_adjustment': 'График отпусков' if item['Примечание'] == '' else item['Примечание'],
                                     'doc_ref_key': docs,
                                 }
                                 counter += 1
@@ -123,6 +145,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                                                                                            defaults=kwargs_obj)
                                 except Exception as _ex:
                                     pass
+
+
                 pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
