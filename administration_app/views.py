@@ -83,81 +83,44 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
-                type_of_report = {
-                    '2': 'Ежегодный',
-                    '3': 'Дополнительный ежегодный отпуск',
-                    '4': 'Отпуск за свой счет',
-                    '5': 'Дополнительный учебный отпуск (оплачиваемый)',
-                    '6': 'Отпуск по уходу за ребенком',
-                    '7': 'Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС',
-                    '8': 'Отпуск по беременности и родам',
-                    '9': 'Отпуск без оплаты согласно ТК РФ',
-                    '10': 'Дополнительный отпуск',
-                    '11': 'Дополнительный оплачиваемый отпуск пострадавшим в ',
-                    '12': 'Основной',
-                }
-                all_records = 0
-                exclude_list = ['proxmox', 'shakirov']
-                year = datetime.datetime.today().year
-                for report_record in ReportCard.objects.filter(
-                        Q(report_card_day__year=year) &
-                        Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'])):
-                    report_record.delete()
-                report_card_list = list()
-                for rec_item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
+                def get_type_of_employment(Ref_Key):
+                    data = get_jsons_data_filter("Document", "ПриемНаРаботу", 'Сотрудник_Key', Ref_Key, 0, 0, True, True)
+                    match len(data['value']):
+                        case 0:
+                            return False
+                        case 1:
+                            if data['value'][0]['ВидЗанятости'] == 'ОсновноеМестоРаботы':
+                                return True
+                        case _:
+                            for item in data['value']:
+                                if item['ВидЗанятости'] == 'ОсновноеМестоРаботы' and item['ИсправленныйДокумент_Key'] != "00000000-0000-0000-0000-000000000000":
+                                    return True
+                    return False
 
-                    dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника',
-                                                'Сотрудник_Key',
-                                                rec_item['ref_key'], 'year(ДатаОкончания)', year, 0, 0)
-                    for key in dt:
-                        for item in dt[key]:
-                            usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
-                            start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
-                            end_date = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
-                            weekend_count = WeekendDay.objects.filter(
-                                Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(
-                                    weekend_type='1')).count()
-                            count_date = int(item['КоличествоДней']) + weekend_count
-                            period = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
-                            weekend = [item.weekend_day for item in WeekendDay.objects.filter(
-                                Q(weekend_day__gte=start_date.date()) & Q(weekend_day__lte=end_date.date()))]
-                            for unit in period:
-                                if unit.weekday() in [0, 1, 2, 3] and unit.date() not in weekend:
-                                    delta_time = datetime.timedelta(
-                                        hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
-                                        minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute)
-                                    start_time = usr_obj.user_work_profile.personal_work_schedule_start
-                                    end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
-                                elif unit.weekday() == 4 and unit not in weekend:
-                                    delta_time = datetime.timedelta(
-                                        hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
-                                        minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute) - \
-                                                 datetime.timedelta(hours=1)
-                                    start_time = usr_obj.user_work_profile.personal_work_schedule_start
-                                    end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
-                                else:
-                                    start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
-                                    end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
+                staff = get_jsons_data_filter("Catalog", "Сотрудники", 'ВАрхиве', 'false', 0, 0, False, False)
+                individuals = get_jsons_data("Catalog", "ФизическиеЛица", 0)
+                staff_set = set()
+                for item in staff['value']:
+                    if item['Description'] != "":
+                        staff_set.add(item['Ref_Key'])
+                users_set = set()
+                for item in DataBaseUser.objects.all():
+                    users_set.add(item.ref_key)
+                users_set &= staff_set
+                print('Есть везде', len(list(users_set)))
+                staff_set -= users_set
+                staff_set_list = list()
+                for unit in list(staff_set):
+                    if get_type_of_employment(unit):
+                        staff_set_list.append(unit)
+                print('Нет в системе',  staff_set_list)
 
-                                value = [i for i in type_of_report if
-                                         type_of_report[i] == item['ВидОтпускаПредставление']]
-                                kwargs_obj = {
-                                    'report_card_day': unit,
-                                    'employee': usr_obj,
-                                    'start_time': start_time,
-                                    'end_time': end_time,
-                                    'record_type': value[0],
-                                    'reason_adjustment': item['Основание'],
-                                    'doc_ref_key': item['ДокументОснование'],
-                                }
-                                report_card_list.append(kwargs_obj)
-                try:
-                    objs = ReportCard.objects.bulk_create([ReportCard(**q) for q in report_card_list])
-                except Exception as _ex:
-                    logger.error(f"Ошибка синхронизации записей отпуска {_ex}")
-                print(len(objs))
-
-
+                def get_filter_list(filter_list, variable, meaning):
+                    return list(filter(lambda item_filter: item_filter[variable] == meaning, filter_list))[0]
+                for item in staff['value']:
+                    if item['Description'] != "":
+                        # find_item = list(filter(lambda item_filter: item_filter['Ref_Key'] == item['ФизическоеЛицо_Key'], individuals['value']))[0]
+                        print(get_filter_list(individuals['value'], 'Ref_Key', item['ФизическоеЛицо_Key']))
 
                 pass
                 # get_sick_leave(2023, 2)

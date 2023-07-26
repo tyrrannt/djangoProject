@@ -359,11 +359,11 @@ class DataBaseUser(AbstractUser):
             'pk': self.pk,
             'number': self.service_number,
             'person': self.get_title(),
-            'division': str(self.user_work_profile.divisions),
-            'job': str(self.user_work_profile.job),
-            'phone': str(self.user_work_profile.internal_phone),
+            'division': str(self.user_work_profile.divisions) if self.user_work_profile else '',
+            'job': str(self.user_work_profile.job) if self.user_work_profile else '',
+            'phone': str(self.user_work_profile.internal_phone) if self.user_work_profile else '',
             'email': self.email,
-            'password': str(self.user_work_profile.work_email_password),
+            'password': str(self.user_work_profile.work_email_password) if self.user_work_profile else '',
             'telegram_id': str(self.telegram_id)
         }
 

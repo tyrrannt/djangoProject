@@ -9,7 +9,6 @@ from administration_app.utils import get_jsons_data_filter, get_jsons, get_jsons
 from customers_app.models import DataBaseUser, Job, Division, DataBaseUserWorkProfile, DataBaseUserProfile, \
     IdentityDocuments
 
-
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
            serialize=config('LOG_SERIALIZE'))
@@ -37,7 +36,8 @@ def get_database_user_work_profile():
     for units in users_list:
         job_code, division_code, date_of_employment = '', '', '1900-01-01'
         todo_str = get_jsons(
-            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_КадроваяИсторияСотрудников?$format=application/json;odata=nometadata&$filter=RecordSet/any(d:%20d/Сотрудник_Key%20eq%20guid%27{units.ref_key}%27)", 0)
+            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_КадроваяИсторияСотрудников?$format=application/json;odata=nometadata&$filter=RecordSet/any(d:%20d/Сотрудник_Key%20eq%20guid%27{units.ref_key}%27)",
+            0)
         period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
         if units.ref_key != "":
             moving = 0
@@ -72,50 +72,91 @@ def get_database_user_work_profile():
     return context
 
 
+def get_type_of_employment(Ref_Key):
+    data = get_jsons_data_filter("Document", "ПриемНаРаботу", 'Сотрудник_Key', Ref_Key, 0, 0, True, True)
+    match len(data['value']):
+        case 0:
+            return False
+        case 1:
+            if data['value'][0]['ВидЗанятости'] == 'ОсновноеМестоРаботы':
+                return True
+        case _:
+            for item in data['value']:
+                if item['ВидЗанятости'] == 'ОсновноеМестоРаботы' and item[
+                    'ИсправленныйДокумент_Key'] != "00000000-0000-0000-0000-000000000000":
+                    return True
+    return False
+
+
+def get_filter_list(filter_list, variable, meaning):
+    result = list(filter(lambda item_filter: item_filter[variable] == meaning, filter_list))
+    return result[0] if len(result) == 1 else False
+
+
 def get_database_user():
     count = DataBaseUser.objects.all().count() + 1
-    staff = get_jsons_data("Catalog", "Сотрудники", 0)
+    staff = get_jsons_data_filter("Catalog", "Сотрудники", 'ВАрхиве', 'false', 0, 0, False, False)
     individuals = get_jsons_data("Catalog", "ФизическиеЛица", 0)
     insurance_policy = get_jsons_data("InformationRegister", "ПолисыОМСФизическихЛиц", 0)
+    staff_set = set()
+    for item in staff['value']:
+        if item['Description'] != "":
+            staff_set.add(item['Ref_Key'])
+    users_set = set()
+    for item in DataBaseUser.objects.all():
+        users_set.add(item.ref_key)
+    users_set &= staff_set  # Есть везде
+    staff_set -= users_set
+    staff_set_list = list()  # Нет в системе
+    for unit in list(staff_set):
+        if get_type_of_employment(unit):
+            staff_set_list.append(unit)
+    personal_kwargs_list, divisions_kwargs_list = list(), list()
     # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
     for item in staff['value']:
-        if item['Description'] != "" and item['ВАрхиве'] == False:
-            Ref_Key, username, first_name = '', '', ''
-            personal_kwargs = {}
+        if item['Description'] != "":
+            # Ref_Key, username, first_name = '', '', ''
+            # personal_kwargs = {}
             last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
-            individuals_item = [items for items in individuals['value'] if
-                                items['Ref_Key'] == item['ФизическоеЛицо_Key']]
-            for item2 in individuals_item:
-                Ref_Key = item2['Ref_Key']
-                username = '0' * (4 - len(str(count))) + str(count) + '_' + transliterate(
-                    item2['Фамилия']).lower() + '_' + \
-                           transliterate(item2['Имя']).lower()[:1] + \
-                           transliterate(item2['Отчество']).lower()[:1]
-                first_name = item2['Имя']
-                last_name = item2['Фамилия']
-                surname = item2['Отчество']
-                gender = 'male' if item2['Пол'] == 'Мужской' else 'female'
-                birthday = datetime.datetime.strptime(item2['ДатаРождения'][:10], "%Y-%m-%d")
-                for item3 in item2['КонтактнаяИнформация']:
-                    if item3['Тип'] == 'АдресЭлектроннойПочты':
-                        email = item3['АдресЭП']
-                    if item3['Тип'] == 'Телефон':
-                        telephone = '+' + item3['НомерТелефона']
-                    if item3['Тип'] == 'Адрес':
-                        address = item3['Представление']
-                oms = ''
-                insurance_policy_item = [items for items in insurance_policy['value'] if
-                                         items['ФизическоеЛицо_Key'] == item['ФизическоеЛицо_Key']]
-                for insurance_item in insurance_policy_item:
-                    oms = insurance_item['НомерПолиса']
-                personal_kwargs = {
-                    'inn': item2['ИНН'],
-                    'snils': item2['СтраховойНомерПФР'],
-                    'oms': oms,
-                }
+            # individuals_item = [items for items in individuals['value'] if
+            #                     items['Ref_Key'] == item['ФизическоеЛицо_Key']]
+            # find_item = list(filter(lambda item_filter: item_filter['Ref_Key'] == item['ФизическоеЛицо_Key'], individuals['value']))[0]
+            find_item = get_filter_list(individuals['value'], 'Ref_Key', item['ФизическоеЛицо_Key'])
+            if not find_item:
+                continue
+            Ref_Key = find_item['Ref_Key']
+            username = '0' * (4 - len(str(count))) + str(count) + '_' + transliterate(
+                find_item['Фамилия']).lower() + '_' + \
+                       transliterate(find_item['Имя']).lower()[:1] + \
+                       transliterate(find_item['Отчество']).lower()[:1]
+            first_name = find_item['Имя']
+            last_name = find_item['Фамилия']
+            surname = find_item['Отчество']
+            gender = 'male' if find_item['Пол'] == 'Мужской' else 'female'
+            birthday = datetime.datetime.strptime(find_item['ДатаРождения'][:10], "%Y-%m-%d")
+            for item3 in find_item['КонтактнаяИнформация']:
+                if item3['Тип'] == 'АдресЭлектроннойПочты':
+                    email = item3['АдресЭП']
+                if item3['Тип'] == 'Телефон':
+                    telephone = '+' + item3['НомерТелефона']
+                if item3['Тип'] == 'Адрес':
+                    address = item3['Представление']
+            # oms = ''
+            insurance_item = get_filter_list(insurance_policy['value'], 'ФизическоеЛицо_Key', item['ФизическоеЛицо_Key'])
+            # insurance_item = list(filter(lambda item_filter: item_filter['ФизическоеЛицо_Key'] == item['ФизическоеЛицо_Key'], insurance_policy['value']))[
+            #     0]
+            # insurance_policy_item = [items for items in insurance_policy['value'] if
+            #                          items['ФизическоеЛицо_Key'] == item['ФизическоеЛицо_Key']]
+            # for insurance_item in insurance_policy_item:
+            #     oms = insurance_item['НомерПолиса']
+            oms = insurance_item['НомерПолиса'] if insurance_item else ''
+            personal_kwargs = {
+                'inn': find_item['ИНН'],
+                'snils': find_item['СтраховойНомерПФР'],
+                'oms': oms,
+            }
 
             divisions_kwargs = {
-                # 'ref_key': item['Ref_Key'],
                 'person_ref_key': Ref_Key,
                 'service_number': item['Code'],
                 'first_name': first_name,
@@ -129,24 +170,38 @@ def get_database_user():
                 'address': address,
             }
             count += 1
-            try:
-                main_obj_item, main_created = DataBaseUser.objects.update_or_create(ref_key=item['Ref_Key'],
-                                                                                    defaults={**divisions_kwargs})
-                if main_created:
-                    main_obj_item.username = username
-            except Exception as _ex:
-                logger.error(f'Сохранение пользователя: {username}, {last_name} {first_name} {_ex}')
-            try:
-                obj_item, created = DataBaseUserProfile.objects.update_or_create(ref_key=item['Ref_Key'],
-                                                                                 defaults={**personal_kwargs})
-            except Exception as _ex:
-                logger.error(f'Сохранение профиля пользователя: {_ex}')
-            if not main_obj_item.user_profile:
+            if item['Ref_Key'] in staff_set_list:
                 try:
-                    main_obj_item.user_profile = DataBaseUserProfile.objects.get(ref_key=main_obj_item.ref_key)
-                    main_obj_item.save()
+                    main_obj_item, main_created = DataBaseUser.objects.update_or_create(ref_key=item['Ref_Key'],
+                                                                                        defaults={**divisions_kwargs})
+                    if main_created:
+                        main_obj_item.username = username
                 except Exception as _ex:
-                    logger.error(f'Сохранения профиля пользователя в модели пользователя: {_ex}')
+                    logger.error(f'Сохранение пользователя: {username}, {last_name} {first_name} {_ex}')
+                try:
+                    obj_item, created = DataBaseUserProfile.objects.update_or_create(ref_key=item['Ref_Key'],
+                                                                                     defaults={**personal_kwargs})
+                except Exception as _ex:
+                    logger.error(f'Сохранение профиля пользователя: {_ex}')
+                if not main_obj_item.user_profile:
+                    try:
+                        main_obj_item.user_profile = DataBaseUserProfile.objects.get(ref_key=main_obj_item.ref_key)
+                        main_obj_item.save()
+                    except Exception as _ex:
+                        logger.error(f'Сохранения профиля пользователя в модели пользователя: {_ex}')
+            if item['Ref_Key'] in users_set:
+                personal_kwargs['ref_key'] = item['Ref_Key']
+                divisions_kwargs['ref_key'] = item['Ref_Key']
+                personal_kwargs_list.append(personal_kwargs)
+                divisions_kwargs_list.append(divisions_kwargs)
+    from django.db import transaction
+
+    with transaction.atomic():
+        for item in divisions_kwargs_list:
+            DataBaseUser.objects.filter(ref_key=item['ref_key']).update(**item)
+    with transaction.atomic():
+        for item in personal_kwargs_list:
+            DataBaseUserProfile.objects.filter(ref_key=item['ref_key']).update(**item)
 
 
 def get_identity_documents():
@@ -159,7 +214,8 @@ def get_identity_documents():
     for units in users_list:
         ref_key, series, number, issued_by_whom, date_of_issue, division_code = '', '', '', '', '1900-01-01', ''
         todo_str = get_jsons(
-            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДокументыФизическихЛиц?$format=application/json;odata=nometadata&$filter=Физлицо_Key%20eq%20guid%27{units.person_ref_key}%27", 0)
+            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДокументыФизическихЛиц?$format=application/json;odata=nometadata&$filter=Физлицо_Key%20eq%20guid%27{units.person_ref_key}%27",
+            0)
         period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
         if units.person_ref_key != "":
             user_identity_documents = {}
@@ -192,7 +248,8 @@ def get_identity_documents():
 
 def get_chart_of_calculation_types(select_uuid):
     todo_str = get_jsons(
-        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/ChartOfCalculationTypes_Начисления?$format=application/json;odata=nometadata&$filter=Ref_Key%20eq%20guid%27{select_uuid}%27&$select=Description", 0)
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/ChartOfCalculationTypes_Начисления?$format=application/json;odata=nometadata&$filter=Ref_Key%20eq%20guid%27{select_uuid}%27&$select=Description",
+        0)
     result = ''
     try:
         for item in todo_str['value']:
@@ -204,7 +261,8 @@ def get_chart_of_calculation_types(select_uuid):
 
 def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, calculation_uud) -> list:
     acc_reg_time = get_jsons(
-        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ОтработанноеВремяПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20Начисление_Key%20eq%20guid%27{calculation_uud}%27", 0)
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ОтработанноеВремяПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20Начисление_Key%20eq%20guid%27{calculation_uud}%27",
+        0)
     days_worked, hours_worked, paid_days = '', '', ''
     try:
         for item in acc_reg_time['value']:
@@ -217,7 +275,8 @@ def get_worked_out_by_the_workers(selected_month, selected_year, users_uuid, cal
     return result
 
 
-def get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end): # , user_start_time, user_end_time
+def get_report_card_table(data_dict, total_score, first_day, last_day, user_start,
+                          user_end):  # , user_start_time, user_end_time
     """
 
     :param data_dict: {'сотрудник': [r1-Дата, r2-Начало, r3-Окончание, r4-Знак, r5-Скалярное общее время за день,
@@ -308,10 +367,12 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
             """
     ref_key, series, number, issued_by_whom, date_of_issue, division_code = '', '', '', '', '1900-01-01', ''
     acc_reg_acc = get_jsons(
-        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_НачисленияУдержанияПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27", 0)
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_НачисленияУдержанияПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27",
+        0)
     # Поля Active = True, ФизическоеЛицо_Key = uuid, Начисление_Key = uuid, ОтработаноДней, ОтработаноЧасов, ОплаченоДней, ОплаченоЧасов, ГруппаНачисленияУдержанияВыплаты = Выплачено
     acc_reg_set = get_jsons(
-        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ВзаиморасчетыССотрудниками_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20ГруппаНачисленияУдержанияВыплаты%20eq%20%27Выплачено%27", 0)
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ВзаиморасчетыССотрудниками_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20ГруппаНачисленияУдержанияВыплаты%20eq%20%27Выплачено%27",
+        0)
     # Поля Active = True, ФизическоеЛицо_Key = uuid, СтатьяРасходов_Key = uuid, СуммаВзаиморасчетов, ГруппаНачисленияУдержанияВыплаты = Выплачено, Recorder = uuid, Recorder_Type = Document_ВедомостьНаВыплатуЗарплатыВКассу или Document_ВедомостьНаВыплатуЗарплатыВБанк
     # f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/{Recorder_Type}?$format=application/json;odata=nometadata&$filter=Состав/any(d:%20d/Ref_Key%20eq%20guid%27{Recorder}%27)&$select=Number,%20Date"
     period = datetime.datetime.strptime(f"{selected_year}-{selected_month}-01", "%Y-%m-%d")
@@ -463,7 +524,7 @@ def get_vacation_days(self, dates):
                 if datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d") > date_admission:
                     days += int(item['Количество'])
 
-    dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission_correct, until=datetime.datetime.strptime(dates, '%Y-%m-%d'))]
+    dates = [dt for dt in rrule.rrule(rrule.MONTHLY, dtstart=date_admission_correct,
+                                      until=datetime.datetime.strptime(dates, '%Y-%m-%d'))]
     print(((len(dates) - 1) * (28 / 12)), days)
     return round(((len(dates) - 1) * (28 / 12)) - days)
-
