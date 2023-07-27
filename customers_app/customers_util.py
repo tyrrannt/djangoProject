@@ -31,32 +31,40 @@ def get_database_user_work_profile():
     Получение подразделения, должности и даты приема на работу сотрудника,
     :return: Найденную запись, или пустую строку
     """
+    from django.db import transaction
     context = ""
-    users_list = DataBaseUser.objects.all().exclude(is_superuser=True)
+    users_list = DataBaseUser.objects.all().exclude(is_superuser=True).values('ref_key')
+    todo_str_list = list()
+    todo_str = get_jsons(
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_КадроваяИсторияСотрудников?$format=application/json;odata=nometadata",
+        0)
+    for item in todo_str['value']:
+        todo_str_list.append(item['RecordSet'][0])
+
+    def get_filter_list(filter_list, variable, meaning):
+        return list(filter(lambda item_filter: item_filter[variable] == meaning, filter_list))
+
     for units in users_list:
         job_code, division_code, date_of_employment = '', '', '1900-01-01'
-        todo_str = get_jsons(
-            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_КадроваяИсторияСотрудников?$format=application/json;odata=nometadata&$filter=RecordSet/any(d:%20d/Сотрудник_Key%20eq%20guid%27{units.ref_key}%27)",
-            0)
-        period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
-        if units.ref_key != "":
-            moving = 0
-            for items in todo_str['value']:
-                for items2 in items['RecordSet']:
-                    if items2['Active'] == True and items2['ВидСобытия'] == 'Перемещение':
-                        if period < datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d"):
-                            period = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
-                            division_code = items2['Подразделение_Key']
-                            job_code = items2['Должность_Key']
-                            moving = 1
 
-                    if items2['Active'] == True and items2['ВидСобытия'] == 'Прием':
-                        date_of_employment = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
-                        if moving == 0:
-                            division_code = items2['Подразделение_Key']
-                            job_code = items2['Должность_Key']
+        todo_str = get_filter_list(todo_str_list, 'Сотрудник_Key', units['ref_key'])
+        period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
+        if units['ref_key'] != "":
+            moving = 0
+            for items2 in todo_str:
+                if items2['Active'] and items2['ВидСобытия'] == 'Перемещение':
+                    if period < datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d"):
+                        period = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
+                        division_code = items2['Подразделение_Key']
+                        job_code = items2['Должность_Key']
+                        moving = 1
+
+                if items2['Active'] and items2['ВидСобытия'] == 'Прием':
+                    date_of_employment = datetime.datetime.strptime(items2['Period'][:10], "%Y-%m-%d")
+                    if moving == 0:
+                        division_code = items2['Подразделение_Key']
+                        job_code = items2['Должность_Key']
             user_work_profile = {
-                # 'ref_key': units.ref_key,
                 'date_of_employment': date_of_employment,
                 'job': Job.objects.get(ref_key=job_code) if job_code not in ["",
                                                                              '00000000-0000-0000-0000-000000000000'] else None,
@@ -64,11 +72,12 @@ def get_database_user_work_profile():
                                                                                                   '00000000-0000-0000-0000-000000000000'] else None,
             }
 
-            DataBaseUserWorkProfile.objects.update_or_create(ref_key=units.ref_key, defaults=user_work_profile)
+            obj, created = DataBaseUserWorkProfile.objects.update_or_create(ref_key=units['ref_key'],
+                                                                            defaults=user_work_profile)
 
-            if not units.user_work_profile:
-                units.user_work_profile = DataBaseUserWorkProfile.objects.get(ref_key=units.ref_key)
-                units.save()
+            with transaction.atomic():
+                DataBaseUser.objects.filter(ref_key=units['ref_key']).update(user_work_profile=obj)
+
     return context
 
 
@@ -89,6 +98,13 @@ def get_type_of_employment(Ref_Key):
 
 
 def get_filter_list(filter_list, variable, meaning):
+    """
+    Поиск элементов в списке словарей
+    :param filter_list: Список значений
+    :param variable: Ключ
+    :param meaning: Значение
+    :return: Вывод первого элемента списка в случае если поиск завершился успешно, иначе False
+    """
     result = list(filter(lambda item_filter: item_filter[variable] == meaning, filter_list))
     return result[0] if len(result) == 1 else False
 
@@ -115,12 +131,7 @@ def get_database_user():
     # ToDo: Счетчик добавленных подразделений из 1С. Подумать как передать его значение
     for item in staff['value']:
         if item['Description'] != "":
-            # Ref_Key, username, first_name = '', '', ''
-            # personal_kwargs = {}
             last_name, surname, birthday, gender, email, telephone, address, = '', '', '1900-01-01', '', '', '', '',
-            # individuals_item = [items for items in individuals['value'] if
-            #                     items['Ref_Key'] == item['ФизическоеЛицо_Key']]
-            # find_item = list(filter(lambda item_filter: item_filter['Ref_Key'] == item['ФизическоеЛицо_Key'], individuals['value']))[0]
             find_item = get_filter_list(individuals['value'], 'Ref_Key', item['ФизическоеЛицо_Key'])
             if not find_item:
                 continue
@@ -141,14 +152,8 @@ def get_database_user():
                     telephone = '+' + item3['НомерТелефона']
                 if item3['Тип'] == 'Адрес':
                     address = item3['Представление']
-            # oms = ''
-            insurance_item = get_filter_list(insurance_policy['value'], 'ФизическоеЛицо_Key', item['ФизическоеЛицо_Key'])
-            # insurance_item = list(filter(lambda item_filter: item_filter['ФизическоеЛицо_Key'] == item['ФизическоеЛицо_Key'], insurance_policy['value']))[
-            #     0]
-            # insurance_policy_item = [items for items in insurance_policy['value'] if
-            #                          items['ФизическоеЛицо_Key'] == item['ФизическоеЛицо_Key']]
-            # for insurance_item in insurance_policy_item:
-            #     oms = insurance_item['НомерПолиса']
+            insurance_item = get_filter_list(insurance_policy['value'], 'ФизическоеЛицо_Key',
+                                             item['ФизическоеЛицо_Key'])
             oms = insurance_item['НомерПолиса'] if insurance_item else ''
             personal_kwargs = {
                 'inn': find_item['ИНН'],
@@ -210,20 +215,20 @@ def get_identity_documents():
         :return: Найденную запись, или пустую строку
         """
     context = ""
-    users_list = DataBaseUser.objects.all().exclude(is_superuser=True)
+    users_list = DataBaseUser.objects.all().exclude(is_superuser=True).values('person_ref_key')
     for units in users_list:
         ref_key, series, number, issued_by_whom, date_of_issue, division_code = '', '', '', '', '1900-01-01', ''
         todo_str = get_jsons(
-            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДокументыФизическихЛиц?$format=application/json;odata=nometadata&$filter=Физлицо_Key%20eq%20guid%27{units.person_ref_key}%27",
+            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДокументыФизическихЛиц?$format=application/json;odata=nometadata&$filter=Физлицо_Key%20eq%20guid%27{units['person_ref_key']}%27",
             0)
         period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
-        if units.person_ref_key != "":
+        if units['person_ref_key'] != "":
             user_identity_documents = {}
             for items in todo_str['value']:
                 if items['ВидДокумента_Key'] == 'ebbd9c1f-cfaf-11e6-bad8-902b345cadc2':
                     if period < datetime.datetime.strptime(items['ДатаВыдачи'][:10], "%Y-%m-%d"):
                         period = datetime.datetime.strptime(items['ДатаВыдачи'][:10], "%Y-%m-%d")
-                        ref_key = units.person_ref_key
+                        ref_key = units['person_ref_key']
                         series = items['Серия']
                         number = items['Номер']
                         issued_by_whom = items['КемВыдан']
@@ -237,10 +242,10 @@ def get_identity_documents():
                 'date_of_issue': date_of_issue,
                 'division_code': division_code,
             }
-            main_obj_item, main_created = IdentityDocuments.objects.update_or_create(ref_key=units.person_ref_key,
+            main_obj_item, main_created = IdentityDocuments.objects.update_or_create(ref_key=units['person_ref_key'],
                                                                                      defaults=user_identity_documents)
             if main_created:
-                obj_item = DataBaseUserProfile.objects.get(ref_key=units.ref_key)
+                obj_item = DataBaseUserProfile.objects.get(person_ref_key=units['person_ref_key'])
                 obj_item.passport = main_obj_item
                 obj_item.save()
     return context
