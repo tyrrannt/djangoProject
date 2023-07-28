@@ -14,6 +14,7 @@ import pathlib
 from pathlib import Path
 # Для работы с переменными которые хранятся в файле .env
 from decouple import config
+from loguru import logger
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -155,6 +156,10 @@ STATICFILES_DIRS = [pathlib.Path.joinpath(BASE_DIR, 'static_dev'), pathlib.Path.
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
+
+logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 customColorPalette = [
     {
