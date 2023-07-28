@@ -11,9 +11,9 @@ from library_app.forms import HelpItemAddForm, HelpItemUpdateForm, DocumentFormA
 from library_app.models import HelpTopic, HelpCategory, DocumentForm
 
 # Create your views here.
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+#            serialize=config('LOG_SERIALIZE'))
 
 
 def index(request):

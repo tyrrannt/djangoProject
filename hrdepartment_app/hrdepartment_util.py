@@ -13,9 +13,9 @@ from customers_app.models import DataBaseUser, HarmfulWorkingConditions
 from djangoProject.settings import EMAIL_HOST_USER
 from hrdepartment_app.models import MedicalOrganisation, Medical, ReportCard, PreHolidayDay, WeekendDay, check_day
 
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+#            serialize=config('LOG_SERIALIZE'))
 
 
 def get_medical_documents():

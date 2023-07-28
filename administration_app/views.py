@@ -25,9 +25,9 @@ from hrdepartment_app.tasks import report_card_separator, report_card_separator_
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
 
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+#            serialize=config('LOG_SERIALIZE'))
 
 
 # Create your views here.

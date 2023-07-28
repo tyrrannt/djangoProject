@@ -11,9 +11,9 @@ from hrdepartment_app.models import Medical, OfficialMemo, Purpose, ApprovalOfic
     BusinessProcessDirection, MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, \
     ReasonForCancellation, OrderDescription, ReportCard, Provisions
 
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+#            serialize=config('LOG_SERIALIZE'))
 
 
 def present_or_future_date(value):

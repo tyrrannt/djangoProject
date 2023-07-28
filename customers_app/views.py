@@ -32,9 +32,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from hrdepartment_app.hrdepartment_util import get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
 
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+#            serialize=config('LOG_SERIALIZE'))
 
 
 class GroupListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):

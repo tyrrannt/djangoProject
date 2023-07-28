@@ -6,9 +6,9 @@ from customers_app.models import Division, DataBaseUser, Counteragent
 from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract
 from django import forms
 
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+#            serialize=config('LOG_SERIALIZE'))
 
 class ContractsAddForm(forms.ModelForm):
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))

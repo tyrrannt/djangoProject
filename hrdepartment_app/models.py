@@ -24,9 +24,9 @@ from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 from library_app.models import DocumentForm
 from telegram_app.models import TelegramNotification, ChatID
 
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+#            serialize=config('LOG_SERIALIZE'))
 
 
 # Create your models here.
