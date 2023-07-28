@@ -66,15 +66,15 @@ class OfficialMemoAddForm(forms.ModelForm):
     place_departure = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.all())
     place_departure.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
+    person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all().exclude(is_active=False, username__in=['admin', 'proxmox']).order_by('last_name'))
     person.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
     purpose_trip.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     official_memo_type = forms.ChoiceField(choices=memo_type)
     type_trip = forms.ChoiceField(choices=type_of_trip)
-    period_from = forms.DateField(label='Дата начала', validators=[present_or_future_date], required=True)
-    period_for = forms.DateField(label='Дата окончания', validators=[present_or_future_date], required=True)
+    period_from = forms.DateField(label='Дата начала', required=True)
+    period_for = forms.DateField(label='Дата окончания', required=True)
     document_extension = forms.ModelChoiceField(queryset=OfficialMemo.objects.all(), required=False)
     document_extension.widget.attrs.update(
         {'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
@@ -84,15 +84,29 @@ class OfficialMemoAddForm(forms.ModelForm):
         fields = ('period_from', 'period_for', 'place_production_activity', 'place_departure',
                   'person', 'purpose_trip', 'responsible', 'type_trip', 'official_memo_type', 'document_extension')
 
+    def date_difference(self, day):
+        return datetime.date.today() - datetime.timedelta(days=day)
+
     def clean(self):
         cleaned_data = super().clean()
         official_memo_type = cleaned_data.get("official_memo_type")
         document_extension = cleaned_data.get("document_extension")
-        if official_memo_type == '2' and not document_extension:
-            # Сохраняем только если оба поля действительны.
-            raise ValidationError(
-                "Ошибка создания документа. Для продления необходимо указать документ основания!!!"
-            )
+        period_from = cleaned_data.get("period_from")
+        period_for = cleaned_data.get("period_for")
+        match official_memo_type:
+            case '1':
+                if period_from < self.date_difference(7) or period_for < self.date_difference(7):
+                    raise forms.ValidationError(f"Нельзя использовать прошедшую дату! Допустимый период 7 дней. Минимальная дата {self.date_difference(7).strftime('%d.%m.%Y')} г.")
+            case '2':
+                if not document_extension:
+                    # Сохраняем только если оба поля действительны.
+                    raise ValidationError(
+                        "Ошибка создания документа. Для продления необходимо указать документ основания!!!")
+                if period_from < self.date_difference(7) or period_for < self.date_difference(7):
+                    raise forms.ValidationError(f"Нельзя использовать прошедшую дату! Допустимый период 7 дней. Минимальная дата {self.date_difference(7).strftime('%d.%m.%Y')} г.")
+            case '3':
+                if period_from < self.date_difference(45) or period_for < self.date_difference(45):
+                    raise forms.ValidationError(f"Нельзя использовать прошедшую дату! Допустимый период 45 дней. Минимальная дата {self.date_difference(45).strftime('%d.%m.%Y')} г.")
 
 
 class OfficialMemoUpdateForm(forms.ModelForm):
