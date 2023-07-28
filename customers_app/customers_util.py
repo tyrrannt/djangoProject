@@ -7,7 +7,7 @@ from loguru import logger
 from administration_app.utils import get_jsons_data_filter, get_jsons, get_jsons_data, transliterate, timedelta_to_time, \
     get_json_vacation
 from customers_app.models import DataBaseUser, Job, Division, DataBaseUserWorkProfile, DataBaseUserProfile, \
-    IdentityDocuments
+    IdentityDocuments, Citizenships
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -34,6 +34,11 @@ def get_database_user_work_profile():
     from django.db import transaction
     context = ""
     users_list = DataBaseUser.objects.all().exclude(is_superuser=True).values('ref_key')
+    profile_list = DataBaseUserWorkProfile.objects.all().values('ref_key')
+    profile_list_items = list()
+    for item in profile_list:
+        profile_list_items.append(item['ref_key'])
+    profile_list_update = list()
     todo_str_list = list()
     todo_str = get_jsons(
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_КадроваяИсторияСотрудников?$format=application/json;odata=nometadata",
@@ -66,17 +71,23 @@ def get_database_user_work_profile():
                         job_code = items2['Должность_Key']
             user_work_profile = {
                 'date_of_employment': date_of_employment,
-                'job': Job.objects.get(ref_key=job_code) if job_code not in ["",
+                'job': Job.objects.filter(ref_key=job_code).first() if job_code not in ["",
                                                                              '00000000-0000-0000-0000-000000000000'] else None,
-                'divisions': Division.objects.get(ref_key=division_code) if division_code not in ["",
+                'divisions': Division.objects.filter(ref_key=division_code).first() if division_code not in ["",
                                                                                                   '00000000-0000-0000-0000-000000000000'] else None,
             }
+            if units['ref_key'] in profile_list_items:
+                user_work_profile['ref_key'] = units['ref_key']
+                profile_list_update.append(user_work_profile)
+            else:
+                obj, created = DataBaseUserWorkProfile.objects.update_or_create(ref_key=units['ref_key'],
+                                                                                defaults=user_work_profile)
 
-            obj, created = DataBaseUserWorkProfile.objects.update_or_create(ref_key=units['ref_key'],
-                                                                            defaults=user_work_profile)
-
-            with transaction.atomic():
-                DataBaseUser.objects.filter(ref_key=units['ref_key']).update(user_work_profile=obj)
+                with transaction.atomic():
+                    DataBaseUser.objects.filter(ref_key=units['ref_key']).update(user_work_profile=obj)
+    with transaction.atomic():
+        for item in profile_list_update:
+            DataBaseUserWorkProfile.objects.filter(ref_key=item['ref_key']).update(**item)
 
     return context
 
@@ -214,21 +225,36 @@ def get_identity_documents():
         Получение паспортных данных сотрудника,
         :return: Найденную запись, или пустую строку
         """
+    from django.db import transaction
     context = ""
-    users_list = DataBaseUser.objects.all().exclude(is_superuser=True).values('person_ref_key')
+    profile_list = DataBaseUserProfile.objects.all().values('ref_key')
+    profile_list_items = list()
+    for item in profile_list:
+        profile_list_items.append(item['ref_key'])
+    todo_str_list = list()
+    todo_str = get_jsons(
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДокументыФизическихЛиц?$format=application/json;odata=nometadata",
+        0)
+    for item in todo_str['value']:
+        todo_str_list.append(item)
+    def get_filter_list(filter_list, variable, meaning):
+        return list(filter(lambda item_filter: item_filter[variable] == meaning, filter_list))
+
+    users_list = DataBaseUser.objects.all().exclude(is_superuser=True).values('ref_key', 'person_ref_key')
+    citizenship = Citizenships.objects.filter(city='Российская Федерация').first()
     for units in users_list:
         ref_key, series, number, issued_by_whom, date_of_issue, division_code = '', '', '', '', '1900-01-01', ''
-        todo_str = get_jsons(
-            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДокументыФизическихЛиц?$format=application/json;odata=nometadata&$filter=Физлицо_Key%20eq%20guid%27{units['person_ref_key']}%27",
-            0)
+        view_description = ''
+
         period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
         if units['person_ref_key'] != "":
             user_identity_documents = {}
-            for items in todo_str['value']:
+            register = get_filter_list(todo_str_list, 'Физлицо_Key', units['person_ref_key'])
+            for items in register:
                 if items['ВидДокумента_Key'] == 'ebbd9c1f-cfaf-11e6-bad8-902b345cadc2':
                     if period < datetime.datetime.strptime(items['ДатаВыдачи'][:10], "%Y-%m-%d"):
                         period = datetime.datetime.strptime(items['ДатаВыдачи'][:10], "%Y-%m-%d")
-                        ref_key = units['person_ref_key']
+                        view_description = item['Представление']
                         series = items['Серия']
                         number = items['Номер']
                         issued_by_whom = items['КемВыдан']
@@ -242,12 +268,15 @@ def get_identity_documents():
                 'date_of_issue': date_of_issue,
                 'division_code': division_code,
             }
-            main_obj_item, main_created = IdentityDocuments.objects.update_or_create(ref_key=units['person_ref_key'],
+            main_obj_item, main_created = IdentityDocuments.objects.update_or_create(ref_key=units['ref_key'],
                                                                                      defaults=user_identity_documents)
-            if main_created:
-                obj_item = DataBaseUserProfile.objects.get(person_ref_key=units['person_ref_key'])
-                obj_item.passport = main_obj_item
-                obj_item.save()
+            with transaction.atomic():
+                if view_description.find('Паспорт гражданина РФ') == 0:
+                    DataBaseUserProfile.objects.filter(ref_key=units['ref_key']).update(passport=main_obj_item,
+                                                                                        citizenship=citizenship)
+                else:
+                    DataBaseUserProfile.objects.filter(ref_key=units['ref_key']).update(passport=main_obj_item)
+
     return context
 
 
