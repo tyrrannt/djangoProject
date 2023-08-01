@@ -29,6 +29,7 @@ from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoPr
     MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
     ProductionCalendar, Provisions
 
+
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
 #            serialize=config('LOG_SERIALIZE'))
@@ -1146,6 +1147,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
         if self.request.GET:
             current_year = int(self.request.GET.get('CY'))
             current_month = int(self.request.GET.get('CM'))
+            current_person = self.request.GET.get('CP')
             html_obj = ''
             report = []
             from calendar import monthrange
@@ -1154,9 +1156,15 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
 
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
-                report_query = ReportCard.objects.filter(
-                    Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
-                    'employee__last_name')
+                if len(current_person) > 0:
+                    current_person_list = current_person.replace('filter_person=', '').split('&')
+                    report_query = ReportCard.objects.filter(
+                        Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end) &
+                        Q(employee__pk__in=current_person_list)).order_by('employee__last_name')
+                else:
+                    report_query = ReportCard.objects.filter(
+                        Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)
+                    ).order_by('employee__last_name')
                 # for item in range(0, 4):
                 #     count_obj = ApprovalOficialMemoProcess.objects.filter(
                 #         (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
@@ -1207,7 +1215,8 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 for item in table_count:
                     html_table_count += f'<th width="2%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">{item}</span></th>'
                 html_table_set = ''
-                color = ['f5f5dc', '49c144', 'ff0000', 'a0dfbd', 'FFCC00', 'ffff00', '9d76f5', 'ff8fa2', '808080', '76e3f5', '46aef2', 'e8ef2a', 'fafafa']
+                color = ['f5f5dc', '49c144', 'ff0000', 'a0dfbd', 'FFCC00', 'ffff00', '9d76f5', 'ff8fa2', '808080',
+                         '76e3f5', '46aef2', 'e8ef2a', 'fafafa']
                 for key, value in table_set.items():
                     html_table_set += f'<tr><td width="14%" style="position: -webkit-sticky;  position: sticky;"><strong>{key}</strong></td>'
                     for unit in value:
@@ -1376,8 +1385,14 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
 
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
         month_dict, year_dict = get_year_interval(2020)
+        all_person = dict()
+        person = DataBaseUser.objects.filter(is_active=True).values('pk', 'title').order_by('last_name')
+        for item in person:
+            all_person[item['pk']] = item['title']
+
         content['year_dict'] = year_dict
         content['month_dict'] = month_dict
+        content['all_person'] = all_person
         content['table_set'] = dict_obj
         content['table_count'] = range(1, (date_end - date_start).days + 2)
         content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Отчет'
