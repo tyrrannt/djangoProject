@@ -141,7 +141,8 @@
             current_year = $("#id_filter_year").val();
             current_month = $("#id_filter_month").val();
             current_person = $("#id_filter_person").serialize();
-            console.log(current_person)
+            var regex = /filter_person=/g;
+
             var $el = $('#LoadingOverlayApi');
 
             $.ajax({
@@ -150,7 +151,7 @@
                 data: {
                     "CY": current_year,
                     "CM": current_month,
-                    "CP": current_person,
+                    "CP": current_person.replace(regex, ''),
                 },
                 dataType: "json",
                 beforeSend: function () {

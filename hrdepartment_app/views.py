@@ -1148,6 +1148,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             current_year = int(self.request.GET.get('CY'))
             current_month = int(self.request.GET.get('CM'))
             current_person = self.request.GET.get('CP')
+
             html_obj = ''
             report = []
             from calendar import monthrange
@@ -1157,7 +1158,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
 
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
                 if len(current_person) > 0:
-                    current_person_list = current_person.replace('filter_person=', '').split('&')
+                    current_person_list = current_person.split('&')
                     report_query = ReportCard.objects.filter(
                         Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end) &
                         Q(employee__pk__in=current_person_list)).order_by('employee__last_name')
