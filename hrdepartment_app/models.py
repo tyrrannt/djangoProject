@@ -24,6 +24,7 @@ from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 from library_app.models import DocumentForm
 from telegram_app.models import TelegramNotification, ChatID
 
+
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
 #            serialize=config('LOG_SERIALIZE'))
@@ -245,7 +246,7 @@ class Medical(models.Model):
         return {
             'pk': self.pk,
             'number': self.number,
-            'date_entry': f'{self.date_entry:%d.%m.%Y} г.', # .strftime(""),
+            'date_entry': f'{self.date_entry:%d.%m.%Y} г.',  # .strftime(""),
             'person': self.person.get_title(),
             'organisation': self.organisation.get_title(),
             'working_status': self.get_working_status_display(),
@@ -395,8 +396,8 @@ class OfficialMemo(models.Model):
             'job': str(self.person.user_work_profile.job),
             'place_production_activity': '; '.join(place),
             'purpose_trip': str(self.purpose_trip),
-            'period_from': f'{self.period_from:%d.%m.%Y} г.', # .strftime(""),
-            'period_for': f'{self.period_for:%d.%m.%Y} г.', # .strftime(""),
+            'period_from': f'{self.period_from:%d.%m.%Y} г.',  # .strftime(""),
+            'period_for': f'{self.period_for:%d.%m.%Y} г.',  # .strftime(""),
             'accommodation': str(self.get_accommodation_display()),
             'order': str(self.order) if self.order else '',
             'comments': str(self.comments),
@@ -690,7 +691,8 @@ def hr_accepted(sender, instance, **kwargs):
         if instance.start_date_trip and instance.end_date_trip:
             interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.start_date_trip, until=instance.end_date_trip))
         else:
-            interval = list(rrule.rrule(rrule.DAILY, dtstart=instance.document.period_from, until=instance.document.period_for))
+            interval = list(
+                rrule.rrule(rrule.DAILY, dtstart=instance.document.period_from, until=instance.document.period_for))
         if len(interval) > 0:
             for date in interval:
                 if instance.document.type_trip == '1':
@@ -717,6 +719,7 @@ def hr_accepted(sender, instance, **kwargs):
                 obj.place_report_card.set(instance.document.place_production_activity.all())
                 obj.save()
 
+
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
 def create_report(sender, instance, **kwargs):
     change_approval_status(instance)
@@ -741,9 +744,11 @@ def create_report(sender, instance, **kwargs):
         }
         tn, created = TelegramNotification.objects.update_or_create(document_id=instance.pk, defaults=kwargs_obj)
         tn.respondents.set(person_agreement_list)
-    if instance.document_not_agreed and not instance.location_selected and not instance.email_send and instance.document.official_memo_type in ['1', '2']:
+    if instance.document_not_agreed and not instance.location_selected and not instance.email_send and instance.document.official_memo_type in [
+        '1', '2']:
         person_agreement_list = []
-        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True)):
+        for item in DataBaseUser.objects.filter(
+                Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True)):
             if item.telegram_id:
                 person_agreement_list.append(ChatID.objects.filter(chat_id=item.telegram_id).first())
         kwargs_obj = {
@@ -757,7 +762,8 @@ def create_report(sender, instance, **kwargs):
         tn.respondents.set(person_agreement_list)
     if instance.location_selected and not instance.process_accepted and not instance.email_send:
         person_agreement_list = []
-        for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True)):
+        for item in DataBaseUser.objects.filter(
+                Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True)):
             if item.telegram_id:
                 person_agreement_list.append(ChatID.objects.filter(chat_id=item.telegram_id).first())
         kwargs_obj = {
@@ -901,9 +907,6 @@ class BusinessProcessDirection(models.Model):
         return reverse('hrdepartment_app:bptrip_list')
 
 
-
-
-
 class OrderDescription(models.Model):
     class Meta:
         verbose_name = 'Наименование приказа'
@@ -954,7 +957,7 @@ class DocumentsOrder(Documents):
         return {
             'pk': self.pk,
             'document_number': self.document_number,
-            'document_date': f'{self.document_date:%d.%m.%Y} г.', # .strftime(""),
+            'document_date': f'{self.document_date:%d.%m.%Y} г.',  # .strftime(""),
             'document_name': self.document_name.name,
             'person': FIO_format(self.document_foundation.person.get_title()) if self.document_foundation else '',
             'approved': status,
@@ -1022,6 +1025,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     except Exception as _ex:
         logger.error(f'Ошибка сохранения файла в pdf {filename}: {_ex}')
 
+
 @receiver(post_save, sender=DocumentsOrder)
 def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
     if not instance.cancellation:
@@ -1033,7 +1037,8 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
             filename = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.docx'
             scanname = f'ORD-{instance.document_order_type}-{instance.document_date}-{uid}.pdf'
             date_doc = instance.document_date
-            order_doc(instance, f'media/docs/ORD/{date_doc.year}/{date_doc.month}', filename, instance.document_order_type)
+            order_doc(instance, f'media/docs/ORD/{date_doc.year}/{date_doc.month}', filename,
+                      instance.document_order_type)
             scan_name = pathlib.Path(instance.scan_file.name).name
             if f'docs/ORD/{date_doc.year}/{date_doc.month}/{filename}' != instance.doc_file:
                 DocumentsOrder.objects.filter(pk=instance.pk).update(
@@ -1041,8 +1046,10 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
             if f'docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}' != instance.scan_file:
                 try:
                     pathlib.Path.rename(
-                        pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scan_name),
-                        pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}', scanname))
+                        pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}',
+                                              scan_name),
+                        pathlib.Path.joinpath(BASE_DIR, 'media', f'docs/ORD/{date_doc.year}/{date_doc.month}',
+                                              scanname))
                 except Exception as _ex0:
                     logger.error(f'Ошибка переименования файла: {_ex0}')
                 DocumentsOrder.objects.filter(pk=instance.pk).update(
@@ -1068,7 +1075,7 @@ class DocumentsJobDescription(Documents):
         return {
             'pk': self.pk,
             'document_number': self.document_number,
-            'document_date': f'{self.document_date:%d.%m.%Y} г.', # .strftime(""),
+            'document_date': f'{self.document_date:%d.%m.%Y} г.',  # .strftime(""),
             'document_job': str(self.document_job),
             'document_division': str(self.document_division),
             'document_order': str(self.document_order),
@@ -1160,16 +1167,15 @@ class ReportCard(models.Model):
     current_intervals = models.BooleanField(verbose_name='Текущий интервал', default=True)
     confirmed = models.BooleanField(verbose_name='Подтвержденная СП', default=False)
     place_report_card = models.ManyToManyField(PlaceProductionActivity, verbose_name='МПД',
-                                                       related_name='place_report_card')
-
+                                               related_name='place_report_card')
 
     def get_data(self):
         return {
             'pk': self.pk,
-            'employee': FIO_format(self.employee.get_title()),
-            'report_card_day': f'{self.report_card_day:%d.%m.%Y} г.', # .strftime(''),
-            'start_time': f'{self.start_time:%H:%M}', # .strftime(''),
-            'end_time': f'{self.end_time:%H:%M}', # .strftime(''),
+            'employee': FIO_format(self.employee.title),
+            'report_card_day': f'{self.report_card_day:%d.%m.%Y} г.',  # .strftime(''),
+            'start_time': f'{self.start_time:%H:%M}',  # .strftime(''),
+            'end_time': f'{self.end_time:%H:%M}',  # .strftime(''),
             'reason_adjustment': self.reason_adjustment,
             'record_type': self.get_record_type_display(),
         }
@@ -1365,6 +1371,7 @@ class Instructions(Documents):
     def __str__(self):
         return self.document_name
 
+
 @receiver(post_save, sender=Instructions)
 def rename_file_name_instructions(sender, instance, **kwargs):
     try:
@@ -1403,7 +1410,6 @@ def rename_file_name_instructions(sender, instance, **kwargs):
             instance.save()
     except Exception as _ex:
         logger.error(f'Ошибка при переименовании файла {_ex}')
-
 
 
 class Provisions(Documents):

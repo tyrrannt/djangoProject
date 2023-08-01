@@ -21,9 +21,10 @@ from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
-    get_vacation
+    get_vacation, vacation_schedule
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
+
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -83,46 +84,47 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
-                def get_type_of_employment(Ref_Key):
-                    data = get_jsons_data_filter("Document", "ПриемНаРаботу", 'Сотрудник_Key', Ref_Key, 0, 0, True, True)
-                    match len(data['value']):
-                        case 0:
-                            return False
-                        case 1:
-                            if data['value'][0]['ВидЗанятости'] == 'ОсновноеМестоРаботы':
-                                return True
-                        case _:
-                            for item in data['value']:
-                                if item['ВидЗанятости'] == 'ОсновноеМестоРаботы' and item['ИсправленныйДокумент_Key'] != "00000000-0000-0000-0000-000000000000":
-                                    return True
-                    return False
-
-                staff = get_jsons_data_filter("Catalog", "Сотрудники", 'ВАрхиве', 'false', 0, 0, False, False)
-                individuals = get_jsons_data("Catalog", "ФизическиеЛица", 0)
-                staff_set = set()
-                for item in staff['value']:
-                    if item['Description'] != "":
-                        staff_set.add(item['Ref_Key'])
-                users_set = set()
-                for item in DataBaseUser.objects.all():
-                    users_set.add(item.ref_key)
-                users_set &= staff_set
-                print('Есть везде', len(list(users_set)))
-                staff_set -= users_set
-                staff_set_list = list()
-                for unit in list(staff_set):
-                    if get_type_of_employment(unit):
-                        staff_set_list.append(unit)
-                print('Нет в системе',  staff_set_list)
-
-                def get_filter_list(filter_list, variable, meaning):
-                    return list(filter(lambda item_filter: item_filter[variable] == meaning, filter_list))[0]
-                for item in staff['value']:
-                    if item['Description'] != "":
-                        # find_item = list(filter(lambda item_filter: item_filter['Ref_Key'] == item['ФизическоеЛицо_Key'], individuals['value']))[0]
-                        print(get_filter_list(individuals['value'], 'Ref_Key', item['ФизическоеЛицо_Key']))
-
-                pass
+                get_vacation()
+                # def get_type_of_employment(Ref_Key):
+                #     data = get_jsons_data_filter("Document", "ПриемНаРаботу", 'Сотрудник_Key', Ref_Key, 0, 0, True, True)
+                #     match len(data['value']):
+                #         case 0:
+                #             return False
+                #         case 1:
+                #             if data['value'][0]['ВидЗанятости'] == 'ОсновноеМестоРаботы':
+                #                 return True
+                #         case _:
+                #             for item in data['value']:
+                #                 if item['ВидЗанятости'] == 'ОсновноеМестоРаботы' and item['ИсправленныйДокумент_Key'] != "00000000-0000-0000-0000-000000000000":
+                #                     return True
+                #     return False
+                #
+                # staff = get_jsons_data_filter("Catalog", "Сотрудники", 'ВАрхиве', 'false', 0, 0, False, False)
+                # individuals = get_jsons_data("Catalog", "ФизическиеЛица", 0)
+                # staff_set = set()
+                # for item in staff['value']:
+                #     if item['Description'] != "":
+                #         staff_set.add(item['Ref_Key'])
+                # users_set = set()
+                # for item in DataBaseUser.objects.all():
+                #     users_set.add(item.ref_key)
+                # users_set &= staff_set
+                # print('Есть везде', len(list(users_set)))
+                # staff_set -= users_set
+                # staff_set_list = list()
+                # for unit in list(staff_set):
+                #     if get_type_of_employment(unit):
+                #         staff_set_list.append(unit)
+                # print('Нет в системе',  staff_set_list)
+                #
+                # def get_filter_list(filter_list, variable, meaning):
+                #     return list(filter(lambda item_filter: item_filter[variable] == meaning, filter_list))[0]
+                # for item in staff['value']:
+                #     if item['Description'] != "":
+                #         # find_item = list(filter(lambda item_filter: item_filter['Ref_Key'] == item['ФизическоеЛицо_Key'], individuals['value']))[0]
+                #         print(get_filter_list(individuals['value'], 'Ref_Key', item['ФизическоеЛицо_Key']))
+                #
+                # pass
                 # get_sick_leave(2023, 2)
             if request.GET.get('update') == '4':
                 for report_record in ReportCard.objects.filter(
