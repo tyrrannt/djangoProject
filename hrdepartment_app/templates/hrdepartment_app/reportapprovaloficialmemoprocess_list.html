@@ -33,7 +33,7 @@
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-                                    <div class="col-sm-12 col-lg-3 mb-1">
+                                    <div class="col-sm-12 col-lg-4 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 id="id_filter_month">
                                             {% for key, value in month_dict.items %}
@@ -43,7 +43,7 @@
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-sm-12 col-lg-3 mb-1">
+                                    <div class="col-sm-12 col-lg-4 mb-1">
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
                                                 id="id_filter_year">
                                             {% for key, value in year_dict.items %}
@@ -53,21 +53,21 @@
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-sm-12 col-lg-3 mb-1">
-                                        <select class="form-control select-style-1 filter-by" name="filter_person"
+                                    <div class="col-sm-12 col-lg-4 mb-1">
+                                        <select class="form-control select-style-1 filter-by" name="filter_person"  style="width: 100%"
                                                 id="id_filter_person" multiple data-plugin-multiselect data-plugin-options='{ "includeSelectAllOption": true }'>
                                             {% for key, value in all_person.items %}
                                                 <option value="{{ key }}">{{ value }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-sm-12 col-lg-3 mb-1">
+                                    <div class="col-sm-12 col-lg-3 mb-2 mt-2">
                                         <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">
                                             Сформировать
                                         </button>
                                     </div>
-                                    <div class="col-sm-12 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" id="print">Печать таблицы</button>
+                                    <div class="col-sm-12 col-lg-3 mb-2 mt-2">
+                                        <button class="btn btn-primary" style="width: 100%"  id="print">Печать таблицы</button>
                                     </div>
                                 </div>
                             </div>
