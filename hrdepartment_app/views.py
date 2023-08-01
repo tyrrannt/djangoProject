@@ -1387,7 +1387,8 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
         month_dict, year_dict = get_year_interval(2020)
         all_person = dict()
-        person = DataBaseUser.objects.filter(is_active=True).values('pk', 'title').order_by('last_name')
+        person = DataBaseUser.objects.filter(is_active=True).exclude(username='proxmox').values('pk', 'title').order_by(
+            'last_name')
         for item in person:
             all_person[item['pk']] = item['title']
 
