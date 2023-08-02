@@ -23,7 +23,7 @@ from administration_app.utils import (
     change_session_context,
     change_session_queryset,
     change_session_get,
-    FIO_format,
+    format_name_initials,
     get_jsons_data,
     ending_day,
     get_history,
@@ -1583,7 +1583,7 @@ class ReportApprovalOficialMemoProcessList(
                 selected_record = report_query.filter(
                     employee__title=rec["employee__title"]
                 )
-                person = FIO_format(rec["employee__title"])
+                person = format_name_initials(rec["employee__title"])
                 if person not in dict_obj:
                     dict_obj[person] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
@@ -1803,7 +1803,7 @@ class ReportApprovalOficialMemoProcessList(
         dict_obj = dict()
         for item in qs.all().order_by("document__person__last_name"):
             list_obj = []
-            person = FIO_format(str(item.document.person))
+            person = format_name_initials(str(item.document.person))
             # Проверяем, заполнялся ли список по сотруднику
             if person in dict_obj:
                 list_obj = dict_obj[person]
@@ -1823,9 +1823,9 @@ class ReportApprovalOficialMemoProcessList(
                             <= item.document.period_for
                         ):
                             list_obj[days_count] = "1"
-                dict_obj[FIO_format(str(item.document.person))] = list_obj
+                dict_obj[format_name_initials(str(item.document.person))] = list_obj
             else:
-                dict_obj[FIO_format(str(item.document.person))] = []
+                dict_obj[format_name_initials(str(item.document.person))] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
                     curent_day = date_start + datetime.timedelta(days_count)
                     # print(list_obj, days_count, date_end, date_start)
@@ -1848,7 +1848,7 @@ class ReportApprovalOficialMemoProcessList(
                         else:
                             list_obj.append(["0", ""])
 
-                dict_obj[FIO_format(str(item.document.person))] = list_obj
+                dict_obj[format_name_initials(str(item.document.person))] = list_obj
         month_dict, year_dict = get_year_interval(2020)
         all_person = dict()
         person = (

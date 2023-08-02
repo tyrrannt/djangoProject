@@ -35,6 +35,13 @@ from hrdepartment_app.models import (
 
 
 def present_or_future_date(value):
+    """
+    Проверяет, существует ли дата или находится в будущем.
+
+    :param value: Дата, которую необходимо проверить.
+    :return: Исходная дата, если она присутствует или будет в будущем.
+    :raises forms.ValidationError: Вызывает исключение если дата в прошлом (более 60 дней назад).
+    """
     if value < datetime.date.today() - datetime.timedelta(days=60):
         raise forms.ValidationError("Нельзя использовать прошедшую дату!")
     return value
@@ -136,6 +143,10 @@ class OfficialMemoAddForm(forms.ModelForm):
         )
 
     def date_difference(self, day):
+        """
+        :param day: Целое число, представляющее количество дней, которое необходимо вычесть из текущей даты.
+        :return: Разница в днях между текущей датой и датой, полученной путем вычитания заданного количества дней.
+        """
         return datetime.date.today() - datetime.timedelta(days=day)
 
     def clean(self):
@@ -235,6 +246,11 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         )
 
     def clean(self):
+        """
+        Этот метод используется для проверки данных, введенных в OfficialMemoUpdateForm. Он проверяет, предшествует ли дата «period_from» дате «period_for».
+
+        :return: None
+        """
         # user age must be above 18 to register
         try:
             if self.cleaned_data.get("period_for") < self.cleaned_data.get(
