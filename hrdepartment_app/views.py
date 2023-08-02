@@ -1155,10 +1155,9 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             days = monthrange(current_year, current_month)[1]
             date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
             date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
-
+            current_person_list = current_person.split('&')
             if self.request.user.user_work_profile.divisions.type_of_role == '2':
                 if len(current_person) > 0:
-                    current_person_list = current_person.split('&')
                     report_query = ReportCard.objects.filter(
                         Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end) &
                         Q(employee__pk__in=current_person_list)).order_by('employee__last_name')
@@ -1177,7 +1176,8 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
             else:
                 report_query = ReportCard.objects.filter(
                     Q(employee__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                    & Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)).order_by(
+                    & Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end) &
+                        Q(employee__pk__in=current_person_list)).order_by(
                     'employee__last_name')
             dict_obj = dict()
             dist = report_query.values('employee__title').distinct()
