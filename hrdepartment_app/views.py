@@ -1851,12 +1851,25 @@ class ReportApprovalOficialMemoProcessList(
                 dict_obj[format_name_initials(str(item.document.person))] = list_obj
         month_dict, year_dict = get_year_interval(2020)
         all_person = dict()
-        person = (
-            DataBaseUser.objects.filter(is_active=True)
-            .exclude(username="proxmox")
-            .values("pk", "title")
-            .order_by("last_name")
-        )
+        if self.request.user.user_work_profile.divisions.type_of_role == "2":
+            person = (
+                DataBaseUser.objects.filter(is_active=True)
+                .exclude(username="proxmox")
+                .values("pk", "title")
+                .order_by("last_name")
+            )
+        else:
+            person = (
+                DataBaseUser.objects.filter(
+                    Q(is_active=True)
+                    & Q(
+                        user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job
+                    )
+                )
+                .exclude(username="proxmox")
+                .values("pk", "title")
+                .order_by("last_name")
+            )
         for item in person:
             all_person[item["pk"]] = item["title"]
 
