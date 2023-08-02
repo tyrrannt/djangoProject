@@ -9,25 +9,73 @@ from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView
+from django.views.generic import (
+    ListView,
+    CreateView,
+    UpdateView,
+    DetailView,
+    DeleteView,
+)
 from loguru import logger
 
 from administration_app.models import PortalProperty
-from administration_app.utils import change_session_context, change_session_queryset, change_session_get, FIO_format, \
-    get_jsons_data, ending_day, get_history, get_year_interval
+from administration_app.utils import (
+    change_session_context,
+    change_session_queryset,
+    change_session_get,
+    FIO_format,
+    get_jsons_data,
+    ending_day,
+    get_history,
+    get_year_interval,
+)
 from customers_app.models import DataBaseUser, Counteragent
-from hrdepartment_app.forms import MedicalExaminationAddForm, MedicalExaminationUpdateForm, OfficialMemoUpdateForm, \
-    OfficialMemoAddForm, ApprovalOficialMemoProcessAddForm, ApprovalOficialMemoProcessUpdateForm, \
-    BusinessProcessDirectionAddForm, BusinessProcessDirectionUpdateForm, MedicalOrganisationAddForm, \
-    MedicalOrganisationUpdateForm, PurposeAddForm, PurposeUpdateForm, DocumentsOrderUpdateForm, DocumentsOrderAddForm, \
-    DocumentsJobDescriptionUpdateForm, DocumentsJobDescriptionAddForm, PlaceProductionActivityAddForm, \
-    PlaceProductionActivityUpdateForm, ApprovalOficialMemoProcessChangeForm, ReportCardAddForm, ReportCardUpdateForm, \
-    ProvisionsUpdateForm, ProvisionsAddForm, OficialMemoCancelForm
-from hrdepartment_app.hrdepartment_util import get_medical_documents, send_mail_change, get_month, \
-    get_working_hours
-from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection, \
-    MedicalOrganisation, Purpose, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity, ReportCard, \
-    ProductionCalendar, Provisions
+from hrdepartment_app.forms import (
+    MedicalExaminationAddForm,
+    MedicalExaminationUpdateForm,
+    OfficialMemoUpdateForm,
+    OfficialMemoAddForm,
+    ApprovalOficialMemoProcessAddForm,
+    ApprovalOficialMemoProcessUpdateForm,
+    BusinessProcessDirectionAddForm,
+    BusinessProcessDirectionUpdateForm,
+    MedicalOrganisationAddForm,
+    MedicalOrganisationUpdateForm,
+    PurposeAddForm,
+    PurposeUpdateForm,
+    DocumentsOrderUpdateForm,
+    DocumentsOrderAddForm,
+    DocumentsJobDescriptionUpdateForm,
+    DocumentsJobDescriptionAddForm,
+    PlaceProductionActivityAddForm,
+    PlaceProductionActivityUpdateForm,
+    ApprovalOficialMemoProcessChangeForm,
+    ReportCardAddForm,
+    ReportCardUpdateForm,
+    ProvisionsUpdateForm,
+    ProvisionsAddForm,
+    OficialMemoCancelForm,
+)
+from hrdepartment_app.hrdepartment_util import (
+    get_medical_documents,
+    send_mail_change,
+    get_month,
+    get_working_hours,
+)
+from hrdepartment_app.models import (
+    Medical,
+    OfficialMemo,
+    ApprovalOficialMemoProcess,
+    BusinessProcessDirection,
+    MedicalOrganisation,
+    Purpose,
+    DocumentsJobDescription,
+    DocumentsOrder,
+    PlaceProductionActivity,
+    ReportCard,
+    ProductionCalendar,
+    Provisions,
+)
 
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -38,64 +86,74 @@ from hrdepartment_app.models import Medical, OfficialMemo, ApprovalOficialMemoPr
 # Create your views here.
 class MedicalOrganisationList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = MedicalOrganisation
-    permission_required = 'customers_app.view_medicalorganisation'
+    permission_required = "customers_app.view_medicalorganisation"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             medicals = MedicalOrganisation.objects.all()
             data = [medical.get_data() for medical in medicals]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         count = 0
-        if self.request.GET.get('update') == '0':
+        if self.request.GET.get("update") == "0":
             todos = get_jsons_data("Catalog", "МедицинскиеОрганизации", 0)
             # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
-            for item in todos['value']:
-                if not item['DeletionMark']:
+            for item in todos["value"]:
+                if not item["DeletionMark"]:
                     divisions_kwargs = {
-                        'ref_key': item['Ref_Key'],
-                        'description': item['Description'],
-                        'ogrn': item['ОГРН'],
-                        'address': item['Адрес'],
+                        "ref_key": item["Ref_Key"],
+                        "description": item["Description"],
+                        "ogrn": item["ОГРН"],
+                        "address": item["Адрес"],
                     }
-                    MedicalOrganisation.objects.update_or_create(ref_key=item['Ref_Key'], defaults=divisions_kwargs)
-            url_match = reverse_lazy('hrdepartment_app:medicalorg_list')
+                    MedicalOrganisation.objects.update_or_create(
+                        ref_key=item["Ref_Key"], defaults=divisions_kwargs
+                    )
+            url_match = reverse_lazy("hrdepartment_app:medicalorg_list")
             return redirect(url_match)
         change_session_get(self.request, self)
         return super(MedicalOrganisationList, self).get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Медицинские организации'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Медицинские организации"
         return context
 
 
 class MedicalOrganisationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = MedicalOrganisation
     form_class = MedicalOrganisationAddForm
-    permission_required = 'customers_app.add_medicalorganisation'
+    permission_required = "customers_app.add_medicalorganisation"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить медицинскую организацию'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить медицинскую организацию"
         return context
 
 
-class MedicalOrganisationUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+class MedicalOrganisationUpdate(
+    PermissionRequiredMixin, LoginRequiredMixin, UpdateView
+):
     model = MedicalOrganisation
     form_class = MedicalOrganisationUpdateForm
-    permission_required = 'customers_app.change_medicalorganisation'
+    permission_required = "customers_app.change_medicalorganisation"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
 
 class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Medical
-    permission_required = 'hrdepartment_app.view_medical'
+    permission_required = "hrdepartment_app.view_medical"
 
     # paginate_by = 10
     # item_sorted = 'date_entry'
@@ -104,7 +162,7 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         change_session_queryset(self.request, self)
-        if self.item_sorted == 'date_entry':
+        if self.item_sorted == "date_entry":
             qs = super().get_queryset().order_by(self.item_sorted).reverse()
         else:
             qs = super().get_queryset().order_by(self.item_sorted)
@@ -112,24 +170,29 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Медицинские направления'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Медицинские направления"
         change_session_context(context, self)
         return context
 
     def get(self, request, *args, **kwargs):
-        if self.request.GET.get('update') == '0':
+        if self.request.GET.get("update") == "0":
             error = get_medical_documents()
             if error:
-                return render(request, 'hrdepartment_app/medical_list.html',
-                              {'error': 'Необходимо обновить список организаций.'})
-            url_match = reverse_lazy('hrdepartment_app:medical_list')
+                return render(
+                    request,
+                    "hrdepartment_app/medical_list.html",
+                    {"error": "Необходимо обновить список организаций."},
+                )
+            url_match = reverse_lazy("hrdepartment_app:medical_list")
             return redirect(url_match)
         change_session_get(self.request, self)
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             medical_list = Medical.objects.all().order_by("date_entry").reverse()
             data = [medical_item.get_data() for medical_item in medical_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
 
         return super(MedicalExamination, self).get(request, *args, **kwargs)
@@ -145,143 +208,188 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 class MedicalExaminationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Medical
     form_class = MedicalExaminationAddForm
-    permission_required = 'hrdepartment_app.add_medical'
+    permission_required = "hrdepartment_app.add_medical"
 
     def get_context_data(self, **kwargs):
         content = super(MedicalExaminationAdd, self).get_context_data(**kwargs)
-        content['all_person'] = DataBaseUser.objects.filter(type_users='staff_member')
-        content['all_contragent'] = Counteragent.objects.all()
-        content['all_status'] = Medical.type_of
-        content['all_harmful'] = ''
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить медицинское направление'
+        content["all_person"] = DataBaseUser.objects.filter(type_users="staff_member")
+        content["all_contragent"] = Counteragent.objects.all()
+        content["all_status"] = Medical.type_of
+        content["all_harmful"] = ""
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить медицинское направление"
         return content
 
     def get_success_url(self):
-        return reverse_lazy('hrdepartment_app:medical_list')
+        return reverse_lazy("hrdepartment_app:medical_list")
         # return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
 
 
 class MedicalExaminationUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Medical
     form_class = MedicalExaminationUpdateForm
-    template_name = 'hrdepartment_app/medical_form_update.html'
-    permission_required = 'hrdepartment_app.change_medical'
+    template_name = "hrdepartment_app/medical_form_update.html"
+    permission_required = "hrdepartment_app.change_medical"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
     def get_success_url(self):
-        return reverse_lazy('hrdepartment_app:medical_list')
+        return reverse_lazy("hrdepartment_app:medical_list")
 
 
 class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = OfficialMemo
-    permission_required = 'hrdepartment_app.view_officialmemo'
+    permission_required = "hrdepartment_app.view_officialmemo"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
-                memo_list = OfficialMemo.objects.all().order_by('date_of_creation').reverse()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            if (
+                request.user.is_superuser
+                or request.user.user_work_profile.job.type_of_job == "0"
+            ):
+                memo_list = (
+                    OfficialMemo.objects.all().order_by("date_of_creation").reverse()
+                )
             else:
-                memo_list = OfficialMemo.objects.filter(
-                    Q(responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
-                    comments='Документооборот завершен').order_by('date_of_creation').reverse()
+                memo_list = (
+                    OfficialMemo.objects.filter(
+                        Q(
+                            responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                        )
+                    )
+                    .exclude(comments="Документооборот завершен")
+                    .order_by("date_of_creation")
+                    .reverse()
+                )
 
             data = [memo_item.get_data() for memo_item in memo_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super(OfficialMemoList, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = super(OfficialMemoList, self).get_queryset().order_by('pk')
+        qs = super(OfficialMemoList, self).get_queryset().order_by("pk")
         if not self.request.user.is_superuser:
-            user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
-            qs = OfficialMemo.objects.filter(responsible__user_work_profile__divisions=user_division).order_by(
-                'period_from').reverse()
+            user_division = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_work_profile.divisions
+            qs = (
+                OfficialMemo.objects.filter(
+                    responsible__user_work_profile__divisions=user_division
+                )
+                .order_by("period_from")
+                .reverse()
+            )
         return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(OfficialMemoList, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Служебные записки'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Служебные записки"
         return context
 
 
 class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = OfficialMemo
     form_class = OfficialMemoAddForm
-    permission_required = 'hrdepartment_app.add_officialmemo'
+    permission_required = "hrdepartment_app.add_officialmemo"
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoAdd, self).get_context_data(**kwargs)
         # content['all_status'] = OfficialMemo.type_of_accommodation
         # Генерируем список сотрудников, которые на текущий момент времени не находятся в СП
-        users_list = [person.person_id for person in OfficialMemo.objects.filter(
-            Q(period_from__lte=datetime.datetime.today()) & Q(period_for__gte=datetime.datetime.today()))]
+        users_list = [
+            person.person_id
+            for person in OfficialMemo.objects.filter(
+                Q(period_from__lte=datetime.datetime.today())
+                & Q(period_for__gte=datetime.datetime.today())
+            )
+        ]
         # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         user_job = self.request.user
 
-        content['form'].fields['person'].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job).exclude(
-            username='proxmox').exclude(is_active=False).order_by('last_name')
-        content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить служебную записку'
+        content["form"].fields["person"].queryset = (
+            DataBaseUser.objects.filter(
+                user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job
+            )
+            .exclude(username="proxmox")
+            .exclude(is_active=False)
+            .order_by("last_name")
+        )
+        content["form"].fields[
+            "place_production_activity"
+        ].queryset = PlaceProductionActivity.objects.all()
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить служебную записку"
         return content
 
     def get_success_url(self):
-        return reverse_lazy('hrdepartment_app:memo_list')
+        return reverse_lazy("hrdepartment_app:memo_list")
 
     def get(self, request, *args, **kwargs):
         global filter_string
         html = list()
-        employee = request.GET.get('employee', None)
-        period_from = request.GET.get('period_from', None)
-        memo_type = request.GET.get('memo_type', None)
+        employee = request.GET.get("employee", None)
+        period_from = request.GET.get("period_from", None)
+        memo_type = request.GET.get("memo_type", None)
         try:
             person = DataBaseUser.objects.get(pk=employee)
             division = str(person.user_work_profile.divisions)
         except DataBaseUser.DoesNotExist:
             pass
         if memo_type and employee:
-            html = {'employee': '', 'memo_type': ''}
-            if memo_type == '2':
+            html = {"employee": "", "memo_type": ""}
+            if memo_type == "2":
                 memo_list = OfficialMemo.objects.filter(
-                    Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(
-                    cancellation=True)
+                    Q(person=employee)
+                    & Q(official_memo_type="1")
+                    & Q(docs__accepted_accounting=False)
+                ).exclude(cancellation=True)
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
-                html['memo_type'] = memo_obj_list
-                html['employee'] = division
+                html["memo_type"] = memo_obj_list
+                html["employee"] = division
                 return JsonResponse(html)
         if employee and period_from:
-            check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
+            check_date = datetime.datetime.strptime(period_from, "%Y-%m-%d")
             filters = OfficialMemo.objects.filter(
-                Q(person__pk=employee) & Q(period_for__gte=check_date)).exclude(cancellation=True)
+                Q(person__pk=employee) & Q(period_for__gte=check_date)
+            ).exclude(cancellation=True)
             try:
-                filter_string = datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
+                filter_string = datetime.datetime.strptime(
+                    "1900-01-01", "%Y-%m-%d"
+                ).date()
                 for item in filters:
                     if item.period_for > filter_string:
                         filter_string = item.period_for
             except AttributeError:
                 logger.info(
-                    f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
+                    f"За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}"
+                )
             if filters.count() > 0:
                 # html = filter_string + datetime.timedelta(days=1)
-                label = 'Внимание, в заданный интервал имеются другие СЗ:'
+                label = "Внимание, в заданный интервал имеются другие СЗ:"
                 for item in filters:
-                    label += ' ' + str(item) + ';'
+                    label += " " + str(item) + ";"
                 html = label
                 return JsonResponse(html, safe=False)
         # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
-        interval = request.GET.get('interval', None)
+        interval = request.GET.get("interval", None)
         if interval:
-            request_day = datetime.datetime.strptime(interval, '%Y-%m-%d').day
-            request_month = datetime.datetime.strptime(interval, '%Y-%m-%d').month
-            request_year = datetime.datetime.strptime(interval, '%Y-%m-%d').year
+            request_day = datetime.datetime.strptime(interval, "%Y-%m-%d").day
+            request_month = datetime.datetime.strptime(interval, "%Y-%m-%d").month
+            request_year = datetime.datetime.strptime(interval, "%Y-%m-%d").year
             current_days = monthrange(request_year, request_month)[1]
             if request_month < 12:
                 next_days = monthrange(request_year, request_month + 1)[1]
@@ -291,17 +399,32 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 next_days = monthrange(request_year + 1, 1)[1]
                 next_month = 1
                 next_year = request_year + 1
-            min_date = datetime.datetime.strptime(interval, '%Y-%m-%d')
+            min_date = datetime.datetime.strptime(interval, "%Y-%m-%d")
             if request_day == current_days:
                 if request_month == 11:
-                    max_date = datetime.datetime.strptime(f'{next_year + 1}-{"01"}-{"01"}', '%Y-%m-%d')
-                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+                    max_date = datetime.datetime.strptime(
+                        f'{next_year + 1}-{"01"}-{"01"}', "%Y-%m-%d"
+                    )
+                    dict_obj = [
+                        min_date.strftime("%Y-%m-%d"),
+                        max_date.strftime("%Y-%m-%d"),
+                    ]
                 else:
-                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month + 1}-{"01"}', '%Y-%m-%d')
-                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+                    max_date = datetime.datetime.strptime(
+                        f'{next_year}-{next_month + 1}-{"01"}', "%Y-%m-%d"
+                    )
+                    dict_obj = [
+                        min_date.strftime("%Y-%m-%d"),
+                        max_date.strftime("%Y-%m-%d"),
+                    ]
             else:
-                max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
-                dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+                max_date = datetime.datetime.strptime(
+                    f'{next_year}-{next_month}-{"01"}', "%Y-%m-%d"
+                )
+                dict_obj = [
+                    min_date.strftime("%Y-%m-%d"),
+                    max_date.strftime("%Y-%m-%d"),
+                ]
             return JsonResponse(dict_obj, safe=False)
         if employee:
             return JsonResponse(division, safe=False)
@@ -310,27 +433,27 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
 class OfficialMemoDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = OfficialMemo
-    permission_required = 'hrdepartment_app.view_officialmemo'
+    permission_required = "hrdepartment_app.view_officialmemo"
 
     def get_context_data(self, **kwargs):
         content = super().get_context_data(**kwargs)
-        content['change_history'] = get_history(self, OfficialMemo)
+        content["change_history"] = get_history(self, OfficialMemo)
         return content
 
 
 class OfficialMemoCancel(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = OfficialMemo
-    permission_required = 'hrdepartment_app.change_officialmemo'
-    template_name = 'hrdepartment_app/officialmemo_form_cancel.html'
+    permission_required = "hrdepartment_app.change_officialmemo"
+    template_name = "hrdepartment_app/officialmemo_form_cancel.html"
     form_class = OficialMemoCancelForm
 
     def get_context_data(self, **kwargs):
         content = super().get_context_data(**kwargs)
-        content['change_history'] = get_history(self, OfficialMemo)
+        content["change_history"] = get_history(self, OfficialMemo)
         return content
 
     def get_success_url(self):
-        return reverse_lazy('hrdepartment_app:memo_list')
+        return reverse_lazy("hrdepartment_app:memo_list")
 
     def get_form_kwargs(self):
         """
@@ -343,32 +466,38 @@ class OfficialMemoCancel(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 cancel = False
         except ApprovalOficialMemoProcess.DoesNotExist:
             cancel = True
-        kwargs.update({'cancel': cancel})
+        kwargs.update({"cancel": cancel})
         return kwargs
 
 
 class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = OfficialMemo
     form_class = OfficialMemoUpdateForm
-    template_name = 'hrdepartment_app/officialmemo_form_update.html'
-    permission_required = 'hrdepartment_app.change_officialmemo'
+    template_name = "hrdepartment_app/officialmemo_form_update.html"
+    permission_required = "hrdepartment_app.change_officialmemo"
 
     def get_context_data(self, **kwargs):
         content = super(OfficialMemoUpdate, self).get_context_data(**kwargs)
         # Получаем объект
         obj_item = self.get_object()
         obj_list = OfficialMemo.objects.filter(
-            Q(person=obj_item.person) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False))
+            Q(person=obj_item.person)
+            & Q(official_memo_type="1")
+            & Q(docs__accepted_accounting=False)
+        )
         # Получаем разницу в днях, для определения количества дней СП
-        delta = (self.object.period_for - self.object.period_from)
+        delta = self.object.period_for - self.object.period_from
         # Передаем количество дней в контекст
-        content['period'] = int(delta.days) + 1
+        content["period"] = int(delta.days) + 1
         # Получаем все служебные записки по человеку, исключая текущую
-        filters = OfficialMemo.objects.filter(person=self.object.person).exclude(pk=self.object.pk).exclude(
-            cancellation=True)
+        filters = (
+            OfficialMemo.objects.filter(person=self.object.person)
+            .exclude(pk=self.object.pk)
+            .exclude(cancellation=True)
+        )
         filter_string = {
             "pk": 0,
-            "period": datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
+            "period": datetime.datetime.strptime("1900-01-01", "%Y-%m-%d").date(),
         }
         # Проходимся по выборке в цикле
         for item in filters:
@@ -376,18 +505,23 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 filter_string["pk"] = item.pk
                 filter_string["period"] = item.period_for
 
-        content['form'].fields['place_production_activity'].queryset = PlaceProductionActivity.objects.all()
-        if obj_item.official_memo_type == '2':
-            content['form'].fields['document_extension'].queryset = obj_list
+        content["form"].fields[
+            "place_production_activity"
+        ].queryset = PlaceProductionActivity.objects.all()
+        if obj_item.official_memo_type == "2":
+            content["form"].fields["document_extension"].queryset = obj_list
         else:
-            content['form'].fields['document_extension'].queryset = OfficialMemo.objects.filter(pk=0).exclude(
-                cancellation=True)
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}'
-        content['change_history'] = get_history(self, OfficialMemo)
+            content["form"].fields[
+                "document_extension"
+            ].queryset = OfficialMemo.objects.filter(pk=0).exclude(cancellation=True)
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}"
+        content["change_history"] = get_history(self, OfficialMemo)
         return content
 
     def get_success_url(self):
-        return reverse_lazy('hrdepartment_app:memo_list')
+        return reverse_lazy("hrdepartment_app:memo_list")
 
     def form_invalid(self, form):
         return super(OfficialMemoUpdate, self).form_invalid(form)
@@ -397,13 +531,13 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         warning_change = 0
 
         def person_finder(item, instanse_obj):
-            person_list = ['person_id']
-            date_field = ['period_from', 'period_for']
+            person_list = ["person_id"]
+            date_field = ["period_from", "period_for"]
             if item in person_list:
                 return DataBaseUser.objects.get(pk=instanse_obj[item])
             if item in date_field:
-                return instanse_obj[item].strftime('%d.%m.%Y')
-            if item == 'purpose_trip_id':
+                return instanse_obj[item].strftime("%d.%m.%Y")
+            if item == "purpose_trip_id":
                 return Purpose.objects.get(pk=instanse_obj[item])
             else:
                 return instanse_obj[item]
@@ -411,31 +545,39 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         if form.is_valid():
             # в old_instance сохраняем старые значения записи
             object_item = self.get_object()
-            place_old = set([item.name for item in object_item.place_production_activity.all()])
+            place_old = set(
+                [item.name for item in object_item.place_production_activity.all()]
+            )
 
             old_instance = object_item.__dict__
             refresh_form = form.save(commit=False)
-            if refresh_form.official_memo_type == '1':
+            if refresh_form.official_memo_type == "1":
                 refresh_form.document_extension = None
             refresh_form.save()
             form.save_m2m()
             object_item = self.get_object()
             # в new_instance сохраняем новые значения записи
             new_instance = object_item.__dict__
-            place_new = set([item.name for item in object_item.place_production_activity.all()])
+            place_new = set(
+                [item.name for item in object_item.place_production_activity.all()]
+            )
             changed = False
             # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
-            message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:<br>'
+            message = (
+                "<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:<br>"
+            )
             # print(diffkeys)
             if place_old != place_new:
                 critical_change = 1
-                message += f'Место назначения: <strike>{place_old}</strike> -> {place_new}<br>'
+                message += (
+                    f"Место назначения: <strike>{place_old}</strike> -> {place_new}<br>"
+                )
                 changed = True
             # Доработать замену СЗ
             for k in diffkeys:
                 # print(k)
-                if k != '_state':
+                if k != "_state":
                     # if object_item._meta.get_field(k).verbose_name == 'Сотрудник':
                     #     critical_change = 1
                     # if object_item._meta.get_field(k).verbose_name == 'Дата начала':
@@ -447,49 +589,55 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                     #     if (new_instance[k] != old_instance[k]) and (
                     #             str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
                     #         warning_change = 1
-                    if k == 'person_id':
+                    if k == "person_id":
                         critical_change = 1
-                    if k == 'period_from':
+                    if k == "period_from":
                         if new_instance[k] < old_instance[k]:
                             critical_change = 1
                         else:
                             warning_change = 1
-                    if k == 'period_for':
+                    if k == "period_for":
                         if (new_instance[k] != old_instance[k]) and (
-                                str(object_item.purpose_trip) == 'Прохождения курсов повышения квалификации (КПК)'):
+                            str(object_item.purpose_trip)
+                            == "Прохождения курсов повышения квалификации (КПК)"
+                        ):
                             critical_change = 1
                         warning_change = 1
-                    if k == 'type_trip':
+                    if k == "type_trip":
                         warning_change = 1
-                    if k == 'purpose_trip_id':
+                    if k == "purpose_trip_id":
                         warning_change = 1
-                    message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(k, old_instance)}</strike> -> {person_finder(k, new_instance)}<br>'
+                    message += f"{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(k, old_instance)}</strike> -> {person_finder(k, new_instance)}<br>"
                     changed = True
             get_obj = self.get_object()
 
             if changed:
-                object_item.history_change.create(author=self.request.user, body=message)
+                object_item.history_change.create(
+                    author=self.request.user, body=message
+                )
                 if critical_change == 1:
                     try:
-                        get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(pk=object_item.docs.pk)
+                        get_bpmemo_obj = ApprovalOficialMemoProcess.objects.get(
+                            pk=object_item.docs.pk
+                        )
                         if object_item.order:
                             get_order_obj = object_item.order
                         else:
-                            get_order_obj = ''
-                        if get_order_obj != '':
+                            get_order_obj = ""
+                        if get_order_obj != "":
                             # ToDo: Сделать обработку отправки письма
                             send_mail_change(1, get_obj, message)
                             if get_obj.period_for < datetime.datetime.now().date():
                                 get_bpmemo_obj.location_selected = False
-                                get_bpmemo_obj.accommodation = ''
-                                get_obj.accommodation = ''
+                                get_bpmemo_obj.accommodation = ""
+                                get_obj.accommodation = ""
                             get_bpmemo_obj.process_accepted = False
                             get_bpmemo_obj.email_send = False
                             get_bpmemo_obj.order = None
                             get_order_obj.cancellation = True
                             get_obj.document_accepted = False
                             get_obj.order = None
-                            get_obj.comments = 'Документ согласован'
+                            get_obj.comments = "Документ согласован"
                             get_obj.save()
                             get_bpmemo_obj.save()
                             get_order_obj.save()
@@ -497,8 +645,8 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                             # ToDo: Сделать обработку отправки письма
                             send_mail_change(2, get_obj, message)
                             get_bpmemo_obj.location_selected = False
-                            get_bpmemo_obj.accommodation = ''
-                            get_obj.comments = 'Документ согласован'
+                            get_bpmemo_obj.accommodation = ""
+                            get_obj.comments = "Документ согласован"
                             get_obj.save()
                             get_bpmemo_obj.save()
                     except Exception as _ex:
@@ -506,17 +654,17 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 else:
                     if warning_change == 1:
                         send_mail_change(3, get_obj, message)
-            return HttpResponseRedirect(reverse('hrdepartment_app:memo_list'))
+            return HttpResponseRedirect(reverse("hrdepartment_app:memo_list"))
 
         else:
-            logger.info(f'{form.errors}')
+            logger.info(f"{form.errors}")
 
     def get(self, request, *args, **kwargs):
         global filter_string
         html = list()
-        employee = request.GET.get('employee', None)
-        period_from = request.GET.get('period_from', None)
-        memo_type = request.GET.get('memo_type', None)
+        employee = request.GET.get("employee", None)
+        period_from = request.GET.get("period_from", None)
+        memo_type = request.GET.get("memo_type", None)
         """
         Функция memo_type_change() в officialmemo_form_update.html. Если в качестве типа служебной записки указывается
         продление, то происходит выборка служебных записок с полями Сотрудник = Сотрудник, Тип СЗ = направление
@@ -524,36 +672,46 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         и в форме появляется возможность выбора
         """
         if memo_type and employee:
-            if memo_type == '2':
-                memo_list = OfficialMemo.objects.filter(
-                    Q(person=employee) & Q(official_memo_type='1') & Q(docs__accepted_accounting=False)).exclude(
-                    pk=self.get_object().pk).exclude(cancelation=True)
+            if memo_type == "2":
+                memo_list = (
+                    OfficialMemo.objects.filter(
+                        Q(person=employee)
+                        & Q(official_memo_type="1")
+                        & Q(docs__accepted_accounting=False)
+                    )
+                    .exclude(pk=self.get_object().pk)
+                    .exclude(cancelation=True)
+                )
                 memo_obj_list = dict()
                 for item in memo_list:
                     memo_obj_list.update({item.get_title(): item.pk})
                 return JsonResponse(memo_obj_list)
         if employee and period_from:
-            check_date = datetime.datetime.strptime(period_from, '%Y-%m-%d')
+            check_date = datetime.datetime.strptime(period_from, "%Y-%m-%d")
             filters = OfficialMemo.objects.filter(
-                Q(person__pk=employee) & Q(period_for__gte=check_date)).exclude(cancelation=True)
+                Q(person__pk=employee) & Q(period_for__gte=check_date)
+            ).exclude(cancelation=True)
             try:
-                filter_string = datetime.datetime.strptime('1900-01-01', '%Y-%m-%d').date()
+                filter_string = datetime.datetime.strptime(
+                    "1900-01-01", "%Y-%m-%d"
+                ).date()
                 for item in filters:
                     if item.period_for > filter_string:
                         filter_string = item.period_for
             except AttributeError:
                 logger.info(
-                    f'За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}')
+                    f"За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}"
+                )
             if filters.count() > 0:
                 html = filter_string + datetime.timedelta(days=1)
                 return JsonResponse(html, safe=False)
         # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
-        interval = request.GET.get('interval', None)
-        period_for_value = request.GET.get('pfv', None)
+        interval = request.GET.get("interval", None)
+        period_for_value = request.GET.get("pfv", None)
         if interval:
-            request_day = datetime.datetime.strptime(interval, '%Y-%m-%d').day
-            request_month = datetime.datetime.strptime(interval, '%Y-%m-%d').month
-            request_year = datetime.datetime.strptime(interval, '%Y-%m-%d').year
+            request_day = datetime.datetime.strptime(interval, "%Y-%m-%d").day
+            request_month = datetime.datetime.strptime(interval, "%Y-%m-%d").month
+            request_year = datetime.datetime.strptime(interval, "%Y-%m-%d").year
             current_days = monthrange(request_year, request_month)[1]
 
             if request_month < 12:
@@ -564,18 +722,33 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 next_days = monthrange(request_year + 1, 1)[1]
                 next_month = 1
                 next_year = request_year + 1
-            min_date = datetime.datetime.strptime(interval, '%Y-%m-%d')
+            min_date = datetime.datetime.strptime(interval, "%Y-%m-%d")
             if request_day == current_days:
                 if request_month == 11:
-                    max_date = datetime.datetime.strptime(f'{next_year + 1}-{"01"}-{"01"}', '%Y-%m-%d')
-                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+                    max_date = datetime.datetime.strptime(
+                        f'{next_year + 1}-{"01"}-{"01"}', "%Y-%m-%d"
+                    )
+                    dict_obj = [
+                        min_date.strftime("%Y-%m-%d"),
+                        max_date.strftime("%Y-%m-%d"),
+                    ]
                 else:
-                    max_date = datetime.datetime.strptime(f'{next_year}-{next_month + 1}-{"01"}', '%Y-%m-%d')
-                    dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
+                    max_date = datetime.datetime.strptime(
+                        f'{next_year}-{next_month + 1}-{"01"}', "%Y-%m-%d"
+                    )
+                    dict_obj = [
+                        min_date.strftime("%Y-%m-%d"),
+                        max_date.strftime("%Y-%m-%d"),
+                    ]
             else:
-                max_date = datetime.datetime.strptime(f'{next_year}-{next_month}-{"01"}', '%Y-%m-%d')
-                dict_obj = [min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")]
-            if datetime.datetime.strptime(period_for_value, '%Y-%m-%d') > max_date:
+                max_date = datetime.datetime.strptime(
+                    f'{next_year}-{next_month}-{"01"}', "%Y-%m-%d"
+                )
+                dict_obj = [
+                    min_date.strftime("%Y-%m-%d"),
+                    max_date.strftime("%Y-%m-%d"),
+                ]
+            if datetime.datetime.strptime(period_for_value, "%Y-%m-%d") > max_date:
                 # period_for_value = max_date
                 dict_obj.append(max_date)
             else:
@@ -584,77 +757,115 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         return super(OfficialMemoUpdate, self).get(request, *args, **kwargs)
 
 
-class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+class ApprovalOficialMemoProcessList(
+    PermissionRequiredMixin, LoginRequiredMixin, ListView
+):
     model = ApprovalOficialMemoProcess
-    permission_required = 'hrdepartment_app.view_approvaloficialmemoprocess'
+    permission_required = "hrdepartment_app.view_approvaloficialmemoprocess"
 
     def get_queryset(self):
         qs = super(ApprovalOficialMemoProcessList, self).get_queryset()
         if not self.request.user.is_superuser:
-            user_division = DataBaseUser.objects.get(pk=self.request.user.pk).user_work_profile.divisions
+            user_division = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_work_profile.divisions
 
             qs = ApprovalOficialMemoProcess.objects.filter(
-                Q(person_agreement__user_work_profile__divisions=user_division) |
-                Q(person_distributor__user_work_profile__divisions=user_division) |
-                Q(person_executor__user_work_profile__divisions=user_division) |
-                Q(person_department_staff__user_work_profile__divisions=user_division)).order_by('pk')
+                Q(person_agreement__user_work_profile__divisions=user_division)
+                | Q(person_distributor__user_work_profile__divisions=user_division)
+                | Q(person_executor__user_work_profile__divisions=user_division)
+                | Q(person_department_staff__user_work_profile__divisions=user_division)
+            ).order_by("pk")
         return qs
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
-                approvalmemo_list = ApprovalOficialMemoProcess.objects.all().order_by('document__period_from').reverse()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            if (
+                request.user.is_superuser
+                or request.user.user_work_profile.job.type_of_job == "0"
+            ):
+                approvalmemo_list = (
+                    ApprovalOficialMemoProcess.objects.all()
+                    .order_by("document__period_from")
+                    .reverse()
+                )
             else:
-                approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(
-                    person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job).order_by(
-                    'document__period_from').reverse()
-            data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
-            response = {'data': data}
+                approvalmemo_list = (
+                    ApprovalOficialMemoProcess.objects.filter(
+                        person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                    )
+                    .order_by("document__period_from")
+                    .reverse()
+                )
+            data = [
+                approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list
+            ]
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Бизнес процесс по служебным поездкам'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процесс по служебным поездкам"
         return context
 
 
-class ApprovalOficialMemoProcessAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+class ApprovalOficialMemoProcessAdd(
+    PermissionRequiredMixin, LoginRequiredMixin, CreateView
+):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessAddForm
-    permission_required = 'hrdepartment_app.add_approvaloficialmemoprocess'
+    permission_required = "hrdepartment_app.add_approvaloficialmemoprocess"
 
     def get_context_data(self, **kwargs):
         global person_agreement_list
         content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
-        content['form'].fields['document'].queryset = OfficialMemo.objects.filter(
-            Q(docs__isnull=True) & Q(responsible=self.request.user)).exclude(cancellation=True)
+        content["form"].fields["document"].queryset = OfficialMemo.objects.filter(
+            Q(docs__isnull=True) & Q(responsible=self.request.user)
+        ).exclude(cancellation=True)
         business_process = BusinessProcessDirection.objects.filter(
-            person_executor=self.request.user.user_work_profile.job)
-        users_list = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
+            person_executor=self.request.user.user_work_profile.job
+        )
+        users_list = (
+            DataBaseUser.objects.all()
+            .exclude(username="proxmox")
+            .exclude(is_active=False)
+        )
         # Для поля Исполнитель, делаем выборку пользователя из БД на основе request
-        content['form'].fields['person_executor'].queryset = users_list.filter(pk=self.request.user.pk)
+        content["form"].fields["person_executor"].queryset = users_list.filter(
+            pk=self.request.user.pk
+        )
 
         person_agreement_list = list()
-        content['form'].fields['person_agreement'].queryset = users_list.filter(
-            user_work_profile__job__pk__in=person_agreement_list)
+        content["form"].fields["person_agreement"].queryset = users_list.filter(
+            user_work_profile__job__pk__in=person_agreement_list
+        )
         for item in business_process:
-            if item.person_executor.filter(name__contains=self.request.user.user_work_profile.job.name):
-                person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
-                content['form'].fields['person_agreement'].queryset = users_list.filter(
-                    user_work_profile__job__pk__in=person_agreement_list)
+            if item.person_executor.filter(
+                name__contains=self.request.user.user_work_profile.job.name
+            ):
+                person_agreement_list = [
+                    items[0] for items in item.person_agreement.values_list()
+                ]
+                content["form"].fields["person_agreement"].queryset = users_list.filter(
+                    user_work_profile__job__pk__in=person_agreement_list
+                )
         # content['form'].fields['person_distributor'].queryset = users_list.filter(
         #     Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
         #     Q(is_superuser=False))
         # content['form'].fields['person_department_staff'].queryset = users_list.filter(
         #     Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
         #     Q(is_superuser=False))
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить бизнес процесс'
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить бизнес процесс"
         return content
 
     def get_success_url(self):
-        return reverse_lazy('hrdepartment_app:bpmemo_list')
+        return reverse_lazy("hrdepartment_app:bpmemo_list")
 
     def form_valid(self, form):
         if form.is_valid():
@@ -665,171 +876,231 @@ class ApprovalOficialMemoProcessAdd(PermissionRequiredMixin, LoginRequiredMixin,
         return super().form_valid(form)
 
 
-class ApprovalOficialMemoProcessUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+class ApprovalOficialMemoProcessUpdate(
+    PermissionRequiredMixin, LoginRequiredMixin, UpdateView
+):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessUpdateForm
-    template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_update.html'
-    permission_required = 'hrdepartment_app.change_approvaloficialmemoprocess'
+    template_name = "hrdepartment_app/approvaloficialmemoprocess_form_update.html"
+    permission_required = "hrdepartment_app.change_approvaloficialmemoprocess"
 
     def get_queryset(self):
-        qs = ApprovalOficialMemoProcess.objects.all().select_related('person_executor', 'person_agreement',
-                                                                     'person_distributor', 'person_department_staff',
-                                                                     'person_clerk', 'person_hr', 'person_accounting',
-                                                                     'document', 'order')
+        qs = ApprovalOficialMemoProcess.objects.all().select_related(
+            "person_executor",
+            "person_agreement",
+            "person_distributor",
+            "person_department_staff",
+            "person_clerk",
+            "person_hr",
+            "person_accounting",
+            "document",
+            "order",
+        )
         return qs
 
     def get_context_data(self, **kwargs):
         global person_agreement_list
 
-        users_list = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
-        content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(**kwargs)
+        users_list = (
+            DataBaseUser.objects.all()
+            .exclude(username="proxmox")
+            .exclude(is_active=False)
+        )
+        content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(
+            **kwargs
+        )
         document = self.get_object()
         business_process = BusinessProcessDirection.objects.filter(
-            person_executor=document.person_executor.user_work_profile.job)
-        content['document'] = document.document
+            person_executor=document.person_executor.user_work_profile.job
+        )
+        content["document"] = document.document
         person_agreement_list = list()
         person_clerk_list = list()
         person_hr_list = list()
         for item in business_process:
-            person_agreement_list = [items[0] for items in item.person_agreement.values_list()]
+            person_agreement_list = [
+                items[0] for items in item.person_agreement.values_list()
+            ]
             person_clerk_list = [items[0] for items in item.clerk.values_list()]
             person_hr_list = [items[0] for items in item.person_hr.values_list()]
         # Получаем подразделение исполнителя
         # division = document.person_executor.user_work_profile.divisions
         # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
-        content['form'].fields['person_executor'].queryset = users_list.filter(pk=document.person_executor.pk)
+        content["form"].fields["person_executor"].queryset = users_list.filter(
+            pk=document.person_executor.pk
+        )
         # Если установлен признак согласования документа, то фильтруем поле согласующего лица
         if document.document_not_agreed:
             try:
-                content['form'].fields['person_agreement'].queryset = users_list.filter(
-                    pk=document.person_agreement.pk)
+                content["form"].fields["person_agreement"].queryset = users_list.filter(
+                    pk=document.person_agreement.pk
+                )
             except AttributeError:
-                content['form'].fields['person_agreement'].queryset = users_list.filter(
-                    user_work_profile__job__pk__in=person_agreement_list)
+                content["form"].fields["person_agreement"].queryset = users_list.filter(
+                    user_work_profile__job__pk__in=person_agreement_list
+                )
         else:
             # Иначе по подразделению исполнителя фильтруем руководителей для согласования
-            content['form'].fields['person_agreement'].queryset = users_list.filter(
-                user_work_profile__job__pk__in=person_agreement_list)
+            content["form"].fields["person_agreement"].queryset = users_list.filter(
+                user_work_profile__job__pk__in=person_agreement_list
+            )
             try:
                 # Если пользователь = Согласующее лицо
                 if self.request.user.user_work_profile.job.pk in person_agreement_list:
-                    content['form'].fields['person_agreement'].queryset = users_list.filter(
-                        Q(user_work_profile__job__pk__in=person_agreement_list) & Q(pk=self.request.user.pk))
+                    content["form"].fields[
+                        "person_agreement"
+                    ].queryset = users_list.filter(
+                        Q(user_work_profile__job__pk__in=person_agreement_list)
+                        & Q(pk=self.request.user.pk)
+                    )
                 # Иначе весь список согласующих лиц
                 else:
-                    content['form'].fields['person_agreement'].queryset = users_list.filter(
-                        user_work_profile__job__pk__in=person_agreement_list)
+                    content["form"].fields[
+                        "person_agreement"
+                    ].queryset = users_list.filter(
+                        user_work_profile__job__pk__in=person_agreement_list
+                    )
             except AttributeError as _ex:
-                logger.error(f'У пользователя отсутствует должность')
+                logger.error(f"У пользователя отсутствует должность")
                 # ToDo: Нужно вставить выдачу ошибки
                 return {}
 
         list_agreement = list()
-        for unit in users_list.filter(user_work_profile__job__pk__in=person_agreement_list):
+        for unit in users_list.filter(
+            user_work_profile__job__pk__in=person_agreement_list
+        ):
             list_agreement.append(unit.pk)
-        content['list_agreement'] = list_agreement
+        content["list_agreement"] = list_agreement
 
         list_distributor = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
-            Q(is_superuser=False))
+            Q(user_work_profile__divisions__type_of_role="1")
+            & Q(user_work_profile__job__right_to_approval=True)
+            & Q(is_superuser=False)
+        )
 
-        content['form'].fields['person_distributor'].queryset = list_distributor
-        content['list_distributor'] = list_distributor
+        content["form"].fields["person_distributor"].queryset = list_distributor
+        content["list_distributor"] = list_distributor
 
         list_department_staff = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
-            Q(is_superuser=False))
-        content['form'].fields['person_department_staff'].queryset = list_department_staff
-        content['list_department_staff'] = list_department_staff
+            Q(user_work_profile__divisions__type_of_role="2")
+            & Q(user_work_profile__job__right_to_approval=True)
+            & Q(is_superuser=False)
+        )
+        content["form"].fields[
+            "person_department_staff"
+        ].queryset = list_department_staff
+        content["list_department_staff"] = list_department_staff
 
         list_accounting = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role='3') & Q(user_work_profile__job__right_to_approval=True) &
-            Q(is_superuser=False))
-        content['form'].fields['person_accounting'].queryset = list_accounting
-        content['list_accounting'] = list_accounting
+            Q(user_work_profile__divisions__type_of_role="3")
+            & Q(user_work_profile__job__right_to_approval=True)
+            & Q(is_superuser=False)
+        )
+        content["form"].fields["person_accounting"].queryset = list_accounting
+        content["list_accounting"] = list_accounting
 
         list_clerk = users_list.filter(user_work_profile__job__pk__in=person_clerk_list)
         if document.originals_received:
             try:
-                content['form'].fields['person_clerk'].queryset = users_list.filter(
-                    pk=document.person_clerk.pk)
+                content["form"].fields["person_clerk"].queryset = users_list.filter(
+                    pk=document.person_clerk.pk
+                )
             except AttributeError:
-                content['form'].fields['person_clerk'].queryset = list_clerk
+                content["form"].fields["person_clerk"].queryset = list_clerk
         else:
             # Иначе по подразделению исполнителя фильтруем делопроизводителя для согласования
-            content['form'].fields['person_clerk'].queryset = list_clerk
+            content["form"].fields["person_clerk"].queryset = list_clerk
             try:
                 # Если пользователь = Делопроизводитель
                 if self.request.user.user_work_profile.job.pk in person_clerk_list:
-                    content['form'].fields['person_clerk'].queryset = users_list.filter(
-                        Q(user_work_profile__job__pk__in=person_clerk_list) & Q(pk=self.request.user.pk))
+                    content["form"].fields["person_clerk"].queryset = users_list.filter(
+                        Q(user_work_profile__job__pk__in=person_clerk_list)
+                        & Q(pk=self.request.user.pk)
+                    )
                 # Иначе весь список делопроизводителей
                 else:
-                    content['form'].fields['person_clerk'].queryset = list_clerk
+                    content["form"].fields["person_clerk"].queryset = list_clerk
             except AttributeError as _ex:
-                logger.error(f'У пользователя отсутствует должность')
+                logger.error(f"У пользователя отсутствует должность")
                 # ToDo: Нужно вставить выдачу ошибки
                 return {}
-        content['list_clerk'] = list_clerk
+        content["list_clerk"] = list_clerk
 
         list_hr = users_list.filter(user_work_profile__job__pk__in=person_hr_list)
         if document.originals_received:
             try:
-                content['form'].fields['person_hr'].queryset = users_list.filter(
-                    pk=document.person_hr.pk)
+                content["form"].fields["person_hr"].queryset = users_list.filter(
+                    pk=document.person_hr.pk
+                )
             except AttributeError:
-                content['form'].fields['person_hr'].queryset = list_hr
+                content["form"].fields["person_hr"].queryset = list_hr
         else:
             # Иначе по подразделению исполнителя фильтруем сотрудника ОК для согласования
-            content['form'].fields['person_hr'].queryset = list_hr
+            content["form"].fields["person_hr"].queryset = list_hr
             try:
                 # Если пользователь = Сотрудник ОК
                 if self.request.user.user_work_profile.job.pk in person_hr_list:
-                    content['form'].fields['person_hr'].queryset = users_list.filter(
-                        Q(user_work_profile__job__pk__in=person_hr_list) & Q(pk=self.request.user.pk))
+                    content["form"].fields["person_hr"].queryset = users_list.filter(
+                        Q(user_work_profile__job__pk__in=person_hr_list)
+                        & Q(pk=self.request.user.pk)
+                    )
                 # Иначе весь список сотрудников ОК
                 else:
-                    content['form'].fields['person_hr'].queryset = list_hr
+                    content["form"].fields["person_hr"].queryset = list_hr
             except AttributeError as _ex:
-                logger.error(f'У пользователя отсутствует должность')
+                logger.error(f"У пользователя отсутствует должность")
                 # ToDo: Нужно вставить выдачу ошибки
                 return {}
-        content['list_hr'] = list_hr
+        content["list_hr"] = list_hr
 
         content[
-            'title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}'
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}"
         # Выбираем приказ
-        if document.document.official_memo_type == '1':
-            content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
-                document_foundation__pk=document.document.pk).exclude(cancellation=True)
-        elif document.document.official_memo_type == '2':
-            content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(
-                document_foundation__pk=document.document.pk).exclude(cancellation=True)
+        if document.document.official_memo_type == "1":
+            content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
+                document_foundation__pk=document.document.pk
+            ).exclude(cancellation=True)
+        elif document.document.official_memo_type == "2":
+            content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
+                document_foundation__pk=document.document.pk
+            ).exclude(cancellation=True)
         else:
-            content['form'].fields['order'].queryset = DocumentsOrder.objects.filter(pk=0)
+            content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
+                pk=0
+            )
         delta = document.document.period_for - document.document.period_from
-        content['ending_day'] = ending_day(int(delta.days) + 1)
-        content['change_history'] = get_history(self, ApprovalOficialMemoProcess)
-        content['without_departure'] = False if document.document.official_memo_type == '3' else True
-        content['extension'] = False if document.document.official_memo_type == '2' else True
+        content["ending_day"] = ending_day(int(delta.days) + 1)
+        content["change_history"] = get_history(self, ApprovalOficialMemoProcess)
+        content["without_departure"] = (
+            False if document.document.official_memo_type == "3" else True
+        )
+        content["extension"] = (
+            False if document.document.official_memo_type == "2" else True
+        )
         # print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
         return content
 
     def form_valid(self, form):
-
         def person_finder(object_item, item, instanse_obj):
-            person_list = ['Исполнитель', 'Согласующее лицо', 'Сотрудник НО', 'Сотрудник ОК', 'Сотрудник Бухгалтерии',
-                           'Делопроизводитель']
+            person_list = [
+                "Исполнитель",
+                "Согласующее лицо",
+                "Сотрудник НО",
+                "Сотрудник ОК",
+                "Сотрудник Бухгалтерии",
+                "Делопроизводитель",
+            ]
             if object_item._meta.get_field(k).verbose_name in person_list:
                 if instanse_obj[item]:
                     return DataBaseUser.objects.get(pk=instanse_obj[item])
                 else:
-                    return 'Пустое значение'
+                    return "Пустое значение"
             else:
                 if instanse_obj[item] == True:
-                    return 'Да'
+                    return "Да"
                 elif instanse_obj[item] == False:
-                    return 'Нет'
+                    return "Нет"
                 else:
                     return instanse_obj[item]
 
@@ -837,20 +1108,26 @@ class ApprovalOficialMemoProcessUpdate(PermissionRequiredMixin, LoginRequiredMix
             object_item = self.get_object()
             # в old_instance сохраняем старые значения записи
             old_instance = object_item.__dict__
-            if object_item.document.official_memo_type == '2':
+            if object_item.document.official_memo_type == "2":
                 refresh_form = form.save(commit=False)
                 refresh_form.hr_accepted = object_item.hr_accepted
                 refresh_form.person_accounting = object_item.person_accounting
                 refresh_form.accepted_accounting = object_item.accepted_accounting
                 refresh_form.date_receipt_original = object_item.date_receipt_original
-                refresh_form.submitted_for_signature = object_item.submitted_for_signature
+                refresh_form.submitted_for_signature = (
+                    object_item.submitted_for_signature
+                )
                 refresh_form.date_transfer_hr = object_item.date_transfer_hr
-                refresh_form.number_business_trip_days = object_item.number_business_trip_days
+                refresh_form.number_business_trip_days = (
+                    object_item.number_business_trip_days
+                )
                 refresh_form.number_flight_days = object_item.number_flight_days
                 refresh_form.person_hr = object_item.person_hr
                 refresh_form.start_date_trip = object_item.start_date_trip
                 refresh_form.end_date_trip = object_item.end_date_trip
-                refresh_form.date_transfer_accounting = object_item.date_transfer_accounting
+                refresh_form.date_transfer_accounting = (
+                    object_item.date_transfer_accounting
+                )
                 refresh_form.prepaid_expense_summ = object_item.prepaid_expense_summ
                 refresh_form.save()
             else:
@@ -864,42 +1141,64 @@ class ApprovalOficialMemoProcessUpdate(PermissionRequiredMixin, LoginRequiredMix
                 doc_list = object_item.document.extension.all()
                 for item in doc_list:
                     try:
-                        approval_process_item = ApprovalOficialMemoProcess.objects.get(document=item)
+                        approval_process_item = ApprovalOficialMemoProcess.objects.get(
+                            document=item
+                        )
                         approval_process_item.hr_accepted = object_item.hr_accepted
-                        approval_process_item.person_accounting = object_item.person_accounting
-                        approval_process_item.accepted_accounting = object_item.accepted_accounting
-                        approval_process_item.date_receipt_original = object_item.date_receipt_original
-                        approval_process_item.submitted_for_signature = object_item.submitted_for_signature
-                        approval_process_item.date_transfer_hr = object_item.date_transfer_hr
-                        approval_process_item.number_business_trip_days = object_item.number_business_trip_days
-                        approval_process_item.number_flight_days = object_item.number_flight_days
+                        approval_process_item.person_accounting = (
+                            object_item.person_accounting
+                        )
+                        approval_process_item.accepted_accounting = (
+                            object_item.accepted_accounting
+                        )
+                        approval_process_item.date_receipt_original = (
+                            object_item.date_receipt_original
+                        )
+                        approval_process_item.submitted_for_signature = (
+                            object_item.submitted_for_signature
+                        )
+                        approval_process_item.date_transfer_hr = (
+                            object_item.date_transfer_hr
+                        )
+                        approval_process_item.number_business_trip_days = (
+                            object_item.number_business_trip_days
+                        )
+                        approval_process_item.number_flight_days = (
+                            object_item.number_flight_days
+                        )
                         approval_process_item.person_hr = object_item.person_hr
                         approval_process_item.start_date_trip = item.period_from
                         approval_process_item.end_date_trip = object_item.end_date_trip
-                        approval_process_item.date_transfer_accounting = object_item.date_transfer_accounting
-                        approval_process_item.prepaid_expense_summ = object_item.prepaid_expense_summ
+                        approval_process_item.date_transfer_accounting = (
+                            object_item.date_transfer_accounting
+                        )
+                        approval_process_item.prepaid_expense_summ = (
+                            object_item.prepaid_expense_summ
+                        )
                         document = approval_process_item.document
-                        document.comments = 'Документооборот завершен'
+                        document.comments = "Документооборот завершен"
                         document.save()
                         approval_process_item.save()
                     except Exception as _ex:
-                        logger.warning(f'{_ex}: Документ - {object_item}')
+                        logger.warning(f"{_ex}: Документ - {object_item}")
             # в new_instance сохраняем новые значения записи
             new_instance = object_item.__dict__
             changed = False
             # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
-            message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
+            message = "<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n"
             for k in diffkeys:
-                if k != '_state':
-                    message += f'{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n'
+                if k != "_state":
+                    message += f"{object_item._meta.get_field(k).verbose_name}: <strike>{person_finder(object_item, k, old_instance)}</strike> -> {person_finder(object_item, k, new_instance)}\n"
                     changed = True
             if changed:
-                object_item.history_change.create(author=self.request.user, body=message)
+                object_item.history_change.create(
+                    author=self.request.user, body=message
+                )
 
-            return HttpResponseRedirect(reverse('hrdepartment_app:bpmemo_list'))
+            return HttpResponseRedirect(reverse("hrdepartment_app:bpmemo_list"))
         else:
-            logger.info(f'{form.errors}')
+            logger.info(f"{form.errors}")
 
     # Проверяем изменения параметров
     def post(self, request, *args, **kwargs):
@@ -914,13 +1213,13 @@ class ApprovalOficialMemoProcessUpdate(PermissionRequiredMixin, LoginRequiredMix
         :param kwargs:
         :return:
         """
-        order = request.POST.get('order')
-        accommodation = request.POST.get('accommodation')
+        order = request.POST.get("order")
+        accommodation = request.POST.get("accommodation")
         change_status = 0
         document = OfficialMemo.objects.get(pk=self.get_object().document.pk)
         if document.order != order:
             # Если добавлен или изменен приказ, сохраняем его в документ Служебной записки
-            if order != '':
+            if order != "":
                 document.order = DocumentsOrder.objects.get(pk=order)
                 change_status = 1
 
@@ -932,25 +1231,25 @@ class ApprovalOficialMemoProcessUpdate(PermissionRequiredMixin, LoginRequiredMix
 
         if change_status > 0:
             if document.cancellation:
-                document.comments = 'Документ отменен'
+                document.comments = "Документ отменен"
             document.save()
         return super().post(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        if request.GET.get('send') == '0':
+        if request.GET.get("send") == "0":
             obj_item = self.get_object()
-            obj_item.send_mail(title='Повторное уведомление', trigger=1)
+            obj_item.send_mail(title="Повторное уведомление", trigger=1)
             # return redirect('hrdepartment_app:bpmemo_update', obj_item.pk)
         return super().get(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse_lazy('hrdepartment_app:bpmemo_list')
+        return reverse_lazy("hrdepartment_app:bpmemo_list")
 
 
 class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
     model = ApprovalOficialMemoProcess
     form_class = ApprovalOficialMemoProcessChangeForm
-    template_name = 'hrdepartment_app/approvaloficialmemoprocess_form_cancel.html'
+    template_name = "hrdepartment_app/approvaloficialmemoprocess_form_cancel.html"
 
     def form_valid(self, form):
         if form.is_valid():
@@ -960,16 +1259,20 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
             order = obj_item.order
             try:
                 if official_memo:
-                    OfficialMemo.objects.filter(pk=official_memo.pk).update(cancellation=True,
-                                                                            reason_cancellation=obj_item.reason_cancellation,
-                                                                            comments='Документ отменен')
+                    OfficialMemo.objects.filter(pk=official_memo.pk).update(
+                        cancellation=True,
+                        reason_cancellation=obj_item.reason_cancellation,
+                        comments="Документ отменен",
+                    )
                 if order:
-                    DocumentsOrder.objects.filter(pk=order.pk).update(cancellation=True,
-                                                                      reason_cancellation=obj_item.reason_cancellation)
-                    print('Отменен')
-                obj_item.send_mail(title='Уведомление об отмене')
+                    DocumentsOrder.objects.filter(pk=order.pk).update(
+                        cancellation=True,
+                        reason_cancellation=obj_item.reason_cancellation,
+                    )
+                    print("Отменен")
+                obj_item.send_mail(title="Уведомление об отмене")
             except Exception as _ex:
-                logger.error(f'Ошибка при отмене БП {_ex}')
+                logger.error(f"Ошибка при отмене БП {_ex}")
 
         return super().form_valid(form)
 
@@ -978,164 +1281,247 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
     """
     Контроль закрытых служебных поездок
     """
+
     model = ApprovalOficialMemoProcess
-    template_name = 'hrdepartment_app/approvaloficialmemoprocess_report_list.html'
+    template_name = "hrdepartment_app/approvaloficialmemoprocess_report_list.html"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        current_month = self.request.GET.get('report_month')
-        current_year = self.request.GET.get('report_year')
+        current_month = self.request.GET.get("report_month")
+        current_year = self.request.GET.get("report_year")
         if current_month and current_year:
-            request.session['current_month'] = int(current_month)
-            request.session['current_year'] = int(current_year)
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            request.session["current_month"] = int(current_month)
+            request.session["current_year"] = int(current_year)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             # if self.request.user.is_superuser:
             #     reportcard_list = ReportCard.objects.all()
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
-            if request.session['current_month'] and request.session['current_year']:
-                start_date = datetime.date(year=int(request.session['current_year']),
-                                           month=int(request.session['current_month']), day=1)
+            if request.session["current_month"] and request.session["current_year"]:
+                start_date = datetime.date(
+                    year=int(request.session["current_year"]),
+                    month=int(request.session["current_month"]),
+                    day=1,
+                )
                 end_date = start_date + relativedelta(day=31)
-                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
+                search_interval = list(
+                    rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
+                )
 
-                if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
-                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
-                        Q(document__period_for__in=search_interval)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
-                                                'Передано в бухгалтерию']).exclude(
-                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
-                        'document__period_for').reverse()
+                if (
+                    request.user.is_superuser
+                    or request.user.user_work_profile.job.type_of_job == "0"
+                ):
+                    reportcard_list = (
+                        ApprovalOficialMemoProcess.objects.filter(
+                            Q(document__period_for__in=search_interval)
+                        )
+                        .exclude(
+                            document__comments__in=[
+                                "Документооборот завершен",
+                                "Передано в ОК",
+                                "Передано в бухгалтерию",
+                            ]
+                        )
+                        .exclude(document__official_memo_type__in=["2", "3"])
+                        .exclude(cancellation=True)
+                        .order_by("document__period_for")
+                        .reverse()
+                    )
                 else:
-                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
-                        Q(document__period_for__in=search_interval) &
-                        Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
-                                                'Передано в бухгалтерию']).exclude(
-                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
-                        'document__period_for').reverse()
-
+                    reportcard_list = (
+                        ApprovalOficialMemoProcess.objects.filter(
+                            Q(document__period_for__in=search_interval)
+                            & Q(
+                                person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                            )
+                        )
+                        .exclude(
+                            document__comments__in=[
+                                "Документооборот завершен",
+                                "Передано в ОК",
+                                "Передано в бухгалтерию",
+                            ]
+                        )
+                        .exclude(document__official_memo_type__in=["2", "3"])
+                        .exclude(cancellation=True)
+                        .order_by("document__period_for")
+                        .reverse()
+                    )
 
             else:
-                start_date = datetime.date(year=datetime.datetime.today().year,
-                                           month=datetime.datetime.today().month, day=1)
+                start_date = datetime.date(
+                    year=datetime.datetime.today().year,
+                    month=datetime.datetime.today().month,
+                    day=1,
+                )
                 end_date = start_date + relativedelta(day=31)
-                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                if request.user.is_superuser or request.user.user_work_profile.job.type_of_job == '0':
-                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
-                        Q(document__period_for__in=search_interval)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
-                                                'Передано в бухгалтерию']).exclude(
-                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
-                        'document__period_for').reverse()
+                search_interval = list(
+                    rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
+                )
+                if (
+                    request.user.is_superuser
+                    or request.user.user_work_profile.job.type_of_job == "0"
+                ):
+                    reportcard_list = (
+                        ApprovalOficialMemoProcess.objects.filter(
+                            Q(document__period_for__in=search_interval)
+                        )
+                        .exclude(
+                            document__comments__in=[
+                                "Документооборот завершен",
+                                "Передано в ОК",
+                                "Передано в бухгалтерию",
+                            ]
+                        )
+                        .exclude(document__official_memo_type__in=["2", "3"])
+                        .exclude(cancellation=True)
+                        .order_by("document__period_for")
+                        .reverse()
+                    )
                 else:
-                    reportcard_list = ApprovalOficialMemoProcess.objects.filter(
-                        Q(document__period_for__in=search_interval) &
-                        Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job)).exclude(
-                        document__comments__in=['Документооборот завершен', 'Передано в ОК',
-                                                'Передано в бухгалтерию']).exclude(
-                        document__official_memo_type__in=['2', '3']).exclude(cancellation=True).order_by(
-                        'document__period_for').reverse()
+                    reportcard_list = (
+                        ApprovalOficialMemoProcess.objects.filter(
+                            Q(document__period_for__in=search_interval)
+                            & Q(
+                                person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                            )
+                        )
+                        .exclude(
+                            document__comments__in=[
+                                "Документооборот завершен",
+                                "Передано в ОК",
+                                "Передано в бухгалтерию",
+                            ]
+                        )
+                        .exclude(document__official_memo_type__in=["2", "3"])
+                        .exclude(cancellation=True)
+                        .order_by("document__period_for")
+                        .reverse()
+                    )
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         month_dict, year_dict = get_year_interval(2020)
-        context['year_dict'] = year_dict
-        context['month_dict'] = month_dict
-        context['current_year'] = self.request.session['current_year']
-        context['current_month'] = str(self.request.session['current_month'])
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Бизнес процессы списком'
+        context["year_dict"] = year_dict
+        context["month_dict"] = month_dict
+        context["current_year"] = self.request.session["current_year"]
+        context["current_month"] = str(self.request.session["current_month"])
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процессы списком"
         return context
 
 
 class PurposeList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Purpose
-    permission_required = 'hrdepartment_app.view_purpose'
+    permission_required = "hrdepartment_app.view_purpose"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             purpose_list = Purpose.objects.all()
             data = [purpose_item.get_data() for purpose_item in purpose_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Цели служебных поездок'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Цели служебных поездок"
         return context
 
 
 class PurposeAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = Purpose
     form_class = PurposeAddForm
-    permission_required = 'hrdepartment_app.add_purpose'
+    permission_required = "hrdepartment_app.add_purpose"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить цель СП'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить цель СП"
         return context
 
 
 class PurposeUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Purpose
     form_class = PurposeUpdateForm
-    permission_required = 'hrdepartment_app.change_purpose'
+    permission_required = "hrdepartment_app.change_purpose"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
 
-class BusinessProcessDirectionList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+class BusinessProcessDirectionList(
+    PermissionRequiredMixin, LoginRequiredMixin, ListView
+):
     model = BusinessProcessDirection
-    permission_required = 'hrdepartment_app.view_businessprocessdirection'
+    permission_required = "hrdepartment_app.view_businessprocessdirection"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Направление бизнес-процессов'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Направление бизнес-процессов"
         return context
 
 
-class BusinessProcessDirectionAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+class BusinessProcessDirectionAdd(
+    PermissionRequiredMixin, LoginRequiredMixin, CreateView
+):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionAddForm
-    permission_required = 'hrdepartment_app.add_businessprocessdirection'
+    permission_required = "hrdepartment_app.add_businessprocessdirection"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить направление бизнес процесса'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить направление бизнес процесса"
         return context
 
 
-class BusinessProcessDirectionUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+class BusinessProcessDirectionUpdate(
+    PermissionRequiredMixin, LoginRequiredMixin, UpdateView
+):
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionUpdateForm
-    permission_required = 'hrdepartment_app.change_businessprocessdirection'
+    permission_required = "hrdepartment_app.change_businessprocessdirection"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
 
-class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+class ReportApprovalOficialMemoProcessList(
+    PermissionRequiredMixin, LoginRequiredMixin, ListView
+):
     """
-        Отчет по сотрудникам
+    Отчет по сотрудникам
     """
+
     model = ApprovalOficialMemoProcess
-    template_name = 'hrdepartment_app/reportapprovaloficialmemoprocess_list.html'
-    permission_required = 'hrdepartment_app.view_approvaloficialmemoprocess'
+    template_name = "hrdepartment_app/reportapprovaloficialmemoprocess_list.html"
+    permission_required = "hrdepartment_app.view_approvaloficialmemoprocess"
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()
-        return HttpResponseRedirect(reverse('hrdepartment_app:bpmemo_report'))
+        return HttpResponseRedirect(reverse("hrdepartment_app:bpmemo_report"))
 
     def get_queryset(self):
         qs = super(ReportApprovalOficialMemoProcessList, self).get_queryset()
@@ -1145,26 +1531,34 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
         # Получаем выборку из базы данных, если был изменен один из параметров
 
         if self.request.GET:
-            current_year = int(self.request.GET.get('CY'))
-            current_month = int(self.request.GET.get('CM'))
-            current_person = self.request.GET.get('CP')
+            current_year = int(self.request.GET.get("CY"))
+            current_month = int(self.request.GET.get("CM"))
+            current_person = self.request.GET.get("CP")
 
-            html_obj = ''
+            html_obj = ""
             report = []
             from calendar import monthrange
+
             days = monthrange(current_year, current_month)[1]
-            date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
-            date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
-            current_person_list = current_person.split('&')
-            if self.request.user.user_work_profile.divisions.type_of_role == '2':
+            date_start = datetime.datetime.strptime(
+                f"{current_year}-{current_month}-01", "%Y-%m-%d"
+            )
+            date_end = datetime.datetime.strptime(
+                f"{current_year}-{current_month}-{days}", "%Y-%m-%d"
+            )
+            current_person_list = current_person.split("&")
+            if self.request.user.user_work_profile.divisions.type_of_role == "2":
                 if len(current_person) > 0:
                     report_query = ReportCard.objects.filter(
-                        Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end) &
-                        Q(employee__pk__in=current_person_list)).order_by('employee__last_name')
+                        Q(report_card_day__gte=date_start)
+                        & Q(report_card_day__lte=date_end)
+                        & Q(employee__pk__in=current_person_list)
+                    ).order_by("employee__last_name")
                 else:
                     report_query = ReportCard.objects.filter(
-                        Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end)
-                    ).order_by('employee__last_name')
+                        Q(report_card_day__gte=date_start)
+                        & Q(report_card_day__lte=date_end)
+                    ).order_by("employee__last_name")
                 # for item in range(0, 4):
                 #     count_obj = ApprovalOficialMemoProcess.objects.filter(
                 #         (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
@@ -1175,142 +1569,173 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 #     report.append(count_obj)
             else:
                 report_query = ReportCard.objects.filter(
-                    Q(employee__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                    & Q(report_card_day__gte=date_start) & Q(report_card_day__lte=date_end) &
-                        Q(employee__pk__in=current_person_list)).order_by(
-                    'employee__last_name')
+                    Q(
+                        employee__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job
+                    )
+                    & Q(report_card_day__gte=date_start)
+                    & Q(report_card_day__lte=date_end)
+                    & Q(employee__pk__in=current_person_list)
+                ).order_by("employee__last_name")
             dict_obj = dict()
-            dist = report_query.values('employee__title').distinct()
+            dist = report_query.values("employee__title").distinct()
             for rec in dist:
                 list_obj = []
-                selected_record = report_query.filter(employee__title=rec['employee__title'])
-                person = FIO_format(rec['employee__title'])
+                selected_record = report_query.filter(
+                    employee__title=rec["employee__title"]
+                )
+                person = FIO_format(rec["employee__title"])
                 if person not in dict_obj:
                     dict_obj[person] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
-                    place, place_short = '', ''
+                    place, place_short = "", ""
                     curent_day = date_start + datetime.timedelta(days_count)
-                    if selected_record.filter(report_card_day=curent_day.date()).exists():
-                        if selected_record.filter(report_card_day=curent_day.date()).count() == 1:
-                            obj = selected_record.filter(report_card_day=curent_day.date()).first()
-                            place = '; '.join([item.name for item in obj.place_report_card.all()])
-                            if place == '':
+                    if selected_record.filter(
+                        report_card_day=curent_day.date()
+                    ).exists():
+                        if (
+                            selected_record.filter(
+                                report_card_day=curent_day.date()
+                            ).count()
+                            == 1
+                        ):
+                            obj = selected_record.filter(
+                                report_card_day=curent_day.date()
+                            ).first()
+                            place = "; ".join(
+                                [item.name for item in obj.place_report_card.all()]
+                            )
+                            if place == "":
                                 place = obj.get_record_type_display()
-                            trigger = '2' if obj.confirmed else '1'
+                            trigger = "2" if obj.confirmed else "1"
                             list_obj.append([trigger, place, obj.record_type])
                         else:
-                            for item in selected_record.filter(report_card_day=curent_day.date()):
-                                place += item.get_record_type_display() + '; '
-                                place_short += item.record_type + '; '
-                            trigger = '3'
+                            for item in selected_record.filter(
+                                report_card_day=curent_day.date()
+                            ):
+                                place += item.get_record_type_display() + "; "
+                                place_short += item.record_type + "; "
+                            trigger = "3"
                             list_obj.append([trigger, place, place_short])
                             print(place_short)
                     else:
-                        list_obj.append(['0', '', ''])
+                        list_obj.append(["0", "", ""])
 
                 dict_obj[person] = list_obj
 
                 table_set = dict_obj
-                html_table_count = ''
+                html_table_count = ""
                 table_count = range(1, (date_end - date_start).days + 2)
                 for item in table_count:
                     html_table_count += f'<th width="2%" style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff"><span style="color: #0a53be">{item}</span></th>'
-                html_table_set = ''
-                color = ['f5f5dc', '49c144', 'ff0000', 'a0dfbd', 'FFCC00', 'ffff00', '9d76f5', 'ff8fa2', '808080',
-                         '76e3f5', '46aef2', 'e8ef2a', 'fafafa']
+                html_table_set = ""
+                color = [
+                    "f5f5dc",
+                    "49c144",
+                    "ff0000",
+                    "a0dfbd",
+                    "FFCC00",
+                    "ffff00",
+                    "9d76f5",
+                    "ff8fa2",
+                    "808080",
+                    "76e3f5",
+                    "46aef2",
+                    "e8ef2a",
+                    "fafafa",
+                ]
                 for key, value in table_set.items():
                     html_table_set += f'<tr><td width="14%" style="position: -webkit-sticky;  position: sticky;"><strong>{key}</strong></td>'
                     for unit in value:
                         match unit[0]:
-                            case '1':
+                            case "1":
                                 place = unit[1].replace('"', "")
                                 match unit[2]:
-                                    case '1':
-                                        place_short = 'Я'
+                                    case "1":
+                                        place_short = "Я"
                                         cnt = 12
-                                    case '4':
-                                        place_short = 'БС'
+                                    case "4":
+                                        place_short = "БС"
                                         cnt = 10
-                                    case '13':
-                                        place_short = 'Р'
+                                    case "13":
+                                        place_short = "Р"
                                         cnt = 12
-                                    case '14':
-                                        place_short = 'СП'
+                                    case "14":
+                                        place_short = "СП"
                                         cnt = 3
-                                    case '15':
-                                        place_short = 'К'
+                                    case "15":
+                                        place_short = "К"
                                         cnt = 3
-                                    case '2':
-                                        place_short = 'О'
+                                    case "2":
+                                        place_short = "О"
                                         cnt = 9
-                                    case '3' | '5' | '7' | '10' | '11':
-                                        place_short = 'ДО'
+                                    case "3" | "5" | "7" | "10" | "11":
+                                        place_short = "ДО"
                                         cnt = 10
-                                    case '16':
-                                        place_short = 'Б'
+                                    case "16":
+                                        place_short = "Б"
                                         cnt = 6
-                                    case '17':
-                                        place_short = 'М'
+                                    case "17":
+                                        place_short = "М"
                                         cnt = 7
-                                    case '18':
-                                        place_short = 'ГО'
+                                    case "18":
+                                        place_short = "ГО"
                                         cnt = 4
                                     case _:
-                                        place_short = ''
+                                        place_short = ""
                                         cnt = 8
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}">{place_short}</td>'
-                            case '2':
+                            case "2":
                                 place = unit[1].replace('"', "")
                                 match unit[2]:
-                                    case '14':
-                                        place_short = 'СП'
+                                    case "14":
+                                        place_short = "СП"
                                         cnt = 1
-                                    case '15':
-                                        place_short = 'К'
+                                    case "15":
+                                        place_short = "К"
                                         cnt = 1
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{place_short}</strong></td>'
-                            case '3':
+                            case "3":
                                 place = unit[1].replace('"', "")
-                                place_short = ''
+                                place_short = ""
                                 match unit[2]:
-                                    case '1; 13; ' | '13; 1; ' | '1; 2; ' | '2; 1; ':
-                                        place_short = 'Я'
+                                    case "1; 13; " | "13; 1; " | "1; 2; " | "2; 1; ":
+                                        place_short = "Я"
                                         cnt = 12
-                                    case '2; 18; ' | '18; 2; ':
-                                        place_short = 'О'
+                                    case "2; 18; " | "18; 2; ":
+                                        place_short = "О"
                                         cnt = 9
-                                    case '1; 16; ' | '16; 1; ':
-                                        place_short = 'Б'
+                                    case "1; 16; " | "16; 1; ":
+                                        place_short = "Б"
                                         cnt = 6
-                                    case '17; 14; ' | '17; 15; ' | '15; 17; ' | '14; 17; ':
-                                        place_short = 'М'
+                                    case "17; 14; " | "17; 15; " | "15; 17; " | "14; 17; ":
+                                        place_short = "М"
                                         cnt = 7
-                                    case '1; 14; ' | '14; 1; ' | '13; 14; ' | '14; 13; ':
-                                        place_short = 'СП'
+                                    case "1; 14; " | "14; 1; " | "13; 14; " | "14; 13; ":
+                                        place_short = "СП"
                                         cnt = 1
-                                    case '1; 15; ' | '15; 1; ' | '13; 15; ' | '15; 13; ':
-                                        place_short = 'К'
+                                    case "1; 15; " | "15; 1; " | "13; 15; " | "15; 13; ":
+                                        place_short = "К"
                                         cnt = 1
                                     case _:
                                         cnt = 2
                                 html_table_set += f'<td width="2%" style="background-color: #{color[cnt]}; border-color:#4670ad;border-style:dashed;border-width:1px;" class="position-4-success" fio="{key}" title="{place}"><strong>{place_short}</strong></td>'
                             case _:
                                 html_table_set += f'<td width="2%" style="background-color: #{color[0]}; border-color:#4670ad;border-style:dashed;border-width:1px;"></td>'
-                    html_table_set += '</tr>'
+                    html_table_set += "</tr>"
 
                 job_type = {
-                    '0': 'Общий состав',
-                    '1': 'Летный состав',
-                    '2': 'Инженерный состав',
-                    '3': 'Транспортный отдел',
+                    "0": "Общий состав",
+                    "1": "Летный состав",
+                    "2": "Инженерный состав",
+                    "3": "Транспортный отдел",
                 }
                 report_item_obj = f'<td colspan="{len(table_count) + 1}"><h4>'
                 counter = 0
                 for report_item in report:
-                    report_item_obj += f'{job_type[str(counter)]}: {report_item};&nbsp;'
+                    report_item_obj += f"{job_type[str(counter)]}: {report_item};&nbsp;"
                     counter += 1
-                report_item_obj += '</h4></td>'
-                html_obj = f'''<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; overflow: auto;">
+                report_item_obj += "</h4></td>"
+                html_obj = f"""<table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable" style="min-width: 1000px; display: block; overflow: auto;">
                                 <thead>
                                 <tr>{report_item_obj}</tr>
                                 <tr>
@@ -1321,7 +1746,7 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                                 <tbody>
                                 {html_table_set}
                                 </tbody>
-                            </table>'''
+                            </table>"""
 
             return JsonResponse(html_obj, safe=False)
         return super().get(request, *args, **kwargs)
@@ -1330,30 +1755,53 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
         content = super().get_context_data(**kwargs)
 
         if self.request.GET:
-            current_year = int(self.request.GET.get('CY'))
-            current_month = int(self.request.GET.get('CM'))
+            current_year = int(self.request.GET.get("CY"))
+            current_month = int(self.request.GET.get("CM"))
         else:
             current_year = datetime.datetime.now().year
             current_month = datetime.datetime.now().month
         from calendar import monthrange
+
         days = monthrange(current_year, current_month)[1]
-        date_start = datetime.datetime.strptime(f'{current_year}-{current_month}-01', '%Y-%m-%d')
-        date_end = datetime.datetime.strptime(f'{current_year}-{current_month}-{days}', '%Y-%m-%d')
+        date_start = datetime.datetime.strptime(
+            f"{current_year}-{current_month}-01", "%Y-%m-%d"
+        )
+        date_end = datetime.datetime.strptime(
+            f"{current_year}-{current_month}-{days}", "%Y-%m-%d"
+        )
 
         # qs = ApprovalOficialMemoProcess.objects.filter(Q(person_executor__pk=self.request.user.pk) & (
         #         Q(document__period_from__lte=date_start) | Q(document__period_from__lte=date_end)) & Q(
         #     document__period_for__gte=date_start)).order_by('document__period_from')
-        if self.request.user.user_work_profile.divisions.type_of_role == '2':
-            qs = ApprovalOficialMemoProcess.objects.filter(
-                (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
+        if self.request.user.user_work_profile.divisions.type_of_role == "2":
+            qs = (
+                ApprovalOficialMemoProcess.objects.filter(
+                    (
+                        Q(start_date_trip__lte=date_start)
+                        | Q(start_date_trip__lte=date_end)
+                    )
+                    & Q(end_date_trip__gte=date_start)
+                )
+                .exclude(cancellation=True)
+                .order_by("document__responsible")
+            )
         else:
-            qs = ApprovalOficialMemoProcess.objects.filter(
-                Q(person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job)
-                & (Q(start_date_trip__lte=date_start) | Q(start_date_trip__lte=date_end))
-                & Q(end_date_trip__gte=date_start)).exclude(cancellation=True).order_by('document__responsible')
+            qs = (
+                ApprovalOficialMemoProcess.objects.filter(
+                    Q(
+                        person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job
+                    )
+                    & (
+                        Q(start_date_trip__lte=date_start)
+                        | Q(start_date_trip__lte=date_end)
+                    )
+                    & Q(end_date_trip__gte=date_start)
+                )
+                .exclude(cancellation=True)
+                .order_by("document__responsible")
+            )
         dict_obj = dict()
-        for item in qs.all().order_by('document__person__last_name'):
+        for item in qs.all().order_by("document__person__last_name"):
             list_obj = []
             person = FIO_format(str(item.document.person))
             # Проверяем, заполнялся ли список по сотруднику
@@ -1362,11 +1810,19 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                 for days_count in range(0, (date_end - date_start).days + 1):
                     curent_day = date_start + datetime.timedelta(days_count)
                     if item.hr_accepted:
-                        if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
-                            list_obj[days_count] = '2'
+                        if (
+                            item.start_date_trip
+                            <= curent_day.date()
+                            <= item.end_date_trip
+                        ):
+                            list_obj[days_count] = "2"
                     else:
-                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj[days_count] = '1'
+                        if (
+                            item.document.period_from
+                            <= curent_day.date()
+                            <= item.document.period_for
+                        ):
+                            list_obj[days_count] = "1"
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
             else:
                 dict_obj[FIO_format(str(item.document.person))] = []
@@ -1374,73 +1830,98 @@ class ReportApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequire
                     curent_day = date_start + datetime.timedelta(days_count)
                     # print(list_obj, days_count, date_end, date_start)
                     if item.hr_accepted:
-                        if item.start_date_trip <= curent_day.date() <= item.end_date_trip:
-                            list_obj.append(['2', ''])
+                        if (
+                            item.start_date_trip
+                            <= curent_day.date()
+                            <= item.end_date_trip
+                        ):
+                            list_obj.append(["2", ""])
                         else:
-                            list_obj.append(['0', ''])
+                            list_obj.append(["0", ""])
                     else:
-                        if item.document.period_from <= curent_day.date() <= item.document.period_for:
-                            list_obj.append(['1', ''])
+                        if (
+                            item.document.period_from
+                            <= curent_day.date()
+                            <= item.document.period_for
+                        ):
+                            list_obj.append(["1", ""])
                         else:
-                            list_obj.append(['0', ''])
+                            list_obj.append(["0", ""])
 
                 dict_obj[FIO_format(str(item.document.person))] = list_obj
         month_dict, year_dict = get_year_interval(2020)
         all_person = dict()
-        person = DataBaseUser.objects.filter(is_active=True).exclude(username='proxmox').values('pk', 'title').order_by(
-            'last_name')
+        person = (
+            DataBaseUser.objects.filter(is_active=True)
+            .exclude(username="proxmox")
+            .values("pk", "title")
+            .order_by("last_name")
+        )
         for item in person:
-            all_person[item['pk']] = item['title']
+            all_person[item["pk"]] = item["title"]
 
-        content['year_dict'] = year_dict
-        content['month_dict'] = month_dict
-        content['all_person'] = all_person
-        content['table_set'] = dict_obj
-        content['table_count'] = range(1, (date_end - date_start).days + 2)
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Отчет'
-        content['current_year'] = current_year
-        content['current_month'] = current_month
+        content["year_dict"] = year_dict
+        content["month_dict"] = month_dict
+        content["all_person"] = all_person
+        content["table_set"] = dict_obj
+        content["table_count"] = range(1, (date_end - date_start).days + 2)
+        content["title"] = f"{PortalProperty.objects.all().last().portal_name} // Отчет"
+        content["current_year"] = current_year
+        content["current_month"] = current_month
 
         return content
 
 
 # Должностные инструкции
-class DocumentsJobDescriptionList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+class DocumentsJobDescriptionList(
+    PermissionRequiredMixin, LoginRequiredMixin, ListView
+):
     """
-        Должностные инструкции - список
+    Должностные инструкции - список
     """
+
     model = DocumentsJobDescription
-    permission_required = 'hrdepartment_app.view_documentsjobdescription'
+    permission_required = "hrdepartment_app.view_documentsjobdescription"
 
     def get_queryset(self):
         return DocumentsJobDescription.objects.filter(Q(allowed_placed=True))
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             documents_job_list = DocumentsJobDescription.objects.all()
-            data = [documents_job_item.get_data() for documents_job_item in documents_job_list]
-            response = {'data': data}
+            data = [
+                documents_job_item.get_data()
+                for documents_job_item in documents_job_list
+            ]
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Должностные инструкции'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Должностные инструкции"
         return context
 
 
-class DocumentsJobDescriptionAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+class DocumentsJobDescriptionAdd(
+    PermissionRequiredMixin, LoginRequiredMixin, CreateView
+):
     """
-        Должностные инструкции - создание
+    Должностные инструкции - создание
     """
+
     model = DocumentsJobDescription
     form_class = DocumentsJobDescriptionAddForm
-    permission_required = 'hrdepartment_app.add_documentsjobdescription'
+    permission_required = "hrdepartment_app.add_documentsjobdescription"
 
     def get_context_data(self, **kwargs):
         content = super(DocumentsJobDescriptionAdd, self).get_context_data(**kwargs)
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить должностную инструкцию'
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить должностную инструкцию"
         return content
 
     def get_form_kwargs(self):
@@ -1449,53 +1930,67 @@ class DocumentsJobDescriptionAdd(PermissionRequiredMixin, LoginRequiredMixin, Cr
         :return: PK текущего пользователя
         """
         kwargs = super().get_form_kwargs()
-        kwargs.update({'user': self.request.user.pk})
+        kwargs.update({"user": self.request.user.pk})
         return kwargs
 
 
-class DocumentsJobDescriptionDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+class DocumentsJobDescriptionDetail(
+    PermissionRequiredMixin, LoginRequiredMixin, DetailView
+):
     """
-        Должностные инструкции - просмотр
+    Должностные инструкции - просмотр
     """
+
     model = DocumentsJobDescription
-    permission_required = 'hrdepartment_app.view_documentsjobdescription'
+    permission_required = "hrdepartment_app.view_documentsjobdescription"
 
     def dispatch(self, request, *args, **kwargs):
         try:
             # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = int(self.get_object().access.level)
             # Получаем уровень доступа к документам у пользователя
-            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).user_access.level
+            user_obj = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_access.level
             # Сравниваем права доступа
             if detail_obj < user_obj:
                 # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
                 # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('library_app:documents_list')
+                url_match = reverse_lazy("library_app:documents_list")
                 return redirect(url_match)
         except Exception as _ex:
             # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
-            url_match = reverse_lazy('library_app:documents_list')
+            url_match = reverse_lazy("library_app:documents_list")
             return redirect(url_match)
-        return super(DocumentsJobDescriptionDetail, self).dispatch(request, *args, **kwargs)
+        return super(DocumentsJobDescriptionDetail, self).dispatch(
+            request, *args, **kwargs
+        )
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
         return context
 
 
-class DocumentsJobDescriptionUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+class DocumentsJobDescriptionUpdate(
+    PermissionRequiredMixin, LoginRequiredMixin, UpdateView
+):
     """
-        Должностные инструкции - редактирование
+    Должностные инструкции - редактирование
     """
-    template_name = 'hrdepartment_app/documentsjobdescription_update.html'
+
+    template_name = "hrdepartment_app/documentsjobdescription_update.html"
     model = DocumentsJobDescription
     form_class = DocumentsJobDescriptionUpdateForm
-    permission_required = 'hrdepartment_app.change_documentsjobdescription'
+    permission_required = "hrdepartment_app.change_documentsjobdescription"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -1504,34 +1999,42 @@ class DocumentsJobDescriptionUpdate(PermissionRequiredMixin, LoginRequiredMixin,
         :return: PK текущего пользователя
         """
         kwargs = super().get_form_kwargs()
-        kwargs.update({'user': self.request.user.pk})
+        kwargs.update({"user": self.request.user.pk})
         return kwargs
 
 
 # Приказы
 class DocumentsOrderList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
-        Список приказов
+    Список приказов
     """
+
     model = DocumentsOrder
-    permission_required = 'hrdepartment_app.view_documentsorder'
+    permission_required = "hrdepartment_app.view_documentsorder"
 
     def get_queryset(self):
         return DocumentsOrder.objects.filter(Q(allowed_placed=True))
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            documents_order_list = DocumentsOrder.objects.all().order_by("document_date").reverse()
-            data = [documents_order_item.get_data() for documents_order_item in documents_order_list]
-            response = {'data': data}
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            documents_order_list = (
+                DocumentsOrder.objects.all().order_by("document_date").reverse()
+            )
+            data = [
+                documents_order_item.get_data()
+                for documents_order_item in documents_order_list
+            ]
+            response = {"data": data}
             # report_card_separator()
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Приказы'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Приказы"
         return context
 
 
@@ -1539,40 +2042,62 @@ class DocumentsOrderAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView)
     """
     Добавление приказа
     """
+
     model = DocumentsOrder
     form_class = DocumentsOrderAddForm
-    permission_required = 'hrdepartment_app.add_documentsorder'
+    permission_required = "hrdepartment_app.add_documentsorder"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавление приказа'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавление приказа"
         return context
 
     def get(self, request, *args, **kwargs):
-        document_foundation = request.GET.get('document_foundation', None)
+        document_foundation = request.GET.get("document_foundation", None)
         if document_foundation:
             memo_obj = OfficialMemo.objects.get(pk=document_foundation)
-            dict_obj = {'period_from': datetime.datetime.strftime(memo_obj.period_from, '%Y-%m-%d'),
-                        'period_for': datetime.datetime.strftime(memo_obj.period_for, '%Y-%m-%d'),
-                        'document_date': datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')}
+            dict_obj = {
+                "period_from": datetime.datetime.strftime(
+                    memo_obj.period_from, "%Y-%m-%d"
+                ),
+                "period_for": datetime.datetime.strftime(
+                    memo_obj.period_for, "%Y-%m-%d"
+                ),
+                "document_date": datetime.datetime.strftime(
+                    datetime.datetime.today(), "%Y-%m-%d"
+                ),
+            }
             return JsonResponse(dict_obj, safe=False)
-        document_date = request.GET.get('document_date', None)
+        document_date = request.GET.get("document_date", None)
         if document_date:
-            document_date = datetime.datetime.strptime(document_date, '%Y-%m-%d')
-            order_list = [item.document_number for item in
-                          DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
-                              cancellation=True)]
-            cancel_order = [item.document_number for item in
-                            DocumentsOrder.objects.filter(Q(document_date=document_date) &
-                                                          Q(cancellation=True)).order_by('document_date')]
+            document_date = datetime.datetime.strptime(document_date, "%Y-%m-%d")
+            order_list = [
+                item.document_number
+                for item in DocumentsOrder.objects.filter(document_date=document_date)
+                .order_by("document_date")
+                .exclude(cancellation=True)
+            ]
+            cancel_order = [
+                item.document_number
+                for item in DocumentsOrder.objects.filter(
+                    Q(document_date=document_date) & Q(cancellation=True)
+                ).order_by("document_date")
+            ]
             if len(order_list) > 0:
                 if len(cancel_order) > 0:
-                    result = 'Крайний: ' + str(order_list[-1]) + '; Отмененные: ' + '; '.join(cancel_order)
+                    result = (
+                        "Крайний: "
+                        + str(order_list[-1])
+                        + "; Отмененные: "
+                        + "; ".join(cancel_order)
+                    )
                 else:
-                    result = 'Крайний: ' + str(order_list[-1])
+                    result = "Крайний: " + str(order_list[-1])
             else:
-                result = 'За этот день нет приказов.'
-            dict_obj = {'document_date': result}
+                result = "За этот день нет приказов."
+            dict_obj = {"document_date": result}
             return JsonResponse(dict_obj, safe=False)
 
         return super().get(request, *args, **kwargs)
@@ -1581,7 +2106,7 @@ class DocumentsOrderAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView)
 class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     # Приказ - просмотр
     model = DocumentsOrder
-    permission_required = 'hrdepartment_app.view_documentsorder'
+    permission_required = "hrdepartment_app.view_documentsorder"
 
     def dispatch(self, request, *args, **kwargs):
         try:
@@ -1593,26 +2118,28 @@ class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVi
             if detail_obj.access.level < user_obj.user_access.level:
                 # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
                 # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('hrdepartment_app:order_list')
+                url_match = reverse_lazy("hrdepartment_app:order_list")
                 return redirect(url_match)
         except Exception as _ex:
             # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
-            url_match = reverse_lazy('hrdepartment_app:order_list')
+            url_match = reverse_lazy("hrdepartment_app:order_list")
             return redirect(url_match)
         return super(DocumentsOrderDetail, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
         return context
 
 
 class DocumentsOrderUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     # Приказ - изменение
-    template_name = 'hrdepartment_app/documentsorder_update.html'
+    template_name = "hrdepartment_app/documentsorder_update.html"
     model = DocumentsOrder
     form_class = DocumentsOrderUpdateForm
-    permission_required = 'hrdepartment_app.change_documentsorder'
+    permission_required = "hrdepartment_app.change_documentsorder"
 
     def get_form_kwargs(self):
         """
@@ -1621,97 +2148,134 @@ class DocumentsOrderUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVi
         """
         obj_item = self.get_object()
         kwargs = super().get_form_kwargs()
-        kwargs.update({'id': obj_item.pk})
+        kwargs.update({"id": obj_item.pk})
         return kwargs
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
     def get(self, request, *args, **kwargs):
-        document_foundation = request.GET.get('document_foundation', None)
+        document_foundation = request.GET.get("document_foundation", None)
         if document_foundation:
             memo_obj = OfficialMemo.objects.get(pk=document_foundation)
-            dict_obj = {'period_from': datetime.datetime.strftime(memo_obj.period_from, '%Y-%m-%d'),
-                        'period_for': datetime.datetime.strftime(memo_obj.period_for, '%Y-%m-%d'),
-                        'document_date': datetime.datetime.strftime(datetime.datetime.today(), '%Y-%m-%d')}
+            dict_obj = {
+                "period_from": datetime.datetime.strftime(
+                    memo_obj.period_from, "%Y-%m-%d"
+                ),
+                "period_for": datetime.datetime.strftime(
+                    memo_obj.period_for, "%Y-%m-%d"
+                ),
+                "document_date": datetime.datetime.strftime(
+                    datetime.datetime.today(), "%Y-%m-%d"
+                ),
+            }
 
             return JsonResponse(dict_obj, safe=False)
-        document_date = request.GET.get('document_date', None)
+        document_date = request.GET.get("document_date", None)
         if document_date:
-            document_date = datetime.datetime.strptime(document_date, '%Y-%m-%d')
-            order_list = [item.document_number for item in
-                          DocumentsOrder.objects.filter(document_date=document_date).order_by('document_date').exclude(
-                              cancellation=True)]
-            cancel_order = [item.document_number for item in
-                            DocumentsOrder.objects.filter(Q(document_date=document_date) &
-                                                          Q(cancellation=True)).order_by('document_date')]
+            document_date = datetime.datetime.strptime(document_date, "%Y-%m-%d")
+            order_list = [
+                item.document_number
+                for item in DocumentsOrder.objects.filter(document_date=document_date)
+                .order_by("document_date")
+                .exclude(cancellation=True)
+            ]
+            cancel_order = [
+                item.document_number
+                for item in DocumentsOrder.objects.filter(
+                    Q(document_date=document_date) & Q(cancellation=True)
+                ).order_by("document_date")
+            ]
             if len(order_list) > 0:
                 if len(cancel_order) > 0:
-                    result = 'Крайний: ' + str(order_list[-1]) + '; Отмененные: ' + '; '.join(cancel_order)
+                    result = (
+                        "Крайний: "
+                        + str(order_list[-1])
+                        + "; Отмененные: "
+                        + "; ".join(cancel_order)
+                    )
                 else:
-                    result = 'Крайний: ' + str(order_list[-1])
+                    result = "Крайний: " + str(order_list[-1])
             else:
-                result = 'За этот день нет приказов.'
-            dict_obj = {'document_date': result}
+                result = "За этот день нет приказов."
+            dict_obj = {"document_date": result}
             return JsonResponse(dict_obj, safe=False)
         return super().get(request, *args, **kwargs)
 
 
-class PlaceProductionActivityList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+class PlaceProductionActivityList(
+    PermissionRequiredMixin, LoginRequiredMixin, ListView
+):
     # Места назначения - список
     model = PlaceProductionActivity
-    permission_required = 'hrdepartment_app.view_placeproductionactivity'
+    permission_required = "hrdepartment_app.view_placeproductionactivity"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             place_list = PlaceProductionActivity.objects.all()
             data = [place_item.get_data() for place_item in place_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Места назначения'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Места назначения"
         return context
 
 
-class PlaceProductionActivityAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+class PlaceProductionActivityAdd(
+    PermissionRequiredMixin, LoginRequiredMixin, CreateView
+):
     # Места назначения - создание
     model = PlaceProductionActivity
     form_class = PlaceProductionActivityAddForm
-    permission_required = 'hrdepartment_app.add_placeproductionactivity'
+    permission_required = "hrdepartment_app.add_placeproductionactivity"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить место назначения'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить место назначения"
         return context
 
 
-class PlaceProductionActivityDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+class PlaceProductionActivityDetail(
+    PermissionRequiredMixin, LoginRequiredMixin, DetailView
+):
     # Места назначения - просмотр
     model = PlaceProductionActivity
-    permission_required = 'hrdepartment_app.view_placeproductionactivity'
+    permission_required = "hrdepartment_app.view_placeproductionactivity"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
         return context
 
 
-class PlaceProductionActivityUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+class PlaceProductionActivityUpdate(
+    PermissionRequiredMixin, LoginRequiredMixin, UpdateView
+):
     # Места назначения - изменение
     model = PlaceProductionActivity
-    template_name = 'hrdepartment_app/placeproductionactivity_form_update.html'
+    template_name = "hrdepartment_app/placeproductionactivity_form_update.html"
     form_class = PlaceProductionActivityUpdateForm
-    permission_required = 'hrdepartment_app.change_placeproductionactivity'
+    permission_required = "hrdepartment_app.change_placeproductionactivity"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
 
@@ -1720,149 +2284,206 @@ class ReportCardList(LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        current_month = self.request.GET.get('report_month')
-        current_year = self.request.GET.get('report_year')
+        current_month = self.request.GET.get("report_month")
+        current_year = self.request.GET.get("report_year")
         if current_month and current_year:
-            request.session['current_month'] = int(current_month)
-            request.session['current_year'] = int(current_year)
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            request.session["current_month"] = int(current_month)
+            request.session["current_year"] = int(current_year)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             # if self.request.user.is_superuser:
             #     reportcard_list = ReportCard.objects.all()
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
-            if request.session['current_month'] and request.session['current_year']:
-                start_date = datetime.date(year=int(request.session['current_year']),
-                                           month=int(request.session['current_month']), day=1)
+            if request.session["current_month"] and request.session["current_year"]:
+                start_date = datetime.date(
+                    year=int(request.session["current_year"]),
+                    month=int(request.session["current_month"]),
+                    day=1,
+                )
                 end_date = start_date + relativedelta(days=31)
-                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                reportcard_list = ReportCard.objects.filter(Q(employee=self.request.user) & Q(record_type='13') & Q(
-                    report_card_day__in=search_interval)).order_by('report_card_day').reverse()
+                search_interval = list(
+                    rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
+                )
+                reportcard_list = (
+                    ReportCard.objects.filter(
+                        Q(employee=self.request.user)
+                        & Q(record_type="13")
+                        & Q(report_card_day__in=search_interval)
+                    )
+                    .order_by("report_card_day")
+                    .reverse()
+                )
             else:
-                reportcard_list = ReportCard.objects.filter(
-                    Q(employee=self.request.user) & Q(record_type='13')).order_by('report_card_day').reverse()
+                reportcard_list = (
+                    ReportCard.objects.filter(
+                        Q(employee=self.request.user) & Q(record_type="13")
+                    )
+                    .order_by("report_card_day")
+                    .reverse()
+                )
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         month_dict, year_dict = get_year_interval(2020)
-        context['year_dict'] = year_dict
-        context['month_dict'] = month_dict
-        context['current_year'] = self.request.session['current_year']
-        context['current_month'] = str(self.request.session['current_month'])
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
+        context["year_dict"] = year_dict
+        context["month_dict"] = month_dict
+        context["current_year"] = self.request.session["current_year"]
+        context["current_month"] = str(self.request.session["current_month"])
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком"
         return context
 
 
 class ReportCardListManual(LoginRequiredMixin, ListView):
     model = ReportCard
-    template_name = 'hrdepartment_app/reportcard_list_manual.html'
+    template_name = "hrdepartment_app/reportcard_list_manual.html"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        current_month = self.request.GET.get('report_month')
-        current_year = self.request.GET.get('report_year')
+        current_month = self.request.GET.get("report_month")
+        current_year = self.request.GET.get("report_year")
         if current_month and current_year:
-            request.session['current_month'] = int(current_month)
-            request.session['current_year'] = int(current_year)
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            request.session["current_month"] = int(current_month)
+            request.session["current_year"] = int(current_year)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             # if self.request.user.is_superuser:
             #     reportcard_list = ReportCard.objects.all()
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
-            if request.session['current_month'] and request.session['current_year']:
-                start_date = datetime.date(year=int(request.session['current_year']),
-                                           month=int(request.session['current_month']), day=1)
+            if request.session["current_month"] and request.session["current_year"]:
+                start_date = datetime.date(
+                    year=int(request.session["current_year"]),
+                    month=int(request.session["current_month"]),
+                    day=1,
+                )
                 end_date = start_date + relativedelta(day=31)
-                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
-                                                            Q(report_card_day__in=search_interval)).order_by(
-                    'report_card_day').reverse()
+                search_interval = list(
+                    rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
+                )
+                reportcard_list = (
+                    ReportCard.objects.filter(
+                        Q(record_type="13") & Q(report_card_day__in=search_interval)
+                    )
+                    .order_by("report_card_day")
+                    .reverse()
+                )
             else:
-                start_date = datetime.date(year=datetime.datetime.today().year,
-                                           month=datetime.datetime.today().month, day=1)
+                start_date = datetime.date(
+                    year=datetime.datetime.today().year,
+                    month=datetime.datetime.today().month,
+                    day=1,
+                )
                 end_date = start_date + relativedelta(day=31)
-                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                reportcard_list = ReportCard.objects.filter(Q(record_type='13') &
-                                                            Q(report_card_day__in=search_interval)).order_by(
-                    'report_card_day').reverse()
+                search_interval = list(
+                    rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
+                )
+                reportcard_list = (
+                    ReportCard.objects.filter(
+                        Q(record_type="13") & Q(report_card_day__in=search_interval)
+                    )
+                    .order_by("report_card_day")
+                    .reverse()
+                )
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         month_dict, year_dict = get_year_interval(2020)
-        context['year_dict'] = year_dict
-        context['month_dict'] = month_dict
-        context['current_year'] = self.request.session['current_year']
-        context['current_month'] = str(self.request.session['current_month'])
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
+        context["year_dict"] = year_dict
+        context["month_dict"] = month_dict
+        context["current_year"] = self.request.session["current_year"]
+        context["current_month"] = str(self.request.session["current_month"])
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком"
         return context
 
 
 class ReportCardListAdmin(LoginRequiredMixin, ListView):
     model = ReportCard
-    template_name = 'hrdepartment_app/reportcard_list_admin.html'
+    template_name = "hrdepartment_app/reportcard_list_admin.html"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        current_month = self.request.GET.get('report_month')
-        current_year = self.request.GET.get('report_year')
+        current_month = self.request.GET.get("report_month")
+        current_year = self.request.GET.get("report_year")
         if current_month and current_year:
-            request.session['current_month'] = int(current_month)
-            request.session['current_year'] = int(current_year)
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            request.session["current_month"] = int(current_month)
+            request.session["current_year"] = int(current_year)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             # if self.request.user.is_superuser:
             #     reportcard_list = ReportCard.objects.all()
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
-            if request.session['current_month'] and request.session['current_year']:
-                start_date = datetime.date(year=int(request.session['current_year']),
-                                           month=int(request.session['current_month']), day=1)
+            if request.session["current_month"] and request.session["current_year"]:
+                start_date = datetime.date(
+                    year=int(request.session["current_year"]),
+                    month=int(request.session["current_month"]),
+                    day=1,
+                )
                 end_date = start_date + relativedelta(day=31)
-                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                reportcard_list = ReportCard.objects.filter(Q(report_card_day__in=search_interval)).order_by(
-                    'report_card_day').reverse()
+                search_interval = list(
+                    rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
+                )
+                reportcard_list = (
+                    ReportCard.objects.filter(Q(report_card_day__in=search_interval))
+                    .order_by("report_card_day")
+                    .reverse()
+                )
             else:
-                start_date = datetime.date(year=datetime.datetime.today().year,
-                                           month=datetime.datetime.today().month, day=1)
+                start_date = datetime.date(
+                    year=datetime.datetime.today().year,
+                    month=datetime.datetime.today().month,
+                    day=1,
+                )
                 end_date = start_date + relativedelta(day=31)
-                search_interval = list(rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date))
-                reportcard_list = ReportCard.objects.filter(Q(report_card_day__in=search_interval)).order_by(
-                    'report_card_day').reverse()
+                search_interval = list(
+                    rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
+                )
+                reportcard_list = (
+                    ReportCard.objects.filter(Q(report_card_day__in=search_interval))
+                    .order_by("report_card_day")
+                    .reverse()
+                )
             data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         month_dict, year_dict = get_year_interval(2020)
-        context['year_dict'] = year_dict
-        context['month_dict'] = month_dict
-        context['current_year'] = self.request.session['current_year']
-        context['current_month'] = str(self.request.session['current_month'])
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком'
+        context["year_dict"] = year_dict
+        context["month_dict"] = month_dict
+        context["current_year"] = self.request.session["current_year"]
+        context["current_month"] = str(self.request.session["current_month"])
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком"
         return context
 
 
 class ReportCardDelete(LoginRequiredMixin, DeleteView):
     model = ReportCard
-    success_url = '/hr/report/admin/'
+    success_url = "/hr/report/admin/"
 
 
 class ReportCardDetailFact(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
-    template_name = 'hrdepartment_app/reportcard_detail_fact.html'
+    template_name = "hrdepartment_app/reportcard_detail_fact.html"
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()
-        return HttpResponseRedirect(reverse('hrdepartment_app:reportcard_detail'))
+        return HttpResponseRedirect(reverse("hrdepartment_app:reportcard_detail"))
 
     def get_queryset(self):
         queryset = ReportCard.objects.all()
@@ -1870,8 +2491,8 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        month = self.request.GET.get('report_month', None)
-        year = self.request.GET.get('report_year', None)
+        month = self.request.GET.get("report_month", None)
+        year = self.request.GET.get("report_year", None)
 
         if month and year:
             current_day = datetime.datetime(int(year), int(month), 1)
@@ -1881,13 +2502,19 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
         # Выбираем пользователей, кто отмечался в течении интервала
-        report_obj_list = ReportCard.objects.filter(
-            Q(report_card_day__gte=first_day) & Q(record_type__in=['1', '13']) &
-            Q(report_card_day__lte=last_day)).values('employee').order_by('employee__last_name')
+        report_obj_list = (
+            ReportCard.objects.filter(
+                Q(report_card_day__gte=first_day)
+                & Q(record_type__in=["1", "13"])
+                & Q(report_card_day__lte=last_day)
+            )
+            .values("employee")
+            .order_by("employee__last_name")
+        )
         users_obj_list = []
         for item in report_obj_list:
-            if item['employee'] not in users_obj_list:
-                users_obj_list.append(item['employee'])
+            if item["employee"] not in users_obj_list:
+                users_obj_list.append(item["employee"])
         users_obj_set = dict()
         for item in users_obj_list:
             users_obj_set[item] = DataBaseUser.objects.get(pk=item)
@@ -1897,56 +2524,71 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
         # Итерируемся по списку сотрудников
         for user_obj in users_obj_set:
-            data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(
-                user_obj, current_day, state=2)
-            absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
-            absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
+            (
+                data_dict,
+                total_score,
+                all_days_count,
+                all_vacation_days,
+                all_vacation_time,
+                holiday_delta,
+            ) = get_working_hours(user_obj, current_day, state=2)
+            absences = all_days_count - (
+                norm_time.number_working_days - all_vacation_days
+            )
+            absences_delta = (
+                norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
+            )
             if absences_delta < 0:
                 hour1, minute1 = divmod(total_score / 60, 60)
-                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм'.format(hour1, minute1)
+                time_count_hour = "{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм".format(
+                    hour1, minute1
+                )
             else:
                 hour1, minute1 = divmod(total_score / 60, 60)
                 hour2, minute2 = divmod(absences_delta * 60, 60)
-                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм'.format(
-                    hour1, minute1, hour2, minute2)
+                time_count_hour = "{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм".format(
+                    hour1, minute1, hour2, minute2
+                )
             all_dict[users_obj_set[user_obj]] = {
-                'dict_count': data_dict,
-                'days_count': all_days_count,  # days_count,
-                'time_count_day': datetime.timedelta(seconds=total_score).days,
+                "dict_count": data_dict,
+                "days_count": all_days_count,  # days_count,
+                "time_count_day": datetime.timedelta(seconds=total_score).days,
                 # time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
-                'time_count_hour': time_count_hour,
+                "time_count_hour": time_count_hour,
                 # (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
-                'absences': abs(absences) if absences < 0 else 0,  # Количество неявок
-                'vacation_time': (all_vacation_time + total_score) / 3600,
-                'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
+                "absences": abs(absences) if absences < 0 else 0,  # Количество неявок
+                "vacation_time": (all_vacation_time + total_score) / 3600,
+                "holidays": norm_time.number_days_off_and_holidays - holiday_delta,
             }
         month_dict, year_dict = get_year_interval(2020)
-        context['range'] = [item for item in range(1, 17)]
-        context['range2'] = [item for item in range(16, 32)]
-        context['year_dict'] = year_dict
-        context['month_dict'] = month_dict
-        context['all_dict'] = all_dict
-        context['month_obj'] = month_obj
-        context['first_day'] = first_day
-        context['norm_time'] = norm_time.get_norm_time()
-        context['norm_day'] = norm_time.number_working_days
-        context['holidays'] = norm_time.number_days_off_and_holidays
-        context['last_day'] = last_day
-        context['current_year'] = datetime.datetime.today().year
-        context['current_month'] = str(datetime.datetime.today().month)
-        context['tabel_month'] = first_day
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени (факт)'
+        context["range"] = [item for item in range(1, 17)]
+        context["range2"] = [item for item in range(16, 32)]
+        context["year_dict"] = year_dict
+        context["month_dict"] = month_dict
+        context["all_dict"] = all_dict
+        context["month_obj"] = month_obj
+        context["first_day"] = first_day
+        context["norm_time"] = norm_time.get_norm_time()
+        context["norm_day"] = norm_time.number_working_days
+        context["holidays"] = norm_time.number_days_off_and_holidays
+        context["last_day"] = last_day
+        context["current_year"] = datetime.datetime.today().year
+        context["current_month"] = str(datetime.datetime.today().month)
+        context["tabel_month"] = first_day
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени (факт)"
         return context
 
 
 class ReportCardDetail(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
-    template_name = 'hrdepartment_app/reportcard_detail.html'
+    template_name = "hrdepartment_app/reportcard_detail.html"
 
     def post(self, request):  # ***** this method required! ******
         self.object_list = self.get_queryset()
-        return HttpResponseRedirect(reverse('hrdepartment_app:reportcard_detail'))
+        return HttpResponseRedirect(reverse("hrdepartment_app:reportcard_detail"))
 
     def get_queryset(self):
         queryset = ReportCard.objects.all()
@@ -1954,8 +2596,8 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        month = self.request.GET.get('report_month', None)
-        year = self.request.GET.get('report_year', None)
+        month = self.request.GET.get("report_month", None)
+        year = self.request.GET.get("report_year", None)
 
         if month and year:
             current_day = datetime.datetime(int(year), int(month), 1)
@@ -1965,13 +2607,19 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
         # Выбираем пользователей, кто отмечался в течении интервала
-        report_obj_list = ReportCard.objects.filter(
-            Q(report_card_day__gte=first_day) & Q(record_type__in=['1', '13']) &
-            Q(report_card_day__lte=last_day)).values('employee').order_by('employee__last_name')
+        report_obj_list = (
+            ReportCard.objects.filter(
+                Q(report_card_day__gte=first_day)
+                & Q(record_type__in=["1", "13"])
+                & Q(report_card_day__lte=last_day)
+            )
+            .values("employee")
+            .order_by("employee__last_name")
+        )
         users_obj_list = []
         for item in report_obj_list:
-            if item['employee'] not in users_obj_list:
-                users_obj_list.append(item['employee'])
+            if item["employee"] not in users_obj_list:
+                users_obj_list.append(item["employee"])
         users_obj_set = dict()
         for item in users_obj_list:
             users_obj_set[item] = DataBaseUser.objects.get(pk=item)
@@ -1981,44 +2629,59 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
         # Итерируемся по списку сотрудников
         for user_obj in users_obj_set:
-            data_dict, total_score, all_days_count, all_vacation_days, all_vacation_time, holiday_delta = get_working_hours(
-                user_obj, current_day, state=1)
-            absences = all_days_count - (norm_time.number_working_days - all_vacation_days)
-            absences_delta = norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
+            (
+                data_dict,
+                total_score,
+                all_days_count,
+                all_vacation_days,
+                all_vacation_time,
+                holiday_delta,
+            ) = get_working_hours(user_obj, current_day, state=1)
+            absences = all_days_count - (
+                norm_time.number_working_days - all_vacation_days
+            )
+            absences_delta = (
+                norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
+            )
             if absences_delta < 0:
                 hour1, minute1 = divmod(total_score / 60, 60)
-                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм'.format(hour1, minute1)
+                time_count_hour = "{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм".format(
+                    hour1, minute1
+                )
             else:
                 hour1, minute1 = divmod(total_score / 60, 60)
                 hour2, minute2 = divmod(absences_delta * 60, 60)
-                time_count_hour = '{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм'.format(
-                    hour1, minute1, hour2, minute2)
+                time_count_hour = "{0:3.0f}&nbspч&nbsp{1:2.0f}&nbspм<br>-{2:3.0f}&nbspч&nbsp{3:2.0f}&nbspм".format(
+                    hour1, minute1, hour2, minute2
+                )
             all_dict[users_obj_set[user_obj]] = {
-                'dict_count': data_dict,
-                'days_count': all_days_count,  # days_count,
-                'time_count_day': datetime.timedelta(seconds=total_score).days,
+                "dict_count": data_dict,
+                "days_count": all_days_count,  # days_count,
+                "time_count_day": datetime.timedelta(seconds=total_score).days,
                 # time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
-                'time_count_hour': time_count_hour,
+                "time_count_hour": time_count_hour,
                 # (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
-                'absences': abs(absences) if absences < 0 else 0,  # Количество неявок
-                'vacation_time': (all_vacation_time + total_score) / 3600,
-                'holidays': norm_time.number_days_off_and_holidays - holiday_delta,
+                "absences": abs(absences) if absences < 0 else 0,  # Количество неявок
+                "vacation_time": (all_vacation_time + total_score) / 3600,
+                "holidays": norm_time.number_days_off_and_holidays - holiday_delta,
             }
         month_dict, year_dict = get_year_interval(2020)
 
-        context['year_dict'] = year_dict
-        context['month_dict'] = month_dict
-        context['all_dict'] = all_dict
-        context['month_obj'] = month_obj
-        context['first_day'] = first_day
-        context['norm_time'] = norm_time.get_norm_time()
-        context['norm_day'] = norm_time.number_working_days
-        context['holidays'] = norm_time.number_days_off_and_holidays
-        context['last_day'] = last_day
-        context['current_year'] = datetime.datetime.today().year
-        context['current_month'] = str(datetime.datetime.today().month)
-        context['tabel_month'] = first_day
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени'
+        context["year_dict"] = year_dict
+        context["month_dict"] = month_dict
+        context["all_dict"] = all_dict
+        context["month_obj"] = month_obj
+        context["first_day"] = first_day
+        context["norm_time"] = norm_time.get_norm_time()
+        context["norm_day"] = norm_time.number_working_days
+        context["holidays"] = norm_time.number_days_off_and_holidays
+        context["last_day"] = last_day
+        context["current_year"] = datetime.datetime.today().year
+        context["current_month"] = str(datetime.datetime.today().month)
+        context["tabel_month"] = first_day
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени"
         return context
 
 
@@ -2027,103 +2690,165 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
     form_class = ReportCardAddForm
 
     def get(self, request, *args, **kwargs):
-        interval = request.GET.get('interval', None)
+        interval = request.GET.get("interval", None)
         if interval:
-            personal_start = self.request.user.user_work_profile.personal_work_schedule_start
-            personal_start = datetime.timedelta(hours=personal_start.hour,
-                                                minutes=personal_start.minute) - datetime.timedelta(hours=1)
-            personal_end = self.request.user.user_work_profile.personal_work_schedule_end
+            personal_start = (
+                self.request.user.user_work_profile.personal_work_schedule_start
+            )
+            personal_start = datetime.timedelta(
+                hours=personal_start.hour, minutes=personal_start.minute
+            ) - datetime.timedelta(hours=1)
+            personal_end = (
+                self.request.user.user_work_profile.personal_work_schedule_end
+            )
 
-            if datetime.datetime.strptime(interval, '%Y-%m-%d').weekday() == 4:
-                personal_end = datetime.timedelta(hours=personal_end.hour, minutes=personal_end.minute)
+            if datetime.datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
+                personal_end = datetime.timedelta(
+                    hours=personal_end.hour, minutes=personal_end.minute
+                )
             else:
-                personal_end = datetime.timedelta(hours=personal_end.hour,
-                                                  minutes=personal_end.minute) + datetime.timedelta(hours=1)
-            result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'),
-                      datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
+                personal_end = datetime.timedelta(
+                    hours=personal_end.hour, minutes=personal_end.minute
+                ) + datetime.timedelta(hours=1)
+            result = [
+                datetime.datetime.strptime(str(personal_start), "%H:%M:%S")
+                .time()
+                .strftime("%H:%M"),
+                datetime.datetime.strptime(str(personal_end), "%H:%M:%S")
+                .time()
+                .strftime("%H:%M"),
+            ]
             return JsonResponse(result, safe=False)
         return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
             search_report = ReportCard.objects.filter(
-                Q(employee=self.request.user) & Q(report_card_day=form.cleaned_data.get('report_card_day')) & Q(
-                    record_type='1'))
-            dt = form.cleaned_data.get('report_card_day')
+                Q(employee=self.request.user)
+                & Q(report_card_day=form.cleaned_data.get("report_card_day"))
+                & Q(record_type="1")
+            )
+            dt = form.cleaned_data.get("report_card_day")
             search_interval = list()
             start_time = list()
             end_time = list()
             for item in search_report:
                 start_time.append(item.start_time.strftime("%H:%M"))
                 end_time.append(item.end_time.strftime("%H:%M"))
-                first_date1 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=item.start_time.hour,
-                                                minute=item.start_time.minute)
-                first_date2 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day, hour=item.end_time.hour,
-                                                minute=item.end_time.minute)
-                search_interval = list(rrule.rrule(rrule.MINUTELY, dtstart=first_date1, until=first_date2))
-            first_date3 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day,
-                                            hour=form.cleaned_data.get('start_time').hour,
-                                            minute=form.cleaned_data.get('start_time').minute)
-            first_date4 = datetime.datetime(year=dt.year, month=dt.month, day=dt.day,
-                                            hour=form.cleaned_data.get('end_time').hour,
-                                            minute=form.cleaned_data.get('end_time').minute)
-            interval = list(rrule.rrule(rrule.MINUTELY, dtstart=first_date3, until=first_date4))
+                first_date1 = datetime.datetime(
+                    year=dt.year,
+                    month=dt.month,
+                    day=dt.day,
+                    hour=item.start_time.hour,
+                    minute=item.start_time.minute,
+                )
+                first_date2 = datetime.datetime(
+                    year=dt.year,
+                    month=dt.month,
+                    day=dt.day,
+                    hour=item.end_time.hour,
+                    minute=item.end_time.minute,
+                )
+                search_interval = list(
+                    rrule.rrule(rrule.MINUTELY, dtstart=first_date1, until=first_date2)
+                )
+            first_date3 = datetime.datetime(
+                year=dt.year,
+                month=dt.month,
+                day=dt.day,
+                hour=form.cleaned_data.get("start_time").hour,
+                minute=form.cleaned_data.get("start_time").minute,
+            )
+            first_date4 = datetime.datetime(
+                year=dt.year,
+                month=dt.month,
+                day=dt.day,
+                hour=form.cleaned_data.get("end_time").hour,
+                minute=form.cleaned_data.get("end_time").minute,
+            )
+            interval = list(
+                rrule.rrule(rrule.MINUTELY, dtstart=first_date3, until=first_date4)
+            )
             set1 = set(search_interval)
             set2 = set(interval)
             result = set2.intersection(set1)
             if len(result) > 0:
-                form.add_error('start_time',
-                               f'Ошибка! Вы указали время с {form.cleaned_data.get("start_time").strftime("%H:%M")} по {form.cleaned_data.get("end_time").strftime("%H:%M")}, но на заданную дату По TimeControl у вас имеется интервал с {start_time} по {end_time}')
+                form.add_error(
+                    "start_time",
+                    f'Ошибка! Вы указали время с {form.cleaned_data.get("start_time").strftime("%H:%M")} по {form.cleaned_data.get("end_time").strftime("%H:%M")}, но на заданную дату По TimeControl у вас имеется интервал с {start_time} по {end_time}',
+                )
                 return super().form_invalid(form)
 
             refresh_form = form.save(commit=False)
             refresh_form.employee = self.request.user
-            refresh_form.record_type = '13'
+            refresh_form.record_type = "13"
             refresh_form.manual_input = True
 
             refresh_form.save()
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('customers_app:profile', args=(self.request.user.pk,))
+        return reverse("customers_app:profile", args=(self.request.user.pk,))
 
 
 class ReportCardUpdate(LoginRequiredMixin, UpdateView):
     model = ReportCard
     form_class = ReportCardUpdateForm
-    template_name = 'hrdepartment_app/reportcard_form_update.html'
+    template_name = "hrdepartment_app/reportcard_form_update.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user_obj = self.get_object()
         if self.request.user.is_superuser:
-            context['min'] = datetime.datetime(1, 1, 1, 1, 0).strftime('%H:%M')
-            context['max'] = datetime.datetime(1, 1, 1, 23, 0).strftime('%H:%M')
+            context["min"] = datetime.datetime(1, 1, 1, 1, 0).strftime("%H:%M")
+            context["max"] = datetime.datetime(1, 1, 1, 23, 0).strftime("%H:%M")
         else:
-            context['min'] = user_obj.employee.user_work_profile.personal_work_schedule_start.strftime('%H:%M')
-            context['max'] = user_obj.employee.user_work_profile.personal_work_schedule_end.strftime('%H:%M')
+            context[
+                "min"
+            ] = user_obj.employee.user_work_profile.personal_work_schedule_start.strftime(
+                "%H:%M"
+            )
+            context[
+                "max"
+            ] = user_obj.employee.user_work_profile.personal_work_schedule_end.strftime(
+                "%H:%M"
+            )
         return context
 
     def get(self, request, *args, **kwargs):
-        interval = request.GET.get('interval', None)
+        interval = request.GET.get("interval", None)
         if interval:
-            personal_start = self.request.user.user_work_profile.personal_work_schedule_start
-            personal_start = datetime.timedelta(hours=personal_start.hour,
-                                                minutes=personal_start.minute) - datetime.timedelta(hours=1)
-            personal_end = self.request.user.user_work_profile.personal_work_schedule_end
+            personal_start = (
+                self.request.user.user_work_profile.personal_work_schedule_start
+            )
+            personal_start = datetime.timedelta(
+                hours=personal_start.hour, minutes=personal_start.minute
+            ) - datetime.timedelta(hours=1)
+            personal_end = (
+                self.request.user.user_work_profile.personal_work_schedule_end
+            )
 
-            if datetime.datetime.strptime(interval, '%Y-%m-%d').weekday() == 4:
-                personal_end = datetime.timedelta(hours=personal_end.hour, minutes=personal_end.minute)
+            if datetime.datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
+                personal_end = datetime.timedelta(
+                    hours=personal_end.hour, minutes=personal_end.minute
+                )
             else:
-                personal_end = datetime.timedelta(hours=personal_end.hour,
-                                                  minutes=personal_end.minute) + datetime.timedelta(hours=1)
-            result = [datetime.datetime.strptime(str(personal_start), '%H:%M:%S').time().strftime('%H:%M'),
-                      datetime.datetime.strptime(str(personal_end), '%H:%M:%S').time().strftime('%H:%M')]
+                personal_end = datetime.timedelta(
+                    hours=personal_end.hour, minutes=personal_end.minute
+                ) + datetime.timedelta(hours=1)
+            result = [
+                datetime.datetime.strptime(str(personal_start), "%H:%M:%S")
+                .time()
+                .strftime("%H:%M"),
+                datetime.datetime.strptime(str(personal_end), "%H:%M:%S")
+                .time()
+                .strftime("%H:%M"),
+            ]
             return JsonResponse(result, safe=False)
         return super().get(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse('hrdepartment_app:reportcard_list')
+        return reverse("hrdepartment_app:reportcard_list")
 
     def get_form_kwargs(self):
         """
@@ -2131,44 +2856,50 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
         :return: PK текущего пользователя
         """
         kwargs = super().get_form_kwargs()
-        kwargs.update({'user': self.request.user.pk})
+        kwargs.update({"user": self.request.user.pk})
         return kwargs
 
 
 # Положения
 class ProvisionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
-        Должностные инструкции - список
+    Должностные инструкции - список
     """
+
     model = Provisions
-    permission_required = 'hrdepartment_app.view_provisions'
+    permission_required = "hrdepartment_app.view_provisions"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
             provisions_list = Provisions.objects.all()
             data = [provisions_item.get_data() for provisions_item in provisions_list]
-            response = {'data': data}
+            response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Положения'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Положения"
         return context
 
 
 class ProvisionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
-        Положения - создание
+    Положения - создание
     """
+
     model = Provisions
     form_class = ProvisionsAddForm
-    permission_required = 'hrdepartment_app.add_provisions'
+    permission_required = "hrdepartment_app.add_provisions"
 
     def get_context_data(self, **kwargs):
         content = super(ProvisionsAdd, self).get_context_data(**kwargs)
-        content['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить положение'
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить положение"
         return content
 
     def get_form_kwargs(self):
@@ -2177,53 +2908,61 @@ class ProvisionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         :return: PK текущего пользователя
         """
         kwargs = super().get_form_kwargs()
-        kwargs.update({'user': self.request.user.pk})
+        kwargs.update({"user": self.request.user.pk})
         return kwargs
 
 
 class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
-        Положения - просмотр
+    Положения - просмотр
     """
+
     model = Provisions
-    permission_required = 'hrdepartment_app.view_provisions'
+    permission_required = "hrdepartment_app.view_provisions"
 
     def dispatch(self, request, *args, **kwargs):
         try:
             # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = int(self.get_object().access.level)
             # Получаем уровень доступа к документам у пользователя
-            user_obj = DataBaseUser.objects.get(pk=self.request.user.pk).user_access.level
+            user_obj = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_access.level
             # Сравниваем права доступа
             if detail_obj < user_obj:
                 # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
                 # Иначе не меняем логику работы класса
-                url_match = reverse_lazy('hrdepartment_app:provisions_list')
+                url_match = reverse_lazy("hrdepartment_app:provisions_list")
                 return redirect(url_match)
         except Exception as _ex:
             # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
-            url_match = reverse_lazy('hrdepartment_app:provisions_list')
+            url_match = reverse_lazy("hrdepartment_app:provisions_list")
             return redirect(url_match)
         return super(ProvisionsDetail, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
         return context
 
 
 class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
-        Положения - редактирование
+    Положения - редактирование
     """
-    template_name = 'hrdepartment_app/provisions_form_update.html'
+
+    template_name = "hrdepartment_app/provisions_form_update.html"
     model = Provisions
     form_class = ProvisionsUpdateForm
-    permission_required = 'hrdepartment_app.change_provisions'
+    permission_required = "hrdepartment_app.change_provisions"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -2232,5 +2971,5 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         :return: PK текущего пользователя
         """
         kwargs = super().get_form_kwargs()
-        kwargs.update({'user': self.request.user.pk})
+        kwargs.update({"user": self.request.user.pk})
         return kwargs
