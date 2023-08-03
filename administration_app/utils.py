@@ -717,7 +717,6 @@ def change_approval_status(self):
         if condition:
             comments = comment
             document_accepted = comment == "Документооборот завершен"
-            break
 
     if comments != "Документооборот начат" and not self.cancellation:
         self.document.comments = comments
