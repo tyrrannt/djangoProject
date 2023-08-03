@@ -553,9 +553,15 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     period = datetime.datetime.strptime(
         f"{selected_year}-{selected_month}-01", "%Y-%m-%d"
     )
-    data_positive = data_negative = data_paid = list()
-    positive = negative = paid = 0
-    result_positive = result_negative = result_paid = dict()
+    data_positive = list()
+    data_negative = list()
+    data_paid = list()
+    positive = 0
+    negative = 0
+    paid = 0
+    result_positive = dict()
+    result_negative = dict()
+    result_paid = dict()
     for items in acc_reg_acc["value"]:
         if (
             period == datetime.datetime.strptime(items["Period"][:10], "%Y-%m-%d")
