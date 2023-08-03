@@ -531,14 +531,12 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     Получение расчетного листка сотрудника,
     :return: Найденную запись, или пустую строку
     """
-    ref_key, series, number, issued_by_whom, date_of_issue, division_code = (
-        "",
-        "",
-        "",
-        "",
-        "1900-01-01",
-        "",
-    )
+    ref_key = ""
+    series = ""
+    number = ""
+    issued_by_whom = ""
+    date_of_issue = "1900-01-01"
+    division_code = ""
     acc_reg_acc = get_jsons(
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_НачисленияУдержанияПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27",
         0,
