@@ -11,6 +11,7 @@ from administration_app.utils import (
     transliterate,
     timedelta_to_time,
     get_json_vacation,
+    timedelta_to_string,
 )
 from customers_app.models import (
     DataBaseUser,
@@ -477,12 +478,12 @@ def get_report_card_table(
                     "М",
                 ]:
                     table_time += r12
-                start_time = timedelta_to_time(r2, 1)
+                start_time = timedelta_to_string(r2)
                 if r10:
-                    end_time = timedelta_to_time(r3, 1)
+                    end_time = timedelta_to_string(r3)
                 else:
-                    end_time = timedelta_to_time("00:00:00", 1)
-                delta = timedelta_to_time(datetime.timedelta(seconds=r5), 1)
+                    end_time = timedelta_to_string("00:00:00")
+                delta = timedelta_to_string(datetime.timedelta(seconds=r5))
                 if r9:
                     style = "background-color: #b0ffd5"
                 else:
@@ -552,17 +553,13 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     period = datetime.datetime.strptime(
         f"{selected_year}-{selected_month}-01", "%Y-%m-%d"
     )
-    data_positive = list()
-    data_negative = list()
-    data_paid = list()
-    positive = 0
-    negative = 0
-    paid = 0
-    result_positive, result_negative, result_paid = {}, {}, {}
+    data_positive = data_negative = data_paid = list()
+    positive = negative = paid = 0
+    result_positive, result_negative, result_paid = [{} for _ in range(3)]
     for items in acc_reg_acc["value"]:
         if (
             period == datetime.datetime.strptime(items["Period"][:10], "%Y-%m-%d")
-            and items["Active"] == True
+            and items["Active"]
         ):
             work_time = get_worked_out_by_the_workers(
                 selected_month, selected_year, users_uuid, items["НачислениеУдержание"]

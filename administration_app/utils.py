@@ -475,19 +475,19 @@ def ending_day(value: int) -> str:
     """
     value = abs(
         value
-    )  # Taking absolute value, as negative numbers should also convert properly
+    )  # Принимает абсолютное значение, так как отрицательные числа также должны быть правильно преобразованы
 
-    # Last two digits are needed to find the form in Russian language
+    # Последние две цифры нужны, чтобы найти форму на русском языке
     last_two_digits = value % 100
 
-    # Last digit is used when the last two digits are from 10 to 19
+    # Последняя цифра используется, когда последние две цифры от 10 до 19
     last_digit = value % 10
 
     if 10 <= last_two_digits <= 20 or last_digit == 0 or 5 <= last_digit <= 9:
         return f"{value} дней"
     elif last_digit == 1:
         return f"{value} день"
-    else:  # If the last digit is from 2 to 4
+    else:  # Если последняя цифра от 2 до 4
         return f"{value} дня"
 
 
@@ -629,17 +629,22 @@ def get_year_interval(year=2020):
     return MONTHS, year_dict
 
 
-def timedelta_to_time(time, trigger=0):
+def timedelta_to_time(time):
     """
-    Перевод времени timedelta в time
-    :param trigger: в зависимости от переключателя, меняется формат вывода 0 - time, 1 - str
-    :param time: время в формате timedelta или в формате строки '00:00:00'
-    :return: время в формате datetime.time
+    Преобразование timedelta во время.
+    :param time: Время в формате timedelta или в формате строки '00:00:00'
+    :return: Время в формате datetime.time
     """
-    if trigger == 0:
-        return datetime.strptime(str(time), "%H:%M:%S").time()
-    if trigger == 1:
-        return datetime.strptime(str(time), "%H:%M:%S").time().strftime("%H:%M")
+    return datetime.strptime(str(time), "%H:%M:%S").time()
+
+
+def timedelta_to_string(time):
+    """
+    Преобразование timedelta в строку.
+    :param time: Время в формате timedelta или в формате строки '00:00:00'
+    :return: Время в формате строки
+    """
+    return datetime.strptime(str(time), "%H:%M:%S").time().strftime("%H:%M")
 
 
 def time_difference(start_time: datetime.time, end_time: datetime.time):
@@ -649,6 +654,8 @@ def time_difference(start_time: datetime.time, end_time: datetime.time):
     :param end_time: время окончания
     :return: количество секунд между start_time и end_time
     """
+    if start_time > end_time:
+        raise ValueError("start_time должно быть раньше, чем end_time.")
     result = (
         timedelta(hours=end_time.hour, minutes=end_time.minute).total_seconds()
         - timedelta(hours=start_time.hour, minutes=start_time.minute).total_seconds()
