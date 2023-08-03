@@ -555,7 +555,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     )
     data_positive = data_negative = data_paid = list()
     positive = negative = paid = 0
-    result_positive = result_negative = result_paid = {}
+    result_positive = result_negative = result_paid = dict()
     for items in acc_reg_acc["value"]:
         if (
             period == datetime.datetime.strptime(items["Period"][:10], "%Y-%m-%d")
@@ -598,7 +598,10 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         }
         paid += float(items["СуммаВзаиморасчетов"])
         data_paid.append(result_paid)
-    accrued_table_set = withheld_table_set = paid_table_set = accrued_table_set_list = ""
+    accrued_table_set = ""
+    withheld_table_set = ""
+    paid_table_set = ""
+    accrued_table_set_list = ""
     for count in data_positive:
         accrued_table_set_list += "<tr>"
         for key in count:
