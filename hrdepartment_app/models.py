@@ -1521,7 +1521,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
                 "Number": obj_model.document_number,
                 "DateDoc": f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
                 "Title": obj_model.document_name,
-                "Description": RichText(obj_model.description),
+                "Description": obj_model.description,
                 # "Description": sub_doc,
             }
         except Exception as _ex:
