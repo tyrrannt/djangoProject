@@ -2,6 +2,7 @@ import datetime
 import pathlib
 import uuid
 
+
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.contrib.contenttypes.fields import GenericRelation
