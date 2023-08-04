@@ -158,10 +158,10 @@ class OfficialMemoAddForm(forms.ModelForm):
         match official_memo_type:
             case "1":
                 if period_from < self.date_difference(
-                    7
-                ) or period_for < self.date_difference(7):
+                    14
+                ) or period_for < self.date_difference(14):
                     raise forms.ValidationError(
-                        f"Нельзя использовать прошедшую дату! Допустимый период 7 дней. Минимальная дата {self.date_difference(7).strftime('%d.%m.%Y')} г."
+                        f"Нельзя использовать прошедшую дату! Допустимый период 14 дней. Минимальная дата {self.date_difference(14).strftime('%d.%m.%Y')} г."
                     )
             case "2":
                 if not document_extension:
@@ -177,10 +177,10 @@ class OfficialMemoAddForm(forms.ModelForm):
                     )
             case "3":
                 if period_from < self.date_difference(
-                    45
-                ) or period_for < self.date_difference(45):
+                    60
+                ) or period_for < self.date_difference(60):
                     raise forms.ValidationError(
-                        f"Нельзя использовать прошедшую дату! Допустимый период 45 дней. Минимальная дата {self.date_difference(45).strftime('%d.%m.%Y')} г."
+                        f"Нельзя использовать прошедшую дату! Допустимый период 60 дней. Минимальная дата {self.date_difference(60).strftime('%d.%m.%Y')} г."
                     )
 
 
