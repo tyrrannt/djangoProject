@@ -1562,7 +1562,6 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
                 instance.document_order_type,
             )
             scan_name = pathlib.Path(created_pdf).name
-            print(scan_name, scanname)
             if (
                 f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}"
                 != instance.doc_file
