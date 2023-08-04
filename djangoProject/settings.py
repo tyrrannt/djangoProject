@@ -227,6 +227,7 @@ CKEDITOR_5_CONFIGS = {
                 "subscript",
                 "superscript",
                 "highlight",
+                "alignment",
                 "|",
                 "codeBlock",
                 "sourceEditing",

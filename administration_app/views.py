@@ -112,13 +112,13 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get("update") == "3":
-                qs = DocumentsOrder.objects.filter(
-                    Q(cancellation=False)
-                    & Q(document_date__year=2023)
-                    & Q(document_date__month=8)
-                )
-                for item in qs:
-                    item.save()
+                # qs = DocumentsOrder.objects.filter(
+                #     Q(cancellation=False)
+                #     & Q(document_date__year=2023)
+                #     & Q(document_date__month=8)
+                # )
+                # for item in qs:
+                #     item.save()
                 # get_vacation()
                 # def get_type_of_employment(Ref_Key):
                 #     data = get_jsons_data_filter("Document", "ПриемНаРаботу", 'Сотрудник_Key', Ref_Key, 0, 0, True, True)
@@ -159,7 +159,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #         # find_item = list(filter(lambda item_filter: item_filter['Ref_Key'] == item['ФизическоеЛицо_Key'], individuals['value']))[0]
                 #         print(get_filter_list(individuals['value'], 'Ref_Key', item['ФизическоеЛицо_Key']))
                 #
-                # pass
+                pass
                 # get_sick_leave(2023, 2)
             if request.GET.get("update") == "4":
                 for report_record in ReportCard.objects.filter(

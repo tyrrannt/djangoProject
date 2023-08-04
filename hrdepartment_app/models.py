@@ -4,7 +4,6 @@ import uuid
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
-from decouple import config
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
@@ -14,7 +13,9 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
+from docx import Document
 from docxtpl import DocxTemplate, RichText
+from htmldocx import HtmlToDocx
 from loguru import logger
 
 from administration_app.utils import (
@@ -1509,13 +1510,19 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
         doc = DocxTemplate(
             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord.docx")
         )
-        description = RichText(obj_model.description)
+        # desc_document = Document()
+        # new_parser = HtmlToDocx()
+        # new_parser.add_html_to_document(obj_model.description, desc_document)
+        # desc_result_path = pathlib.Path.joinpath(BASE_DIR, "media/docs/ORD/subdoc.docx")
+        # desc_document.save(desc_result_path)
+        # sub_doc = doc.new_subdoc(desc_result_path)
         try:
             context = {
                 "Number": obj_model.document_number,
                 "DateDoc": f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
                 "Title": obj_model.document_name,
-                "Description": obj_model.description,
+                "Description": RichText(obj_model.description),
+                # "Description": sub_doc,
             }
         except Exception as _ex:
             # DataBaseUser.objects.get(pk=request)
@@ -1526,6 +1533,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     if not path_obj.exists():
         path_obj.mkdir(parents=True)
     doc.save(pathlib.Path.joinpath(path_obj, filename))
+
     from msoffice2pdf import convert
 
     try:
