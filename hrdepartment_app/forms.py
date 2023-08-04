@@ -170,10 +170,10 @@ class OfficialMemoAddForm(forms.ModelForm):
                         "Ошибка создания документа. Для продления необходимо указать документ основания!!!"
                     )
                 if period_from < self.date_difference(
-                    25
-                ) or period_for < self.date_difference(25):
+                    30
+                ) or period_for < self.date_difference(30):
                     raise forms.ValidationError(
-                        f"Нельзя использовать прошедшую дату! Допустимый период 25 дней. Минимальная дата {self.date_difference(25).strftime('%d.%m.%Y')} г."
+                        f"Нельзя использовать прошедшую дату! Допустимый период 30 дней. Минимальная дата {self.date_difference(30).strftime('%d.%m.%Y')} г."
                     )
             case "3":
                 if period_from < self.date_difference(

@@ -14,7 +14,7 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
-from docxtpl import DocxTemplate
+from docxtpl import DocxTemplate, RichText
 from loguru import logger
 
 from administration_app.utils import (
@@ -1509,18 +1509,20 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
         doc = DocxTemplate(
             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord.docx")
         )
+        description = RichText(obj_model.description)
         try:
             context = {
                 "Number": obj_model.document_number,
                 "DateDoc": f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
                 "Title": obj_model.document_name,
-                "Description": obj_model.description,
+                "Description": description,
             }
+            print(context)
         except Exception as _ex:
             # DataBaseUser.objects.get(pk=request)
             logger.debug(f"Ошибка заполнения файла {filename}: {_ex}")
             context = {}
-    doc.render(context)
+    doc.render(context, autoescape=True)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
     if not path_obj.exists():
         path_obj.mkdir(parents=True)
