@@ -1,4 +1,5 @@
 import datetime
+import os
 import pathlib
 import uuid
 
@@ -14,7 +15,9 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
+from docx import Document
 from docxtpl import DocxTemplate, RichText
+from htmldocx import HtmlToDocx
 from loguru import logger
 
 from administration_app.utils import (
@@ -1460,6 +1463,7 @@ class DocumentsOrder(Documents):
 
 
 def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
+    sub_doc_file = ""
     if obj_model.document_foundation:
         if obj_model.document_foundation.type_trip == "1":
             if (
@@ -1509,19 +1513,21 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
         doc = DocxTemplate(
             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord.docx")
         )
-
-        # desc_document = Document()
-        # new_parser = HtmlToDocx()
-        # new_parser.add_html_to_document(obj_model.description, desc_document)
-        # desc_result_path = pathlib.Path.joinpath(BASE_DIR, "media/docs/ORD/subdoc.docx")
-        # desc_document.save(desc_result_path)
-        # sub_doc = doc.new_subdoc(desc_result_path)
+        sub_doc_file = pathlib.Path.joinpath(
+            pathlib.Path.joinpath(BASE_DIR, filepath), f"subdoc-{filename}.docx"
+        )
+        desc_document = Document()
+        new_parser = HtmlToDocx()
+        new_parser.add_html_to_document(obj_model.description, desc_document)
+        desc_result_path = sub_doc_file
+        desc_document.save(desc_result_path)
+        sub_doc = doc.new_subdoc(desc_result_path)
         try:
             context = {
                 "Number": obj_model.document_number,
                 "DateDoc": f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
-                "Title": obj_model.document_name,
-                "Description": obj_model.description,
+                # "Title": obj_model.document_name,
+                "Description": sub_doc,
                 # "Description": sub_doc,
             }
         except Exception as _ex:
@@ -1533,6 +1539,8 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     if not path_obj.exists():
         path_obj.mkdir(parents=True)
     doc.save(pathlib.Path.joinpath(path_obj, filename))
+    if os.path.isfile(sub_doc_file):
+        os.remove(sub_doc_file)
 
     from msoffice2pdf import convert
 
