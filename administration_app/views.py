@@ -112,7 +112,11 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get("update") == "3":
-                qs = DocumentsOrder.objects.filter(Q(cancellation=False) & Q(document_date__year=2023) & Q(document_date__month=8))
+                qs = DocumentsOrder.objects.filter(
+                    Q(cancellation=False)
+                    & Q(document_date__year=2023)
+                    & Q(document_date__month=8)
+                )
                 for item in qs:
                     item.save()
                 # get_vacation()
