@@ -1515,9 +1515,8 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
                 "Number": obj_model.document_number,
                 "DateDoc": f'{obj_model.document_date.strftime("%d.%m.%Y")} г.',
                 "Title": obj_model.document_name,
-                "Description": description,
+                "Description": obj_model.description,
             }
-            print(context)
         except Exception as _ex:
             # DataBaseUser.objects.get(pk=request)
             logger.debug(f"Ошибка заполнения файла {filename}: {_ex}")
@@ -1530,7 +1529,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     from msoffice2pdf import convert
 
     try:
-        convert(
+        var = convert(
             source=str(pathlib.Path.joinpath(path_obj, filename)),
             output_dir=str(path_obj),
             soft=0,
@@ -1538,6 +1537,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
         logger.debug(
             f"Файл: {str(pathlib.Path.joinpath(path_obj, filename))}, Путь: {str(path_obj)}"
         )
+        return var
     except Exception as _ex:
         logger.error(f"Ошибка сохранения файла в pdf {filename}: {_ex}")
 
@@ -1555,13 +1555,14 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
                 f"ORD-{instance.document_order_type}-{instance.document_date}-{uid}.pdf"
             )
             date_doc = instance.document_date
-            order_doc(
+            created_pdf = order_doc(
                 instance,
                 f"media/docs/ORD/{date_doc.year}/{date_doc.month}",
                 filename,
                 instance.document_order_type,
             )
-            scan_name = pathlib.Path(instance.scan_file.name).name
+            scan_name = pathlib.Path(created_pdf).name
+            print(scan_name, scanname)
             if (
                 f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}"
                 != instance.doc_file
@@ -1569,10 +1570,7 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
                 DocumentsOrder.objects.filter(pk=instance.pk).update(
                     doc_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}"
                 )
-            if (
-                f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
-                != instance.scan_file
-            ):
+            if scanname != scan_name:
                 try:
                     pathlib.Path.rename(
                         pathlib.Path.joinpath(
