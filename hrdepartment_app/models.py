@@ -1510,6 +1510,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
         doc = DocxTemplate(
             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord.docx")
         )
+
         # desc_document = Document()
         # new_parser = HtmlToDocx()
         # new_parser.add_html_to_document(obj_model.description, desc_document)
