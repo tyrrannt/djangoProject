@@ -13,9 +13,7 @@ from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
-from docx import Document
 from docxtpl import DocxTemplate, RichText
-from htmldocx import HtmlToDocx
 from loguru import logger
 
 from administration_app.utils import (
