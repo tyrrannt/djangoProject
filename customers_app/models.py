@@ -102,6 +102,27 @@ class HarmfulWorkingConditions(models.Model):
         }
 
 
+class Affiliation(models.Model):
+    """
+    Модель, представляющая принадлежность к подразделению.
+
+    Поля:
+        name (str): Название принадлежности.
+
+    Атрибуты:
+        name: (CharField) Имя принадлежности.
+    """
+
+    class Meta:
+        verbose_name = "Принадлежность к подразделению"
+        verbose_name_plural = "Принадлежности к подразделению"
+
+    name = models.CharField(verbose_name="Наименование", max_length=40, help_text="")
+
+    def __str__(self):
+        return self.name
+
+
 class Job(models.Model):
     """
     Класс должностей
@@ -131,6 +152,13 @@ class Job(models.Model):
         null=True,
         blank=True,
         max_length=18,
+    )
+    division_affiliation = models.ForeignKey(
+        Affiliation,
+        verbose_name="Принадлежность",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
     date_entry = models.DateField(
         verbose_name="Дата ввода", auto_now_add=True, null=True

@@ -10,7 +10,13 @@ from django.db.models import Q
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.utils.decorators import method_decorator
-from django.views.generic import DetailView, UpdateView, CreateView, ListView
+from django.views.generic import (
+    DetailView,
+    UpdateView,
+    CreateView,
+    ListView,
+    DeleteView,
+)
 
 from administration_app.models import PortalProperty
 from administration_app.utils import (
@@ -43,6 +49,7 @@ from customers_app.models import (
     IdentityDocuments,
     HarmfulWorkingConditions,
     Groups,
+    Affiliation,
 )
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import (
@@ -1296,3 +1303,31 @@ class HarmfulWorkingConditionsList(
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Вредные условия труда"
         return context
+
+
+class AffiliationListView(ListView):
+    model = Affiliation
+    template_name = "affiliation_list.html"
+
+
+class AffiliationDetailView(DetailView):
+    model = Affiliation
+    template_name = "affiliation_detail.html"
+
+
+class AffiliationCreateView(CreateView):
+    model = Affiliation
+    template_name = "affiliation_form.html"
+    fields = ["name"]
+
+
+class AffiliationUpdateView(UpdateView):
+    model = Affiliation
+    template_name = "affiliation_form.html"
+    fields = ["name"]
+
+
+class AffiliationDeleteView(DeleteView):
+    model = Affiliation
+    template_name = "affiliation_confirm_delete.html"
+    success_url = "/affiliations/"

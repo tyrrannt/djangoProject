@@ -34,6 +34,7 @@ from customers_app.models import (
     Job,
     AccessLevel,
     HistoryChange,
+    Affiliation,
 )
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 from library_app.models import DocumentForm
@@ -1375,11 +1376,31 @@ class BusinessProcessDirection(models.Model):
 
 
 class OrderDescription(models.Model):
+    """
+    Модель, представляющая описание приказа.
+
+    Атрибуты:
+        name (str): Название приказа
+        affiliation (Affiliation): Принадлежность приказа к службе
+
+    """
+
     class Meta:
         verbose_name = "Наименование приказа"
         verbose_name_plural = "Наименования приказов"
 
-    name = models.CharField(verbose_name="", max_length=250)
+    name = models.CharField(
+        verbose_name="",
+        max_length=250,
+        blank=True,
+    )
+    affiliation = models.ForeignKey(
+        Affiliation,
+        verbose_name="Принадлежность",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return self.name
@@ -1398,6 +1419,7 @@ class DocumentsOrder(Documents):
         verbose_name="Наименование документа",
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         default=None,
     )
     # doc_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=1)

@@ -1074,3 +1074,27 @@ class ProvisionsUpdateForm(forms.ModelForm):
         self.fields["applying_for_job"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+
+
+class OrderDescriptionForm(forms.ModelForm):
+    """
+    Форма для создания или обновления экземпляра OrderDescription.
+
+    Поля:
+        - name: CharField
+        - affiliation: CharField
+
+    Методы:
+        clean_name: проверка поле «name».
+    """
+
+    class Meta:
+        model = OrderDescription
+        fields = ["name", "affiliation"]
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name")
+        if not name:
+            raise forms.ValidationError("Это поле не может быть пустым.")
+        # Add more validations if needed
+        return name
