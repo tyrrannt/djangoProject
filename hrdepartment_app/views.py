@@ -783,7 +783,7 @@ class ApprovalOficialMemoProcessList(
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             if (
                 request.user.is_superuser
-                or request.user.user_work_profile.job.division_affiliation == 1
+                or request.user.user_work_profile.job.division_affiliation.pk == 1
             ):
                 approvalmemo_list = (
                     ApprovalOficialMemoProcess.objects.all()
