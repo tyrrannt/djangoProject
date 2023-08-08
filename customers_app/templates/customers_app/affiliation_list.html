@@ -39,7 +39,7 @@
                               <ul>
                                 {% for affiliation in object_list %}
                                   <li>
-                                    <a href="{{ affiliation.get_absolute_url }}">{{ affiliation.name }}</a>
+                                    <a href="{% url 'customers_app:affiliation-detail' affiliation.pk %}">{{ affiliation.name }}</a>
                                   </li>
                                 {% empty %}
                                   <li>Сейчас нет принадлежностей.</li>

@@ -1,10 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
 
-</body>
-</html>
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+                                    {% if user.is_staff %}
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'customers_app:divisions_add' %}"
+                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Добавить подразделение </a>
+                                        </div>
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'customers_app:divisions_list' %}?update=0"
+                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Обновить список </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Сохранить</button>
+  </form>
+
+                            <hr class="solid mt-5 opacity-4">
+                            {% include 'library_app/paginator.html' %}
+                            <div class="datatable-footer">
+                                <div class="row align-items-center justify-content-between mt-3">
+                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-stretch">
+                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-auto text-center order-3 order-lg-2">
+                                        <div class="results-info-wrapper"></div>
+                                    </div>
+                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                        <div class="pagination-wrapper"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            $('#datatable-ecommerce-list thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "scrollX": true,
+                "sDom": 'T<"clear">lrtip',
+                "ajax": "{% url 'customers_app:divisions_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "code"},
+                    {"data": "name"},
+                    {"data": "parent_category"},
+                ],
+            });
+        });
+
+    </script>
+{% endblock %}

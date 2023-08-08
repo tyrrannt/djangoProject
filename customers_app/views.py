@@ -1307,27 +1307,22 @@ class HarmfulWorkingConditionsList(
 
 class AffiliationListView(ListView):
     model = Affiliation
-    template_name = "affiliation_list.html"
 
 
 class AffiliationDetailView(DetailView):
     model = Affiliation
-    template_name = "affiliation_detail.html"
 
 
 class AffiliationCreateView(CreateView):
     model = Affiliation
-    template_name = "affiliation_form.html"
     fields = ["name"]
 
 
 class AffiliationUpdateView(UpdateView):
     model = Affiliation
-    template_name = "affiliation_form.html"
     fields = ["name"]
 
 
 class AffiliationDeleteView(DeleteView):
     model = Affiliation
-    template_name = "affiliation_confirm_delete.html"
     success_url = "/affiliations/"

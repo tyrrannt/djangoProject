@@ -24,7 +24,7 @@ from administration_app.utils import (
     get_date_interval,
     get_json_vacation,
 )
-from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
+from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Affiliation
 from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import (
     OfficialMemo,
@@ -112,6 +112,16 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get("update") == "3":
+                qs = Job.objects.all()
+                for item in qs:
+                    if item.type_of_job:
+                        item.division_affiliation = Affiliation.objects.get(
+                            pk=int(item.type_of_job) + 1
+                        )
+                    else:
+                        item.division_affiliation = Affiliation.objects.get(pk=1)
+                        item.save()
+
                 # qs = DocumentsOrder.objects.filter(
                 #     Q(cancellation=False)
                 #     & Q(document_date__year=2023)

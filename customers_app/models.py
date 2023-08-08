@@ -122,6 +122,15 @@ class Affiliation(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        """
+        Этот метод возвращает абсолютный URL-адрес для представления «affiliation-list» в приложении
+        «customers_app».
+
+        :return: Абсолютный URL-адрес представления «список принадлежности».
+        """
+        return reverse("customers_app:affiliation-list")
+
 
 class Job(models.Model):
     """
