@@ -252,7 +252,7 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             if (
                 request.user.is_superuser
-                or request.user.user_work_profile.job.type_of_job == "0"
+                or request.user.user_work_profile.job.division_affiliation.pk == 1
             ):
                 memo_list = (
                     OfficialMemo.objects.all().order_by("date_of_creation").reverse()
@@ -261,7 +261,7 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                 memo_list = (
                     OfficialMemo.objects.filter(
                         Q(
-                            responsible__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                            responsible__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk
                         )
                     )
                     .exclude(comments="Документооборот завершен")

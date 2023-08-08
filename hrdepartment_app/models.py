@@ -193,7 +193,8 @@ def Med(obj_model, filepath, filename_pmo, filename_po, request):
         ("2", "Периодический"),
         ("3", "Внеплановый"),
     ]
-    if obj_model.person.user_work_profile.job.type_of_job == "1":
+
+    if obj_model.person.user_work_profile.job.division_affiliation.pk == 2:
         doc = DocxTemplate(
             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/med.docx")
         )
@@ -897,7 +898,10 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 except Exception as _ex:
                     place = []
                 # Получаем ссылку на файл шаблона
-                if self.document.person.user_work_profile.job.type_of_job == "1":
+                if (
+                    self.document.person.user_work_profile.job.division_affiliation.pk
+                    == 2
+                ):
                     if self.document.type_trip == "2":
                         filepath_name = "spk.xlsx"
                     else:
@@ -1204,7 +1208,7 @@ def create_report(sender, instance, **kwargs):
         except Exception as _ex:
             place = []
         # Получаем ссылку на файл шаблона
-        if instance.document.person.user_work_profile.job.type_of_job == "1":
+        if instance.document.person.user_work_profile.job.division_affiliation.pk == 2:
             if instance.document.type_trip == "2":
                 filepath_name = "spk.xlsx"
             else:
