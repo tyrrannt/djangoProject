@@ -120,7 +120,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         )
                     else:
                         item.division_affiliation = Affiliation.objects.get(pk=1)
-                        item.save()
+                    item.save()
 
                 # qs = DocumentsOrder.objects.filter(
                 #     Q(cancellation=False)
