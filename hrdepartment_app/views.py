@@ -319,7 +319,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
         content["form"].fields["person"].queryset = (
             DataBaseUser.objects.filter(
-                user_work_profile__job__type_of_job=user_job.user_work_profile.job.type_of_job
+                user_work_profile__job__division_affiliation__pk=user_job.user_work_profile.job.division_affiliation.pk
             )
             .exclude(username="proxmox")
             .exclude(is_active=False)
@@ -783,7 +783,7 @@ class ApprovalOficialMemoProcessList(
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             if (
                 request.user.is_superuser
-                or request.user.user_work_profile.job.type_of_job == "0"
+                or request.user.user_work_profile.job.division_affiliation == 1
             ):
                 approvalmemo_list = (
                     ApprovalOficialMemoProcess.objects.all()
@@ -793,7 +793,7 @@ class ApprovalOficialMemoProcessList(
             else:
                 approvalmemo_list = (
                     ApprovalOficialMemoProcess.objects.filter(
-                        person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                        person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk
                     )
                     .order_by("document__period_from")
                     .reverse()
@@ -1310,7 +1310,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
 
                 if (
                     request.user.is_superuser
-                    or request.user.user_work_profile.job.type_of_job == "0"
+                    or request.user.user_work_profile.job.division_affiliation.pk == 1
                 ):
                     reportcard_list = (
                         ApprovalOficialMemoProcess.objects.filter(
@@ -1333,7 +1333,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                         ApprovalOficialMemoProcess.objects.filter(
                             Q(document__period_for__in=search_interval)
                             & Q(
-                                person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                                person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk
                             )
                         )
                         .exclude(
@@ -1361,7 +1361,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                 )
                 if (
                     request.user.is_superuser
-                    or request.user.user_work_profile.job.type_of_job == "0"
+                    or request.user.user_work_profile.job.division_affiliation == 1
                 ):
                     reportcard_list = (
                         ApprovalOficialMemoProcess.objects.filter(
@@ -1384,7 +1384,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                         ApprovalOficialMemoProcess.objects.filter(
                             Q(document__period_for__in=search_interval)
                             & Q(
-                                person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job
+                                person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk
                             )
                         )
                         .exclude(
@@ -1570,7 +1570,7 @@ class ReportApprovalOficialMemoProcessList(
             else:
                 report_query = ReportCard.objects.filter(
                     Q(
-                        employee__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job
+                        employee__user_work_profile__job__division_affiliation__pk=self.request.user.user_work_profile.job.division_affiliation.pk
                     )
                     & Q(report_card_day__gte=date_start)
                     & Q(report_card_day__lte=date_end)
@@ -1789,7 +1789,7 @@ class ReportApprovalOficialMemoProcessList(
             qs = (
                 ApprovalOficialMemoProcess.objects.filter(
                     Q(
-                        person_executor__user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job
+                        person_executor__user_work_profile__job__division_affiliation__pk=self.request.user.user_work_profile.job.division_affiliation.pk
                     )
                     & (
                         Q(start_date_trip__lte=date_start)
@@ -1863,7 +1863,7 @@ class ReportApprovalOficialMemoProcessList(
                 DataBaseUser.objects.filter(
                     Q(is_active=True)
                     & Q(
-                        user_work_profile__job__type_of_job=self.request.user.user_work_profile.job.type_of_job
+                        user_work_profile__job__division_affiliation__pk=self.request.user.user_work_profile.job.division_affiliation.pk
                     )
                 )
                 .exclude(username="proxmox")

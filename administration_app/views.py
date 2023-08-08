@@ -114,11 +114,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get("update") == "3":
                 qs = Job.objects.all()
                 for item in qs:
-                    if item.type_of_job:
-                        item.division_affiliation = Affiliation.objects.get(
-                            pk=int(item.type_of_job) + 1
-                        )
-                    else:
+                    if not item.division_affiliation:
                         item.division_affiliation = Affiliation.objects.get(pk=1)
                     item.save()
 
