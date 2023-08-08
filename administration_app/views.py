@@ -112,11 +112,16 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get("update") == "3":
-                qs = Job.objects.all()
-                for item in qs:
-                    if not item.division_affiliation:
-                        item.division_affiliation = Affiliation.objects.get(pk=1)
-                    item.save()
+                report_query = ReportCard.objects.filter(
+                    Q(
+                        employee__user_work_profile__job__division_affiliation=self.request.user.user_work_profile.job.division_affiliation
+                    )
+                ).order_by("employee__last_name")
+                for item in report_query:
+                    # if not item.division_affiliation:
+                    #     item.division_affiliation = Affiliation.objects.get(pk=1)
+                    # item.save()
+                    print(item)
 
                 # qs = DocumentsOrder.objects.filter(
                 #     Q(cancellation=False)

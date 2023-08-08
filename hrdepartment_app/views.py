@@ -1616,7 +1616,7 @@ class ReportApprovalOficialMemoProcessList(
                                 place_short += item.record_type + "; "
                             trigger = "3"
                             list_obj.append([trigger, place, place_short])
-                            print(place_short)
+                            # print(place_short)
                     else:
                         list_obj.append(["0", "", ""])
 
