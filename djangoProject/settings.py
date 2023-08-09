@@ -211,6 +211,8 @@ CKEDITOR_5_CONFIGS = {
         ],
         "toolbar": {
             "items": [
+                "selectAll",
+                "style",
                 "undo",
                 "redo",
                 "heading",
@@ -315,6 +317,13 @@ CKEDITOR_5_CONFIGS = {
                 },
             ]
         },
+        "style": {
+            "definitions": [
+                {"name": "Article category", "element": "h3", "classes": ["category"]},
+                {"name": "Info box", "element": "p", "classes": ["info-box"]},
+            ]
+        },
+        "fontSize": {"options": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21]},
     },
     "list": {
         "properties": {
