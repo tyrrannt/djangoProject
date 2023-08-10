@@ -83,8 +83,10 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # Подключаем context processors из приложения administration_app
                 "administration_app.context_processors.get_all_contracts",
                 "administration_app.context_processors.get_approval_oficial_memo_process",
+                "administration_app.context_processors.get_qrcode",
             ],
         },
     },
