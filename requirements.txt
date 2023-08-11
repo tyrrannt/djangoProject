@@ -61,11 +61,13 @@ prometheus-client==0.16.0
 prompt-toolkit==3.0.38
 psycopg2-binary==2.9.6
 PyMeeus==0.5.12
+pypng==0.20220715.0
 pyTelegramBotAPI==4.12.0
 python-dateutil==2.8.2
 python-decouple==3.8
 python-docx==0.8.11
 pytz==2023.3
+qrcode==7.4.2
 redis==4.5.4
 redis-cli==0.1.2
 requests==2.31.0
@@ -78,6 +80,7 @@ telebot==0.0.5
 terminaltables==3.1.10
 tornado==6.3
 tqdm==4.65.0
+typing_extensions==4.7.1
 tzdata==2023.3
 urllib3==1.26.15
 vine==5.0.0
