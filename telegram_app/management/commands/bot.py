@@ -119,28 +119,30 @@ def main_bot(tok):
 
 def send_message_tg():
     time_list = [0, 15, 5]
-    bot = telebot.TeleBot(API_TOKEN, skip_pending=True)
     dt = datetime.datetime.now()
-    notify_list = TelegramNotification.objects.filter(Q(send_time__hour=dt.hour) & Q(send_time__minute=dt.minute))
     result = list()
-    for item in notify_list:
-        for chat_id in item.respondents.all():
-            if item.sending_counter > 0:
-                if item.document_url:
-                    bot.send_message(chat_id.chat_id,
-                                     f'{item.message}. <a href="{item.document_url}">Ссылка на документ</a>',
-                                     parse_mode='HTML')
-                    result.append(
-                        f'Сообщение для {chat_id.chat_id}: {item.message}. Ссылка на документ: {item.document_url}')
-                    logger.info(
-                        f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}. Ссылка: {item.document_url}')
-                else:
-                    bot.send_message(chat_id.chat_id, f'{item.message}', parse_mode='HTML')
-                    result.append(f'Сообщение для {chat_id.chat_id}: {item.message}.')
-                    logger.info(f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}.')
-        item.sending_counter -= 1
-        item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
-        item.save()
+    try:
+        bot = telebot.TeleBot(API_TOKEN, skip_pending=True)
+        notify_list = TelegramNotification.objects.filter(Q(send_time__hour=dt.hour) & Q(send_time__minute=dt.minute))
+        for item in notify_list:
+            for chat_id in item.respondents.all():
+                if item.sending_counter > 0:
+                    if item.document_url:
+                        bot.send_message(chat_id.chat_id, f'{item.message}. <a href="{item.document_url}">Ссылка на '
+                                                          f'документ</a>', parse_mode='HTML')
+                        result.append(f'Сообщение для {chat_id.chat_id}: {item.message}. '
+                                      f'Ссылка на документ: {item.document_url}')
+                        logger.info(f'Сообщение для {chat_id.chat_id} отправлено. '
+                                    f'Текст: {item.message}. Ссылка: {item.document_url}')
+                    else:
+                        bot.send_message(chat_id.chat_id, f'{item.message}', parse_mode='HTML')
+                        result.append(f'Сообщение для {chat_id.chat_id}: {item.message}.')
+                        logger.info(f'Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}.')
+            item.sending_counter -= 1
+            item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
+            item.save()
+    except Exception as _ex:
+        result.append(f'Ошибка telegram бота: {_ex}')
     return result
 
 
