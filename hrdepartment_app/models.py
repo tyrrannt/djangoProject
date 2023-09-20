@@ -1109,7 +1109,7 @@ def hr_accepted(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
-def create_report(sender, instance, **kwargs):
+def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
     change_approval_status(instance)
     type_of = ["Служебная квартира", "Гостиница"]
     if (

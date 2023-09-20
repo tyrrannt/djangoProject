@@ -546,6 +546,7 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ВзаиморасчетыССотрудниками_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20ГруппаНачисленияУдержанияВыплаты%20eq%20%27Выплачено%27",
         0,
     )
+    print(acc_reg_acc, acc_reg_set)
     # Поля Active = True, ФизическоеЛицо_Key = uuid, СтатьяРасходов_Key = uuid, СуммаВзаиморасчетов, ГруппаНачисленияУдержанияВыплаты = Выплачено, Recorder = uuid, Recorder_Type = Document_ВедомостьНаВыплатуЗарплатыВКассу или Document_ВедомостьНаВыплатуЗарплатыВБанк
     # f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/{Recorder_Type}?$format=application/json;odata=nometadata&$filter=Состав/any(d:%20d/Ref_Key%20eq%20guid%27{Recorder}%27)&$select=Number,%20Date"
     period = datetime.datetime.strptime(
