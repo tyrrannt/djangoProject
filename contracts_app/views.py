@@ -34,11 +34,9 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // База договоров'
-        change_session_context(context, self)
         return context
 
     def get_queryset(self):
-        change_session_queryset(self.request, self)
         return Contract.objects.filter(Q(allowed_placed=True)).order_by(self.item_sorted)
 
     def get(self, request, *args, **kwargs):
