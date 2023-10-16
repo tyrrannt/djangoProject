@@ -14,7 +14,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_queryset, change_session_context, FIO_format, get_year_interval
+    change_session_get, change_session_queryset, change_session_context, format_name_initials, get_year_interval
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
@@ -156,7 +156,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         month_dict, year_dict = get_year_interval(2020)
         context['year_dict'] = year_dict
         context['month_dict'] = month_dict
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(FIO_format(user_obj))
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(format_name_initials(user_obj))
         context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
         context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
         context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()

@@ -1,12 +1,12 @@
 from django.urls import path
 from . import views
-from .views import (
-    AffiliationListView,
-    AffiliationDetailView,
-    AffiliationCreateView,
-    AffiliationUpdateView,
-    AffiliationDeleteView,
-)
+# from .views import (
+#     AffiliationListView,
+#     AffiliationDetailView,
+#     AffiliationCreateView,
+#     AffiliationUpdateView,
+#     AffiliationDeleteView,
+# )
 
 app_name = "customers_app"
 
@@ -70,25 +70,25 @@ urlpatterns = [
         views.ChangeAvatarUpdate.as_view(),
         name="avatar_update",
     ),
-    path("affiliation/", AffiliationListView.as_view(), name="affiliation-list"),
-    path(
-        "affiliation/<int:pk>",
-        AffiliationDetailView.as_view(),
-        name="affiliation-detail",
-    ),
-    path(
-        "affiliation/create/",
-        AffiliationCreateView.as_view(),
-        name="affiliation-create",
-    ),
-    path(
-        "affiliation/<int:pk>/update/",
-        AffiliationUpdateView.as_view(),
-        name="affiliation-update",
-    ),
-    path(
-        "affiliation/<int:pk>/delete/",
-        AffiliationDeleteView.as_view(),
-        name="affiliation-delete",
-    ),
+    # path("affiliation/", AffiliationListView.as_view(), name="affiliation-list"),
+    # path(
+    #     "affiliation/<int:pk>",
+    #     AffiliationDetailView.as_view(),
+    #     name="affiliation-detail",
+    # ),
+    # path(
+    #     "affiliation/create/",
+    #     AffiliationCreateView.as_view(),
+    #     name="affiliation-create",
+    # ),
+    # path(
+    #     "affiliation/<int:pk>/update/",
+    #     AffiliationUpdateView.as_view(),
+    #     name="affiliation-update",
+    # ),
+    # path(
+    #     "affiliation/<int:pk>/delete/",
+    #     AffiliationDeleteView.as_view(),
+    #     name="affiliation-delete",
+    # ),
 ]
