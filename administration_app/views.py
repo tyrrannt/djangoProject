@@ -181,6 +181,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     except Exception as _ex:
                         logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
 
+
             if request.GET.get('update') == '4':
                 # for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
                 #     report_record.delete()
