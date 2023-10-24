@@ -50,7 +50,7 @@ admin.site.register(Provisions)
 class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
     list_display = ("document", "order", "email_send", "cancellation")
     search_fields = (
-        "document",
+        "document__title",
         "cancellation",
     )
     list_filter = (
