@@ -20,6 +20,7 @@ from hrdepartment_app.models import (
     check_day,
 )
 
+
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
 #            serialize=config('LOG_SERIALIZE'))
@@ -40,8 +41,8 @@ def get_medical_documents():
             db_user = db_users.filter(person_ref_key=item["ФизическоеЛицо_Key"])
             db_med_org = item["МедицинскаяОрганизация_Key"]
             if (
-                db_user.count() > 0
-                and db_med_org != "00000000-0000-0000-0000-000000000000"
+                    db_user.count() > 0
+                    and db_med_org != "00000000-0000-0000-0000-000000000000"
             ):
                 qs = list()
                 for items in item["ВредныеФакторыИВидыРабот"]:
@@ -66,7 +67,7 @@ def get_medical_documents():
                         if next(
                             x[0] for x in type_inspection if x[1] == item["ТипОсмотра"]
                         )
-                        == 1
+                           == 1
                         else 2,
                         "view_inspection": 1
                         if item["ВидОсмотра"] == "МедицинскийОсмотр"
@@ -347,13 +348,13 @@ def get_working_hours(pk, start_date, state=0):
                 False if not current_intervals else record.current_intervals
             )
             if (record.record_type in ["1", "13"]) and (
-                record_type
-                not in [
-                    "СП",
-                    "К",
-                    "Б",
-                    "М",
-                ]
+                    record_type
+                    not in [
+                        "СП",
+                        "К",
+                        "Б",
+                        "М",
+                    ]
             ):
                 if current_intervals:
                     dayly_interval += list(
@@ -378,8 +379,8 @@ def get_working_hours(pk, start_date, state=0):
                     if start_time == datetime.datetime(1, 1, 1, 0, 0).time():
                         start_time = record.start_time
                     if (
-                        record.start_time < start_time
-                        and record.start_time != datetime.datetime(1, 1, 1, 0, 0).time()
+                            record.start_time < start_time
+                            and record.start_time != datetime.datetime(1, 1, 1, 0, 0).time()
                     ):
                         start_time = record.start_time
                 if end_time == "":
@@ -422,8 +423,10 @@ def get_working_hours(pk, start_date, state=0):
                     if record_type not in [
                         "Б",
                         "М",
-                    ]:
+                    ] and record.record_type != "18":
                         record_type = "О"
+                    else:
+                        record_type = "ГО"
         if record_type not in [
             "СП",
             "К",
@@ -450,40 +453,40 @@ def get_working_hours(pk, start_date, state=0):
                     time_worked = total_day_time
                     # От отработанного времени отнимаем рабочее, чтоб получить дельту
                     total_day_time -= (
-                        datetime.timedelta(
-                            hours=user_end_time.hour, minutes=user_end_time.minute
-                        ).total_seconds()
-                        - datetime.timedelta(
-                            hours=user_start_time.hour, minutes=user_start_time.minute
-                        ).total_seconds()
+                            datetime.timedelta(
+                                hours=user_end_time.hour, minutes=user_end_time.minute
+                            ).total_seconds()
+                            - datetime.timedelta(
+                        hours=user_start_time.hour, minutes=user_start_time.minute
+                    ).total_seconds()
                     )
             if record_type == "СП" or record_type == "К":
                 all_days_count += 1
                 time_worked = total_day_time
                 # От отработанного времени отнимаем рабочее, чтоб получить дельту
                 total_day_time -= (
-                    datetime.timedelta(
-                        hours=user_end_time.hour, minutes=user_end_time.minute
-                    ).total_seconds()
-                    - datetime.timedelta(
-                        hours=user_start_time.hour, minutes=user_start_time.minute
-                    ).total_seconds()
+                        datetime.timedelta(
+                            hours=user_end_time.hour, minutes=user_end_time.minute
+                        ).total_seconds()
+                        - datetime.timedelta(
+                    hours=user_start_time.hour, minutes=user_start_time.minute
+                ).total_seconds()
                 )
             # Если только отпуск
             if (
-                record_type == "О" or record_type == "Б" or record_type == "М"
+                    record_type == "О" or record_type == "Б" or record_type == "М"
             ) and report_record.count() == 1:
                 total_time += 0
                 all_total_time += 0
                 if user_end_time.hour > 0:
                     all_vacation_days += 1
                 all_vacation_time += (
-                    datetime.timedelta(
-                        hours=user_end_time.hour, minutes=user_end_time.minute
-                    ).total_seconds()
-                    - datetime.timedelta(
-                        hours=user_start_time.hour, minutes=user_start_time.minute
-                    ).total_seconds()
+                        datetime.timedelta(
+                            hours=user_end_time.hour, minutes=user_end_time.minute
+                        ).total_seconds()
+                        - datetime.timedelta(
+                    hours=user_start_time.hour, minutes=user_start_time.minute
+                ).total_seconds()
                 )
             if record_type == "Я":
                 total_time += total_day_time
@@ -496,7 +499,7 @@ def get_working_hours(pk, start_date, state=0):
                 if user_end_time.hour == 0:
                     holiday_delta += 1
             if (
-                record_type == "О" or record_type == "Б" or record_type == "М"
+                    record_type == "О" or record_type == "Б" or record_type == "М"
             ) and merge_interval:
                 time_worked = total_day_time
                 total_time += total_day_time
@@ -504,12 +507,12 @@ def get_working_hours(pk, start_date, state=0):
                 if user_end_time.hour > 0:
                     all_vacation_days += 1
                 all_vacation_time += (
-                    datetime.timedelta(
-                        hours=user_end_time.hour, minutes=user_end_time.minute
-                    ).total_seconds()
-                    - datetime.timedelta(
-                        hours=user_start_time.hour, minutes=user_start_time.minute
-                    ).total_seconds()
+                        datetime.timedelta(
+                            hours=user_end_time.hour, minutes=user_end_time.minute
+                        ).total_seconds()
+                        - datetime.timedelta(
+                    hours=user_start_time.hour, minutes=user_start_time.minute
+                ).total_seconds()
                 )
             if record_type == "К" and merge_interval:
                 time_worked = total_day_time
@@ -518,12 +521,12 @@ def get_working_hours(pk, start_date, state=0):
                 if user_end_time.hour > 0:
                     all_vacation_days += 1
                 all_vacation_time += (
-                    datetime.timedelta(
-                        hours=user_end_time.hour, minutes=user_end_time.minute
-                    ).total_seconds()
-                    - datetime.timedelta(
-                        hours=user_start_time.hour, minutes=user_start_time.minute
-                    ).total_seconds()
+                        datetime.timedelta(
+                            hours=user_end_time.hour, minutes=user_end_time.minute
+                        ).total_seconds()
+                        - datetime.timedelta(
+                    hours=user_start_time.hour, minutes=user_start_time.minute
+                ).total_seconds()
                 )
             sign = ""
             if total_day_time < 0:

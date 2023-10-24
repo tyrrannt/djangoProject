@@ -156,7 +156,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         month_dict, year_dict = get_year_interval(2020)
         context['year_dict'] = year_dict
         context['month_dict'] = month_dict
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(format_name_initials(user_obj))
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(
+            format_name_initials(user_obj))
         context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
         context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
         context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()
@@ -197,14 +198,18 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     html_obj = ['', '', '']
                 return JsonResponse(html_obj, safe=False)
             if report_year and report_month:
+                # Получение отработанных дней
                 # data_dict, total_score, first_day, last_day, user_start_time, user_end_time = get_report_card(self.request.user.pk, RY=report_year, RM=report_month)
-                data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(self.request.user.pk, datetime.datetime(year=int(report_year), month=int(report_month), day=1))
+                data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(
+                    self.request.user.pk, datetime.datetime(year=int(report_year), month=int(report_month), day=1))
 
                 # print(data_dict, total_score, first_day, last_day, user_start_time, user_end_time)
-                return JsonResponse(get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end), safe=False)
+                return JsonResponse(
+                    get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end),
+                    safe=False)
             if get_date:
+                # Получение остатка отпусков
                 html = f"<label class='form-control form-control-modern'>Остаток отпуска: {get_vacation_days(self, get_date)} дн.</label>"
-
 
                 return JsonResponse(html, safe=False)
         return super().get(request, *args, **kwargs)
@@ -544,7 +549,8 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(is_active=False)
+            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(
+                is_active=False)
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
             return JsonResponse(response)
