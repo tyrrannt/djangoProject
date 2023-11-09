@@ -20,7 +20,8 @@ from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
 from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
-from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign
+from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
+    report_card_separator_daily, vacation_schedule
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
 
@@ -181,7 +182,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     except Exception as _ex:
                         logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
 
-
             if request.GET.get('update') == '4':
                 # for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
                 #     report_record.delete()
@@ -214,6 +214,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     }
                 #     TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
+                # report_card_separator_daily(year=2023, month=10, day=30)
+                vacation_schedule()
                 pass
                 # type_of_report = {
                 #     '2': 'Ежегодный',

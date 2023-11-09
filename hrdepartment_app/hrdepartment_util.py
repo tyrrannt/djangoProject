@@ -584,6 +584,7 @@ def get_working_hours(pk, start_date, state=0):
                 .strftime("%H:%M")
             )
             dict_obj[str(user_id)].append([date.date(), record_type, time_worker])
+    print(dict_obj, all_total_time, start_date, cnt, user_start, user_end)
     if state == 0:
         # return dict_obj, total_time, start_date, cnt, user_start, user_end
         return dict_obj, all_total_time, start_date, cnt, user_start, user_end

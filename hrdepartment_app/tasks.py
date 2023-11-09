@@ -31,6 +31,7 @@ from hrdepartment_app.models import (
 from telegram_app.management.commands.bot import send_message_tg
 from telegram_app.models import TelegramNotification, ChatID
 
+
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
 #            serialize=config('LOG_SERIALIZE'))
@@ -368,28 +369,28 @@ def get_vacation():
     exclude_list = ["proxmox", "shakirov"]
     year = datetime.datetime.today().year
     for report_record in ReportCard.objects.filter(
-        Q(report_card_day__year=year)
-        & Q(
-            record_type__in=[
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8",
-                "9",
-                "10",
-                "11",
-                "12",
-                "19",
-            ]
-        )
+            Q(report_card_day__year=year)
+            & Q(
+                record_type__in=[
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "9",
+                    "10",
+                    "11",
+                    "12",
+                    "19",
+                ]
+            )
     ):
         report_record.delete()
     report_card_list = list()
     for rec_item in (
-        DataBaseUser.objects.all().exclude(username__in=exclude_list).values("ref_key")
+            DataBaseUser.objects.all().exclude(username__in=exclude_list).values("ref_key")
     ):
         dt = get_jsons_data_filter2(
             "InformationRegister",
@@ -523,7 +524,7 @@ def vacation_schedule():
                     vacation_list.append(item)
     year = datetime.datetime.today().year
     for report_record in ReportCard.objects.filter(
-        Q(report_card_day__year=year) & Q(record_type="18")
+            Q(report_card_day__year=year) & Q(record_type="18")
     ):
         report_record.delete()
     docs = graph_vacacion["value"][0]["Ref_Key"]
@@ -531,8 +532,8 @@ def vacation_schedule():
     report_card_list = list()
     for item in vacation_list:
         if (
-            datetime.datetime.strptime(item["ДатаОкончания"][:10], "%Y-%m-%d")
-            >= datetime.datetime.today()
+                datetime.datetime.strptime(item["ДатаОкончания"][:10], "%Y-%m-%d")
+                >= datetime.datetime.today()
         ):
             if DataBaseUser.objects.filter(ref_key=item["Сотрудник_Key"]).exists():
                 del item["Ref_Key"]
@@ -554,19 +555,20 @@ def vacation_schedule():
                     )
                 )
                 for unit in period:
-                    kwargs_obj = {
-                        "report_card_day": unit,
-                        "employee": usr_obj,
-                        "start_time": datetime.datetime(1, 1, 1, 9, 30),
-                        "end_time": datetime.datetime(1, 1, 1, 18, 00),
-                        "record_type": "18",
-                        "reason_adjustment": "График отпусков"
-                        if item["Примечание"] == ""
-                        else item["Примечание"],
-                        "doc_ref_key": docs,
-                    }
-                    report_card_list.append(kwargs_obj)
-                    counter += 1
+                    if unit > datetime.datetime.today():
+                        kwargs_obj = {
+                            "report_card_day": unit,
+                            "employee": usr_obj,
+                            "start_time": datetime.datetime(1, 1, 1, 9, 30),
+                            "end_time": datetime.datetime(1, 1, 1, 18, 00),
+                            "record_type": "18",
+                            "reason_adjustment": "График отпусков"
+                            if item["Примечание"] == ""
+                            else item["Примечание"],
+                            "doc_ref_key": docs,
+                        }
+                        report_card_list.append(kwargs_obj)
+                        counter += 1
 
     try:
         objs = ReportCard.objects.bulk_create(
@@ -578,8 +580,11 @@ def vacation_schedule():
 
 
 @app.task()
-def report_card_separator_daily():
-    current_data = datetime.datetime.date(datetime.datetime.today())
+def report_card_separator_daily(year=0, month=0, day=0):
+    if year == 0 and month == 0 and day == 0:
+        current_data = datetime.datetime.date(datetime.datetime.today())
+    else:
+        current_data = datetime.datetime.date(datetime.datetime(year, month, day))
     rec_obj = ReportCard.objects.filter(
         Q(report_card_day=current_data) & Q(record_type="1")
     )
