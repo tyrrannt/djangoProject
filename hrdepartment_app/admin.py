@@ -49,16 +49,16 @@ admin.site.register(Provisions)
 @admin.register(ApprovalOficialMemoProcess)
 class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
     """
-    Admin class for ApprovalOficialMemoProcess model.
+    Класс администратора для модели ApprovalOficialMemoProcess.
 
-    The ApprovalOficialMemoProcessAdmin class is responsible for managing the admin interface
-    for the ApprovalOficialMemoProcess model. It provides customization for the list display,
-    search fields, and list filter.
+    Класс ApprovalOficialMemoProcessAdmin отвечает за управление интерфейсом администратора.
+    для модели ApprovalOficialMemoProcess. Он обеспечивает настройку отображения списка,
+    поля поиска и фильтр списка.
 
-    Attributes:
-        list_display (tuple): A tuple of fields to be displayed in the admin list view.
-        search_fields (tuple): A tuple of fields to be used for searching in the admin interface.
-        list_filter (tuple): A tuple of fields to be used for filtering the admin list view.
+    Атрибуты:
+        list_display (кортеж): кортеж полей, которые будут отображаться в представлении списка администратора.
+        search_fields (кортеж): кортеж полей, которые будут использоваться для поиска в интерфейсе администратора.
+        list_filter (кортеж): кортеж полей, которые будут использоваться для фильтрации представления списка администраторов.
 
     """
     list_display = ("document", "order", "email_send", "cancellation")
@@ -75,19 +75,19 @@ class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
 @admin.register(OrderDescription)
 class OrderDescriptionAdmin(admin.ModelAdmin):
     """
-    The OrderDescriptionAdmin class is a Django ModelAdmin class used to manage the administration interface for the OrderDescription model.
+    Класс OrderDescriptionAdmin — это класс Django ModelAdmin, используемый для управления интерфейсом администрирования модели OrderDescription.
 
-    Attributes:
-        form (Form): The form class used for creating and updating OrderDescription objects.
-        list_display (tuple): The fields of the OrderDescription model to be displayed in the list view of the admin site.
-        search_fields (tuple): The fields of the OrderDescription model to be searched in the admin site.
-        list_filter (tuple): The fields of the OrderDescription model to be used as filters in the admin site.
-        fieldsets (tuple): The fieldsets configuration for the OrderDescription model in the admin site.
-        add_fieldsets (tuple): The fieldsets configuration for the OrderDescription model when creating a new object in the admin site.
-        ordering (tuple): The field used to order the OrderDescription objects in the admin site.
+    Атрибуты:
+        form (Form): класс формы, используемый для создания и обновления объектов OrderDescription.
+        list_display (tuple): поля модели OrderDescription, которые будут отображаться в виде списка на сайте администрирования.
+        search_fields (кортеж): поля модели OrderDescription, по которым осуществляется поиск на сайте администрирования.
+        list_filter (кортеж): поля модели OrderDescription, которые будут использоваться в качестве фильтров на сайте администрирования.
+        наборы полей (кортеж): конфигурация наборов полей для модели OrderDescription на сайте администрирования.
+        add_fieldsets (кортеж): конфигурация наборов полей для модели OrderDescription при создании нового объекта на сайте администрирования.
+        заказ (кортеж): поле, используемое для упорядочивания объектов OrderDescription на сайте администрирования.
 
-    Methods:
-        get_fieldsets(request, obj=None): Returns the fieldsets configuration for the OrderDescriptionAdmin class.
+    Методы:
+        get_fieldsets(request, obj=None): возвращает конфигурацию наборов полей для класса OrderDescriptionAdmin.
 
     """
     form = OrderDescriptionForm
