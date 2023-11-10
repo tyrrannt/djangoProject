@@ -3,7 +3,6 @@ import os
 import pathlib
 import uuid
 
-
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.contrib.contenttypes.fields import GenericRelation
@@ -899,8 +898,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                     place = []
                 # Получаем ссылку на файл шаблона
                 if (
-                    self.document.person.user_work_profile.job.division_affiliation.pk
-                    == 2
+                        self.document.person.user_work_profile.job.division_affiliation.pk
+                        == 2
                 ):
                     if self.document.type_trip == "2":
                         filepath_name = "spk.xlsx"
@@ -929,9 +928,9 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 ws["C8"] = ", ".join(place)
                 ws["C9"] = str(self.document.purpose_trip)
                 ws["A90"] = (
-                    str(self.person_agreement.user_work_profile.job)
-                    + ", "
-                    + format_name_initials(self.person_agreement)
+                        str(self.person_agreement.user_work_profile.job)
+                        + ", "
+                        + format_name_initials(self.person_agreement)
                 )
 
                 wb.save(
@@ -966,19 +965,19 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                     type_trip_extension = ""
                 else:
                     subject_mail = (
-                        "Продление служебной "
-                        + type_trip[0:-1]
-                        + "и: с "
-                        + str(self.document.period_from.strftime("%d.%m.%Y"))
-                        + " г. по "
-                        + str(self.document.period_for.strftime("%d.%m.%Y"))
-                        + " г. "
-                        + str(self.document.document_extension.order)
+                            "Продление служебной "
+                            + type_trip[0:-1]
+                            + "и: с "
+                            + str(self.document.period_from.strftime("%d.%m.%Y"))
+                            + " г. по "
+                            + str(self.document.period_for.strftime("%d.%m.%Y"))
+                            + " г. "
+                            + str(self.document.document_extension.order)
                     )
                     type_trip_title = "Вам продлена служебная " + type_trip[0:-1] + "а"
                     type_trip_variant = "продлении служебной " + type_trip[0:-1] + "и"
                     type_trip_variant_second = (
-                        "продление служебной " + type_trip[0:-1] + "и"
+                            "продление служебной " + type_trip[0:-1] + "и"
                     )
                     type_trip_extension = "Внимание! При продлении служебной поездки или служебной командировки, новое служебное задание не высылается. Отметки и печати о выбытии и прибытии в пункты назначения проставляются в основном служебном задании."
 
@@ -1113,9 +1112,9 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
     change_approval_status(instance)
     type_of = ["Служебная квартира", "Гостиница"]
     if (
-        instance.submit_for_approval
-        and not instance.document_not_agreed
-        and not instance.email_send
+            instance.submit_for_approval
+            and not instance.document_not_agreed
+            and not instance.email_send
     ):
         business_process = BusinessProcessDirection.objects.filter(
             person_executor=instance.person_executor.user_work_profile.job
@@ -1126,7 +1125,7 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
             for job in item.person_agreement.all():
                 person_agreement_job_list.append(job)
         for item in DataBaseUser.objects.filter(
-            user_work_profile__job__name__in=set(person_agreement_job_list)
+                user_work_profile__job__name__in=set(person_agreement_job_list)
         ):
             if item.telegram_id:
                 person_agreement_list.append(
@@ -1144,15 +1143,15 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
         )
         tn.respondents.set(person_agreement_list)
     if (
-        instance.document_not_agreed
-        and not instance.location_selected
-        and not instance.email_send
-        and instance.document.official_memo_type in ["1", "2"]
+            instance.document_not_agreed
+            and not instance.location_selected
+            and not instance.email_send
+            and instance.document.official_memo_type in ["1", "2"]
     ):
         person_agreement_list = []
         for item in DataBaseUser.objects.filter(
-            Q(user_work_profile__divisions__type_of_role="1")
-            & Q(user_work_profile__job__right_to_approval=True)
+                Q(user_work_profile__divisions__type_of_role="1")
+                & Q(user_work_profile__job__right_to_approval=True)
         ):
             if item.telegram_id:
                 person_agreement_list.append(
@@ -1170,14 +1169,14 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
         )
         tn.respondents.set(person_agreement_list)
     if (
-        instance.location_selected
-        and not instance.process_accepted
-        and not instance.email_send
+            instance.location_selected
+            and not instance.process_accepted
+            and not instance.email_send
     ):
         person_agreement_list = []
         for item in DataBaseUser.objects.filter(
-            Q(user_work_profile__divisions__type_of_role="2")
-            & Q(user_work_profile__job__right_to_approval=True)
+                Q(user_work_profile__divisions__type_of_role="2")
+                & Q(user_work_profile__job__right_to_approval=True)
         ):
             if item.telegram_id:
                 person_agreement_list.append(
@@ -1238,9 +1237,9 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
             ws["H86"] = ", из них ПСР"
             ws["K86"] = "__________"
         ws["A90"] = (
-            str(instance.person_agreement.user_work_profile.job)
-            + ", "
-            + format_name_initials(instance.person_agreement)
+                str(instance.person_agreement.user_work_profile.job)
+                + ", "
+                + format_name_initials(instance.person_agreement)
         )
 
         wb.save(
@@ -1274,14 +1273,14 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
             type_trip_extension = ""
         else:
             subject_mail = (
-                "Продление служебной "
-                + type_trip[0:-1]
-                + "и: с "
-                + str(instance.document.period_from.strftime("%d.%m.%Y"))
-                + " г. по "
-                + str(instance.document.period_for.strftime("%d.%m.%Y"))
-                + " г. Приказ:  "
-                + str(instance.document.order)
+                    "Продление служебной "
+                    + type_trip[0:-1]
+                    + "и: с "
+                    + str(instance.document.period_from.strftime("%d.%m.%Y"))
+                    + " г. по "
+                    + str(instance.document.period_for.strftime("%d.%m.%Y"))
+                    + " г. Приказ:  "
+                    + str(instance.document.order)
             )
             type_trip_title = "Вам продлена служебная " + type_trip[0:-1] + "а"
             type_trip_variant = "продлении служебной " + type_trip[0:-1] + "и"
@@ -1460,8 +1459,8 @@ class DocumentsOrder(Documents):
         dt = datetime.datetime.today()
 
         if (
-            self.validity_period_end
-            and datetime.date(dt.year, dt.month, dt.day) > self.validity_period_end
+                self.validity_period_end
+                and datetime.date(dt.year, dt.month, dt.day) > self.validity_period_end
         ):
             status = "Действие завершил"
         else:
@@ -1493,8 +1492,8 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     if obj_model.document_foundation:
         if obj_model.document_foundation.type_trip == "1":
             if (
-                "Командир воздушного судна"
-                in obj_model.document_foundation.person.user_work_profile.job.get_title()
+                    "Командир воздушного судна"
+                    in obj_model.document_foundation.person.user_work_profile.job.get_title()
             ):
                 doc = DocxTemplate(
                     pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/aom2.docx")
@@ -1509,8 +1508,8 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
             )
 
         delta = (
-            obj_model.document_foundation.period_for
-            - obj_model.document_foundation.period_from
+                obj_model.document_foundation.period_for
+                - obj_model.document_foundation.period_from
         )
         place = [
             item.name
@@ -1771,6 +1770,18 @@ class ReportCard(models.Model):
     )
 
     def get_data(self):
+        """
+        Получает данные из экземпляра ReportCard.
+
+        :return: словарь, содержащий следующие данные:
+            - "pk": первичный ключ экземпляра ReportCard.
+            - "employee": форматированные инициалы имени сотрудника.
+            - "report_card_day": день табеля в формате "ДД.ММ.ГГГГ"
+            - "start_time": время начала в формате "ЧЧ:ММ"
+            - "end_time": время окончания в формате "ЧЧ:ММ"
+            - "reason_adjustment": причина корректировки.
+            - "record_type": отображение типа записи.
+        """
         return {
             "pk": self.pk,
             "employee": format_name_initials(self.employee.title),
@@ -1786,6 +1797,14 @@ class ReportCard(models.Model):
 
 
 class PreHolidayDay(models.Model):
+    """
+    Обозначает предпраздничный день.
+
+    Атрибуты:
+        preholiday_day (DateField): дата предпраздничного дня.
+        work_time (TimeField): рабочее время предпраздничного дня.
+    """
+
     class Meta:
         verbose_name = "Предпраздничный день"
         verbose_name_plural = "Предпраздничные дни"
@@ -1885,9 +1904,9 @@ class ProductionCalendar(models.Model):
         :return: количество рабочих часов в месяце
         """
         return (
-            (self.number_working_days * 8)
-            + (self.number_working_days / 2)
-            - self.get_friday_count()
+                (self.number_working_days * 8)
+                + (self.number_working_days / 2)
+                - self.get_friday_count()
         )
 
     def __str__(self):
