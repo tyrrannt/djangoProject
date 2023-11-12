@@ -29,6 +29,7 @@ from hrdepartment_app.models import (
     Provisions,
 )
 
+
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
 #            serialize=config('LOG_SERIALIZE'))
@@ -158,7 +159,7 @@ class OfficialMemoAddForm(forms.ModelForm):
         match official_memo_type:
             case "1":
                 if period_from < self.date_difference(
-                    14
+                        14
                 ) or period_for < self.date_difference(14):
                     raise forms.ValidationError(
                         f"Нельзя использовать прошедшую дату! Допустимый период 14 дней. "
@@ -171,7 +172,7 @@ class OfficialMemoAddForm(forms.ModelForm):
                         "Ошибка создания документа. Для продления необходимо указать документ основания!!!"
                     )
                 if period_from < self.date_difference(
-                    45
+                        45
                 ) or period_for < self.date_difference(45):
                     raise forms.ValidationError(
                         f"Нельзя использовать прошедшую дату! Допустимый период 30 дней. "
@@ -179,7 +180,7 @@ class OfficialMemoAddForm(forms.ModelForm):
                     )
             case "3":
                 if period_from < self.date_difference(
-                    60
+                        60
                 ) or period_for < self.date_difference(60):
                     raise forms.ValidationError(
                         f"Нельзя использовать прошедшую дату! Допустимый период 60 дней. "
@@ -257,7 +258,7 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         # user age must be above 18 to register
         try:
             if self.cleaned_data.get("period_for") < self.cleaned_data.get(
-                "period_from"
+                    "period_from"
             ):
                 msg = "Дата начала не может быть больше даты окончания!"
                 self.add_error(None, msg)
@@ -639,6 +640,10 @@ class DocumentsJobDescriptionAddForm(forms.ModelForm):
     document_job.widget.attrs.update(
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
+    parent_document = forms.ModelChoiceField(queryset=DocumentsJobDescription.objects.all(), required=False)
+    parent_document.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
 
     class Meta:
         model = DocumentsJobDescription
@@ -656,7 +661,7 @@ class DocumentsJobDescriptionAddForm(forms.ModelForm):
             "document_order",
             "validity_period_end",
             "actuality",
-            "previous_document",
+            "parent_document",
             "document_name",
             "document_job",
         )
@@ -761,7 +766,6 @@ class DocumentsOrderAddForm(forms.ModelForm):
         )
 
     def clean(self):
-        print(datetime.date.today)
         cleaned_data = super().clean()
         scan_file = cleaned_data.get("scan_file")
         ext = str(scan_file).split(".")[-1]

@@ -65,16 +65,24 @@
                                         </div>
 
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_document_date">Дата документа</label>
+                                            <label for="id_document_date">Дата документа:</label>
                                             <input type="date" class="form-control form-control-modern"
                                                    name="document_date" value="{{ object.document_date|date:"c" }}"
                                                    id="id_document_date"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_document_number">Номер документа</label>
+                                            <label for="id_document_number">Номер документа:</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="document_number" value="{{ object.document_number }}"
                                                    id="id_document_number"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            {% if object.previous_document %}
+                                                <label for="id_previous_document">Предыдущий документ:</label>
+                                                <p id="previous_document"><a href="{{ object.previous_document }}">{{ object.parent_document }}</a> </p>
+                                            {% else %}
+                                                <label for="id_previous_document">Это первичный документ.</label>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <div class="row text">

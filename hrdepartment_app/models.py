@@ -122,6 +122,9 @@ class Documents(models.Model):
     previous_document = models.URLField(
         verbose_name="Предшествующий документ", blank=True
     )
+    parent_document = models.ForeignKey(
+        "self", verbose_name="Предшествующий документ", on_delete=models.SET_NULL, null=True, blank=True
+    )
     applying_for_job = models.BooleanField(
         verbose_name="Обязательно к ознакомлению при приеме на работу", default=False
     )
@@ -1671,7 +1674,7 @@ class DocumentsJobDescription(Documents):
 
 
 @receiver(post_save, sender=DocumentsJobDescription)
-def rename_jds_file_name(sender, instance, **kwargs):
+def rename_jds_file_name(sender, instance: DocumentsJobDescription, **kwargs):
     try:
         # Получаем имя сохраненного файла
         file_name = pathlib.Path(instance.doc_file.name).name

@@ -251,8 +251,8 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             if (
-                request.user.is_superuser
-                or request.user.user_work_profile.job.division_affiliation.pk == 1
+                    request.user.is_superuser
+                    or request.user.user_work_profile.job.division_affiliation.pk == 1
             ):
                 memo_list = (
                     OfficialMemo.objects.all().order_by("date_of_creation").reverse()
@@ -598,8 +598,8 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                             warning_change = 1
                     if k == "period_for":
                         if (new_instance[k] != old_instance[k]) and (
-                            str(object_item.purpose_trip)
-                            == "Прохождения курсов повышения квалификации (КПК)"
+                                str(object_item.purpose_trip)
+                                == "Прохождения курсов повышения квалификации (КПК)"
                         ):
                             critical_change = 1
                         warning_change = 1
@@ -782,8 +782,8 @@ class ApprovalOficialMemoProcessList(
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             if (
-                request.user.is_superuser
-                or request.user.user_work_profile.job.division_affiliation.pk == 1
+                    request.user.is_superuser
+                    or request.user.user_work_profile.job.division_affiliation.pk == 1
             ):
                 approvalmemo_list = (
                     ApprovalOficialMemoProcess.objects.all()
@@ -845,7 +845,7 @@ class ApprovalOficialMemoProcessAdd(
         )
         for item in business_process:
             if item.person_executor.filter(
-                name__contains=self.request.user.user_work_profile.job.name
+                    name__contains=self.request.user.user_work_profile.job.name
             ):
                 person_agreement_list = [
                     items[0] for items in item.person_agreement.values_list()
@@ -967,7 +967,7 @@ class ApprovalOficialMemoProcessUpdate(
 
         list_agreement = list()
         for unit in users_list.filter(
-            user_work_profile__job__pk__in=person_agreement_list
+                user_work_profile__job__pk__in=person_agreement_list
         ):
             list_agreement.append(unit.pk)
         content["list_agreement"] = list_agreement
@@ -1309,8 +1309,8 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                 )
 
                 if (
-                    request.user.is_superuser
-                    or request.user.user_work_profile.job.division_affiliation.pk == 1
+                        request.user.is_superuser
+                        or request.user.user_work_profile.job.division_affiliation.pk == 1
                 ):
                     reportcard_list = (
                         ApprovalOficialMemoProcess.objects.filter(
@@ -1360,8 +1360,8 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                     rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
                 )
                 if (
-                    request.user.is_superuser
-                    or request.user.user_work_profile.job.division_affiliation == 1
+                        request.user.is_superuser
+                        or request.user.user_work_profile.job.division_affiliation == 1
                 ):
                     reportcard_list = (
                         ApprovalOficialMemoProcess.objects.filter(
@@ -1590,13 +1590,13 @@ class ReportApprovalOficialMemoProcessList(
                     place, place_short = "", ""
                     curent_day = date_start + datetime.timedelta(days_count)
                     if selected_record.filter(
-                        report_card_day=curent_day.date()
+                            report_card_day=curent_day.date()
                     ).exists():
                         if (
-                            selected_record.filter(
-                                report_card_day=curent_day.date()
-                            ).count()
-                            == 1
+                                selected_record.filter(
+                                    report_card_day=curent_day.date()
+                                ).count()
+                                == 1
                         ):
                             obj = selected_record.filter(
                                 report_card_day=curent_day.date()
@@ -1610,7 +1610,7 @@ class ReportApprovalOficialMemoProcessList(
                             list_obj.append([trigger, place, obj.record_type])
                         else:
                             for item in selected_record.filter(
-                                report_card_day=curent_day.date()
+                                    report_card_day=curent_day.date()
                             ):
                                 place += item.get_record_type_display() + "; "
                                 place_short += item.record_type + "; "
@@ -1777,8 +1777,8 @@ class ReportApprovalOficialMemoProcessList(
             qs = (
                 ApprovalOficialMemoProcess.objects.filter(
                     (
-                        Q(start_date_trip__lte=date_start)
-                        | Q(start_date_trip__lte=date_end)
+                            Q(start_date_trip__lte=date_start)
+                            | Q(start_date_trip__lte=date_end)
                     )
                     & Q(end_date_trip__gte=date_start)
                 )
@@ -1792,8 +1792,8 @@ class ReportApprovalOficialMemoProcessList(
                         person_executor__user_work_profile__job__division_affiliation__pk=self.request.user.user_work_profile.job.division_affiliation.pk
                     )
                     & (
-                        Q(start_date_trip__lte=date_start)
-                        | Q(start_date_trip__lte=date_end)
+                            Q(start_date_trip__lte=date_start)
+                            | Q(start_date_trip__lte=date_end)
                     )
                     & Q(end_date_trip__gte=date_start)
                 )
@@ -1811,16 +1811,16 @@ class ReportApprovalOficialMemoProcessList(
                     curent_day = date_start + datetime.timedelta(days_count)
                     if item.hr_accepted:
                         if (
-                            item.start_date_trip
-                            <= curent_day.date()
-                            <= item.end_date_trip
+                                item.start_date_trip
+                                <= curent_day.date()
+                                <= item.end_date_trip
                         ):
                             list_obj[days_count] = "2"
                     else:
                         if (
-                            item.document.period_from
-                            <= curent_day.date()
-                            <= item.document.period_for
+                                item.document.period_from
+                                <= curent_day.date()
+                                <= item.document.period_for
                         ):
                             list_obj[days_count] = "1"
                 dict_obj[format_name_initials(str(item.document.person))] = list_obj
@@ -1831,18 +1831,18 @@ class ReportApprovalOficialMemoProcessList(
                     # print(list_obj, days_count, date_end, date_start)
                     if item.hr_accepted:
                         if (
-                            item.start_date_trip
-                            <= curent_day.date()
-                            <= item.end_date_trip
+                                item.start_date_trip
+                                <= curent_day.date()
+                                <= item.end_date_trip
                         ):
                             list_obj.append(["2", ""])
                         else:
                             list_obj.append(["0", ""])
                     else:
                         if (
-                            item.document.period_from
-                            <= curent_day.date()
-                            <= item.document.period_for
+                                item.document.period_from
+                                <= curent_day.date()
+                                <= item.document.period_for
                         ):
                             list_obj.append(["1", ""])
                         else:
@@ -1930,21 +1930,21 @@ class DocumentsJobDescriptionAdd(
     form_class = DocumentsJobDescriptionAddForm
     permission_required = "hrdepartment_app.add_documentsjobdescription"
 
-    def get_context_data(self, **kwargs):
-        content = super(DocumentsJobDescriptionAdd, self).get_context_data(**kwargs)
+    def get_context_data(self, *, object_list=None, **kwargs):
+        content = super().get_context_data(object_list=None, **kwargs)
         content[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить должностную инструкцию"
         return content
 
-    def get_form_kwargs(self):
-        """
-        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
-        :return: PK текущего пользователя
-        """
-        kwargs = super().get_form_kwargs()
-        kwargs.update({"user": self.request.user.pk})
-        return kwargs
+    # def get_form_kwargs(self):
+    #     """
+    #     Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+    #     :return: PK текущего пользователя
+    #     """
+    #     kwargs = super().get_form_kwargs()
+    #     kwargs.update({"user": self.request.user.pk})
+    #     return kwargs
 
 
 class DocumentsJobDescriptionDetail(
@@ -2006,14 +2006,23 @@ class DocumentsJobDescriptionUpdate(
         ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
-    def get_form_kwargs(self):
-        """
-        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
-        :return: PK текущего пользователя
-        """
-        kwargs = super().get_form_kwargs()
-        kwargs.update({"user": self.request.user.pk})
-        return kwargs
+    def form_valid(self, form):
+        if form.is_valid():
+            refresh_form = form.save(commit=False)
+            if refresh_form.parent_document:
+                refresh_form.previous_document = reverse('hrdepartment_app:jobdescription_update',
+                                                         args=[refresh_form.parent_document.pk])
+            refresh_form.save()
+        return super().form_valid(form)
+
+    # def get_form_kwargs(self):
+    #     """
+    #     Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+    #     :return: PK текущего пользователя
+    #     """
+    #     kwargs = super().get_form_kwargs()
+    #     kwargs.update({"user": self.request.user.pk})
+    #     return kwargs
 
 
 # Приказы
@@ -2101,10 +2110,10 @@ class DocumentsOrderAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView)
             if len(order_list) > 0:
                 if len(cancel_order) > 0:
                     result = (
-                        "Крайний: "
-                        + str(order_list[-1])
-                        + "; Отмененные: "
-                        + "; ".join(cancel_order)
+                            "Крайний: "
+                            + str(order_list[-1])
+                            + "; Отмененные: "
+                            + "; ".join(cancel_order)
                     )
                 else:
                     result = "Крайний: " + str(order_list[-1])
@@ -2206,10 +2215,10 @@ class DocumentsOrderUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVi
             if len(order_list) > 0:
                 if len(cancel_order) > 0:
                     result = (
-                        "Крайний: "
-                        + str(order_list[-1])
-                        + "; Отмененные: "
-                        + "; ".join(cancel_order)
+                            "Крайний: "
+                            + str(order_list[-1])
+                            + "; Отмененные: "
+                            + "; ".join(cancel_order)
                     )
                 else:
                     result = "Крайний: " + str(order_list[-1])
@@ -2546,10 +2555,10 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
                 holiday_delta,
             ) = get_working_hours(user_obj, current_day, state=2)
             absences = all_days_count - (
-                norm_time.number_working_days - all_vacation_days
+                    norm_time.number_working_days - all_vacation_days
             )
             absences_delta = (
-                norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
+                    norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             )
             if absences_delta < 0:
                 hour1, minute1 = divmod(total_score / 60, 60)
@@ -2651,10 +2660,10 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
                 holiday_delta,
             ) = get_working_hours(user_obj, current_day, state=1)
             absences = all_days_count - (
-                norm_time.number_working_days - all_vacation_days
+                    norm_time.number_working_days - all_vacation_days
             )
             absences_delta = (
-                norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
+                    norm_time.get_norm_time() - (all_vacation_time + total_score) / 3600
             )
             if absences_delta < 0:
                 hour1, minute1 = divmod(total_score / 60, 60)
