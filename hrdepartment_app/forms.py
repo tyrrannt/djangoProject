@@ -180,11 +180,11 @@ class OfficialMemoAddForm(forms.ModelForm):
                     )
             case "3":
                 if period_from < self.date_difference(
-                        60
-                ) or period_for < self.date_difference(60):
+                        90
+                ) or period_for < self.date_difference(90):
                     raise forms.ValidationError(
-                        f"Нельзя использовать прошедшую дату! Допустимый период 60 дней. "
-                        f"Минимальная дата {self.date_difference(60).strftime('%d.%m.%Y')} г."
+                        f"Нельзя использовать прошедшую дату! Допустимый период 90 дней. "
+                        f"Минимальная дата {self.date_difference(90).strftime('%d.%m.%Y')} г."
                     )
 
 
@@ -871,7 +871,7 @@ class ReportCardAddForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         report_card_day = cleaned_data.get("report_card_day")
-        yesterday = datetime.date.today() - datetime.timedelta(days=3)
+        yesterday = datetime.date.today() - datetime.timedelta(days=7)
         tomorrow = datetime.date.today() + datetime.timedelta(days=2)
         if yesterday > report_card_day or report_card_day > tomorrow:
             raise ValidationError(
@@ -909,7 +909,7 @@ class ReportCardUpdateForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         report_card_day = cleaned_data.get("report_card_day")
-        yesterday = datetime.date.today() - datetime.timedelta(days=3)
+        yesterday = datetime.date.today() - datetime.timedelta(days=7)
         tomorrow = datetime.date.today() + datetime.timedelta(days=2)
         user_obj = DataBaseUser.objects.get(pk=self.user)
         if not user_obj.is_superuser:
