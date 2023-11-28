@@ -87,6 +87,8 @@ def get_database_user_work_profile():
         if units["ref_key"] != "":
             moving = 0
             for items2 in todo_str:
+                if (datetime.datetime.strptime(items2["ДействуетДо"][:10], "%Y-%m-%d") != datetime.datetime.strptime("0001-01-01", "%Y-%m-%d")) and (datetime.datetime.strptime(items2["ДействуетДо"][:10], "%Y-%m-%d") < datetime.datetime.today()):
+                    continue
                 if items2["Active"] and items2["ВидСобытия"] == "Перемещение":
                     if period < datetime.datetime.strptime(
                         items2["Period"][:10], "%Y-%m-%d"
