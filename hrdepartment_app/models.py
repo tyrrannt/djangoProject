@@ -534,6 +534,9 @@ class OfficialMemo(models.Model):
     title = models.CharField(
         verbose_name="Наименование", max_length=200, default="", blank=True
     )
+    creation_retroactively = models.BooleanField(
+        verbose_name="Документ введен задним числом", default=False
+    )
 
     def __str__(self):
         return self.title

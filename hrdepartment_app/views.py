@@ -313,7 +313,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 & Q(period_for__gte=datetime.datetime.today())
             )
         ]
-        # Выбераем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
+        # Выбираем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         user_job = self.request.user
 
@@ -634,8 +634,12 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                             get_bpmemo_obj.process_accepted = False
                             get_bpmemo_obj.email_send = False
                             get_bpmemo_obj.order = None
+                            get_bpmemo_obj.originals_received = False
+                            get_bpmemo_obj.hr_accepted = False
+                            get_bpmemo_obj.accepted_accounting = False
                             get_order_obj.cancellation = True
                             get_obj.document_accepted = False
+
                             get_obj.order = None
                             get_obj.comments = "Документ согласован"
                             get_obj.save()

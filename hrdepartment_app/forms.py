@@ -141,6 +141,7 @@ class OfficialMemoAddForm(forms.ModelForm):
             "type_trip",
             "official_memo_type",
             "document_extension",
+            "creation_retroactively",
         )
 
     def date_difference(self, day):
