@@ -1909,10 +1909,16 @@ class ProductionCalendar(models.Model):
         Подсчет количества рабочих часов в месяце
         :return: количество рабочих часов в месяце
         """
+        first_day = self.calendar_month + relativedelta(day=1)
+        last_day = self.calendar_month + relativedelta(day=31)
+        preholiday_day = PreHolidayDay.objects.filter(preholiday_day__in=range(first_day.day, last_day.day + 1))
+        preholiday_time = 0
+        for item in preholiday_day:
+            preholiday_time += item.work_time
         return (
-                (self.number_working_days * 8)
+                (self.number_working_days - int(preholiday_day) * 8)
                 + (self.number_working_days / 2)
-                - self.get_friday_count()
+                - self.get_friday_count() + preholiday_time
         )
 
     def __str__(self):

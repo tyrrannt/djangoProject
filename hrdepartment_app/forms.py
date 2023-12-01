@@ -167,10 +167,8 @@ class OfficialMemoAddForm(forms.ModelForm):
         period_from = cleaned_data.get("period_from")
         period_for = cleaned_data.get("period_for")
         creation_retroactively = cleaned_data.get("creation_retroactively")
-        print(creation_retroactively, official_memo_type)
         match official_memo_type:
             case "1" | "3":
-                print(creation_retroactively)
                 if not creation_retroactively:
                     if period_from < self.date_difference(7) or period_for < self.date_difference(7):
                         raise forms.ValidationError(
@@ -179,7 +177,6 @@ class OfficialMemoAddForm(forms.ModelForm):
                             f"Если все же необходимо завести документ, то установите соответствующий переключатель!"
                         )
             case "2":
-                print(creation_retroactively + "123")
                 if not document_extension:
                     # Сохраняем только если оба поля действительны.
                     raise ValidationError(
