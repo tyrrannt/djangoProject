@@ -90,14 +90,14 @@
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_official_memo_type">Тип служебной поездки:</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()"}}
+                                            {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()" }}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_document_extension">Документ основания:</label>
                                         <div class="col-lg-7 col-xl-6">
-                                            {{ form.document_extension | add_class:"form-control form-control-modern" | attr:"disabled"}}
+                                            {{ form.document_extension | add_class:"form-control form-control-modern" | attr:"disabled" }}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -115,8 +115,9 @@
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
                                                 <input type="date" id="id_period_from"
-                                                   class="form-control form-control-modern" onchange=minimumPeriodFor()
-                                                   name="period_from" value="{{ object.period_from | date:'c' }}"/>
+                                                       class="form-control form-control-modern"
+                                                       onchange=minimumPeriodFor()
+                                                       name="period_from" value="{{ object.period_from | date:'c' }}"/>
                                             </div>
                                         </div>
                                     </div>
@@ -128,10 +129,18 @@
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
                                                 <input type="date" id="id_period_for"
-                                                   class="form-control form-control-modern "  onchange="employee_change()"
-                                                   name="period_for" value="{{ object.period_for | date:'c' }}"/>
-                                                <label id="id_check_date" for="check_date" style="color: #ff000e; font-weight: bold; bo"></label>
+                                                       class="form-control form-control-modern "
+                                                       onchange="employee_change()"
+                                                       name="period_for" value="{{ object.period_for | date:'c' }}"/>
+                                                <label id="id_check_date" for="check_date"
+                                                       style="color: #ff000e; font-weight: bold; bo"></label>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row pb-3">
+                                        <label class="col-lg-3 control-label text-lg-end pt-2">Подтверждаю, что документ введен задним числом</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            {{ form.creation_retroactively }}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -152,7 +161,7 @@
                                                 </div>
                                                 <div class="col-1" style="align-content: center">
                                                     <a class="btn btn-primary form-control form-control-modern"
-                                                        href="{% url 'hrdepartment_app:place_add' %}">+</a>
+                                                       href="{% url 'hrdepartment_app:place_add' %}">+</a>
                                                 </div>
 
                                             </div>
@@ -278,6 +287,7 @@
                 }
             });
         };
+
         function memo_type_change() {
             employee = document.getElementById("id_person").value;
             memo_type = document.getElementById("id_official_memo_type").value;
@@ -296,9 +306,9 @@
                     employee_divisions.refresh;
                     var document_extension = $("#id_document_extension");
                     document_extension.empty();
-                    $.each(data['memo_type'], function(key,value) {
+                    $.each(data['memo_type'], function (key, value) {
                         document_extension.append($("<option selected></option>")
-                        .attr("value", value).text(key));
+                            .attr("value", value).text(key));
                     });
                     document_extension.removeAttr("disabled")
                     $('#id_document_extension').refresh;

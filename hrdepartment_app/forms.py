@@ -144,6 +144,15 @@ class OfficialMemoAddForm(forms.ModelForm):
             "creation_retroactively",
         )
 
+    def __init__(self, *args, **kwargs):
+        super(OfficialMemoAddForm, self).__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs["class"] = "form-control form-control-modern"
+            field.help_text = ""
+        self.fields["creation_retroactively"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+
     def date_difference(self, day):
         """
         :param day: Целое число, представляющее количество дней, которое необходимо вычесть из текущей даты.
@@ -157,36 +166,31 @@ class OfficialMemoAddForm(forms.ModelForm):
         document_extension = cleaned_data.get("document_extension")
         period_from = cleaned_data.get("period_from")
         period_for = cleaned_data.get("period_for")
+        creation_retroactively = cleaned_data.get("creation_retroactively")
+        print(creation_retroactively, official_memo_type)
         match official_memo_type:
-            case "1":
-                if period_from < self.date_difference(
-                        14
-                ) or period_for < self.date_difference(14):
-                    raise forms.ValidationError(
-                        f"Нельзя использовать прошедшую дату! Допустимый период 14 дней. "
-                        f"Минимальная дата {self.date_difference(14).strftime('%d.%m.%Y')} г."
-                    )
+            case "1" | "3":
+                print(creation_retroactively)
+                if not creation_retroactively:
+                    if period_from < self.date_difference(7) or period_for < self.date_difference(7):
+                        raise forms.ValidationError(
+                            f"Нельзя использовать прошедшую дату! Допустимый период 7 дней. "
+                            f"Минимальная дата {self.date_difference(7).strftime('%d.%m.%Y')} г."
+                            f"Если все же необходимо завести документ, то установите соответствующий переключатель!"
+                        )
             case "2":
+                print(creation_retroactively + "123")
                 if not document_extension:
                     # Сохраняем только если оба поля действительны.
                     raise ValidationError(
                         "Ошибка создания документа. Для продления необходимо указать документ основания!!!"
                     )
-                if period_from < self.date_difference(
-                        45
-                ) or period_for < self.date_difference(45):
-                    raise forms.ValidationError(
-                        f"Нельзя использовать прошедшую дату! Допустимый период 30 дней. "
-                        f"Минимальная дата {self.date_difference(45).strftime('%d.%m.%Y')} г."
-                    )
-            case "3":
-                if period_from < self.date_difference(
-                        90
-                ) or period_for < self.date_difference(90):
-                    raise forms.ValidationError(
-                        f"Нельзя использовать прошедшую дату! Допустимый период 90 дней. "
-                        f"Минимальная дата {self.date_difference(90).strftime('%d.%m.%Y')} г."
-                    )
+                if not creation_retroactively:
+                    if period_from < self.date_difference(7) or period_for < self.date_difference(7):
+                        raise forms.ValidationError(
+                            f"Нельзя использовать прошедшую дату! Допустимый период 7 дней. "
+                            f"Минимальная дата {self.date_difference(7).strftime('%d.%m.%Y')} г."
+                            f"Если все же необходимо завести документ, то установите соответствующий переключатель!")
 
 
 class OfficialMemoUpdateForm(forms.ModelForm):
