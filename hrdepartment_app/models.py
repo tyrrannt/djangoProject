@@ -1921,7 +1921,6 @@ class ProductionCalendar(models.Model):
                 preholiday_time += item.work_time.hour + 1 + item.work_time.minute / 60
             else:
                 preholiday_time += item.work_time.hour + item.work_time.minute / 60
-        print(preholiday_time)
         return (
                 (self.number_working_days * 8)
                 + (self.number_working_days / 2)
