@@ -1911,12 +1911,18 @@ class ProductionCalendar(models.Model):
         """
         first_day = self.calendar_month + relativedelta(day=1)
         last_day = self.calendar_month + relativedelta(day=31)
-        preholiday_day = PreHolidayDay.objects.filter(preholiday_day__in=range(first_day.day, last_day.day + 1))
         preholiday_time = 0
-        for item in preholiday_day:
-            preholiday_time += item.work_time
+        preholiday_day_count = 0
+        try:
+            preholiday_day = PreHolidayDay.objects.filter(preholiday_day__in=range(first_day.day, last_day.day + 1))
+            for item in preholiday_day:
+                preholiday_day_count += 1
+                preholiday_time += item.work_time
+        except Exception as _ex:
+            print(_ex)
+
         return (
-                (self.number_working_days - int(preholiday_day) * 8)
+                (self.number_working_days - int(preholiday_day_count) * 8)
                 + (self.number_working_days / 2)
                 - self.get_friday_count() + preholiday_time
         )
