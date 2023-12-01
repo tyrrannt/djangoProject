@@ -1918,13 +1918,14 @@ class ProductionCalendar(models.Model):
             for item in preholiday_day:
                 preholiday_day_count += 1
                 preholiday_time += item.work_time
+            print(preholiday_day_count, preholiday_time)
         except Exception as _ex:
             print(_ex)
 
         return (
-                (self.number_working_days - int(preholiday_day_count) * 8)
+                (self.number_working_days * 8)
                 + (self.number_working_days / 2)
-                - self.get_friday_count() + preholiday_time
+                - self.get_friday_count() - (preholiday_day_count*8 - preholiday_time)
         )
 
     def __str__(self):
