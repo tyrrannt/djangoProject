@@ -1913,19 +1913,19 @@ class ProductionCalendar(models.Model):
         last_day = self.calendar_month + relativedelta(day=31)
         preholiday_time = 0
         preholiday_day_count = 0
-        try:
-            preholiday_day = PreHolidayDay.objects.filter(preholiday_day__in=range(first_day.day, last_day.day + 1))
-            for item in preholiday_day:
-                preholiday_day_count += 1
-                preholiday_time += item.work_time
-            print(preholiday_day_count, preholiday_time)
-        except Exception as _ex:
-            print(_ex)
 
+        preholiday_day = PreHolidayDay.objects.filter(preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
+        for item in preholiday_day:
+            preholiday_day_count += 1
+            if item.preholiday_day.weekday() == 4:
+                preholiday_time += item.work_time.hour + 1 + item.work_time.minute / 60
+            else:
+                preholiday_time += item.work_time.hour + item.work_time.minute / 60
+        print(preholiday_time)
         return (
                 (self.number_working_days * 8)
                 + (self.number_working_days / 2)
-                - self.get_friday_count() - (preholiday_day_count*8 - preholiday_time)
+                - self.get_friday_count() - (preholiday_day_count*8.5 - preholiday_time)
         )
 
     def __str__(self):
