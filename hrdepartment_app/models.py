@@ -2046,6 +2046,20 @@ class Instructions(Documents):
     )
 
     def get_data(self):
+        """
+        Return a dictionary representing the data of the object.
+
+        :return: A dictionary with the following keys:
+                 - "pk": The primary key of the object.
+                 - "document_name": The name of the document.
+                 - "document_number": The number of the document.
+                 - "document_date": The formatted date of the document ("dd.mm.yyyy г.").
+                 - "document_division": The storage location division of the document (converted to string).
+                 - "document_order": The document order (converted to string).
+                 - "actuality": The actuality of the document ("Да" if true, "Нет" if false).
+                 - "executor": The formatted name initials of the executor.
+
+        """
         return {
             "pk": self.pk,
             "document_name": self.document_name,
@@ -2061,6 +2075,12 @@ class Instructions(Documents):
     #     return reverse('hrdepartment_app:instructions_list')
 
     def __str__(self):
+        """
+        Returns the string representation of the object.
+
+        :return: The string representation of the object.
+        :rtype: str
+        """
         return self.document_name
 
 
