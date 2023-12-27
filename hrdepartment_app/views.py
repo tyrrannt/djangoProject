@@ -183,7 +183,7 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                 return render(
                     request,
                     "hrdepartment_app/medical_list.html",
-                    {"error": "Необходимо обновить список организаций."},
+                    {"error": f"{error}: Необходимо обновить список организаций."},
                 )
             url_match = reverse_lazy("hrdepartment_app:medical_list")
             return redirect(url_match)
