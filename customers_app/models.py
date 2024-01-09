@@ -848,3 +848,34 @@ class HappyBirthdayGreetings(models.Model):
             return f"{self.get_gender_display()} на {self.age_to} летие"
         else:
             return f"{self.get_gender_display()} c {self.age_from} по {self.age_to}"
+
+
+class VacationSchedule(models.Model):
+    """
+    Класс для хранения расписания отпусков
+    """
+    VACATION_TYPE = [
+        ("dd940e62-cfaf-11e6-bad8-902b345cadc2", "Отпуск за свой счет"),
+        ("b51bdb10-8fb9-11e9-80cc-309c23d346b4", "Дополнительный оплачиваемый отпуск пострадавшим на ЧАЭС"),
+        ("c3e8c3e8-cfb6-11e6-bad8-902b345cadc2", "Дополнительный неоплачиваемый отпуск пострадавшим на ЧАЭС"),
+        ("c3e8c3e7-cfb6-11e6-bad8-902b345cadc2", "Дополнительный учебный отпуск (оплачиваемый)"),
+        ("dd940e63-cfaf-11e6-bad8-902b345cadc2", "Дополнительный учебный отпуск без оплаты"),
+        ("6f4631a7-df12-11e6-950a-0cc47a7917f4", "Дополнительный отпуск КЛО, ЗКЛО, начальник ИБП"),
+        ("56f643c6-bf49-11e9-a3dc-0cc47a7917f4", "Дополнительный оплачиваемый отпуск пострадавшим в аварии на ЧАЭС"),
+        ("dd940e60-cfaf-11e6-bad8-902b345cadc2", "Дополнительный ежегодный отпуск"),
+        ("ebbd9c67-cfaf-11e6-bad8-902b345cadc2", "Основной"),
+    ]
+
+    class Meta:
+        verbose_name = "Расписание отпусков"
+        verbose_name_plural = "Расписание отпусков"
+
+    employee = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE)
+    start_date = models.DateField(verbose_name="Начало отпуска")
+    end_date = models.DateField(verbose_name="Конец отпуска")
+    type_vacation = models.CharField(
+        verbose_name="Тип отпуска", max_length=100, choices=VACATION_TYPE
+    )
+    days = models.IntegerField(verbose_name="Количество дней", default=0)
+    years = models.IntegerField(verbose_name="Год графика", default=0)
+    comment = models.TextField(verbose_name="Комментарий", blank=True)

@@ -116,11 +116,30 @@ class MedicalOrganisationList(PermissionRequiredMixin, LoginRequiredMixin, ListV
         return super(MedicalOrganisationList, self).get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
+        """
+        Извлекает контекстные данные для представления.
+
+        Параметры:
+            object_list (список): список объектов, которые будут отображаться в представлении. По умолчанию — Нет.
+            **kwargs (dict): дополнительные аргументы ключевого слова.
+
+        Возврат:
+            dict: данные контекста для представления.
+        """
         context = super().get_context_data(object_list=None, **kwargs)
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Медицинские организации"
         return context
+
+    def get_queryset(self):
+        """
+        Retrieves all MedicalOrganisation objects.
+
+        :param self: The instance of the class.
+        :return: A QuerySet containing all MedicalOrganisation objects.
+        """
+        return MedicalOrganisation.objects.all()
 
 
 class MedicalOrganisationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
