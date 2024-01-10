@@ -529,13 +529,13 @@ def vacation_check():
     return logger.info(f"Создано {len(objs)} записей")
 
 
-def vacation_schedule_send(self):
-    employee = DataBaseUser.objects.all().exclude(is_active=False).filter(pk=self.request.user.pk)
+def vacation_schedule_send():
+    employee = DataBaseUser.objects.all().exclude(is_active=False)
     for item in employee:
         get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2024)
         message = ""
         for unit in get_vacation_shedule:
-            message += f"С {unit.start_date.strftime('%d.%m.%Y')} на {unit.days} календарных дней\n"
+            message += f"С {unit.start_date.strftime('%d.%m.%Y')} на {unit.days} календарных дней. <br />"
         current_context = {
             "greetings": "Уважаемый"
             if item.gender == "male"
@@ -562,6 +562,10 @@ def vacation_schedule_send(self):
             ],
         )
         msg.attach_alternative(html_content, "text/html")
+        try:
+            res = msg.send()
+        except Exception as _ex:
+            logger.debug(f"Failed to send email. {_ex}")
 
 
 @app.task()

@@ -268,10 +268,10 @@
                                     <!-- section text ======-->
                                     <p style="line-height: 24px; margin-bottom:15px;"><strong>Информирую, что 15.12.2023 года в ООО Авиакомпания «БАРКОЛ» утвержден график отпусков на 2024 год Приказом генерального директора № 804-лс от 15.12.2023 года.</strong>
                                     </p></br>
-                                    <p style="line-height: 24px; margin-bottom:20px;">Ознакамливаю вас, что ваш отпуск согласно утвержденного графика отпусков запланирован в следующие даты:
+                                    <p style="line-height: 24px; margin-bottom:20px;">Довожу до вашего сведения, что ваш отпуск, согласно утвержденного графика отпусков, запланирован в следующие даты:
                                     </p></br>
                                     <p style="line-height: 24px; margin-bottom:20px;">
-                                        {{ messages }}
+                                        {% autoescape off %}{{ message }}{% endautoescape %}
                                     </p></br>
                                     <p style="line-height: 24px"><strong>
                                         С уважением,</br>
@@ -330,9 +330,9 @@
                                             <img src="https://corp.barkol.ru/static/admin_templates/img/logo.png"
                                                  style="margin-top: 1.4em;margin-left:1.1em;width:90px;"></div>
                                         <div style="width:190px;max-width:190px;font-family:&quot;Lucida Grande&quot;,Tahoma;font-size:12px;margin-top:0.5em;color:rgb(102,102,102);letter-spacing:2px;border-left:2px solid rgb(211,216,215);padding-top:3px;padding-left:10px;overflow:hidden">
-                                            <p>Исполнитель:<br>{{ person_executor }}&nbsp;<br></p>
-                                            <p><a href="mailto:{{ mail_to_copy }}"
-                                                  style="color: #888888; font-size: 14px; font-family: 'Hind Siliguri', Calibri, Sans-serif; font-weight: 400;">{{ mail_to_copy }}</a><br>
+                                            <p>Исполнитель:<br>Кирюшкина И. А.&nbsp;<br></p>
+                                            <p><a href="mailto:ok@barkol.ru"
+                                                  style="color: #888888; font-size: 14px; font-family: 'Hind Siliguri', Calibri, Sans-serif; font-weight: 400;">ok@barkol.ru</a><br>
                                                 <a href="https://corp.barkol.ru/"
                                                    style="margin-top:0.5em;color:rgb(102,102,102);text-decoration:none"
                                                    target="_blank">corp.barkol.ru</a>&nbsp;<br>
