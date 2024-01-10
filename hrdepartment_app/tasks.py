@@ -8,6 +8,7 @@ import telebot
 from dateutil import rrule
 from decouple import config
 from django.core import mail
+from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -19,7 +20,8 @@ from administration_app.utils import (
     get_jsons_data_filter,
 )
 
-from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings
+from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings, VacationScheduleList, \
+    VacationSchedule
 from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
 from hrdepartment_app.models import (
@@ -484,9 +486,97 @@ def get_vacation():
     return logger.info(f"Создано {len(objs)} записей")
 
 
+def vacation_check():
+    obj = VacationSchedule.objects.all()
+    for item in obj:
+        item.delete()
+    VACATION_TYPE = [
+        ("dd940e62-cfaf-11e6-bad8-902b345cadc2", "Отпуск за свой счет"),
+        ("b51bdb10-8fb9-11e9-80cc-309c23d346b4", "Дополнительный оплачиваемый отпуск пострадавшим на ЧАЭС"),
+        ("c3e8c3e8-cfb6-11e6-bad8-902b345cadc2", "Дополнительный неоплачиваемый отпуск пострадавшим на ЧАЭС"),
+        ("c3e8c3e7-cfb6-11e6-bad8-902b345cadc2", "Дополнительный учебный отпуск (оплачиваемый)"),
+        ("dd940e63-cfaf-11e6-bad8-902b345cadc2", "Дополнительный учебный отпуск без оплаты"),
+        ("6f4631a7-df12-11e6-950a-0cc47a7917f4", "Дополнительный отпуск КЛО, ЗКЛО, начальник ИБП"),
+        ("56f643c6-bf49-11e9-a3dc-0cc47a7917f4", "Дополнительный оплачиваемый отпуск пострадавшим в аварии на ЧАЭС"),
+        ("dd940e60-cfaf-11e6-bad8-902b345cadc2", "Дополнительный ежегодный отпуск"),
+        ("ebbd9c67-cfaf-11e6-bad8-902b345cadc2", "Основной"),
+    ]
+    vacation_list = VacationScheduleList.objects.all()
+    all_vacation_list = list()
+    for vacation in vacation_list:
+        graph_vacacion = get_jsons_data_filter(
+            "Document", "ГрафикОтпусков", "Number", vacation.document_number, 0, 0, False, True
+        )
+        for item in graph_vacacion["value"][0]["Сотрудники"]:
+            if DataBaseUser.objects.filter(ref_key=item["Сотрудник_Key"]).exists():
+                kwargs_obj = {
+                    "employee": DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"]),
+                    "start_date": datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d"),
+                    "end_date": datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d"),
+                    "type_vacation": [v[0] for i, v in enumerate(VACATION_TYPE) if v[0] == item["ВидОтпуска_Key"]][0],
+                    "days": item["КоличествоДней"],
+                    "years": vacation.document_year,
+                    "comment": item["Примечание"],
+                }
+                all_vacation_list.append(kwargs_obj)
+    objs = ""
+    try:
+        objs = VacationSchedule.objects.bulk_create(
+            [VacationSchedule(**q) for q in all_vacation_list]
+        )
+    except Exception as _ex:
+        logger.error(f"Ошибка синхронизации графика отпусков {_ex}")
+    return logger.info(f"Создано {len(objs)} записей")
+
+
+def vacation_schedule_send(self):
+    employee = DataBaseUser.objects.all().exclude(is_active=False).filter(pk=self.request.user.pk)
+    for item in employee:
+        get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2024)
+        message = ""
+        for unit in get_vacation_shedule:
+            message += f"С {unit.start_date.strftime('%d.%m.%Y')} на {unit.days} календарных дней\n"
+        current_context = {
+            "greetings": "Уважаемый"
+            if item.gender == "male"
+            else "Уважаемая",
+            "person": str(item),
+            "message": message,
+        }
+        print(current_context)
+        logger.debug(f"Email string: {current_context}")
+        text_content = render_to_string(
+            "administration_app/vacation_send.html", current_context
+        )
+        html_content = render_to_string(
+            "administration_app/vacation_send.html", current_context
+        )
+        subject_mail = "График отпусков"
+        mail_to = item.email
+        msg = EmailMultiAlternatives(
+            subject_mail,
+            text_content,
+            EMAIL_HOST_USER,
+            [
+                mail_to,
+            ],
+        )
+        msg.attach_alternative(html_content, "text/html")
+
+
 @app.task()
 def vacation_schedule():
     def search_vacation(name, people):
+        """
+        Поиск отпуска по названию в списке людей.
+
+        Аргументы:
+            name (str): Имя для поиска.
+            people (list): список словарей, представляющих людей, каждый из которых содержит ключ «Сотрудник_Key».
+
+        Возврат:
+            list: список словарей, представляющих людей, у которых «Сотрудник_Key» равен данному имени.
+        """
         return [element for element in people if element["Сотрудник_Key"] == name]
 
     vacation_list = list()

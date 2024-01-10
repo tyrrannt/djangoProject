@@ -19,6 +19,7 @@ from .models import (
     HistoryChange,
     HappyBirthdayGreetings,
     Affiliation,
+    VacationScheduleList,
     VacationSchedule,
 )
 
@@ -81,4 +82,5 @@ admin.site.register(ViewDocumentsPhysical)
 admin.site.register(HistoryChange)
 admin.site.register(HappyBirthdayGreetings)
 admin.site.register(Affiliation)
+admin.site.register(VacationScheduleList)
 admin.site.register(VacationSchedule)

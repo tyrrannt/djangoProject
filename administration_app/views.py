@@ -16,12 +16,12 @@ from loguru import logger
 from administration_app.models import PortalProperty
 from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
     get_jsons_data_filter2, get_types_userworktime, get_date_interval, get_json_vacation
-from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
+from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, VacationSchedule
 from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
-    report_card_separator_daily, vacation_schedule
+    report_card_separator_daily, vacation_schedule, vacation_check, vacation_schedule_send
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
 
@@ -183,6 +183,9 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
 
             if request.GET.get('update') == '4':
+                #vacation_schedule_send(self)
+
+                vacation_check()
                 # for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
                 #     report_record.delete()
                 # date_admission, vacation = get_json_vacation(self.request.user.ref_key)

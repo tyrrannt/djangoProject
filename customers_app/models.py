@@ -850,6 +850,22 @@ class HappyBirthdayGreetings(models.Model):
             return f"{self.get_gender_display()} c {self.age_from} по {self.age_to}"
 
 
+class VacationScheduleList(models.Model):
+    """
+    Класс для хранения расписания отпусков
+    """
+
+    document_number = models.CharField(
+        verbose_name="Номер документа", max_length=100,
+    )
+    document_year = models.IntegerField(
+        verbose_name="Год документа", default=0,
+    )
+
+    def __str__(self):
+        return f"{self.pk}"
+
+
 class VacationSchedule(models.Model):
     """
     Класс для хранения расписания отпусков
