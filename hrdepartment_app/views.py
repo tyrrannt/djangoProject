@@ -658,7 +658,6 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                             get_bpmemo_obj.accepted_accounting = False
                             get_order_obj.cancellation = True
                             get_obj.document_accepted = False
-
                             get_obj.order = None
                             get_obj.comments = "Документ согласован"
                             get_obj.save()

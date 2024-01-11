@@ -854,6 +854,9 @@ class VacationScheduleList(models.Model):
     """
     Класс для хранения расписания отпусков
     """
+    class Meta:
+        verbose_name = "Номер документа графика отпусков"
+        verbose_name_plural = "Номера документов графиков отпусков"
 
     document_number = models.CharField(
         verbose_name="Номер документа", max_length=100,
