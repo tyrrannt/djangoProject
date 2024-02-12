@@ -241,6 +241,7 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
             )
     except Exception as _ex:
         logger.debug(f"{_ex}")
+        print(_ex)
         return {"value": ""}
     return json.loads(response.text)
 

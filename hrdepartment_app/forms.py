@@ -26,7 +26,7 @@ from hrdepartment_app.models import (
     ReasonForCancellation,
     OrderDescription,
     ReportCard,
-    Provisions,
+    Provisions, GuidanceDocuments,
 )
 
 
@@ -1107,3 +1107,133 @@ class OrderDescriptionForm(forms.ModelForm):
             raise forms.ValidationError("Это поле не может быть пустым.")
         # Add more validations if needed
         return name
+
+
+class GuidanceDocumentsAddForm(forms.ModelForm):
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = GuidanceDocuments
+        fields = (
+            "executor",
+            "document_date",
+            "document_number",
+            "doc_file",
+            "scan_file",
+            "access",
+            "storage_location_division",
+            "employee",
+            "allowed_placed",
+            "validity_period_start",
+            "document_order",
+            "validity_period_end",
+            "actuality",
+            "previous_document",
+            "document_name",
+            "applying_for_job",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(GuidanceDocumentsAddForm, self).__init__(*args, **kwargs)
+        self.fields["executor"].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["employee"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["executor"].widget.attrs.update(
+            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        )
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["applying_for_job"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+
+
+class GuidanceDocumentsUpdateForm(forms.ModelForm):
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = GuidanceDocuments
+        fields = (
+            "document_date",
+            "document_number",
+            "doc_file",
+            "scan_file",
+            "access",
+            "storage_location_division",
+            "employee",
+            "validity_period_start",
+            "validity_period_end",
+            "previous_document",
+            "allowed_placed",
+            "actuality",
+            "document_name",
+            "document_order",
+            "applying_for_job",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(GuidanceDocumentsUpdateForm, self).__init__(*args, **kwargs)
+        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["employee"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["applying_for_job"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )

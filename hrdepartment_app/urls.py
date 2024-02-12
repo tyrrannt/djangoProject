@@ -11,7 +11,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     PlaceProductionActivityUpdate, ReportCardList, OfficialMemoDetail, \
     ApprovalOficialMemoProcessCancel, ReportCardDetail, ReportCardAdd, ReportCardUpdate, ReportCardDetailFact, \
     ReportCardListManual, ProvisionsList, ProvisionsAdd, ProvisionsDetail, ProvisionsUpdate, ReportCardListAdmin, \
-    ReportCardDelete, ApprovalOficialMemoProcessReportList, OfficialMemoCancel
+    ReportCardDelete, ApprovalOficialMemoProcessReportList, OfficialMemoCancel, GuidanceDocumentsList, \
+    GuidanceDocumentsAdd, GuidanceDocumentsDetail, GuidanceDocumentsUpdate
 
 app_name = 'hrdepartment_app'
 
@@ -64,4 +65,8 @@ urlpatterns = [
     path('provisions/add/', ProvisionsAdd.as_view(), name='provisions_add'),
     path('provisions/<int:pk>/', ProvisionsDetail.as_view(), name='provisions'),
     path('provisions/<int:pk>/update/', ProvisionsUpdate.as_view(), name='provisions_update'),
+    path('guidance_documents/', GuidanceDocumentsList.as_view(), name='guidance_documents_list'),
+    path('guidance_documents/add/', GuidanceDocumentsAdd.as_view(), name='guidance_documents_add'),
+    path('guidance_documents/<int:pk>/', GuidanceDocumentsDetail.as_view(), name='guidance_documents'),
+    path('guidance_documents/<int:pk>/update/', GuidanceDocumentsUpdate.as_view(), name='guidance_documents_update'),
 ]

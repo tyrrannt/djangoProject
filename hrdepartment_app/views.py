@@ -54,7 +54,7 @@ from hrdepartment_app.forms import (
     ReportCardUpdateForm,
     ProvisionsUpdateForm,
     ProvisionsAddForm,
-    OficialMemoCancelForm,
+    OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -74,7 +74,7 @@ from hrdepartment_app.models import (
     PlaceProductionActivity,
     ReportCard,
     ProductionCalendar,
-    Provisions,
+    Provisions, GuidanceDocuments,
 )
 
 
@@ -3001,6 +3001,121 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Provisions
     form_class = ProvisionsUpdateForm
     permission_required = "hrdepartment_app.change_provisions"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+
+# Руководящие документы
+class GuidanceDocumentsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Руководящие документы - список
+    """
+
+    model = GuidanceDocuments
+    permission_required = "hrdepartment_app.view_guidancedocuments"
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            provisions_list = GuidanceDocuments.objects.all()
+            data = [provisions_item.get_data() for provisions_item in provisions_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Руководящие документы"
+        return context
+
+
+class GuidanceDocumentsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """
+    Руководящие документы - создание
+    """
+
+    model = GuidanceDocuments
+    form_class = GuidanceDocumentsAddForm
+    permission_required = "hrdepartment_app.add_guidancedocuments"
+
+    def get_context_data(self, **kwargs):
+        content = super(GuidanceDocumentsAdd, self).get_context_data(**kwargs)
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить руководящий документ"
+        return content
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+
+class GuidanceDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """
+    Руководящий документ - просмотр
+    """
+
+    model = GuidanceDocuments
+    permission_required = "hrdepartment_app.view_guidancedocuments"
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_access.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy("hrdepartment_app:guidance_documents_list")
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy("hrdepartment_app:guidance_documents_list")
+            return redirect(url_match)
+        return super(GuidanceDocumentsDetail, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        return context
+
+
+class GuidanceDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """
+    Руководящий документ - редактирование
+    """
+
+    template_name = "hrdepartment_app/guidancedocuments_form_update.html"
+    model = GuidanceDocuments
+    form_class = GuidanceDocumentsUpdateForm
+    permission_required = "hrdepartment_app.change_guidancedocuments"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)

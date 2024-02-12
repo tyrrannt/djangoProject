@@ -2247,3 +2247,108 @@ def rename_file_name_provisions(sender, instance, **kwargs):
             instance.save()
     except Exception as _ex:
         logger.error(f"Ошибка при переименовании файла {_ex}")
+
+
+class GuidanceDocuments(Documents):
+    class Meta:
+        verbose_name = "Руководящий документ"
+        verbose_name_plural = "Руководящие документы"
+
+    doc_file = models.FileField(
+        verbose_name="Файл документа", upload_to=prv_directory_path, blank=True
+    )
+    scan_file = models.FileField(
+        verbose_name="Скан документа", upload_to=prv_directory_path, blank=True
+    )
+    storage_location_division = models.ForeignKey(
+        Division,
+        verbose_name="Подразделение где хранится оригинал",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="guidance_documents_location_division",
+    )
+    document_division = models.ManyToManyField(
+        Division,
+        verbose_name="Подразделения",
+        related_name="guidance_documents_document_division",
+    )
+    document_order = models.ForeignKey(
+        DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True
+    )
+
+    def get_data(self):
+        return {
+            "pk": self.pk,
+            "document_name": self.document_name,
+            "document_number": self.document_number,
+            "document_date": f"{self.document_date:%d.%m.%Y} г.",
+            "document_division": str(self.storage_location_division),
+            "document_order": str(self.document_order),
+            "actuality": "Да" if self.actuality else "Нет",
+            "executor": format_name_initials(self.executor),
+        }
+
+    def get_absolute_url(self):
+        return reverse("hrdepartment_app:guidance_documents_list")
+
+    def __str__(self):
+        return self.document_name
+
+
+@receiver(post_save, sender=Provisions)
+def rename_file_name_guidance_documents(sender, instance, **kwargs):
+    try:
+        change = 0
+        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
+        user_uid = "0" * (7 - len(str(instance.executor.pk))) + str(
+            instance.executor.pk
+        )
+        if instance.doc_file:
+            # Получаем имя сохраненного файла
+            draft_file_name = pathlib.Path(instance.doc_file.name).name
+            # Получаем путь к файлу
+            draft_path_name = pathlib.Path(instance.doc_file.name).parent
+            # Получаем расширение файла
+            draft_ext = draft_file_name.split(".")[-1]
+            filename_draft = (
+                f"GDC-{uid}-{instance.date_entry}-DRAFT-{user_uid}.{draft_ext}"
+            )
+            if draft_file_name != filename_draft:
+                pathlib.Path.rename(
+                    pathlib.Path.joinpath(
+                        BASE_DIR, "media", draft_path_name, draft_file_name
+                    ),
+                    pathlib.Path.joinpath(
+                        BASE_DIR, "media", draft_path_name, filename_draft
+                    ),
+                )
+                instance.doc_file = f"{draft_path_name}/{filename_draft}"
+                change = 1
+
+        if instance.scan_file:
+            # Получаем имя сохраненного файла
+            scan_file_name = pathlib.Path(instance.scan_file.name).name
+            # Получаем путь к файлу
+            scan_path_name = pathlib.Path(instance.scan_file.name).parent
+            # Получаем расширение файла
+            scan_ext = scan_file_name.split(".")[-1]
+            filename_scan = (
+                f"GDC-{uid}-{instance.date_entry}-SCAN-{user_uid}.{scan_ext}"
+            )
+            if scan_file_name != filename_scan:
+                pathlib.Path.rename(
+                    pathlib.Path.joinpath(
+                        BASE_DIR, "media", scan_path_name, scan_file_name
+                    ),
+                    pathlib.Path.joinpath(
+                        BASE_DIR, "media", scan_path_name, filename_scan
+                    ),
+                )
+                instance.scan_file = f"{scan_path_name}/{filename_scan}"
+                change = 1
+
+        if change == 1:
+            instance.save()
+    except Exception as _ex:
+        logger.error(f"Ошибка при переименовании файла {_ex}")
+
