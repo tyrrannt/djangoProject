@@ -247,14 +247,14 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
 
 
 def get_jsons_data_filter(
-    object_type: str,
-    object_name: str,
-    filter_obj: str,
-    filter_content: str,
-    logical: int,
-    base_index: int,
-    guid=True,
-    separator=True,
+        object_type: str,
+        object_name: str,
+        filter_obj: str,
+        filter_content: str,
+        logical: int,
+        base_index: int,
+        guid=True,
+        separator=True,
 ) -> dict:
     """
     Получение JSON объекта из таблицы 1С
@@ -349,14 +349,14 @@ def get_json_vacation(ref_key):
 
 
 def get_jsons_data_filter2(
-    object_type: str,
-    object_name: str,
-    filter_obj: str,
-    filter_content: str,
-    filter_obj2: str,
-    filter_content2: str,
-    logical: int,
-    base_index: int,
+        object_type: str,
+        object_name: str,
+        filter_obj: str,
+        filter_content: str,
+        filter_obj2: str,
+        filter_content2: str,
+        logical: int,
+        base_index: int,
 ) -> dict:
     logical_operation = ["eq", "ne", "gt", "ge", "lt", "le", "or", "and", "not"]
     base = [
@@ -658,8 +658,8 @@ def time_difference(start_time: datetime.time, end_time: datetime.time):
     if start_time > end_time:
         raise ValueError("start_time должно быть раньше, чем end_time.")
     result = (
-        timedelta(hours=end_time.hour, minutes=end_time.minute).total_seconds()
-        - timedelta(hours=start_time.hour, minutes=start_time.minute).total_seconds()
+            timedelta(hours=end_time.hour, minutes=end_time.minute).total_seconds()
+            - timedelta(hours=start_time.hour, minutes=start_time.minute).total_seconds()
     )
     return result
 
@@ -732,3 +732,16 @@ def change_approval_status(self):
         self.document.save()
 
     return ""
+
+
+def change_password():
+    count, errors = 0, 0
+    for item in DataBaseUser.objects.all().exclude(is_superuser=True):
+        if item.user_work_profile.work_email_password:
+            item.set_password(item.user_work_profile.work_email_password)
+            item.save()
+            count += 1
+        else:
+            errors += 1
+
+    return count, errors
