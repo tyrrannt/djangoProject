@@ -543,6 +543,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             get_database_user_work_profile()
 
         if self.request.GET.get('update') == '0':
+            # Загрузка сотрудников из базы 1С
             get_database_user()
             url_match = reverse_lazy('customers_app:staff_list')
             return redirect(url_match)
