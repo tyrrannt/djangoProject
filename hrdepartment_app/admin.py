@@ -31,7 +31,7 @@ admin.site.register(PlaceProductionActivity)
 admin.site.register(MedicalOrganisation)
 admin.site.register(Medical)
 admin.site.register(Purpose)
-admin.site.register(OfficialMemo)
+#admin.site.register(OfficialMemo)
 # admin.site.register(ApprovalOficialMemoProcess)
 admin.site.register(BusinessProcessDirection)
 admin.site.register(Groups)
@@ -45,6 +45,42 @@ admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
 admin.site.register(Provisions)
 
+@admin.register(OfficialMemo)
+class OfficialMemoAdmin(admin.ModelAdmin):
+    """
+    Класс администратора для модели OfficialMemo.
+
+    Класс OfficialMemoAdmin отвечает за управление интерфейсом администратора.
+    для модели OfficialMemo. Он обеспечивает настройку отображения списка,
+    поля поиска и фильтр списка.
+
+    Атрибуты:
+        list_display (кортеж): кортеж полей, которые будут отображаться в представлении списка администратора.
+        search_fields (кортеж): кортеж полей, которые будут использоваться для поиска в интерфейсе администратора.
+        list_filter (кортеж): кортеж полей, которые будут использоваться для фильтрации представления списка администраторов.
+
+    """
+    # какие поля будут отображаться
+    list_display = ("person", "type_trip", "period_from", "period_for", "cancellation")
+    # какие поля будут использоваться для поиска
+    search_fields = ["title",]
+    # какие поля будут использоваться для фильтрации
+    list_filter = (
+        "purpose_trip",
+        "type_trip",
+    )
+    # какие поля будут в виде ссылок
+    list_display_links = ("person",)
+    # какие поля будут использоваться для сортировки
+    ordering = ['-period_from', 'person', 'type_trip']
+    # какие поля будут отображаться в списке
+    list_editable = ("type_trip", "cancellation")
+    # сколько строк будут использоваться для постраничного отображения
+    list_per_page = 100
+    # показывать ли пустые значения
+    empty_value_display = '-empty-'
+    # какие поля будут использоваться из других моделей, для уменьшения запросов
+    list_select_related = ('person', 'purpose_trip')
 
 @admin.register(ApprovalOficialMemoProcess)
 class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
@@ -62,6 +98,7 @@ class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
 
     """
     list_display = ("document", "order", "email_send", "cancellation")
+    # какие поля будут использоваться для поиска
     search_fields = (
         "document__title",
         "cancellation",
@@ -70,6 +107,18 @@ class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
         "cancellation",
         "accepted_accounting",
     )
+    # какие поля будут в виде ссылок
+    list_display_links = ("document",)
+    # # какие поля будут использоваться для сортировки
+    ordering = ['-start_date_trip', 'document__person']
+    # какие поля будут отображаться в списке
+    list_editable = ("email_send", "cancellation")
+    # сколько строк будут использоваться для постраничного отображения
+    list_per_page = 100
+    # показывать ли пустые значения
+    empty_value_display = '-empty-'
+    # какие поля будут использоваться из других моделей, для уменьшения запросов
+    list_select_related = ('order',)
 
 
 @admin.register(OrderDescription)
