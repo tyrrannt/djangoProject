@@ -163,9 +163,9 @@ def send_telegram_notify():
     #     except Exception as _ex:
     #         logger.error(f"{_ex}")
     if dt.hour == 23 and dt.minute == 30:
-        get_sick_leave(2023, 1)
+        get_sick_leave(dt.year, 1)
     if dt.hour == 23 and dt.minute == 35:
-        get_sick_leave(2023, 2)
+        get_sick_leave(dt.year, 2)
     if dt.hour == 23 and dt.minute == 40:
         report_card_separator_daily()
     if dt.hour == 23 and dt.minute == 50:
