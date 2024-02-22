@@ -65,6 +65,7 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
+    search_fields = ('title', 'ref_key', 'person_ref_key')
 
 
 admin.site.register(DataBaseUser, CustomUserAdmin)

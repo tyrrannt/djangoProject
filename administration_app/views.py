@@ -21,7 +21,7 @@ from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
-    report_card_separator_daily, vacation_schedule, vacation_check, vacation_schedule_send
+    report_card_separator_daily, vacation_schedule, vacation_check, vacation_schedule_send, get_sick_leave
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
 
@@ -36,58 +36,58 @@ def index(request):
     pass
 
 
-def get_sick_leave(year, triger):
-    """
-    Получение неявок на рабочее место.
-    :param year: Год, за который запрашиваем информацию.
-    :param triger: 1 - больничные, 2 - мед осмотры.
-    :return:
-    """
-    if triger == 1:
-        url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27'
-        triger_type = 'StandardODATA.Document_БольничныйЛист'
-        record_type = '16'
-    if triger == 2:
-        url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27'
-        triger_type = 'StandardODATA.Document_ОплатаПоСреднемуЗаработку'
-        record_type = '17'
-
-    source_url = url
-    try:
-        response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
-        dt = json.loads(response.text)
-        rec_number_count = 0
-        for item in dt['value']:
-            if item['Recorder_Type'] == triger_type and item['Active'] == True:
-                interval = get_date_interval(datetime.datetime.strptime(item['Начало'][:10], "%Y-%m-%d"),
-                                             datetime.datetime.strptime(item['Окончание'][:10], "%Y-%m-%d"))
-                rec_list = ReportCard.objects.filter(doc_ref_key=item['ДокументОснование'])
-                for record in rec_list:
-                    record.delete()
-                try:
-                    user_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
-                    for date in interval:
-                        rec_number_count += 1
-                        start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
-                                                         datetime.datetime(1, 1, 1, 18, 0).time())
-                        kwargs_obj = {
-                            'report_card_day': date,
-                            'employee': user_obj,
-                            'rec_no': rec_number_count,
-                            'doc_ref_key': item['ДокументОснование'],
-                            'record_type': record_type,
-                            'reason_adjustment': 'Запись введена автоматически из 1С ЗУП',
-                            'start_time': start_time,
-                            'end_time': end_time,
-                        }
-                        ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=item['ДокументОснование'],
-                                                            defaults=kwargs_obj)
-                        print(kwargs_obj)
-                except Exception as _ex:
-                    logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
-    except Exception as _ex:
-        logger.debug(f'{_ex}')
-        return {'value': ""}
+# def get_sick_leave(year, triger):
+#     """
+#     Получение неявок на рабочее место.
+#     :param year: Год, за который запрашиваем информацию.
+#     :param triger: 1 - больничные, 2 - мед осмотры.
+#     :return:
+#     """
+#     if triger == 1:
+#         url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27'
+#         triger_type = 'StandardODATA.Document_БольничныйЛист'
+#         record_type = '16'
+#     if triger == 2:
+#         url = f'http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27'
+#         triger_type = 'StandardODATA.Document_ОплатаПоСреднемуЗаработку'
+#         record_type = '17'
+#
+#     source_url = url
+#     try:
+#         response = requests.get(source_url, auth=(config('HRM_LOGIN'), config('HRM_PASS')))
+#         dt = json.loads(response.text)
+#         rec_number_count = 0
+#         for item in dt['value']:
+#             if item['Recorder_Type'] == triger_type and item['Active'] == True:
+#                 interval = get_date_interval(datetime.datetime.strptime(item['Начало'][:10], "%Y-%m-%d"),
+#                                              datetime.datetime.strptime(item['Окончание'][:10], "%Y-%m-%d"))
+#                 rec_list = ReportCard.objects.filter(doc_ref_key=item['ДокументОснование'])
+#                 for record in rec_list:
+#                     record.delete()
+#                 try:
+#                     user_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
+#                     for date in interval:
+#                         rec_number_count += 1
+#                         start_time, end_time = check_day(date, datetime.datetime(1, 1, 1, 9, 30).time(),
+#                                                          datetime.datetime(1, 1, 1, 18, 0).time())
+#                         kwargs_obj = {
+#                             'report_card_day': date,
+#                             'employee': user_obj,
+#                             'rec_no': rec_number_count,
+#                             'doc_ref_key': item['ДокументОснование'],
+#                             'record_type': record_type,
+#                             'reason_adjustment': 'Запись введена автоматически из 1С ЗУП',
+#                             'start_time': start_time,
+#                             'end_time': end_time,
+#                         }
+#                         ReportCard.objects.update_or_create(report_card_day=date, doc_ref_key=item['ДокументОснование'],
+#                                                             defaults=kwargs_obj)
+#                         print(kwargs_obj)
+#                 except Exception as _ex:
+#                     logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
+#     except Exception as _ex:
+#         logger.debug(f'{_ex}')
+#         return {'value': ""}
 
 
 class PortalPropertyList(LoginRequiredMixin, ListView):
@@ -220,7 +220,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '5':
                 get_sick_leave(2024, 1)
                 # report_card_separator_daily(year=2023, month=10, day=30)
-                #vacation_schedule()
+                vacation_schedule()
                 pass
                 # type_of_report = {
                 #     '2': 'Ежегодный',

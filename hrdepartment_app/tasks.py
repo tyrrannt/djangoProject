@@ -819,6 +819,7 @@ def get_sick_leave(year, trigger):
         record_type = "17"
 
     source_url = url
+    print(source_url)
     try:
         response = requests.get(
             source_url, auth=(config("HRM_LOGIN"), config("HRM_PASS"))
@@ -840,6 +841,7 @@ def get_sick_leave(year, trigger):
 
                 try:
                     user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"])
+                    print(user_obj)
                 except Exception as _ex:
                     logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
                 if user_obj != "":
