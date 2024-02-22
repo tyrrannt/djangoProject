@@ -220,7 +220,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '5':
                 get_sick_leave(2024, 1)
                 # report_card_separator_daily(year=2023, month=10, day=30)
-                vacation_schedule()
+                #vacation_schedule()
                 pass
                 # type_of_report = {
                 #     '2': 'Ежегодный',
