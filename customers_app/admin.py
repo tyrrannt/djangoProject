@@ -66,6 +66,7 @@ class CustomUserAdmin(UserAdmin):
         ),
     )
     search_fields = ('title', 'ref_key', 'person_ref_key')
+    ordering = ('last_name', 'first_name')
 
 
 admin.site.register(DataBaseUser, CustomUserAdmin)

@@ -342,7 +342,6 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
             )
             .exclude(username="proxmox")
             .exclude(is_active=False)
-            .order_by("last_name")
         )
         content["form"].fields[
             "place_production_activity"

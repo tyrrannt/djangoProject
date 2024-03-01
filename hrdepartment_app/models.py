@@ -431,6 +431,8 @@ class OfficialMemo(models.Model):
     class Meta:
         verbose_name = "Служебная записка"
         verbose_name_plural = "Служебные записки"
+        ordering = ["-date_of_creation"]
+
 
     type_of_accommodation = [("1", "Квартира"), ("2", "Гостиница")]
 
