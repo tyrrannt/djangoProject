@@ -2353,4 +2353,3 @@ def rename_file_name_guidance_documents(sender, instance, **kwargs):
             instance.save()
     except Exception as _ex:
         logger.error(f"Ошибка при переименовании файла {_ex}")
-

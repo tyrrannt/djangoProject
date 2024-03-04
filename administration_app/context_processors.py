@@ -69,6 +69,24 @@ def get_all_contracts(request):
 def get_approval_oficial_memo_process(request):
     if not request.user.is_anonymous:
         try:
+            person_executor, person_agreement, clerk, person_hr = list(), list(), list(), list()
+            business_process = BusinessProcessDirection.objects.all().values_list('person_executor', 'person_agreement', 'clerk', 'person_hr')
+            print(business_process, request.user.user_work_profile.job.pk)
+            for item in business_process:
+                person_executor.append(item[0])
+                person_agreement.append(item[1])
+                clerk.append(item[2])
+                person_hr.append(item[3])
+            if request.user.user_work_profile.job.pk in person_executor:
+
+                print(person_executor)
+            if request.user.user_work_profile.job.pk in person_agreement:
+                print(person_agreement)
+            if request.user.user_work_profile.job.pk in clerk:
+                print(clerk)
+            if request.user.user_work_profile.job.pk in person_hr:
+                print(person_hr)
+
             business_process_direction_list = BusinessProcessDirection.objects.filter(
                 person_agreement=request.user.user_work_profile.job
             )
@@ -177,6 +195,27 @@ def get_approval_oficial_memo_process(request):
                 .exclude(cancellation=True)
                 .exclude(document__official_memo_type="2")
             )
+
+            kwargs = {
+                "person_agreement": person_agreement,
+                "document_not_agreed": person_agreement.count(),
+                "clerk": clerk_list,
+                "originals_received": clerk,
+                "originals_received_count": clerk.count(),
+                "person_distributor": person_distributor,
+                "location_selected": location_selected,
+                "location_selected_count": location_selected.count,
+                "person_department_staff": person_department_staff,
+                "process_accepted": process_accepted,
+                "process_accepted_count": process_accepted.count,
+                "person_hr": person_hr,
+                "hr_accepted": hr_accepted,
+                "hr_accepted_count": hr_accepted.count,
+                "accounting": accounting,
+                "accounting_accepted": accounting_accepted,
+                "accounting_accepted_count": accounting_accepted.count,
+            }
+            print(kwargs)
 
             return {
                 "person_agreement": person_agreement,
