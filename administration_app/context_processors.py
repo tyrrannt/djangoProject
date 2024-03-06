@@ -78,7 +78,6 @@ def get_approval_oficial_memo_process(request):
                 clerk.append(item[2])
                 person_hr.append(item[3])
             if request.user.user_work_profile.job.pk in person_executor:
-
                 print(person_executor)
             if request.user.user_work_profile.job.pk in person_agreement:
                 print(person_agreement)
