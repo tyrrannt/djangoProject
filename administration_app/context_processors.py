@@ -12,6 +12,7 @@ from hrdepartment_app.models import (
 )
 from loguru import logger
 
+
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
 #            serialize=config('LOG_SERIALIZE'))
@@ -66,174 +67,111 @@ def get_all_contracts(request):
     }
 
 
+def make_list(n):
+    for _ in range(n):
+        yield []  # empty list
+
+
 def get_approval_oficial_memo_process(request):
     if not request.user.is_anonymous:
         try:
-            person_executor, person_agreement, clerk, person_hr = list(), list(), list(), list()
-            business_process = BusinessProcessDirection.objects.all().values_list('person_executor', 'person_agreement', 'clerk', 'person_hr')
-            print(business_process, request.user.user_work_profile.job.pk)
+            person_executor, person_agreement, person_clerk, person_hr, person_distributor, person_accounting = make_list(6)
+            executor, agreement, clerk, hr, distributor, accounting, hr_accepted = make_list(7)
+            business_process = BusinessProcessDirection.objects.all().values_list('person_executor', 'person_agreement',
+                                                                                  'clerk', 'person_hr')
             for item in business_process:
-                person_executor.append(item[0])
-                person_agreement.append(item[1])
-                clerk.append(item[2])
-                person_hr.append(item[3])
+                person_executor.append(item[0])  # Получаем список исполнителей
+                person_agreement.append(item[1])  # Получаем список согласователей
+                person_clerk.append(item[2])  # Получаем список делопроизводителей
+                person_hr.append(item[3])  # Получаем список сотрудников ОК
+
+            for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=1)
+                                                    & Q(user_work_profile__job__right_to_approval=True)).values('pk'):
+                person_distributor.append(item['pk'])  # Получаем список сотрудников НО
+
+            for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=3)
+                                                    & Q(user_work_profile__job__right_to_approval=True)).values('pk'):
+                person_accounting.append(item['pk'])  # Получаем список сотрудников бухгалтерии
+
             if request.user.user_work_profile.job.pk in person_executor:
-                print(person_executor)
+                pass  # Если пользователь является исполнителем
+
             if request.user.user_work_profile.job.pk in person_agreement:
-                print(person_agreement)
-            if request.user.user_work_profile.job.pk in clerk:
-                print(clerk)
+                # Если пользователь является согласователем
+                agreement = ApprovalOficialMemoProcess.objects.filter(
+                    Q(person_agreement__user_work_profile__job__pk__in=person_agreement) &
+                    Q(document_not_agreed=False)
+                ).exclude(cancellation=True)
+
+            if request.user.pk in person_distributor:
+                # Получение списка сотрудников НО
+                distributor = (
+                    ApprovalOficialMemoProcess.objects.filter(
+                        Q(location_selected=False) & Q(document_not_agreed=True)
+                    )
+                    .exclude(cancellation=True)
+                    .exclude(document__official_memo_type="3")
+                )
+
+            if request.user.user_work_profile.job.pk in person_clerk:
+                # Если пользователь является делопроизводителем
+                clerk = (
+                    ApprovalOficialMemoProcess.objects.filter(
+                        Q(person_clerk__user_work_profile__job__pk__in=person_clerk)
+                        & Q(originals_received=False)
+                        & Q(process_accepted=True)
+                    )
+                    .exclude(cancellation=True)
+                    .exclude(document__official_memo_type="2")
+                )
+
             if request.user.user_work_profile.job.pk in person_hr:
-                print(person_hr)
+                # Если пользователь является HR
+                hr = (
+                    ApprovalOficialMemoProcess.objects.filter(
+                        Q(process_accepted=False) & Q(location_selected=True)
+                    )
+                    .exclude(cancellation=True)
+                    .exclude(document__official_memo_type="3")
+                )
+                hr_accepted = (
+                    ApprovalOficialMemoProcess.objects.filter(
+                        Q(hr_accepted=False)
+                        & Q(originals_received=True)
+                        & Q(date_transfer_hr__isnull=False)
+                    )
+                    .exclude(cancellation=True)
+                    .exclude(document__official_memo_type="2")
+                )
 
-            business_process_direction_list = BusinessProcessDirection.objects.filter(
-                person_agreement=request.user.user_work_profile.job
-            )
-            person_executor_job_list = list()
-            for item in business_process_direction_list:
-                person_executor_job_list += [
-                    items[0] for items in item.person_executor.values_list()
-                ]
-            # print(person_executor_job_list)
-            business_process_direction_list = BusinessProcessDirection.objects.filter(
-                clerk=request.user.user_work_profile.job
-            )
-            clerk_job_list_set = list()
-            clerk_job_list_executor_set = list()
-            for item in business_process_direction_list:
-                clerk_job_list_set += [items[0] for items in item.clerk.values_list()]
-                clerk_job_list_executor_set += [
-                    items[0] for items in item.person_executor.values_list()
-                ]
-            clerk_job_list = set(clerk_job_list_set)
-            clerk_job_list_executor = set(clerk_job_list_executor_set)
-            # Выбор согласующих лиц
-            person_executor_list = list()
-            for item in DataBaseUser.objects.filter(
-                user_work_profile__job__in=person_executor_job_list
-            ):
-                person_executor_list.append(item)
-            person_agreement = ApprovalOficialMemoProcess.objects.filter(
-                Q(person_executor__in=person_executor_list)
-                & Q(document_not_agreed=False)
-            ).exclude(cancellation=True)
-
-            # Получение списка сотрудников НО
-            person_distributor_list = DataBaseUser.objects.filter(
-                Q(user_work_profile__divisions__type_of_role=1)
-                & Q(user_work_profile__job__right_to_approval=True)
-            )
-            person_distributor = [item for item in person_distributor_list]
-            location_selected = (
-                ApprovalOficialMemoProcess.objects.filter(
-                    Q(location_selected=False) & Q(document_not_agreed=True)
+            if request.user.pk in person_accounting:
+                # Получение списка сотрудников бухгалтерии
+                accounting = (
+                    ApprovalOficialMemoProcess.objects.filter(
+                        Q(accepted_accounting=False) & Q(hr_accepted=True)
+                    )
+                    .exclude(cancellation=True)
+                    .exclude(document__official_memo_type="2")
                 )
-                .exclude(cancellation=True)
-                .exclude(document__official_memo_type="3")
-            )
-            # Получение списка сотрудников ОК
-            person_department_staff_list = DataBaseUser.objects.filter(
-                Q(user_work_profile__divisions__type_of_role=2)
-                & Q(user_work_profile__job__right_to_approval=True)
-            )
-            person_department_staff = [item for item in person_department_staff_list]
-            process_accepted = (
-                ApprovalOficialMemoProcess.objects.filter(
-                    Q(process_accepted=False) & Q(location_selected=True)
-                )
-                .exclude(cancellation=True)
-                .exclude(document__official_memo_type="3")
-            )
-            # Выбор делопроизводителя
-            clerk_list = [
-                item
-                for item in DataBaseUser.objects.filter(
-                    user_work_profile__job__in=clerk_job_list
-                )
-            ]
-            clerk_list_executor = [
-                item
-                for item in DataBaseUser.objects.filter(
-                    user_work_profile__job__in=clerk_job_list_executor
-                )
-            ]
-            clerk = (
-                ApprovalOficialMemoProcess.objects.filter(
-                    Q(person_executor__in=clerk_list_executor)
-                    & Q(originals_received=False)
-                    & Q(process_accepted=True)
-                )
-                .exclude(cancellation=True)
-                .exclude(document__official_memo_type="2")
-            )
-            # Получение списка сотрудников ОК 2
-            person_hr_list = DataBaseUser.objects.filter(
-                Q(user_work_profile__divisions__type_of_role=2)
-                & Q(user_work_profile__job__right_to_approval=True)
-            )
-            person_hr = [item for item in person_hr_list]
-            hr_accepted = (
-                ApprovalOficialMemoProcess.objects.filter(
-                    Q(hr_accepted=False)
-                    & Q(originals_received=True)
-                    & Q(date_transfer_hr__isnull=False)
-                )
-                .exclude(cancellation=True)
-                .exclude(document__official_memo_type="2")
-            )
-            # Получение списка сотрудников ОК 2
-            accounting_list = DataBaseUser.objects.filter(
-                Q(user_work_profile__divisions__type_of_role=3)
-                & Q(user_work_profile__job__right_to_approval=True)
-            )
-            accounting = [item for item in accounting_list]
-            accounting_accepted = (
-                ApprovalOficialMemoProcess.objects.filter(
-                    Q(accepted_accounting=False) & Q(hr_accepted=True)
-                )
-                .exclude(cancellation=True)
-                .exclude(document__official_memo_type="2")
-            )
-
-            kwargs = {
-                "person_agreement": person_agreement,
-                "document_not_agreed": person_agreement.count(),
-                "clerk": clerk_list,
-                "originals_received": clerk,
-                "originals_received_count": clerk.count(),
-                "person_distributor": person_distributor,
-                "location_selected": location_selected,
-                "location_selected_count": location_selected.count,
-                "person_department_staff": person_department_staff,
-                "process_accepted": process_accepted,
-                "process_accepted_count": process_accepted.count,
-                "person_hr": person_hr,
-                "hr_accepted": hr_accepted,
-                "hr_accepted_count": hr_accepted.count,
-                "accounting": accounting,
-                "accounting_accepted": accounting_accepted,
-                "accounting_accepted_count": accounting_accepted.count,
-            }
-            print(kwargs)
 
             return {
-                "person_agreement": person_agreement,
-                "document_not_agreed": person_agreement.count(),
-                "clerk": clerk_list,
+                "person_agreement": agreement,
+                "document_not_agreed": agreement.count(),
+                "clerk": person_clerk,
                 "originals_received": clerk,
                 "originals_received_count": clerk.count(),
                 "person_distributor": person_distributor,
-                "location_selected": location_selected,
-                "location_selected_count": location_selected.count,
-                "person_department_staff": person_department_staff,
-                "process_accepted": process_accepted,
-                "process_accepted_count": process_accepted.count,
+                "location_selected": distributor,
+                "location_selected_count": distributor.count,
+                "person_department_staff": person_hr,
+                "process_accepted": hr,
+                "process_accepted_count": hr.count,
                 "person_hr": person_hr,
                 "hr_accepted": hr_accepted,
                 "hr_accepted_count": hr_accepted.count,
-                "accounting": accounting,
-                "accounting_accepted": accounting_accepted,
-                "accounting_accepted_count": accounting_accepted.count,
+                "accounting": person_accounting,
+                "accounting_accepted": accounting,
+                "accounting_accepted_count": accounting.count,
             }
         except Exception as _ex:
             logger.exception(_ex)

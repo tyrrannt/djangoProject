@@ -996,7 +996,7 @@ class ApprovalOficialMemoProcessUpdate(
         list_distributor = users_list.filter(
             Q(user_work_profile__divisions__type_of_role="1")
             & Q(user_work_profile__job__right_to_approval=True)
-            & Q(is_superuser=False)
+            # & Q(is_superuser=False)
         )
 
         content["form"].fields["person_distributor"].queryset = list_distributor

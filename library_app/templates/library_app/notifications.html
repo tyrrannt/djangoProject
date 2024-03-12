@@ -154,7 +154,7 @@
         </div>
     </li>
     {#Оповещение о новом БП на служебную записку#}
-    {% if user in person_distributor %}
+    {% if user.pk in person_distributor %}
         <li>
             {% if location_selected_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -268,7 +268,7 @@
         </li>
     {% endif %}
     {#Оповещение о новом БП на служебную записку#}
-    {% if user in clerk %}
+    {% if user.pk in person_clerk %}
         <li>
             {% if originals_received_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">

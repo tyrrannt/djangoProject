@@ -65,7 +65,8 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
-    search_fields = ('title', 'ref_key', 'person_ref_key')
+    list_display = ("pk", "username", "first_name", "last_name", "surname", "birthday", "email", "is_active")
+    search_fields = ('pk','title', 'ref_key', 'person_ref_key')
     ordering = ('last_name', 'first_name')
 
 
