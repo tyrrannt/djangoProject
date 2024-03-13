@@ -25,8 +25,11 @@ def empty_item(string):
 def FIO_format(value):
     string_obj = str(value)
     list_obj = string_obj.split(" ")
-    result = f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
-    return result
+    match len(list_obj):
+        case 0: return ""
+        case 1: return list_obj[0]
+        case 2: return f"{list_obj[0]} {list_obj[1][:1]}."
+        case 3: return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
 
 
 @register.simple_tag()

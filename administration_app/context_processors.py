@@ -29,8 +29,8 @@ def get_all_contracts(request):
         Q(allowed_placed=True),
         Q(type_of_document__type_document="Договор"),
     ).count()
-    all_prolongation = Contract.type_of_prolongation
-    all_access = AccessLevel.objects.all()
+    # all_prolongation = Contract.type_of_prolongation
+    # all_access = AccessLevel.objects.all()
     if not request.user.is_anonymous:
         try:
             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False))
@@ -53,14 +53,13 @@ def get_all_contracts(request):
     # contracts_not_published_count = 0
     posts_not_published = Posts.objects.filter(allowed_placed=False)
     posts_not_published_count = Posts.objects.filter(allowed_placed=False).count()
-
     return {
-        "prolongation": all_prolongation,
+        # "prolongation": all_prolongation,
         "contracts_count": contracts_count,
         "contracts_not_published": contracts_not_published,
         "posts_not_published": posts_not_published,
         "contracts_not_published_count": contracts_not_published_count,
-        "access": all_access,
+        # "access": all_access,
         "documents_not_published": documents_not_published,
         "documents_not_published_count": documents_not_published_count,
         "posts_not_published_count": posts_not_published_count,

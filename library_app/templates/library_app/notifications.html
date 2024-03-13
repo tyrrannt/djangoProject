@@ -122,7 +122,7 @@
     <li>
         {% if document_not_agreed != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                <i class='bx bx-user-pin'></i>
+                <i class='bx bx-select-multiple' ></i>
                 <span class="badge">{{ document_not_agreed }}</span>
             </a>
         {% endif %}
@@ -160,7 +160,7 @@
         <li>
             {% if location_selected_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-user-pin'></i>
+                    <i class='bx bx-hotel'></i>
                     <span class="badge">{{ location_selected_count }}</span>
                 </a>
             {% endif %}
@@ -236,7 +236,7 @@
         <li>
             {% if hr_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-notepad'></i>
+                    <i class='bx bx-pencil' ></i>
                     <span class="badge">{{ hr_accepted_count }}</span>
                 </a>
             {% endif %}
@@ -312,7 +312,7 @@
         <li>
             {% if accounting_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-notepad'></i>
+                    <i class='bx bx-check-shield' ></i>
                     <span class="badge">{{ accounting_accepted_count }}</span>
                 </a>
             {% endif %}
