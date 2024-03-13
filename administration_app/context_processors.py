@@ -98,7 +98,7 @@ def get_approval_oficial_memo_process(request):
             if request.user.user_work_profile.job.pk in person_agreement:
                 # Если пользователь является согласователем
                 agreement = ApprovalOficialMemoProcess.objects.filter(
-                    Q(person_agreement__user_work_profile__job__pk__in=person_agreement) &
+                    Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job) &
                     Q(document_not_agreed=False)
                 ).exclude(cancellation=True)
 
