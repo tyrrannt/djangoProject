@@ -156,22 +156,22 @@ def get_approval_oficial_memo_process(request):
 
             return {
                 "person_agreement": agreement,
-                "document_not_agreed": agreement.count(),
+                "document_not_agreed": agreement.count() if agreement else 0,
                 "clerk": person_clerk,
                 "originals_received": clerk,
-                "originals_received_count": clerk.count(),
+                "originals_received_count": clerk.count() if clerk else 0,
                 "person_distributor": person_distributor,
                 "location_selected": distributor,
-                "location_selected_count": distributor.count,
+                "location_selected_count": distributor.count if distributor else 0,
                 "person_department_staff": person_hr,
                 "process_accepted": hr,
-                "process_accepted_count": hr.count,
+                "process_accepted_count": hr.count if hr else 0,
                 "person_hr": person_hr,
                 "hr_accepted": hr_accepted,
-                "hr_accepted_count": hr_accepted.count,
+                "hr_accepted_count": hr_accepted.count if hr_accepted else 0,
                 "accounting": person_accounting,
                 "accounting_accepted": accounting,
-                "accounting_accepted_count": accounting.count,
+                "accounting_accepted_count": accounting.count if accounting else 0,
             }
         except Exception as _ex:
             logger.exception(_ex)
