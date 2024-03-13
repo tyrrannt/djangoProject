@@ -117,7 +117,7 @@ def get_approval_oficial_memo_process(request):
                 # Если пользователь является делопроизводителем
                 clerk = (
                     ApprovalOficialMemoProcess.objects.filter(
-                        Q(person_clerk__user_work_profile__job__type_of_role=request.user.user_work_profile.job.type_of_role) &
+                        Q(person_clerk__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job) &
                         Q(originals_received=False)
                         & Q(process_accepted=True)
                     )
