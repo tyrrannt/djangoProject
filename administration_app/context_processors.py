@@ -155,7 +155,8 @@ def get_approval_oficial_memo_process(request):
                 )
 
             return {
-                "person_agreement": agreement,
+                "person_agreement": person_agreement,
+                "document_agreement": agreement,
                 "document_not_agreed": agreement.count() if agreement else 0,
                 "clerk": person_clerk,
                 "originals_received": clerk,

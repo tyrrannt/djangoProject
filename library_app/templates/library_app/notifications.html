@@ -133,7 +133,7 @@
             </div>
             <div class="content" id="wrapper">
                 <ul>
-                    {% for item in person_agreement %}
+                    {% for item in document_agreement %}
                         <li>
                             <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
                                 <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
@@ -156,7 +156,7 @@
     </li>
     {% endif %}
     {#Оповещение о новом БП на служебную записку#}
-    {% if user.user_work_profile.job.pk in person_distributor %}
+    {% if user.pk in person_distributor %}
         <li>
             {% if location_selected_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
