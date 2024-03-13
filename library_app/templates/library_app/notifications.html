@@ -118,6 +118,7 @@
         </div>
     </li>
     {#Оповещение о новом БП на служебную записку#}
+    {% if user.user_work_profile.job.pk in person_agreement %}
     <li>
         {% if document_not_agreed != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -128,7 +129,7 @@
         <div class="dropdown-menu notification-menu">
             <div class="notification-title">
                 <span class="float-end badge badge-default">{{ document_not_agreed }}</span>
-                Служебные записки
+                Согласование
             </div>
             <div class="content" id="wrapper">
                 <ul>
@@ -153,8 +154,9 @@
             </div>
         </div>
     </li>
+    {% endif %}
     {#Оповещение о новом БП на служебную записку#}
-    {% if user.pk in person_distributor %}
+    {% if user.user_work_profile.job.pk in person_distributor %}
         <li>
             {% if location_selected_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -165,7 +167,7 @@
             <div class="dropdown-menu notification-menu">
                 <div class="notification-title">
                     <span class="float-end badge badge-default">{{ location_selected_count }}</span>
-                    Служебные записки
+                    Место проживания
                 </div>
                 <div class="content" id="wrapper">
                     <ul>
@@ -192,7 +194,7 @@
         </li>
     {% endif %}
     {#Оповещение о новом БП на служебную записку#}
-    {% if user in person_department_staff %}
+    {% if user.user_work_profile.job.pk in person_department_staff %}
         <li>
             {% if process_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -203,7 +205,7 @@
             <div class="dropdown-menu notification-menu">
                 <div class="notification-title">
                     <span class="float-end badge badge-default">{{ process_accepted_count }}</span>
-                    Служебные записки
+                    Приказ
                 </div>
                 <div class="content" id="wrapper">
                     <ul>
@@ -230,7 +232,7 @@
         </li>
     {% endif %}
     {#Оповещение о новом БП на служебную записку#}
-    {% if user in person_hr %}
+    {% if user.user_work_profile.job.pk in person_hr %}
         <li>
             {% if hr_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -241,7 +243,7 @@
             <div class="dropdown-menu notification-menu">
                 <div class="notification-title">
                     <span class="float-end badge badge-default">{{ hr_accepted_count }}</span>
-                    Оригиналы
+                    Проверка
                 </div>
                 <div class="content" id="wrapper">
                     <ul>
@@ -268,7 +270,7 @@
         </li>
     {% endif %}
     {#Оповещение о новом БП на служебную записку#}
-    {% if user.pk in person_clerk %}
+    {% if user.user_work_profile.job.pk in clerk %}
         <li>
             {% if originals_received_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -306,7 +308,7 @@
         </li>
     {% endif %}
     {#Оповещение бухгалтерии о новом БП на служебную записку#}
-    {% if user in accounting %}
+    {% if user.pk in accounting %}
         <li>
             {% if accounting_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -317,7 +319,7 @@
             <div class="dropdown-menu notification-menu">
                 <div class="notification-title">
                     <span class="float-end badge badge-default">{{ accounting_accepted_count }}</span>
-                    Оригиналы
+                    Авансовый отчет
                 </div>
                 <div class="content" id="wrapper">
                     <ul>
