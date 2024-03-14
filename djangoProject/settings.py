@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "customers_app.apps.CustomersAppConfig",
     "contracts_app.apps.ContractsAppConfig",
     "hrdepartment_app.apps.HrdepartmentAppConfig",
+    "logistics_app.apps.LogisticsAppConfig",
     "telegram_app.apps.TelegramAppConfig",
     "widget_tweaks",
     "django_ckeditor_5",
