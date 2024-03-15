@@ -492,7 +492,7 @@ def ending_day(value: int) -> str:
         return f"{value} дня"
 
 
-def format_name_initials(value, obj=None):
+def format_name_initials(value: str, obj=None) -> str:
     """
     Форматирование ФИО человека, до вида Фамилия И.О.
     :param value: Строка с ФИО
