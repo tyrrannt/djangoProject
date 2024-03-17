@@ -199,8 +199,7 @@ def send_message_tg():
             item.sending_counter -= 1
             item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
             item.save()
-        bot.stop_bot()
-        bot.close()
+
     except Exception as _ex:
         result.append(f"Ошибка telegram бота: {_ex}")
     return result
