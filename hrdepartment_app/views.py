@@ -335,14 +335,18 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         # Выбираем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         user_job = self.request.user
-
-        content["form"].fields["person"].queryset = (
-            DataBaseUser.objects.filter(
-                user_work_profile__job__division_affiliation__pk=user_job.user_work_profile.job.division_affiliation.pk
+        if user_job.user_work_profile.divisions.type_of_role == 2:
+            content["form"].fields["person"].queryset = (
+                DataBaseUser.objects.filter(is_active=True).exclude(username="proxmox")
             )
-            .exclude(username="proxmox")
-            .exclude(is_active=False)
-        )
+        else:
+            content["form"].fields["person"].queryset = (
+                DataBaseUser.objects.filter(
+                    user_work_profile__job__division_affiliation__pk=user_job.user_work_profile.job.division_affiliation.pk
+                )
+                .exclude(username="proxmox")
+                .exclude(is_active=False)
+            )
         content["form"].fields[
             "place_production_activity"
         ].queryset = PlaceProductionActivity.objects.all()
