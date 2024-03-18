@@ -335,7 +335,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         # Выбираем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
         # content['form'].fields['person'].queryset = DataBaseUser.objects.all().exclude(pk__in=users_list).exclude(is_superuser=True)
         user_job = self.request.user
-        if user_job.user_work_profile.divisions.type_of_role == 2:
+        if self.request.user.user_work_profile.divisions.type_of_role == 2:
             content["form"].fields["person"].queryset = (
                 DataBaseUser.objects.filter(is_active=True).exclude(username="proxmox")
             )
