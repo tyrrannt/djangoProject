@@ -694,6 +694,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     """
     Бизнес-процесс служебной записки
     """
+    class Meta:
+        ordering = ["document__period_from"]
 
     type_of = [("1", "Квартира"), ("2", "Гостиница")]
     # ref_key = models.CharField(default=uuid.uuid4, max_length=37, null=True, blank=True)

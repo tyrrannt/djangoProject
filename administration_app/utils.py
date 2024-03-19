@@ -499,12 +499,14 @@ def format_name_initials(value: str, obj=None) -> str:
     :param obj: принимает объект, чтоб в результате ошибки вывести в логах, где произошла ошибка
     :return: возвращает форматированную строку
     """
-    if not value:
-        return ""
-
     try:
-        parts = str(value).split(" ")
-        return f"{parts[0]} {parts[1][0]}.{parts[2][0]}."
+        string_obj = str(value)
+        list_obj = string_obj.split(" ")
+        match len(list_obj):
+            case 0: return ""
+            case 1: return list_obj[0]
+            case 2: return f"{list_obj[0]} {list_obj[1][:1]}."
+            case 3: return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
     except Exception as _ex:
         logger.error(
             f"Error while formatting name. Value: {value}; Document: {obj}; Error: {_ex}"

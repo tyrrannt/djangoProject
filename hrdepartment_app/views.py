@@ -782,9 +782,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         return super(OfficialMemoUpdate, self).get(request, *args, **kwargs)
 
 
-class ApprovalOficialMemoProcessList(
-    PermissionRequiredMixin, LoginRequiredMixin, ListView
-):
+class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
     permission_required = "hrdepartment_app.view_approvaloficialmemoprocess"
 
@@ -800,32 +798,23 @@ class ApprovalOficialMemoProcessList(
                 | Q(person_distributor__user_work_profile__divisions=user_division)
                 | Q(person_executor__user_work_profile__divisions=user_division)
                 | Q(person_department_staff__user_work_profile__divisions=user_division)
-            ).order_by("pk")
+            )
         return qs
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        id_all = request.GET.get("id_all", None)
+        # Подготавливаем запросную строку
+        query = Q()
+        if id_all != 'true':
+            query &= Q(cancellation=False)
+            query &= Q(accepted_accounting=False)
+        if (not request.user.is_superuser or request.user.user_work_profile.job.division_affiliation.pk != 1):
+            query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
+                       request.user.user_work_profile.job.division_affiliation.pk)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            if (
-                    request.user.is_superuser
-                    or request.user.user_work_profile.job.division_affiliation.pk == 1
-            ):
-                approvalmemo_list = (
-                    ApprovalOficialMemoProcess.objects.all()
-                    .order_by("document__period_from")
-                    .reverse()
-                )
-            else:
-                approvalmemo_list = (
-                    ApprovalOficialMemoProcess.objects.filter(
-                        person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk
-                    )
-                    .order_by("document__period_from")
-                    .reverse()
-                )
-            data = [
-                approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list
-            ]
+            approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(query)
+            data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
             response = {"data": data}
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
@@ -2074,7 +2063,8 @@ class DocumentsOrderList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                 )
             else:
                 documents_order_list = (
-                    DocumentsOrder.objects.filter(Q(cancellation=False) & Q(validity_period_end__gte=datetime.datetime.now()))
+                    DocumentsOrder.objects.filter(
+                        Q(cancellation=False) & Q(validity_period_end__gte=datetime.datetime.now()))
                 )
 
             data = [
