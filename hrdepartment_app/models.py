@@ -433,7 +433,6 @@ class OfficialMemo(models.Model):
         verbose_name_plural = "Служебные записки"
         ordering = ["-date_of_creation"]
 
-
     type_of_accommodation = [("1", "Квартира"), ("2", "Гостиница")]
 
     type_of_trip = [("1", "Служебная поездка"), ("2", "Командировка")]
@@ -694,8 +693,11 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     """
     Бизнес-процесс служебной записки
     """
+
     class Meta:
-        ordering = ["document__period_from"]
+        verbose_name = "Служебная записка по служебной поездке"
+        verbose_name_plural = "Служебные записки по служебным поездкам"
+        ordering = ["-document__period_from"]
 
     type_of = [("1", "Квартира"), ("2", "Гостиница")]
     # ref_key = models.CharField(default=uuid.uuid4, max_length=37, null=True, blank=True)
@@ -766,10 +768,6 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         max_digits=10,
         decimal_places=2,
     )
-
-    class Meta:
-        verbose_name = "Служебная записка по служебной поездке"
-        verbose_name_plural = "Служебные записки по служебным поездкам"
 
     def __init__(self, *args, **kwargs):
         super(ApprovalOficialMemoProcess, self).__init__(*args, **kwargs)
@@ -1917,7 +1915,8 @@ class ProductionCalendar(models.Model):
         preholiday_time = 0
         preholiday_day_count = 0
 
-        preholiday_day = PreHolidayDay.objects.filter(preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
+        preholiday_day = PreHolidayDay.objects.filter(
+            preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
         for item in preholiday_day:
             preholiday_day_count += 1
             if item.preholiday_day.weekday() == 4:
@@ -1927,7 +1926,7 @@ class ProductionCalendar(models.Model):
         return (
                 (self.number_working_days * 8)
                 + (self.number_working_days / 2)
-                - self.get_friday_count() - (preholiday_day_count*8.5 - preholiday_time)
+                - self.get_friday_count() - (preholiday_day_count * 8.5 - preholiday_time)
         )
 
     def __str__(self):
