@@ -24,6 +24,8 @@ class WayBill(models.Model):
     document_date = models.DateField(verbose_name="Дата документа")
     executor = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Исполнитель",
                                  on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_executor")
+    responsible = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Получение",
+                                 on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_responsible")
     date_of_creation = models.DateField(verbose_name="Дата и время создания",
                                         auto_now_add=True)  # При миграции указать 1 и вставить timezone.now()
     place_of_departure = models.ForeignKey(PlaceProductionActivity, verbose_name="Куда",
@@ -33,6 +35,7 @@ class WayBill(models.Model):
                                        null=True, blank=True)
     comment = models.TextField(verbose_name="Комментарий", blank=True, null=True)
     state = models.CharField(max_length=100, verbose_name="Состояние", choices=STATES, default=0)
+
 
     def __str__(self):
         return self.document_number

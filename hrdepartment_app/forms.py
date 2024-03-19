@@ -814,6 +814,7 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
         self.fields["description"].widget.attrs.update(
             {"class": "form-control django_ckeditor_5"}
         )
+        # self.fields["document_name"].widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
         self.fields["description"].required = False
         self.fields["document_foundation"].queryset = (
             OfficialMemo.objects.filter(

@@ -2059,21 +2059,29 @@ class DocumentsOrderList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = DocumentsOrder
     permission_required = "hrdepartment_app.view_documentsorder"
 
-    def get_queryset(self):
-        return DocumentsOrder.objects.filter(Q(allowed_placed=True))
+    # def get_queryset(self):
+    #     qs = super().get_queryset().filter(allowed_placed=True)
+    #     print(qs)
+    #     return DocumentsOrder.objects.filter(Q(allowed_placed=True))
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        cancellation = request.GET.get("cancellation", None)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            documents_order_list = (
-                DocumentsOrder.objects.all().order_by("document_date").reverse()
-            )
+            if cancellation == "true":
+                documents_order_list = (
+                    DocumentsOrder.objects.all()
+                )
+            else:
+                documents_order_list = (
+                    DocumentsOrder.objects.filter(Q(cancellation=False) & Q(validity_period_end__gte=datetime.datetime.now()))
+                )
+
             data = [
                 documents_order_item.get_data()
                 for documents_order_item in documents_order_list
             ]
             response = {"data": data}
-            # report_card_separator()
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 

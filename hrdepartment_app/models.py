@@ -1423,7 +1423,7 @@ class DocumentsOrder(Documents):
     class Meta:
         verbose_name = "Приказ"
         verbose_name_plural = "Приказы"
-        # default_related_name = 'order'
+        ordering = ["-document_date"]
 
     document_name = models.ForeignKey(
         OrderDescription,
@@ -1433,7 +1433,6 @@ class DocumentsOrder(Documents):
         blank=True,
         default=None,
     )
-    # doc_name = models.ForeignKey(OrderDescription, verbose_name='Наименование документа', on_delete=models.SET_NULL, null=True, default=1)
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=ord_directory_path, blank=True
     )
