@@ -841,9 +841,10 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
                 query &= Q(cancellation=False)
                 query &= Q(accepted_accounting=False)
 
-        if (not request.user.is_superuser or request.user.user_work_profile.job.division_affiliation.pk != 1):
-            query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
-                       request.user.user_work_profile.job.division_affiliation.pk)
+        if not request.user.is_superuser:
+            if request.user.user_work_profile.job.division_affiliation.pk != 1:
+                query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
+                           request.user.user_work_profile.job.division_affiliation.pk)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(query)
             data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
