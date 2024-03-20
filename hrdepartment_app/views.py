@@ -821,6 +821,7 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
                 query &= Q(process_accepted=False)
             case "4":
                 query &= Q(cancellation=False)
+                query &= ~Q(document__official_memo_type=2)  # ~Q это отрицание, т.е. исключение
                 query &= Q(process_accepted=True)
                 query &= Q(originals_received=False)
             case "5":
