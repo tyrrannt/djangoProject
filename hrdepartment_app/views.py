@@ -806,9 +806,32 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
         id_all = request.GET.get("id_all", None)
         # Подготавливаем запросную строку
         query = Q()
-        if id_all != 'true':
-            query &= Q(cancellation=False)
-            query &= Q(accepted_accounting=False)
+        match id_all:
+            case "1":
+                query &= Q(document_not_agreed=False)
+            case "2":
+                query &= Q(document_not_agreed=True)
+                query &= Q(location_selected=False)
+            case "3":
+                query &= Q(location_selected=True)
+                query &= Q(process_accepted=False)
+            case "4":
+                query &= Q(process_accepted=True)
+                query &= Q(originals_received=False)
+            case "5":
+                query &= Q(originals_received=True)
+                query &= Q(hr_accepted=False)
+            case "6":
+                query &= Q(hr_accepted=True)
+                query &= Q(accepted_accounting=False)
+            case "7":
+                query &= Q(accepted_accounting=True)
+            case "8":
+                pass
+            case _:
+                query &= Q(cancellation=False)
+                query &= Q(accepted_accounting=False)
+
         if (not request.user.is_superuser or request.user.user_work_profile.job.division_affiliation.pk != 1):
             query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
                        request.user.user_work_profile.job.division_affiliation.pk)
