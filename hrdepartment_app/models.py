@@ -25,6 +25,7 @@ from administration_app.utils import (
     timedelta_to_time,
     change_approval_status,
 )
+from contracts_app.models import CompanyProperty
 from customers_app.models import (
     DataBaseUser,
     Counteragent,
@@ -1635,6 +1636,129 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
                 scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
             )
 
+class CreatingTeam(models.Model):
+    class Meta:
+        verbose_name = "Создание бригады"
+        verbose_name_plural = "Создание бригад"
+
+    senior_brigade = models.ForeignKey(DataBaseUser, verbose_name="Старший бригады", on_delete=models.SET_NULL,
+                                       null=True, related_name='senior_brigade')
+    team_brigade = models.ManyToManyField(DataBaseUser, verbose_name="Состав бригады", related_name='team_brigade')
+    executor_person = models.ForeignKey(DataBaseUser, verbose_name="Исполнитель", on_delete=models.SET_NULL,
+                                        null=True, related_name='executor_person')
+    approving_person = models.ForeignKey(DataBaseUser, verbose_name="Согласующее лицо", on_delete=models.SET_NULL,
+                                         null=True, related_name='approving_person')
+    date_start = models.DateField(verbose_name="Дата начала", null=True, blank=True,
+                                  default=datetime.date.today) # Дата начала бригады.
+    date_end = models.DateField(verbose_name="Дата окончания", null=True, blank=True,
+                                default=datetime.date.today) # Дата окончания бригады.
+    date_create = models.DateField(verbose_name="Дата приказа", null=True, blank=True,
+                                   default=datetime.date.today) # Дата создания бригады.
+    number = models.CharField(verbose_name="Номер приказа", max_length=255, null=True, blank=True)
+    place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL, null=True, related_name='place')
+    company_property = models.ForeignKey(CompanyProperty, verbose_name="Задание на полет", on_delete=models.SET_NULL, null=True, related_name='company_property')
+    agreed = models.BooleanField(verbose_name="Согласовано", default=False)
+    # documents_order = models.ForeignKey(DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True, related_name='documents_order', blank=True)
+    doc_file = models.FileField(verbose_name="Файл документа", upload_to=ord_directory_path, blank=True)
+    scan_file = models.FileField(verbose_name="Скан документа", upload_to=ord_directory_path, blank=True)
+    cancellation = models.BooleanField(verbose_name="Отмена", default=False)
+
+    def __str__(self):
+        return f"{self.senior_brigade} - с: {self.date_start} по: {self.date_end}"
+
+def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
+    doc = DocxTemplate(
+        pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord-ias.docx")
+    )
+    sub_doc_file = pathlib.Path.joinpath(
+        pathlib.Path.joinpath(BASE_DIR, filepath), f"subdoc-{filename}.docx"
+    )
+    desc_document = Document()
+    # new_parser = HtmlToDocx()
+    # new_parser.add_html_to_document(obj_model.description, desc_document)
+    desc_result_path = sub_doc_file
+    desc_document.save(desc_result_path)
+    sub_doc = doc.new_subdoc(desc_result_path)
+    context = {
+        "DocNumber": obj_model.number,
+        "DateDoc": f'{obj_model.date_create.strftime("%d.%m.%Y")} г.',
+        "DateStart": obj_model.date_start.strftime("%d.%m.%Y"),
+        "DateEnd": obj_model.date_end.strftime("%d.%m.%Y"),
+        "Place": obj_model.place,
+        "CompanyProperty": obj_model.company_property,
+        "TypeProperty": obj_model.company_property.category,
+        # "Description": sub_doc,
+        # "Description": sub_doc,
+    }
+    doc.render(context, autoescape=True)
+    path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
+    if not path_obj.exists():
+        path_obj.mkdir(parents=True)
+    doc.save(pathlib.Path.joinpath(path_obj, filename))
+    if os.path.isfile(sub_doc_file):
+        os.remove(sub_doc_file)
+
+    from msoffice2pdf import convert
+
+    try:
+        var = convert(
+            source=str(pathlib.Path.joinpath(path_obj, filename)),
+            output_dir=str(path_obj),
+            soft=0,
+        )
+        logger.debug(
+            f"Файл: {str(pathlib.Path.joinpath(path_obj, filename))}, Путь: {str(path_obj)}"
+        )
+        return var
+    except Exception as _ex:
+        logger.error(f"Ошибка сохранения файла в pdf {filename}: {_ex}")
+
+@receiver(post_save, sender=CreatingTeam)
+def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
+    if not instance.cancellation:
+        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+
+        # ext_scan = str(instance.scan_file).split('.')[-1]
+        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
+        filename = (
+            f"ORD-3-{instance.date_create}-{uid}.docx"
+        )
+        scanname = (
+            f"ORD-3-{instance.date_create}-{uid}.pdf"
+        )
+        date_doc = instance.date_create
+        created_pdf = ias_order(
+            instance,
+            f"media/docs/ORD/{date_doc.year}/{date_doc.month}",
+            filename,
+            '3',
+        )
+        scan_name = pathlib.Path(created_pdf).name
+        if f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}" != instance.doc_file:
+            CreatingTeam.objects.filter(pk=instance.pk).update(
+                doc_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}"
+            )
+        if scanname != scan_name:
+            try:
+                pathlib.Path.rename(
+                    pathlib.Path.joinpath(
+                        BASE_DIR,
+                        "media",
+                        f"docs/ORD/{date_doc.year}/{date_doc.month}",
+                        scan_name,
+                    ),
+                    pathlib.Path.joinpath(
+                        BASE_DIR,
+                        "media",
+                        f"docs/ORD/{date_doc.year}/{date_doc.month}",
+                        scanname,
+                    ),
+                )
+            except Exception as _ex0:
+                logger.error(f"Ошибка переименования файла: {_ex0}")
+            CreatingTeam.objects.filter(pk=instance.pk).update(
+                scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
+            )
 
 class DocumentsJobDescription(Documents):
     class Meta:

@@ -21,6 +21,7 @@ from hrdepartment_app.models import (
     TypesUserworktime,
     Instructions,
     Provisions,
+    CreatingTeam,
 )
 
 # Register your models here.
@@ -41,6 +42,7 @@ admin.site.register(ProductionCalendar)
 admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
 admin.site.register(Provisions)
+admin.site.register(CreatingTeam)
 
 @admin.register(OfficialMemo)
 class OfficialMemoAdmin(admin.ModelAdmin):

@@ -9,7 +9,7 @@ from django.urls import reverse
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
 from djangoProject import settings
 from djangoProject.settings import BASE_DIR
-from hrdepartment_app.models import PlaceProductionActivity
+# from hrdepartment_app.models import PlaceProductionActivity
 
 
 def contract_directory_path(instance, filename):
@@ -73,6 +73,19 @@ class TypeProperty(models.Model):
             'type_property': self.type_property,
         }
 
+
+class CompanyProperty(models.Model):
+
+    class Meta:
+        verbose_name = 'Имущество компании'
+        verbose_name_plural = 'Имущество компании'
+        ordering = ['name']
+
+    category = models.ForeignKey(TypeProperty, verbose_name='Тип имущества', on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name='Наименование', max_length=200)
+
+    def __str__(self):
+        return f'{self.name}'
 
 class Estate(models.Model):
     class Meta:
@@ -206,24 +219,24 @@ class Posts(models.Model):
                                            on_delete=models.SET_NULL, null=True)
 
 
-class Hotel(models.Model):
-    """
-        Модель Hotel - введена для возможности ведения квартир.
-    """
-
-    class Meta:
-        verbose_name = 'Квартира'
-        verbose_name_plural = 'Квартиры'
-
-    contract_number = models.ForeignKey(Contract, verbose_name='Номер договора', on_delete=models.CASCADE)
-    name = models.CharField(verbose_name='Наименование', max_length=150, default='')
-    place_production_activity = models.ForeignKey(PlaceProductionActivity, verbose_name='Наименование точки',
-                                                  on_delete=models.SET_NULL, null=True, related_name='place_production')
-    address = models.CharField(verbose_name='Адрес', max_length=250, default='', blank=True)
-    container = models.BigIntegerField(verbose_name='Количество мест', default=0)
-
-    def __str__(self):
-        return f'{self.name}'
+# class Hotel(models.Model):
+#     """
+#         Модель Hotel - введена для возможности ведения квартир.
+#     """
+#
+#     class Meta:
+#         verbose_name = 'Квартира'
+#         verbose_name_plural = 'Квартиры'
+#
+#     contract_number = models.ForeignKey(Contract, verbose_name='Номер договора', on_delete=models.CASCADE)
+#     name = models.CharField(verbose_name='Наименование', max_length=150, default='')
+#     place_production_activity = models.ForeignKey(PlaceProductionActivity, verbose_name='Наименование точки',
+#                                                   on_delete=models.SET_NULL, null=True, related_name='place_production')
+#     address = models.CharField(verbose_name='Адрес', max_length=250, default='', blank=True)
+#     container = models.BigIntegerField(verbose_name='Количество мест', default=0)
+#
+#     def __str__(self):
+#         return f'{self.name}'
 
 
 @receiver(post_save, sender=Contract)
