@@ -1671,7 +1671,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
         pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord-ias.docx")
     )
     sub_doc_file = pathlib.Path.joinpath(
-        pathlib.Path.joinpath(BASE_DIR, filepath), f"subdoc-{filename}.docx"
+        pathlib.Path.joinpath(BASE_DIR, filepath), f"subdoc-{filename}"
     )
     desc_document = Document()
     # new_parser = HtmlToDocx()
@@ -1720,12 +1720,8 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
 
         # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
-        filename = (
-            f"ORD-3-{instance.date_create}-{uid}.docx"
-        )
-        scanname = (
-            f"ORD-3-{instance.date_create}-{uid}.pdf"
-        )
+        filename = (f"ORD-3-{instance.date_create}-{uid}.docx")
+        scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
         date_doc = instance.date_create
         created_pdf = ias_order(
             instance,
