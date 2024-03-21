@@ -1679,6 +1679,9 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     desc_result_path = sub_doc_file
     desc_document.save(desc_result_path)
     sub_doc = doc.new_subdoc(desc_result_path)
+    team_brigade_list = []
+    for item in obj_model.team_brigade.all():
+        team_brigade_list.append([item, item.user_work_profile.job])
     context = {
         "DocNumber": obj_model.number,
         "DateDoc": f'{obj_model.date_create.strftime("%d.%m.%Y")} г.',
@@ -1689,7 +1692,8 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
         "TypeProperty": obj_model.company_property.category,
         "team_brigade": obj_model.senior_brigade,
         "team_brigade_job": obj_model.senior_brigade.user_work_profile.job,
-        "ShortName": obj_model.place.short_name
+        "ShortName": obj_model.place.short_name,
+        "team_brigade_list": team_brigade_list,
     }
     doc.render(context, autoescape=True)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
