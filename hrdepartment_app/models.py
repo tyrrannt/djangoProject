@@ -397,7 +397,8 @@ class PlaceProductionActivity(models.Model):
 
     name = models.CharField(verbose_name="Наименование", max_length=250)
     address = models.CharField(verbose_name="Адрес", max_length=250, blank=True)
-    short_name = models.CharField(verbose_name="", max_length=30, default="", blank=True)
+    short_name = models.CharField(verbose_name="Краткое наименование", max_length=30, default="", blank=True)
+    use_team_orders = models.BooleanField(verbose_name="Использовать в приказах", default=False)  # Использовать командные orders
 
     def __str__(self):
         return str(self.name)
