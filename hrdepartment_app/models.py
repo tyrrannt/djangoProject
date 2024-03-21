@@ -397,7 +397,7 @@ class PlaceProductionActivity(models.Model):
 
     name = models.CharField(verbose_name="Наименование", max_length=250)
     address = models.CharField(verbose_name="Адрес", max_length=250, blank=True)
-    short_name = models.CharField(verbose_name="", max_length=3, default="", blank=True)
+    short_name = models.CharField(verbose_name="", max_length=30, default="", blank=True)
 
     def __str__(self):
         return str(self.name)
@@ -1687,8 +1687,9 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
         "Place": obj_model.place,
         "CompanyProperty": obj_model.company_property,
         "TypeProperty": obj_model.company_property.category,
-        # "Description": sub_doc,
-        # "Description": sub_doc,
+        "team_brigade": obj_model.senior_brigade,
+        "team_brigade_job": obj_model.senior_brigade.user_work_profile.job,
+        "ShortName": obj_model.place.short_name
     }
     doc.render(context, autoescape=True)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
