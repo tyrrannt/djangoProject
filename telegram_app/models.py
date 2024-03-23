@@ -31,6 +31,7 @@ class TelegramNotification(models.Model):
     )
     sending_counter = models.IntegerField(verbose_name="Счетчик отправок", default=3)
     send_time = models.TimeField(verbose_name="Время отправки", blank=True, null=True)
+    send_date = models.DateField(verbose_name="Дата отправки", blank=True, null=True)
 
     def __str__(self):
         return self.message

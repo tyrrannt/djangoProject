@@ -166,7 +166,7 @@ def send_message_tg():
     try:
         bot = telebot.TeleBot(API_TOKEN, skip_pending=True)
         notify_list = TelegramNotification.objects.filter(
-            Q(send_time__hour=dt.hour) & Q(send_time__minute=dt.minute)
+            Q(send_time__hour=dt.hour) & Q(send_time__minute=dt.minute) & Q(send_date=dt.date())
         )
         for item in notify_list:
             for chat_id in item.respondents.all():

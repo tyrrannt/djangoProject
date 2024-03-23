@@ -210,6 +210,7 @@ def happy_birthday():
                 "document_id": post.pk,
                 "sending_counter": 1,
                 "send_time": datetime.datetime(1, 1, 1, 9, 30),
+                "send_date": today,
             }
             tn, created = TelegramNotification.objects.update_or_create(
                 document_id=post.pk, defaults=kwargs_obj
