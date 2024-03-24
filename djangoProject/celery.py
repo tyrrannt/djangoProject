@@ -16,7 +16,7 @@ app.conf.beat_schedule = {
     },
     'birthday_gift': {
         'task': 'hrdepartment_app.tasks.happy_birthday',
-        'schedule': crontab(minute='*/5'),
+        'schedule': crontab(minute='*/1'),
     },
     'send_telegram_notify': {
         'task': 'hrdepartment_app.tasks.send_telegram_notify',
