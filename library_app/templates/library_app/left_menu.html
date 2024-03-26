@@ -200,6 +200,27 @@
                         <ul class="nav nav-children">
                             <li class="nav-parent">
                                 <a class="nav-link" href="#">
+                                    <span>Договора</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="#">
+                                            Бланк согласования <br>
+                                            договора
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="#">
+                                            Бизнес-процесс по <br>
+                                            договорам
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <ul class="nav nav-children">
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
                                     <span>Логистика</span>
                                 </a>
                                 <ul class="nav nav-children">
@@ -240,19 +261,17 @@
                         <ul class="nav nav-children">
                             <li class="nav-parent">
                                 <a class="nav-link" href="#">
-                                    <span>Договора</span>
+                                    <span>Старшие бригад</span>
                                 </a>
                                 <ul class="nav nav-children">
                                     <li>
-                                        <a class="nav-link" href="#">
-                                            Бланк согласования <br>
-                                            договора
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:team_list' %}">
+                                            Список
                                         </a>
                                     </li>
                                     <li>
                                         <a class="nav-link" href="#">
-                                            Бизнес-процесс по <br>
-                                            договорам
+                                            Отчет
                                         </a>
                                     </li>
                                 </ul>

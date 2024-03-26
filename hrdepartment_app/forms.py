@@ -26,7 +26,7 @@ from hrdepartment_app.models import (
     ReasonForCancellation,
     OrderDescription,
     ReportCard,
-    Provisions, GuidanceDocuments,
+    Provisions, GuidanceDocuments, CreatingTeam,
 )
 
 
@@ -46,6 +46,25 @@ def present_or_future_date(value):
     if value < datetime.date.today() - datetime.timedelta(days=60):
         raise forms.ValidationError("Нельзя использовать прошедшую дату!")
     return value
+
+
+def make_custom_datefield(f):
+    if isinstance(f, forms.DateField):
+        return f.widget.attrs.update(
+            {"class": "form-control form-control-modern",
+             "data-plugin-datepicker": True, "type": "text",
+             "data-date-language": "ru", "todayBtn": True, "clearBtn": True,
+             "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',
+             }
+        )
+    if isinstance(f, forms.BooleanField):
+        return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
+    if isinstance(f, forms.CharField):
+        return f.widget.attrs.update({"class": "form-control form-control-modern"})
+    if isinstance(f, forms.ModelChoiceField):
+        return f.widget.attrs.update(
+            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        )
 
 
 class MedicalOrganisationAddForm(forms.ModelForm):
@@ -1238,3 +1257,52 @@ class GuidanceDocumentsUpdateForm(forms.ModelForm):
         self.fields["applying_for_job"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+
+
+class CreatingTeamAddForm(forms.ModelForm):
+
+    class Meta:
+        model = CreatingTeam
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(CreatingTeamAddForm, self).__init__(*args, **kwargs)
+        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["team_brigade"].widget.attrs.update(
+            {
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        for field in self.fields:
+            make_custom_datefield(self.fields[field])
+
+
+
+
+class CreatingTeamUpdateForm(forms.ModelForm):
+    class Meta:
+        model = CreatingTeam
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(CreatingTeamUpdateForm, self).__init__(*args, **kwargs)
+        self.fields['executor_person'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["team_brigade"].widget.attrs.update(
+            {
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
+            }
+        )
+        for field in self.fields:
+            make_custom_datefield(self.fields[field])

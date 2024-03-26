@@ -54,7 +54,8 @@ from hrdepartment_app.forms import (
     ReportCardUpdateForm,
     ProvisionsUpdateForm,
     ProvisionsAddForm,
-    OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm,
+    OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
+    CreatingTeamUpdateForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -74,7 +75,7 @@ from hrdepartment_app.models import (
     PlaceProductionActivity,
     ReportCard,
     ProductionCalendar,
-    Provisions, GuidanceDocuments,
+    Provisions, GuidanceDocuments, CreatingTeam,
 )
 
 
@@ -3166,3 +3167,102 @@ class GuidanceDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
         kwargs = super().get_form_kwargs()
         kwargs.update({"user": self.request.user.pk})
         return kwargs
+
+
+# Приказы о старших бригад
+class CreatingTeamList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Руководящие документы - список
+    """
+
+    model = CreatingTeam
+    permission_required = "hrdepartment_app.view_guidancedocuments"
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            order_list = CreatingTeam.objects.all()
+            data = [order_item.get_data() for order_item in order_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Приказы о старших бригад"
+        return context
+
+
+class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """
+    Руководящие документы - создание
+    """
+
+    model = CreatingTeam
+    form_class = CreatingTeamAddForm
+    permission_required = "hrdepartment_app.add_guidancedocuments"
+
+    def get_context_data(self, **kwargs):
+        content = super(CreatingTeamAdd, self).get_context_data(**kwargs)
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить руководящий документ"
+        return content
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+
+class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """
+    Руководящий документ - просмотр
+    """
+
+    model = CreatingTeam
+    permission_required = "hrdepartment_app.view_guidancedocuments"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        return context
+
+
+class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """
+    Руководящий документ - редактирование
+    """
+
+    template_name = "hrdepartment_app/creatingteam_form_update.html"
+    model = CreatingTeam
+    form_class = CreatingTeamUpdateForm
+    permission_required = "hrdepartment_app.change_guidancedocuments"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+    def form_invalid(self, form):
+        print('form_invalid')
+        return super().form_invalid(form)

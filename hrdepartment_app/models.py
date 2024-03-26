@@ -1670,6 +1670,34 @@ class CreatingTeam(models.Model):
     def __str__(self):
         return f"{self.senior_brigade} - с: {self.date_start} по: {self.date_end}"
 
+    def get_absolute_url(self):
+        return reverse("hrdepartment_app:team_list")
+
+    def get_data(self):
+        status = ""
+        dt = datetime.datetime.today()
+
+        if (
+                self.date_end
+                and datetime.date(dt.year, dt.month, dt.day) > self.date_end
+        ):
+            status = "Действие завершил"
+        else:
+            status = "Действует"
+
+        if self.cancellation:
+            status = "Отменён"
+        return {
+            "pk": self.pk,
+            "document_number": self.number,
+            "document_date": f"{self.date_create:%d.%m.%Y} г.",  # .strftime(""),
+            "document_name": self.__str__(),
+            "document_division": self.place.name,
+            "executor": format_name_initials(self.executor_person),
+            "actuality": status,
+            "cancellation": self.cancellation,
+        }
+
 def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     doc = DocxTemplate(
         pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord-ias.docx")
@@ -1685,7 +1713,8 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     sub_doc = doc.new_subdoc(desc_result_path)
     team_brigade_list = []
     for item in obj_model.team_brigade.all():
-        team_brigade_list.append([item, item.user_work_profile.job])
+        team_brigade_list.append([format_name_initials(item), item.user_work_profile.job])
+
     context = {
         "DocNumber": obj_model.number,
         "DateDoc": f'{obj_model.date_create.strftime("%d.%m.%Y")} г.',
@@ -1706,7 +1735,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     doc.save(pathlib.Path.joinpath(path_obj, filename))
     if os.path.isfile(sub_doc_file):
         os.remove(sub_doc_file)
-
+    print(context)
     from msoffice2pdf import convert
 
     try:
@@ -1726,7 +1755,6 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
 def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
     if not instance.cancellation:
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-
         # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
         filename = (f"ORD-3-{instance.date_create}-{uid}.docx")
