@@ -762,6 +762,8 @@ def make_custom_field(f: forms.Field):
         return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
     if isinstance(f, forms.CharField):
         return f.widget.attrs.update({"class": "form-control form-control-modern"})
+    if isinstance(f, forms.ChoiceField):
+        return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
     if isinstance(f, forms.ModelChoiceField):
         try:
             if f.widget.attrs['multiple']:

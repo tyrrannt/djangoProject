@@ -3,20 +3,20 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% block custome_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+{#    <link rel="stylesheet"#}
+{#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+{#    <link rel="stylesheet"#}
+{#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
 {% endblock %}
 
 {% block custome_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{#    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
+{#    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
+{#    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
 
 {% endblock %}
 
@@ -57,59 +57,60 @@
                                     <p class="card-big-info-desc" id="testof">Направление бизнес процесса</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_official_memo_type">Тип бизнес процесса</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.business_process_type | add_class:"form-control form-control-modern" }}
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person_executor">Исполнитель</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person_executor | attr:"multiple" }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person_agreement">Согласующее лицо</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person_agreement | attr:"multiple" }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_clerk">Делопроизводитель</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.clerk | attr:"multiple" }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_clerk">Сотрудник ОК</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.person_hr | attr:"multiple" }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_date_start">Дата начала</label>
-                                        <div class="col-lg-7 col-xl-6" id="period_from_id">
-                                            <input type="date" id="id_date_start"
-                                                   class="form-control form-control-modern" onchange=minimumPeriodFor()
-                                                   name="date_start" value="{{ object.date_start | date:'c' }}"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_date_end">Дата окончания</label>
-                                        <div class="col-lg-7 col-xl-6" id="period_for_id">
-                                            <input type="date" id="id_date_end"
-                                                   class="form-control form-control-modern "
-                                                   name="date_end" value="{{ object.date_end | date:'c' }}"/>
-                                        </div>
-                                    </div>
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_official_memo_type">Тип бизнес процесса</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            {{ form.business_process_type | add_class:"form-control form-control-modern" }}#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_person_executor">Исполнитель</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <span>{{ form.person_executor | attr:"multiple" }}</span>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_person_agreement">Согласующее лицо</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <span>{{ form.person_agreement | attr:"multiple" }}</span>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_clerk">Делопроизводитель</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <span>{{ form.clerk | attr:"multiple" }}</span>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_clerk">Сотрудник ОК</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <span>{{ form.person_hr | attr:"multiple" }}</span>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_date_start">Дата начала</label>#}
+{#                                        <div class="col-lg-7 col-xl-6" id="period_from_id">#}
+{#                                            <input type="date" id="id_date_start"#}
+{#                                                   class="form-control form-control-modern" onchange=minimumPeriodFor()#}
+{#                                                   name="date_start" value="{{ object.date_start | date:'c' }}"/>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_date_end">Дата окончания</label>#}
+{#                                        <div class="col-lg-7 col-xl-6" id="period_for_id">#}
+{#                                            <input type="date" id="id_date_end"#}
+{#                                                   class="form-control form-control-modern "#}
+{#                                                   name="date_end" value="{{ object.date_end | date:'c' }}"/>#}
+{#                                        </div>#}
+{#                                    </div>#}
+                                    {{ form.as_p }}
                                 </div>
                             </div>
                         </div>

@@ -49,8 +49,6 @@ def present_or_future_date(value):
     return value
 
 
-
-
 class MedicalOrganisationAddForm(forms.ModelForm):
     class Meta:
         model = MedicalOrganisation
@@ -559,57 +557,75 @@ class ApprovalOficialMemoProcessChangeForm(forms.ModelForm):
 
 
 class BusinessProcessDirectionAddForm(forms.ModelForm):
-    type_of = [("1", "SP")]
-    business_process_type = forms.ChoiceField(choices=type_of)
-    person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    person_agreement.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    person_executor.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    clerk.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    person_hr.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    date_start = forms.DateField(required=False)
-    date_end = forms.DateField(required=False)
+    # type_of = [("1", "SP")]
+    # business_process_type = forms.ChoiceField(choices=type_of)
+    # person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # person_agreement.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # person_executor.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # clerk.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # person_hr.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # date_start = forms.DateField(required=False)
+    # date_end = forms.DateField(required=False)
 
     class Meta:
         model = BusinessProcessDirection
         fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["clerk"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class BusinessProcessDirectionUpdateForm(forms.ModelForm):
-    type_of = [("1", "SP")]
-    business_process_type = forms.ChoiceField(choices=type_of)
-    person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    person_agreement.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    person_executor.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    clerk.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    person_hr.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    date_start = forms.DateField(required=False)
-    date_end = forms.DateField(required=False)
+    # type_of = [("1", "SP")]
+    # business_process_type = forms.ChoiceField(choices=type_of)
+    # person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # person_agreement.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # person_executor.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # clerk.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
+    # person_hr.widget.attrs.update(
+    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    # )
+    # date_start = forms.DateField(required=False)
+    # date_end = forms.DateField(required=False)
 
     class Meta:
         model = BusinessProcessDirection
         fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["clerk"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class PurposeAddForm(forms.ModelForm):
@@ -1254,7 +1270,6 @@ class GuidanceDocumentsUpdateForm(forms.ModelForm):
 
 
 class CreatingTeamAddForm(forms.ModelForm):
-
     class Meta:
         model = CreatingTeam
         fields = '__all__'
@@ -1265,7 +1280,13 @@ class CreatingTeamAddForm(forms.ModelForm):
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
         self.user = kwargs.pop("user")
+        # Выбрать из списка бизнес-процессов имеющих право согласования
+        approving_person_list = [item['person_agreement'] for item in
+                                 BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                     'person_agreement')]
+
         super(CreatingTeamAddForm, self).__init__(*args, **kwargs)
+        self.fields['approving_person'].queryset = DataBaseUser.objects.filter(user_work_profile__job__in=approving_person_list)
         self.fields["executor_person"].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
@@ -1281,8 +1302,6 @@ class CreatingTeamAddForm(forms.ModelForm):
             make_custom_field(self.fields[field])
 
 
-
-
 class CreatingTeamUpdateForm(forms.ModelForm):
     class Meta:
         model = CreatingTeam
@@ -1294,9 +1313,16 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
         self.user = kwargs.pop("user")
+        # Выбрать из списка бизнес-процессов имеющих право согласования
+        approving_person_list = [item['person_agreement'] for item in
+                                 BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                     'person_agreement')]
+
         super(CreatingTeamUpdateForm, self).__init__(*args, **kwargs)
         self.fields['executor_person'].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
+        self.fields['approving_person'].queryset = DataBaseUser.objects.filter(
+            user_work_profile__job__in=approving_person_list)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)

@@ -1358,7 +1358,7 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
 
 
 class BusinessProcessDirection(models.Model):
-    type_of = [("1", "SP")]
+    type_of = [("1", "Служебная поездка"), ("2", "Приказы о старших бригадах")]
 
     class Meta:
         verbose_name = "Направление бизнес процесса"
