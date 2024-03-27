@@ -3172,7 +3172,7 @@ class GuidanceDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
 # Приказы о старших бригад
 class CreatingTeamList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
-    Руководящие документы - список
+    Приказы о старших бригад - список
     """
 
     model = CreatingTeam
@@ -3197,7 +3197,7 @@ class CreatingTeamList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
 class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
-    Руководящие документы - создание
+    Приказы о старших бригад - создание
     """
 
     model = CreatingTeam
@@ -3208,7 +3208,7 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         content = super(CreatingTeamAdd, self).get_context_data(**kwargs)
         content[
             "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить руководящий документ"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить приказ о старших бригад"
         return content
 
     def get_form_kwargs(self):
@@ -3223,7 +3223,7 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
 class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
-    Руководящий документ - просмотр
+    Приказы о старших бригад - просмотр
     """
 
     model = CreatingTeam
@@ -3239,7 +3239,7 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
 
 class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
-    Руководящий документ - редактирование
+    Приказы о старших бригад - редактирование
     """
 
     template_name = "hrdepartment_app/creatingteam_form_update.html"
