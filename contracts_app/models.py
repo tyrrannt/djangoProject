@@ -77,8 +77,8 @@ class TypeProperty(models.Model):
 class CompanyProperty(models.Model):
 
     class Meta:
-        verbose_name = 'Имущество компании'
-        verbose_name_plural = 'Имущество компании'
+        verbose_name = 'УДАЛЕНО'
+        verbose_name_plural = 'УДАЛЕНО'
         ordering = ['name']
 
     category = models.ForeignKey(TypeProperty, verbose_name='Тип имущества', on_delete=models.SET_NULL, null=True)
