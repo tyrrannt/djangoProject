@@ -1273,6 +1273,7 @@ class CreatingTeamAddForm(forms.ModelForm):
         self.user = kwargs.pop("user")
         super(CreatingTeamAddForm, self).__init__(*args, **kwargs)
         self.fields["executor_person"].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав')
         self.fields["team_brigade"].queryset = DataBaseUser.objects.filter(
@@ -1302,6 +1303,7 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         self.user = kwargs.pop("user")
         super(CreatingTeamUpdateForm, self).__init__(*args, **kwargs)
         self.fields['executor_person'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав')
         self.fields["team_brigade"].queryset = DataBaseUser.objects.filter(

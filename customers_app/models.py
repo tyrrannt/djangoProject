@@ -22,11 +22,14 @@ class Groups(Group):
 
     def get_data(self):
         permissions = [str(item.name) for item in self.permissions.iterator()]
+        for item in self.permissions.iterator():
+            print(item.codename, item.content_type.name)
         return {
             "pk": self.pk,
             "name": self.name,
             "permissions": "; ".join(permissions),
         }
+
 
 
 class ViewDocumentsPhysical(models.Model):
