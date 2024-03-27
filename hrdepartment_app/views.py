@@ -3176,7 +3176,7 @@ class CreatingTeamList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
 
     model = CreatingTeam
-    permission_required = "hrdepartment_app.view_guidancedocuments"
+    permission_required = "hrdepartment_app.view_creatingteam"
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -3202,7 +3202,7 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     model = CreatingTeam
     form_class = CreatingTeamAddForm
-    permission_required = "hrdepartment_app.add_guidancedocuments"
+    permission_required = "hrdepartment_app.add_creatingteam"
 
     def get_context_data(self, **kwargs):
         content = super(CreatingTeamAdd, self).get_context_data(**kwargs)
@@ -3227,7 +3227,7 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
     """
 
     model = CreatingTeam
-    permission_required = "hrdepartment_app.view_guidancedocuments"
+    permission_required = "hrdepartment_app.view_creatingteam"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
@@ -3245,7 +3245,7 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     template_name = "hrdepartment_app/creatingteam_form_update.html"
     model = CreatingTeam
     form_class = CreatingTeamUpdateForm
-    permission_required = "hrdepartment_app.change_guidancedocuments"
+    permission_required = "hrdepartment_app.change_creatingteam"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
