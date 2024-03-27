@@ -1295,9 +1295,9 @@ class CreatingTeamAddForm(forms.ModelForm):
         self.fields["executor_person"].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__division_affiliation__name='Инженерный состав')
+            user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
         self.fields["team_brigade"].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__division_affiliation__name='Инженерный состав')
+            user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
         self.fields["team_brigade"].widget.attrs.update(
             {
                 "multiple": "multiple",
@@ -1324,9 +1324,9 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         self.fields['executor_person'].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__division_affiliation__name='Инженерный состав')
+            user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
         self.fields["team_brigade"].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__division_affiliation__name='Инженерный состав')
+            user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
         self.fields["team_brigade"].widget.attrs.update(
             {
                 "multiple": "multiple",
