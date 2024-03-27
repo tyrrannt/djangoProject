@@ -25,7 +25,7 @@ from administration_app.utils import (
     timedelta_to_time,
     change_approval_status,
 )
-from contracts_app.models import CompanyProperty
+from contracts_app.models import CompanyProperty, Estate
 from customers_app.models import (
     DataBaseUser,
     Counteragent,
@@ -1660,7 +1660,7 @@ class CreatingTeam(models.Model):
                                    default=datetime.date.today) # Дата создания бригады.
     number = models.CharField(verbose_name="Номер приказа", max_length=255, null=True, blank=True)
     place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL, null=True, related_name='place')
-    company_property = models.ForeignKey(CompanyProperty, verbose_name="Задание на полет", on_delete=models.SET_NULL, null=True, related_name='company_property')
+    company_property = models.ForeignKey(Estate, verbose_name="Задание на полет", on_delete=models.SET_NULL, null=True, related_name='company_property')
     agreed = models.BooleanField(verbose_name="Согласовано", default=False)
     # documents_order = models.ForeignKey(DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True, related_name='documents_order', blank=True)
     doc_file = models.FileField(verbose_name="Файл документа", upload_to=ord_directory_path, blank=True)
@@ -1722,7 +1722,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
         "DateEnd": obj_model.date_end.strftime("%d.%m.%Y"),
         "Place": obj_model.place,
         "CompanyProperty": obj_model.company_property,
-        "TypeProperty": obj_model.company_property.category,
+        "TypeProperty": obj_model.company_property.type_property,
         "team_brigade": obj_model.senior_brigade,
         "team_brigade_job": obj_model.senior_brigade.user_work_profile.job,
         "ShortName": obj_model.place.short_name,
