@@ -102,6 +102,8 @@ class Estate(models.Model):
     ownership_right = models.CharField(verbose_name='Право владения', max_length=100, default='', blank=True)
     year_of_manufacture = models.CharField(verbose_name='Год выпуска авто', max_length=100, default='', blank=True)
 
+    def __str__(self):
+        return f'{self.registration_number}'
 
 class ContractModel(models.Model):
     """
