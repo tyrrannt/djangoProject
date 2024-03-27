@@ -56,33 +56,34 @@
                                     <p class="card-big-info-desc">Форма создания места назначения</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_name">Наименование</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_name"
-                                                   class="form-control form-control-modern"
-                                                   name="name" value=""/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_address">Адрес</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_address"
-                                                   class="form-control form-control-modern"
-                                                   name="address" value=""/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_short_name">Краткое наименование</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_short_name"
-                                                   class="form-control form-control-modern"
-                                                   name="short_name" value="{{ object.short_name }}"/>
-                                        </div>
-                                    </div>
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_name">Наименование</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <input type="text" id="id_name"#}
+{#                                                   class="form-control form-control-modern"#}
+{#                                                   name="name" value=""/>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_address">Адрес</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <input type="text" id="id_address"#}
+{#                                                   class="form-control form-control-modern"#}
+{#                                                   name="address" value=""/>#}
+{#                                        </div>#}
+{#                                    </div>#}
+{#                                    <div class="form-group row align-items-center pb-3">#}
+{#                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"#}
+{#                                               for="id_short_name">Краткое наименование</label>#}
+{#                                        <div class="col-lg-7 col-xl-6">#}
+{#                                            <input type="text" id="id_short_name"#}
+{#                                                   class="form-control form-control-modern"#}
+{#                                                   name="short_name" value="{{ object.short_name }}"/>#}
+{#                                        </div>#}
+{#                                    </div>#}
+                                    {{ form.as_p }}
                                 </div>
                             </div>
                         </div>

@@ -48,7 +48,7 @@ def present_or_future_date(value):
     return value
 
 
-def make_custom_datefield(f):
+def make_custom_datefield(f: forms.Field):
     if isinstance(f, forms.DateField):
         return f.widget.attrs.update(
             {"class": "form-control form-control-modern",
@@ -62,9 +62,19 @@ def make_custom_datefield(f):
     if isinstance(f, forms.CharField):
         return f.widget.attrs.update({"class": "form-control form-control-modern"})
     if isinstance(f, forms.ModelChoiceField):
-        return f.widget.attrs.update(
-            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-        )
+        try:
+            if f.widget.attrs['multiple']:
+                return f.widget.attrs.update(
+                    {"class": "form-select select2 form-control-modern",
+                     "data-plugin-multiselect": True,
+                     "multiple": "multiple",
+                     "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
+                     }
+                )
+        except KeyError:
+            return f.widget.attrs.update(
+                {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+            )
 
 
 class MedicalOrganisationAddForm(forms.ModelForm):
@@ -876,13 +886,23 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
 class PlaceProductionActivityAddForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
-        fields = ("name", "address", "short_name")
+        fields = ("name", "address", "short_name", "use_team_orders")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_datefield(self.fields[field])
 
 
 class PlaceProductionActivityUpdateForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
-        fields = ("name", "address", "short_name")
+        fields = ("name", "address", "short_name", "use_team_orders")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_datefield(self.fields[field])
 
 
 class ReportCardAddForm(forms.ModelForm):
@@ -1281,7 +1301,6 @@ class CreatingTeamAddForm(forms.ModelForm):
         self.fields["team_brigade"].widget.attrs.update(
             {
                 "multiple": "multiple",
-                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
             }
         )
         for field in self.fields:
@@ -1311,7 +1330,6 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         self.fields["team_brigade"].widget.attrs.update(
             {
                 "multiple": "multiple",
-                "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
             }
         )
         for field in self.fields:

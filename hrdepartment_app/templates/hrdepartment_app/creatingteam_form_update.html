@@ -3,21 +3,20 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% block custome_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+{#    <link rel="stylesheet"#}
+{#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+{#    <link rel="stylesheet"#}
+{#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
 {% endblock %}
 
 {% block custome_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{#    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
+{#    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
+{#    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
 {% endblock %}
 
 {% block title %}
@@ -58,20 +57,6 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_senior_brigade">Старший бригады:</label>
-                                            {{ form.senior_brigade }}
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_team_brigade">Состав бригады:</label>
-                                            {{ form.team_brigade }}
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_place">Подразделение:</label>
-                                            {{ form.place }}
-                                        </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="col-md-4 text-black-50">
                                             <label for="id_date_create">Дата документа:</label>
                                             {{ form.date_create }}
                                         </div>
@@ -85,16 +70,17 @@
                                         </div>
                                     </div>
                                     <div class="row text">
-
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_date_star">Действителен с:</label>
                                             {{ form.date_start }}
-
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_date_end">Действителен по:</label>
                                             {{ form.date_end }}
-
+                                        </div>
+                                        <div class="col-md-4 text-black-50 mt-3">
+                                            <label for="id_agreed">Согласовано:</label>
+                                            {{ form.agreed }}
                                         </div>
                                     </div>
                                 </div>
@@ -112,12 +98,6 @@
                                             <label for="id_approving_person">Согласующее лицо:</label>
                                             {{  form.approving_person }}
                                         </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="col-md-4 text-black-50 mt-3">
-                                            <label for="id_agreed">Согласовано:</label>
-                                            {{ form.agreed }}
-                                        </div>
                                         <div class="col-md-4 text-black-50 mt-3">
                                             <label for="id_cancellation">Приказ отменен:</label>
                                             {{ form.cancellation }}
@@ -127,32 +107,21 @@
                             </div>
                         </div>
                     </section>
-                    <section class="toggle">
-                        <label>Файл</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        <div class="col-lg-6 text-black-50 mt-2">
-                                            <label for="id_doc_file">Файл приказа</label>
-                                            {% if object.doc_file %}
-                                                <span id="id_doc_file"><a href="{{ object.doc_file.url }}" target="_blank"><img src="{% static 'Extension/docx.png' %}"></a></span>
-                                            {% endif %}
-                                        </div>
-{#                                    </div>#}
-{#                                    <div class="row text">#}
-                                        <div class="col-lg-6 text-black-50 mt-2">
-                                            <label for="id_scan_file">Скан приказа</label>
-                                            {% if object.scan_file %}
-                                                <span id="id_scan_file"><a href="{{ object.scan_file.url }}"><img src="{% static 'Extension/pdf.png' %}"></a></span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </section>
+                </div>
+                <div class="row text">
+                    <div class="col-md-4 text-black-50">
+                        <label for="id_senior_brigade">Старший бригады:</label>
+                        {{ form.senior_brigade }}
+                    </div>
+                    <div class="col-md-4 text-black-50">
+                        <label for="id_place">Подразделение:</label>
+                        {{ form.place }}
+                    </div>
+                    <div class="col-sm-4 text-black-50">
+                        <label class="col-sm-12 control-label mb-0"
+                               for="id_team_brigade">Состав бригады:</label>
+                        {{ form.team_brigade | attr:"multiple" }}
+                    </div>
                 </div>
             </div>
             <div class="row action-buttons">

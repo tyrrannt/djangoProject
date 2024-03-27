@@ -15,7 +15,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
 from docx import Document
-from docxtpl import DocxTemplate, RichText
+from docxtpl import DocxTemplate, RichText, Listing
 from htmldocx import HtmlToDocx
 from loguru import logger
 
@@ -1711,9 +1711,9 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     desc_result_path = sub_doc_file
     desc_document.save(desc_result_path)
     sub_doc = doc.new_subdoc(desc_result_path)
-    team_brigade_list = []
+    team_brigade_list = f"- {format_name_initials(obj_model.senior_brigade)} - {obj_model.senior_brigade.user_work_profile.job}\a"
     for item in obj_model.team_brigade.all():
-        team_brigade_list.append([format_name_initials(item), item.user_work_profile.job])
+        team_brigade_list += f"- {format_name_initials(item)} - {item.user_work_profile.job}\a"
 
     context = {
         "DocNumber": obj_model.number,
@@ -1726,7 +1726,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
         "team_brigade": obj_model.senior_brigade,
         "team_brigade_job": obj_model.senior_brigade.user_work_profile.job,
         "ShortName": obj_model.place.short_name,
-        "team_brigade_list": team_brigade_list,
+        "team_brigade_list": Listing(f"{team_brigade_list[:-1]}"),
     }
     doc.render(context, autoescape=True)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
