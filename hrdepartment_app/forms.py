@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from loguru import logger
 
+from administration_app.utils import make_custom_field
 from customers_app.models import (
     Division,
     DataBaseUser,
@@ -48,33 +49,6 @@ def present_or_future_date(value):
     return value
 
 
-def make_custom_datefield(f: forms.Field):
-    if isinstance(f, forms.DateField):
-        return f.widget.attrs.update(
-            {"class": "form-control form-control-modern",
-             "data-plugin-datepicker": True, "type": "text",
-             "data-date-language": "ru", "todayBtn": True, "clearBtn": True,
-             "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',
-             }
-        )
-    if isinstance(f, forms.BooleanField):
-        return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
-    if isinstance(f, forms.CharField):
-        return f.widget.attrs.update({"class": "form-control form-control-modern"})
-    if isinstance(f, forms.ModelChoiceField):
-        try:
-            if f.widget.attrs['multiple']:
-                return f.widget.attrs.update(
-                    {"class": "form-select select2 form-control-modern",
-                     "data-plugin-multiselect": True,
-                     "multiple": "multiple",
-                     "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
-                     }
-                )
-        except KeyError:
-            return f.widget.attrs.update(
-                {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-            )
 
 
 class MedicalOrganisationAddForm(forms.ModelForm):
@@ -891,7 +865,7 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields:
-            make_custom_datefield(self.fields[field])
+            make_custom_field(self.fields[field])
 
 
 class PlaceProductionActivityUpdateForm(forms.ModelForm):
@@ -902,7 +876,7 @@ class PlaceProductionActivityUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields:
-            make_custom_datefield(self.fields[field])
+            make_custom_field(self.fields[field])
 
 
 class ReportCardAddForm(forms.ModelForm):
@@ -1304,7 +1278,7 @@ class CreatingTeamAddForm(forms.ModelForm):
             }
         )
         for field in self.fields:
-            make_custom_datefield(self.fields[field])
+            make_custom_field(self.fields[field])
 
 
 
@@ -1321,7 +1295,8 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         """
         self.user = kwargs.pop("user")
         super(CreatingTeamUpdateForm, self).__init__(*args, **kwargs)
-        self.fields['executor_person'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['executor_person'].queryset = DataBaseUser.objects.filter(
+            user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
@@ -1333,4 +1308,4 @@ class CreatingTeamUpdateForm(forms.ModelForm):
             }
         )
         for field in self.fields:
-            make_custom_datefield(self.fields[field])
+            make_custom_field(self.fields[field])

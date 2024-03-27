@@ -2,6 +2,7 @@ from decouple import config
 from django.forms import CheckboxSelectMultiple, SelectMultiple, ClearableFileInput
 from loguru import logger
 
+from administration_app.utils import make_custom_field
 from customers_app.models import Division, DataBaseUser, Counteragent
 from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract
 from django import forms
@@ -143,52 +144,64 @@ class ContractsPostAddForm(forms.ModelForm):
 class TypeDocumentsAddForm(forms.ModelForm):
     class Meta:
         model = TypeDocuments
-        fields = ('type_document', 'short_name', 'file_name_prefix')
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class TypeDocumentsUpdateForm(forms.ModelForm):
     class Meta:
         model = TypeDocuments
-        fields = ('type_document', 'short_name', 'file_name_prefix')
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control form-control-modern'
-            field.help_text = ''
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class TypeContractsAddForm(forms.ModelForm):
     class Meta:
         model = TypeContract
-        fields = ('type_contract',)
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class TypeContractsUpdateForm(forms.ModelForm):
     class Meta:
         model = TypeContract
-        fields = ('type_contract',)
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control form-control-modern'
-            field.help_text = ''
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class TypePropertysAddForm(forms.ModelForm):
     class Meta:
         model = TypeProperty
-        fields = ('type_property',)
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class TypePropertysUpdateForm(forms.ModelForm):
     class Meta:
         model = TypeProperty
-        fields = ('type_property',)
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control form-control-modern'
-            field.help_text = ''
+        for field in self.fields:
+            make_custom_field(self.fields[field])

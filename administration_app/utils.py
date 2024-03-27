@@ -7,6 +7,7 @@ from urllib.parse import urljoin
 import requests
 from dateutil import rrule, relativedelta
 from decouple import config
+from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import FileSystemStorage
 from loguru import logger
@@ -747,3 +748,31 @@ def change_password():
             errors += 1
 
     return count, errors
+
+def make_custom_field(f: forms.Field):
+    if isinstance(f, forms.DateField):
+        return f.widget.attrs.update(
+            {"class": "form-control form-control-modern",
+             "data-plugin-datepicker": True, "type": "text",
+             "data-date-language": "ru", "todayBtn": True, "clearBtn": True,
+             "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',
+             }
+        )
+    if isinstance(f, forms.BooleanField):
+        return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
+    if isinstance(f, forms.CharField):
+        return f.widget.attrs.update({"class": "form-control form-control-modern"})
+    if isinstance(f, forms.ModelChoiceField):
+        try:
+            if f.widget.attrs['multiple']:
+                return f.widget.attrs.update(
+                    {"class": "form-select select2 form-control-modern",
+                     "data-plugin-multiselect": True,
+                     "multiple": "multiple",
+                     "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
+                     }
+                )
+        except KeyError:
+            return f.widget.attrs.update(
+                {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+            )
