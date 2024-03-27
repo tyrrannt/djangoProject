@@ -1668,7 +1668,7 @@ class CreatingTeam(models.Model):
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
 
     def __str__(self):
-        return f"{self.senior_brigade} - с: {self.date_start} по: {self.date_end}"
+        return f"{format_name_initials(self.senior_brigade)} - с: {self.date_start.strftime('%d.%m.%Y')} по: {self.date_end.strftime('%d.%m.%Y')}"
 
     def get_absolute_url(self):
         return reverse("hrdepartment_app:team_list")
