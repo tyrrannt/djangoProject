@@ -1693,7 +1693,7 @@ class CreatingTeam(models.Model):
             status = "Отменён"
         return {
             "pk": self.pk,
-            "document_number": self.number,
+            "document_number": self.number if self.number else "",
             "document_date": f"{self.date_create:%d.%m.%Y} г.",  # .strftime(""),
             "document_name": self.__str__(),
             "document_division": self.place.name,
