@@ -1364,7 +1364,6 @@ class CreatingTeamAgreedForm(forms.ModelForm):
 
     def clean_agreed(self):
         agreed = self.cleaned_data.get("agreed")
-        print(self.approving_person, self.user, agreed)
         if not agreed:
             return agreed
         if self.user in self.approving_person:
