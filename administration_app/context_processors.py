@@ -76,7 +76,7 @@ def get_approval_oficial_memo_process(request):
         try:
             person_executor, person_agreement, person_clerk, person_hr, person_distributor, person_accounting = make_list(6)
             executor, agreement, clerk, hr, distributor, accounting, hr_accepted = make_list(7)
-            business_process = BusinessProcessDirection.objects.all().values_list('person_executor', 'person_agreement',
+            business_process = BusinessProcessDirection.objects.filter(business_process_type=1).values_list('person_executor', 'person_agreement',
                                                                                   'clerk', 'person_hr')
             for item in business_process:
                 person_executor.append(item[0])  # Получаем список исполнителей
