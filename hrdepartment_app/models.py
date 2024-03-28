@@ -1673,7 +1673,6 @@ class CreatingTeam(models.Model):
                               related_name='place')
     company_property = models.ManyToManyField(Estate, verbose_name="Задание на полет", related_name='company_property')
     agreed = models.BooleanField(verbose_name="Согласовано", default=False)
-    # documents_order = models.ForeignKey(DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True, related_name='documents_order', blank=True)
     doc_file = models.FileField(verbose_name="Файл документа", upload_to=team_directory_path, blank=True)
     scan_file = models.FileField(verbose_name="Скан документа", upload_to=team_directory_path, blank=True)
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
@@ -1703,10 +1702,13 @@ class CreatingTeam(models.Model):
             "pk": self.pk,
             "document_number": self.number,
             "document_date": f"{self.date_create:%d.%m.%Y} г.",  # .strftime(""),
-            "document_name": self.__str__(),
+            "document_name": format_name_initials(self.senior_brigade),  # self.senior_brigade,
             "document_division": self.place.name,
             "executor": format_name_initials(self.executor_person),
             "actuality": status,
+            "agreed": "Согласовано" if self.agreed else "Не согласовано", # Согласовано, Не согласовано
+            "date_start": self.date_start.strftime("%d.%m.%Y"),
+            "date_end": self.date_end.strftime("%d.%m.%Y"),
             "cancellation": self.cancellation,
         }
 
