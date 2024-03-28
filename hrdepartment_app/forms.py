@@ -876,7 +876,7 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
 class PlaceProductionActivityAddForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
-        fields = ("name", "address", "short_name", "use_team_orders")
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -887,7 +887,7 @@ class PlaceProductionActivityAddForm(forms.ModelForm):
 class PlaceProductionActivityUpdateForm(forms.ModelForm):
     class Meta:
         model = PlaceProductionActivity
-        fields = ("name", "address", "short_name", "use_team_orders")
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1284,20 +1284,18 @@ class CreatingTeamAddForm(forms.ModelForm):
         approving_person_list = [item['person_agreement'] for item in
                                  BusinessProcessDirection.objects.filter(business_process_type=2).values(
                                      'person_agreement')]
-
+        person_executor_list = [item['person_executor'] for item in
+                                 BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                     'person_executor')]
         super(CreatingTeamAddForm, self).__init__(*args, **kwargs)
         self.fields['approving_person'].queryset = DataBaseUser.objects.filter(user_work_profile__job__in=approving_person_list)
-        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_list)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
         self.fields["team_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
-        self.fields["team_brigade"].widget.attrs.update(
-            {
-                "multiple": "multiple",
-            }
-        )
+        self.fields["team_brigade"].widget.attrs.update({"multiple": "multiple"})
         for field in self.fields:
             make_custom_field(self.fields[field])
 
@@ -1317,10 +1315,11 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         approving_person_list = [item['person_agreement'] for item in
                                  BusinessProcessDirection.objects.filter(business_process_type=2).values(
                                      'person_agreement')]
-
+        person_executor_list = [item['person_executor'] for item in
+                                BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                    'person_executor')]
         super(CreatingTeamUpdateForm, self).__init__(*args, **kwargs)
-        self.fields['executor_person'].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
+        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_list)
         self.fields['approving_person'].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__in=approving_person_list)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
@@ -1328,10 +1327,6 @@ class CreatingTeamUpdateForm(forms.ModelForm):
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
         self.fields["team_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
-        self.fields["team_brigade"].widget.attrs.update(
-            {
-                "multiple": "multiple",
-            }
-        )
+        self.fields["team_brigade"].widget.attrs.update({"multiple": "multiple"})
         for field in self.fields:
             make_custom_field(self.fields[field])

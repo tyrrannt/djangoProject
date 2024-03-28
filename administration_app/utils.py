@@ -504,10 +504,14 @@ def format_name_initials(value: str, obj=None) -> str:
         string_obj = str(value)
         list_obj = string_obj.split(" ")
         match len(list_obj):
-            case 0: return ""
-            case 1: return list_obj[0]
-            case 2: return f"{list_obj[0]} {list_obj[1][:1]}."
-            case 3: return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
+            case 0:
+                return ""
+            case 1:
+                return list_obj[0]
+            case 2:
+                return f"{list_obj[0]} {list_obj[1][:1]}."
+            case 3:
+                return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
     except Exception as _ex:
         logger.error(
             f"Error while formatting name. Value: {value}; Document: {obj}; Error: {_ex}"
@@ -749,7 +753,9 @@ def change_password():
 
     return count, errors
 
+
 def make_custom_field(f: forms.Field):
+    print(type(f))
     if isinstance(f, forms.DateField):
         return f.widget.attrs.update(
             {"class": "form-control form-control-modern",
@@ -760,21 +766,22 @@ def make_custom_field(f: forms.Field):
         )
     if isinstance(f, forms.BooleanField):
         return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
-    if isinstance(f, forms.CharField):
+    if isinstance(f, forms.CharField) or isinstance(f, forms.DecimalField):
         return f.widget.attrs.update({"class": "form-control form-control-modern"})
     if isinstance(f, forms.ChoiceField):
         return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
     if isinstance(f, forms.ModelChoiceField):
-        try:
-            if f.widget.attrs['multiple']:
-                return f.widget.attrs.update(
-                    {"class": "form-select select2 form-control-modern",
-                     "data-plugin-multiselect": True,
-                     "multiple": "multiple",
-                     "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
-                     }
-                )
-        except KeyError:
-            return f.widget.attrs.update(
-                {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-            )
+        return f.widget.attrs.update(
+            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        )
+    if isinstance(f, forms.ModelMultipleChoiceField):
+        return f.widget.attrs.update(
+            {"class": "form-select select2 form-control-modern",
+             "data-plugin-multiselect": True,
+             "multiple": "multiple",
+             "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
+             }
+        )
+    if isinstance(f, forms.FileField):
+        return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-fileinput": True})
+

@@ -399,6 +399,7 @@ class PlaceProductionActivity(models.Model):
     address = models.CharField(verbose_name="Адрес", max_length=250, blank=True)
     short_name = models.CharField(verbose_name="Краткое наименование", max_length=30, default="", blank=True)
     use_team_orders = models.BooleanField(verbose_name="Использовать в приказах", default=False)  # Использовать командные orders
+    additional_payment = models.DecimalField(verbose_name="Дополнительная оплата", default=0, blank=True, decimal_places=2, max_digits=10)
 
     def __str__(self):
         return str(self.name)
@@ -1727,6 +1728,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
         "team_brigade_job": obj_model.senior_brigade.user_work_profile.job,
         "ShortName": obj_model.place.short_name,
         "team_brigade_list": Listing(f"{team_brigade_list[:-1]}"),
+        "additional_payment": str(obj_model.place.additional_payment),
     }
     doc.render(context, autoescape=True)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
@@ -1758,7 +1760,7 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
         filename = (f"ORD-3-{instance.date_create}-{uid}.docx")
-        scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
+        # scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
         date_doc = instance.date_create
         created_pdf = ias_order(
             instance,
@@ -1766,32 +1768,32 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
             filename,
             '3',
         )
-        scan_name = pathlib.Path(created_pdf).name
+        # scan_name = pathlib.Path(created_pdf).name
         if f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}" != instance.doc_file:
             CreatingTeam.objects.filter(pk=instance.pk).update(
                 doc_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}"
             )
-        if scanname != scan_name:
-            try:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR,
-                        "media",
-                        f"docs/ORD/{date_doc.year}/{date_doc.month}",
-                        scan_name,
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR,
-                        "media",
-                        f"docs/ORD/{date_doc.year}/{date_doc.month}",
-                        scanname,
-                    ),
-                )
-            except Exception as _ex0:
-                logger.error(f"Ошибка переименования файла: {_ex0}")
-            CreatingTeam.objects.filter(pk=instance.pk).update(
-                scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
-            )
+        # if scanname != scan_name:
+        #     try:
+        #         pathlib.Path.rename(
+        #             pathlib.Path.joinpath(
+        #                 BASE_DIR,
+        #                 "media",
+        #                 f"docs/ORD/{date_doc.year}/{date_doc.month}",
+        #                 scan_name,
+        #             ),
+        #             pathlib.Path.joinpath(
+        #                 BASE_DIR,
+        #                 "media",
+        #                 f"docs/ORD/{date_doc.year}/{date_doc.month}",
+        #                 scanname,
+        #             ),
+        #         )
+        #     except Exception as _ex0:
+        #         logger.error(f"Ошибка переименования файла: {_ex0}")
+        #     CreatingTeam.objects.filter(pk=instance.pk).update(
+        #         scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
+        #     )
 
 class DocumentsJobDescription(Documents):
     class Meta:

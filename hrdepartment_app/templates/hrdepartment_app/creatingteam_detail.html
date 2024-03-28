@@ -41,23 +41,7 @@
                         <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_senior_brigade">Старший бригады:</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="senior_brigade" value="{{ object.senior_brigade | FIO_format}}" id="id_senior_brigade"/>
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_team_brigade">Состав бригады:</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="team_brigade" value="{% for item in object.team_brigade.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }},{% endif %}{% endfor %}" id="id_team_brigade"/>
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_place">Подразделение:</label>
-                                            <input type="text" class="form-control form-control-modern" disabled
-                                                   name="place" value="{{ object.place }}" id="id_place"/>
-                                        </div>
-                                    </div>
+
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_date_create">Дата документа</label>
@@ -80,7 +64,23 @@
                                         </div>
                                     </div>
                                     <div class="row text">
-
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_senior_brigade">Старший бригады:</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="senior_brigade" value="{{ object.senior_brigade | FIO_format}}" id="id_senior_brigade"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_team_brigade">Состав бригады:</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="team_brigade" value="{% for item in object.team_brigade.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }},{% endif %}{% endfor %}" id="id_team_brigade"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_place">Подразделение:</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="place" value="{{ object.place }}" id="id_place"/>
+                                        </div>
+                                    </div>
+                                    <div class="row text">
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_date_star">Действителен с:</label>
                                             <input type="text" class="form-control form-control-modern"
@@ -99,14 +99,14 @@
                                                    data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
 
                                         </div>
+                                        <div class="col-md-4 text-black-50 mt-3">
+                                            <label for="id_agreed">Согласовано:</label>
+                                            <input type="checkbox" name="agreed" id="id_agreed"
+                                                   {% if object.agreed %}checked{% endif %}>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </section>
-                    <section class="toggle">
-                        <label>Служебная информация</label>
-                        <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
@@ -120,13 +120,6 @@
                                             <input type="text" class="form-control form-control-modern" disabled
                                                    name="approving_person" value="{{ object.approving_person | FIO_format}}" id="id_approving_person"/>
                                         </div>
-                                    </div>
-                                    <div class="row text">
-                                        <div class="col-md-4 text-black-50 mt-3">
-                                            <label for="id_agreed">Согласовано:</label>
-                                            <input type="checkbox" name="agreed" id="id_agreed"
-                                                   {% if object.agreed %}checked{% endif %}>
-                                        </div>
                                         <div class="col-md-4 text-black-50 mt-3">
                                             <label for="id_cancellation">Приказ отменен:</label>
                                             <input type="checkbox" name="cancellation" id="id_cancellation"
@@ -135,11 +128,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </section>
-                    <section class="toggle">
-                        <label>Файл</label>
-                        <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
