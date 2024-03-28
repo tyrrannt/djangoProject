@@ -1739,7 +1739,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
         "CompanyProperty": company_property,
         "team_brigade": obj_model.senior_brigade,
         "team_brigade_job": obj_model.senior_brigade.user_work_profile.job,
-        "ShortName": obj_model.place.short_name,
+        "ShortName": obj_model.place,
         "team_brigade_list": Listing(f"{team_brigade_list[:-1]}"),
         "additional_payment": str(obj_model.place.additional_payment),
     }
