@@ -105,6 +105,13 @@ class Estate(models.Model):
     def __str__(self):
         return f'{self.registration_number}'
 
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'type_property': self.type_property.type_property,
+            'registration_number': self.registration_number,
+        }
+
 class ContractModel(models.Model):
     """
     Абстрактная модель договоров. Введена для возможности реализации иерархической вложенности. Элемент модели

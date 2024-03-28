@@ -4,7 +4,7 @@ from loguru import logger
 
 from administration_app.utils import make_custom_field
 from customers_app.models import Division, DataBaseUser, Counteragent
-from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract
+from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract, Estate
 from django import forms
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -199,6 +199,28 @@ class TypePropertysAddForm(forms.ModelForm):
 class TypePropertysUpdateForm(forms.ModelForm):
     class Meta:
         model = TypeProperty
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class EstateAddForm(forms.ModelForm):
+    class Meta:
+        model = Estate
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class EstateUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Estate
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):

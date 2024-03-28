@@ -8,9 +8,10 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from administration_app.utils import int_validate, change_session_queryset, change_session_context
-from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments
+from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments, Estate
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
-    TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm
+    TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm, \
+    EstateAddForm, EstateUpdateForm
 from django.urls import reverse, reverse_lazy
 
 from customers_app.models import DataBaseUser
@@ -555,6 +556,84 @@ class TypePropertysUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
         if form.is_valid():
             form.save()
         return HttpResponseRedirect(reverse('contracts_app:typepropertys', args=[self.object.pk]))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        return context
+
+
+"""
+Имущества: Список, Добавление, Детализация, Обновление
+"""
+
+
+class EstateList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    model = Estate
+    permission_required = 'hrdepartment_app.view_estate'
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            type_property_list = Estate.objects.all()
+            data = [type_property_item.get_data() for type_property_item in type_property_list]
+            response = {'data': data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Имущества'
+        return context
+
+
+class EstateAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    model = Estate
+    form_class = EstateAddForm
+    permission_required = 'hrdepartment_app.add_estate'
+
+    def get(self, request, *args, **kwargs):
+        return super(EstateAdd, self).get(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:estate_list'))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить имущества'
+        return context
+
+
+class EstateDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    model = Estate
+    permission_required = 'hrdepartment_app.view_estate'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        return context
+
+
+class EstateUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    model = Estate
+    form_class = EstateUpdateForm
+    permission_required = 'hrdepartment_app.change_estate'
+
+    def get(self, request, *args, **kwargs):
+        return super(EstateUpdate, self).get(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(reverse('contracts_app:estate_list'))
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))

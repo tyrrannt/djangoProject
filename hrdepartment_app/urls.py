@@ -13,7 +13,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     ReportCardListManual, ProvisionsList, ProvisionsAdd, ProvisionsDetail, ProvisionsUpdate, ReportCardListAdmin, \
     ReportCardDelete, ApprovalOficialMemoProcessReportList, OfficialMemoCancel, GuidanceDocumentsList, \
     GuidanceDocumentsAdd, GuidanceDocumentsDetail, GuidanceDocumentsUpdate, CreatingTeamList, CreatingTeamAdd, \
-    CreatingTeamDetail, CreatingTeamUpdate
+    CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed
 
 app_name = 'hrdepartment_app'
 
@@ -74,4 +74,5 @@ urlpatterns = [
     path('team/add/', CreatingTeamAdd.as_view(), name='team_add'),
     path('team/<int:pk>/', CreatingTeamDetail.as_view(), name='team'),
     path('team/<int:pk>/update/', CreatingTeamUpdate.as_view(), name='team_update'),
+    path('team/<int:pk>/agreed/', CreatingTeamAgreed.as_view(), name='team_agreed'),
 ]

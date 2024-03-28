@@ -55,7 +55,7 @@ from hrdepartment_app.forms import (
     ProvisionsUpdateForm,
     ProvisionsAddForm,
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
-    CreatingTeamUpdateForm,
+    CreatingTeamUpdateForm, CreatingTeamAgreedForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -959,7 +959,7 @@ class ApprovalOficialMemoProcessUpdate(
         )
         document = self.get_object()
         business_process = BusinessProcessDirection.objects.filter(
-            Q(person_executor=document.person_executor.user_work_profile.job)&Q(business_process_type=1)
+            Q(person_executor=document.person_executor.user_work_profile.job) & Q(business_process_type=1)
         )
         content["document"] = document.document
         person_agreement_list = list()
@@ -3237,7 +3237,6 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         return context
 
 
-
 class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
     Приказы о старших бригад - редактирование
@@ -3267,3 +3266,46 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     def form_invalid(self, form):
         print('form_invalid')
         return super().form_invalid(form)
+
+
+class CreatingTeamDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):  # DeleteView
+    model = CreatingTeam  # Приказы о старших бригад - удаление
+    template_name = "hrdepartment_app/creatingteam_confirm_delete.html"
+    success_url = reverse_lazy("hrdepartment_app:creatingteam_list")
+    permission_required = "hrdepartment_app.delete_creatingteam"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        return context
+
+
+class CreatingTeamAgreed(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):  # UpdateView
+    model = CreatingTeam
+    template_name = "hrdepartment_app/creatingteam_form_agreed.html"
+    form_class = CreatingTeamAgreedForm
+    permission_required = "hrdepartment_app.change_creatingteam"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Согласование - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        approving_job_list = [item['person_agreement'] for item in
+                              BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                  'person_agreement')]
+        approving_person_list = [item.pk for item in DataBaseUser.objects.filter(
+            user_work_profile__job__in=approving_job_list).exclude(is_active=False)]
+        kwargs.update({"approving_person": approving_person_list})
+        return kwargs

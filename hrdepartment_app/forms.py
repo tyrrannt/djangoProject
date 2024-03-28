@@ -1285,11 +1285,13 @@ class CreatingTeamAddForm(forms.ModelForm):
                                  BusinessProcessDirection.objects.filter(business_process_type=2).values(
                                      'person_agreement')]
         person_executor_list = [item['person_executor'] for item in
-                                 BusinessProcessDirection.objects.filter(business_process_type=2).values(
-                                     'person_executor')]
+                                BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                    'person_executor')]
         super(CreatingTeamAddForm, self).__init__(*args, **kwargs)
-        self.fields['approving_person'].queryset = DataBaseUser.objects.filter(user_work_profile__job__in=approving_person_list).exclude(is_active=False)
-        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_list).exclude(is_active=False)
+        self.fields['approving_person'].queryset = DataBaseUser.objects.filter(
+            user_work_profile__job__in=approving_person_list).exclude(is_active=False)
+        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(
+            user_work_profile__job__in=person_executor_list).exclude(is_active=False)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
@@ -1308,11 +1310,7 @@ class CreatingTeamAddForm(forms.ModelForm):
                 "Ошибка! Вы не входите в список лиц, кому разрешено создание приказов о старших бригадах."
             )
 
-    # def clean_agreed(self):
-    #     agreed = self.cleaned_data.get("agreed")
-    #     if not agreed:
-    #         raise ValidationError("Ошибка! Вы не согласились с условиями")
-    #     return agreed
+        return cleaned_data
 
 
 class CreatingTeamUpdateForm(forms.ModelForm):
@@ -1334,7 +1332,8 @@ class CreatingTeamUpdateForm(forms.ModelForm):
                                 BusinessProcessDirection.objects.filter(business_process_type=2).values(
                                     'person_executor')]
         super(CreatingTeamUpdateForm, self).__init__(*args, **kwargs)
-        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(user_work_profile__job__in=person_executor_list).exclude(is_active=False)
+        self.fields["executor_person"].queryset = DataBaseUser.objects.filter(
+            user_work_profile__job__in=person_executor_list).exclude(is_active=False)
         self.fields['approving_person'].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__in=approving_person_list).exclude(is_active=False)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
@@ -1345,4 +1344,31 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         self.fields["team_brigade"].widget.attrs.update({"multiple": "multiple"})
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+
+class CreatingTeamAgreedForm(forms.ModelForm):
+    class Meta:
+        model = CreatingTeam
+        fields = ('agreed',)
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        self.approving_person = kwargs.pop("approving_person")
+        super(CreatingTeamAgreedForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+    def clean_agreed(self):
+        agreed = self.cleaned_data.get("agreed")
+        print(self.approving_person, self.user, agreed)
+        if not agreed:
+            return agreed
+        if self.user in self.approving_person:
+            return agreed
+        else:
+            raise ValidationError("Ошибка! Вы не имеете право согласования приказов о старших бригадах.")
 

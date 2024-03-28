@@ -159,6 +159,12 @@
                        align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-save text-4 me-2"></i> Изменить</a>
                 </div>
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                    <a href="{% url 'hrdepartment_app:team_agreed' object.pk %}"
+                       class="submit-button btn btn-success btn-px-4 py-3 d-flex
+                       align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-save text-4 me-2"></i> Согласовать</a>
+                </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'hrdepartment_app:team_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>

@@ -25,4 +25,8 @@ urlpatterns = [
     path('typepropertys/add/', views.TypePropertysAdd.as_view(), name='typepropertys_add'),
     path('typepropertys/<int:pk>/', views.TypePropertysDetail.as_view(), name='typepropertys'),
     path('typepropertys/<int:pk>/update/', views.TypePropertysUpdate.as_view(), name='typepropertys_update'),
+    path('estate/', views.EstateList.as_view(), name='estate_list'),
+    path('estate/add/', views.EstateAdd.as_view(), name='estate_add'),
+    path('estate/<int:pk>/', views.EstateDetail.as_view(), name='estate'),
+    path('estate/<int:pk>/update/', views.EstateUpdate.as_view(), name='estate_update'),
 ]
