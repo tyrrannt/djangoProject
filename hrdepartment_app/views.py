@@ -959,7 +959,7 @@ class ApprovalOficialMemoProcessUpdate(
         )
         document = self.get_object()
         business_process = BusinessProcessDirection.objects.filter(
-            person_executor=document.person_executor.user_work_profile.job
+            Q(person_executor=document.person_executor.user_work_profile.job)&Q(business_process_type=1)
         )
         content["document"] = document.document
         person_agreement_list = list()
