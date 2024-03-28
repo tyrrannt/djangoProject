@@ -124,9 +124,13 @@
                     </div>
                 </div>
                 <div class="row text">
-                    <div class="col-md-4 text-black-50">
+                    <div class="col-md-6 text-black-50">
                         <label for="id_place">Скан:</label>
-                        {{ form.scan_file }}
+                        {% if object.scan_file %}
+                            <span id="id_scan_file"><a href="{{ object.scan_file.url }}"><img src="{% static 'Extension/pdf.png' %}"></a></span>
+                        {% endif %}
+                        <input type="file" name="scan_file" class="form-control mb-4"
+                                                   id="id_scan_file" accept="*.application/pdf">
                     </div>
                 </div>
             </div>

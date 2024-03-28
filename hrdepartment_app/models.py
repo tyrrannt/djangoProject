@@ -67,6 +67,9 @@ def ord_directory_path(instance, filename):
     year = instance.document_date
     return f"docs/ORD/{year.year}/{filename}"
 
+def team_directory_path(instance, filename):
+    year = instance.date_create
+    return f"docs/ORD/{year.year}/{year.month}/{filename}"
 
 class Documents(models.Model):
     class Meta:
@@ -1664,8 +1667,8 @@ class CreatingTeam(models.Model):
     company_property = models.ForeignKey(Estate, verbose_name="Задание на полет", on_delete=models.SET_NULL, null=True, related_name='company_property')
     agreed = models.BooleanField(verbose_name="Согласовано", default=False)
     # documents_order = models.ForeignKey(DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True, related_name='documents_order', blank=True)
-    doc_file = models.FileField(verbose_name="Файл документа", upload_to=ord_directory_path, blank=True)
-    scan_file = models.FileField(verbose_name="Скан документа", upload_to=ord_directory_path, blank=True)
+    doc_file = models.FileField(verbose_name="Файл документа", upload_to=team_directory_path, blank=True)
+    scan_file = models.FileField(verbose_name="Скан документа", upload_to=team_directory_path, blank=True)
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
 
     def __str__(self):
@@ -1737,21 +1740,20 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     doc.save(pathlib.Path.joinpath(path_obj, filename))
     if os.path.isfile(sub_doc_file):
         os.remove(sub_doc_file)
-    print(context)
-    from msoffice2pdf import convert
-
-    try:
-        var = convert(
-            source=str(pathlib.Path.joinpath(path_obj, filename)),
-            output_dir=str(path_obj),
-            soft=0,
-        )
-        logger.debug(
-            f"Файл: {str(pathlib.Path.joinpath(path_obj, filename))}, Путь: {str(path_obj)}"
-        )
-        return var
-    except Exception as _ex:
-        logger.error(f"Ошибка сохранения файла в pdf {filename}: {_ex}")
+    # from msoffice2pdf import convert
+    #
+    # try:
+    #     var = convert(
+    #         source=str(pathlib.Path.joinpath(path_obj, filename)),
+    #         output_dir=str(path_obj),
+    #         soft=0,
+    #     )
+    #     logger.debug(
+    #         f"Файл: {str(pathlib.Path.joinpath(path_obj, filename))}, Путь: {str(path_obj)}"
+    #     )
+    #     return var
+    # except Exception as _ex:
+    #     logger.error(f"Ошибка сохранения файла в pdf {filename}: {_ex}")
 
 @receiver(post_save, sender=CreatingTeam)
 def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
@@ -1760,37 +1762,38 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
         filename = (f"ORD-3-{instance.date_create}-{uid}.docx")
-        # scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
+        scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
         date_doc = instance.date_create
-        created_pdf = ias_order(
-            instance,
-            f"media/docs/ORD/{date_doc.year}/{date_doc.month}",
-            filename,
-            '3',
-        )
+        created_pdf = ias_order(instance,f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename,'3',)
         # scan_name = pathlib.Path(created_pdf).name
         if f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}" != instance.doc_file:
             CreatingTeam.objects.filter(pk=instance.pk).update(
                 doc_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}"
             )
+        if instance.scan_file:
+            if f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}" != instance.scan_file.name:
+                try:
+                    pathlib.Path.rename(
+                        pathlib.Path.joinpath(
+                            BASE_DIR,
+                            "media",
+                            instance.scan_file.name,
+                        ),
+                        pathlib.Path.joinpath(
+                            BASE_DIR,
+                            "media",
+                            f"docs/ORD/{date_doc.year}/{date_doc.month}",
+                            scanname,
+                        ),
+                    )
+                except Exception as _ex0:
+                    logger.error(f"Ошибка переименования файла: {_ex0}")
+                CreatingTeam.objects.filter(pk=instance.pk).update(
+                    scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
+                )
+            print(instance.scan_file.name)
         # if scanname != scan_name:
-        #     try:
-        #         pathlib.Path.rename(
-        #             pathlib.Path.joinpath(
-        #                 BASE_DIR,
-        #                 "media",
-        #                 f"docs/ORD/{date_doc.year}/{date_doc.month}",
-        #                 scan_name,
-        #             ),
-        #             pathlib.Path.joinpath(
-        #                 BASE_DIR,
-        #                 "media",
-        #                 f"docs/ORD/{date_doc.year}/{date_doc.month}",
-        #                 scanname,
-        #             ),
-        #         )
-        #     except Exception as _ex0:
-        #         logger.error(f"Ошибка переименования файла: {_ex0}")
+
         #     CreatingTeam.objects.filter(pk=instance.pk).update(
         #         scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
         #     )
