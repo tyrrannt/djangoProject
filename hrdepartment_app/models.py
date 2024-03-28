@@ -67,9 +67,11 @@ def ord_directory_path(instance, filename):
     year = instance.document_date
     return f"docs/ORD/{year.year}/{filename}"
 
+
 def team_directory_path(instance, filename):
     year = instance.date_create
     return f"docs/ORD/{year.year}/{year.month}/{filename}"
+
 
 class Documents(models.Model):
     class Meta:
@@ -401,8 +403,10 @@ class PlaceProductionActivity(models.Model):
     name = models.CharField(verbose_name="Наименование", max_length=250)
     address = models.CharField(verbose_name="Адрес", max_length=250, blank=True)
     short_name = models.CharField(verbose_name="Краткое наименование", max_length=30, default="", blank=True)
-    use_team_orders = models.BooleanField(verbose_name="Использовать в приказах", default=False)  # Использовать командные orders
-    additional_payment = models.DecimalField(verbose_name="Дополнительная оплата", default=0, blank=True, decimal_places=2, max_digits=10)
+    use_team_orders = models.BooleanField(verbose_name="Использовать в приказах",
+                                          default=False)  # Использовать командные orders
+    additional_payment = models.DecimalField(verbose_name="Дополнительная оплата", default=0, blank=True,
+                                             decimal_places=2, max_digits=10)
 
     def __str__(self):
         return str(self.name)
@@ -1644,6 +1648,7 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
                 scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
             )
 
+
 class CreatingTeam(models.Model):
     class Meta:
         verbose_name = "Создание бригады"
@@ -1657,14 +1662,15 @@ class CreatingTeam(models.Model):
     approving_person = models.ForeignKey(DataBaseUser, verbose_name="Согласующее лицо", on_delete=models.SET_NULL,
                                          null=True, related_name='approving_person')
     date_start = models.DateField(verbose_name="Дата начала", null=True, blank=True,
-                                  default=datetime.date.today) # Дата начала бригады.
+                                  default=datetime.date.today)  # Дата начала бригады.
     date_end = models.DateField(verbose_name="Дата окончания", null=True, blank=True,
-                                default=datetime.date.today) # Дата окончания бригады.
+                                default=datetime.date.today)  # Дата окончания бригады.
     date_create = models.DateField(verbose_name="Дата приказа", null=True, blank=True,
-                                   default=datetime.date.today) # Дата создания бригады.
-    number = models.CharField(verbose_name="Номер приказа", max_length=255, null=True, blank=True)
-    place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL, null=True, related_name='place')
-    company_property = models.ForeignKey(Estate, verbose_name="Задание на полет", on_delete=models.SET_NULL, null=True, related_name='company_property')
+                                   default=datetime.date.today)  # Дата создания бригады.
+    number = models.CharField(verbose_name="Номер приказа", max_length=255, blank=True, default='')
+    place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL, null=True,
+                              related_name='place')
+    company_property = models.ManyToManyField(Estate, verbose_name="Задание на полет", related_name='company_property')
     agreed = models.BooleanField(verbose_name="Согласовано", default=False)
     # documents_order = models.ForeignKey(DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True, related_name='documents_order', blank=True)
     doc_file = models.FileField(verbose_name="Файл документа", upload_to=team_directory_path, blank=True)
@@ -1691,9 +1697,10 @@ class CreatingTeam(models.Model):
 
         if self.cancellation:
             status = "Отменён"
+
         return {
             "pk": self.pk,
-            "document_number": self.number if self.number else "",
+            "document_number": self.number,
             "document_date": f"{self.date_create:%d.%m.%Y} г.",  # .strftime(""),
             "document_name": self.__str__(),
             "document_division": self.place.name,
@@ -1701,6 +1708,7 @@ class CreatingTeam(models.Model):
             "actuality": status,
             "cancellation": self.cancellation,
         }
+
 
 def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     doc = DocxTemplate(
@@ -1718,15 +1726,17 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     team_brigade_list = f"- {format_name_initials(obj_model.senior_brigade)} - {obj_model.senior_brigade.user_work_profile.job}\a"
     for item in obj_model.team_brigade.all():
         team_brigade_list += f"- {format_name_initials(item)} - {item.user_work_profile.job}\a"
+    company_property = ''
+    for item in obj_model.company_property.all():
+        company_property += f" {item.type_property} {item},"
 
     context = {
-        "DocNumber": obj_model.number,
+        "DocNumber": '____' if obj_model.number=='' else obj_model.number,
         "DateDoc": f'{obj_model.date_create.strftime("%d.%m.%Y")} г.',
         "DateStart": obj_model.date_start.strftime("%d.%m.%Y"),
         "DateEnd": obj_model.date_end.strftime("%d.%m.%Y"),
         "Place": obj_model.place,
-        "CompanyProperty": obj_model.company_property,
-        "TypeProperty": obj_model.company_property.type_property,
+        "CompanyProperty": company_property,
         "team_brigade": obj_model.senior_brigade,
         "team_brigade_job": obj_model.senior_brigade.user_work_profile.job,
         "ShortName": obj_model.place.short_name,
@@ -1755,6 +1765,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
     # except Exception as _ex:
     #     logger.error(f"Ошибка сохранения файла в pdf {filename}: {_ex}")
 
+
 @receiver(post_save, sender=CreatingTeam)
 def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
     if not instance.cancellation:
@@ -1764,7 +1775,7 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         filename = (f"ORD-3-{instance.date_create}-{uid}.docx")
         scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
         date_doc = instance.date_create
-        created_pdf = ias_order(instance,f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename,'3',)
+        created_pdf = ias_order(instance, f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename, '3', )
         # scan_name = pathlib.Path(created_pdf).name
         if f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}" != instance.doc_file:
             CreatingTeam.objects.filter(pk=instance.pk).update(
@@ -1797,6 +1808,7 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         #     CreatingTeam.objects.filter(pk=instance.pk).update(
         #         scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
         #     )
+
 
 class DocumentsJobDescription(Documents):
     class Meta:

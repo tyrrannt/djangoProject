@@ -1308,6 +1308,12 @@ class CreatingTeamAddForm(forms.ModelForm):
                 "Ошибка! Вы не входите в список лиц, кому разрешено создание приказов о старших бригадах."
             )
 
+    # def clean_agreed(self):
+    #     agreed = self.cleaned_data.get("agreed")
+    #     if not agreed:
+    #         raise ValidationError("Ошибка! Вы не согласились с условиями")
+    #     return agreed
+
 
 class CreatingTeamUpdateForm(forms.ModelForm):
     class Meta:
