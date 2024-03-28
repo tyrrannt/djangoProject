@@ -3237,6 +3237,7 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         return context
 
 
+
 class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
     Приказы о старших бригад - редактирование

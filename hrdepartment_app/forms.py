@@ -1345,3 +1345,4 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         self.fields["team_brigade"].widget.attrs.update({"multiple": "multiple"})
         for field in self.fields:
             make_custom_field(self.fields[field])
+

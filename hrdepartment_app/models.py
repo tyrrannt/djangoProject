@@ -1654,6 +1654,7 @@ class CreatingTeam(models.Model):
         verbose_name = "Создание бригады"
         verbose_name_plural = "Создание бригад"
 
+    replaceable_document = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,)
     senior_brigade = models.ForeignKey(DataBaseUser, verbose_name="Старший бригады", on_delete=models.SET_NULL,
                                        null=True, related_name='senior_brigade')
     team_brigade = models.ManyToManyField(DataBaseUser, verbose_name="Состав бригады", related_name='team_brigade')
@@ -1676,6 +1677,7 @@ class CreatingTeam(models.Model):
     doc_file = models.FileField(verbose_name="Файл документа", upload_to=team_directory_path, blank=True)
     scan_file = models.FileField(verbose_name="Скан документа", upload_to=team_directory_path, blank=True)
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
+
 
     def __str__(self):
         return f"{format_name_initials(self.senior_brigade)} - с: {self.date_start.strftime('%d.%m.%Y')} по: {self.date_end.strftime('%d.%m.%Y')}"
@@ -1768,7 +1770,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
 
 @receiver(post_save, sender=CreatingTeam)
 def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
-    if not instance.cancellation:
+    if not instance.agreed:
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
         # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)

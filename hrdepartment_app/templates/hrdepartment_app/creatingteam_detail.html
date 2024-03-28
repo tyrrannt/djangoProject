@@ -59,8 +59,11 @@
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_company_property">Борт:</label>
+{#                                            <input type="text" class="form-control form-control-modern" disabled#}
+{#                                                   name="company_property" value="{{ object.company_property }}" id="id_company_property"/>#}
                                             <input type="text" class="form-control form-control-modern" disabled
-                                                   name="company_property" value="{{ object.company_property }}" id="id_company_property"/>
+                                                   name="company_property" value="{% for item in object.company_property.iterator %}{% if forloop.last %}{{ item }}{% else %}{{ item }}, {% endif %}{% endfor %}" id="id_company_property"/>
+
                                         </div>
                                     </div>
                                     <div class="row text">
@@ -72,7 +75,7 @@
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_team_brigade">Состав бригады:</label>
                                             <input type="text" class="form-control form-control-modern" disabled
-                                                   name="team_brigade" value="{% for item in object.team_brigade.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }},{% endif %}{% endfor %}" id="id_team_brigade"/>
+                                                   name="team_brigade" value="{% for item in object.team_brigade.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }}, {% endif %}{% endfor %}" id="id_team_brigade"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_place">Подразделение:</label>
@@ -100,9 +103,7 @@
 
                                         </div>
                                         <div class="col-md-4 text-black-50 mt-3">
-                                            <label for="id_agreed">Согласовано:</label>
-                                            <input type="checkbox" name="agreed" id="id_agreed"
-                                                   {% if object.agreed %}checked{% endif %}>
+                                            {% if object.agreed %}<label for="id_agreed">Согласован.</label>{% else %}<label for="id_agreed">Не согласован.</label>{% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -121,9 +122,7 @@
                                                    name="approving_person" value="{{ object.approving_person | FIO_format}}" id="id_approving_person"/>
                                         </div>
                                         <div class="col-md-4 text-black-50 mt-3">
-                                            <label for="id_cancellation">Приказ отменен:</label>
-                                            <input type="checkbox" name="cancellation" id="id_cancellation"
-                                                   {% if object.cancellation %}checked{% endif %}>
+                                            {% if object.cancellation %}<label for="id_cancellation">Приказ отменен.</label>{% else %}{% endif %}
                                         </div>
                                     </div>
                                 </div>
