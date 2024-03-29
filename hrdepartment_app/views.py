@@ -268,30 +268,20 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     permission_required = "hrdepartment_app.view_officialmemo"
 
     def get(self, request, *args, **kwargs):
-        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            if (
-                    request.user.is_superuser
-                    or request.user.user_work_profile.job.division_affiliation.pk == 1
-            ):
-                memo_list = (
-                    OfficialMemo.objects.all().order_by("date_of_creation").reverse()
-                )
-            else:
-                memo_list = (
-                    OfficialMemo.objects.filter(
-                        Q(
-                            responsible__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk
-                        )
-                    )
-                    .exclude(comments="Документооборот завершен")
-                    .order_by("date_of_creation")
-                    .reverse()
-                )
 
-            data = [memo_item.get_data() for memo_item in memo_list]
-            response = {"data": data}
-            return JsonResponse(response)
+        query = Q()
+        if not request.user.is_superuser:
+            if request.user.user_work_profile.job.division_affiliation.pk != 1:
+                query &= Q(responsible__user_work_profile__job__division_affiliation__pk=
+                           request.user.user_work_profile.job.division_affiliation.pk)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['type_trip', 'person__title',
+                           'person__user_work_profile__job__name', 'place_production_activity__name', 'purpose_trip__title',
+                           'period_from', 'period_for', 'accommodation',
+                           'order__document_number', 'comments', 'period_from',
+                           ]
+            context = ajax_search(request, self, search_list, OfficialMemo, query)
+            return JsonResponse(context, safe=False)
         return super(OfficialMemoList, self).get(request, *args, **kwargs)
 
     def get_queryset(self):
