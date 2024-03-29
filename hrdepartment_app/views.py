@@ -2107,24 +2107,31 @@ class DocumentsOrderList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        cancellation = request.GET.get("cancellation", None)
+        # cancellation = request.GET.get("cancellation", None)
+        # if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        #     if cancellation == "true":
+        #         documents_order_list = (
+        #             DocumentsOrder.objects.all()
+        #         )
+        #     else:
+        #         documents_order_list = (
+        #             DocumentsOrder.objects.filter(
+        #                 Q(cancellation=False) & Q(validity_period_end__gte=datetime.datetime.now()))
+        #         )
+        #
+        #     data = [
+        #         documents_order_item.get_data()
+        #         for documents_order_item in documents_order_list
+        #     ]
+        #     response = {"data": data}
+        #     return JsonResponse(response)
+        query = Q()
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            if cancellation == "true":
-                documents_order_list = (
-                    DocumentsOrder.objects.all()
-                )
-            else:
-                documents_order_list = (
-                    DocumentsOrder.objects.filter(
-                        Q(cancellation=False) & Q(validity_period_end__gte=datetime.datetime.now()))
-                )
-
-            data = [
-                documents_order_item.get_data()
-                for documents_order_item in documents_order_list
-            ]
-            response = {"data": data}
-            return JsonResponse(response)
+            search_list = ['document_number', 'document_date',
+                           'document_name__name', 'document_foundation__person__title', 'validity_period_end',
+                           ]
+            context = ajax_search(request, self, search_list, DocumentsOrder, query)
+            return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
