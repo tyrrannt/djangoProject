@@ -3220,6 +3220,23 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         kwargs.update({"user": self.request.user.pk})
         return kwargs
 
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        document_type = request.GET.get("document_type", None)
+        if document_type:
+            html = {"replaceable_document": ""}
+            if document_type == "1":
+                team_list = CreatingTeam.objects.filter(
+                    date_end__gte=datetime.datetime.today()
+                ).exclude(cancellation=True)
+                team_list_obj = dict()
+                for item in team_list:
+                    team_list_obj.update({str(item): item.pk})
+                html["replaceable_document"] = team_list_obj
+                print(html)
+                return JsonResponse(html)
+        return super().get(request, *args, **kwargs)
+
 
 class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """

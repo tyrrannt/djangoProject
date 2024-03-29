@@ -58,7 +58,7 @@
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_type">Вид документа:</label>
-                                            {{ form.document_type }}
+                                            {{ form.document_type | attr:"onchange=memo_type_change()" }}
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_replaceable_document">Отменяемый документ:</label>
@@ -157,5 +157,35 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
+    <script type="text/javascript">
+            function memo_type_change() {
+            document_type = document.getElementById("id_document_type").value;
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:team_add' %}',
+                data: {
+                    "document_type": document_type,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    var replaceable_document = $("#id_replaceable_document");
+                    replaceable_document.empty();
+                    $.each(data['replaceable_document'], function (key, value) {
+                        replaceable_document.append($("<option selected></option>")
+                            .attr("value", value).text(key));
+                    });
+                    replaceable_document.removeAttr("disabled")
+                    $('#id_replaceable_document').refresh;
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+    </script>
 
 {% endblock %}
