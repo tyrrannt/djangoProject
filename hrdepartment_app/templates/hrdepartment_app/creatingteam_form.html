@@ -57,6 +57,16 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
+                                            <label for="id_document_type">Вид документа:</label>
+                                            {{ form.document_type }}
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_replaceable_document">Отменяемый документ:</label>
+                                            {{  form.replaceable_document | attr:"disabled" }}
+                                        </div>
+                                    </div>
+                                    <div class="row text">
+                                        <div class="col-md-4 text-black-50">
                                             <label for="id_executor_person">Исполнитель:</label>
                                             {{ form.executor_person }}
                                         </div>

@@ -1654,7 +1654,12 @@ class CreatingTeam(models.Model):
         verbose_name = "Создание бригады"
         verbose_name_plural = "Создание бригад"
 
-    replaceable_document = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, )
+    doc_type = [
+        ("0", "Новый документ"),
+        ("1", "Замещающий документ"),
+    ]
+    document_type = models.CharField(verbose_name='Тип документа', max_length=1, choices=doc_type, default="0")
+    replaceable_document = models.ForeignKey('self', verbose_name='Отменяемый документ', null=True, blank=True, on_delete=models.SET_NULL, )
     senior_brigade = models.ForeignKey(DataBaseUser, verbose_name="Старший бригады", on_delete=models.SET_NULL,
                                        null=True, related_name='senior_brigade')
     team_brigade = models.ManyToManyField(DataBaseUser, verbose_name="Состав бригады", related_name='team_brigade')
