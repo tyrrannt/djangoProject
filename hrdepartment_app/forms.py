@@ -1316,7 +1316,9 @@ class CreatingTeamAddForm(forms.ModelForm):
 class CreatingTeamUpdateForm(forms.ModelForm):
     class Meta:
         model = CreatingTeam
-        fields = '__all__'
+        fields = ('senior_brigade', 'team_brigade', 'executor_person', 'approving_person', 'date_start', 'date_end',
+                  'place',  'date_create', 'number', 'company_property', 'scan_file')
+
 
     def __init__(self, *args, **kwargs):
         """
