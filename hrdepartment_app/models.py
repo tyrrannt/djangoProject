@@ -1507,6 +1507,7 @@ class DocumentsOrder(Documents):
         return f'Пр. № {self.document_number} от {self.document_date.strftime("%d.%m.%Y")} г.'
 
 
+
 def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     sub_doc_file = ""
     if obj_model.document_foundation:
@@ -1705,16 +1706,15 @@ class CreatingTeam(models.Model):
 
         return {
             "pk": self.pk,
-            "document_number": self.number,
-            "document_date": f"{self.date_create:%d.%m.%Y} г.",  # .strftime(""),
             "document_name": format_name_initials(self.senior_brigade),  # self.senior_brigade,
-            "document_division": self.place.name,
-            "executor": format_name_initials(self.executor_person),
-            "actuality": status,
-            "agreed": "Согласовано" if self.agreed else "Не согласовано", # Согласовано, Не согласовано
             "date_start": self.date_start.strftime("%d.%m.%Y"),
             "date_end": self.date_end.strftime("%d.%m.%Y"),
-            "cancellation": self.cancellation,
+            "document_number": self.number,
+            "document_date": f"{self.date_create:%d.%m.%Y} г.",  # .strftime(""),
+            "document_division": self.place.name,
+            "agreed": "Согласовано" if self.agreed else "Не согласовано",  # Согласовано, Не согласовано
+            "actuality": status,
+            "executor": format_name_initials(self.executor_person),
         }
 
 

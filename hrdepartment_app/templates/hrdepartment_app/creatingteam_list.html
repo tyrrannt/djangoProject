@@ -88,8 +88,13 @@
                 "order": [[ 0, 'desc' ], [ 1, 'desc' ],],
                 "pageLength": 25,
                 "scrollX": true,
-                "sDom": 'T<"clear">lrtip',
+                "sDom": 'BT<"clear">lrtip',
                 "ajax": "{% url 'hrdepartment_app:team_list' %}",
+                "processing": true,
+                "serverSide": true,
+                "lengthMenu": [[10, 25, 50, 75, 100, 200], [10, 25, 50, 75, 100, 200]],
+                "searching": true,
+                "stateSave": true,
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },

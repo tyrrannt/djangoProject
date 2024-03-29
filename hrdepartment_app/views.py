@@ -27,7 +27,7 @@ from administration_app.utils import (
     get_jsons_data,
     ending_day,
     get_history,
-    get_year_interval,
+    get_year_interval, ajax_search,
 )
 from customers_app.models import DataBaseUser, Counteragent
 from hrdepartment_app.forms import (
@@ -786,6 +786,8 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = ApprovalOficialMemoProcess
     permission_required = "hrdepartment_app.view_approvaloficialmemoprocess"
+    paginate_by = 10
+    ordering = "-id"
 
     def get_queryset(self):
         qs = super(ApprovalOficialMemoProcessList, self).get_queryset()
@@ -803,54 +805,80 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
         return qs
 
     def get(self, request, *args, **kwargs):
-        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        id_all = request.GET.get("id_all", None)
-        # Подготавливаем запросную строку
-        query = Q()
-        match id_all:
-            case "1":
-                query &= Q(cancellation=False)
-                query &= Q(document_not_agreed=False)
-            case "2":
-                query &= Q(cancellation=False)
-                query &= ~Q(document__official_memo_type=3)  # ~Q это отрицание, т.е. исключение
-                query &= Q(document_not_agreed=True)
-                query &= Q(location_selected=False)
-            case "3":
-                query &= Q(cancellation=False)
-                query &= Q(location_selected=True)
-                query &= Q(process_accepted=False)
-            case "4":
-                query &= Q(cancellation=False)
-                query &= ~Q(document__official_memo_type=2)  # ~Q это отрицание, т.е. исключение
-                query &= Q(process_accepted=True)
-                query &= Q(originals_received=False)
-            case "5":
-                query &= Q(cancellation=False)
-                query &= Q(originals_received=True)
-                query &= Q(hr_accepted=False)
-            case "6":
-                query &= Q(cancellation=False)
-                query &= Q(hr_accepted=True)
-                query &= Q(accepted_accounting=False)
-            case "7":
-                query &= Q(cancellation=False)
-                query &= Q(accepted_accounting=True)
-            case "8":
-                pass
-            case _:
-                query &= Q(cancellation=False)
-                query &= Q(accepted_accounting=False)
+        # # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        # id_all = request.GET.get("id_all", None)
+        # # Подготавливаем запросную строку
 
+        # match id_all:
+        #     case "1":
+        #         query &= Q(cancellation=False)
+        #         query &= Q(document_not_agreed=False)
+        #     case "2":
+        #         query &= Q(cancellation=False)
+        #         query &= ~Q(document__official_memo_type=3)  # ~Q это отрицание, т.е. исключение
+        #         query &= Q(document_not_agreed=True)
+        #         query &= Q(location_selected=False)
+        #     case "3":
+        #         query &= Q(cancellation=False)
+        #         query &= Q(location_selected=True)
+        #         query &= Q(process_accepted=False)
+        #     case "4":
+        #         query &= Q(cancellation=False)
+        #         query &= ~Q(document__official_memo_type=2)  # ~Q это отрицание, т.е. исключение
+        #         query &= Q(process_accepted=True)
+        #         query &= Q(originals_received=False)
+        #     case "5":
+        #         query &= Q(cancellation=False)
+        #         query &= Q(originals_received=True)
+        #         query &= Q(hr_accepted=False)
+        #     case "6":
+        #         query &= Q(cancellation=False)
+        #         query &= Q(hr_accepted=True)
+        #         query &= Q(accepted_accounting=False)
+        #     case "7":
+        #         query &= Q(cancellation=False)
+        #         query &= Q(accepted_accounting=True)
+        #     case "8":
+        #         pass
+        #     case _:
+        #         query &= Q(cancellation=False)
+        #         query &= Q(accepted_accounting=False)
+        #
+        # if not request.user.is_superuser:
+        #     if request.user.user_work_profile.job.division_affiliation.pk != 1:
+        #         query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
+        #                    request.user.user_work_profile.job.division_affiliation.pk)
+        # if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        #     approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(query)
+        #     data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
+        #     response = {"data": data}
+        #     return JsonResponse(response)
+
+        """ 
+            "document",
+            "submit_for_approval",
+            "document_not_agreed",
+            "location_selected",
+            "process_accepted",
+            "accepted_accounting",
+            "accommodation",
+            "order",
+            "comments",  
+        """
+        query = Q()
         if not request.user.is_superuser:
             if request.user.user_work_profile.job.division_affiliation.pk != 1:
                 query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
                            request.user.user_work_profile.job.division_affiliation.pk)
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            approvalmemo_list = ApprovalOficialMemoProcess.objects.filter(query)
-            data = [approvalmemo_item.get_data() for approvalmemo_item in approvalmemo_list]
-            response = {"data": data}
-            return JsonResponse(response)
+            search_list = ['document__title', 'person_executor__title',
+                           'person_agreement__title', 'person_distributor__title',
+                           'person_department_staff__title', 'person_accounting__title',
+                           'accommodation', 'order__document_number', 'document__comments',
+                           ]
+            context = ajax_search(request, self, search_list, ApprovalOficialMemoProcess, query)
+            return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -3177,14 +3205,19 @@ class CreatingTeamList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     model = CreatingTeam
     permission_required = "hrdepartment_app.view_creatingteam"
+    paginate_by = 10
+    ordering = "-id"
 
     def get(self, request, *args, **kwargs):
-        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        query = Q()
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            order_list = CreatingTeam.objects.all()
-            data = [order_item.get_data() for order_item in order_list]
-            response = {"data": data}
-            return JsonResponse(response)
+            search_list = ['senior_brigade__title', 'date_start',
+                           'date_end', 'number', 'date_create',
+                           'place__name', 'agreed', 'cancellation',
+                           'executor_person__title'
+                           ]
+            context = ajax_search(request, self, search_list, CreatingTeam, query)
+            return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):

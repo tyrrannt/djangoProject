@@ -10,6 +10,8 @@ from decouple import config
 from django import forms
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import FileSystemStorage
+from django.db.models import Q
+from django.http import JsonResponse
 from loguru import logger
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
@@ -785,3 +787,32 @@ def make_custom_field(f: forms.Field):
     if isinstance(f, forms.FileField):
         return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-fileinput": True})
 
+
+def ajax_search(request, self, field_list, model_name, query):
+    #  Метод для поиска по модели.
+    context = {}
+    data = request.GET
+    draw = int(data.get("draw"))
+    start = int(data.get("start"))
+    length = int(data.get("length"))
+
+    counter = 0
+    for field in field_list:
+        if request.GET.get(f"columns[{counter}][search][value]"):
+            query &= Q(**{field + '__iregex': request.GET.get(f"columns[{counter}][search][value]")})
+        counter += 1
+    if query:
+        order_list = model_name.objects.filter(query)
+    else:
+        order_list = model_name.objects.all()
+
+    total = order_list.count()  # Получаем общее количество записей в таблице
+    context["recordsTotal"] = total  # Общее количество записей в таблице
+    context["draw"] = draw  # Количество записей на странице
+    context["recordsFiltered"] = total  # Общее количество записей в таблице
+    context['iDisplayStart'] = start  # Стартовая позиция
+    order_list = order_list[start:start + length]
+    self.paginate_by = int(length)
+
+    context["data"] = [order_item.get_data() for order_item in order_list]
+    return context
