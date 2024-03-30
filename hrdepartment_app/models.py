@@ -1776,6 +1776,9 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
 @receiver(post_save, sender=CreatingTeam)
 def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
     if instance.agreed:
+        tn = TelegramNotification.objects.filter(document_id=instance.pk)
+        if tn:
+            tn.delete()
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
         # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
@@ -1810,11 +1813,34 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
                     scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
                 )
             print(instance.scan_file.name)
-        # if scanname != scan_name:
-
-        #     CreatingTeam.objects.filter(pk=instance.pk).update(
-        #         scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
-        #     )
+    else:
+        business_process = BusinessProcessDirection.objects.filter(
+            person_executor=instance.executor_person.user_work_profile.job
+        )
+        person_agreement_job_list = []
+        person_agreement_list = []
+        for item in business_process:
+            for job in item.person_agreement.all():
+                person_agreement_job_list.append(job)
+        for item in DataBaseUser.objects.filter(
+                user_work_profile__job__name__in=set(person_agreement_job_list)
+        ):
+            if item.telegram_id:
+                person_agreement_list.append(
+                    ChatID.objects.filter(chat_id=item.telegram_id).first()
+                )
+        kwargs_obj = {
+            "message": f"Необходимо согласовать документ: {instance}",
+            "document_url": f"https://corp.barkol.ru/hr/team/{instance.pk}/agreed/",
+            "document_id": f"{instance.pk}",
+            "sending_counter": 3,
+            "send_time": datetime.datetime.now() + relativedelta(minutes=1),
+            "send_date": datetime.datetime.today(),
+        }
+        tn, created = TelegramNotification.objects.update_or_create(
+            document_id=instance.pk, defaults=kwargs_obj
+        )
+        tn.respondents.set(person_agreement_list)
 
 
 class DocumentsJobDescription(Documents):
