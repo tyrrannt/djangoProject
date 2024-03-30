@@ -29,6 +29,7 @@ urlpatterns = [
     path('users/', include('customers_app.urls')),
     path('contracts/', include('contracts_app.urls')),
     path('hr/', include('hrdepartment_app.urls')),
+    path('logistics/', include('logistics_app.urls')),
     path('portal/', include('administration_app.urls')),
     path('telegram_app/', include('telegram_app.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls'), name="ck_editor_5_upload_file"),

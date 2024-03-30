@@ -1954,7 +1954,7 @@ class ReportCard(models.Model):
     class Meta:
         verbose_name = "Рабочее время"
         verbose_name_plural = "Табель учета"
-
+        ordering = ("-report_card_day",)
     report_card_day = models.DateField(verbose_name="Дата", null=True, blank=True)
     rec_no = models.IntegerField(verbose_name="Номер записи", default=0, blank=True)
     employee = models.ForeignKey(

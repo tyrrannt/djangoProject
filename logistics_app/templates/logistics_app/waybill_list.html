@@ -1,10 +1,173 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
 
-</body>
-</html>
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+                <section class="card">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
+                        </div>
+                        <h2 class="card-title">Основной</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="row">
+                        <div class="col-lg-9">
+                        <form action="{% url 'hrdepartment_app:reportcard_listadmin' %}" method="get">
+                        <div class="row">
+                            <div class="col-sm-12 col-lg-3 mb-1">
+                                <select class="form-control select-style-1 filter-by" name="report_month"
+                                        id="id_report_month">
+                                    {% for key, value in month_dict.items %}
+                                    <option value="{{ key }}" {% if current_month == key %}selected{% endif %}> {{ value }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-12 col-lg-3 mb-1">
+                                <select class="form-control select-style-1 filter-by" name="report_year"
+                                        id="id_report_year">
+                                    {% for key, value in year_dict.items %}
+                                    <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-12 col-lg-3 mb-1">
+                                <button type="submit" class="btn btn-primary" style="width: 100%" onclick="report_date()">OK</button>
+                            </div>
+                        </div>
+                        </form>
+                        </div>
+                        </div>
+                        <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                            <div class="row">
+                            </div>
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
+                            <table class="table table-ecommerce-simple mb-0 table-hover" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Дата документа</th>
+                                    <th width="10%">Куда</th>
+                                    <th width="10%">Содержание</th>
+                                    <th width="10%">Комментарий</th>
+                                    <th width="10%">Подразделение</th>
+                                    <th width="10%">Отправитель</th>
+                                    <th width="10%">Состояние</th>
+                                    <th width="10%">Получение</th>
+                                    <th width="10%">Дата и время создания</th>
+                                    <th width="10%">Исполнитель</th>
+                                </tr>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            {#                            <div class="datatable-header">#}
+                            {#                                <div class="row align-items-center mb-3">#}
+                            {#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+                            {#                                            <a href="{% url 'hrdepartment_app:reportcard_detail' %}"#}
+                            {#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
+                            {#                                                Сводная таблица по месяцам </a>#}
+                            {#                                        </div>#}
+                            {#                                </div>#}
+                            {#                            </div>#}
+
+                            <hr class="solid mt-5 opacity-4">
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            $('#datatable-editable thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
+            var table = $('#datatable-editable').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "ordering": false,
+                "scrollX": true,
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                            'copy', 'csv', 'excel', 'pdf', 'print'
+                            ],
+                "ajax": "{% url 'logistics_app:logistics_list' %}",
+                "processing": true,
+                "serverSide": true,
+                "lengthMenu": [[10, 25, 50, 75, 100, 200, 300], [10, 25, 50, 75, 100, 200, 300]],
+                "searching": true,
+                "stateSave": true,
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    $(nRow).attr("href", '/hr/report/' + id + '/update/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "document_date"},
+                    {"data": "place_of_departure"},
+                    {"data": "content"},
+                    {"data": "comment"},
+                    {"data": "place_division"},
+                    {"data": "sender"},
+                    {"data": "state"},
+                    {"data": "responsible"},
+                    {"data": "date_of_creation"},
+                    {"data": "executor"},
+                ],
+            });
+        });
+    </script>
+{% endblock %}
