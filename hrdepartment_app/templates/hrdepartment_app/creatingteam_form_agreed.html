@@ -57,6 +57,26 @@
                                     <p class="card-big-info-desc" id="testof">Согласование приказа</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
+                                    <div class="row text">
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="id_place"><h4>Старший бригады:&nbsp&nbsp&nbsp<u>{{ object.senior_brigade }}</u></h4></label>
+                                        </div>
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="id_place"><h4>Бригада:&nbsp&nbsp&nbsp<u>{% for item in object.team_brigade.iterator %}{{ item }}, {% endfor %}</u></h4></label>
+                                        </div>
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="id_place"><h4>На:&nbsp&nbsp&nbsp<u>{{ object.place }}</u></h4></label>
+                                            </div>
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="id_place"><h4>С:&nbsp&nbsp&nbsp<u>{{ object.date_start }}</u></h4></label>
+                                            </div>
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="id_place"><h4>По:&nbsp&nbsp&nbsp<u>{{ object.date_end }}</u></h4></label>
+                                        </div>
+                                        <div class="col-md-12 text-black-50">
+                                            <label for="id_place"><h4>В задание на полет:&nbsp&nbsp&nbsp<u>{% for item in object.company_property.iterator %}{{ item }}, {% endfor %}</u></h4></label>
+                                        </div>
+                                    </div>
                                     {{ form.as_p }}
                                 </div>
                             </div>

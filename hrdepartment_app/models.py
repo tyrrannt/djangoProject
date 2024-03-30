@@ -1654,6 +1654,7 @@ class CreatingTeam(models.Model):
     class Meta:
         verbose_name = "Создание бригады"
         verbose_name_plural = "Создание бригад"
+        ordering = ["-id"]
 
     doc_type = [
         ("0", "Новый документ"),
