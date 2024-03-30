@@ -2526,6 +2526,7 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
             #     reportcard_list = ReportCard.objects.all()
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
+            query = Q()
             if request.session["current_month"] and request.session["current_year"]:
                 start_date = datetime.date(
                     year=int(request.session["current_year"]),
@@ -2536,11 +2537,7 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
                 search_interval = list(
                     rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
                 )
-                reportcard_list = (
-                    ReportCard.objects.filter(Q(report_card_day__in=search_interval))
-                    .order_by("report_card_day")
-                    .reverse()
-                )
+                query &= Q(report_card_day__in=search_interval)
             else:
                 start_date = datetime.date(
                     year=datetime.datetime.today().year,
@@ -2551,14 +2548,12 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
                 search_interval = list(
                     rrule.rrule(rrule.DAILY, dtstart=start_date, until=end_date)
                 )
-                reportcard_list = (
-                    ReportCard.objects.filter(Q(report_card_day__in=search_interval))
-                    .order_by("report_card_day")
-                    .reverse()
-                )
-            data = [reportcard_item.get_data() for reportcard_item in reportcard_list]
-            response = {"data": data}
-            return JsonResponse(response)
+                query &= Q(report_card_day__in=search_interval)
+
+            search_list = ['report_card_day', 'employee.title',
+                           'start_time', 'end_time', 'reason_adjustment', 'record_type']
+            context = ajax_search(request, self, search_list, ReportCard, query)
+            return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):

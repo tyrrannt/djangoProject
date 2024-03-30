@@ -157,6 +157,11 @@
                             'copy', 'csv', 'excel', 'pdf', 'print'
                             ],
                 "ajax": "{% url 'hrdepartment_app:reportcard_listadmin' %}",
+                "processing": true,
+                "serverSide": true,
+                "lengthMenu": [[10, 25, 50, 75, 100, 200, 300], [10, 25, 50, 75, 100, 200, 300]],
+                "searching": true,
+                "stateSave": true,
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
