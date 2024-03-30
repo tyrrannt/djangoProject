@@ -2,6 +2,7 @@ import uuid
 
 from django.db import models
 
+from administration_app.utils import format_name_initials
 from customers_app.models import DataBaseUser, Division
 from hrdepartment_app.models import PlaceProductionActivity
 
@@ -15,11 +16,11 @@ class WayBill(models.Model):
         ordering = ["-date_of_creation"]
 
     STATES = (
-        (0, "Не обработана"),
-        (1, "Обработана"),
-        (2, "Отправлена"),
-        (3, "Принята"),
-        (4, "Отклонена"),
+        ("0", "Не обработана"),
+        ("1", "Обработана"),
+        ('2', "Отправлена"),
+        ("3", "Принята"),
+        ("4", "Отклонена"),
     )
 
     document_number = models.CharField(max_length=37, verbose_name="Номер документа", default=uuid.uuid4)
@@ -33,7 +34,7 @@ class WayBill(models.Model):
                                        null=True, blank=True)
     sender = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Отправитель",
                                  on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_sender")
-    state = models.CharField(max_length=100, verbose_name="Состояние", choices=STATES, default=0)
+    state = models.CharField(max_length=100, verbose_name="Состояние", choices=STATES, default="0")
     responsible = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Получение",
                                  on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_responsible")
     date_of_creation = models.DateField(verbose_name="Дата и время создания",
@@ -64,9 +65,9 @@ class WayBill(models.Model):
             "content": self.content,
             "comment": self.comment,
             "place_division": self.place_division.name,
-            "sender": self.sender.title,
-            "state": self.state,
-            "responsible": self.responsible.title,
+            "sender": format_name_initials(self.sender.title),
+            "state": self.get_state_display(),
+            "responsible": format_name_initials(self.responsible.title),
             "date_of_creation": f"{self.date_of_creation:%d.%m.%Y} г.",
-            "executor": self.executor.title,
+            "executor": format_name_initials(self.executor.title),
         }

@@ -23,33 +23,43 @@
                     </header>
                     <div class="card-body">
                         <div class="row">
-                        <div class="col-lg-9">
-                        <form action="{% url 'hrdepartment_app:reportcard_listadmin' %}" method="get">
-                        <div class="row">
-                            <div class="col-sm-12 col-lg-3 mb-1">
-                                <select class="form-control select-style-1 filter-by" name="report_month"
-                                        id="id_report_month">
-                                    {% for key, value in month_dict.items %}
-                                    <option value="{{ key }}" {% if current_month == key %}selected{% endif %}> {{ value }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
+                            <div class="col-lg-9">
+                                <form action="{% url 'logistics_app:waybill_list' %}" method="get">
+                                    <div class="row">
+                                        <!-- Button trigger modal -->
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                                data-bs-target="#staticBackdrop">
+                                            Launch static backdrop modal
+                                        </button>
+
+                                        <!-- Modal -->
+                                        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
+                                             data-bs-keyboard="false" tabindex="-1"
+                                             aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="staticBackdropLabel">Modal
+                                                            title</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                                aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        ...
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                                data-bs-dismiss="modal">Close
+                                                        </button>
+                                                        <button type="button" class="btn btn-primary">Understood
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
-                            <div class="col-sm-12 col-lg-3 mb-1">
-                                <select class="form-control select-style-1 filter-by" name="report_year"
-                                        id="id_report_year">
-                                    {% for key, value in year_dict.items %}
-                                    <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-sm-12 col-lg-3 mb-1">
-                                <button type="submit" class="btn btn-primary" style="width: 100%" onclick="report_date()">OK</button>
-                            </div>
-                        </div>
-                        </form>
-                        </div>
                         </div>
                         <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
                             <div class="row">
@@ -68,7 +78,7 @@
                                    style="min-width: 750px;">
                                 <thead>
                                 <tr>
-                                    <th width="20%">Дата документа</th>
+                                    <th width="8%">Дата документа</th>
                                     <th width="10%">Куда</th>
                                     <th width="10%">Содержание</th>
                                     <th width="10%">Комментарий</th>
@@ -76,8 +86,10 @@
                                     <th width="10%">Отправитель</th>
                                     <th width="10%">Состояние</th>
                                     <th width="10%">Получение</th>
-                                    <th width="10%">Дата и время создания</th>
                                     <th width="10%">Исполнитель</th>
+                                    <th width="4%"></th>
+                                    <th width="4%"></th>
+                                    <th width="4%"></th>
                                 </tr>
                                 </thead>
                             </table>
@@ -113,11 +125,11 @@
 {% block custome_script %}
     <script>
         $(document).ready(function () {
-            $('#datatable-editable thead th').each(function () {
+            $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
                 $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
             });
-            var table = $('#datatable-editable').DataTable({
+            var table = $('#datatable-ecommerce-list').DataTable({
                 "initComplete": function () {
                     // Apply the search
                     this.api()
@@ -135,9 +147,9 @@
                 "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
                 "buttons": [
-                            'copy', 'csv', 'excel', 'pdf', 'print'
-                            ],
-                "ajax": "{% url 'logistics_app:logistics_list' %}",
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                "ajax": "{% url 'logistics_app:waybill_list' %}",
                 "processing": true,
                 "serverSide": true,
                 "lengthMenu": [[10, 25, 50, 75, 100, 200, 300], [10, 25, 50, 75, 100, 200, 300]],
@@ -146,15 +158,7 @@
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
-                    $(nRow).attr("href", '/hr/report/' + id + '/update/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
-                    });
-                },
+
                 "columns": [
                     {"data": "document_date"},
                     {"data": "place_of_departure"},
@@ -164,8 +168,31 @@
                     {"data": "sender"},
                     {"data": "state"},
                     {"data": "responsible"},
-                    {"data": "date_of_creation"},
                     {"data": "executor"},
+                    {"data": null,
+                        "mRender":function(data,type,full){
+                            {
+                                ret ='<a class="underline" href="/logistics/waybill/add/" target="_BLANK"><i class="bx bx-book-add"></i></a>';
+                                return ret;
+                            }
+                            return data.name;
+                        }},
+                    {"data": null,
+                        "mRender":function(data,type,full){
+                            {
+                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/update/" target="_BLANK"><i class="bx bx-edit" ></i></a>';
+                                return ret;
+                            }
+                            return data.name;
+                        }},
+                    {"data": null,
+                        "mRender":function(data,type,full){
+                            {
+                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/delete/" target="_BLANK"><i class="bx bx-trash"></i></a>';
+                                return ret;
+                            }
+                            return data.name;
+                        }},
                 ],
             });
         });

@@ -2,9 +2,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.generic import ListView
+from django.views.generic import ListView, CreateView, DetailView, UpdateView, DeleteView
 
 from administration_app.utils import ajax_search
+from logistics_app.forms import WayBillCreateForm
 from logistics_app.models import WayBill
 
 
@@ -12,8 +13,6 @@ from logistics_app.models import WayBill
 
 class WayBillListView(LoginRequiredMixin, ListView):
     model = WayBill
-    template_name = 'logistics_app/waybill_list.html'
-    context_object_name = 'waybills'
     paginate_by = 10
 
     def get_queryset(self):
@@ -30,3 +29,21 @@ class WayBillListView(LoginRequiredMixin, ListView):
             context = ajax_search(request, self, search_list, WayBill, query)
             return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
+
+
+class WayBillCreateView(LoginRequiredMixin, CreateView):
+    model = WayBill
+    form_class = WayBillCreateForm
+
+
+class WayBillDetailView(LoginRequiredMixin, DetailView):
+    model = WayBill
+
+
+class WayBillUpdateView(LoginRequiredMixin, UpdateView):
+    model = WayBill
+
+
+class WayBillDeleteView(LoginRequiredMixin, DeleteView):
+    model = WayBill
+    success_url = '/logistics/waybill/'
