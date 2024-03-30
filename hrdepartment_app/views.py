@@ -2550,7 +2550,7 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
                 )
                 query &= Q(report_card_day__in=search_interval)
 
-            search_list = ['report_card_day', 'employee.title',
+            search_list = ['report_card_day', 'employee__title',
                            'start_time', 'end_time', 'reason_adjustment', 'record_type']
             context = ajax_search(request, self, search_list, ReportCard, query)
             return JsonResponse(context, safe=False)
