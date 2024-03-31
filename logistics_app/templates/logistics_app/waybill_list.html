@@ -38,22 +38,26 @@
                                              aria-labelledby="staticBackdropLabel" aria-hidden="true">
                                             <div class="modal-dialog">
                                                 <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="staticBackdropLabel">Modal
-                                                            title</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                                aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        ...
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary"
-                                                                data-bs-dismiss="modal">Close
-                                                        </button>
-                                                        <button type="button" class="btn btn-primary">Understood
-                                                        </button>
-                                                    </div>
+                                                    <form action="{% url 'logistics_app:waybill_delete' 1 %}" method="post">
+                                                        {% csrf_token %}
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="staticBackdropLabel">Modal
+                                                                title</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                                    aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                                <p>Are you sure you want to delete "{{ object.pk }}"?</p>
+                                                                {{ form }}
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Close
+                                                            </button>
+                                                            <button type="button" class="btn btn-primary">Understood
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -180,7 +184,15 @@
                     {"data": null,
                         "mRender":function(data,type,full){
                             {
-                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/update/" target="_BLANK"><i class="bx bx-edit" ></i></a>';
+                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/update/" target="_BLANK"><i class="bx bx-edit"></i></a>';
+                                return ret;
+                            }
+                            return data.name;
+                        }},
+                    {"data": null,
+                        "mRender":function(data,type,full){
+                            {
+                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/delete/" target="_BLANK"><i class="bx bx-trash"></i></a>';
                                 return ret;
                             }
                             return data.name;
