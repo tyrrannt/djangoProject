@@ -24,12 +24,11 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-lg-9">
-                                <form action="{% url 'logistics_app:waybill_list' %}" method="get">
                                     <div class="row">
                                         <!-- Button trigger modal -->
                                         <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                 data-bs-target="#staticBackdrop">
-                                            Launch static backdrop modal
+                                            Добавить запись
                                         </button>
 
                                         <!-- Modal -->
@@ -38,7 +37,7 @@
                                              aria-labelledby="staticBackdropLabel" aria-hidden="true">
                                             <div class="modal-dialog">
                                                 <div class="modal-content">
-                                                    <form action="{% url 'logistics_app:waybill_delete' 1 %}" method="post">
+                                                    <form action="{% url 'logistics_app:waybill_add' %}" method="post">
                                                         {% csrf_token %}
                                                         <div class="modal-header">
                                                             <h5 class="modal-title" id="staticBackdropLabel">Modal
@@ -47,8 +46,7 @@
                                                                     aria-label="Close"></button>
                                                         </div>
                                                         <div class="modal-body">
-                                                                <p>Are you sure you want to delete "{{ object.pk }}"?</p>
-                                                                {{ form }}
+                                                                {{ form.as_p }}
                                                         </div>
                                                         <div class="modal-footer">
                                                             <button type="button" class="btn btn-secondary"
@@ -62,7 +60,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                </form>
                             </div>
                         </div>
                         <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
@@ -91,7 +88,7 @@
                                     <th width="10%">Состояние</th>
                                     <th width="10%">Получение</th>
                                     <th width="10%">Исполнитель</th>
-                                    <th width="4%"></th>
+
                                     <th width="4%"></th>
                                     <th width="4%"></th>
                                 </tr>
@@ -173,26 +170,11 @@
                     {"data": "state"},
                     {"data": "responsible"},
                     {"data": "executor"},
+
                     {"data": null,
                         "mRender":function(data,type,full){
                             {
-                                ret ='<a class="underline" href="/logistics/waybill/add/" target="_BLANK"><i class="bx bx-book-add"></i></a>';
-                                return ret;
-                            }
-                            return data.name;
-                        }},
-                    {"data": null,
-                        "mRender":function(data,type,full){
-                            {
-                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/update/" target="_BLANK"><i class="bx bx-edit"></i></a>';
-                                return ret;
-                            }
-                            return data.name;
-                        }},
-                    {"data": null,
-                        "mRender":function(data,type,full){
-                            {
-                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/delete/" target="_BLANK"><i class="bx bx-trash"></i></a>';
+                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/update/" target="_BLANK"><i class="bx bxs-edit-alt" ></i></a>';
                                 return ret;
                             }
                             return data.name;
@@ -205,6 +187,7 @@
                             }
                             return data.name;
                         }},
+
                 ],
             });
         });
