@@ -24,7 +24,7 @@ class WayBillListView(LoginRequiredMixin, ListView):
             search_list = ['document_date', 'place_of_departure__name',
                            'content', 'comment', 'place_division__name',
                            'sender__title', 'state', 'responsible__title', 'date_of_creation',
-                           'executor__title'
+                           'executor__title', 'urgency'
                            ]
             context = ajax_search(request, self, search_list, WayBill, query)
             return JsonResponse(context, safe=False)

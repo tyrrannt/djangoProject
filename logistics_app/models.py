@@ -76,4 +76,5 @@ class WayBill(models.Model):
             "responsible": format_name_initials(self.responsible.title),
             "date_of_creation": f"{self.date_of_creation:%d.%m.%Y} г.",
             "executor": format_name_initials(self.executor.title),
+            "urgency": self.get_urgency_display(),
         }

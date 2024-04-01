@@ -6,6 +6,11 @@
     <title>{{ title }}</title>
 {% endblock %}
 
+{% block custome_css %}
+    <link type="text/css" href="//gyrocode.github.io/jquery-datatables-checkboxes/1.2.12/css/dataTables.checkboxes.css" rel="stylesheet" />
+<script type="text/javascript" src="//gyrocode.github.io/jquery-datatables-checkboxes/1.2.12/js/dataTables.checkboxes.min.js"></script>
+{% endblock %}
+
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
 
@@ -79,6 +84,7 @@
                                    style="min-width: 750px;">
                                 <thead>
                                 <tr>
+
                                     <th width="8%">Дата документа</th>
                                     <th width="10%">Куда</th>
                                     <th width="10%">Содержание</th>
@@ -88,7 +94,7 @@
                                     <th width="10%">Состояние</th>
                                     <th width="10%">Получение</th>
                                     <th width="10%">Исполнитель</th>
-
+                                    <th width="10%">Срочность</th>
                                     <th width="4%"></th>
                                     <th width="4%"></th>
                                 </tr>
@@ -145,6 +151,7 @@
                         });
                 },
                 "ordering": false,
+                "select": true,
                 "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
                 "buttons": [
@@ -159,7 +166,7 @@
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
-
+                {#https://www.datatables.net/forums/discussion/55671/datatables-editor-loading-select-options-from-database-in-a-django-app#}
                 "columns": [
                     {"data": "document_date"},
                     {"data": "place_of_departure"},
@@ -170,7 +177,7 @@
                     {"data": "state"},
                     {"data": "responsible"},
                     {"data": "executor"},
-
+                    {"data": "urgency"},
                     {"data": null,
                         "mRender":function(data,type,full){
                             {
