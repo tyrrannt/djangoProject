@@ -71,7 +71,7 @@ def send_email_notification():
                 "name": item.first_name,
                 "surname": item.surname,
                 "text": f"Уведомляем Вас, что Вам открыт доступ к Вашей учетной записи на корпоративном портале. Данные для авторизации указаны ниже:",
-                "sign": f"Ваш логин: {item.username}\nВаш пароль: {item.user_work_profile.work_email_password}",
+                "sign": f"Ваш логин: {item.username}<br>Ваш пароль: {item.user_work_profile.work_email_password}",
                 "color": "white",
             }
             text_content = render_to_string(
