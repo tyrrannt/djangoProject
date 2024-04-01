@@ -75,10 +75,10 @@ def send_email_notification():
                 "color": "white",
             }
             text_content = render_to_string(
-                "hrdepartment_app/happy_birthday.html", current_context
+                "hrdepartment_app/change_password.html", current_context
             )
             html_content = render_to_string(
-                "hrdepartment_app/happy_birthday.html", current_context
+                "hrdepartment_app/change_password.html", current_context
             )
             plain_message = strip_tags(html_content)
             try:
