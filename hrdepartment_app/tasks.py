@@ -56,6 +56,52 @@ def send_email():
     print("It is work!")
 
 
+@app.task()
+def send_email_notification():
+    count, errors = 0, 0
+    for item in DataBaseUser.objects.all().exclude(is_superuser=False):
+        if item.user_work_profile.work_email_password:
+            item.set_password(item.user_work_profile.work_email_password)
+            item.save()
+            mail_to = item.email
+            subject_mail = (
+                f"Уведомление о доступе к Вашей учетной записи на портале"
+            )
+            current_context = {
+                "name": item.first_name,
+                "surname": item.surname,
+                "text": f"Уведомляем Вас, что Вам открыт доступ к Вашей учетной записи на корпоративном портале. Данные для авторизации указаны ниже:",
+                "sign": f"Ваш логин: {item.username}\nВаш пароль: {item.user_work_profile.work_email_password}",
+                "color": "white",
+            }
+            text_content = render_to_string(
+                "hrdepartment_app/happy_birthday.html", current_context
+            )
+            html_content = render_to_string(
+                "hrdepartment_app/happy_birthday.html", current_context
+            )
+            plain_message = strip_tags(html_content)
+            try:
+                mail.send_mail(
+                    subject_mail,
+                    plain_message,
+                    EMAIL_HOST_USER,
+                    [
+                        mail_to,
+                        EMAIL_HOST_USER,
+                    ],
+                    html_message=html_content,
+                )
+            except Exception as _ex:
+                logger.debug(f"Failed to send email. {_ex}")
+            count += 1
+        else:
+            errors += 1
+
+    return count, errors
+
+
+
 def change_sign():
     list_obj = HappyBirthdayGreetings.objects.all()
     for item in list_obj:

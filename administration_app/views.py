@@ -21,7 +21,8 @@ from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
-    report_card_separator_daily, vacation_schedule, vacation_check, vacation_schedule_send, get_sick_leave
+    report_card_separator_daily, vacation_schedule, vacation_check, vacation_schedule_send, get_sick_leave, \
+    send_email_notification
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
 
@@ -183,7 +184,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
 
             if request.GET.get('update') == '4':
-                change_password()
+                # change_password()
+                send_email_notification()
                 #vacation_schedule_send()
 
                 #vacation_check()
