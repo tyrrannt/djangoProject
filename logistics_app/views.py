@@ -38,6 +38,7 @@ class WayBillCreateView(LoginRequiredMixin, CreateView):
 
 class WayBillDetailView(LoginRequiredMixin, DetailView):
     model = WayBill
+    template_name = 'logistics_app/waybill_detail.html'
 
 
 class WayBillUpdateView(LoginRequiredMixin, UpdateView):
