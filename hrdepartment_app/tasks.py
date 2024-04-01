@@ -94,7 +94,7 @@ def send_email_notification():
                 )
                 logger.info(f"Сообщение для {mail_to} отправлено!")
             except Exception as _ex:
-                logger.debug(f"Failed to send email to {mail_to}. {_ex}")
+                logger.debug(f"Failed to send email to {mail_to} because {_ex}")
             count += 1
         else:
             errors += 1
