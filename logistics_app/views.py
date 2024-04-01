@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.views.generic import ListView, CreateView, DetailView, UpdateView, DeleteView
 
 from administration_app.utils import ajax_search
-from logistics_app.forms import WayBillCreateForm
+from logistics_app.forms import WayBillCreateForm, WayBillUpdateForm
 from logistics_app.models import WayBill
 
 
@@ -42,6 +42,7 @@ class WayBillDetailView(LoginRequiredMixin, DetailView):
 
 class WayBillUpdateView(LoginRequiredMixin, UpdateView):
     model = WayBill
+    form_class = WayBillUpdateForm
 
 
 class WayBillDeleteView(LoginRequiredMixin, DeleteView):
