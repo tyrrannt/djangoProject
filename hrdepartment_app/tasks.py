@@ -59,7 +59,7 @@ def send_email():
 @app.task()
 def send_email_notification():
     count, errors = 0, 0
-    for item in DataBaseUser.objects.all().exclude(is_superuser=False):
+    for item in DataBaseUser.objects.filter(is_active=True).exclude(is_superuser=False):
         if item.user_work_profile.work_email_password:
             item.set_password(item.user_work_profile.work_email_password)
             item.save()
