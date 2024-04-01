@@ -17,6 +17,7 @@ from administration_app.models import PortalProperty
 from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
     get_jsons_data_filter2, get_types_userworktime, get_date_interval, get_json_vacation, change_password
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, VacationSchedule
+from djangoProject.celery import app
 from djangoProject.settings import API_TOKEN
 from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
     ApprovalOficialMemoProcess
@@ -185,7 +186,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 
             if request.GET.get('update') == '4':
                 # change_password()
-                send_email_notification()
+                send_email_notification.delay()
+
                 #vacation_schedule_send()
 
                 #vacation_check()
