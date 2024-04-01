@@ -186,7 +186,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 
             if request.GET.get('update') == '4':
                 # change_password()
-                send_email_notification.delay()
+                result = send_email_notification.delay()
 
                 #vacation_schedule_send()
 
