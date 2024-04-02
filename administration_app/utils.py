@@ -757,7 +757,6 @@ def change_password():
 
 
 def make_custom_field(f: forms.Field):
-    print(type(f))
     if isinstance(f, forms.DateField):
         return f.widget.attrs.update(
             {"class": "form-control form-control-modern",
@@ -769,7 +768,7 @@ def make_custom_field(f: forms.Field):
     if isinstance(f, forms.BooleanField):
         return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
     if isinstance(f, forms.CharField) or isinstance(f, forms.DecimalField):
-        return f.widget.attrs.update({"class": "form-control form-control-modern"})
+        return f.widget.attrs.update({"class": "form-control form-control-modern", "autocomplete": "on"})
     if isinstance(f, forms.ChoiceField):
         return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
     if isinstance(f, forms.ModelChoiceField):

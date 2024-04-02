@@ -10,13 +10,15 @@
 {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
 {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
 {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/autocomplete/src/jquery-ui.css' %}"/>
 {% endblock %}
 
 {% block custome_script %}
-{#    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
-{#    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
-{#    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
+{#    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>#}
+    <script src="{% static 'admin_templates/vendor/autocomplete/src/jquery-ui.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/autocomplete/src/custom.autocomplete.js' %}"></script>
+
+{#<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.devbridge-autocomplete/1.4.2/jquery.autocomplete.min.js"></script>#}
 {% endblock %}
 
 {% block title %}
@@ -47,8 +49,6 @@
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">Приказ № {{ object.number }}
-                    от {{ object.date_create }} г.</h4>
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
                         <label>Основные реквизиты</label>

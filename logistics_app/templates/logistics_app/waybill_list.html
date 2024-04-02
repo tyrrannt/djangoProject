@@ -6,9 +6,8 @@
     <title>{{ title }}</title>
 {% endblock %}
 
-{% block custome_css %}
-    <link type="text/css" href="//gyrocode.github.io/jquery-datatables-checkboxes/1.2.12/css/dataTables.checkboxes.css" rel="stylesheet" />
-<script type="text/javascript" src="//gyrocode.github.io/jquery-datatables-checkboxes/1.2.12/js/dataTables.checkboxes.min.js"></script>
+{% block SpecificPageVendor %}
+    <script src="{% static 'admin_templates/vendor/autocomplete/src/jquery.autocomplete.js' %}"></script>
 {% endblock %}
 
 {% block content %}

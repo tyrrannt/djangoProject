@@ -5,6 +5,8 @@ from django.shortcuts import render
 from django.views.generic import ListView, CreateView, DetailView, UpdateView, DeleteView
 
 from administration_app.utils import ajax_search
+from customers_app.models import DataBaseUser
+from hrdepartment_app.models import ApprovalOficialMemoProcess
 from logistics_app.forms import WayBillCreateForm, WayBillUpdateForm
 from logistics_app.models import WayBill
 
@@ -34,6 +36,16 @@ class WayBillListView(LoginRequiredMixin, ListView):
 class WayBillCreateView(LoginRequiredMixin, CreateView):
     model = WayBill
     form_class = WayBillCreateForm
+    get_success_url = '/logistics/waybill/'
+
+    def get(self, request, *args, **kwargs):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            if request.GET.get('term') is not None:
+                object_list = WayBill.objects.filter(content__iregex=request.GET.get('term'))
+                suggestions = [property_item.content for property_item in object_list]
+                print(suggestions)
+                return JsonResponse(suggestions, safe=False)
+        return super().get(request, *args, **kwargs)
 
 
 class WayBillDetailView(LoginRequiredMixin, DetailView):

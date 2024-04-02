@@ -19,6 +19,9 @@ class WayBillCreateForm(forms.ModelForm):
         super(WayBillCreateForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
+        # self.fields["content"].widget.attrs.update(
+        #     {"class": "ui-widget"}
+        # )
 
 
 class WayBillUpdateForm(forms.ModelForm):
