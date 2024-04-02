@@ -45,6 +45,11 @@ class WayBillCreateView(LoginRequiredMixin, CreateView):
                 suggestions = [property_item.content for property_item in object_list]
                 print(suggestions)
                 return JsonResponse(suggestions, safe=False)
+            if request.GET.get('q') is not None:
+                object_list = WayBill.objects.filter(comment__iregex=request.GET.get('q'))
+                suggestions = [property_item.comment for property_item in object_list]
+                print(suggestions)
+                return JsonResponse(suggestions, safe=False)
         return super().get(request, *args, **kwargs)
 
 
