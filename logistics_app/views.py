@@ -42,14 +42,12 @@ class WayBillCreateView(LoginRequiredMixin, CreateView):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             if request.GET.get('term') is not None:
                 object_list = WayBill.objects.filter(content__iregex=request.GET.get('term'))
-                suggestions = [property_item.content for property_item in object_list]
-                print(suggestions)
-                return JsonResponse(suggestions, safe=False)
+                suggestions_set = set([property_item.content for property_item in object_list])
+                return JsonResponse(list(suggestions_set), safe=False)
             if request.GET.get('q') is not None:
                 object_list = WayBill.objects.filter(comment__iregex=request.GET.get('q'))
-                suggestions = [property_item.comment for property_item in object_list]
-                print(suggestions)
-                return JsonResponse(suggestions, safe=False)
+                suggestions_set = set([property_item.comment for property_item in object_list])
+                return JsonResponse(list(suggestions_set), safe=False)
         return super().get(request, *args, **kwargs)
 
 
@@ -61,6 +59,7 @@ class WayBillDetailView(LoginRequiredMixin, DetailView):
 class WayBillUpdateView(LoginRequiredMixin, UpdateView):
     model = WayBill
     form_class = WayBillUpdateForm
+    success_url = '/logistics/waybill/'
 
 
 class WayBillDeleteView(LoginRequiredMixin, DeleteView):
