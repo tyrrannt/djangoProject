@@ -210,6 +210,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(
                     self.request.user.pk, datetime.datetime(year=int(report_year), month=int(report_month), day=1))
 
+
                 # print(data_dict, total_score, first_day, last_day, user_start_time, user_end_time)
                 return JsonResponse(
                     get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end),
