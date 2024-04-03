@@ -9,7 +9,7 @@
     <li>
         {% if contracts_not_published_count != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                <i class="bx bx-list-ol"></i>
+                <i class="bx bx-list-ol" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Договора к публикации"></i>
                 <span class="badge">{{ contracts_not_published_count }}</span>
             </a>
         {% endif %}
@@ -121,8 +121,8 @@
     {% if user.user_work_profile.job.pk in person_agreement %}
     <li>
         {% if document_not_agreed != 0 %}
-            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                <i class='bx bx-select-multiple' ></i>
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown" >
+                <i class='bx bx-select-multiple' data-bs-toggle="tooltip" data-bs-placement="bottom" title="Согласование"></i>
                 <span class="badge">{{ document_not_agreed }}</span>
             </a>
         {% endif %}
@@ -160,7 +160,7 @@
         <li>
             {% if location_selected_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-hotel'></i>
+                    <i class='bx bx-hotel' data-bs-toggle="tooltip" data-bs-placement="bottom" title="Место проживания"></i>
                     <span class="badge">{{ location_selected_count }}</span>
                 </a>
             {% endif %}
@@ -198,7 +198,7 @@
         <li>
             {% if process_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-user-pin'></i>
+                    <i class='bx bx-user-pin' data-bs-toggle="tooltip" data-bs-placement="bottom" title="Приказ"></i>
                     <span class="badge">{{ process_accepted_count }}</span>
                 </a>
             {% endif %}
@@ -236,7 +236,7 @@
         <li>
             {% if hr_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-pencil' ></i>
+                    <i class='bx bx-pencil' data-bs-toggle="tooltip" data-bs-placement="bottom" title="Проверка"></i>
                     <span class="badge">{{ hr_accepted_count }}</span>
                 </a>
             {% endif %}
@@ -274,7 +274,7 @@
         <li>
             {% if originals_received_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-notepad'></i>
+                    <i class='bx bx-notepad' data-bs-toggle="tooltip" data-bs-placement="bottom" title="Оригиналы"></i>
                     <span class="badge">{{ originals_received_count }}</span>
                 </a>
             {% endif %}
@@ -312,7 +312,7 @@
         <li>
             {% if accounting_accepted_count != 0 %}
                 <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
-                    <i class='bx bx-check-shield' ></i>
+                    <i class='bx bx-check-shield' data-bs-toggle="tooltip" data-bs-placement="bottom" title="Авансовый отчет"></i>
                     <span class="badge">{{ accounting_accepted_count }}</span>
                 </a>
             {% endif %}

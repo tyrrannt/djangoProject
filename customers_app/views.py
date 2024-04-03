@@ -143,7 +143,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
         user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
-        print(context['databaseuser'].pk)
+        # print(context['databaseuser'].pk)
         post_obj = Posts.objects.all().exclude(post_date_end__lt=datetime.datetime.today())
 
         try:

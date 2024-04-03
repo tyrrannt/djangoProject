@@ -74,19 +74,16 @@
                                             <label for="id_approving_person">Согласующее лицо:</label>
                                             {{  form.approving_person }}
                                         </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_place">Подразделение:</label>
+                                            {{ form.place }}
+                                        </div>
                                     </div>
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_date_create">Дата документа:</label>
                                             {{ form.date_create }}
                                         </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_number">Номер документа:</label>
-                                            {{ form.number }}
-                                        </div>
-
-                                    </div>
-                                    <div class="row text">
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_date_star">Действителен с:</label>
                                             {{ form.date_start }}
@@ -98,14 +95,8 @@
 
                                     </div>
                                     <div class="row text">
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_place">Подразделение:</label>
-                                            {{ form.place }}
-                                        </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_company_property">Борт:</label>
-                                            {{ form.company_property }}
-                                        </div>
+
+
                                     </div>
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50">
@@ -116,6 +107,10 @@
                                             <label class="col-sm-12 control-label mb-0"
                                                    for="id_team_brigade">Состав бригады:</label>
                                             {{ form.team_brigade }}
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_company_property">Борт:</label>
+                                            {{ form.company_property }}
                                         </div>
                                     </div>
 

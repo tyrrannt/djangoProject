@@ -55,7 +55,7 @@ from hrdepartment_app.forms import (
     ProvisionsUpdateForm,
     ProvisionsAddForm,
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
-    CreatingTeamUpdateForm, CreatingTeamAgreedForm,
+    CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -3233,6 +3233,7 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         content[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить приказ о старших бригад"
+
         return content
 
     def get_form_kwargs(self):
@@ -3275,6 +3276,17 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        user_job = self.request.user.user_work_profile.job.pk
+        persons_list = BusinessProcessDirection.objects.filter(business_process_type="2")
+        for person in persons_list:
+            if user_job in [item.pk for item in person.person_executor.iterator()]:
+                context["is_executor"] = True
+            if user_job in [item.pk for item in person.person_agreement.iterator()]:
+                context["is_agreement"] = True
+            if user_job in [item.pk for item in person.person_hr.iterator()]:
+                context["is_hr"] = True
+            if user_job in [item.pk for item in person.clerk.iterator()]:
+                context["is_clerk"] = True
         return context
 
 
@@ -3349,4 +3361,32 @@ class CreatingTeamAgreed(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         approving_person_list = [item.pk for item in DataBaseUser.objects.filter(
             user_work_profile__job__in=approving_job_list).exclude(is_active=False)]
         kwargs.update({"approving_person": approving_person_list})
+        return kwargs
+
+class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):  # UpdateView
+    model = CreatingTeam
+    template_name = "hrdepartment_app/creatingteam_form_number.html"
+    form_class = CreatingTeamSetNumberForm
+    permission_required = "hrdepartment_app.change_creatingteam"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Присвоение номера - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        hr_job_list = [item['person_hr'] for item in
+                              BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                  'person_hr')]
+        hr_person_list = [item.pk for item in DataBaseUser.objects.filter(
+            user_work_profile__job__in=hr_job_list).exclude(is_active=False)]
+        kwargs.update({"hr_person": hr_person_list})
         return kwargs

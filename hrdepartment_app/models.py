@@ -1780,6 +1780,7 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         tn = TelegramNotification.objects.filter(document_id=instance.pk)
         if tn:
             tn.delete()
+    if instance.agreed and instance.number != '':
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
         # ext_scan = str(instance.scan_file).split('.')[-1]
         uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)

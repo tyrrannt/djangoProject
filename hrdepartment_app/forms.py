@@ -1273,7 +1273,7 @@ class CreatingTeamAddForm(forms.ModelForm):
     class Meta:
         model = CreatingTeam
         fields = ('senior_brigade', 'team_brigade', 'executor_person', 'approving_person', 'date_start', 'date_end',
-                  'place', 'date_create', 'number', 'company_property', 'replaceable_document', 'document_type')
+                  'place', 'date_create', 'company_property', 'replaceable_document', 'document_type')
 
     def __init__(self, *args, **kwargs):
         """
@@ -1318,8 +1318,7 @@ class CreatingTeamUpdateForm(forms.ModelForm):
     class Meta:
         model = CreatingTeam
         fields = ('senior_brigade', 'team_brigade', 'executor_person', 'approving_person', 'date_start', 'date_end',
-                  'place',  'date_create', 'number', 'company_property', 'scan_file')
-
+                  'place', 'date_create', 'number', 'company_property', 'scan_file')
 
     def __init__(self, *args, **kwargs):
         """
@@ -1374,3 +1373,28 @@ class CreatingTeamAgreedForm(forms.ModelForm):
         else:
             raise ValidationError("Ошибка! Вы не имеете право согласования приказов о старших бригадах.")
 
+
+class CreatingTeamSetNumberForm(forms.ModelForm):
+    class Meta:
+        model = CreatingTeam
+        fields = ('number',)
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        self.hr_person = kwargs.pop("hr_person")
+        super(CreatingTeamSetNumberForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+    def clean_number(self):
+        number = self.cleaned_data.get("number")
+        if number == '':
+            return number
+        if self.user in self.hr_person:
+            return number
+        else:
+            raise ValidationError("Ошибка! Вы не имеете право задавать номера приказов о старших бригадах.")
