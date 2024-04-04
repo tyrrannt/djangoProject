@@ -8,6 +8,8 @@ from django.contrib.auth.forms import (
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django_ckeditor_5.widgets import CKEditor5Widget
+
+from administration_app.utils import make_custom_field
 from .models import (
     DataBaseUser,
     Posts,
@@ -336,34 +338,25 @@ class JobsAddForm(forms.ModelForm):
 
 class JobsUpdateForm(forms.ModelForm):
     division_affiliation = forms.ModelChoiceField(queryset=Affiliation.objects.all())
-    division_affiliation.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     group = forms.ModelMultipleChoiceField(
         queryset=Groups.objects.all(), required=False
-    )
-    group.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
     harmful = forms.ModelMultipleChoiceField(
         queryset=HarmfulWorkingConditions.objects.all(), required=False
     )
-    harmful.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
 
     class Meta:
         model = Job
-        fields = (
-            "code",
-            "name",
-            "harmful",
-            "ref_key",
-            "excluded_standard_spelling",
-            "right_to_approval",
-            "group",
-            "division_affiliation",
-        )
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        super(JobsUpdateForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class StaffUpdateForm(forms.ModelForm):
