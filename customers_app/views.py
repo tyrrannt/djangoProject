@@ -937,7 +937,7 @@ class JobsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'customers_app/jobs_update.html'
     form_class = JobsUpdateForm
     permission_required = 'customers_app.change_job'
-    success_url = 'customers_app:jobs_list' # Ссылка на список
+    success_url = 'customers_app:jobs_list'
 
     def dispatch(self, request, *args, **kwargs):
         return super(JobsUpdate, self).dispatch(request, *args, **kwargs)
