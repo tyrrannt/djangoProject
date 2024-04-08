@@ -312,13 +312,7 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
             cancellation=True
         )
     )
-    document.widget.attrs.update(
-        {
-            "class": "form-control form-control-modern",
-            "data-plugin-selectTwo": True,
-            "type": "date",
-        }
-    )
+
 
     class Meta:
         model = ApprovalOficialMemoProcess
@@ -339,16 +333,18 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
         """
         # self.user = kwargs.pop('user')
         super(ApprovalOficialMemoProcessAddForm, self).__init__(*args, **kwargs)
-        self.fields["submit_for_approval"].widget.attrs.update(
-            {"class": "todo-check", "data-plugin-ios-switch": True}
-        )
-        self.fields["person_executor"].widget.attrs.update(
-            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-        )
-        self.fields["person_agreement"].widget.attrs.update(
-            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-        )
+        # self.fields["submit_for_approval"].widget.attrs.update(
+        #     {"class": "todo-check", "data-plugin-ios-switch": True}
+        # )
+        # self.fields["person_executor"].widget.attrs.update(
+        #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        # )
+        # self.fields["person_agreement"].widget.attrs.update(
+        #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        # )
         self.fields["person_agreement"].required = False
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
     def clean(self):
         if not self.cleaned_data.get("submit_for_approval"):
