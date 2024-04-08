@@ -350,6 +350,10 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
         )
         self.fields["person_agreement"].required = False
 
+    def clean(self):
+        if not self.cleaned_data.get("submit_for_approval"):
+            raise ValidationError("Невозможно запустить бизнес процесс. Не установлен переключатель передачи на согласование.")
+
 
 class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     type_of = [("1", "Квартира"), ("2", "Гостиница")]
