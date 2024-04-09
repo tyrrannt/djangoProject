@@ -70,8 +70,8 @@ def send_email_notification():
             current_context = {
                 "name": item.first_name,
                 "surname": item.surname,
-                "text": f"Уведомляем Вас, что Вам открыт доступ к Вашей учетной записи на корпоративном портале. Данные для авторизации указаны ниже:",
-                "sign": f"Ваш логин: {item.username}<br>Ваш пароль: {item.user_work_profile.work_email_password}",
+                "text": f"Уведомляем Вас, что для Вам открыт доступ к корпоративному порталу. Данные для авторизации указаны ниже:",
+                "sign": f"Ваш логин: <u>{item.username}</u><br>Ваш пароль: <u>{item.user_work_profile.work_email_password}</u>",
                 "color": "white",
             }
             text_content = render_to_string(
