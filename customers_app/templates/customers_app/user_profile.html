@@ -6,6 +6,10 @@
     <title>{{ title }}</title>
 {% endblock %}
 
+{% block custome_script %}
+    <script src="{% static 'admin_templates/js/websocket.js' %}"></script>
+{% endblock %}
+
 {% block content %}
     <section role="main" class="content-body">
 {#        <header class="page-header">#}
@@ -35,6 +39,7 @@
             <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0">
                 <section class="card">
                     {% include 'customers_app/block_personal_info.html' %}
+                    <h1 id="app"></h1>
                 </section>
                 {% if user.is_superuser %}
 {#                    <section class="card">#}
