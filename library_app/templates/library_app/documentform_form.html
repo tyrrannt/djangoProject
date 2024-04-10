@@ -57,51 +57,9 @@
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_title">Наименование:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_title" class="form-control form-control-modern"
-                                                   name="title" value="{{ object.title }}" required/>
-                                        </div>
+                                        {{ form.as_p }}
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_sample">Образец заполнения:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_sample" class="form-control form-control-modern"
-                                                   name="sample" value="{{ object.sample }}"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_draft">Файл документа:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="file" name="draft" class="form-control mb-4"
-                                                   id="id_draft">
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_scan">Скан документа:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="file" name="scan" class="form-control mb-4"
-                                                   id="id_scan">
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_employee">Ответственные лица:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.employee }}
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_executor">Исполнитель:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.executor }}
-                                        </div>
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>

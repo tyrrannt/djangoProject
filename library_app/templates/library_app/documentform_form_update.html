@@ -53,47 +53,11 @@
                             <div class="row">
                                 <div class="col-lg-2-5 col-xl-1-5">
                                     <i class="card-big-info-icon bx bxs-buildings"></i>
-                                    <p class="card-big-info-desc">Форма создания бланка.</p>
+                                    <p class="card-big-info-desc">Форма изменения бланка.</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_title">Наименование:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_title" class="form-control form-control-modern"
-                                                   name="title" value="{{ object.title }}" required/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_sample">Образец заполнения:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_sample" class="form-control form-control-modern"
-                                                   name="sample" value="{{ object.sample }}"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_draft">Файл документа:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="file" name="draft" class="form-control mb-4"
-                                                   id="id_draft">
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_scan">Скан документа:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="file" name="scan" class="form-control mb-4"
-                                                   id="id_scan">
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_employee">Ответственные лица:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.employee }}
-                                        </div>
+                                        {{ form.as_p }}
                                     </div>
                                 </div>
                             </div>
@@ -104,7 +68,7 @@
             <div class="row action-buttons">
 
                 <div class="col-12 col-md-auto">
-                    <button type="submit" {% if object.executor != user %} disabled {% endif %}
+                    <button type="submit" {% if not user.is_superuser %}{% if object.executor != user %} disabled {% endif %}{% endif %}
                             class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить

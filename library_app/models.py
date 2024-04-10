@@ -27,6 +27,10 @@ def scan_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     return f'blank/scan/{filename}'
 
+def sample_directory_path(instance, filename):
+    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
+    return f'blank/sample/{filename}'
+
 
 class HashTag(models.Model):
     class Meta:
@@ -86,7 +90,7 @@ class DocumentForm(models.Model):
     title = models.CharField(verbose_name='Наименование', max_length=200, default='Бланк ')
     draft = models.FileField(verbose_name='Черновик', upload_to=draft_directory_path, blank=True)
     scan = models.FileField(verbose_name='Скан копия', upload_to=scan_directory_path, blank=True)
-    sample = models.URLField(verbose_name='Образец заполнения', blank=True)
+    sample = models.FileField(verbose_name='Образец заполнения', upload_to=sample_directory_path, blank=True)
     executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                  null=True, related_name='%(app_label)s_%(class)s_executor')
     employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True,
@@ -106,7 +110,7 @@ class DocumentForm(models.Model):
 
 
 @receiver(post_save, sender=DocumentForm)
-def rename_file_name(sender, instance, **kwargs):
+def rename_file_name(sender, instance: DocumentForm, **kwargs):
     try:
         change = 0
         if instance.draft:
@@ -135,6 +139,20 @@ def rename_file_name(sender, instance, **kwargs):
                 pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, scan_file_name),
                                     pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, filename_scan))
                 instance.scan = f'{scan_path_name}/{filename_scan}'
+                change = 1
+
+        if instance.sample:
+            # Получаем имя сохраненного файла
+            sample_file_name = pathlib.Path(instance.sample.name).name
+            # Получаем путь к файлу
+            sample_path_name = pathlib.Path(instance.sample.name).parent
+            # Получаем расширение файла
+            sample_ext = sample_file_name.split('.')[-1]
+            filename_sample = f'BLK-{instance.ref_key}-SAMPLE.pdf'
+            if sample_file_name != filename_sample:
+                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', sample_path_name, sample_file_name),
+                                    pathlib.Path.joinpath(BASE_DIR, 'media', sample_path_name, filename_sample))
+                instance.sample = f'{sample_path_name}/{filename_sample}'
                 change = 1
 
         if change == 1:

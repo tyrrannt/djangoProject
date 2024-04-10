@@ -79,14 +79,14 @@
                                                                 src="{% static 'Extension/pdf.png' %}"></a></span>
                                                     {% endif %}
                                                 </div>
-                                            {% if object.sample %}
-                                                <hr>
                                                 <div class="col-sm-12 text-black-50 mt-2 pb-4">
-                                                    <a href="{{ object.sample }}"
-                                                       class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">
-                                                        Образец заполнения</a>
-                                                </div>
-                                            {% endif %}
+                                                    <label for="id_scan">Образец заполнения: </label>
+                                                    {% if object.sample %}
+                                                        <span id="id_scan"><a
+                                                                href="{{ object.sample.url }}"><img
+                                                                src="{% static 'Extension/pdf.png' %}"></a></span>
+                                                    {% endif %}
+                                                </div>                                            
                                             </div>
                                         </div>
                                     </div>

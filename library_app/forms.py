@@ -1,5 +1,6 @@
 from django import forms
 
+from administration_app.utils import make_custom_field
 from customers_app.models import DataBaseUser
 from library_app.models import HelpTopic, HelpCategory, HashTag, DocumentForm
 
@@ -57,7 +58,6 @@ class HelpItemUpdateForm(forms.ModelForm):
 
 
 class DocumentFormAddForm(forms.ModelForm):
-    sample = forms.URLField(required=False)
 
     class Meta:
         model = DocumentForm
@@ -71,12 +71,9 @@ class DocumentFormAddForm(forms.ModelForm):
         self.user = kwargs.pop("user")
         super(DocumentFormAddForm, self).__init__(*args, **kwargs)
         self.fields["executor"].queryset = DataBaseUser.objects.filter(pk=self.user)
-        self.fields["employee"].widget.attrs.update(
-            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-        )
-        self.fields["executor"].widget.attrs.update(
-            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-        )
+        self.fields["employee"].queryset = DataBaseUser.objects.filter(is_active=True).exclude(username="proxmox")
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class DocumentFormUpdateForm(forms.ModelForm):
@@ -92,8 +89,6 @@ class DocumentFormUpdateForm(forms.ModelForm):
 
     """
 
-    sample = forms.URLField(required=False)
-
     class Meta:
         model = DocumentForm
         fields = ("title", "draft", "scan", "sample", "employee")
@@ -101,6 +96,5 @@ class DocumentFormUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super(DocumentFormUpdateForm, self).__init__(*args, **kwargs)
-        self.fields["employee"].widget.attrs.update(
-            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
