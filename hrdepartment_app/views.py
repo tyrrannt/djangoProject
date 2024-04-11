@@ -270,10 +270,12 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
 
         query = Q()
-        if not request.user.is_superuser:
+        if not request.user.is_superuser or not request.user.is_staff:
             if request.user.user_work_profile.job.division_affiliation.pk != 1:
                 query &= Q(responsible__user_work_profile__job__division_affiliation__pk=
                            request.user.user_work_profile.job.division_affiliation.pk)
+            if not request.user.user_work_profile.job.right_to_approval:
+                query &= Q(person__pk=request.user.pk)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['type_trip', 'person__title',
                            'person__user_work_profile__job__name', 'place_production_activity__name', 'purpose_trip__title',
