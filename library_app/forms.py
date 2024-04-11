@@ -1,7 +1,7 @@
 from django import forms
 
 from administration_app.utils import make_custom_field
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Division
 from library_app.models import HelpTopic, HelpCategory, HashTag, DocumentForm
 
 
@@ -61,7 +61,7 @@ class DocumentFormAddForm(forms.ModelForm):
 
     class Meta:
         model = DocumentForm
-        fields = ("title", "draft", "scan", "sample", "employee", "executor")
+        fields = ("title", "draft", "scan", "sample", "division", "employee", "executor")
 
     def __init__(self, *args, **kwargs):
         """
@@ -72,6 +72,7 @@ class DocumentFormAddForm(forms.ModelForm):
         super(DocumentFormAddForm, self).__init__(*args, **kwargs)
         self.fields["executor"].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields["employee"].queryset = DataBaseUser.objects.filter(is_active=True).exclude(username="proxmox")
+        self.fields["division"].queryset = Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение')
         for field in self.fields:
             make_custom_field(self.fields[field])
 
@@ -91,10 +92,11 @@ class DocumentFormUpdateForm(forms.ModelForm):
 
     class Meta:
         model = DocumentForm
-        fields = ("title", "draft", "scan", "sample", "employee")
+        fields = ("title", "draft", "scan", "sample", "division", "employee")
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super(DocumentFormUpdateForm, self).__init__(*args, **kwargs)
+        self.fields["division"].queryset = Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение')
         for field in self.fields:
             make_custom_field(self.fields[field])

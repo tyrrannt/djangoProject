@@ -289,6 +289,7 @@ class Division(Category):
     class Meta:
         verbose_name = "Подразделение"
         verbose_name_plural = "Подразделения организации"
+        ordering = ["code"]  # сортировка по полю name
 
     type_of_role = models.CharField(
         verbose_name="Роль подразделения",

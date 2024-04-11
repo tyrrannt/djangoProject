@@ -1,5 +1,6 @@
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
@@ -107,7 +108,12 @@ class DocumentFormList(LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            dcumentform_list = DocumentForm.objects.all()
+            if self.request.user.is_superuser or self.request.user.is_staff:
+                dcumentform_list = DocumentForm.objects.all()
+            else:
+                dcumentform_list = DocumentForm.objects.filter(
+                    Q(division__code__icontains=self.request.user.user_work_profile.divisions.code) |
+                    Q(division=None))
             data = [
                 dcumentform_item.get_data() for dcumentform_item in dcumentform_list
             ]

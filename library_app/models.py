@@ -10,7 +10,7 @@ from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
 from loguru import logger
 
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Division
 from djangoProject.settings import BASE_DIR
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -91,6 +91,7 @@ class DocumentForm(models.Model):
     draft = models.FileField(verbose_name='Черновик', upload_to=draft_directory_path, blank=True)
     scan = models.FileField(verbose_name='Скан копия', upload_to=scan_directory_path, blank=True)
     sample = models.FileField(verbose_name='Образец заполнения', upload_to=sample_directory_path, blank=True)
+    division = models.ManyToManyField(Division, blank=True, verbose_name='Подразделение')
     executor = models.ForeignKey(DataBaseUser, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                  null=True, related_name='%(app_label)s_%(class)s_executor')
     employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True,
@@ -100,6 +101,7 @@ class DocumentForm(models.Model):
         return {
             'pk': self.pk,
             'title': self.title,
+            'division': self.division.name if self.division else '',
             'draft': 'Есть' if self.draft else 'Отсутствует',
             'scan': 'Есть' if self.scan else 'Отсутствует',
             'sample': 'Есть' if self.sample else 'Отсутствует',
