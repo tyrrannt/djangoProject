@@ -815,3 +815,8 @@ def ajax_search(request, self, field_list, model_name, query):
 
     context["data"] = [order_item.get_data() for order_item in order_list]
     return context
+
+def send_mail(mail_attributes: dict):
+    # Метод для отправки писем
+
+    send_mail(subject, message, sender, [receiver], fail_silently=False)

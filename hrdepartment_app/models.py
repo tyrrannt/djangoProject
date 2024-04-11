@@ -1683,6 +1683,8 @@ class CreatingTeam(models.Model):
     doc_file = models.FileField(verbose_name="Файл документа", upload_to=team_directory_path, blank=True)
     scan_file = models.FileField(verbose_name="Скан документа", upload_to=team_directory_path, blank=True)
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
+    email_send = models.BooleanField(verbose_name="Письмо отправлено", default=False)
+
 
     def __str__(self):
         return f"{format_name_initials(self.senior_brigade)} - с: {self.date_start.strftime('%d.%m.%Y')} по: {self.date_end.strftime('%d.%m.%Y')}"
@@ -1815,6 +1817,8 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
                     scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
                 )
             print(instance.scan_file.name)
+        # if not instance.email_send:
+
     else:
         business_process = BusinessProcessDirection.objects.filter(
             person_executor=instance.executor_person.user_work_profile.job
