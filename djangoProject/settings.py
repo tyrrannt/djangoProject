@@ -347,6 +347,8 @@ CKEDITOR_5_CONFIGS = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# DATA_UPLOAD_MAX_MEMORY_SIZE = 5248
+
 # STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
 # MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, 'media')
 # MEDIA_URL = pathlib.Path.joinpath(BASE_DIR, 'media')
