@@ -23,7 +23,7 @@ from administration_app.utils import (
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings, VacationScheduleList, \
     VacationSchedule
 from djangoProject.celery import app
-from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN
+from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN, BASE_DIR
 from hrdepartment_app.models import (
     ReportCard,
     WeekendDay,
@@ -919,3 +919,46 @@ def get_sick_leave(year, trigger):
     except Exception as _ex:
         logger.debug(f"654654654 {_ex}")
         return {"value": ""}
+
+@app.task()
+def send_mail_notification(mail_attributes: dict):
+    """
+    Метод для отправки писем
+    :param mail_attributes: Словарь с параметрами для отправки писем, содержащий следующие параметры:
+    - subject: Тема письма.
+    - sender: Адрес отправителя.
+    - receiver: Адрес получателя.
+    - template_name: Название шаблона.
+    - attachment_path: Путь к файлу для отправки.
+    - current_context: Контекст для шаблона. Для шаблона используется словарь с данными из контекста.
+
+    :return: Возвращает True если письмо отправлено, иначе False
+    """
+    # Метод для отправки писем
+    html_content = render_to_string(
+        mail_attributes["template_name"], mail_attributes["current_context"]
+    )
+    plain_message = strip_tags(html_content)
+
+    try:
+        email = EmailMultiAlternatives(mail_attributes["subject"], plain_message, mail_attributes["sender"],
+                             [mail_attributes["receiver"], mail_attributes["sender"]])
+        email.attach_alternative(html_content, "text/html")
+        if "attachment_path" in mail_attributes:
+            # file_name = pathlib.Path.joinpath(BASE_DIR, mail_attributes["attachment_path"])
+            file_name_string = str(BASE_DIR) + mail_attributes["attachment_path"]
+            print(file_name_string)
+            with open(file_name_string, 'rb') as file:
+                file_content = file.read()
+            # mime_type = magic.from_buffer(file_content, mime=True)
+            # Extract the filename from the attachment_path
+
+            # email.attach(file_name_string, file_content, mime_type)
+            email.attach_file(file_name_string)
+        # Send the email
+        email.send()
+        logger.info(f"Сообщение для {mail_attributes['receiver']} отправлено!")
+        return True
+    except Exception as _ex:
+        logger.debug(f"Failed to send email to {mail_attributes['receiver']} because {_ex}")
+        return False

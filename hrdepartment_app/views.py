@@ -30,6 +30,7 @@ from administration_app.utils import (
     get_year_interval, ajax_search,
 )
 from customers_app.models import DataBaseUser, Counteragent
+from djangoProject.settings import EMAIL_HOST_USER
 from hrdepartment_app.forms import (
     MedicalExaminationAddForm,
     MedicalExaminationUpdateForm,
@@ -77,6 +78,7 @@ from hrdepartment_app.models import (
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam,
 )
+from hrdepartment_app.tasks import send_mail_notification
 
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -3370,6 +3372,7 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
     template_name = "hrdepartment_app/creatingteam_form_number.html"
     form_class = CreatingTeamSetNumberForm
     permission_required = "hrdepartment_app.change_creatingteam"
+    success_url = reverse_lazy("hrdepartment_app:team_list")
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
@@ -3392,3 +3395,27 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
             user_work_profile__job__in=hr_job_list).exclude(is_active=False)]
         kwargs.update({"hr_person": hr_person_list})
         return kwargs
+
+    def form_valid(self, form):
+        if form.is_valid():
+            refresh_form = form.save(commit=False)
+            if not self.object.email_send:
+                kwargs = {
+                    "template_name": "hrdepartment_app/creatingteam_email.html",
+                    "subject": "Назначение старшего бригады",
+                    "sender": EMAIL_HOST_USER,
+                    "receiver": self.object.senior_brigade.email,
+                    "attachment_path": self.object.scan_file.url,
+                    "current_context":{
+                        "name": self.object.senior_brigade.first_name,
+                        "surname": self.object.senior_brigade.surname,
+                        "text": f'Вы назначены старшим бригадой в {self.object.place.name} с {self.object.date_start.strftime("%d.%m.%Y")} по {self.object.date_end.strftime("%d.%m.%Y")}.',
+                        "sign": f'Исполнитель {format_name_initials(self.object.executor_person)}'}
+                }
+                if send_mail_notification(kwargs):
+                    # refresh_form.email_send = True
+                    refresh_form.save()
+                else:
+                    form.add_error(None, 'Письмо не было отправлено')
+                    return super().form_invalid(form)
+        return super().form_valid(form)

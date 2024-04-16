@@ -4,19 +4,24 @@ import pathlib
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
+import magic
 import requests
 from dateutil import rrule, relativedelta
 from decouple import config
 from django import forms
 from django.contrib.contenttypes.models import ContentType
+from django.core import mail
 from django.core.files.storage import FileSystemStorage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.http import JsonResponse
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from loguru import logger
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
-from djangoProject.settings import BASE_DIR
+from djangoProject.settings import BASE_DIR, MEDIA_ROOT
 
 logger.add(
     "debug.json",
@@ -816,7 +821,4 @@ def ajax_search(request, self, field_list, model_name, query):
     context["data"] = [order_item.get_data() for order_item in order_list]
     return context
 
-def send_mail(mail_attributes: dict):
-    # Метод для отправки писем
 
-    send_mail(subject, message, sender, [receiver], fail_silently=False)
