@@ -284,6 +284,11 @@ class Medical(models.Model):
     class Meta:
         verbose_name = "Медицинское направление"
         verbose_name_plural = "Медицинские направления"
+        ordering = ["-date_entry"]
+
+    # class TypeOf(models.TextChoices):
+    #     APPLY = "1", "Поступающий на работу"
+    #     WORK = "2", "Работающий"
 
     type_of = [("1", "Поступающий на работу"), ("2", "Работающий")]
 

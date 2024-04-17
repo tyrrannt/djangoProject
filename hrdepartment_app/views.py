@@ -3,7 +3,6 @@ from calendar import monthrange
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
-from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponseRedirect
@@ -182,13 +181,6 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     # sorted_list = ['number', 'date_entry', 'person', 'person__user_work_profile__job__name', 'organisation',
     #                'type_inspection']
 
-    def get_queryset(self):
-        change_session_queryset(self.request, self)
-        if self.item_sorted == "date_entry":
-            qs = super().get_queryset().order_by(self.item_sorted).reverse()
-        else:
-            qs = super().get_queryset().order_by(self.item_sorted)
-        return qs
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -209,22 +201,17 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                 )
             url_match = reverse_lazy("hrdepartment_app:medical_list")
             return redirect(url_match)
-        change_session_get(self.request, self)
-        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+
+        query = Q()
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            medical_list = Medical.objects.all().order_by("date_entry").reverse()
-            data = [medical_item.get_data() for medical_item in medical_list]
-            response = {"data": data}
-            return JsonResponse(response)
+            search_list = ['number', 'date_entry',
+                           'person__title', 'organisation__description', 'working_status',
+                           'view_inspection', 'type_inspection',
+                           ]
+            context = ajax_search(request, self, search_list, Medical, query)
+            return JsonResponse(context, safe=False)
 
         return super(MedicalExamination, self).get(request, *args, **kwargs)
-
-    # @staticmethod
-    # def ajax_get(request, *args, **kwargs):
-    #     medicals = Medical.objects.all()
-    #     data = [medical.get_data() for medical in medicals]
-    #     response = {'data': data}
-    #     return JsonResponse(response)
 
 
 class MedicalExaminationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
