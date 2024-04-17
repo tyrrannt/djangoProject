@@ -181,18 +181,14 @@
                 </div>
             </div>
             <div class="row action-buttons">
-                {% if user == object.responsible or user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:memo_update' object.pk %}"
-                           class="btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
-                    </div>
-                {% endif %}
-                {% if user == object.responsible or user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:memo_cancel' object.pk %}"
-                           class="cancel-button btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">{% if object.cancellation %}Восстановить{% else %}Отменить{% endif %}</a>
-                    </div>
-                {% endif %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:memo_update' object.pk %}"
+                       class="btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:memo_cancel' object.pk %}"
+                       class="cancel-button btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">{% if object.cancellation %}Восстановить{% else %}Отменить{% endif %}</a>
+                </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'hrdepartment_app:memo_list' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
