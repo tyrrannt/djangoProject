@@ -157,12 +157,12 @@ USE_TZ = True
 # )
 
 STATIC_URL = "/static/"
-# STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
+STATIC_ROOT = pathlib.Path.joinpath(BASE_DIR, 'static')
 
-STATICFILES_DIRS = [
-    pathlib.Path.joinpath(BASE_DIR, "static_dev"),
-    pathlib.Path.joinpath(BASE_DIR, "static"),
-]
+# STATICFILES_DIRS = [
+#     pathlib.Path.joinpath(BASE_DIR, "static_dev"),
+#     pathlib.Path.joinpath(BASE_DIR, "static"),
+# ]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, "media")
@@ -366,7 +366,7 @@ REDIS_HOST = "127.0.0.1"
 REDIS_PORT = "6379"
 CELERY_BROKER_URL = "redis://" + REDIS_HOST + ":" + REDIS_PORT + "/0"
 CELERY_BROKER_TRANSPORT_OPTION = {"visibility_timeout": 3600}
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True # Автоматическая попытка установить соединение с AMQP broker при запуске Celery, если он недоступен.
 CELERY_RESULT_BACKEND = "redis://" + REDIS_HOST + ":" + REDIS_PORT + "/0"
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
