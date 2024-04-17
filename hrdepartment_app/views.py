@@ -3196,7 +3196,7 @@ class CreatingTeamList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
             search_list = ['senior_brigade__title', 'date_start',
                            'date_end', 'number', 'date_create',
                            'place__name', 'agreed', 'cancellation',
-                           'executor_person__title'
+                           'executor_person__title', "email_send",
                            ]
             context = ajax_search(request, self, search_list, CreatingTeam, query)
             return JsonResponse(context, safe=False)
@@ -3258,7 +3258,6 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
     """
     Приказы о старших бригад - просмотр
     """
-
     model = CreatingTeam
     permission_required = "hrdepartment_app.view_creatingteam"
 
@@ -3278,7 +3277,36 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
                 context["is_hr"] = True
             if user_job in [item.pk for item in person.clerk.iterator()]:
                 context["is_clerk"] = True
+        if not self.object.email_send and self.object.scan_file:
+            context["email_send"] = True
         return context
+
+    def get(self, request, *args, **kwargs):
+        get_object = self.get_object()
+        kwargs = {
+            "template_name": "hrdepartment_app/creatingteam_email.html",
+            "sender": EMAIL_HOST_USER,
+            "receiver": [get_object.senior_brigade.email, get_object.place.email, ],
+            "attachment_path": get_object.scan_file.url if get_object.scan_file else None,
+            "current_context": {
+                "name": get_object.senior_brigade.first_name,
+                "surname": get_object.senior_brigade.surname,
+                "text": f'Вы назначены старшим бригадой в {get_object.place.name} с {get_object.date_start.strftime("%d.%m.%Y")} по {get_object.date_end.strftime("%d.%m.%Y")}.',
+                "sign": f'Исполнитель {format_name_initials(get_object.executor_person)}'}
+        }
+        if request.GET.get('sm') == '1':
+            kwargs["subject"] = "Назначение старшего бригады"
+            if send_mail_notification(kwargs):
+                get_object.email_send = True
+                get_object.save()
+
+        if request.GET.get('sm') == '2':
+            kwargs["subject"] = "Повторное уведомление о назначение старшего бригады"
+            if send_mail_notification(kwargs):
+                get_object.email_send = True
+                get_object.save()
+
+        return super().get(request, *args, **kwargs)
 
 
 class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
@@ -3382,27 +3410,3 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
             user_work_profile__job__in=hr_job_list).exclude(is_active=False)]
         kwargs.update({"hr_person": hr_person_list})
         return kwargs
-
-    def form_valid(self, form):
-        if form.is_valid():
-            refresh_form = form.save(commit=False)
-            if not self.object.email_send:
-                kwargs = {
-                    "template_name": "hrdepartment_app/creatingteam_email.html",
-                    "subject": "Назначение старшего бригады",
-                    "sender": EMAIL_HOST_USER,
-                    "receiver": self.object.senior_brigade.email,
-                    "attachment_path": self.object.scan_file.url,
-                    "current_context":{
-                        "name": self.object.senior_brigade.first_name,
-                        "surname": self.object.senior_brigade.surname,
-                        "text": f'Вы назначены старшим бригадой в {self.object.place.name} с {self.object.date_start.strftime("%d.%m.%Y")} по {self.object.date_end.strftime("%d.%m.%Y")}.',
-                        "sign": f'Исполнитель {format_name_initials(self.object.executor_person)}'}
-                }
-                if send_mail_notification(kwargs):
-                    # refresh_form.email_send = True
-                    refresh_form.save()
-                else:
-                    form.add_error(None, 'Письмо не было отправлено')
-                    return super().form_invalid(form)
-        return super().form_valid(form)

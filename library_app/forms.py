@@ -1,4 +1,5 @@
 from django import forms
+from django_ckeditor_5.widgets import CKEditor5Widget
 
 from administration_app.utils import make_custom_field
 from customers_app.models import DataBaseUser, Division
@@ -22,12 +23,14 @@ class HelpItemAddForm(forms.ModelForm):
     class Meta:
         model = HelpTopic
         fields = "__all__"
+        widgets = {
+            "text": CKEditor5Widget(
+                attrs={"class": "django_ckeditor_5"}, config_name="comment"
+            )
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["text"].widget.attrs.update(
-            {"class": "form-control django_ckeditor_5"}
-        )
         self.fields["text"].required = False
 
 

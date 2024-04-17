@@ -927,7 +927,7 @@ def send_mail_notification(mail_attributes: dict):
     :param mail_attributes: Словарь с параметрами для отправки писем, содержащий следующие параметры:
     - subject: Тема письма.
     - sender: Адрес отправителя.
-    - receiver: Адрес получателя.
+    - receiver: Адрес получателя. Тип: список
     - template_name: Название шаблона.
     - attachment_path: Путь к файлу для отправки.
     - current_context: Контекст для шаблона. Для шаблона используется словарь с данными из контекста.
@@ -942,7 +942,7 @@ def send_mail_notification(mail_attributes: dict):
 
     try:
         email = EmailMultiAlternatives(mail_attributes["subject"], plain_message, mail_attributes["sender"],
-                             [mail_attributes["receiver"], mail_attributes["sender"]])
+                             [*mail_attributes["receiver"]])
         email.attach_alternative(html_content, "text/html")
         if "attachment_path" in mail_attributes:
             # file_name = pathlib.Path.joinpath(BASE_DIR, mail_attributes["attachment_path"])

@@ -412,6 +412,7 @@ class PlaceProductionActivity(models.Model):
                                           default=False)  # Использовать командные orders
     additional_payment = models.DecimalField(verbose_name="Дополнительная оплата", default=0, blank=True,
                                              decimal_places=2, max_digits=10)
+    email = models.EmailField(verbose_name="Электронная почта", max_length=250, blank=True)
 
     def __str__(self):
         return str(self.name)
@@ -1723,6 +1724,7 @@ class CreatingTeam(models.Model):
             "agreed": "Согласовано" if self.agreed else "Не согласовано",  # Согласовано, Не согласовано
             "actuality": status,
             "executor": format_name_initials(self.executor_person),
+            "email_send": "Да" if self.email_send else "Нет",
         }
 
 
