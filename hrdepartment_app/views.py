@@ -3243,8 +3243,10 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
             html = {"replaceable_document": ""}
             if document_type == "1":
                 team_list = CreatingTeam.objects.filter(
-                    date_end__gte=datetime.datetime.today()
-                ).exclude(cancellation=True)
+                    Q(date_end__gte=datetime.datetime.today()) &
+                    Q(agreed=True) &
+                    Q(cancellation=False)
+                ).exclude(number='')
                 team_list_obj = dict()
                 for item in team_list:
                     team_list_obj.update({str(item): item.pk})
@@ -3253,6 +3255,26 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 return JsonResponse(html)
         return super().get(request, *args, **kwargs)
 
+    def form_valid(self, form):
+        refreshed_form = form.save(commit=False)
+        if refreshed_form.replaceable_document:
+            replaceable_document = refreshed_form.replaceable_document
+            replaceable_document.cancellation = True
+            replaceable_document.save()
+            kwargs = {
+                "template_name": "hrdepartment_app/creatingteam_email.html",
+                "sender": EMAIL_HOST_USER,
+                "subject": f"Отмена приказа № {replaceable_document.number} о назначении старшего бригады",
+                "receiver": [replaceable_document.senior_brigade.email, replaceable_document.place.email, ],
+                "current_context": {
+                    "name": replaceable_document.senior_brigade.first_name,
+                    "surname": replaceable_document.senior_brigade.surname,
+                    "text": f'Приказ № {replaceable_document.number} от {replaceable_document.date_create.strftime("%d.%m.%Y")} отменен.',
+                    "sign": f'Исполнитель {format_name_initials(refreshed_form.executor_person)}'}
+            }
+            send_mail_notification(kwargs)
+        refreshed_form.save()
+        return super().form_valid(form)
 
 class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """

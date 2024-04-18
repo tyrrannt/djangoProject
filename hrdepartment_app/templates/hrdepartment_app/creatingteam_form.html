@@ -155,7 +155,8 @@
     <script type="text/javascript">
             function memo_type_change() {
             document_type = document.getElementById("id_document_type").value;
-            $.ajax({
+            if (document_type==1){
+                $.ajax({
                 type: "GET",
                 url: '{% url 'hrdepartment_app:team_add' %}',
                 data: {
@@ -180,6 +181,13 @@
                     console.log("failure");
                 }
             });
+            }
+            if (document_type==0){
+                var replaceable_document = $("#id_replaceable_document");
+                replaceable_document.empty();
+                replaceable_document.prop('disabled', true);
+                $('#id_replaceable_document').refresh();
+            }
         };
     </script>
 
