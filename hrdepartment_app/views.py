@@ -3272,8 +3272,14 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                     "text": f'Приказ № {replaceable_document.number} от {replaceable_document.date_create.strftime("%d.%m.%Y")} отменен.',
                     "sign": f'Исполнитель {format_name_initials(refreshed_form.executor_person)}'}
             }
-            send_mail_notification(kwargs)
-        refreshed_form.save()
+            if send_mail_notification(kwargs):
+                refreshed_form.save()
+            else:
+                form.add_error(
+                    None,
+                    f'Ошибка при отправке письма!',
+                )
+                return super().form_invalid(form)
         return super().form_valid(form)
 
 class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
