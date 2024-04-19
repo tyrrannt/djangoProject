@@ -1,9 +1,8 @@
 import pathlib
 
-from decouple import config
 from django.db.models import Q
 from contracts_app.models import Contract
-from customers_app.models import DataBaseUser, Posts, AccessLevel
+from customers_app.models import DataBaseUser, Posts
 from djangoProject.settings import MEDIA_ROOT
 from hrdepartment_app.models import (
     ApprovalOficialMemoProcess,
@@ -29,8 +28,6 @@ def get_all_contracts(request):
         Q(allowed_placed=True),
         Q(type_of_document__type_document="Договор"),
     ).count()
-    # all_prolongation = Contract.type_of_prolongation
-    # all_access = AccessLevel.objects.all()
     if not request.user.is_anonymous:
         try:
             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False))
@@ -49,17 +46,13 @@ def get_all_contracts(request):
         contracts_not_published_count = 0
         documents_not_published = ""
         documents_not_published_count = 0
-    # contracts_not_published = ''
-    # contracts_not_published_count = 0
     posts_not_published = Posts.objects.filter(allowed_placed=False)
     posts_not_published_count = Posts.objects.filter(allowed_placed=False).count()
     return {
-        # "prolongation": all_prolongation,
         "contracts_count": contracts_count,
         "contracts_not_published": contracts_not_published,
         "posts_not_published": posts_not_published,
         "contracts_not_published_count": contracts_not_published_count,
-        # "access": all_access,
         "documents_not_published": documents_not_published,
         "documents_not_published_count": documents_not_published_count,
         "posts_not_published_count": posts_not_published_count,
@@ -183,9 +176,7 @@ def get_approval_oficial_memo_process(request):
 def get_qrcode(request):
     import qrcode
 
-    # print(request.build_absolute_uri())
     img = qrcode.make(request.build_absolute_uri())
-    # img = qrcode.make('request.build_absolute_uri()')
     try:
         img.save(pathlib.Path.joinpath(MEDIA_ROOT, f"qr/{request.user.ref_key}.png"))
         return {"qrcode": f"/media/qr/{request.user.ref_key}.png"}

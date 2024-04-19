@@ -1,6 +1,6 @@
 from django.db import models
 
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Job
 
 
 # Create your models here.
@@ -69,3 +69,17 @@ class BaseItems(models.Model):
     code = models.CharField(verbose_name='Код', max_length=10, default='', help_text='')
     name = models.CharField(verbose_name='Название', max_length=128, default='')
     active = models.BooleanField(verbose_name='Активность', default=True)
+
+
+class Notification(models.Model):
+    class Meta:
+        verbose_name = 'Уведомление'
+        verbose_name_plural = 'Уведомления'
+        ordering = ['name']
+        unique_together = ('name', 'document_type', 'division_type')
+
+    name = models.CharField(verbose_name='Наименование', max_length=128, default='')
+    document_type = models.CharField(verbose_name='Тип документа', max_length=3, default='')
+    division_type = models.CharField(verbose_name='Тип подразделения', max_length=128, default='')
+    job_list = models.ManyToManyField(Job, verbose_name='Список должностей', blank=True)
+    count = models.IntegerField(verbose_name='Количество уведомлений', default=0)

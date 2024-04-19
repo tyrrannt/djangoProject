@@ -17,7 +17,7 @@ from django.views.generic import (
 )
 from loguru import logger
 
-from administration_app.models import PortalProperty
+from administration_app.models import PortalProperty, Notification
 from administration_app.utils import (
     change_session_context,
     change_session_queryset,
@@ -3257,7 +3257,10 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         refreshed_form = form.save(commit=False)
+        send_email = False
+        kwargs = {}
         if refreshed_form.replaceable_document:
+            send_email = True
             replaceable_document = refreshed_form.replaceable_document
             replaceable_document.cancellation = True
             replaceable_document.save()
@@ -3269,17 +3272,22 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 "current_context": {
                     "name": replaceable_document.senior_brigade.first_name,
                     "surname": replaceable_document.senior_brigade.surname,
-                    "text": f'Приказ № {replaceable_document.number} от {replaceable_document.date_create.strftime("%d.%m.%Y")} отменен.',
+                    "text": f'Приказ № {replaceable_document.number} от '
+                            f'{replaceable_document.date_create.strftime("%d.%m.%Y")} отменен.',
                     "sign": f'Исполнитель {format_name_initials(refreshed_form.executor_person)}'}
             }
+        if send_email:
             if send_mail_notification(kwargs):
-                refreshed_form.save()
-            else:
-                form.add_error(
-                    None,
-                    f'Ошибка при отправке письма!',
-                )
-                return super().form_invalid(form)
+                refreshed_form.email_cancellation_send = True
+        refreshed_form.save()
+
+        approve_list = [item[0] for item in BusinessProcessDirection.objects.filter(business_process_type='2').values_list(
+            "person_agreement")]
+        notify, created = Notification.objects.get_or_create(name='team_create_approve', document_type='CTO',
+                                                             division_type='2')
+        notify.count = CreatingTeam.objects.filter(agreed=False).exclude(cancellation=True).count()
+        notify.save()
+        notify.job_list.add(*approve_list) # добавляем список согласующих
         return super().form_valid(form)
 
 class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
@@ -3363,10 +3371,6 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         kwargs.update({"user": self.request.user.pk})
         return kwargs
 
-    def form_invalid(self, form):
-        print('form_invalid')
-        return super().form_invalid(form)
-
 
 class CreatingTeamDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):  # DeleteView
     model = CreatingTeam  # Приказы о старших бригад - удаление
@@ -3409,6 +3413,19 @@ class CreatingTeamAgreed(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             user_work_profile__job__in=approving_job_list).exclude(is_active=False)]
         kwargs.update({"approving_person": approving_person_list})
         return kwargs
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+            approve_list = [item[0] for item in
+                            BusinessProcessDirection.objects.filter(business_process_type='2').values_list(
+                                "person_hr")]
+            notify, created = Notification.objects.get_or_create(name='team_create_approve', document_type='CTO',
+                                                                 division_type='2')
+            notify.count = CreatingTeam.objects.filter(agreed=False).exclude(cancellation=True).count()
+            notify.save()
+            notify.job_list.add(*approve_list)  # добавляем список согласующих
+        return super().form_valid(form)
 
 class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):  # UpdateView
     model = CreatingTeam
