@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Choices
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
@@ -1692,6 +1692,10 @@ class CreatingTeam(models.Model):
     email_send = models.BooleanField(verbose_name="Письмо отправлено", default=False)
     email_cancellation_send = models.BooleanField(verbose_name="Письмо от отмене отправлено", default=False)
 
+    def change_status(self, item: int, status: bool):
+        match item:
+            case 0: self.email_send = status
+            case 1: self.email_cancellation_send = status
 
     def __str__(self):
         return f"{format_name_initials(self.senior_brigade)} - с: {self.date_start.strftime('%d.%m.%Y')} по: {self.date_end.strftime('%d.%m.%Y')}"

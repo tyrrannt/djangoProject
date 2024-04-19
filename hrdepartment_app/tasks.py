@@ -920,8 +920,8 @@ def get_sick_leave(year, trigger):
         logger.debug(f"654654654 {_ex}")
         return {"value": ""}
 
-@app.task()
-def send_mail_notification(mail_attributes: dict):
+@app.task(bind=True)
+def send_mail_notification(self, mail_attributes: dict, obj, item):
     """
     Метод для отправки писем
     :param mail_attributes: Словарь с параметрами для отправки писем, содержащий следующие параметры:
@@ -958,7 +958,8 @@ def send_mail_notification(mail_attributes: dict):
         # Send the email
         email.send()
         logger.info(f"Сообщение для {mail_attributes['receiver']} отправлено!")
-        return True
-    except Exception as _ex:
-        logger.debug(f"Failed to send email to {mail_attributes['receiver']} because {_ex}")
-        return False
+        obj.change_status(item, True)
+        obj.save()
+    except Exception as exc:
+        logger.debug(f"Failed to send email to {mail_attributes['receiver']} because {exc}")
+        raise self.retry(exc=exc)

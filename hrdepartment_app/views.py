@@ -61,7 +61,7 @@ from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
     get_month,
-    get_working_hours,
+    get_working_hours, get_notify,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -181,7 +181,6 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     # sorted_list = ['number', 'date_entry', 'person', 'person__user_work_profile__job__name', 'organisation',
     #                'type_inspection']
 
-
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
         context[
@@ -267,7 +266,8 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                 query &= Q(person__pk=request.user.pk)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['type_trip', 'person__title',
-                           'person__user_work_profile__job__name', 'place_production_activity__name', 'purpose_trip__title',
+                           'person__user_work_profile__job__name', 'place_production_activity__name',
+                           'purpose_trip__title',
                            'period_from', 'period_for', 'accommodation',
                            'order__document_number', 'comments', 'period_from',
                            ]
@@ -3276,19 +3276,19 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                             f'{replaceable_document.date_create.strftime("%d.%m.%Y")} отменен.',
                     "sign": f'Исполнитель {format_name_initials(refreshed_form.executor_person)}'}
             }
-        if send_email:
-            if send_mail_notification(kwargs):
-                refreshed_form.email_cancellation_send = True
         refreshed_form.save()
+        if send_email:
+            send_mail_notification(kwargs, self.object, 1)
 
-        approve_list = [item[0] for item in BusinessProcessDirection.objects.filter(business_process_type='2').values_list(
-            "person_agreement")]
-        notify, created = Notification.objects.get_or_create(name='team_create_approve', document_type='CTO',
-                                                             division_type='2')
-        notify.count = CreatingTeam.objects.filter(agreed=False).exclude(cancellation=True).count()
-        notify.save()
-        notify.job_list.add(*approve_list) # добавляем список согласующих
+        notify_dict = {
+            'name' : 'team_create_approve',
+            'document_type' : 'CTO',
+            'division_type' : '2'
+        }
+        get_notify(CreatingTeam, Q(agreed=False), Notification, notify_dict, BusinessProcessDirection,
+                   Q(business_process_type='2'), "person_agreement")
         return super().form_valid(form)
+
 
 class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
@@ -3332,13 +3332,13 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         }
         if request.GET.get('sm') == '1':
             kwargs["subject"] = "Назначение старшего бригады"
-            if send_mail_notification(kwargs):
+            if send_mail_notification(kwargs, get_object):
                 get_object.email_send = True
                 get_object.save()
 
         if request.GET.get('sm') == '2':
             kwargs["subject"] = "Повторное уведомление о назначение старшего бригады"
-            if send_mail_notification(kwargs):
+            if send_mail_notification(kwargs, get_object):
                 get_object.email_send = True
                 get_object.save()
 
@@ -3417,15 +3417,23 @@ class CreatingTeamAgreed(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     def form_valid(self, form):
         if form.is_valid():
             form.save()
-            approve_list = [item[0] for item in
-                            BusinessProcessDirection.objects.filter(business_process_type='2').values_list(
-                                "person_hr")]
-            notify, created = Notification.objects.get_or_create(name='team_create_approve', document_type='CTO',
-                                                                 division_type='2')
-            notify.count = CreatingTeam.objects.filter(agreed=False).exclude(cancellation=True).count()
-            notify.save()
-            notify.job_list.add(*approve_list)  # добавляем список согласующих
+            notify_dict = {
+                'name': 'team_create_approve',
+                'document_type': 'CTO',
+                'division_type': '2'
+            }
+            get_notify(CreatingTeam, Q(agreed=False), Notification, notify_dict, BusinessProcessDirection,
+                       Q(business_process_type='2'), "person_agreement")
+            notify_dict = {
+                'name': 'team_check_hr',
+                'document_type': 'CTO',
+                'division_type': '2'
+            }
+            query = Q(agreed=True) & (Q(number='') | Q(scan_file=''))
+            get_notify(CreatingTeam, query, Notification, notify_dict, BusinessProcessDirection,
+                       Q(business_process_type='2'), "person_hr")
         return super().form_valid(form)
+
 
 class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):  # UpdateView
     model = CreatingTeam
@@ -3449,8 +3457,8 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
         kwargs = super().get_form_kwargs()
         kwargs.update({"user": self.request.user.pk})
         hr_job_list = [item['person_hr'] for item in
-                              BusinessProcessDirection.objects.filter(business_process_type=2).values(
-                                  'person_hr')]
+                       BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                           'person_hr')]
         hr_person_list = [item.pk for item in DataBaseUser.objects.filter(
             user_work_profile__job__in=hr_job_list).exclude(is_active=False)]
         kwargs.update({"hr_person": hr_person_list})

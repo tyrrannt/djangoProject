@@ -607,3 +607,27 @@ def get_working_hours(pk, start_date, state=0):
             all_vacation_time,
             holiday_delta,
         )
+
+
+def get_notify(data_table, data_query: Q, notify_table, notify_dict: dict, rules_table, rules_query: Q, rules_list: str):
+    """
+    Обновляем уведомление о согласовании или создаем новое при необходимости
+    :param data_table: Модель данных документов (служебные поездки, приказы старших бригад и т.д.)
+    :param data_query: Фильтр выборки документов = тип Q
+    :param notify_table: Модель уведомлений = класс Notification
+    :param notify_dict: Словарь с данными уведомления = тип dict
+    :param rules_table: Модель правил бизнес-процессов = класс BusinessProcessDirection
+    :param rules_query: Фильтр выборки бизнес-процессов = тип Q
+    :param rules_list: Поля бизнес-процессов
+
+    :return:
+
+    """
+    # Обновляем список согласующих
+    approve_list = [item[0] for item in rules_table.objects.filter(rules_query).values_list(rules_list)]
+    # Получаем уведомление о согласовании или создаем новое при необходимости
+    notify, created = notify_table.objects.get_or_create(**notify_dict)
+    # Сохраняем уведомление записав в него количество требуемых согласований
+    notify.count = data_table.objects.filter(data_query).exclude(cancellation=True).count()
+    notify.save()
+    notify.job_list.add(*approve_list)  # добавляем список согласующих лиц
