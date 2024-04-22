@@ -1377,7 +1377,7 @@ class CreatingTeamAgreedForm(forms.ModelForm):
 class CreatingTeamSetNumberForm(forms.ModelForm):
     class Meta:
         model = CreatingTeam
-        fields = ('number',)
+        fields = ('number', 'scan_file')
 
     def __init__(self, *args, **kwargs):
         """
