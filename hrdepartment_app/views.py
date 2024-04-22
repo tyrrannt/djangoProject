@@ -3332,13 +3332,13 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         }
         if request.GET.get('sm') == '1':
             kwargs["subject"] = "Назначение старшего бригады"
-            if send_mail_notification(kwargs, get_object):
+            if send_mail_notification(kwargs, get_object, 0):
                 get_object.email_send = True
                 get_object.save()
 
         if request.GET.get('sm') == '2':
             kwargs["subject"] = "Повторное уведомление о назначение старшего бригады"
-            if send_mail_notification(kwargs, get_object):
+            if send_mail_notification(kwargs, get_object, 0):
                 get_object.email_send = True
                 get_object.save()
 
