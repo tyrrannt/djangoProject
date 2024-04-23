@@ -447,6 +447,12 @@ class DataBaseUserWorkProfile(models.Model):
         blank=True,
         default="",
     )
+    work_application_password = models.CharField(
+        verbose_name="Пароль приложения от корпоративной почты",
+        max_length=100,
+        blank=True,
+        default="",
+    )
     personal_work_schedule_start = models.TimeField(
         verbose_name="Начало рабочего времени", default=get_time("9:30:00")
     )

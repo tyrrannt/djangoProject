@@ -1,7 +1,16 @@
+import imaplib
 import json
 import os
 import pathlib
+import smtplib
+import time
 from datetime import datetime, timedelta
+from email import encoders
+from email.header import Header
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formatdate
 from urllib.parse import urljoin
 
 import magic
@@ -822,3 +831,61 @@ def ajax_search(request, self, field_list, model_name, query):
     return context
 
 
+def send_notification(sender: DataBaseUser, recipient: DataBaseUser, subject: str, template: str, context: dict,
+                           attachment=''):
+    """
+    Функция отправки письма
+    :param sender: Отправитель
+    :param recipient: Получатель
+    :param subject: Тема
+    :param template: Шаблон письма
+    :param context: Контекст для заполнения шаблона
+    :param attachment: Вложение к письму, в виде ссылки на файл
+    :return:
+    """
+    from_mail = sender.email  # адрес отправителя
+    from_passwd = sender.user_work_profile.work_application_password  # пароль от почты отправителя
+    server_adr = "smtp.mail.ru"  # адрес почтового сервера
+    server_imap = "imap.mail.ru"  # адрес imap сервера
+    to_mail = recipient.email  # адрес получателя
+    message = render_to_string(template, context)
+    msg = MIMEMultipart()  # Создаем сообщение
+    msg["From"] = from_mail  # Добавляем адрес отправителя
+    msg['To'] = to_mail  # Добавляем адрес получателя
+    msg["Subject"] = Header(subject, 'utf-8')  # Пишем тему сообщения
+    msg["Date"] = formatdate(localtime=True)  # Дата сообщения
+    msg.attach(MIMEText(message, 'html', 'utf-8'))  # Добавляем форматированный текст сообщения
+
+    # Добавляем файл
+    if attachment != '':
+        filepath = str(BASE_DIR) + attachment  # путь к файлу
+        part = MIMEBase('application', "octet-stream")  # Создаем объект для загрузки файла
+        part.set_payload(open(filepath, "rb").read())  # Подключаем файл
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition',
+                        f'attachment; filename="{os.path.basename(filepath)}"')
+        msg.attach(part)  # Добавляем файл в письмо
+
+    smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
+    try:
+        smtp.login(from_mail, from_passwd)  # Логинимся в свой ящик
+        smtp.sendmail(from_mail, to_mail, msg.as_string())  # Отправляем сообщения
+        smtp.quit()  # Закрываем соединение
+    except smtplib.SMTPAuthenticationError:
+        print("Неверный логин или пароль")
+    except smtplib.SMTPRecipientsRefused:
+        print("Неверный адрес получателя")
+
+    # Сохраняем сообщение в исходящие
+    imap = imaplib.IMAP4_SSL(server_imap, 993)  # Подключаемся в почтовому серверу
+    imap.login(from_mail, from_passwd)  # Логинимся в свой ящик
+    list_imap = imap.list()  # Получаем список папок
+    box = ''
+    if list_imap[0] == 'OK':
+        for i in list_imap[1]:
+            strings = i.decode().split(' ')
+            if 'Sent' in strings[0]:
+                box = strings[2].replace('"', '')
+    imap.append(box, None,  # Добавляем наше письмо в папку Исходящие
+                imaplib.Time2Internaldate(time.time()),
+                msg.as_bytes())

@@ -26,7 +26,7 @@ from administration_app.utils import (
     get_jsons_data,
     ending_day,
     get_history,
-    get_year_interval, ajax_search,
+    get_year_interval, ajax_search, send_notification,
 )
 from customers_app.models import DataBaseUser, Counteragent
 from djangoProject.settings import EMAIL_HOST_USER
@@ -3332,9 +3332,16 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         }
         if request.GET.get('sm') == '1':
             kwargs["subject"] = "Назначение старшего бригады"
-            if send_mail_notification(kwargs, get_object, 0):
-                get_object.email_send = True
-                get_object.save()
+            current_context = {
+                "name": get_object.senior_brigade.first_name,
+                "surname": get_object.senior_brigade.surname,
+                "text": f'Вы назначены старшим бригадой в {get_object.place.name} с {get_object.date_start.strftime("%d.%m.%Y")} по {get_object.date_end.strftime("%d.%m.%Y")}.',
+                "sign": f'Исполнитель {format_name_initials(get_object.executor_person)}'}
+            attachment_path = get_object.scan_file.url if get_object.scan_file else ''
+            send_notification(get_object.executor_person, get_object.senior_brigade, 'Назначение старшего бригады', "hrdepartment_app/creatingteam_email.html", current_context, attachment_path)
+            # if send_mail_notification(kwargs, get_object, 0):
+            #     get_object.email_send = True
+            #     get_object.save()
 
         if request.GET.get('sm') == '2':
             kwargs["subject"] = "Повторное уведомление о назначение старшего бригады"
