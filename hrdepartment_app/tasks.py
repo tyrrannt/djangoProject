@@ -171,18 +171,19 @@ def birthday_telegram():
     for item in list_obj:
         if item.gender == "male":
             age = today.year - item.birthday.year
-            messages += f'\n<blockquote>{item.title}\n{item.user_work_profile.job.name}\nпразднует свой {age}-й день рождения!</blockquote>\n'
+            messages += f'\n<blockquote><b>{item.title}</b>\n{item.user_work_profile.job.name}\nпразднует свой {age}-й день рождения!</blockquote>\n'
         else:
-            messages += f'\n<blockquote>{item.title}\n{item.user_work_profile.job.name}\nпразднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
+            messages += f'\n<blockquote><b>{item.title}</b>\n{item.user_work_profile.job.name}\nпразднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
         count += 1
-    messages += '\n <b>Поздравляем С Днём Рождения! \U0001f389 \U0001f389 \U0001f389</b>'
+    messages += '\n<b>Поздравляем\nС Днём Рождения! \U0001f389 \U0001f389 \U0001f389</b>'
+    messages += '<a href="https://corp.barkol.ru/static/admin_templates/img/Cakes_Candles_Holidays.jpg">&#8205;</a>'
     # Указаваем в параметрах CHAT_ID и само сообщение
-    print(messages)
     input_data = json.dumps(
         {
             'chat_id': TELEGRAM_CHAT_ID,
             'parse_mode': 'html',
             'text': messages,
+            'disable_web_page_preview': False,
         }
     ).encode()
     if count >= 1:
