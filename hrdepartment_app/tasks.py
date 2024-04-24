@@ -291,21 +291,6 @@ def happy_birthday():
         if created:
             post.post_divisions.add(*division)
             post.save()
-            person_list = DataBaseUser.objects.filter(telegram_id__regex=r"^\d")
-            person_tg_list = [item.telegram_id for item in person_list]
-            person_tg_list_chat_id = ChatID.objects.filter(chat_id__in=person_tg_list)
-            kwargs_obj = {
-                "message": description,
-                "document_url": "",
-                "document_id": post.pk,
-                "sending_counter": 1,
-                "send_time": datetime.datetime(1, 1, 1, 9, 30),
-                "send_date": datetime.datetime.today(),
-            }
-            tn, created = TelegramNotification.objects.update_or_create(
-                document_id=post.pk, defaults=kwargs_obj
-            )
-            tn.respondents.set(person_tg_list_chat_id)
             if not post.email_send:
                 send_mail(item, age, post)
         else:
