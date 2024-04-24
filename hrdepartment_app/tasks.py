@@ -164,19 +164,20 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
 @app.task()
 def birthday_telegram():
     today = datetime.datetime.today()
-    list_obj = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month)).exclude(is_active=False)
+    list_obj = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month)).exclude(is_active=False).order_by('title')
     api_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     messages = f'<b>\U0001F382 Сегодня {today.strftime("%d.%m.%Y")}:\n</b>'
     count = 0
     for item in list_obj:
         if item.gender == "male":
             age = today.year - item.birthday.year
-            messages += f'<blockquote>{item.title} празднует свой {age}-й день рождения!</blockquote>\n'
+            messages += f'\n<blockquote>{item.title}\n{item.user_work_profile.job.name}\nпразднует свой {age}-й день рождения!</blockquote>\n'
         else:
-            messages += f'<blockquote>{item.title} празднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
+            messages += f'\n<blockquote>{item.title}\n{item.user_work_profile.job.name}\nпразднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
         count += 1
-    messages += '\n <b>Поздравляем С Днём Рождения! </b>'
+    messages += '\n <b>Поздравляем С Днём Рождения! \U0001f389 \U0001f389 \U0001f389</b>'
     # Указаваем в параметрах CHAT_ID и само сообщение
+    print(messages)
     input_data = json.dumps(
         {
             'chat_id': TELEGRAM_CHAT_ID,
