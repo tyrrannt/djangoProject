@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import json
+import urllib.request
 from random import randrange
 
 import requests
@@ -23,7 +24,7 @@ from administration_app.utils import (
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings, VacationScheduleList, \
     VacationSchedule
 from djangoProject.celery import app
-from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN, BASE_DIR
+from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN, BASE_DIR, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 from hrdepartment_app.models import (
     ReportCard,
     WeekendDay,
@@ -102,7 +103,6 @@ def send_email_notification():
     return count, errors
 
 
-
 def change_sign():
     list_obj = HappyBirthdayGreetings.objects.all()
     for item in list_obj:
@@ -159,6 +159,46 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
             record.save()
         except Exception as _ex:
             logger.debug(f"Failed to send email. {_ex}")
+
+
+@app.task()
+def birthday_telegram():
+    today = datetime.datetime.today()
+    list_obj = DataBaseUser.objects.filter(Q(birthday__day=today.day) & Q(birthday__month=today.month)).exclude(is_active=False)
+    api_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
+    messages = f'<b>\U0001F382 Сегодня {today.strftime("%d.%m.%Y")}:\n</b>'
+    count = 0
+    for item in list_obj:
+        if item.gender == "male":
+            age = today.year - item.birthday.year
+            messages += f'<blockquote>{item.title} празднует свой {age}-й день рождения!</blockquote>\n'
+        else:
+            messages += f'<blockquote>{item.title} празднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
+        count += 1
+    messages += '\n <b>Поздравляем с днем рождения!</b>'
+    # Указаваем в параметрах CHAT_ID и само сообщение
+    input_data = json.dumps(
+        {
+            'chat_id': TELEGRAM_CHAT_ID,
+            'parse_mode': 'html',
+            'text': messages,
+        }
+    ).encode()
+    if count >= 1:
+        try:
+            req = urllib.request.Request(
+                url=api_url,
+                data=input_data,
+                headers={'Content-Type': 'application/json'}
+            )
+            with urllib.request.urlopen(req) as response:
+                # Тут выводим ответ
+                print(response.read().decode('utf-8'))
+
+        except Exception as e:
+            print(e)
+
+
 
 
 def happy_birthday_loc():
@@ -920,6 +960,7 @@ def get_sick_leave(year, trigger):
         logger.debug(f"654654654 {_ex}")
         return {"value": ""}
 
+
 @app.task(bind=True)
 def send_mail_notification(self, mail_attributes: dict, obj, item):
     """
@@ -942,7 +983,7 @@ def send_mail_notification(self, mail_attributes: dict, obj, item):
 
     try:
         email = EmailMultiAlternatives(mail_attributes["subject"], plain_message, mail_attributes["sender"],
-                             [*mail_attributes["receiver"]])
+                                       [*mail_attributes["receiver"]])
         email.attach_alternative(html_content, "text/html")
         if "attachment_path" in mail_attributes:
             # file_name = pathlib.Path.joinpath(BASE_DIR, mail_attributes["attachment_path"])

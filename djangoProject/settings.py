@@ -295,8 +295,9 @@ INTERNAL_IPS = [
 ]
 
 CKEDITOR_5_FILE_STORAGE = "administration_app.utils.CkeditorCustomStorage"
-
-API_TOKEN = config("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = config("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = config("TELEGRAM_CHAT_ID")
+API_TOKEN = TELEGRAM_TOKEN
 WEBHOOK_PATH = API_TOKEN
 WEBHOOK_URL = f"https://corp.barkol.ru/{WEBHOOK_PATH}"
 WEBHOOK_SSL_CERTIFICATE = pathlib.Path.joinpath(

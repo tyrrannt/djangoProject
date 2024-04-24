@@ -18,6 +18,10 @@ app.conf.beat_schedule = {
         'task': 'hrdepartment_app.tasks.happy_birthday',
         'schedule': crontab(minute='*/1'),
     },
+    'birthday_channel_telegram': {
+        'task': 'hrdepartment_app.tasks.birthday_telegram',
+        'schedule': crontab(hour='9', minute='30'),
+    },
     'send_telegram_notify': {
         'task': 'hrdepartment_app.tasks.send_telegram_notify',
         'schedule': crontab(minute='*/1'),
