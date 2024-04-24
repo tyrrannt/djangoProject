@@ -1,6 +1,7 @@
 from django import forms
 
 from administration_app.utils import make_custom_field
+from customers_app.models import Division
 from logistics_app.models import WayBill
 
 
@@ -25,6 +26,9 @@ class WayBillCreateForm(forms.ModelForm):
 
 
 class WayBillUpdateForm(forms.ModelForm):
+    place_division = forms.ModelChoiceField(
+        queryset=Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение'),
+        label="Подразделение")
     class Meta:
         model = WayBill
         fields = '__all__'

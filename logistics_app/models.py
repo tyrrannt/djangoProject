@@ -34,7 +34,7 @@ class WayBill(models.Model):
     place_of_departure = models.ForeignKey(PlaceProductionActivity, verbose_name="Куда",
                                            on_delete=models.SET_NULL, null=True, blank=True,
                                            related_name="way_bill_place_of_departure")
-    content = models.CharField(verbose_name="Содержание", default='', max_length=300)
+    content = models.TextField(verbose_name="Содержание", default='')
     comment = models.CharField(verbose_name="Комментарий", default='', max_length=300)
     place_division = models.ForeignKey(Division, verbose_name="Подразделение", on_delete=models.SET_NULL,
                                        null=True, blank=True)
