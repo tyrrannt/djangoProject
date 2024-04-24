@@ -23,7 +23,7 @@ from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesU
     ApprovalOficialMemoProcess
 from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
     report_card_separator_daily, vacation_schedule, vacation_check, vacation_schedule_send, get_sick_leave, \
-    send_email_notification
+    send_email_notification, birthday_telegram
 from telegram_app.management.commands import bot
 from telegram_app.management.commands.bot import send_message_tg
 
@@ -186,10 +186,10 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 
             if request.GET.get('update') == '4':
                 # change_password()
-                result = send_email_notification.delay()
-
+                # result = send_email_notification.delay()
+                # birthday_telegram()
                 #vacation_schedule_send()
-
+                pass
                 #vacation_check()
                 # for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
                 #     report_record.delete()
@@ -295,5 +295,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #                                                                        defaults=kwargs_obj)
                 #                 if counter:
                 #                     all_records += 1
-
+            if request.GET.get('update') == '6':
+                birthday_telegram()
         return super().get(request, *args, **kwargs)
