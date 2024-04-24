@@ -175,7 +175,7 @@ def birthday_telegram():
         else:
             messages += f'<blockquote>{item.title} празднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
         count += 1
-    messages += '\n <b>Поздравляем с днем рождения!</b>'
+    messages += '\n <b>Поздравляем С Днём Рождения! </b>'
     # Указаваем в параметрах CHAT_ID и само сообщение
     input_data = json.dumps(
         {
