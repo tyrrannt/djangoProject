@@ -30,7 +30,8 @@ from loguru import logger
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
-from djangoProject.settings import BASE_DIR, MEDIA_ROOT
+from djangoProject.settings import BASE_DIR, MEDIA_ROOT, EMAIL_HOST, EMAIL_IMAP_HOST, EMAIL_IAS_USER, \
+    EMAIL_IAS_PASSWORD, EMAIL_FLY_USER, EMAIL_FLY_PASSWORD, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
 
 logger.add(
     "debug.json",
@@ -831,10 +832,12 @@ def ajax_search(request, self, field_list, model_name, query):
     return context
 
 
-def send_notification(sender: DataBaseUser, recipient: DataBaseUser, subject: str, template: str, context: dict,
-                           attachment=''):
+def send_notification(sender: DataBaseUser, recipient, subject: str, template: str, context: dict,
+                      attachment='', division=0, document=0):
     """
     Функция отправки письма
+    :param document: 0 - обычное письмо, 1 - Старшие бригад, 2 - Командировка и служебные
+    :param division: 0 - <username>@barkol.ru, 1 - ias@barkol.ru, 2 - fly@barkol.ru, Другое - corp@barkol.ru
     :param sender: Отправитель
     :param recipient: Получатель
     :param subject: Тема
@@ -843,15 +846,32 @@ def send_notification(sender: DataBaseUser, recipient: DataBaseUser, subject: st
     :param attachment: Вложение к письму, в виде ссылки на файл
     :return:
     """
-    from_mail = sender.email  # адрес отправителя
-    from_passwd = sender.user_work_profile.work_application_password  # пароль от почты отправителя
-    server_adr = "smtp.mail.ru"  # адрес почтового сервера
-    server_imap = "imap.mail.ru"  # адрес imap сервера
-    to_mail = recipient.email  # адрес получателя
+    match division:
+        case 0:
+            from_mail = sender.email  # адрес отправителя
+            from_passwd = sender.user_work_profile.work_application_password  # пароль от почты отправителя
+        case 1:
+            from_mail = EMAIL_IAS_USER  # адрес отправителя
+            from_passwd = EMAIL_IAS_PASSWORD  # пароль от почты отправителя
+        case 2:
+            from_mail = EMAIL_FLY_USER  # адрес отправителя
+            from_passwd = EMAIL_FLY_PASSWORD  # пароль от почты отправителя
+        case _:
+            from_mail = EMAIL_HOST_USER  # адрес отправителя
+            from_passwd = EMAIL_HOST_PASSWORD  # пароль от почты отправителя
+    server_adr = EMAIL_HOST  # адрес почтового сервера
+    server_imap = EMAIL_IMAP_HOST  # адрес imap сервера
+    match document:
+        case 0:
+            to_mail = [recipient.email, ]  # адрес получателя
+        case 1:
+            to_mail = [recipient.senior_brigade.email, recipient.place.email,]  # адрес получателя
+        case 2:
+            to_mail = [recipient.document.person.email,]
     message = render_to_string(template, context)
     msg = MIMEMultipart()  # Создаем сообщение
     msg["From"] = from_mail  # Добавляем адрес отправителя
-    msg['To'] = to_mail  # Добавляем адрес получателя
+    msg['To'] = ','.join(to_mail)  # Добавляем адрес получателя
     msg["Subject"] = Header(subject, 'utf-8')  # Пишем тему сообщения
     msg["Date"] = formatdate(localtime=True)  # Дата сообщения
     msg.attach(MIMEText(message, 'html', 'utf-8'))  # Добавляем форматированный текст сообщения
@@ -865,7 +885,6 @@ def send_notification(sender: DataBaseUser, recipient: DataBaseUser, subject: st
         part.add_header('Content-Disposition',
                         f'attachment; filename="{os.path.basename(filepath)}"')
         msg.attach(part)  # Добавляем файл в письмо
-
     smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
     try:
         smtp.login(from_mail, from_passwd)  # Логинимся в свой ящик

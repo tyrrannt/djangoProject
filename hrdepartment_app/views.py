@@ -3338,7 +3338,7 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
                 "text": f'Вы назначены старшим бригадой в {get_object.place.name} с {get_object.date_start.strftime("%d.%m.%Y")} по {get_object.date_end.strftime("%d.%m.%Y")}.',
                 "sign": f'Исполнитель {format_name_initials(get_object.executor_person)}'}
             attachment_path = get_object.scan_file.url if get_object.scan_file else ''
-            send_notification(get_object.executor_person, get_object.senior_brigade, 'Назначение старшего бригады', "hrdepartment_app/creatingteam_email.html", current_context, attachment_path)
+            send_notification(get_object.executor_person, get_object, 'Назначение старшего бригады', "hrdepartment_app/creatingteam_email.html", current_context, attachment=attachment_path, division=0, document=1)
             # if send_mail_notification(kwargs, get_object, 0):
             #     get_object.email_send = True
             #     get_object.save()
