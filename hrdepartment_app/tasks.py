@@ -176,6 +176,7 @@ def birthday_telegram():
             messages += f'\n<blockquote><b>{item.title}</b>\n{item.user_work_profile.job.name}\nпразднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
         count += 1
     messages += '\n<b>Поздравляем\nС Днём Рождения! \U0001f389 \U0001f389 \U0001f389</b>'
+    # Вставка картинки в сообщение, если есть. &#8205; - это символ невидимого неразрывного пробела
     messages += '<a href="https://corp.barkol.ru/static/admin_templates/img/Cakes_Candles_Holidays.jpg">&#8205;</a>'
     # Указаваем в параметрах CHAT_ID и само сообщение
     input_data = json.dumps(
