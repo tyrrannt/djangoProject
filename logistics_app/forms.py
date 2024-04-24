@@ -38,6 +38,7 @@ class WayBillUpdateForm(forms.ModelForm):
         :param args:
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
+
         # self.user = kwargs.pop("user")
         # Выбрать из списка бизнес-процессов имеющих право согласования
         super(WayBillUpdateForm, self).__init__(*args, **kwargs)
