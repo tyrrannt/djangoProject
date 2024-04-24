@@ -11,3 +11,4 @@ static
 debug.*
 rsync
 /static/admin_templates/vendor/simple-line-icons/node_modules/
+celerybeat-schedule
