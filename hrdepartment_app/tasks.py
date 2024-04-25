@@ -171,9 +171,9 @@ def birthday_telegram():
     for item in list_obj:
         if item.gender == "male":
             age = today.year - item.birthday.year
-            messages += f'\n<blockquote><b>{item.title}</b>\n{item.user_work_profile.job.name}\nпразднует свой {age}-й день рождения!</blockquote>\n'
+            messages += f'\n<blockquote>{item.user_work_profile.job.name}\n<b>{item.title}</b>\nпразднует свой {age}-й день рождения!</blockquote>\n'
         else:
-            messages += f'\n<blockquote><b>{item.title}</b>\n{item.user_work_profile.job.name}\nпразднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
+            messages += f'\n<blockquote>{item.user_work_profile.job.name}\n<b>{item.title}</b>\nпразднует свой 18-й день рождения! \U0001F339 </blockquote>\n'
         count += 1
     messages += '\n<b>Поздравляем\nС Днём Рождения! \U0001f389 \U0001f389 \U0001f389</b>'
     # Вставка картинки в сообщение, если есть. &#8205; - это символ невидимого неразрывного пробела
