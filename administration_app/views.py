@@ -296,5 +296,5 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #                 if counter:
                 #                     all_records += 1
             if request.GET.get('update') == '6':
-                birthday_telegram()
+                birthday_telegram.delay()
         return super().get(request, *args, **kwargs)

@@ -78,3 +78,12 @@ class WayBill(models.Model):
             "executor": format_name_initials(self.executor.title),
             "urgency": self.get_urgency_display(),
         }
+
+
+class Package(models.Model):
+    class Meta:
+        verbose_name = 'Посылка'
+        verbose_name_plural = 'Посылки'
+        ordering = ["-date_of_creation"]
+
+    date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True) # При миграции указать 1 и вставить timezone.now()
