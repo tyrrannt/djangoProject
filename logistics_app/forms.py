@@ -2,8 +2,9 @@ from django import forms
 
 from administration_app.utils import make_custom_field
 from customers_app.models import Division
-from logistics_app.models import WayBill
+from logistics_app.models import WayBill, Package
 import sched
+from django.forms import inlineformset_factory, BaseInlineFormSet
 
 
 class WayBillCreateForm(forms.ModelForm):
@@ -45,3 +46,24 @@ class WayBillUpdateForm(forms.ModelForm):
         super(WayBillUpdateForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+
+class PackageCreateForm(forms.ModelForm):
+    class Meta:
+        model = Package
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+
+        # self.user = kwargs.pop("user")
+        # Выбрать из списка бизнес-процессов имеющих право согласования
+        super(PackageCreateForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+# PackageInlineFormSet = inlineformset_factory(Package, WayBill, form=PackageCreateForm, extra=1)
+WayBillInlineFormSet = inlineformset_factory(Package, WayBill, form=WayBillCreateForm, fk_name='package_number', extra=1, can_delete=True, can_delete_extra=True, formset=BaseInlineFormSet,)

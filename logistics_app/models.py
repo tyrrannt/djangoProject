@@ -48,6 +48,7 @@ class WayBill(models.Model):
     executor = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Исполнитель",
                                  on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_executor")
     urgency = models.CharField(max_length=100, verbose_name="Срочность", choices=URGENCY_CHOICES, default="0")
+    package_number = models.ForeignKey('Package', verbose_name="Посылка", on_delete=models.SET_NULL, null=True, blank=True)
     def __str__(self):
         return self.content
 
@@ -87,3 +88,6 @@ class Package(models.Model):
         ordering = ["-date_of_creation"]
 
     date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True) # При миграции указать 1 и вставить timezone.now()
+    date_of_dispatch = models.DateField(verbose_name='Дата отправки', null=True, blank=True)
+    place_of_dispatch = models.ForeignKey(PlaceProductionActivity, verbose_name='Куда отправляется', on_delete=models.SET_NULL, null=True, blank=True)
+    number_of_dispatch = models.CharField(verbose_name='Номер посылки', max_length=37, default='')
