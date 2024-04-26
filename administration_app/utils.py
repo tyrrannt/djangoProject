@@ -891,9 +891,9 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
         smtp.sendmail(from_mail, to_mail, msg.as_string())  # Отправляем сообщения
         smtp.quit()  # Закрываем соединение
     except smtplib.SMTPAuthenticationError:
-        print("Неверный логин или пароль")
+        return 0
     except smtplib.SMTPRecipientsRefused:
-        print("Неверный адрес получателя")
+        return 0
 
     # Сохраняем сообщение в исходящие
     imap = imaplib.IMAP4_SSL(server_imap, 993)  # Подключаемся в почтовому серверу
@@ -908,3 +908,4 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
     imap.append(box, None,  # Добавляем наше письмо в папку Исходящие
                 imaplib.Time2Internaldate(time.time()),
                 msg.as_bytes())
+    return 1 # Сообщение успешно отправлено

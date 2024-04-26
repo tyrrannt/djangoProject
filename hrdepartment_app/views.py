@@ -3338,10 +3338,19 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
                 "text": f'Вы назначены старшим бригадой в {get_object.place.name} с {get_object.date_start.strftime("%d.%m.%Y")} по {get_object.date_end.strftime("%d.%m.%Y")}.',
                 "sign": f'Исполнитель {format_name_initials(get_object.executor_person)}'}
             attachment_path = get_object.scan_file.url if get_object.scan_file else ''
-            send_notification(get_object.executor_person, get_object, 'Назначение старшего бригады', "hrdepartment_app/creatingteam_email.html", current_context, attachment=attachment_path, division=0, document=1)
-            # if send_mail_notification(kwargs, get_object, 0):
-            #     get_object.email_send = True
-            #     get_object.save()
+            sm = send_notification(get_object.executor_person, get_object, 'Назначение старшего бригады', "hrdepartment_app/creatingteam_email.html", current_context, attachment=attachment_path, division=0, document=1)
+            if sm==1:
+                get_object.email_send = True
+                get_object.save()
+                notify_dict = {
+                    'name': 'team_check_clerk',
+                    'document_type': 'CTO',
+                    'division_type': '2'
+                }
+                query = Q(agreed=True) & ~Q(number='') & ~Q(scan_file='')
+                get_notify(CreatingTeam, query, Notification, notify_dict, BusinessProcessDirection,
+                           Q(business_process_type='2'), "person_hr")
+
 
         if request.GET.get('sm') == '2':
             kwargs["subject"] = "Повторное уведомление о назначение старшего бригады"
