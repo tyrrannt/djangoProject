@@ -125,6 +125,7 @@ class PackageCreateView(LoginRequiredMixin, PackageInline, CreateView):
     model = Package
     form_class = PackageCreateForm
     get_success_url = '/logistics/waybill/'
+    #https://www.letscodemore.com/blog/django-inline-formset-factory-with-examples/
 
     def get_context_data(self, **kwargs):
         ctx = super(PackageCreateView, self).get_context_data(**kwargs)
