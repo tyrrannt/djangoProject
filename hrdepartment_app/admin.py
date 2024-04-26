@@ -47,16 +47,17 @@ admin.site.register(CreatingTeam)
 @admin.register(ReportCard)
 class ReportCardAdmin(admin.ModelAdmin):
     # какие поля будут отображаться
-    list_display = ("report_card_day", "employee", "rec_no", "start_time", "end_time")
+    list_display = ("report_card_day", "employee", "record_type", "start_time", "end_time")
     # какие поля будут использоваться для поиска
     search_fields = ["employee__title", ]
     # какие поля будут использоваться для фильтрации
     list_filter = (
         "report_card_day",
         "employee",
+        "record_type",
     )
     # какие поля будут в виде ссылок
-    list_display_links = ("employee",)
+    list_display_links = ("employee", "record_type")
     # какие поля будут использоваться для сортировки
     ordering = ['-report_card_day',  ]
     # какие поля будут отображаться в списке
