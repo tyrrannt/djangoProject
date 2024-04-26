@@ -32,7 +32,7 @@ admin.site.register(PlaceProductionActivity)
 admin.site.register(MedicalOrganisation)
 admin.site.register(Medical)
 admin.site.register(Purpose)
-admin.site.register(BusinessProcessDirection)
+
 admin.site.register(Groups)
 
 admin.site.register(ReasonForCancellation)
@@ -43,6 +43,43 @@ admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
 admin.site.register(Provisions)
 admin.site.register(CreatingTeam)
+
+
+@admin.register(BusinessProcessDirection)
+class BusinessProcessDirectionAdmin(admin.ModelAdmin):
+    # какие поля будут отображаться
+    list_display = ("business_process_type", "get_person_executor", "get_person_agreement", "get_person_hr", "get_clerk", ) #
+
+    def get_clerk(self, obj: BusinessProcessDirection):
+        s = [item.name for item in obj.clerk.iterator()]
+        return '; '.join(s)
+    def get_person_executor(self, obj: BusinessProcessDirection):
+        s = [item.name for item in obj.person_executor.iterator()]
+        return '; '.join(s)
+    def get_person_agreement(self, obj: BusinessProcessDirection):
+        s = [item.name for item in obj.person_agreement.iterator()]
+        return '; '.join(s)
+    def get_person_hr(self, obj: BusinessProcessDirection):
+        s = [item.name for item in obj.person_hr.iterator()]
+        return '; '.join(s)
+    # какие поля будут использоваться для поиска
+    # search_fields = ["employee__title", ]
+    # какие поля будут использоваться для фильтрации
+    list_filter = (
+        "business_process_type",
+    )
+    # какие поля будут в виде ссылок
+    # list_display_links = ("business_process_type", )
+    # какие поля будут использоваться для сортировки
+    ordering = ['business_process_type',  ]
+    # какие поля будут отображаться в списке
+    # list_editable = ("type_trip", "cancellation")
+    # сколько строк будут использоваться для постраничного отображения
+    list_per_page = 100
+    # показывать ли пустые значения
+    empty_value_display = '-empty-'
+    # какие поля будут использоваться из других моделей, для уменьшения запросов
+    # list_select_related = ("person_executor", "person_agreement", "clerk", "person_hr" )
 
 @admin.register(ReportCard)
 class ReportCardAdmin(admin.ModelAdmin):
