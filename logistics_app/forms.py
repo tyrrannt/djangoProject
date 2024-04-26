@@ -26,6 +26,22 @@ class WayBillCreateForm(forms.ModelForm):
         #     {"class": "ui-widget"}
         # )
 
+class WayBillForm(forms.ModelForm):
+    class Meta:
+        model = WayBill
+        fields = ['document_date', 'place_of_departure', 'comment', 'place_division', 'sender', 'state', 'responsible', 'executor', 'urgency']
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        # self.user = kwargs.pop("user")
+        # Выбрать из списка бизнес-процессов имеющих право согласования
+        super(WayBillForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class WayBillUpdateForm(forms.ModelForm):
     place_division = forms.ModelChoiceField(
@@ -66,4 +82,6 @@ class PackageCreateForm(forms.ModelForm):
             make_custom_field(self.fields[field])
 
 # PackageInlineFormSet = inlineformset_factory(Package, WayBill, form=PackageCreateForm, extra=1)
-WayBillInlineFormSet = inlineformset_factory(Package, WayBill, form=WayBillCreateForm, fk_name='package_number', extra=1, can_delete=True, can_delete_extra=True, formset=BaseInlineFormSet,)
+WayBillInlineFormSet = inlineformset_factory(Package, WayBill, form=WayBillForm, fk_name='package_number',
+                                             extra=1, can_delete=True, can_delete_extra=True,
+                                             formset=BaseInlineFormSet,)

@@ -7,7 +7,7 @@ from django.views.generic import ListView, CreateView, DetailView, UpdateView, D
 from administration_app.utils import ajax_search
 from customers_app.models import DataBaseUser
 from hrdepartment_app.models import ApprovalOficialMemoProcess
-from logistics_app.forms import WayBillCreateForm, WayBillUpdateForm, PackageCreateForm
+from logistics_app.forms import WayBillCreateForm, WayBillUpdateForm, PackageCreateForm, WayBillInlineFormSet
 from logistics_app.models import WayBill, Package
 
 
@@ -121,11 +121,22 @@ class PackageInline():
             variant.product = self.object
             variant.save()
 
-class PackageCreateView(LoginRequiredMixin, CreateView):
+class PackageCreateView(LoginRequiredMixin, PackageInline, CreateView):
     model = Package
     form_class = PackageCreateForm
     get_success_url = '/logistics/waybill/'
 
-    def get(self, request, *args, **kwargs):
+    def get_context_data(self, **kwargs):
+        ctx = super(PackageCreateView, self).get_context_data(**kwargs)
+        ctx['named_formsets'] = self.get_named_formsets()
+        return ctx
 
-        return super().get(request, *args, **kwargs)
+    def get_named_formsets(self):
+        if self.request.method == "GET":
+            return {
+                'variants': WayBillInlineFormSet(prefix='variants'),
+            }
+        else:
+            return {
+                'variants': WayBillInlineFormSet(self.request.POST or None, self.request.FILES or None, prefix='variants'),
+            }

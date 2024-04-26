@@ -29,9 +29,105 @@
             <div class="col-lg-12">
 
                 {{ form.as_p }}
+                {% with named_formsets.variants as formset %}
+                    {{ formset.management_form }}
+                    <script type="text/html" id="variants-template">  // id="inlineformsetname-template"
+                    // id='inlineformsetname-__prefix__'
+                    <tr id="variants-__prefix__" class=hide_all>
+                        {% for fields in formset.empty_form.hidden_fields %}
+                            {{ fields }}
+                        {% endfor %}
 
+                        {% for fields in formset.empty_form.visible_fields %}
+                            <td>{{ fields }}</td>
+                        {% endfor %}
+                    </tr>
+                    </script>
+                    <div class="table-responsive card mt-4">
+                        <div class="card-header card-header-secondary">
+                            <h4 class="card-title">Add Variants</h4>
+                        </div>
+                        <table class="table card-header">
+                            <thead class="text-secondary">
+                            <th>Дата документа <span style="color: red;" class="required">*</span></th>
+                            <th>Куда <span style="color: red;" class="required">*</span></th>
+                            <th>Комментарий <span style="color: red;" class="required">*</span></th>
+                            <th>Подразделение <span style="color: red;" class="required">*</span></th>
+                            <th>Отправитель <span style="color: red;" class="required">*</span></th>
+                            <th>Состояние <span style="color: red;" class="required">*</span></th>
+                            <th>Получение <span style="color: red;" class="required">*</span></th>
+                            <th>Исполнитель <span style="color: red;" class="required">*</span></th>
+                            <th>Срочность <span style="color: red;" class="required">*</span></th>
+
+
+                            <th>Delete?</th>
+                            <th>Custom Delete btn</th>
+                            </thead>
+                            <tbody id="item-variants">  <!-- id="item-inlineformsetname" -->
+                            <!-- formset non forms errors -->
+                            {% for error in formset.non_form_errors %}
+                                <span style="color: red">{{ error }}</span>
+                            {% endfor %}
+                            {% for formss in formset %}
+                                {{ formss.management_form }}
+                                <tr id="variants-{{ forloop.counter0 }}" class=hide_all>
+                                    <!-- id="inlineformsetname-counter" -->
+                                    {{ formss.id }}
+                                    {% for field in formss.visible_fields %}
+                                        <td>
+                                            {{ field }}
+                                            {% for error in field.errors %}
+                                                <span style="color: red">{{ error }}</span>
+                                            {% endfor %}
+
+                                            {% comment %} {{ field.DELETE }} {% endcomment %}
+                                        </td>
+                                    {% endfor %}
+                                    {% comment %} for delete {% endcomment %}
+                                    {% if formss.instance.pk %}
+                                        <td>
+                                            <button type="button" class="btn btn-danger" data-toggle="modal"
+                                                    data-target="#exampleModal{{ formss.instance.pk }}">
+                                                Delete
+                                            </button>
+                                            <!-- Modal -->
+                                            <div class="modal fade" id="exampleModal{{ formss.instance.pk }}"
+                                                 tabindex="-1" role="dialog"
+                                                 aria-labelledby="exampleModalLabel{{ formss.instance.pk }}"
+                                                 aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title"
+                                                                id="exampleModalLabel{{ formss.instance.pk }}">Are Your
+                                                                Sure You Want To Delete This?</h5>
+                                                            <button type="button" class="close" data-dismiss="modal"
+                                                                    aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <a href="{% url 'products:delete_variant' formss.instance.pk %}"
+                                                               type="button" class="btn btn-primary">Yes, Delete</a>
+                                                            <button type="button" class="btn btn-secondary"
+                                                                    data-dismiss="modal">Close
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        <a href="#" id="add-variant-button" class="btn btn-secondary add-variants">Add More</a>
+                        <!-- id="add-inlineformsetname-button" -->
+                    </div>
+
+                {% endwith %}
             </div>
-            {% for form in forms %}
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <button type="submit"
@@ -56,6 +152,22 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
+    <script>
 
+
+  $(document).ready(function() {
+    // when user clicks add more btn of variants
+      $('.add-variants').click(function(ev) {
+          ev.preventDefault();
+          var count = $('#item-variants').children().length;
+          var tmplMarkup = $('#variants-template').html();
+          var compiledTmpl = tmplMarkup.replace(/__prefix__/g, count);
+          $('#item-variants').append(compiledTmpl);
+
+          // update form count
+          $('#id_variants-TOTAL_FORMS').attr('value', count+1);
+      });
+  });
+</script>
 
 {% endblock %}
