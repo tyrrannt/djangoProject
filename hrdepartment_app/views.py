@@ -3470,3 +3470,26 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
             user_work_profile__job__in=hr_job_list).exclude(is_active=False)]
         kwargs.update({"hr_person": hr_person_list})
         return kwargs
+
+    def form_valid(self, form):
+        if form.is_valid():
+            form.save()
+
+            notify_dict = {
+                'name': 'team_check_hr',
+                'document_type': 'CTO',
+                'division_type': '2'
+            }
+            query = Q(agreed=True) & (Q(number='') | Q(scan_file=''))
+            get_notify(CreatingTeam, query, Notification, notify_dict, BusinessProcessDirection,
+                       Q(business_process_type='2'), "person_hr")
+
+            notify_dict = {
+                'name': 'team_check_clerk',
+                'document_type': 'CTO',
+                'division_type': '2'
+            }
+            query = Q(agreed=True) & ~Q(number='') & ~Q(scan_file='')
+            get_notify(CreatingTeam, query, Notification, notify_dict, BusinessProcessDirection,
+                       Q(business_process_type='2'), "person_hr")
+        return super().form_valid(form)
