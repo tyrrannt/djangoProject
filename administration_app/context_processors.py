@@ -7,7 +7,7 @@ from djangoProject.settings import MEDIA_ROOT
 from hrdepartment_app.models import (
     ApprovalOficialMemoProcess,
     BusinessProcessDirection,
-    DocumentsJobDescription,
+    DocumentsJobDescription, CreatingTeam,
 )
 from loguru import logger
 
@@ -146,6 +146,36 @@ def get_approval_oficial_memo_process(request):
                     .exclude(document__official_memo_type="2")
                 )
 
+            person_executor_cto, person_agreement_cto, person_clerk_cto, person_hr_cto = make_list(4)
+            executor_cto, agreement_cto, clerk_cto, hr_cto = make_list(4)
+            business_process_cto = BusinessProcessDirection.objects.filter(business_process_type=2)
+
+
+            for item in business_process_cto:
+                for ut in item.person_executor.iterator():
+                    person_executor_cto.append(ut.pk)  # Получаем список исполнителей
+                for ut in item.person_agreement.iterator():
+                    person_agreement_cto.append(ut.pk)  # Получаем список согласователей
+                for ut in item.clerk.iterator():
+                    person_clerk_cto.append(ut.pk)  # Получаем список делопроизводителей
+                for ut in item.person_hr.iterator():
+                    person_hr_cto.append(ut.pk)  # Получаем список сотрудников ОК
+
+            if request.user.user_work_profile.job.pk in person_executor_cto:
+                pass  # Если пользователь является исполнителем
+
+            if request.user.user_work_profile.job.pk in person_agreement_cto:
+                # Если пользователь является согласователем
+                agreement_cto = CreatingTeam.objects.filter(Q(agreed=False)).exclude(cancellation=True)
+            if request.user.user_work_profile.job.pk in person_hr_cto:
+                # Если пользователь является согласователем
+                query = Q(agreed=True) & (Q(number='') | Q(scan_file=''))
+                hr_cto = CreatingTeam.objects.filter(query).exclude(cancellation=True)
+            if request.user.user_work_profile.job.pk in person_clerk_cto:
+                # Если пользователь является согласователем
+                query = Q(agreed=True) & ~Q(number='') & ~Q(scan_file='')
+                clerk_cto = CreatingTeam.objects.filter(query).exclude(cancellation=True)
+
             return {
                 "person_agreement": person_agreement,
                 "document_agreement": agreement,
@@ -165,6 +195,18 @@ def get_approval_oficial_memo_process(request):
                 "accounting": person_accounting,
                 "accounting_accepted": accounting,
                 "accounting_accepted_count": accounting.count if accounting else 0,
+
+                "agreement_cto": person_agreement_cto,
+                "agreement_cto_accepted": agreement_cto,
+                "agreement_cto_accepted_count": agreement_cto.count if agreement_cto else 0,
+
+                "hr_cto": person_hr_cto,
+                "hr_cto_accepted": hr_cto,
+                "hr_cto_accepted_count": hr_cto.count if hr_cto else 0,
+
+                "clerk_cto": person_clerk_cto,
+                "clerk_cto_accepted": clerk_cto,
+                "clerk_cto_accepted_count": clerk_cto.count if clerk_cto else 0,
             }
         except Exception as _ex:
             logger.exception(_ex)

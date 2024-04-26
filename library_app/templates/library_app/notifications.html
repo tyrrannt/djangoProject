@@ -345,5 +345,120 @@
             </div>
         </li>
     {% endif %}
+
+    {#Оповещение о согласовании приказа о старших бригадах#}
+    {% if user.user_work_profile.job.pk in agreement_cto %}
+        <li>
+            {% if agreement_cto_accepted_count != 0 %}
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+{#                    <i class='bx bx-check-shield' data-bs-toggle="tooltip" data-bs-placement="bottom" text-primary></i>#}
+                    <i class="fa fa-check text-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Согласование приказа СБ"></i>
+                    <span class="badge">{{ agreement_cto_accepted_count }}</span>
+                </a>
+            {% endif %}
+            <div class="dropdown-menu notification-menu">
+                <div class="notification-title">
+                    <span class="float-end badge badge-default">{{ agreement_cto_accepted_count }}</span>
+                    Согласование приказа СБ
+                </div>
+                <div class="content" id="wrapper">
+                    <ul>
+                        {% for item in agreement_cto_accepted %}
+                            <li>
+                                <a href="{% url 'hrdepartment_app:team_agreed' item.pk %}" class="clearfix">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top" title=""
+                                         data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                        <code style="font-size: small">
+                                            {{ item }}
+                                        </code>
+                                    </div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <hr/>
+                    <div class="text-end">
+                        <a href="{% url 'hrdepartment_app:team_list' %}" class="view-more">Просмотреть все</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+    {% endif %}
+{#Оповещение о присвоении номера и скана приказа о старших бригадах#}
+    {% if user.user_work_profile.job.pk in hr_cto %}
+        <li>
+            {% if hr_cto_accepted_count != 0 %}
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+{#                    <i class='bx bx-check-shield' data-bs-toggle="tooltip" data-bs-placement="bottom" text-primary></i>#}
+                    <i class="fa fa-book text-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Регистрация приказа СБ"></i>
+                    <span class="badge">{{ hr_cto_accepted_count }}</span>
+                </a>
+            {% endif %}
+            <div class="dropdown-menu notification-menu">
+                <div class="notification-title">
+                    <span class="float-end badge badge-default">{{ hr_cto_accepted_count }}</span>
+                    Регистрация приказа СБ
+                </div>
+                <div class="content" id="wrapper">
+                    <ul>
+                        {% for item in hr_cto_accepted %}
+                            <li>
+                                <a href="{% url 'hrdepartment_app:team_number' item.pk %}" class="clearfix">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top" title=""
+                                         data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                        <code style="font-size: small">
+                                            {{ item }}
+                                        </code>
+                                    </div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <hr/>
+                    <div class="text-end">
+                        <a href="{% url 'hrdepartment_app:team_list' %}" class="view-more">Просмотреть все</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+    {% endif %}
+{#Оповещение об отправке письма приказа о старших бригадах#}
+    {% if user.user_work_profile.job.pk in clerk_cto %}
+        <li>
+            {% if clerk_cto_accepted_count != 0 %}
+                <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+{#                    <i class='bx bx-check-shield' data-bs-toggle="tooltip" data-bs-placement="bottom" text-primary></i>#}
+                    <i class="fa fa-envelope text-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Отправка письма приказа СБ"></i>
+                    <span class="badge">{{ clerk_cto_accepted_count }}</span>
+                </a>
+            {% endif %}
+            <div class="dropdown-menu notification-menu">
+                <div class="notification-title">
+                    <span class="float-end badge badge-default">{{ clerk_cto_accepted_count }}</span>
+                    Отправка письма приказа СБ
+                </div>
+                <div class="content" id="wrapper">
+                    <ul>
+                        {% for item in clerk_cto_accepted %}
+                            <li>
+                                <a href="{% url 'hrdepartment_app:team' item.pk %}" class="clearfix">
+                                    <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top" title=""
+                                         data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
+                                        <code style="font-size: small">
+                                            {{ item }}
+                                        </code>
+                                    </div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <hr/>
+                    <div class="text-end">
+                        <a href="{% url 'hrdepartment_app:team_list' %}" class="view-more">Просмотреть все</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+    {% endif %}
 </ul>
 
