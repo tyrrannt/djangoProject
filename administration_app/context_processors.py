@@ -173,7 +173,7 @@ def get_approval_oficial_memo_process(request):
                 hr_cto = CreatingTeam.objects.filter(query).exclude(cancellation=True)
             if request.user.user_work_profile.job.pk in person_clerk_cto:
                 # Если пользователь является согласователем
-                query = Q(agreed=True) & ~Q(number='') & ~Q(scan_file='')
+                query = Q(agreed=True) & ~Q(number='') & ~Q(scan_file='') & Q(email_send=False)
                 clerk_cto = CreatingTeam.objects.filter(query).exclude(cancellation=True)
 
             return {
