@@ -26,10 +26,12 @@ class WayBillCreateForm(forms.ModelForm):
         #     {"class": "ui-widget"}
         # )
 
+
 class WayBillForm(forms.ModelForm):
     class Meta:
         model = WayBill
-        fields = ['document_date', 'place_of_departure', 'comment', 'place_division', 'sender', 'state', 'responsible', 'executor', 'urgency']
+        fields = ['document_date', 'place_of_departure', 'comment', 'place_division', 'sender', 'state', 'responsible',
+                  'executor', 'urgency']
 
     def __init__(self, *args, **kwargs):
         """
@@ -47,6 +49,7 @@ class WayBillUpdateForm(forms.ModelForm):
     place_division = forms.ModelChoiceField(
         queryset=Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение'),
         label="Подразделение")
+
     class Meta:
         model = WayBill
         fields = '__all__'
@@ -81,7 +84,8 @@ class PackageCreateForm(forms.ModelForm):
         for field in self.fields:
             make_custom_field(self.fields[field])
 
+
 # PackageInlineFormSet = inlineformset_factory(Package, WayBill, form=PackageCreateForm, extra=1)
 WayBillInlineFormSet = inlineformset_factory(Package, WayBill, form=WayBillForm, fk_name='package_number',
                                              extra=1, can_delete=True, can_delete_extra=True,
-                                             formset=BaseInlineFormSet,)
+                                             formset=BaseInlineFormSet, )
