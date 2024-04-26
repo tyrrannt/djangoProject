@@ -34,7 +34,7 @@ admin.site.register(Medical)
 admin.site.register(Purpose)
 admin.site.register(BusinessProcessDirection)
 admin.site.register(Groups)
-admin.site.register(ReportCard)
+
 admin.site.register(ReasonForCancellation)
 admin.site.register(PreHolidayDay)
 admin.site.register(WeekendDay)
@@ -43,6 +43,30 @@ admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
 admin.site.register(Provisions)
 admin.site.register(CreatingTeam)
+
+@admin.register(ReportCard)
+class ReportCardAdmin(admin.ModelAdmin):
+    # какие поля будут отображаться
+    list_display = ("report_card_day", "employee", "rec_no", "start_time", "end_time")
+    # какие поля будут использоваться для поиска
+    search_fields = ["employee__title", ]
+    # какие поля будут использоваться для фильтрации
+    list_filter = (
+        "report_card_day",
+        "employee",
+    )
+    # какие поля будут в виде ссылок
+    list_display_links = ("employee",)
+    # какие поля будут использоваться для сортировки
+    ordering = ['-report_card_day',  ]
+    # какие поля будут отображаться в списке
+    # list_editable = ("type_trip", "cancellation")
+    # сколько строк будут использоваться для постраничного отображения
+    list_per_page = 100
+    # показывать ли пустые значения
+    empty_value_display = '-empty-'
+    # какие поля будут использоваться из других моделей, для уменьшения запросов
+    list_select_related = ('employee', )
 
 @admin.register(OfficialMemo)
 class OfficialMemoAdmin(admin.ModelAdmin):
