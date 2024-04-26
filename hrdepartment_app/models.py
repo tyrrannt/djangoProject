@@ -1670,7 +1670,7 @@ class CreatingTeam(models.Model):
     replaceable_document = models.ForeignKey('self', verbose_name='Отменяемый документ', null=True, blank=True, on_delete=models.SET_NULL, )
     senior_brigade = models.ForeignKey(DataBaseUser, verbose_name="Старший бригады", on_delete=models.SET_NULL,
                                        null=True, related_name='senior_brigade')
-    team_brigade = models.ManyToManyField(DataBaseUser, verbose_name="Состав бригады", related_name='team_brigade')
+    team_brigade = models.ManyToManyField(DataBaseUser, verbose_name="Состав бригады", related_name='team_brigade', blank=True)
     executor_person = models.ForeignKey(DataBaseUser, verbose_name="Исполнитель", on_delete=models.SET_NULL,
                                         null=True, related_name='executor_person')
     approving_person = models.ForeignKey(DataBaseUser, verbose_name="Согласующее лицо", on_delete=models.SET_NULL,
@@ -1733,9 +1733,10 @@ class CreatingTeam(models.Model):
         }
 
 
-def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request):
+def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request, single=True):
+    ordteam = "static/DocxTemplates/ord-ias-single.docx" if single else "static/DocxTemplates/ord-ias.docx"
     doc = DocxTemplate(
-        pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord-ias.docx")
+        pathlib.Path.joinpath(BASE_DIR, ordteam)
     )
     sub_doc_file = pathlib.Path.joinpath(
         pathlib.Path.joinpath(BASE_DIR, filepath), f"subdoc-{filename}"
@@ -1801,7 +1802,8 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         filename = (f"ORD-3-{instance.date_create}-{uid}.docx")
         scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
         date_doc = instance.date_create
-        created_pdf = ias_order(instance, f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename, '3', )
+        single = True if instance.team_brigade.count() < 1 else False
+        created_pdf = ias_order(instance, f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename, '3', single)
         # scan_name = pathlib.Path(created_pdf).name
         if f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}" != instance.doc_file:
             CreatingTeam.objects.filter(pk=instance.pk).update(
