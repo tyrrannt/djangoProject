@@ -3315,6 +3315,7 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
                 context["is_clerk"] = True
         if not self.object.email_send and self.object.scan_file:
             context["email_send"] = True
+        context["change_history"] = get_history(self, CreatingTeam)
         return context
 
     def get(self, request, *args, **kwargs):
