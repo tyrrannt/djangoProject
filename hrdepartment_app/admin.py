@@ -34,7 +34,6 @@ admin.site.register(Medical)
 admin.site.register(Purpose)
 
 admin.site.register(Groups)
-
 admin.site.register(ReasonForCancellation)
 admin.site.register(PreHolidayDay)
 admin.site.register(WeekendDay)

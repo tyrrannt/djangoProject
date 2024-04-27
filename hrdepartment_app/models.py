@@ -1691,6 +1691,7 @@ class CreatingTeam(models.Model):
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
     email_send = models.BooleanField(verbose_name="Письмо отправлено", default=False)
     email_cancellation_send = models.BooleanField(verbose_name="Письмо от отмене отправлено", default=False)
+    history_change = GenericRelation(HistoryChange)
 
     def change_status(self, item: int, status: bool):
         match item:
