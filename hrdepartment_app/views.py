@@ -3388,6 +3388,21 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         kwargs.update({"user": self.request.user.pk})
         return kwargs
 
+    def form_valid(self, form):
+        if form.is_valid():
+            form.instance.scan_file = None
+            form.instance.email_send = False
+            form.save()
+            notify_dict = {
+                'name': 'team_check_clerk',
+                'document_type': 'CTO',
+                'division_type': '2'
+            }
+            query = Q(agreed=True) & ~Q(number='') & ~Q(scan_file='')
+            get_notify(CreatingTeam, query, Notification, notify_dict, BusinessProcessDirection,
+                       Q(business_process_type='2'), "clerk")
+        return super().form_valid(form)
+
 
 class CreatingTeamDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):  # DeleteView
     model = CreatingTeam  # Приказы о старших бригад - удаление
