@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from administration_app.utils import format_name_initials
 from customers_app.models import Groups
 from hrdepartment_app.forms import OrderDescriptionForm
 from hrdepartment_app.models import (
@@ -41,10 +42,33 @@ admin.site.register(WeekendDay)
 admin.site.register(ProductionCalendar)
 admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
-admin.site.register(Provisions)
-admin.site.register(CreatingTeam)
 
+@admin.register(Provisions)
+class ProvisionsAdmin(admin.ModelAdmin):
+    list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
+                    "validity_period_start", "validity_period_end")  #
+    list_filter = (
+        "actuality", "applying_for_job",
+    )
+    search_fields = ["document_name", ]
+    def get_employee(self, obj: Provisions):
+        s = [format_name_initials(item.title) for item in obj.employee.iterator()]
+        return '; '.join(s)
 
+@admin.register(CreatingTeam)
+class CreatingTeamAdmin(admin.ModelAdmin):
+    list_display = ("get_document_type", "date_create", "number", "senior_brigade", "get_team_brigade",
+                    "place", "date_start", "date_end", "agreed", "email_send") #
+    list_filter = (
+        "agreed", "email_send",
+    )
+    search_fields = ["senior_brigade__title", ]
+    def get_document_type(self, obj: CreatingTeam):
+        return obj.get_document_type_display()
+
+    def get_team_brigade(self, obj: CreatingTeam):
+        s = [format_name_initials(item.title) for item in obj.team_brigade.iterator()]
+        return '; '.join(s)
 @admin.register(BusinessProcessDirection)
 class BusinessProcessDirectionAdmin(admin.ModelAdmin):
     # какие поля будут отображаться
