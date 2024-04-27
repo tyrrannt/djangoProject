@@ -28,7 +28,6 @@ from hrdepartment_app.models import (
 # Register your models here.
 
 admin.site.register(DocumentsJobDescription)
-admin.site.register(DocumentsOrder)
 admin.site.register(PlaceProductionActivity)
 admin.site.register(MedicalOrganisation)
 admin.site.register(Medical)
@@ -42,6 +41,22 @@ admin.site.register(WeekendDay)
 admin.site.register(ProductionCalendar)
 admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
+
+
+@admin.register(DocumentsOrder)
+class DocumentsOrderAdmin(admin.ModelAdmin):
+    list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
+                    "validity_period_start", "get_document_order_type")  #
+    list_filter = (
+        "actuality", "applying_for_job",
+    )
+    search_fields = ["document_name", ]
+    def get_document_order_type(self, obj: DocumentsOrder):
+        return obj.get_document_order_type_display()
+
+    def get_employee(self, obj: Provisions):
+        s = [format_name_initials(item.title) for item in obj.employee.iterator()]
+        return '; '.join(s)
 
 @admin.register(Provisions)
 class ProvisionsAdmin(admin.ModelAdmin):

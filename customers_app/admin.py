@@ -78,7 +78,6 @@ admin.site.register(Counteragent)
 admin.site.register(AccessLevel)
 admin.site.register(DataBaseUserProfile)
 admin.site.register(Citizenships)
-admin.site.register(IdentityDocuments)
 admin.site.register(DataBaseUserWorkProfile)
 admin.site.register(HarmfulWorkingConditions)
 admin.site.register(ViewDocumentsPhysical)
@@ -87,3 +86,9 @@ admin.site.register(HappyBirthdayGreetings)
 admin.site.register(Affiliation)
 admin.site.register(VacationScheduleList)
 admin.site.register(VacationSchedule)
+
+@admin.register(IdentityDocuments)
+class IdentityDocumentsAdmin(admin.ModelAdmin):
+    list_display = ("series", "number", "issued_by_whom", "date_of_issue",
+                    "division_code", )  #
+
