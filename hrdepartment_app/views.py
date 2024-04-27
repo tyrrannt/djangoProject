@@ -3393,13 +3393,11 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             if form.changed_data:
                 old_dict = {}
                 get_object = self.get_object()
-                print(form.changed_data)
                 for item in form.changed_data:
                     if item in ["team_brigade", "company_property"]:
                         old_dict[item] = [item for item in getattr(get_object, item).all()]
                     else:
                         old_dict[item] = getattr(get_object, item)
-                print(old_dict)
                 refresh_form = form.save(commit=False)
                 refresh_form.scan_file = None
                 refresh_form.email_send = False
@@ -3412,13 +3410,11 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                         new_dict[item] = [item for item in getattr(get_object, item).all()]
                     else:
                         new_dict[item] = getattr(get_object, item)
-                print(new_dict)
                 notify_dict = {
                     'name': 'team_check_clerk',
                     'document_type': 'CTO',
                     'division_type': '2'
                 }
-                print(form.changed_data)
                 query = Q(agreed=True) & ~Q(number='') & ~Q(scan_file='')
                 get_notify(CreatingTeam, query, Notification, notify_dict, BusinessProcessDirection,
                            Q(business_process_type='2'), "clerk")
