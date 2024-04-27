@@ -39,16 +39,19 @@ class WayBill(models.Model):
     place_division = models.ForeignKey(Division, verbose_name="Подразделение", on_delete=models.SET_NULL,
                                        null=True, blank=True)
     sender = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Отправитель",
-                                 on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_sender")
+                               on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_sender")
     state = models.CharField(max_length=100, verbose_name="Состояние", choices=STATES, default="0")
     responsible = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Получение",
-                                 on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_responsible")
+                                    on_delete=models.SET_NULL, null=True, blank=True,
+                                    related_name="way_bill_responsible")
     date_of_creation = models.DateField(verbose_name="Дата и время создания",
                                         auto_now_add=True)  # При миграции указать 1 и вставить timezone.now()
     executor = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Исполнитель",
                                  on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_executor")
     urgency = models.CharField(max_length=100, verbose_name="Срочность", choices=URGENCY_CHOICES, default="0")
-    package_number = models.ForeignKey('Package', verbose_name="Посылка", on_delete=models.SET_NULL, null=True, blank=True)
+    package_number = models.ForeignKey('Package', verbose_name="Посылка", on_delete=models.SET_NULL, null=True,
+                                       blank=True)
+
     def __str__(self):
         return self.content
 
@@ -85,9 +88,42 @@ class Package(models.Model):
     class Meta:
         verbose_name = 'Посылка'
         verbose_name_plural = 'Посылки'
-        ordering = ["-date_of_creation"]
+        ordering = ["-date_of_dispatch"]
 
-    date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True) # При миграции указать 1 и вставить timezone.now()
+    TYPE_OF_SENDING = (
+        ("0", "Логистическая компания"),
+        ("1", "Водитель"),
+        ("2", "Сотрудник"),
+    )
+    # При миграции указать 1 и вставить timezone.now()
+    date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True)
     date_of_dispatch = models.DateField(verbose_name='Дата отправки', null=True, blank=True)
-    place_of_dispatch = models.ForeignKey(PlaceProductionActivity, verbose_name='Куда отправляется', on_delete=models.SET_NULL, null=True, blank=True)
+    place_of_dispatch = models.ForeignKey(PlaceProductionActivity, verbose_name='Куда отправляется',
+                                          on_delete=models.SET_NULL, null=True, blank=True)
     number_of_dispatch = models.CharField(verbose_name='Номер посылки', max_length=37, default='')
+    executor = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Исполнитель",
+                                 on_delete=models.SET_NULL, null=True, blank=True, related_name="dispatch_executor")
+    type_of_dispatch = models.CharField(max_length=100, verbose_name="Тип отправки",
+                                        choices=TYPE_OF_SENDING, default="0")
+
+    def get_data(self):
+        """
+        Получает данные из экземпляра ReportCard.
+
+        :return: словарь, содержащий следующие данные:
+            - "pk": первичный ключ экземпляра ReportCard.
+            - "employee": форматированные инициалы имени сотрудника.
+            - "report_card_day": день табеля в формате "ДД.ММ.ГГГГ"
+            - "start_time": время начала в формате "ЧЧ:ММ"
+            - "end_time": время окончания в формате "ЧЧ:ММ"
+            - "reason_adjustment": причина корректировки.
+            - "record_type": отображение типа записи.
+        """
+        return {
+            "pk": self.pk,
+            "date_of_dispatch": f"{self.date_of_dispatch:%d.%m.%Y} г.",
+            "number_of_dispatch": self.number_of_dispatch,
+            "place_of_dispatch": self.place_of_dispatch.name,
+            "executor": format_name_initials(self.executor.title) if self.executor else '',
+            "type_of_dispatch": self.get_type_of_dispatch_display(),
+        }

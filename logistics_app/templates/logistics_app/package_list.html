@@ -1,13 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-<div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'logistics_app:package_add' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block SpecificPageVendor %}
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+                <section class="card">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
+                        </div>
+                        <h2 class="card-title">Основной</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+                                    {% if user|has_group:"Старшие бригад" or user.is_superuser %}
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'logistics_app:package_add' %}"
+                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                                Добавить отправку</a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                            <div class="row">
+                            </div>
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
+                            <table class="table table-ecommerce-simple mb-0 table-hover" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+                                <thead>
+                                <tr>
+
+                                    <th width="8%">Дата отправки</th>
+                                    <th width="10%">Номер посылки</th>
+                                    <th width="10%">Куда отправляется</th>
+                                    <th width="10%">Исполнитель</th>
+                                    <th width="10%">Тип отправки</th>
+                                </tr>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            {#                            <div class="datatable-header">#}
+                            {#                                <div class="row align-items-center mb-3">#}
+                            {#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+                            {#                                            <a href="{% url 'hrdepartment_app:reportcard_detail' %}"#}
+                            {#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
+                            {#                                                Сводная таблица по месяцам </a>#}
+                            {#                                        </div>#}
+                            {#                                </div>#}
+                            {#                            </div>#}
+
+                            <hr class="solid mt-5 opacity-4">
+
+                        </div>
+                    </div>
+
                 </div>
-</body>
-</html>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            $('#datatable-ecommerce-list thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "ordering": false,
+                "select": true,
+                "scrollX": true,
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                "ajax": "{% url 'logistics_app:package_list' %}",
+                "processing": true,
+                "serverSide": true,
+                "lengthMenu": [[10, 25, 50, 75, 100, 200, 300], [10, 25, 50, 75, 100, 200, 300]],
+                "searching": true,
+                "stateSave": true,
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                {#https://www.datatables.net/forums/discussion/55671/datatables-editor-loading-select-options-from-database-in-a-django-app#}
+                "columns": [
+                    {"data": "date_of_dispatch"},
+                    {"data": "number_of_dispatch"},
+                    {"data": "place_of_dispatch"},
+                    {"data": "executor"},
+                    {"data": "type_of_dispatch"},
+                ],
+            });
+        });
+    </script>
+{% endblock %}
