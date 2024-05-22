@@ -11,11 +11,11 @@ class EchoConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         await self.accept()
         channel_layer = get_channel_layer()
-        # for i in range(1000):
-        #     num = random.randint(0,1000)
-        #     await self.send(json.dumps({"value": num}))
-        #     channel_layer.group_send('notifications', {})
-        #     await sleep(1)
+        for i in range(1000):
+            num = random.randint(0,1000)
+            await self.send(json.dumps({"value": num}))
+            channel_layer.group_send('notifications', {})
+            await sleep(1)
 
     def disconnect(self, close_code):
         pass
