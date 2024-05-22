@@ -373,8 +373,8 @@ def rename_file_name(sender, instance, **kwargs):
     try:
         change = 0
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
-        user_uid = "0" * (7 - len(str(instance.person.pk))) + str(instance.person.pk)
+        uid = f"{instance.pk:07}"
+        user_uid = f"{instance.person.pk:07}"
         filename_pmo = (
             f"MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}.docx"
         )
@@ -546,6 +546,13 @@ class OfficialMemo(models.Model):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
+    )
+    expenses = models.BooleanField(verbose_name="Пометка выплаты", default=False)
+    expenses_summ = models.DecimalField(
+        verbose_name="Сумма аванса",
+        default=0,
+        max_digits=10,
+        decimal_places=2,
     )
     history_change = GenericRelation(HistoryChange)
     title = models.CharField(
@@ -1614,7 +1621,7 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
 
         # ext_scan = str(instance.scan_file).split('.')[-1]
-        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
+        uid = f"{instance.pk:07}"
         filename = (
             f"ORD-{instance.document_order_type}-{instance.document_date}-{uid}.docx"
         )
@@ -1799,7 +1806,7 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
     if instance.agreed and instance.number != '':
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
         # ext_scan = str(instance.scan_file).split('.')[-1]
-        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
+        uid = f"{instance.pk:07}"
         filename = (f"ORD-3-{instance.date_create}-{uid}.docx")
         scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
         date_doc = instance.date_create
@@ -1916,7 +1923,7 @@ def rename_jds_file_name(sender, instance: DocumentsJobDescription, **kwargs):
         # Получаем расширение файла
         ext = file_name.split(".")[-1]
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
+        uid = f"{instance.pk:07}"
         filename = (
             f"JDS-{instance.document_division.code}-"
             f"{instance.document_job.code}-{uid}-{instance.document_date}.{ext}"
@@ -2319,10 +2326,8 @@ class Instructions(Documents):
 def rename_file_name_instructions(sender, instance, **kwargs):
     try:
         change = 0
-        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
-        user_uid = "0" * (7 - len(str(instance.executor.pk))) + str(
-            instance.executor.pk
-        )
+        uid = f"{instance.pk:07}"
+        user_uid = f"{instance.executor.pk:07}"
         if instance.doc_file:
             # Получаем имя сохраненного файла
             draft_file_name = pathlib.Path(instance.doc_file.name).name
@@ -2426,10 +2431,8 @@ class Provisions(Documents):
 def rename_file_name_provisions(sender, instance, **kwargs):
     try:
         change = 0
-        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
-        user_uid = "0" * (7 - len(str(instance.executor.pk))) + str(
-            instance.executor.pk
-        )
+        uid = f"{instance.pk:07}"
+        user_uid = f"{instance.executor.pk:07}"
         if instance.doc_file:
             # Получаем имя сохраненного файла
             draft_file_name = pathlib.Path(instance.doc_file.name).name
@@ -2530,10 +2533,8 @@ class GuidanceDocuments(Documents):
 def rename_file_name_guidance_documents(sender, instance, **kwargs):
     try:
         change = 0
-        uid = "0" * (7 - len(str(instance.pk))) + str(instance.pk)
-        user_uid = "0" * (7 - len(str(instance.executor.pk))) + str(
-            instance.executor.pk
-        )
+        uid = f"{instance.pk:07}"
+        user_uid = f"{instance.executor.pk:07}"
         if instance.doc_file:
             # Получаем имя сохраненного файла
             draft_file_name = pathlib.Path(instance.doc_file.name).name

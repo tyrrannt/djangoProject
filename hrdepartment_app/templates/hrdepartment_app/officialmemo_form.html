@@ -116,7 +116,7 @@
                                                 </span>
                                                 <input type="date" id="id_period_from"
                                                        class="form-control form-control-modern"
-                                                       onchange=minimumPeriodFor()
+                                                       onchange=minimumPeriodFor() onblur=expenses()
                                                        name="period_from" value="{{ object.period_from | date:'c' }}"/>
                                             </div>
                                         </div>
@@ -130,7 +130,7 @@
                                                 </span>
                                                 <input type="date" id="id_period_for"
                                                        class="form-control form-control-modern "
-{#                                                       onchange="employee_change()"#}
+                                                       onblur=expenses()
                                                        name="period_for" value="{{ object.period_for | date:'c' }}"/>
                                                 <label id="id_check_date" for="check_date"
                                                        style="color: #ff000e; font-weight: bold; bo"></label>
@@ -176,6 +176,13 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                               for="id_expenses_summ">Сумма аванса:</label>
+                                        <div class="col-lg-7 col-xl-6">
+                                            <span>{{ form.expenses_summ }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_accommodation">Ответственный:</label>
                                         <div class="col-lg-7 col-xl-6">
                                             <select class="form-control form-control-modern" name="responsible"
@@ -216,6 +223,21 @@
         <!-- end: page -->
     </section>
     <script type="text/javascript">
+        function expenses() {
+            period_from = new Date(document.getElementById("id_period_from").value);
+            period_for = new Date(document.getElementById("id_period_for").value);
+            diff = new Date(period_for - period_from);
+            summ = diff.getUTCDate() - 1;
+            if (summ > 0) {
+                if (summ <16) {
+                    document.getElementById("id_expenses_summ").value = summ*700;
+                }
+                else {
+                    document.getElementById("id_expenses_summ").value = 15*700;
+                }
+
+            }
+        }
         function minimumPeriodFor() {
             period_from = document.getElementById("id_period_from").value;
             var period_for = document.getElementById("id_period_for");

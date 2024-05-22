@@ -201,7 +201,37 @@ def birthday_telegram():
         except Exception as e:
             print(e)
 
+@app.task()
+def holiday_telegram():
+    today = datetime.datetime.today()
+    api_url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
+    messages = f'<b>Уважаемые коллеги!\n</b>'
+    count = 1
+    messages += f'\n<blockquote> Поздравляем вас с Днём Победы! Желаем вам чистого неба над головой, мира и добра. Пусть в вашей жизни всегда будет радость и счастье!</blockquote>\n'
+    # Вставка картинки в сообщение, если есть. &#8205; - это символ невидимого неразрывного пробела
+    messages += '<a href="https://corp.barkol.ru/static/admin_templates/img/9may.jpg">&#8205;</a>'
+    # Указаваем в параметрах CHAT_ID и само сообщение
+    input_data = json.dumps(
+        {
+            'chat_id': TELEGRAM_CHAT_ID,
+            'parse_mode': 'html',
+            'text': messages,
+            'disable_web_page_preview': False,
+        }
+    ).encode()
+    if count >= 1:
+        try:
+            req = urllib.request.Request(
+                url=api_url,
+                data=input_data,
+                headers={'Content-Type': 'application/json'}
+            )
+            with urllib.request.urlopen(req) as response:
+                # Тут выводим ответ
+                print(response.read().decode('utf-8'))
 
+        except Exception as e:
+            print(e)
 
 
 def happy_birthday_loc():

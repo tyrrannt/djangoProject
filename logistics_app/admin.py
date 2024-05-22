@@ -1,11 +1,18 @@
 from django.contrib import admin
 
 from administration_app.utils import format_name_initials
-from logistics_app.models import WayBill, Package
+from logistics_app.models import WayBill, Package, PackageImage
+
 
 # Register your models here.
-admin.site.register(WayBill)
+@admin.register(WayBill)
+class WayBillAdmin(admin.ModelAdmin):
+    list_display = ("document_date", "place_of_departure", "place_division",
+                    "sender", "state", "responsible", "date_of_creation", "executor", "urgency")
 
+@admin.register(PackageImage)
+class PackageImageAdmin(admin.ModelAdmin):
+    list_display = ("date_of_creation", "package", "caption")
 
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):

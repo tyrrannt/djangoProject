@@ -127,3 +127,19 @@ class Package(models.Model):
             "executor": format_name_initials(self.executor.title) if self.executor else '',
             "type_of_dispatch": self.get_type_of_dispatch_display(),
         }
+
+
+def image_directory_path(instance, filename):
+    year = instance.date_of_creation
+    return f"logist/PKG/{year.year}/{year.month}/{filename}"
+
+class PackageImage(models.Model):
+    class Meta:
+        verbose_name = "Фотографию к посылке"
+        verbose_name_plural = "Фотографии к посылкам"
+        ordering = ["-date_of_creation"]
+    date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True)
+    image = models.ImageField(verbose_name='', upload_to=image_directory_path)
+    caption = models.CharField(verbose_name='', max_length=200, default='')
+    package = models.ForeignKey(Package, verbose_name='', on_delete=models.CASCADE)
+

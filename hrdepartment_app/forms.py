@@ -143,6 +143,7 @@ class OfficialMemoAddForm(forms.ModelForm):
             "official_memo_type",
             "document_extension",
             "creation_retroactively",
+            "expenses_summ",
         )
 
     def __init__(self, *args, **kwargs):
@@ -250,6 +251,7 @@ class OfficialMemoUpdateForm(forms.ModelForm):
             "official_memo_type",
             "place_departure",
             "document_extension",
+            "expenses_summ"
         )
 
     def clean(self):

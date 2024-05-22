@@ -885,7 +885,10 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
         part.add_header('Content-Disposition',
                         f'attachment; filename="{os.path.basename(filepath)}"')
         msg.attach(part)  # Добавляем файл в письмо
-    smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
+    try:
+        smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
+    except Exception as _ex:
+        print(_ex)
     try:
         smtp.login(from_mail, from_passwd)  # Логинимся в свой ящик
         smtp.sendmail(from_mail, to_mail, msg.as_string())  # Отправляем сообщения
@@ -894,6 +897,10 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
         return 0
     except smtplib.SMTPRecipientsRefused:
         return 0
+    except Exception as _ex:
+        print('Не удалось подключиться к серверу')
+        return 0
+
 
     # Сохраняем сообщение в исходящие
     imap = imaplib.IMAP4_SSL(server_imap, 993)  # Подключаемся в почтовому серверу

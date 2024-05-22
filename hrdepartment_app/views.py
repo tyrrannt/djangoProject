@@ -3257,28 +3257,25 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         refreshed_form = form.save(commit=False)
-        send_email = False
-        kwargs = {}
         if refreshed_form.replaceable_document:
-            send_email = True
             replaceable_document = refreshed_form.replaceable_document
-            replaceable_document.cancellation = True
-            replaceable_document.save()
-            kwargs = {
-                "template_name": "hrdepartment_app/creatingteam_email.html",
-                "sender": EMAIL_HOST_USER,
-                "subject": f"Отмена приказа № {replaceable_document.number} о назначении старшего бригады",
-                "receiver": [replaceable_document.senior_brigade.email, replaceable_document.place.email, ],
-                "current_context": {
-                    "name": replaceable_document.senior_brigade.first_name,
-                    "surname": replaceable_document.senior_brigade.surname,
-                    "text": f'Приказ № {replaceable_document.number} от '
-                            f'{replaceable_document.date_create.strftime("%d.%m.%Y")} отменен.',
-                    "sign": f'Исполнитель {format_name_initials(refreshed_form.executor_person)}'}
-            }
+
+            current_context = {
+                "name": replaceable_document.senior_brigade.first_name,
+                "surname": replaceable_document.senior_brigade.surname,
+                "text": f'Приказ № {replaceable_document.number} от {replaceable_document.date_create.strftime("%d.%m.%Y")} отменен.',
+                "sign": f'Исполнитель {format_name_initials(replaceable_document.executor_person)}'}
+            attachment_path = ''
+            subject = f"Отмена приказа № {replaceable_document.number} о назначении старшего бригады"
+            sm = send_notification(replaceable_document.executor_person, replaceable_document, subject,
+                                   "hrdepartment_app/creatingteam_email.html", current_context,
+                                   attachment=attachment_path, division=1, document=1)
+            if sm == 1:
+                replaceable_document.cancellation = True
+                replaceable_document.save()
+            else:
+                self.form_invalid(form)
         refreshed_form.save()
-        if send_email:
-            send_mail_notification(kwargs, self.object, 1)
 
         notify_dict = {
             'name': 'team_create_approve',
