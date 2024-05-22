@@ -7,7 +7,7 @@ from djangoProject.settings import MEDIA_ROOT
 from hrdepartment_app.models import (
     ApprovalOficialMemoProcess,
     BusinessProcessDirection,
-    DocumentsJobDescription, CreatingTeam,
+    DocumentsJobDescription, CreatingTeam, OfficialMemo,
 )
 from loguru import logger
 
@@ -145,6 +145,12 @@ def get_approval_oficial_memo_process(request):
                     .exclude(cancellation=True)
                     .exclude(document__official_memo_type="2")
                 )
+                expenses_dicts = ApprovalOficialMemoProcess.objects.filter(
+                    Q(document__expenses=False) &
+                    Q(document__expenses_summ__gt=0) &
+                    Q(process_accepted=True)).values('document').count()
+                # expenses_lists = [item['document'] for item in expenses_dicts]
+
 
             person_executor_cto, person_agreement_cto, person_clerk_cto, person_hr_cto = make_list(4)
             executor_cto, agreement_cto, clerk_cto, hr_cto = make_list(4)
@@ -192,9 +198,11 @@ def get_approval_oficial_memo_process(request):
                 "person_hr": person_hr,
                 "hr_accepted": hr_accepted,
                 "hr_accepted_count": hr_accepted.count if hr_accepted else 0,
+
                 "accounting": person_accounting,
                 "accounting_accepted": accounting,
                 "accounting_accepted_count": accounting.count if accounting else 0,
+                "accounting_expenses_count": expenses_dicts if expenses_dicts else 0,
 
                 "agreement_cto": person_agreement_cto,
                 "agreement_cto_accepted": agreement_cto,

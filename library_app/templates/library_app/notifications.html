@@ -6,6 +6,16 @@
     }
 </style>
 <ul class="notifications">
+
+    <li>
+        {% if accounting_expenses_count != 0 %}
+            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+                <i class="bx bxs-bank text-danger" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Запрос аванса"></i>
+                <span class="badge">{{ accounting_expenses_count }}</span>
+            </a>
+        {% endif %}        
+    </li>
+
     <li>
         {% if contracts_not_published_count != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
