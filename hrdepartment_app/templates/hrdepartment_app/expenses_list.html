@@ -41,6 +41,7 @@
                                     <th width="10%">По</th>
                                     <th width="10%">Приказ</th>
                                     <th width="10%">Сумма</th>
+                                    <th width="4%"></th>
                                 </tr>
                                 </thead>
                             </table>
@@ -110,16 +111,7 @@
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
 
-                    $(nRow).attr("href", id + '/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
-                    });
-                },
                 "columns": [
                     {"data": "person"},
                     {"data": "job"},
@@ -127,6 +119,14 @@
                     {"data": "period_for"},
                     {"data": "order"},
                     {"data": "expenses_summ"},
+                    {"data": null,
+                        "mRender":function(data,type,full){
+                            {
+                                ret ='<a class="underline" href="/hr/expenses/'+data.pk+'/update/" ><i class="bx bxs-edit-alt" ></i></a>';
+                                return ret;
+                            }
+                            return data.name;
+                        }},
                 ],
             });
             table.column(10).visible(false);

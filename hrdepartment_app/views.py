@@ -3563,3 +3563,9 @@ class ExpensesList(LoginRequiredMixin, ListView):
             context = ajax_search(request, self, search_list, OfficialMemo, query)
             return JsonResponse(context, safe=False)
         return super(ExpensesList, self).get(request, *args, **kwargs)
+
+def expenses_update(request,  *args,  **kwargs):
+    obj = OfficialMemo.objects.get(pk=kwargs['pk'])
+    obj.expenses = True
+    obj.save()
+    return redirect("hrdepartment_app:expenses_list")
