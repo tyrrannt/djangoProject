@@ -3540,3 +3540,26 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
             get_notify(CreatingTeam, query, Notification, notify_dict, BusinessProcessDirection,
                        Q(business_process_type='2'), "person_hr")
         return super().form_valid(form)
+
+class ExpensesList(LoginRequiredMixin, ListView):
+    model = OfficialMemo
+    template_name = "hrdepartment_app/expenses_list.html"
+
+    def get(self, request, *args, **kwargs):
+        query = Q()
+        expenses_dicts = ApprovalOficialMemoProcess.objects.filter(
+            Q(document__expenses=False) &
+            Q(document__expenses_summ__gt=0) &
+            Q(process_accepted=True)).values('document')
+        expenses_list = [item['document'] for item in expenses_dicts]
+        query &= Q(id__in=expenses_list)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['type_trip', 'person__title',
+                           'person__user_work_profile__job__name', 'place_production_activity__name',
+                           'purpose_trip__title',
+                           'period_from', 'period_for', 'accommodation',
+                           'order__document_number', 'comments', 'period_from',
+                           ]
+            context = ajax_search(request, self, search_list, OfficialMemo, query)
+            return JsonResponse(context, safe=False)
+        return super(ExpensesList, self).get(request, *args, **kwargs)

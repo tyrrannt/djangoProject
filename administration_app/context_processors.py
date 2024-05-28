@@ -137,7 +137,7 @@ def get_approval_oficial_memo_process(request):
                     .exclude(document__official_memo_type="2")
                 )
 
-            if request.user.pk in person_accounting:
+            if (request.user.pk in person_accounting) or request.user.is_superuser:
                 # Получение списка сотрудников бухгалтерии
                 accounting = (
                     ApprovalOficialMemoProcess.objects.filter(
