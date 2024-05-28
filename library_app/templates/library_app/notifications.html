@@ -469,6 +469,7 @@
             </div>
         </li>
     {% endif %}
+    {% if user.pk in accounting or user.is_superuser%}
     <li>
         {% if accounting_expenses_count != 0 %}
             <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
@@ -490,5 +491,6 @@
             </div>
         </div>
     </li>
+    {% endif %}
 </ul>
 
