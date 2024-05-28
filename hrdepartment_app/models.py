@@ -598,6 +598,7 @@ class OfficialMemo(models.Model):
             "cancellation": self.cancellation,
             "document_accepted": self.document_accepted,
             "date_order": self.period_from,
+            "expenses_summ": self.expenses_summ,
         }
 
 
