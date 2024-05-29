@@ -78,6 +78,8 @@
                                     <th width="10%">Проживание</th>
                                     <th width="10%">Приказ</th>
                                     <th width="10%">Примечание</th>
+                                    <th width="10%">Сумма</th>
+                                    <th width="10%">Выплачено</th>
                                 </tr>
                                 </thead>
                             </table>
@@ -157,6 +159,12 @@
                     if (aData['originals_received']) {
                         $('td:eq(8)', nRow).addClass('text-info text-color-inherit');
                     }
+                    if (aData['expenses_summ_check']) {
+                        $('td:eq(10)', nRow).html('<i class="bx bx-check-double"></i>')
+                    } else {
+                        $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
+                    }
+
                     $(nRow).attr("href", id + '/update/');
                     $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {
@@ -174,6 +182,8 @@
                     {"data": "accommodation"},
                     {"data": "order"},
                     {"data": "comments"},
+                    {"data": "expenses_summ"},
+                    {"data": "expenses_summ_check"},
                 ],
             });
         });

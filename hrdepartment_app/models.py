@@ -835,6 +835,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             "originals_received": True
             if self.originals_received and self.date_transfer_hr
             else False,
+            "expenses_summ": self.document.expenses_summ,
+            "expenses_summ_check": self.document.expenses,
         }
 
     @staticmethod
