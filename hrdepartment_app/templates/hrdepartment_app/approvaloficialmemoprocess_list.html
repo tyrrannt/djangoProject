@@ -160,9 +160,13 @@
                         $('td:eq(8)', nRow).addClass('text-info text-color-inherit');
                     }
                     if (aData['expenses_summ_check']) {
-                        $('td:eq(10)', nRow).html('<i class="bx bx-check-double"></i>')
+                        if (aData['expenses_summ_check'] == "-") {
+                            $('td:eq(10)', nRow).html('')
+                        } else {
+                            $('td:eq(10)', nRow).html('<i class="bx bx-check-double"></i>')
+                        }
                     } else {
-                        $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
+                            $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
                     }
 
                     $(nRow).attr("href", id + '/update/');
