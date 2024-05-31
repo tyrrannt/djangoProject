@@ -287,6 +287,9 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '7':
                 # Получение неявок на рабочее место.
                 get_sick_leave.delay(2024, 2)
+            if request.GET.get('update') == '8':
+                # Получение неявок на рабочее место.
+                get_sick_leave.delay(2024, 3)
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
         return super().get(request, *args, **kwargs)
