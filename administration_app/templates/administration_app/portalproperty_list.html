@@ -21,43 +21,58 @@
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
                                     {% if user.is_superuser %}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'administration_app:property_list' %}?update=0"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Выдать общие права </a>
+
+                                        <div class="btn-group pb-2">
+                                            <a href="{% url 'administration_app:property_list' %}?update=0" class="btn btn-primary">Выдать общие права</a>
+                                            <a href="{% url 'administration_app:property_list' %}?update=1" class="btn btn-primary">Обновить права</a>
+                                            <a href="{% url 'administration_app:property_list' %}?update=2" class="btn btn-primary">Обновить заголовки СЗ</a>
+                                            <a href="{% url 'administration_app:property_list' %}?update=3" class="btn btn-primary">Пользователи</a>
                                         </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'administration_app:property_list' %}?update=1"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить права </a>
+                                        <br>
+                                        <div class="btn-group pb-2">
+                                            <a href="{% url 'administration_app:property_list' %}?update=4" class="btn btn-primary">Обновить пароли</a>
+                                            <a href="{% url 'administration_app:property_list' %}?update=5" class="btn btn-primary">Больничные</a>
+                                            <a href="{% url 'administration_app:property_list' %}?update=6" class="btn btn-primary">День рождения</a>
+                                            <a href="{% url 'administration_app:property_list' %}?update=7" class="btn btn-primary">Медосмотры</a>
                                         </div>
+{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                            <a href="{% url 'administration_app:property_list' %}?update=0"#}
+{#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
+{#                                                Выдать общие права </a>#}
+{#                                        </div>#}
+{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                            <a href="{% url 'administration_app:property_list' %}?update=1"#}
+{#                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+#}
+{#                                                Обновить права </a>#}
+{#                                        </div>#}
+{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                            <a href="{% url 'administration_app:property_list' %}?update=2"#}
+{#                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+#}
+{#                                                Обновить заголовки СЗ </a>#}
+{#                                        </div>#}
+{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                            <a href="{% url 'administration_app:property_list' %}?update=3"#}
+{#                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+#}
+{#                                                Пользователи </a>#}
+{#                                        </div>#}
+{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                            <a href="{% url 'administration_app:property_list' %}?update=4"#}
+{#                                               class="btn btn-info btn-md font-weight-semibold btn-py-2 px-4">+#}
+{#                                                Обновить пароли</a>#}
+{#                                        </div>#}
+{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                            <a href="{% url 'administration_app:property_list' %}?update=5"#}
+{#                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+#}
+{#                                                Больничные и медосмотры</a>#}
+{#                                        </div>#}
+{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                            <a href="{% url 'administration_app:property_list' %}?update=6"#}
+{#                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+#}
+{#                                                День рождения</a>#}
+{#                                        </div>#}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'administration_app:property_list' %}?update=2"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить заголовки СЗ </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'administration_app:property_list' %}?update=3"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Пользователи </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'administration_app:property_list' %}?update=4"
-                                               class="btn btn-info btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить пароли</a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'administration_app:property_list' %}?update=5"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Больничные и медосмотры</a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'administration_app:property_list' %}?update=6"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                День рождения</a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <select name="grops" id="id_groups" class="form-control form-control-modern" >
+                                            <select name="grops" id="id_groups"
+                                                    class="form-control form-control-modern">
                                                 {% for item in Group %}
                                                     <option value="{{ item.pk }}">{{ item }}</option>
                                                 {% endfor %}

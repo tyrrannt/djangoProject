@@ -2,9 +2,6 @@ import datetime
 import json
 
 import requests
-import telebot
-from dateutil import rrule
-from dateutil.relativedelta import relativedelta
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
@@ -14,18 +11,10 @@ from django.views.generic import ListView
 from loguru import logger
 
 from administration_app.models import PortalProperty
-from administration_app.utils import get_users_info, change_users_password, get_jsons_data_filter, get_jsons_data, \
-    get_jsons_data_filter2, get_types_userworktime, get_date_interval, get_json_vacation, change_password
-from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, VacationSchedule
-from djangoProject.celery import app
-from djangoProject.settings import API_TOKEN
-from hrdepartment_app.models import OfficialMemo, WeekendDay, ReportCard, TypesUserworktime, check_day, \
-    ApprovalOficialMemoProcess
-from hrdepartment_app.tasks import report_card_separator, report_card_separator_loc, happy_birthday_loc, change_sign, \
-    report_card_separator_daily, vacation_schedule, vacation_check, vacation_schedule_send, get_sick_leave, \
-    send_email_notification, birthday_telegram
-from telegram_app.management.commands import bot
-from telegram_app.management.commands.bot import send_message_tg
+
+from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
+from hrdepartment_app.models import ReportCard
+from hrdepartment_app.tasks import get_sick_leave, birthday_telegram
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -223,8 +212,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
                 # Получение неявок на рабочее место.
-                get_sick_leave(2024, 1).delay()
-                get_sick_leave(2024, 2).delay()
+                get_sick_leave.delay(2024, 2)
                 # report_card_separator_daily(year=2023, month=10, day=30)
                 # vacation_schedule()
                 pass
@@ -296,6 +284,9 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #                                                                        defaults=kwargs_obj)
                 #                 if counter:
                 #                     all_records += 1
+            if request.GET.get('update') == '7':
+                # Получение неявок на рабочее место.
+                get_sick_leave.delay(2024, 2)
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
         return super().get(request, *args, **kwargs)
