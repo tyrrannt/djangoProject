@@ -925,7 +925,7 @@ def get_sick_leave(year, trigger):
         record_type = "17"
     if trigger == 3:
         url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27ДополнительныеВыходныеДниНеОплачиваемые%27"
-        trigger_type = "StandardODATA.Document_ОплатаПоСреднемуЗаработку"
+        trigger_type = "StandardODATA.Document_Отгул"
         record_type = "20"
 
     source_url = url
