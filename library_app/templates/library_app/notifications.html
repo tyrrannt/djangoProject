@@ -469,16 +469,16 @@
             </div>
         </li>
     {% endif %}
-{#    {% if user.pk in accounting or user.is_superuser%}#}
-{#    <li>#}
-{#        {% if accounting_expenses_count != 0 %}#}
-{#            <a href="{% url 'hrdepartment_app:expenses_list' %}" class="dropdown-toggle notification-icon" >#}
-{#                <i class="bx bxs-bank text-danger" data-bs-toggle="tooltip" data-bs-placement="bottom"#}
-{#                   title="Запрос аванса"></i>#}
-{#                <span class="badge">{{ accounting_expenses_count }}</span>#}
-{#            </a>#}
-{#        {% endif %}        #}
-{#    </li>#}
-{#    {% endif %}#}
+    {% if user.pk in accounting or user.is_superuser%}
+    <li>
+        {% if accounting_expenses_count != 0 %}
+            <a href="{% url 'hrdepartment_app:expenses_list' %}" class="dropdown-toggle notification-icon" >
+                <i class="bx bxs-bank text-danger" data-bs-toggle="tooltip" data-bs-placement="bottom"
+                   title="Запрос аванса"></i>
+                <span class="badge">{{ accounting_expenses_count }}</span>
+            </a>
+        {% endif %}        
+    </li>
+    {% endif %}
 </ul>
 
