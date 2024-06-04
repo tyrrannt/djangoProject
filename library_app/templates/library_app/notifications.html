@@ -472,24 +472,12 @@
     {% if user.pk in accounting or user.is_superuser%}
     <li>
         {% if accounting_expenses_count != 0 %}
-            <a href="#" class="dropdown-toggle notification-icon" data-bs-toggle="dropdown">
+            <a href="{% url 'hrdepartment_app:expenses_list' %}" class="dropdown-toggle notification-icon" >
                 <i class="bx bxs-bank text-danger" data-bs-toggle="tooltip" data-bs-placement="bottom"
                    title="Запрос аванса"></i>
                 <span class="badge">{{ accounting_expenses_count }}</span>
             </a>
-        {% endif %}
-        <div class="dropdown-menu notification-menu">
-            <div class="notification-title">
-                <span class="float-end badge badge-default">{{ accounting_expenses_count }}</span>
-                Запрос аванса
-            </div>
-            <div class="content" id="wrapper">
-
-                <div class="text-end">
-                    <a href="{% url 'hrdepartment_app:expenses_list' %}" class="view-more">Просмотреть все</a>
-                </div>
-            </div>
-        </div>
+        {% endif %}        
     </li>
     {% endif %}
 </ul>
