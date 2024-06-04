@@ -25,6 +25,7 @@ colorclass==2.2.2
 constantly==23.10.4
 convertdate==2.4.0
 cryptography==42.0.5
+dadata==21.10.1
 daphne==4.1.2
 Django==5.0.6
 django-ckeditor-5==0.2.12
