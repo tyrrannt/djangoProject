@@ -174,8 +174,7 @@ def send_message_tg():
                     if item.document_url:
                         bot.send_message(
                             chat_id.chat_id,
-                            f'{item.message}. <a href="{item.document_url}">Ссылка на '
-                            f"документ</a>",
+                            f'<b>{item.message}</b>.\n <a href="{item.document_url}">Ссылка на документ</a>\n <blockquote>Время отправки: {item.send_date.strftime("%d.%m.%Y")} {item.send_time.strftime("%H:%M")}</blockquote>',
                             parse_mode="HTML",
                         )
                         result.append(
