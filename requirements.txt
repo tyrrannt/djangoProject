@@ -26,7 +26,7 @@ constantly==23.10.4
 convertdate==2.4.0
 cryptography==42.0.5
 daphne==4.1.2
-Django==5.0.3
+Django==5.0.6
 django-ckeditor-5==0.2.12
 django-debug-toolbar==4.3.0
 django-widget-tweaks==1.5.0
@@ -38,7 +38,7 @@ docxtpl==0.16.7
 et-xmlfile==1.1.0
 flower==2.0.1
 frozenlist==1.4.1
-gunicorn==21.2.0
+gunicorn==22.0.0
 h11==0.14.0
 hijri-converter==2.3.1
 htmldocx==0.0.6
