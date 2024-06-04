@@ -2,10 +2,10 @@ from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import QueryDict, JsonResponse
-from django.shortcuts import HttpResponseRedirect
+from django.shortcuts import HttpResponseRedirect, render
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 from loguru import logger
-
+from dadata import Dadata
 from administration_app.models import PortalProperty
 from administration_app.utils import int_validate, change_session_queryset, change_session_context
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments, Estate
@@ -15,6 +15,7 @@ from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, Contract
 from django.urls import reverse, reverse_lazy
 
 from customers_app.models import DataBaseUser
+
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -642,3 +643,38 @@ class EstateUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         context = super().get_context_data(object_list=None, **kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
         return context
+
+
+def counteragent_check(request):
+    if request.method == 'POST':
+        data = request.POST
+        if data.get('counteragent') == '':
+            return HttpResponseRedirect(reverse('contracts_app:counteragent_check'))
+        else:
+            token = config('FNS')
+            ddata = Dadata(token)
+            res = ddata.find_by_id("party", str(data.get('counteragent')))
+
+            # for item in res:
+            #     for unit in item:
+            #         if type(item[unit]) is dict:
+            #             for unit2 in item[unit]:
+            #                 print(item[unit][unit2])
+            #                 if type(item[unit][unit2]) is dict:
+            #                     for unit3 in item[unit][unit2]:
+            #                         print(item[unit][unit2][unit3])
+            #                         if type(item[unit][unit2][unit3]) is dict:
+            #                             for unit4 in item[unit][unit2][unit3]:
+            #                                 print(item[unit][unit2][unit3][unit4])
+            #                                 if item[unit][unit2][unit3][unit4] == None:
+            #                                     item[unit][unit2][unit3][unit4].pop(unit4)
+            #                         if item[unit][unit2][unit3] == None:
+            #                             item[unit][unit2].pop(unit3)
+            #                 if item[unit][unit2] == None:
+            #                     item[unit].pop(unit2)
+            #         if item[unit] == None:
+            #             item.pop(unit)
+            data = {'query': res}
+            return render(request, 'contracts_app/counteragent_check.html', context=data)
+    else:
+        return render(request, 'contracts_app/counteragent_check.html')

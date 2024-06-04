@@ -26,10 +26,14 @@ def FIO_format(value):
     string_obj = str(value)
     list_obj = string_obj.split(" ")
     match len(list_obj):
-        case 0: return ""
-        case 1: return list_obj[0]
-        case 2: return f"{list_obj[0]} {list_obj[1][:1]}."
-        case 3: return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
+        case 0:
+            return ""
+        case 1:
+            return list_obj[0]
+        case 2:
+            return f"{list_obj[0]} {list_obj[1][:1]}."
+        case 3:
+            return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
 
 
 @register.simple_tag()
@@ -41,6 +45,73 @@ def multiply(first, second, *args, **kwargs):
 @register.filter(name="has_group")
 def has_group(user, group_name):
     return user.groups.filter(name=group_name).exists()
+
+
+@register.filter(name="change_key")
+def change_key(key2):
+    result_dict = {
+        "value": "Наименование компании",
+        "inn": "ИНН",
+        "kpp": "КПП",
+        "ogrn": "ОГРН",
+        "ogrn_date": "Дата выдачи ОГРН",
+        "hid": "Внутренний идентификатор",
+        "type": "Тип организации",
+        "name": "Наименование",
+        "full_with_opf": "полное наименование",
+        "short_with_opf": "краткое наименование",
+        "okato": "Код ОКАТО",
+        "oktmo": "Код ОКМО",
+        "okpo": "Код ОКПО",
+        "okogu": "Код ОКОГУ",
+        "okfs": "Код ОКФС",
+        "okved": "Код ОКВЭД",
+        "okved_type": "Версия справочника ОКВЭД (2001 или 2014)",
+        "opf": "Организационно-правовая форма",
+        "management": "Руководитель",
+        "name": "ФИО руководителя",
+        "post": "должность руководителя",
+        "branch_count": "Количество филиалов",
+        "branch_type": "Тип подразделения",
+        "address": "Адрес",
+        "source": "адрес одной строкой как в ЕГРЮЛ",
+        "qc": "код проверки адреса",
+        "state": "Состояние",
+        "actuality_date": "дата последних изменений",
+        "registration_date": "дата регистрации",
+        "liquidation_date": "дата ликвидации",
+        "unrestricted_value": "Наименование",
+        "postal_code": "Почтовый индекс",
+        "country": "Страна",
+        "country_iso_code": "Код страны",
+        "federal_district": "Округ",
+        "city": "Город",
+        "city_type": "Наименование",
+        "city_type_full": "Полное наименование",
+        "full": "Полное наименование",
+        "short": "Краткое наименование",
+        "geo_lat": "Географическая привязка",
+        "geo_lon": "Географическая привязка",
+        "house": "Дом",
+        "street": "Улица",
+        "street_type": "Тип",
+        "street_type_full": "Полное наименование",
+        "floor": "Этаж",
+        "metro": "Метро",
+        "finance": "Налоговый режим",
+        "phones": "Телефон",
+        "emails": "Электронная почта",
+        "timezone": "Часовой пояс",
+        "tax_office": "Код налогового органа",
+        "region": "Регион",
+        "region_type": "Тип региона",
+        "region_type_full": "Полное наименование региона",
+        "status":  "Статус",
+        "code":  "Код",
+        "data":  "Данные",
+    }
+    result = result_dict[key2] if key2 in result_dict else ""
+    return result if result != "" else key2
 
 
 register.filter("has_group", has_group)

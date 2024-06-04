@@ -29,4 +29,5 @@ urlpatterns = [
     path('estate/add/', views.EstateAdd.as_view(), name='estate_add'),
     path('estate/<int:pk>/', views.EstateDetail.as_view(), name='estate'),
     path('estate/<int:pk>/update/', views.EstateUpdate.as_view(), name='estate_update'),
+    path('check/', views.counteragent_check, name='counteragent_check'),
 ]
