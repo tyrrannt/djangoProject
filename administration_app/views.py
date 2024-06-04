@@ -6,13 +6,14 @@ from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
+from django.shortcuts import render
 
 from django.views.generic import ListView
 from loguru import logger
 
 from administration_app.models import PortalProperty
 
-from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
+from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Counteragent
 from hrdepartment_app.models import ReportCard
 from hrdepartment_app.tasks import get_sick_leave, birthday_telegram
 
@@ -80,6 +81,35 @@ def index(request):
 #         logger.debug(f'{_ex}')
 #         return {'value': ""}
 
+def import_data(request):
+    if request.method == 'POST' and request.FILES['json_file']:
+        json_file = request.FILES['json_file']
+        data = json.load(json_file)
+        for item in data:
+            counteragent = {
+                "ref_key": item['fields']['ref_key'],
+                "short_name": item['fields']['short_name'] if item['fields']['short_name'] else '',
+                "full_name": item['fields']['full_name'],
+                "inn": item['fields']['inn'],
+                "kpp": item['fields']['kpp'] if item['fields']['kpp'] else '',
+                "ogrn": item['fields']['ogrn'],
+                "type_counteragent": item['fields']['type_counteragent'],
+                "juridical_address": item['fields']['juridical_address'],
+                "physical_address": item['fields']['physical_address'],
+                "email": item['fields']['email'] if item['fields']['email'] else '',
+                "phone": item['fields']['phone'] if item['fields']['phone'] else '',
+                "base_counteragent": item['fields']['base_counteragent'],
+                "director": item['fields']['director'],
+                "accountant": item['fields']['accountant'],
+                "contact_person": item['fields']['contact_person'],
+            }
+            obj, created = Counteragent.objects.update_or_create(inn=item['fields']['inn'], kpp=item['fields']['kpp'], defaults=counteragent)
+            if created:
+                print("counteragent created")
+            else:
+                print("counteragent updated")
+        return render(request, 'administration_app/success.html')
+    return render(request, 'administration_app/json.html')
 
 class PortalPropertyList(LoginRequiredMixin, ListView):
     model = PortalProperty
@@ -292,4 +322,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 get_sick_leave.delay(2024, 3)
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
+            if request.GET.get('update') == '9':
+                pass
         return super().get(request, *args, **kwargs)

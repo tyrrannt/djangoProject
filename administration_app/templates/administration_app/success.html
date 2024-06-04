@@ -1,0 +1,24 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <h1>Данные успешно загружены</h1>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+
+{% endblock %}

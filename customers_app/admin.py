@@ -74,7 +74,6 @@ admin.site.register(DataBaseUser, CustomUserAdmin)
 admin.site.register(Posts)
 admin.site.register(Job)
 admin.site.register(Division)
-admin.site.register(Counteragent)
 admin.site.register(AccessLevel)
 admin.site.register(DataBaseUserProfile)
 admin.site.register(Citizenships)
@@ -92,3 +91,7 @@ class IdentityDocumentsAdmin(admin.ModelAdmin):
     list_display = ("series", "number", "issued_by_whom", "date_of_issue",
                     "division_code", )  #
 
+@admin.register(Counteragent)
+class CounteragentAdmin(admin.ModelAdmin):
+    list_display = ("pk", "short_name", "inn", "kpp", "ogrn", "type_counteragent",)
+    search_fields = ("short_name", "inn", "kpp", "ogrn")

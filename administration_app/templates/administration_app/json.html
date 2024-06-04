@@ -1,0 +1,29 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <h1>Import JSON Data</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="json_file">
+        <button type="submit">Import</button>
+    </form>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+
+{% endblock %}
