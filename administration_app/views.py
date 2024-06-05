@@ -116,7 +116,7 @@ def import_data(request):
                     else:
                         print("counteragent updated")
                 except MultipleObjectsReturned:
-                    error['error'] += f'Найдено нескольких объектов в базе данных с таким {item['fields']['inn']} \n'
+                    error['error'] += f"Найдено нескольких объектов в базе данных с таким {item['fields']['inn']} \n"
             return render(request, 'administration_app/success.html', context=error)
     except MultiValueDictKeyError:
         error = {'error': 'Не выбран файл'}
