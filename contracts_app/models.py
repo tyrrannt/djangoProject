@@ -154,7 +154,7 @@ class ContractModel(models.Model):
                                null=True, default=5)
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
     actuality = models.BooleanField(verbose_name='Актуальность', default=False)
-
+    official_information = models.CharField(verbose_name='Служебная информация', max_length=400, blank=True, default='', )
     @property
     def is_past_due(self):
         today = datetime.datetime.today()

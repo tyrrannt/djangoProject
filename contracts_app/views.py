@@ -648,7 +648,7 @@ class EstateUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 def counteragent_check(request):
     if request.method == 'POST':
         data = request.POST
-        if data.get('counteragent') == '' and data.get('counteragent_name')  == '' and data.get('counteragent_affilation')  ==  '':
+        if data.get('counteragent') == '' and data.get('counteragent_name')  == '':
             return HttpResponseRedirect(reverse('contracts_app:counteragent_check'))
         else:
             token = config('FNS')
@@ -656,17 +656,13 @@ def counteragent_check(request):
             inn = str(data.get('counteragent'))
             kpp = str(data.get('counteragent_kpp'))
             name = str(data.get('counteragent_name')).strip()
-            affilation = str(data.get('counteragent_affilation')).strip()
             if kpp:
                 res = ddata.find_by_id("party", inn, kpp=kpp)
             else:
                 if inn:
                     res = ddata.find_by_id("party", inn)
                 else:
-                    if affilation:
-                        res = ddata.find_affiliated(affilation)
-                    else:
-                        res = ddata.suggest("party", name)
+                    res = ddata.suggest("party", name)
 
             data = {'query': res}
             return render(request, 'contracts_app/counteragent_check.html', context=data)
