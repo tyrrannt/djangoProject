@@ -85,6 +85,8 @@ def index(request):
 
 def import_data(request):
     error = {'error': ''}
+    updated = 0
+    create = 0
     try:
         if request.method == 'POST' and request.FILES['json_file']:
             json_file = request.FILES['json_file']
@@ -112,11 +114,13 @@ def import_data(request):
                                                                          kpp=item['fields']['kpp'],
                                                                          defaults=counteragent)
                     if created:
-                        print("counteragent created")
+                        create += 1
                     else:
-                        print("counteragent updated")
+                        updated += 1
                 except MultipleObjectsReturned:
                     error['error'] += f"Найдено нескольких объектов в базе данных с таким {item['fields']['inn']} \n"
+            error['updated'] = updated
+            error['created'] = create
             return render(request, 'administration_app/success.html', context=error)
     except MultiValueDictKeyError:
         error = {'error': 'Не выбран файл'}

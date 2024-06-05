@@ -14,8 +14,18 @@
         <!-- start: page -->
         <div class="row">
             <div class="col">
-                <h2>Данные успешно загружены</h2>
+                <h2>Данные успешно обработаны</h2>    
             </div>
+            {% if updated %}
+                <div class="alert alert-success" role="alert">
+                    <p>Обновлено записей: {{ updated }}</p>
+                </div>
+            {% endif %}
+            {% if create %}
+                <div class="alert alert-primary" role="alert">
+                    <p>Загружено новых записей: {{ create }}</p>
+                </div>
+            {% endif %}
             {% if error %}
                 <div class="alert alert-danger" role="alert">
                     <h3>Но имеются ошибки:</h3>
