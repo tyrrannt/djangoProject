@@ -10,17 +10,32 @@
     <section role="main" class="content-body content-body-modern mt-0">
 
         {% include 'library_app/breadcrumb.html' %}
-
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error  }}
+        </div>
+        {% endif %}
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
-                <h1>Import JSON Data</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <input type="file" name="json_file">
-        <button type="submit">Import</button>
-    </form>
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <h2 class="card-title mb-4">Импорт JSON</h2>
+                                <form method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <label for="id_json_file">Контрагенты:</label>
+                                    <input class="form-control mb-4" type="file" name="json_file" id="id_json_file">
+                                    <button type="submit"
+                                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                                            data-loading-text="Loading...">ИМПОРТ
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
         <!-- end: page -->

@@ -1,6 +1,8 @@
 import datetime
 import json
 
+from django.core.exceptions import MultipleObjectsReturned
+from django.utils.datastructures import MultiValueDictKeyError
 import requests
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -82,34 +84,45 @@ def index(request):
 #         return {'value': ""}
 
 def import_data(request):
-    if request.method == 'POST' and request.FILES['json_file']:
-        json_file = request.FILES['json_file']
-        data = json.load(json_file)
-        for item in data:
-            counteragent = {
-                "ref_key": item['fields']['ref_key'],
-                "short_name": item['fields']['short_name'] if item['fields']['short_name'] else '',
-                "full_name": item['fields']['full_name'],
-                "inn": item['fields']['inn'],
-                "kpp": item['fields']['kpp'] if item['fields']['kpp'] else '',
-                "ogrn": item['fields']['ogrn'],
-                "type_counteragent": item['fields']['type_counteragent'],
-                "juridical_address": item['fields']['juridical_address'],
-                "physical_address": item['fields']['physical_address'],
-                "email": item['fields']['email'] if item['fields']['email'] else '',
-                "phone": item['fields']['phone'] if item['fields']['phone'] else '',
-                "base_counteragent": item['fields']['base_counteragent'],
-                "director": item['fields']['director'],
-                "accountant": item['fields']['accountant'],
-                "contact_person": item['fields']['contact_person'],
-            }
-            obj, created = Counteragent.objects.update_or_create(inn=item['fields']['inn'], kpp=item['fields']['kpp'], defaults=counteragent)
-            if created:
-                print("counteragent created")
-            else:
-                print("counteragent updated")
-        return render(request, 'administration_app/success.html')
+    error = {'error': ''}
+    try:
+        if request.method == 'POST' and request.FILES['json_file']:
+            json_file = request.FILES['json_file']
+            data = json.load(json_file)
+            for item in data:
+                counteragent = {
+                    "ref_key": item['fields']['ref_key'],
+                    "short_name": item['fields']['short_name'] if item['fields']['short_name'] else '',
+                    "full_name": item['fields']['full_name'],
+                    "inn": item['fields']['inn'],
+                    "kpp": item['fields']['kpp'] if item['fields']['kpp'] else '',
+                    "ogrn": item['fields']['ogrn'],
+                    "type_counteragent": item['fields']['type_counteragent'],
+                    "juridical_address": item['fields']['juridical_address'],
+                    "physical_address": item['fields']['physical_address'],
+                    "email": item['fields']['email'] if item['fields']['email'] else '',
+                    "phone": item['fields']['phone'] if item['fields']['phone'] else '',
+                    "base_counteragent": item['fields']['base_counteragent'],
+                    "director": item['fields']['director'],
+                    "accountant": item['fields']['accountant'],
+                    "contact_person": item['fields']['contact_person'],
+                }
+                try:
+                    obj, created = Counteragent.objects.update_or_create(inn=item['fields']['inn'],
+                                                                         kpp=item['fields']['kpp'],
+                                                                         defaults=counteragent)
+                    if created:
+                        print("counteragent created")
+                    else:
+                        print("counteragent updated")
+                except MultipleObjectsReturned:
+                    error['error'] += f'Найдено нескольких объектов в базе данных с таким {item['fields']['inn']} \n'
+            return render(request, 'administration_app/success.html', context=error)
+    except MultiValueDictKeyError:
+        error = {'error': 'Не выбран файл'}
+        return render(request, 'administration_app/json.html', context=error)
     return render(request, 'administration_app/json.html')
+
 
 class PortalPropertyList(LoginRequiredMixin, ListView):
     model = PortalProperty

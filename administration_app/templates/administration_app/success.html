@@ -14,9 +14,14 @@
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
-                <h1>Данные успешно загружены</h1>
+                <h2>Данные успешно загружены</h2>
             </div>
+            {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <h3>Но имеются ошибки:</h3>
+                    {{ error }}
+                </div>
+            {% endif %}
         </div>
         <!-- end: page -->
     </section>
