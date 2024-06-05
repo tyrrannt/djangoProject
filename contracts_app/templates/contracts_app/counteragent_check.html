@@ -74,14 +74,14 @@
                                                                                         <ul>
                                                                                             {% for key5, value5 in value4.items %}
                                                                                                 {%  if value5 %}
-                                                                                                <li><strong>{{key5 | change_key}}:</strong> - {{value5}}</li>
+                                                                                                <li><strong>{{key5 | change_key}}:</strong> - {{value5 | change_value }}</li>
                                                                                                 {% endif %}
                                                                                             {% endfor %}
                                                                                         </ul>
                                                                                     </li>
                                                                                 {% else %}
                                                                                     {%  if value4 %}
-                                                                                        <li><strong>{{key4 | change_key}}:</strong> - {{value4}}</li>
+                                                                                        <li><strong>{{key4 | change_key}}:</strong> - {{value4 | change_value }}</li>
                                                                                     {% endif %}
                                                                                 {% endif %}
                                                                             {% endfor %}
@@ -89,7 +89,7 @@
                                                                     </li>
                                                                 {% else %}
                                                                     {%  if value3 %}
-                                                                        <li><strong>{{key3 | change_key}}:</strong> - {{value3}}</li>
+                                                                        <li><strong>{{key3 | change_key}}:</strong> - {{value3 | change_value }}</li>
                                                                     {% endif %}
                                                                 {% endif %}
                                                             {% endfor %}
@@ -97,7 +97,7 @@
                                                         </li>
                                                     {% else %}
                                                         {%  if value2 %}
-                                                            <li><strong>{{key2 | change_key}}:</strong> - {{value2}}</li>
+                                                            <li><strong>{{key2 | change_key}}:</strong> - {{value2 | change_value }}</li>
                                                         {% endif %}
                                                     {% endif %}
                                                 {% endfor %}
@@ -105,7 +105,7 @@
                                                 </li>
                                             {% else %}
                                                 {%  if value %}
-                                                    <li><strong>{{key | change_key}}:</strong> - {{value}}</li>
+                                                    <li><strong>{{key | change_key}}:</strong> - {{value | change_value }}</li>
                                                 {% endif %}
                                             {% endif %}
                                         {% endfor %}
@@ -115,13 +115,33 @@
                                 </div>
                                 <div class="col-lg-2-5 col-xl-1-5">
                                     <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc">Форма проверки контрагента</p>
+                                    <p class="card-big-info-desc">Форма поиска контрагента по ИНН/КПП</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
-                                    <label for="id_counteragent">ИНН контрагента:</label>
-                                    <input type="text" name="counteragent" class="form-control mb-4" id="id_counteragent">
+                                    <label for="id_counteragent">ИНН:</label>
+                                    <input type="text" name="counteragent" class="form-control mb-4" id="id_counteragent" placeholder="Обязательно к заполнению">
+                                    <label for="id_counteragent_kpp">КПП:</label>
+                                    <input type="text" name="counteragent_kpp" class="form-control mb-4" id="id_counteragent_kpp" placeholder="КПП можно не указывать">
+                                </div>  
+                            <hr>
+                                <div class="col-lg-2-5 col-xl-1-5">
+                                    <i class="card-big-info-icon bx bxl-netlify"></i>
+                                    <p class="card-big-info-desc">Форма поиска контрагента по наименованию</p>
                                 </div>
-                                
+                                <div class="col-lg-3-5 col-xl-4-5">
+                                    <label for="id_counteragent_name">Наименование:</label>
+                                    <input type="text" name="counteragent_name" class="form-control mb-4" id="id_counteragent_name" placeholder="Обязательно к заполнению">                                    
+                                </div> 
+                            
+{#                            <hr>#}
+{#                                <div class="col-lg-2-5 col-xl-1-5">#}
+{#                                    <i class="card-big-info-icon bx bxl-netlify"></i>#}
+{#                                    <p class="card-big-info-desc">Поиск дочерних компаний по ИНН/КПП></p>#}
+{#                                </div>#}
+{#                                <div class="col-lg-3-5 col-xl-4-5">#}
+{#                                    <label for="id_counteragent_affilation">Наименование:</label>#}
+{#                                    <input type="text" name="counteragent_affilation" class="form-control mb-4" id="id_counteragent_affilation" placeholder="Обязательно к заполнению">                                    #}
+{#                                </div> #}
                             </div>
                         </div>
                     </section>

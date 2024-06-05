@@ -114,6 +114,24 @@ def change_key(key2):
     return result if result != "" else key2
 
 
+@register.filter(name="change_value")
+def change_value(key):
+    result_dict = {
+        "LEGAL": "юридическое лицо",
+        "INDIVIDUAL": "индивидуальный предприниматель",
+        "MAIN": "головная организация",
+        "BRANCH": "филиал",
+        "ACTIVE": "действующая",
+        "LIQUIDATING": "ликвидируется",
+        "LIQUIDATED": "ликвидирована",
+        "BANKRUPT": "банкротство",
+        "REORGANIZING": "в процессе присоединения к другому юрлицу, с последующей ликвидацией",
+
+    }
+    result = result_dict[key] if key in result_dict else ""
+    return result if result != "" else key
+
+
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)
 register.filter("FIO_format", FIO_format)
