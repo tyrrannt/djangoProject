@@ -3242,8 +3242,9 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         if document_type:
             html = {"replaceable_document": ""}
             if document_type == "1":
+                check_data = datetime.datetime.today() + relativedelta(months=-2)
                 team_list = CreatingTeam.objects.filter(
-                    Q(date_end__gte=datetime.datetime.today()) &
+                    Q(date_end__gte=check_data) &
                     Q(agreed=True) &
                     Q(cancellation=False)
                 ).exclude(number='')
