@@ -1744,8 +1744,10 @@ class CreatingTeam(models.Model):
         }
 
 
-def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request, single=True):
+def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request, single=True, cancel=False):
     ordteam = "static/DocxTemplates/ord-ias-single.docx" if single else "static/DocxTemplates/ord-ias.docx"
+    if cancel:
+        ordteam = "static/DocxTemplates/ord-ias-single-cancel.docx" if single else "static/DocxTemplates/ord-ias-cancel.docx"
     doc = DocxTemplate(
         pathlib.Path.joinpath(BASE_DIR, ordteam)
     )
@@ -1814,7 +1816,8 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         scanname = (f"ORD-3-{instance.date_create}-{uid}.pdf")
         date_doc = instance.date_create
         single = True if instance.team_brigade.count() < 1 else False
-        created_pdf = ias_order(instance, f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename, '3', single)
+        cancel = True if instance.replaceable_document else False
+        created_pdf = ias_order(instance, f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename, '3', single, cancel)
         # scan_name = pathlib.Path(created_pdf).name
         if f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}" != instance.doc_file:
             CreatingTeam.objects.filter(pk=instance.pk).update(
