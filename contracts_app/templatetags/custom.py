@@ -128,8 +128,13 @@ def change_value(key):
         "REORGANIZING": "в процессе присоединения к другому юрлицу, с последующей ликвидацией",
 
     }
-    result = result_dict[key] if key in result_dict else ""
-    return result if result != "" else key
+    try:
+        result = result_dict[key]
+    except TypeError:
+        result = key
+    except KeyError:
+        result = key
+    return result
 
 
 register.filter("has_group", has_group)
