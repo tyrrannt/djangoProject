@@ -684,10 +684,13 @@ class Counteragent(models.Model):
         verbose_name="Уникальный номер", max_length=37, default=""
     )
     short_name = models.CharField(
-        verbose_name="Наименование", max_length=400, default="", help_text=""
+        verbose_name="Наименование", max_length=400, default="", help_text="", blank=True,
     )
     full_name = models.CharField(
-        verbose_name="Полное наименование", max_length=400, default="", help_text=""
+        verbose_name="Полное наименование", max_length=400, default="", help_text="", blank=True,
+    )
+    natural_person = models.CharField(
+        verbose_name="Физическое лицо", max_length=400, default="", help_text="", blank=True,
     )
     inn = models.CharField(
         verbose_name="ИНН", max_length=12, blank=True, default="", help_text=""

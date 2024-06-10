@@ -229,6 +229,7 @@ class CounteragentUpdateForm(forms.ModelForm):
             "accountant",
             "contact_person",
             "ogrn",
+            "natural_person",
         )
 
     def __init__(self, *args, **kwargs):
@@ -255,8 +256,13 @@ class CounteragentAddForm(forms.ModelForm):
             "accountant",
             "contact_person",
             "ogrn",
+            "natural_person",
         )
 
+    def  __init__(self,  *args,  **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 class DivisionsAddForm(forms.ModelForm):
     parent_category = forms.ModelChoiceField(
