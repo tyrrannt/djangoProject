@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django import template
 from django.conf import settings
 
@@ -115,7 +117,7 @@ def change_key(key2):
 
 
 @register.filter(name="change_value")
-def change_value(key):
+def change_value(key, value):
     result_dict = {
         "LEGAL": "юридическое лицо",
         "INDIVIDUAL": "индивидуальный предприниматель",
@@ -126,14 +128,18 @@ def change_value(key):
         "LIQUIDATED": "ликвидирована",
         "BANKRUPT": "банкротство",
         "REORGANIZING": "в процессе присоединения к другому юрлицу, с последующей ликвидацией",
-
     }
     try:
-        result = result_dict[key]
+        result = result_dict[value]
+        return result
     except TypeError:
-        result = key
+        result = value
     except KeyError:
-        result = key
+        result = value
+    if key in ["actuality_date", "registration_date", "liquidation_date", "issue_date", "valid_from"]:
+        ts = int(value)/1000
+        print(ts)
+        result = datetime.fromtimestamp(ts).strftime('%d.%m.%Y %H:%M:%S')
     return result
 
 

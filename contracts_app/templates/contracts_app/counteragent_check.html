@@ -74,14 +74,14 @@
                                                                                         <ul>
                                                                                             {% for key5, value5 in value4.items %}
                                                                                                 {%  if value5 %}
-                                                                                                <li><strong>{{key5 | change_key}}:</strong> - {{value5 | change_value }}</li>
+                                                                                                <li><strong>{{key5 | change_key}}:</strong> - {{ key5 | change_value:value5 }}</li>
                                                                                                 {% endif %}
                                                                                             {% endfor %}
                                                                                         </ul>
                                                                                     </li>
                                                                                 {% else %}
                                                                                     {%  if value4 %}
-                                                                                        <li><strong>{{key4 | change_key}}:</strong> - {{value4 | change_value }}</li>
+                                                                                        <li><strong>{{key4 | change_key}}:</strong> - {{ key4 | change_value:value4 }}</li>
                                                                                     {% endif %}
                                                                                 {% endif %}
                                                                             {% endfor %}
@@ -89,7 +89,7 @@
                                                                     </li>
                                                                 {% else %}
                                                                     {%  if value3 %}
-                                                                        <li><strong>{{key3 | change_key}}:</strong> - {{value3 | change_value }}</li>
+                                                                        <li><strong>{{key3 | change_key}}:</strong> - {{ key3 | change_value:value3 }}</li>
                                                                     {% endif %}
                                                                 {% endif %}
                                                             {% endfor %}
@@ -97,7 +97,7 @@
                                                         </li>
                                                     {% else %}
                                                         {%  if value2 %}
-                                                            <li><strong>{{key2 | change_key}}:</strong> - {{value2 | change_value }}</li>
+                                                            <li><strong>{{key2 | change_key}}:</strong> - {{ key2 | change_value:value2  }}</li>
                                                         {% endif %}
                                                     {% endif %}
                                                 {% endfor %}
@@ -105,7 +105,7 @@
                                                 </li>
                                             {% else %}
                                                 {%  if value %}
-                                                    <li><strong>{{key | change_key}}:</strong> - {{value | change_value }}</li>
+                                                    <li><strong>{{key | change_key}}:</strong> - {{ key | change_value:value }}</li>
                                                 {% endif %}
                                             {% endif %}
                                         {% endfor %}
