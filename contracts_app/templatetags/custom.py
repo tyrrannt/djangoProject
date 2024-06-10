@@ -112,6 +112,8 @@ def change_key(key2):
         "code":  "Код",
         "data":  "Данные",
         "fio": "ФИО",
+        "surname":  "Фамилия",
+        "patronymic":  "Отчество",
     }
     result = result_dict[key2] if key2 in result_dict else ""
     return result if result != "" else key2
@@ -137,7 +139,8 @@ def change_value(key, value):
         result = value
     except KeyError:
         result = value
-    if key in ["actuality_date", "registration_date", "liquidation_date", "issue_date", "valid_from"]:
+    if key in ["actuality_date", "registration_date", "liquidation_date", "issue_date", "valid_from",
+               "valid_to", "ogrn_date", ]:
         ts = int(value)/1000
         print(ts)
         result = datetime.fromtimestamp(ts).strftime('%d.%m.%Y %H:%M:%S')
