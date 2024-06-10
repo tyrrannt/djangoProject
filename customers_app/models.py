@@ -751,12 +751,19 @@ class Counteragent(models.Model):
     )
 
     def __str__(self):
+        if self.short_name == "":
+            if self.full_name == "":
+                self.short_name  =  self.natural_person
+            else:
+                self.short_name = self.full_name
+            self.save()
+
         return f"{self.short_name}"
 
     def get_data(self):
         return {
             "pk": self.pk,
-            "short_name": self.full_name,
+            "short_name": self.short_name,
             "inn": self.inn,
             "kpp": self.kpp,
         }

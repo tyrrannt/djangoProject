@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import uuid
 
 from decouple import config
 from django.core.exceptions import PermissionDenied
@@ -209,7 +210,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # data_dict, total_score, first_day, last_day, user_start_time, user_end_time = get_report_card(self.request.user.pk, RY=report_year, RM=report_month)
                 data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(
                     self.request.user.pk, datetime.datetime(year=int(report_year), month=int(report_month), day=1))
-
 
                 # print(data_dict, total_score, first_day, last_day, user_start_time, user_end_time)
                 return JsonResponse(
@@ -463,24 +463,26 @@ class CounteragentAdd(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(CounteragentAdd, self).get_context_data(**kwargs)
-        context['counteragent_users'] = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
-        context['type_counteragent'] = Counteragent.type_of
+        # context['counteragent_users'] = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
+        # context['type_counteragent'] = Counteragent.type_of
         return context
 
     def post(self, request, *args, **kwargs):
         content = QueryDict.copy(self.request.POST)
-        if content['director'] == 'none':
-            content.setlist('director', '')
-        if content['accountant'] == 'none':
-            content.setlist('accountant', '')
-        if content['contact_person'] == 'none':
-            content.setlist('contact_person', '')
+        # if content['director'] == 'none':
+        #     content.setlist('director', '')
+        # if content['accountant'] == 'none':
+        #     content.setlist('accountant', '')
+        # if content['contact_person'] == 'none':
+        #     content.setlist('contact_person', '')
         self.request.POST = content
         return super(CounteragentAdd, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
-            form.save()
+            refreshed_form = form.save(commit=False)
+            refreshed_form.ref_key = uuid.uuid4()
+            refreshed_form.save()
         return HttpResponseRedirect(reverse('customers_app:counteragent_list'))
 
     def form_invalid(self, form):
@@ -509,18 +511,21 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
     def post(self, request, *args, **kwargs):
         content = QueryDict.copy(self.request.POST)
-        if content['director'] == 'none':
-            content.setlist('director', '')
-        if content['accountant'] == 'none':
-            content.setlist('accountant', '')
-        if content['contact_person'] == 'none':
-            content.setlist('contact_person', '')
+        # if content['director'] == 'none':
+        #     content.setlist('director', '')
+        # if content['accountant'] == 'none':
+        #     content.setlist('accountant', '')
+        # if content['contact_person'] == 'none':
+        #     content.setlist('contact_person', '')
         self.request.POST = content
         return super(CounteragentUpdate, self).post(request, *args, **kwargs)
 
     def form_valid(self, form):
         if form.is_valid():
-            form.save()
+            refreshed_form = form.save(commit=False)
+            if refreshed_form.ref_key == "":
+                refreshed_form.ref_key = uuid.uuid4()
+            refreshed_form.save()
         return HttpResponseRedirect(reverse('customers_app:counteragent', args=[self.object.pk]))
 
     def form_invalid(self, form):
