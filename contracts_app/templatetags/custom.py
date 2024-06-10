@@ -111,6 +111,7 @@ def change_key(key2):
         "status":  "Статус",
         "code":  "Код",
         "data":  "Данные",
+        "fio": "ФИО",
     }
     result = result_dict[key2] if key2 in result_dict else ""
     return result if result != "" else key2

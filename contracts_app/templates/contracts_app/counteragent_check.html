@@ -61,7 +61,7 @@
                                                 <li><strong>{{key | change_key}}:</strong>
                                                 <ol>
                                                 {% for key2, value2 in value.items %}
-                                                    {% if key2 in 'state, opf, name, address, finance, management'%}
+                                                    {% if key2 in 'state, opf, name, address, finance, management, fio'%}
                                                         <li><strong>{{key2 | change_key}}:</strong>
                                                         <ul>
                                                             {% for key3, value3 in value2.items %}
