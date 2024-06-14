@@ -94,8 +94,8 @@ def import_data(request):
             if request.POST.get('contract') == "on":
                 trigger = 1
             json_file = request.FILES['json_file']
-            data = json.load(json_file)
-            upload_json.delay(data, trigger)
+            dt = json.load(json_file)
+            upload_json.delay(dt, trigger)
             error = {
                 'error': 'Данные отправлены на сервер для загрузки. Результат загрузки можно посмотреть в файле debug.json'}
             return render(request, 'administration_app/success.html', context=error)

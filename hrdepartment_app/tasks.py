@@ -1062,6 +1062,7 @@ def upload_json(data, trigger):
                 except Exception as _exc:
                     logger.error(f"Не удалось создать объект  {item}")
         case 1:
+            Contract.objects.all().delete()
             for item in data:
                 contract = {
                     "contract_counteragent_id": int(item['contract_counteragent']),
