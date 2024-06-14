@@ -271,4 +271,5 @@ def rename_file_name(sender, instance, **kwargs):
         if file_name != filename:
             instance.save()
     except Exception as _ex:
-        print(_ex)
+        # print(_ex)
+        pass
