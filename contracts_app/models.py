@@ -131,7 +131,7 @@ class ContractModel(models.Model):
                                               null=True)
     contract_number = models.CharField(verbose_name='Номер договора', max_length=50, blank=True, default='',
                                        help_text='')
-    date_conclusion = models.DateField(verbose_name='Дата заключения договора')
+    date_conclusion = models.DateField(verbose_name='Дата заключения договора', null=True, blank=True)
     subject_contract = models.TextField(verbose_name='Предмет договора', blank=True)
     cost = models.FloatField(verbose_name='Стоимость', default=0, null=True, blank=True)
     type_of_contract = models.ForeignKey(TypeContract, verbose_name='Тип договора', on_delete=models.SET_NULL,
@@ -145,7 +145,7 @@ class ContractModel(models.Model):
     prolongation = models.CharField(verbose_name='Пролонгация', max_length=40, choices=type_of_prolongation,
                                     help_text='', blank=True, default='', )
     comment = models.TextField(verbose_name='Примечание', blank=True)
-    date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
+    date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now=True)
     executor = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                  null=True,
                                  related_name='contract_executor')
@@ -195,6 +195,7 @@ class Contract(ContractModel):
     class Meta:
         verbose_name = 'Договор'
         verbose_name_plural = 'Договора'
+        ordering = ['-date_conclusion']
 
     def get_data(self):
         return {

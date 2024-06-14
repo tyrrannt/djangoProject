@@ -73,7 +73,7 @@ class CustomUserAdmin(UserAdmin):
 admin.site.register(DataBaseUser, CustomUserAdmin)
 admin.site.register(Posts)
 admin.site.register(Job)
-admin.site.register(Division)
+# admin.site.register(Division)
 admin.site.register(AccessLevel)
 admin.site.register(DataBaseUserProfile)
 admin.site.register(Citizenships)
@@ -95,3 +95,10 @@ class IdentityDocumentsAdmin(admin.ModelAdmin):
 class CounteragentAdmin(admin.ModelAdmin):
     list_display = ("pk", "short_name", "inn", "kpp", "ogrn", "type_counteragent",)
     search_fields = ("short_name", "inn", "kpp", "ogrn")
+
+
+@admin.register(Division)
+class CounteragentAdmin(admin.ModelAdmin):
+    list_display = ("pk", "code", "name", "active", )
+    search_fields = ("name", "code", )
+    ordering = ('code', )

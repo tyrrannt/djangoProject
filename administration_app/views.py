@@ -14,10 +14,11 @@ from django.views.generic import ListView
 from loguru import logger
 
 from administration_app.models import PortalProperty
+from contracts_app.models import Contract
 
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Counteragent
 from hrdepartment_app.models import ReportCard
-from hrdepartment_app.tasks import get_sick_leave, birthday_telegram
+from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -85,47 +86,125 @@ def index(request):
 
 def import_data(request):
     error = {'error': ''}
-    updated = 0
-    create = 0
     try:
         if request.method == 'POST' and request.FILES['json_file']:
+            trigger = 2
+            if request.POST.get('contragent') == "on":
+                trigger = 0
+            if request.POST.get('contract') == "on":
+                trigger = 1
             json_file = request.FILES['json_file']
             data = json.load(json_file)
-            for item in data:
-                counteragent = {
-                    "ref_key": item['fields']['ref_key'],
-                    "short_name": item['fields']['short_name'] if item['fields']['short_name'] else '',
-                    "full_name": item['fields']['full_name'],
-                    "inn": item['fields']['inn'],
-                    "kpp": item['fields']['kpp'] if item['fields']['kpp'] else '',
-                    "ogrn": item['fields']['ogrn'],
-                    "type_counteragent": item['fields']['type_counteragent'],
-                    "juridical_address": item['fields']['juridical_address'],
-                    "physical_address": item['fields']['physical_address'],
-                    "email": item['fields']['email'] if item['fields']['email'] else '',
-                    "phone": item['fields']['phone'] if item['fields']['phone'] else '',
-                    "base_counteragent": item['fields']['base_counteragent'],
-                    "director": item['fields']['director'],
-                    "accountant": item['fields']['accountant'],
-                    "contact_person": item['fields']['contact_person'],
-                }
-                try:
-                    obj, created = Counteragent.objects.update_or_create(inn=item['fields']['inn'],
-                                                                         kpp=item['fields']['kpp'],
-                                                                         defaults=counteragent)
-                    if created:
-                        create += 1
-                    else:
-                        updated += 1
-                except MultipleObjectsReturned:
-                    error['error'] += f"Найдено нескольких объектов в базе данных с таким {item['fields']['inn']} \n"
-            error['updated'] = updated
-            error['created'] = create
+            upload_json.delay(data, trigger)
+            error = {
+                'error': 'Данные отправлены на сервер для загрузки. Результат загрузки можно посмотреть в файле debug.json'}
             return render(request, 'administration_app/success.html', context=error)
     except MultiValueDictKeyError:
         error = {'error': 'Не выбран файл'}
         return render(request, 'administration_app/json.html', context=error)
-    return render(request, 'administration_app/json.html')
+    return render(request, 'administration_app/json.html', context=error)
+
+    # error = {'error': ''}
+    # updated = 0
+    # create = 0
+    # if request.POST.get('contragent') == "on":
+    #     try:
+    #         if request.method == 'POST' and request.FILES['json_file']:
+    #             json_file = request.FILES['json_file']
+    #             data = json.load(json_file)
+    #             for item in data:
+    #                 counteragent = {
+    #                     "ref_key": item['fields']['ref_key'],
+    #                     "short_name": item['fields']['short_name'] if item['fields']['short_name'] else '',
+    #                     "full_name": item['fields']['full_name'],
+    #                     "inn": item['fields']['inn'],
+    #                     "kpp": item['fields']['kpp'] if item['fields']['kpp'] else '',
+    #                     "ogrn": item['fields']['ogrn'],
+    #                     "type_counteragent": item['fields']['type_counteragent'],
+    #                     "juridical_address": item['fields']['juridical_address'],
+    #                     "physical_address": item['fields']['physical_address'],
+    #                     "email": item['fields']['email'] if item['fields']['email'] else '',
+    #                     "phone": item['fields']['phone'] if item['fields']['phone'] else '',
+    #                     "base_counteragent": item['fields']['base_counteragent'],
+    #                     "director": item['fields']['director'],
+    #                     "accountant": item['fields']['accountant'],
+    #                     "contact_person": item['fields']['contact_person'],
+    #                 }
+    #                 try:
+    #                     obj, created = Counteragent.objects.update_or_create(inn=item['fields']['inn'],
+    #                                                                          kpp=item['fields']['kpp'],
+    #                                                                          defaults=counteragent)
+    #                     if created:
+    #                         create += 1
+    #                     else:
+    #                         updated += 1
+    #                 except MultipleObjectsReturned:
+    #                     error[
+    #                         'error'] += f"Найдено нескольких объектов в базе данных с таким {item['fields']['inn']} \n"
+    #             error['updated'] = updated
+    #             error['created'] = create
+    #             return render(request, 'administration_app/success.html', context=error)
+    #     except MultiValueDictKeyError:
+    #         error = {'error': 'Не выбран файл'}
+    #         return render(request, 'administration_app/json.html', context=error)
+    # if request.POST.get('contract') == "on":
+    #     try:
+    #         if request.method == 'POST' and request.FILES['json_file']:
+    #             json_file = request.FILES['json_file']
+    #             data = json.load(json_file)
+    #             for item in data:
+    #                 contract = {
+    #                     "contract_counteragent_id": int(item['contract_counteragent']),
+    #                     "contract_number": item['contract_number'],
+    #                     "date_conclusion": item['date_conclusion'] if item['date_conclusion'] else None,
+    #                     "subject_contract": item['subject_contract'],
+    #                     "cost": float(item['cost']) if item['cost'] else 0,
+    #                     "type_of_contract_id": item['type_of_contract'],
+    #                     "type_of_document_id": item['type_of_document'],
+    #                     "closing_date": item['closing_date'] if item['closing_date'] else None,
+    #                     "prolongation": item['prolongation'],
+    #                     "comment": item['comment'],
+    #                     "date_entry": item['date_entry'] if item['date_entry'] else None,
+    #                     "executor_id": item['executor'],
+    #                     "doc_file": item['doc_file'],
+    #                     "access_id": item['access'],
+    #                     "allowed_placed": item['allowed_placed'],
+    #                     "actuality": item['actuality'],
+    #                     "official_information": item['official_information'],
+    #
+    #                 }
+    #                 try:
+    #                     # counteragent = Counteragent.objects.get(pk=item['contract_counteragent'])
+    #                     # print(counteragent)
+    #                     # new_obj = Contract(**contract)
+    #                     # new_obj.save()
+    #                     obj, created = Contract.objects.update_or_create(
+    #                         contract_counteragent_id=item['contract_counteragent'],
+    #                         contract_number=item['contract_number'],
+    #                         date_conclusion=item['date_conclusion'],
+    #                         defaults=contract)
+    #                     if created:
+    #                         if len(item['divisions']) > 0:
+    #                             obj.divisions.set(item['divisions'])
+    #                         if len(item['type_property']) > 0:
+    #                             obj.type_property.set(item['type_property'])
+    #                         if len(item['employee']) > 0:
+    #                             obj.employee.set(item['employee'])
+    #                         # obj.save()
+    #                         create += 1
+    #                     else:
+    #                         updated += 1
+    #                 except MultipleObjectsReturned:
+    #                     error[
+    #                         'error'] += f"Найдено нескольких объектов в базе данных с таким {item['fields']['inn']} \n"
+    #             error['updated'] = updated
+    #             error['created'] = create
+    #             return render(request, 'administration_app/success.html', context=error)
+    #     except MultiValueDictKeyError:
+    #         error = {'error': 'Не выбран файл'}
+    #         return render(request, 'administration_app/json.html', context=error)
+
+    # return render(request, 'administration_app/json.html')
 
 
 class PortalPropertyList(LoginRequiredMixin, ListView):

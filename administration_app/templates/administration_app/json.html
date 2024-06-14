@@ -11,9 +11,9 @@
 
         {% include 'library_app/breadcrumb.html' %}
         {% if error %}
-        <div class="alert alert-danger" role="alert">
-            {{ error  }}
-        </div>
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
         {% endif %}
         <!-- start: page -->
         <div class="row">
@@ -25,7 +25,20 @@
                                 <h2 class="card-title mb-4">Импорт JSON</h2>
                                 <form method="post" enctype="multipart/form-data">
                                     {% csrf_token %}
-                                    <label for="id_json_file">Контрагенты:</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="contragent"
+                                               id="id_contragent">
+                                        <label class="form-check-label" for="id_contragent">
+                                            Контрагенты
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="contract"
+                                               id="id_contract">
+                                        <label class="form-check-label" for="id_contract">
+                                            Договора
+                                        </label>
+                                    </div>
                                     <input class="form-control mb-4" type="file" name="json_file" id="id_json_file">
                                     <button type="submit"
                                             class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"

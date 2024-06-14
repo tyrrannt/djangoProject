@@ -7,7 +7,7 @@ from django.views.generic import DetailView, UpdateView, ListView, CreateView, D
 from loguru import logger
 from dadata import Dadata
 from administration_app.models import PortalProperty
-from administration_app.utils import int_validate, change_session_queryset, change_session_context
+from administration_app.utils import int_validate, change_session_queryset, change_session_context, ajax_search
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments, Estate
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm, \
@@ -43,12 +43,21 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            contract_list = Contract.objects.filter(type_of_document__type_document='Договор').order_by('pk').reverse()
-            data = [contract_item.get_data() for contract_item in contract_list]
-            response = {'data': data}
-            # report_card_separator()
-            return JsonResponse(response)
+        # if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        #     contract_list = Contract.objects.filter(type_of_document__type_document='Договор').order_by('pk').reverse()
+        #     data = [contract_item.get_data() for contract_item in contract_list]
+        #     response = {'data': data}
+        #     # report_card_separator()
+        #     return JsonResponse(response)
+        # return super().get(request, *args, **kwargs)
+        query = Q(type_of_document__type_document='Договор')
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['contract_number', 'date_conclusion',
+                           'type_of_document__type_document', 'type_of_contract__type_contract', 'parent_category',
+                           'contract_counteragent__short_name', 'actuality',
+                           ]
+            context = ajax_search(request, self, search_list, Contract, query)
+            return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
 
 
