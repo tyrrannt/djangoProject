@@ -1062,41 +1062,41 @@ def upload_json(data, trigger):
                 except Exception as _exc:
                     logger.error(f"Не удалось создать объект  {item}")
         case 1:
-            Contract.objects.all().delete()
-            # for item in data:
-            #     contract = {
-            #         "contract_counteragent_id": int(item['contract_counteragent']),
-            #         "contract_number": item['contract_number'],
-            #         "date_conclusion": item['date_conclusion'] if item['date_conclusion'] else None,
-            #         "subject_contract": item['subject_contract'],
-            #         "cost": float(item['cost']) if item['cost'] else 0,
-            #         "type_of_contract_id": item['type_of_contract'],
-            #         "type_of_document_id": item['type_of_document'],
-            #         "closing_date": item['closing_date'] if item['closing_date'] else None,
-            #         "prolongation": item['prolongation'],
-            #         "comment": item['comment'],
-            #         "date_entry": item['date_entry'] if item['date_entry'] else None,
-            #         "executor_id": item['executor'],
-            #         "doc_file": item['doc_file'],
-            #         "access_id": item['access'],
-            #         "allowed_placed": item['allowed_placed'],
-            #         "actuality": item['actuality'],
-            #         "official_information": item['official_information'],
-            #
-            #     }
-            #     try:
-            #         obj, created = Contract.objects.update_or_create(
-            #             contract_counteragent_id=item['contract_counteragent'],
-            #             contract_number=item['contract_number'],
-            #             date_conclusion=item['date_conclusion'],
-            #             defaults=contract)
-            #         if created:
-            #             if len(item['divisions']) > 0:
-            #                 obj.divisions.set(item['divisions'])
-            #             if len(item['type_property']) > 0:
-            #                 obj.type_property.set(item['type_property'])
-            #             if len(item['employee']) > 0:
-            #                 obj.employee.set(item['employee'])
-            #             logger.info(f"Объект: {item} успешно создан")
-            #     except Exception as _exc:
-            #         logger.error(f"Не удалось создать объект  {item}")
+            # Contract.objects.all().delete()
+            for item in data:
+                contract = {
+                    "contract_counteragent_id": int(item['contract_counteragent']),
+                    "contract_number": item['contract_number'],
+                    "date_conclusion": item['date_conclusion'] if item['date_conclusion'] else None,
+                    "subject_contract": item['subject_contract'],
+                    "cost": float(item['cost']) if item['cost'] else 0,
+                    "type_of_contract_id": item['type_of_contract'],
+                    "type_of_document_id": item['type_of_document'],
+                    "closing_date": item['closing_date'] if item['closing_date'] else None,
+                    "prolongation": item['prolongation'],
+                    "comment": item['comment'],
+                    "date_entry": item['date_entry'] if item['date_entry'] else None,
+                    "executor_id": item['executor'],
+                    "doc_file": item['doc_file'],
+                    "access_id": item['access'],
+                    "allowed_placed": item['allowed_placed'],
+                    "actuality": item['actuality'],
+                    "official_information": item['official_information'],
+
+                }
+                try:
+                    obj, created = Contract.objects.update_or_create(
+                        contract_counteragent_id=item['contract_counteragent'],
+                        contract_number=item['contract_number'],
+                        date_conclusion=item['date_conclusion'],
+                        defaults=contract)
+                    if created:
+                        if len(item['divisions']) > 0:
+                            obj.divisions.set(item['divisions'])
+                        if len(item['type_property']) > 0:
+                            obj.type_property.set(item['type_property'])
+                        if len(item['employee']) > 0:
+                            obj.employee.set(item['employee'])
+                        logger.info(f"Объект: {item} успешно создан")
+                except Exception as _exc:
+                    logger.error(f"Не удалось создать объект  {item}")
