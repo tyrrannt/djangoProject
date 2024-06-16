@@ -1084,6 +1084,7 @@ def upload_json(data, trigger):
                     "official_information": item['official_information'],
 
                 }
+
                 try:
                     obj, created = Contract.objects.update_or_create(
                         contract_counteragent_id=item['contract_counteragent'],
@@ -1091,12 +1092,21 @@ def upload_json(data, trigger):
                         date_conclusion=item['date_conclusion'],
                         defaults=contract)
                     if created:
-                        if len(item['divisions']) > 0:
-                            obj.divisions.set(item['divisions'])
-                        if len(item['type_property']) > 0:
-                            obj.type_property.set(item['type_property'])
-                        if len(item['employee']) > 0:
-                            obj.employee.set(item['employee'])
+                        try:
+                            if len(item['divisions']) > 0:
+                                obj.divisions.set(item['divisions'])
+                        except TypeError:
+                            pass
+                        try:
+                            if len(item['type_property']) > 0:
+                                obj.type_property.set(item['type_property'])
+                        except TypeError:
+                            pass
+                        try:
+                            if len(item['employee']) > 0:
+                                obj.employee.set(item['employee'])
+                        except TypeError:
+                            pass
                         logger.info(f"Объект: {item} успешно создан")
                 except Exception as _exc:
-                    logger.error(f"Не удалось создать объект  {item}")
+                    logger.error(f"Не удалось создать объект  {_exc}")

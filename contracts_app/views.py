@@ -1,5 +1,6 @@
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import QueryDict, JsonResponse
 from django.shortcuts import HttpResponseRedirect, render
@@ -187,7 +188,12 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     permission_required = 'contracts_app.view_contract'
 
     def dispatch(self, request, *args, **kwargs):
-        return super(ContractDetail, self).dispatch(request, *args, **kwargs)
+        contract_object = self.get_object()
+        if request.user.user_access.pk <= contract_object.access.pk or request.user.is_superuser:
+            return super(ContractDetail, self).dispatch(request, *args, **kwargs)
+        else:
+            logger.warning(f'Пользователь {request.user} хотел получить доступ к договору {contract_object}')
+            raise PermissionDenied
 
     def get_context_data(self, **kwargs):
         context = super(ContractDetail, self).get_context_data(**kwargs)
@@ -657,7 +663,7 @@ class EstateUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 def counteragent_check(request):
     if request.method == 'POST':
         data = request.POST
-        if data.get('counteragent') == '' and data.get('counteragent_name')  == '':
+        if data.get('counteragent') == '' and data.get('counteragent_name') == '':
             return HttpResponseRedirect(reverse('contracts_app:counteragent_check'))
         else:
             token = config('FNS')

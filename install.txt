@@ -235,3 +235,7 @@ source ~/myprojectenv/bin/activate
 sudo killall gunicorn
 Supervisor автоматически запустит Gunicorn после этой команды, так что можете не беспокоиться, что сервер ляжет
 надолго. Не более секундного сбоя.
+
+
+Полная копия базы:
+python manage.py dumpdata --natural-foreign --natural-primary -e contenttypes -e auth.Permission --indent 2 > dump.json
