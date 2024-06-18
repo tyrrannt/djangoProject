@@ -1769,6 +1769,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request, si
     context = {
         "DocNumber": '____' if obj_model.number == '' else obj_model.number,
         "DateDoc": f'{obj_model.date_create.strftime("%d.%m.%Y")} г.',
+        "DateDocOrder": f'{obj_model.date_start.strftime("%d.%m.%Y")} г.',
         "DateStart": obj_model.date_start.strftime("%d.%m.%Y"),
         "DateEnd": obj_model.date_end.strftime("%d.%m.%Y"),
         "Place": obj_model.place,
@@ -1779,7 +1780,7 @@ def ias_order(obj_model: CreatingTeam, filepath: str, filename: str, request, si
         "team_brigade_list": Listing(f"{team_brigade_list[:-1]}"),
         "additional_payment": str(obj_model.place.additional_payment),
         "number_order": obj_model.replaceable_document.number if obj_model.replaceable_document else '',
-        "date_order": f'{obj_model.replaceable_document.date_start.strftime("%d.%m.%Y")} г.' if obj_model.replaceable_document else '',
+        "date_order": f'{obj_model.replaceable_document.date_create.strftime("%d.%m.%Y")} г.' if obj_model.replaceable_document else '',
     }
     doc.render(context, autoescape=True)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
