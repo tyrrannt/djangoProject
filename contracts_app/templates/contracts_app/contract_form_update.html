@@ -1,4 +1,5 @@
 {% extends 'customers_app/main.html' %}
+{% load widget_tweaks %}
 
 {% load static %}
 {% block custome_css %}
@@ -69,7 +70,7 @@
                                         </div>
                                         <div class="col-md-6 col-sm-6 text-black-50">
                                             <label for="id_contract_counteragent">Контрагент</label>
-                                            {{ form.contract_counteragent }}
+                                            {{ form.contract_counteragent | attr:"onkeydown=contragent_change()"}}
                                         </div>
                                     </div>
                                     <div class="row text">
@@ -215,4 +216,73 @@
         </form>
         <!-- end: page -->
     </section>
+    <script type="text/javascript">
+        function contragent_change() {
+            contragent = document.getElementById("id_contract_counteragent").value;
+
+            $.ajax({
+                type: "GET",
+                url: '{% url 'contracts_app:update' object.pk %}',
+                data: {
+                    "contragent": contragent,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    // var period_from = document.getElementById("id_period_from");
+                    // var period_for = document.getElementById("id_period_for");
+                    // period_from.removeAttribute("min")
+                    // period_from.setAttribute("min", data)
+                    // $("#id_period_from").trigger("create")
+                    // period_for.removeAttribute("min")
+                    // period_for.setAttribute("min", data)
+                    // $("#id_period_for").trigger("create")
+                    // var check_date = document.getElementById("id_check_date");
+                    // var employee_divisions = document.getElementById("employee_divisions");
+                    // $("label[for='employee_divisions']").text(data);
+                    // employee_divisions.refresh;
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+
+        function memo_type_change() {
+            employee = document.getElementById("id_person").value;
+            memo_type = document.getElementById("id_official_memo_type").value;
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:memo_add' %}',
+                data: {
+                    "employee": employee,
+                    "memo_type": memo_type,
+                },
+                dataType: "json",
+                success: function (data) {
+                    // any process in data
+                    var employee_divisions = document.getElementById("employee_divisions");
+                    $("label[for='employee_divisions']").text(data['employee']);
+                    employee_divisions.refresh;
+                    var document_extension = $("#id_document_extension");
+                    document_extension.empty();
+                    $.each(data['memo_type'], function (key, value) {
+                        document_extension.append($("<option selected></option>")
+                            .attr("value", value).text(key));
+                    });
+                    document_extension.removeAttr("disabled")
+                    $('#id_document_extension').refresh;
+                    if (data === 'ok') {
+                        console.log("success");
+                    }
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+    </script>
 {% endblock %}

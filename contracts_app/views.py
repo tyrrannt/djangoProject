@@ -15,7 +15,7 @@ from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, Contract
     EstateAddForm, EstateUpdateForm
 from django.urls import reverse, reverse_lazy
 
-from customers_app.models import DataBaseUser
+from customers_app.models import DataBaseUser, Counteragent
 
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -227,6 +227,25 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
+    # def get_form_kwargs(self):
+    #     """
+    #     Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+    #     :return: PK текущего пользователя
+    #     """
+    #     kwargs = super().get_form_kwargs()
+    #     kwargs.update({"parent": self.object.parent_category})
+    #     kwargs.update({"contragent": self.object.contract_counteragent.pk})
+    #     return kwargs
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class=self.form_class)
+        form.fields['contract_counteragent'].queryset = Counteragent.objects.filter(
+            pk=self.object.contract_counteragent.pk)
+        if self.object.parent_category:
+            form.fields['parent_category'].queryset = Contract.objects.filter(
+                parent_category=self.object.parent_category.pk)
+        return form
+
     def form_valid(self, form):
         """
         Проверяем корректность переданной формы
@@ -267,6 +286,10 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         # except Exception as _ex:
         #     url_match = reverse_lazy('contracts_app:index')
         #     return redirect(url_match)
+        contragent = request.GET.get("contragent", None)
+        print(contragent)
+        if contragent:
+            print(contragent)
         return super(ContractUpdate, self).get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

@@ -7,6 +7,7 @@ from customers_app.models import Division, DataBaseUser, Counteragent
 from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract, Estate
 from django import forms
 
+
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 #            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
 #            serialize=config('LOG_SERIALIZE'))
@@ -27,7 +28,8 @@ class ContractsAddForm(forms.ModelForm):
     contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
     contract_counteragent.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    parent_category = forms.ModelChoiceField(queryset=Contract.objects.filter(parent_category__isnull=True), required=False)
+    parent_category = forms.ModelChoiceField(queryset=Contract.objects.filter(parent_category__isnull=True),
+                                             required=False)
     parent_category.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
@@ -96,27 +98,10 @@ class ContractsAddForm(forms.ModelForm):
 
 
 class ContractsUpdateForm(forms.ModelForm):
-    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
-    employee.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    type_of_contract = forms.ModelChoiceField(queryset=TypeContract.objects.all())
-    type_of_contract.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    type_of_document = forms.ModelChoiceField(queryset=TypeDocuments.objects.all())
-    type_of_document.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'), required=False)
     divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
-    divisions.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
-    contract_counteragent.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    parent_category = forms.ModelChoiceField(queryset=Contract.objects.filter(parent_category__isnull=True), required=False)
-    parent_category.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
-    type_property.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    parent_category = forms.ModelChoiceField(queryset=Contract.objects.none(), required=False)
 
     class Meta:
         model = Contract
@@ -125,9 +110,10 @@ class ContractsUpdateForm(forms.ModelForm):
                   'subject_contract', 'cost', 'prolongation', 'allowed_placed', 'doc_file')
 
     def __init__(self, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class ContractsPostAddForm(forms.ModelForm):
