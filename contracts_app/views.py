@@ -28,10 +28,6 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     Отображение списка договоров
     """
     model = Contract
-    paginate_by = 6
-    item_sorted = 'pk'
-    sorted_list = ['pk', 'contract_counteragent', 'contract_number', 'date_conclusion',
-                   'type_of_contract', 'divisions']
     permission_required = 'contracts_app.view_contract'
 
     def get_context_data(self, **kwargs):
@@ -40,7 +36,8 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        return Contract.objects.filter(Q(allowed_placed=True)).order_by(self.item_sorted)
+        access = self.request.user.user_access
+        return Contract.objects.filter(Q(allowed_placed=True) & Q(access_id__gte=access))
 
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -51,7 +48,8 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         #     # report_card_separator()
         #     return JsonResponse(response)
         # return super().get(request, *args, **kwargs)
-        query = Q(type_of_document__type_document='Договор')
+        access = self.request.user.user_access
+        query = Q(type_of_document__type_document='Договор') & Q(access_id__gte=access)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['contract_number', 'date_conclusion',
                             'type_of_contract__type_contract', 'subject_contract',
@@ -188,12 +186,15 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     permission_required = 'contracts_app.view_contract'
 
     def dispatch(self, request, *args, **kwargs):
-        contract_object = self.get_object()
-        if request.user.user_access.pk <= contract_object.access.pk or request.user.is_superuser:
-            return super(ContractDetail, self).dispatch(request, *args, **kwargs)
-        else:
-            logger.warning(f'Пользователь {request.user} хотел получить доступ к договору {contract_object}')
-            raise PermissionDenied
+        try:
+            contract_object = self.get_object()
+            if request.user.user_access.pk <= contract_object.access.pk or request.user.is_superuser:
+                return super(ContractDetail, self).dispatch(request, *args, **kwargs)
+            else:
+                logger.warning(f'Пользователь {request.user} хотел получить доступ к договору {contract_object}')
+                raise PermissionDenied
+        except PermissionDenied:
+            return render(request, "library_app/403.html")
 
     def get_context_data(self, **kwargs):
         context = super(ContractDetail, self).get_context_data(**kwargs)
@@ -223,6 +224,17 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     form_class = ContractsUpdateForm
     template_name = 'contracts_app/contract_form_update.html'
     permission_required = 'contracts_app.change_contract'
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            contract_object = self.get_object()
+            if request.user.user_access.pk <= contract_object.access.pk: # or request.user.is_superuser:
+                return super(ContractUpdate, self).dispatch(request, *args, **kwargs)
+            else:
+                logger.warning(f'Пользователь {request.user} хотел получить доступ к договору {contract_object}')
+                raise PermissionDenied
+        except PermissionDenied:
+            return render(request, "library_app/403.html")
 
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
