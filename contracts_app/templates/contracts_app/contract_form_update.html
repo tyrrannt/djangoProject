@@ -182,9 +182,9 @@
                                     </div>
                                     <div class="row">
                                         <p>
-                                            <label for="id_doc_file">Файл документа:</label>
+                                            <label for="id_doc_file">Файл документа: {{ object.official_information }}</label>
                                             <input type="file" name="doc_file" class="form-control mb-4"
-                                                   id="id_doc_file">
+                                                   id="id_doc_file" value="{{ object.official_information }}" />
                                         </p>
                                     </div>
                                 </div>
