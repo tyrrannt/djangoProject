@@ -2,6 +2,7 @@ import datetime
 import pathlib
 
 from django.db import models
+from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -9,6 +10,8 @@ from django.urls import reverse
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
 from djangoProject import settings
 from djangoProject.settings import BASE_DIR
+
+
 # from hrdepartment_app.models import PlaceProductionActivity
 
 
@@ -75,7 +78,6 @@ class TypeProperty(models.Model):
 
 
 class CompanyProperty(models.Model):
-
     class Meta:
         verbose_name = 'УДАЛЕНО'
         verbose_name_plural = 'УДАЛЕНО'
@@ -86,6 +88,7 @@ class CompanyProperty(models.Model):
 
     def __str__(self):
         return f'{self.name}'
+
 
 class Estate(models.Model):
     class Meta:
@@ -112,6 +115,7 @@ class Estate(models.Model):
             'registration_number': self.registration_number,
         }
 
+
 class ContractModel(models.Model):
     """
     Абстрактная модель договоров. Введена для возможности реализации иерархической вложенности. Элемент модели
@@ -125,6 +129,7 @@ class ContractModel(models.Model):
         ('auto', 'Автоматическая пролонгация'),
         ('ag', 'Оформление ДС')
     ]
+
     parent_category = models.ForeignKey('self', verbose_name='Главный документ', on_delete=models.CASCADE, null=True,
                                         blank=True)
     contract_counteragent = models.ForeignKey(Counteragent, verbose_name='Контрагент', on_delete=models.SET_NULL,
@@ -154,11 +159,16 @@ class ContractModel(models.Model):
                                null=True, default=5)
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
     actuality = models.BooleanField(verbose_name='Актуальность', default=False)
-    official_information = models.CharField(verbose_name='Служебная информация', max_length=400, blank=True, default='', )
+    official_information = models.CharField(verbose_name='Служебная информация', max_length=400, blank=True,
+                                            default='', )
+
     @property
     def is_past_due(self):
-        today = datetime.datetime.today()
-        return today.date() < self.closing_date
+        try:
+            today = datetime.datetime.today()
+            return today.date() < self.closing_date
+        except TypeError:
+            return True
 
     def __str__(self):
         if self.parent_category:
@@ -206,7 +216,7 @@ class Contract(ContractModel):
             'type_of_contract': str(self.type_of_contract),
             'subject_contract': str(self.subject_contract),
             'contract_counteragent': str(self.contract_counteragent),
-            'actuality': 'Да' if self.actuality else 'Нет',
+            'actuality': self.is_past_due,
         }
 
     def __init__(self, *args, **kwargs):

@@ -53,8 +53,7 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['contract_number', 'date_conclusion',
                             'type_of_contract__type_contract', 'subject_contract',
-                           'contract_counteragent__short_name', 'actuality',
-                           ]
+                           'contract_counteragent__short_name',]
             context = ajax_search(request, self, search_list, Contract, query)
             return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)

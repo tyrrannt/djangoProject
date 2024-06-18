@@ -48,7 +48,6 @@
                                     <th width="12%">Тип договора</th>
                                     <th width="34%">Предмет договора</th>
                                     <th width="25%">Контрагент</th>
-                                    <th width="8%">Актуальность</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -119,6 +118,11 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
+                    if (aData['actuality']) {
+                        $(nRow).addClass('text-primary fs-6')
+                    } else {
+                        $(nRow).addClass('text-muted fs-6')
+                    }
                     $(nRow).attr("href", id + '/');
                     $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {
@@ -133,7 +137,6 @@
                     {"data": "type_of_contract"},
                     {"data": "subject_contract"},
                     {"data": "contract_counteragent"},
-                    {"data": "actuality"},
                 ],
             });
         });
