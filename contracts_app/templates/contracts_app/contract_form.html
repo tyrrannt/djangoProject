@@ -137,28 +137,16 @@
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="date_entry">Дата ввода информации</label>
-                                            <input type="date" class="form-control form-control-modern"
-                                                   name="date_entry"
-                                                   value="" id="date_entry"/>
+                                            {{ form.date_entry }}
                                         </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="id_prolongation">Пролонгация</label>
-                                            <select class="form-control form-control-modern" id="id_prolongation"
-                                                    name="prolongation"
-                                                    data-plugin-selectTwo>
-                                                {% for key, value in prolongation %}
-                                                    <option value="{{ key }}">{{ value }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.prolongation }}
                                         </div>
 
                                         <p>
                                             <label for="id_access">Уровень доступа к документу:</label>
-                                            <select name="access" class="form-control mb-4" required="" id="id_access">
-                                                {% for item in access.iterator %}
-                                                    <option value="{{ item.pk }}" selected="">{{ item.name }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            {{ form.access }}
                                         </p>
                                         <p>
                                             <label for="id_executor">Исполнитель:</label>
