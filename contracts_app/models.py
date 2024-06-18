@@ -204,7 +204,7 @@ class Contract(ContractModel):
             'date_conclusion': f'{self.date_conclusion:%d.%m.%Y} г.' if self.date_conclusion else '',
             'type_of_document': str(self.type_of_document),
             'type_of_contract': str(self.type_of_contract),
-            'parent_category': str(self.parent_category) if self.parent_category else '--//--',
+            'subject_contract': str(self.subject_contract),
             'contract_counteragent': str(self.contract_counteragent),
             'actuality': 'Да' if self.actuality else 'Нет',
         }
