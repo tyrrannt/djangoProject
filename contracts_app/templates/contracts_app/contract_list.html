@@ -48,6 +48,7 @@
                                     <th width="12%">Тип договора</th>
                                     <th width="34%">Предмет договора</th>
                                     <th width="25%">Контрагент</th>
+                                    <th width="3%"></th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -123,27 +124,41 @@
                             $(nRow).addClass('text-primary fs-6')
                         } else {
                             $(nRow).addClass('text-muted fs-6')
-                        }    
+                        }
                     } else {
                         $(nRow).addClass('text-danger fs-6')
                     }
-                    
-                    $(nRow).attr("href", id + '/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
-                    });
+
+                    {#тут блок ниже#}
                 },
+                
                 "columns": [
-                    {"data": "contract_number"},
+                    {
+                        "data": "contract_number",
+                        "mRender": function (data, type, row) {
+                            return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
+                        },
+                    },                    
                     {"data": "date_conclusion"},
                     {"data": "type_of_contract"},
                     {"data": "subject_contract"},
                     {"data": "contract_counteragent"},
+                    {
+                        "data": null,
+                        "mRender": function (data, type, row) {
+                            return "<a href="+" "+row.pk+"/update/"+"><i class='bx bxs-edit'></i></a>";
+                        },
+                    },
                 ],
             });
         });
 
     </script>
 {% endblock %}
+
+{#                    $(nRow).attr("href", id + '/');#}
+{#                    $(nRow).css('cursor', 'pointer');#}
+{#                    $(nRow).click(function () {#}
+{#                        window.location = $(this).attr('href');#}
+{#                        return false;#}
+{#                    });#}
