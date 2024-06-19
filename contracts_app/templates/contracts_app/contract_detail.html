@@ -178,7 +178,8 @@
                                     </div>
                                 </div>
                             </div>
-                        <div class="form-row">
+                        {% if request.user.is_superuser  %}
+                            <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
                                         <div class="col-md-3 text-black-50">
@@ -193,6 +194,8 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif  %}
+                        
                     </section>
                     <section class="toggle">
                         <label>Файл</label>

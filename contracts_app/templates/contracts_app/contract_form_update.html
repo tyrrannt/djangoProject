@@ -181,8 +181,11 @@
                                         </div>
                                     </div>
                                     <div class="row">
+                                        {% if request.user.is_superuser  %}
+                                        <p>{{ object.official_information }}</p>
+                                        {% endif  %}
                                         <p>
-                                            <label for="id_doc_file">Файл документа: {{ object.official_information }}</label>
+                                            <label for="id_doc_file">Файл документа: </label>
                                             <input type="file" name="doc_file" class="form-control mb-4"
                                                    id="id_doc_file" value="{{ object.official_information }}" />
                                         </p>
