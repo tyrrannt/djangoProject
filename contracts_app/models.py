@@ -208,6 +208,7 @@ class Contract(ContractModel):
         ordering = ['-date_conclusion']
 
     def get_data(self):
+        variable = str(self.doc_file.name).split('.')
         return {
             'pk': self.pk,
             'contract_number': self.contract_number,
@@ -216,6 +217,7 @@ class Contract(ContractModel):
             'type_of_contract': str(self.type_of_contract),
             'subject_contract': str(self.subject_contract),
             'contract_counteragent': str(self.contract_counteragent),
+            'is_file': True if variable[1] != '' else False,
             'actuality': self.is_past_due,
         }
 

@@ -118,11 +118,16 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
-                    if (aData['actuality']) {
-                        $(nRow).addClass('text-primary fs-6')
+                    if (aData['is_file']) {
+                        if (aData['actuality']) {
+                            $(nRow).addClass('text-primary fs-6')
+                        } else {
+                            $(nRow).addClass('text-muted fs-6')
+                        }    
                     } else {
-                        $(nRow).addClass('text-muted fs-6')
+                        $(nRow).addClass('text-danger fs-6')
                     }
+                    
                     $(nRow).attr("href", id + '/');
                     $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {
@@ -133,7 +138,6 @@
                 "columns": [
                     {"data": "contract_number"},
                     {"data": "date_conclusion"},
-                    {#{"data": "type_of_document"},#}
                     {"data": "type_of_contract"},
                     {"data": "subject_contract"},
                     {"data": "contract_counteragent"},
