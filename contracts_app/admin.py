@@ -15,7 +15,7 @@ class DocumentsOrderAdmin(admin.ModelAdmin):
     list_display = ("pk", "contract_number", "date_conclusion", "type_of_document",
                     "type_of_contract", "actuality", "contract_counteragent")  #
     list_filter = (
-        "actuality",
+        "actuality", "allowed_placed",
     )
     search_fields = ["contract_number",  "contract_counteragent__full_name",  "date_conclusion", ]
     # def get_document_order_type(self, obj: DocumentsOrder):
