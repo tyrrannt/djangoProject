@@ -59,6 +59,47 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         return super().get(request, *args, **kwargs)
 
 
+class ContractListAdmin(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Отображение списка договоров
+    """
+    model = Contract
+    template_name = 'contracts_app/contract_list_admin.html'
+    permission_required = 'contracts_app.view_contract'
+
+    def get_context_data(self, **kwargs):
+        context = super(ContractListAdmin, self).get_context_data(**kwargs)
+        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // База договоров'
+        return context
+
+    def get_queryset(self):
+        access = self.request.user.user_access
+        return Contract.objects.filter(
+            Q(allowed_placed=True) &
+            Q(access_id__gte=access) &
+            ~Q(doc_file__endswith='.pdf')
+        )
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        # if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        #     contract_list = Contract.objects.filter(type_of_document__type_document='Договор').order_by('pk').reverse()
+        #     data = [contract_item.get_data() for contract_item in contract_list]
+        #     response = {'data': data}
+        #     # report_card_separator()
+        #     return JsonResponse(response)
+        # return super().get(request, *args, **kwargs)
+        access = self.request.user.user_access
+        query = Q(type_of_document__type_document='Договор') & Q(access_id__gte=access) & ~Q(doc_file__endswith='.pdf')
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['contract_number', 'date_conclusion',
+                            'type_of_contract__type_contract', 'subject_contract',
+                           'contract_counteragent__short_name',]
+            context = ajax_search(request, self, search_list, Contract, query)
+            return JsonResponse(context, safe=False)
+        return super().get(request, *args, **kwargs)
+
+
 class ContractSearch(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
     Поиск договоров в базе

@@ -1,0 +1,164 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+{#        {% include 'library_app/breadcrumb.html' %}#}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper dt-bootstrap5">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="{% url 'contracts_app:create' %}"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                            Добавить договор </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
+                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+                                <thead>
+                                <tr>
+                                    <th width="10%">Номер договора</th>
+                                    <th width="10%">Дата договора</th>
+{#                                    <th width="12%">Тип документа</th>#}
+                                    <th width="12%">Тип договора</th>
+                                    <th width="34%">Предмет договора</th>
+                                    <th width="25%">Контрагент</th>
+                                    <th width="3%"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+
+                            <hr class="solid mt-5 opacity-4">
+{#                            {% include 'library_app/paginator.html' %}#}
+                            <div class="datatable-footer">
+                                <div class="row align-items-center justify-content-between mt-3">
+                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-stretch">
+                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-auto text-center order-3 order-lg-2">
+                                        <div class="results-info-wrapper"></div>
+                                    </div>
+                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                        <div class="pagination-wrapper"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+
+{% endblock %}
+
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            // Setup - add a text input to each footer cell
+            $('#datatable-ecommerce-list thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "order": [[0, 'desc'], [1, 'desc'],],
+                "pageLength": 25,
+                "scrollX": true,
+                "sDom": 'T<"clear">lrtip',
+                "ajax": "{% url 'contracts_app:index-admin' %}",
+                "processing": true,
+                "serverSide": true,
+                "lengthMenu": [[10, 25, 50, 75, 100, 200], [10, 25, 50, 75, 100, 200]],
+                "searching": true,
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    if (aData['is_file']) {
+                        if (aData['actuality']) {
+                            $(nRow).addClass('text-primary fs-6')
+                        } else {
+                            $(nRow).addClass('text-muted fs-6')
+                        }
+                    } else {
+                        $(nRow).addClass('text-danger fs-6')
+                    }
+
+                    {#тут блок ниже#}
+                },
+                
+                "columns": [
+                    {
+                        "data": "contract_number",
+                        "mRender": function (data, type, row) {
+                            return "<a href=/contracts/"+row.pk+"/"+">" + data + "</a>";
+                        },
+                    },                    
+                    {"data": "date_conclusion"},
+                    {"data": "type_of_contract"},
+                    {"data": "subject_contract"},
+                    {"data": "contract_counteragent"},
+                    {
+                        "data": null,
+                        "mRender": function (data, type, row) {
+                            return "<a href=/contracts/"+row.pk+"/update/"+"><i class='bx bxs-edit'></i></a>";
+                        },
+                    },
+                ],
+            });
+        });
+
+    </script>
+{% endblock %}
+
+{#                    $(nRow).attr("href", id + '/');#}
+{#                    $(nRow).css('cursor', 'pointer');#}
+{#                    $(nRow).click(function () {#}
+{#                        window.location = $(this).attr('href');#}
+{#                        return false;#}
+{#                    });#}

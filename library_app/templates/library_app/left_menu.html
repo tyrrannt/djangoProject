@@ -190,6 +190,13 @@
                                     Общий список договоров
                                 </a>
                             </li>
+                            {% if request.user.is_superuser %}
+                                <li>
+                                <a class="nav-link" href="{% url 'contracts_app:index-admin' %}">
+                                    Общий список договоров - admin
+                                </a>
+                            </li>
+                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'contracts_app:counteragent_check' %}">
                                     Поиск контрагента

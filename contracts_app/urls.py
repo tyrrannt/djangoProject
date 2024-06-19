@@ -5,6 +5,7 @@ app_name = 'contracts_app'
 
 urlpatterns = [
     path('', views.ContractList.as_view(), name='index'),
+    path('admin/', views.ContractListAdmin.as_view(), name='index-admin'),
     # path(r'^pdf', views.pdf, name='pdf'),
     path('search/', views.ContractSearch.as_view(), name='search'),
     path('create/', views.ContractAdd.as_view(), name='create'),
