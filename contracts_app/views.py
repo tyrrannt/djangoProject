@@ -250,8 +250,8 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class=self.form_class)
-        form.fields['contract_counteragent'].queryset = Counteragent.objects.filter(
-            pk=self.object.contract_counteragent.pk)
+        # form.fields['contract_counteragent'].queryset = Counteragent.objects.filter(
+        #     pk=self.object.contract_counteragent.pk)
         if self.object.parent_category:
             form.fields['parent_category'].queryset = Contract.objects.filter(
                 parent_category=self.object.parent_category.pk)
