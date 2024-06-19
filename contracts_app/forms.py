@@ -13,7 +13,7 @@ from django import forms
 #            serialize=config('LOG_SERIALIZE'))
 
 class ContractsAddForm(forms.ModelForm):
-    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'))
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'), required=False)
     employee.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_of_contract = forms.ModelChoiceField(queryset=TypeContract.objects.all())
@@ -67,6 +67,7 @@ class ContractsAddForm(forms.ModelForm):
                 initial['subject_contract'] = get_obj.subject_contract
                 initial['subject_contract'] = get_obj.subject_contract
                 initial['parent_category'] = get_obj
+                initial['executor'] = get_obj.executor
                 kwargs['initial'] = initial
             except Contract.DoesNotExist:
                 logger.error(f'Запись с UIN={self.parent} отсутствует в базе данных')
