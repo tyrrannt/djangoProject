@@ -24,6 +24,7 @@ class TypeDocuments(models.Model):
     class Meta:
         verbose_name = 'Тип документа'
         verbose_name_plural = 'Тип документов'
+        ordering = ['type_document']
 
     type_document = models.CharField(verbose_name='Тип документа', max_length=50)
     short_name = models.CharField(verbose_name='Краткое наименование', max_length=3, default='')
@@ -45,6 +46,7 @@ class TypeContract(models.Model):
     class Meta:
         verbose_name = 'Тип договора'
         verbose_name_plural = 'Тип договоров'
+        ordering = ['type_contract']
 
     type_contract = models.CharField(verbose_name='Тип договора', max_length=50)
     authorized_person = models.ManyToManyField(DataBaseUser, verbose_name='Авторизованное лицо')
@@ -63,6 +65,7 @@ class TypeProperty(models.Model):
     class Meta:
         verbose_name = 'Тип имущества'
         verbose_name_plural = 'Тип имущества'
+        ordering = ['type_property']
 
     type_property = models.CharField(verbose_name='Тип имущества', max_length=50, blank=True, default='',
                                      help_text='')
