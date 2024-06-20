@@ -27,7 +27,7 @@
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0" xmlns="http://www.w3.org/1999/html">
 
-{#        {% include 'library_app/breadcrumb.html' %}#}
+        {#        {% include 'library_app/breadcrumb.html' %}#}
 
         <!-- start: page -->
         <div class="order-details action-buttons-fixed" method="post">
@@ -94,11 +94,6 @@
                                 </div>
                             </div>
                             <code>{{ object.access }}</code>
-                        </div>
-                    </section>
-                    <section class="toggle">
-                        <label>Дополнительные данные</label>
-                        <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
@@ -178,25 +173,24 @@
                                     </div>
                                 </div>
                             </div>
-                        {% if request.user.is_superuser  %}
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="official_information">Служебная информация</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="official_information" disabled
-                                                   value="{{ object.official_information }}"
-                                                   id="official_information"/>
+                            {% if request.user.is_superuser %}
+                                <div class="form-row">
+                                    <div class="form-group col mb-3">
+                                        <div class="row">
+                                            <div class="col-md-3 text-black-50">
+                                                <label for="official_information">Служебная информация</label>
+                                                <input type="text" class="form-control form-control-modern"
+                                                       name="official_information" disabled
+                                                       value="{{ object.official_information }}"
+                                                       id="official_information"/>
+                                            </div>
+
                                         </div>
-                                        
                                     </div>
                                 </div>
-                            </div>
+                            {% endif %}
                         </div>
-                        {% endif  %}
-                        
-                    </section>
+                    </section>                    
                     <section class="toggle">
                         <label>Файл</label>
                         <div class="toggle-content">
@@ -313,12 +307,12 @@
             </div>
             <div class="row action-buttons">
 
-                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                        <a href="{% url 'contracts_app:update' object.pk %}"
-                           class="submit-button btn btn-primary btn-px-4 py-3 d-flex
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                    <a href="{% url 'contracts_app:update' object.pk %}"
+                       class="submit-button btn btn-primary btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-save text-4 me-2"></i> Изменить документ</a>
-                    </div>
+                        <i class="bx bx-save text-4 me-2"></i> Изменить документ</a>
+                </div>
 
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                     <a href="{% url 'contracts_app:index' %}"
