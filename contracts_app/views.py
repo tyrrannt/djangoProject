@@ -177,11 +177,12 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
     model = Contract
     form_class = ContractsAddForm
-    success_url = reverse_lazy('contracts_app:index')
+    # success_url = reverse_lazy('contracts_app:index')
     permission_required = 'contracts_app.add_contract'
 
-    def get_absolute_url(self):
-        obj = self.get_object()
+    def get_success_url(self):
+        obj = self.object
+        print(obj, obj.parent_category)
         if obj.parent_category:
             return reverse('contracts_app:detail', kwargs={'pk': obj.parent_category.pk})
         else:
