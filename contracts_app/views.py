@@ -52,8 +52,8 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         query = Q(type_of_document__type_document='Договор') & Q(access_id__gte=access)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['contract_number', 'date_conclusion',
-                            'type_of_contract__type_contract', 'subject_contract',
-                           'contract_counteragent__short_name',]
+                           'type_of_contract__type_contract', 'subject_contract',
+                           'contract_counteragent__short_name', ]
             context = ajax_search(request, self, search_list, Contract, query)
             return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
@@ -93,8 +93,8 @@ class ContractListAdmin(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         query = Q(type_of_document__type_document='Договор') & Q(access_id__gte=access) & ~Q(doc_file__endswith='.pdf')
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['contract_number', 'date_conclusion',
-                            'type_of_contract__type_contract', 'subject_contract',
-                           'contract_counteragent__short_name',]
+                           'type_of_contract__type_contract', 'subject_contract',
+                           'contract_counteragent__short_name', ]
             context = ajax_search(request, self, search_list, Contract, query)
             return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
@@ -179,6 +179,13 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     form_class = ContractsAddForm
     success_url = reverse_lazy('contracts_app:index')
     permission_required = 'contracts_app.add_contract'
+
+    def get_absolute_url(self):
+        obj = self.get_object()
+        if obj.parent_category:
+            return reverse('contracts_app:detail', kwargs={'pk': obj.parent_category.pk})
+        else:
+            return reverse('contracts_app:index')
 
     def post(self, request, *args, **kwargs):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
@@ -268,7 +275,7 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         try:
             contract_object = self.get_object()
-            if request.user.user_access.pk <= contract_object.access.pk: # or request.user.is_superuser:
+            if request.user.user_access.pk <= contract_object.access.pk:  # or request.user.is_superuser:
                 return super(ContractUpdate, self).dispatch(request, *args, **kwargs)
             else:
                 logger.warning(f'Пользователь {request.user} хотел получить доступ к договору {contract_object}')
