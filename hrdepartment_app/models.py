@@ -2397,7 +2397,7 @@ class Provisions(Documents):
     class Meta:
         verbose_name = "Положение"
         verbose_name_plural = "Положения"
-        ordering = ['-date_entry']
+        ordering = ['-document_date']
 
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=prv_directory_path, blank=True
