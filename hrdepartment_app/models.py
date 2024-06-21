@@ -1523,7 +1523,6 @@ class DocumentsOrder(Documents):
         return f'Пр. № {self.document_number} от {self.document_date.strftime("%d.%m.%Y")} г.'
 
 
-
 def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
     sub_doc_file = ""
     if obj_model.document_foundation:
@@ -1677,10 +1676,12 @@ class CreatingTeam(models.Model):
         ("1", "Замещающий документ"),
     ]
     document_type = models.CharField(verbose_name='Тип документа', max_length=1, choices=doc_type, default="0")
-    replaceable_document = models.ForeignKey('self', verbose_name='Отменяемый документ', null=True, blank=True, on_delete=models.SET_NULL, )
+    replaceable_document = models.ForeignKey('self', verbose_name='Отменяемый документ', null=True, blank=True,
+                                             on_delete=models.SET_NULL, )
     senior_brigade = models.ForeignKey(DataBaseUser, verbose_name="Старший бригады", on_delete=models.SET_NULL,
                                        null=True, related_name='senior_brigade')
-    team_brigade = models.ManyToManyField(DataBaseUser, verbose_name="Состав бригады", related_name='team_brigade', blank=True)
+    team_brigade = models.ManyToManyField(DataBaseUser, verbose_name="Состав бригады", related_name='team_brigade',
+                                          blank=True)
     executor_person = models.ForeignKey(DataBaseUser, verbose_name="Исполнитель", on_delete=models.SET_NULL,
                                         null=True, related_name='executor_person')
     approving_person = models.ForeignKey(DataBaseUser, verbose_name="Согласующее лицо", on_delete=models.SET_NULL,
@@ -1705,8 +1706,10 @@ class CreatingTeam(models.Model):
 
     def change_status(self, item: int, status: bool):
         match item:
-            case 0: self.email_send = status
-            case 1: self.email_cancellation_send = status
+            case 0:
+                self.email_send = status
+            case 1:
+                self.email_cancellation_send = status
 
     def __str__(self):
         return f"{format_name_initials(self.senior_brigade)} - с: {self.date_start.strftime('%d.%m.%Y')} по: {self.date_end.strftime('%d.%m.%Y')}"
@@ -1820,7 +1823,8 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         date_doc = instance.date_create
         single = True if instance.team_brigade.count() < 1 else False
         cancel = True if instance.replaceable_document else False
-        created_pdf = ias_order(instance, f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename, '3', single, cancel)
+        created_pdf = ias_order(instance, f"media/docs/ORD/{date_doc.year}/{date_doc.month}", filename, '3', single,
+                                cancel)
         # scan_name = pathlib.Path(created_pdf).name
         if f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}" != instance.doc_file:
             CreatingTeam.objects.filter(pk=instance.pk).update(
@@ -1993,6 +1997,7 @@ class ReportCard(models.Model):
         verbose_name = "Рабочее время"
         verbose_name_plural = "Табель учета"
         ordering = ("-report_card_day",)
+
     report_card_day = models.DateField(verbose_name="Дата", null=True, blank=True)
     rec_no = models.IntegerField(verbose_name="Номер записи", default=0, blank=True)
     employee = models.ForeignKey(
@@ -2392,6 +2397,7 @@ class Provisions(Documents):
     class Meta:
         verbose_name = "Положение"
         verbose_name_plural = "Положения"
+        ordering = ['-date_entry']
 
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=prv_directory_path, blank=True
