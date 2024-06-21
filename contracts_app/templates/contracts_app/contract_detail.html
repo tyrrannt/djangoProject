@@ -196,7 +196,7 @@
                                             <select class="form-control form-control-modern" name="employee" disabled
                                                     data-plugin-selectTwo multiple>
                                                 {% for item in object.employee.iterator %}
-                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                    <option value="{{ item.pk }}" selected>{{ item | FIO_format }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
