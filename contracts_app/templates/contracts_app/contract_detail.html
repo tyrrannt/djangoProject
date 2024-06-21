@@ -117,7 +117,7 @@
                                             <input type="text" class="form-control form-control-modern"
                                                    name="type_of_contract" disabled
                                                    value="{{ object.type_of_contract }}" id="type_of_contract"/>
-                                        </div>                                        
+                                        </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="type_property">Тип имущества</label>
                                             <select class="form-control form-control-modern" id="type_property"
@@ -156,7 +156,7 @@
                             </div>
                             <div class="form-row">
                                 <div class="form-group col mb-3">
-                                    <div class="row">                                        
+                                    <div class="row">
                                         <div class="col-md-12 text-black-50">
                                             <label for="id_comment">Примечание:</label>
                                             <textarea class="form-control form-control-modern" name="comment" rows="4"
@@ -187,7 +187,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
@@ -196,7 +196,7 @@
                                             <select class="form-control form-control-modern" name="employee" disabled
                                                     data-plugin-selectTwo multiple>
                                                 {% for item in object.employee.iterator %}
-                                                    <option value="{{ item.pk }}" selected>{{ item | FIO_format }}</option>
+                                                    <option value="{{ item.pk }}" selected title="{{ item.user_work_profile.job }} {{ item }}">{{ item | FIO_format }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
