@@ -177,7 +177,8 @@
                                     </div>
                                     <div class="row">
                                         {% if request.user.is_superuser  %}
-                                        <p>{{ object.official_information }}</p>
+                                            <label for="id_official_information" class="todo-label">Ссылка на файл</label>
+                                            <input class="input form-control mb-4" type="text" id="id_official_information" value="{{ object.official_information }}" />
                                         {% endif  %}
                                         <p>
                                             <label for="id_doc_file">Файл документа: </label>
@@ -215,6 +216,27 @@
         <!-- end: page -->
     </section>
     <script type="text/javascript">
+    const input = document.querySelector('.input');
+
+    input.addEventListener('focus', (e) => {
+      navigator.clipboard.writeText(e.target.value);
+    });
+    </script>
+    <script type="text/javascript">
+        // copy content to clipboard
+        function copyToClipboard(element) {
+            var $temp = $("<input>");
+            $("body").append($temp);
+            $temp.val($(element).text()).select();
+            document.execCommand("copy");
+            $temp.remove();
+        }
+
+        // copy coupone code to clipboard
+        $(".coupon-btn").on("click", function () {
+            copyToClipboard("#id_official_information");
+            $(".coupon-alert").fadeIn("slow");
+        });
         function contragent_change() {
             contragent = document.getElementById("id_contract_counteragent").value;
 
