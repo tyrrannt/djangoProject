@@ -127,6 +127,14 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
+                                        <div class="form-group row align-items-center">
+                                            <div class="col-md-12 text-black-50">
+                                                <label for="id_doc_file">Файл документа:</label>
+                                                <input type="file" name="doc_file" class="form-control mb-4"
+                                                       id="id_doc_file">
+
+                                            </div>
+                                        </div>
                                         <div class="col-md-3 text-black-50">
                                             <label for="id_cost">Стоимость</label>
                                             {{ form.cost }}
@@ -152,14 +160,11 @@
                                             <label for="id_comment">Примечание:</label>
                                             {{ form.comment }}
                                         </p>
-                                        <div class="form-group row align-items-center">
-                                            <div class="col-md-12 text-black-50">
-                                                <label for="id_doc_file">Файл документа:</label>
-                                                <input type="file" name="doc_file" class="form-control mb-4"
-                                                       id="id_doc_file">
-
-                                            </div>
-                                        </div>
+                                        <p>
+                                            <label for="id_comment">Разрешение на публикацию:</label>
+                                            {{ form.allowed_placed }}
+                                        </p>
+                                        
                                     </div>
                                 </div>
                             </div>

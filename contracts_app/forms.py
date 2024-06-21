@@ -41,7 +41,7 @@ class ContractsAddForm(forms.ModelForm):
         fields = ['parent_category', 'contract_counteragent', 'contract_number',
                   'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
                   'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
-                  'comment', 'doc_file', 'access', 'executor', 'type_of_document']
+                  'comment', 'doc_file', 'access', 'executor', 'type_of_document', 'allowed_placed']
         # widgets = {
         #     'doc_file': ClearableFileInput(attrs={'multiple': True})
         # }
@@ -68,6 +68,7 @@ class ContractsAddForm(forms.ModelForm):
                 initial['subject_contract'] = get_obj.subject_contract
                 initial['parent_category'] = get_obj
                 initial['executor'] = get_obj.executor
+                initial['allowed_placed'] = get_obj.allowed_placed
                 kwargs['initial'] = initial
             except Contract.DoesNotExist:
                 logger.error(f'Запись с UIN={self.parent} отсутствует в базе данных')
