@@ -182,7 +182,6 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         obj = self.object
-        print(obj, obj.parent_category)
         if obj.parent_category:
             return reverse('contracts_app:detail', kwargs={'pk': obj.parent_category.pk})
         else:

@@ -34,84 +34,91 @@
 
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
+                    <section class="toggle">
+                        <label>Файл</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                {% if object.doc_file %}
+                                    <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
+                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"
+                                            height="750px">
+                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">
+                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы
+                                            просмотреть его: <a
+                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>
+                                        </embed>
+                                    </object>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
                     <section class="toggle active">
                         <label>Основное </label>
                         <div class="toggle-content">
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-sm-12 text-black-50">
                                             <label for="contract_counteragent">Контрагент</label>
                                             <input type="text" class="form-control form-control-modern"
                                                    name="contract_counteragent" disabled
                                                    value="{{ object.contract_counteragent }}"
                                                    id="contract_counteragent"/>
                                         </div>
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="id_type_of_document">Тип документа:</label>
-                                            <input name="type_of_document" type="text"
-                                                   class="form-control form-control-modern" disabled
-                                                   value="{{ contract.type_of_document }}" id="id_type_of_document"/>
-                                        </div>
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="type_of_contract">Тип договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="type_of_contract" disabled
-                                                   value="{{ object.type_of_contract }}" id="type_of_contract"/>
-                                        </div>
-                                        <div class="col-md-6 text-black-50">
-                                            <label>Ответственные лица</label>
-                                            <select class="form-control form-control-modern" name="employee" disabled
-                                                    data-plugin-selectTwo multiple>
-                                                {% for item in object.employee.iterator %}
-                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-
-                                        <div class="col-lg-3 col-md-4 text">
-                                            <label for="contract_number">Номер договора</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="contract_number" disabled
-                                                   value="{{ object.contract_number }}"
-                                                   id="contract_number"/>
-                                        </div>
-                                        <div class="col-lg-3 col-md-4 date">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-lg-2 col-md-2 date">
                                             <label for="date_conclusion">Дата заключения</label>
                                             <input type="date" class="form-control form-control-modern"
                                                    name="date_conclusion"
                                                    value="{{ object.date_conclusion | date:"c" }}" disabled
                                                    id="date_conclusion"/>
                                         </div>
-                                        <div class="col-lg-3 col-md-4 date">
+                                        <div class="col-lg-2 col-md-2 text">
+                                            <label for="contract_number">Номер договора</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="contract_number" disabled
+                                                   value="{{ object.contract_number }}"
+                                                   id="contract_number"/>
+                                        </div>
+                                        <div class="col-md-2 text-black-50">
+                                            <label for="cost">Стоимость</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="cost" disabled
+                                                   value="{{ object.cost }}"
+                                                   id="cost"/>
+                                        </div>
+                                        <div class="col-md-2 text-black-50">
+                                            <label for="prolongation">Пролонгация</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="prolongation" disabled
+                                                   value="{{ object.get_prolongation_display }}"
+                                                   id="prolongation"/>
+                                        </div>
+                                        <div class="col-lg-2 col-md-2 date">
                                             <label for="closing_date">Дата закрытия договора</label>
                                             <input type="date" class="form-control form-control-modern"
                                                    name="closing_date"
                                                    value="{{ object.closing_date | date:"c" }}" disabled
                                                    id="closing_date"/>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <code>{{ object.access }}</code>
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="divisions">Подразделение</label>
-                                            <select class="form-control form-control-modern" id="divisions"
-                                                    name="divisions" disabled
-                                                    data-plugin-selectTwo multiple>
-                                                {% if object.divisions %}
-                                                    {% for item in object.divisions.values %}
-                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
-                                                    {% endfor %}
-                                                {% else %}
-                                                    <option value="1" selected>Отсутствуют</option>
-                                                {% endif %}
-                                            </select>
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="id_type_of_document">Тип документа:</label>
+                                            <input name="type_of_document" type="text"
+                                                   class="form-control form-control-modern" disabled
+                                                   value="{{ contract.type_of_document }}" id="id_type_of_document"/>
                                         </div>
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-3 text-black-50">
+                                            <label for="type_of_contract">Тип договора</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="type_of_contract" disabled
+                                                   value="{{ object.type_of_contract }}" id="type_of_contract"/>
+                                        </div>                                        
+                                        <div class="col-md-3 text-black-50">
                                             <label for="type_property">Тип имущества</label>
                                             <select class="form-control form-control-modern" id="type_property"
                                                     name="type_property" disabled
@@ -125,7 +132,12 @@
                                                     <option value="1" selected>Отсутствуют</option>
                                                 {% endif %}
                                             </select>
-
+                                        </div>
+                                        <div class="col-md-2 text-black-50">
+                                            <label for="date_entry">Дата ввода информации</label>
+                                            <input type="date" class="form-control form-control-modern"
+                                                   name="date_entry"
+                                                   value="{{ object.date_entry | date:"c" }}" id="date_entry" disabled/>
                                         </div>
                                     </div>
                                 </div>
@@ -133,13 +145,19 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-6 text-black-50">
+                                        <div class="col-md-12 text-black-50">
                                             <label for="subject_contract">Предмет договора</label>
                                             <textarea class="form-control form-control-modern" name="subject_contract"
                                                       rows="4" disabled
                                                       id="subject_contract">{{ object.subject_contract }}</textarea>
                                         </div>
-                                        <div class="col-md-6 text-black-50">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">                                        
+                                        <div class="col-md-12 text-black-50">
                                             <label for="id_comment">Примечание:</label>
                                             <textarea class="form-control form-control-modern" name="comment" rows="4"
                                                       id="id_comment" disabled>{{ object.comment }}</textarea>
@@ -147,28 +165,40 @@
                                     </div>
                                 </div>
                             </div>
+                            <code>{{ object.access }}</code>
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="cost">Стоимость</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="cost" disabled
-                                                   value="{{ object.cost }}"
-                                                   id="cost"/>
+                                        <div class="col-sm-12 text-black-50">
+                                            <label for="divisions">Подразделение</label>
+                                            <select class="form-control form-control-modern" id="divisions"
+                                                    name="divisions" disabled
+                                                    data-plugin-selectTwo multiple>
+                                                {% if object.divisions %}
+                                                    {% for item in object.divisions.values %}
+                                                        <option value="{{ item.pk }}" selected>{{ item.name }}</option>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <option value="1" selected>Отсутствуют</option>
+                                                {% endif %}
+                                            </select>
                                         </div>
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="date_entry">Дата ввода информации</label>
-                                            <input type="date" class="form-control form-control-modern"
-                                                   name="date_entry"
-                                                   value="{{ object.date_entry | date:"c" }}" id="date_entry" disabled/>
-                                        </div>
-                                        <div class="col-md-3 text-black-50">
-                                            <label for="prolongation">Пролонгация</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="prolongation" disabled
-                                                   value="{{ object.get_prolongation_display }}"
-                                                   id="prolongation"/>
+
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row">
+                                        <div class="col-sm-12 text-black-50">
+                                            <label>Ответственные лица</label>
+                                            <select class="form-control form-control-modern" name="employee" disabled
+                                                    data-plugin-selectTwo multiple>
+                                                {% for item in object.employee.iterator %}
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                {% endfor %}
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -190,25 +220,8 @@
                                 </div>
                             {% endif %}
                         </div>
-                    </section>                    
-                    <section class="toggle">
-                        <label>Файл</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                {% if object.doc_file %}
-                                    <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
-                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"
-                                            height="750px">
-                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">
-                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы
-                                            просмотреть его: <a
-                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>
-                                        </embed>
-                                    </object>
-                                {% endif %}
-                            </div>
-                        </div>
                     </section>
+
                     {% if slaves %}
                         <section class="toggle">
                             <label>Дополнительные документы</label>
