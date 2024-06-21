@@ -139,10 +139,10 @@
                         "data": null,
                         "mRender": function (data, type, row) {
                             if (row.actuality)  {
-                                return "<span class='text-success'><i class='bx bx-check-double'></i></span>";
+                                return "<span class='text-success' title='Действующий договор'><i class='bx bx-check-double'></i></span>";
                             }
                             else   {
-                                return "<span class='text-danger'><i class='bx bx-comment-x'></i></span>";
+                                return "<span class='text-danger' title='Срок действия договора истёк'><i class='bx bx-comment-x'></i></span>";
                             }
                             
                         },
