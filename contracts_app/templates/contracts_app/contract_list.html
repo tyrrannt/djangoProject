@@ -121,12 +121,12 @@
                     var id = aData['pk'];
                     if (aData['is_file']) {
                         if (aData['actuality']) {
-                            $(nRow).addClass('text-primary fs-6')
+                            $(nRow).addClass('text-primary link-primary fs-6')
                         } else {
-                            $(nRow).addClass('text-muted fs-6')
+                            $(nRow).addClass('text-muted link-muted fs-6')
                         }
                     } else {
-                        $(nRow).addClass('text-danger fs-6')
+                        $(nRow).addClass('text-danger link-danger fs-6')
                     }
 
                     {#тут блок ниже#}
@@ -169,6 +169,7 @@
                             return "<a href="+" "+row.pk+"/update/"+"><i class='bx bxs-edit'></i></a>";
                         },
                     },
+                    
                 ],
             });
         });
