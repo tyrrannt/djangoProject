@@ -52,6 +52,100 @@
                             </div>
                         </div>
                     </section>
+                    {% if slaves %}
+                        <section class="toggle">
+                            <label>Дополнительные документы</label>
+                            <div class="toggle-content">
+                                <div class="table-responsive">
+                                    <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
+                                           style="min-width: 380px;">
+                                        <thead>
+                                        <tr>
+                                            <th width="8%" class="ps-4">ID</th>
+                                            <th width="15%">Тип документа</th>
+                                            <th width="16%" class="text-end">Тип договора</th>
+                                            <th width="15%" class="text-end">Номер документа</th>
+                                            <th width="15%" class="text-end">Дата документа</th>
+                                            <th width="16%" class="text-end">Исполнитель</th>
+                                            <th width="5%" class="text-end">Статус</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for item in slaves %}
+                                            <tr>
+                                                <td class="ps-4"><a
+                                                        href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.type_of_document }}</strong></a>
+                                                </td>
+                                                <td class="text-end">{{ item.type_of_contract }}</td>
+                                                <td class="text-end">
+                                                    {% if item.contract_number %}
+                                                        {{ item.contract_number }}
+                                                    {% else %}
+                                                        (без номера)
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-end">{{ item.date_conclusion }}</td>
+                                                <td class="text-end">{{ item.executor | FIO_format }}</td>
+                                                <td class="text-end">
+                                                    {% if item.closing_date < now %}
+                                                        Действующий
+                                                    {% else %}
+                                                        Закрыт
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+                    {% endif %}
+                    <section class="toggle">
+                        <label>Заметки к договору</label>
+                        <div class="toggle-content">
+                            {% for item in posts %}
+                                <div class="ecommerce-timeline mb-3">
+                                    <div class="ecommerce-timeline-items-wrapper">
+                                        <div class="ecommerce-timeline-item">
+                                            <small>Добавлено: {{ item.creation_date }}.
+                                                Автор: {{ item.responsible_person }}
+                                            </small>
+                                            <p>{% autoescape off %}
+                                                {{ item.post_description }}
+                                            {% endautoescape %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            <form action="{% url 'contracts_app:post_add' object.pk %}" method="post">
+                                {% csrf_token %}
+                                <input name="contract_number" value="{{ object.pk }}" hidden>
+                                <input name="responsible_person" value="{{ user.pk }}" hidden>
+                                <div class="form-row">
+                                    <div class="form-group col pb-1 mb-3">
+                                        <h4>Добавление заметки</h4>
+                                        <textarea class="form-control form-control-modern" name="post_description"
+                                                  rows="6"></textarea>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col">
+                                        <input type="submit"
+                                               class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                               value="Добавить"/>
+                                        {#                                        ToDo: Решить вопрос с удалением записи.#}
+                                        {#                                        <a class="btn btn-warning btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"#}
+                                        {#                                           href="{% url 'contracts_app:post_list' pk=object.pk %}?cn={{ object.pk }}">Удалить записи</a>#}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
                     <section class="toggle active">
                         <label>Основное </label>
                         <div class="toggle-content">
@@ -222,100 +316,7 @@
                         </div>
                     </section>
 
-                    {% if slaves %}
-                        <section class="toggle">
-                            <label>Дополнительные документы</label>
-                            <div class="toggle-content">
-                                <div class="table-responsive">
-                                    <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
-                                           style="min-width: 380px;">
-                                        <thead>
-                                        <tr>
-                                            <th width="8%" class="ps-4">ID</th>
-                                            <th width="15%">Тип документа</th>
-                                            <th width="16%" class="text-end">Тип договора</th>
-                                            <th width="15%" class="text-end">Номер документа</th>
-                                            <th width="15%" class="text-end">Дата документа</th>
-                                            <th width="16%" class="text-end">Исполнитель</th>
-                                            <th width="5%" class="text-end">Статус</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {% for item in slaves %}
-                                            <tr>
-                                                <td class="ps-4"><a
-                                                        href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                                </td>
-                                                <td>
-                                                    <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.type_of_document }}</strong></a>
-                                                </td>
-                                                <td class="text-end">{{ item.type_of_contract }}</td>
-                                                <td class="text-end">
-                                                    {% if item.contract_number %}
-                                                        {{ item.contract_number }}
-                                                    {% else %}
-                                                        (без номера)
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">{{ item.date_conclusion }}</td>
-                                                <td class="text-end">{{ item.executor | FIO_format }}</td>
-                                                <td class="text-end">
-                                                    {% if item.closing_date < now %}
-                                                        Действующий
-                                                    {% else %}
-                                                        Закрыт
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </section>
-                    {% endif %}
-                    <section class="toggle">
-                        <label>Заметки к договору</label>
-                        <div class="toggle-content">
-                            {% for item in posts %}
-                                <div class="ecommerce-timeline mb-3">
-                                    <div class="ecommerce-timeline-items-wrapper">
-                                        <div class="ecommerce-timeline-item">
-                                            <small>Добавлено: {{ item.creation_date }}.
-                                                Автор: {{ item.responsible_person }}
-                                            </small>
-                                            <p>{% autoescape off %}
-                                                {{ item.post_description }}
-                                            {% endautoescape %}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                            <form action="{% url 'contracts_app:post_add' object.pk %}" method="post">
-                                {% csrf_token %}
-                                <input name="contract_number" value="{{ object.pk }}" hidden>
-                                <input name="responsible_person" value="{{ user.pk }}" hidden>
-                                <div class="form-row">
-                                    <div class="form-group col pb-1 mb-3">
-                                        <h4>Добавление заметки</h4>
-                                        <textarea class="form-control form-control-modern" name="post_description"
-                                                  rows="6"></textarea>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group col">
-                                        <input type="submit"
-                                               class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
-                                               value="Добавить"/>
-                                        {#                                        ToDo: Решить вопрос с удалением записи.#}
-                                        {#                                        <a class="btn btn-warning btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"#}
-                                        {#                                           href="{% url 'contracts_app:post_list' pk=object.pk %}?cn={{ object.pk }}">Удалить записи</a>#}
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
+                    
                 </div>
             </div>
             <div class="row action-buttons">
