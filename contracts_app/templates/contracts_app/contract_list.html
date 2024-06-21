@@ -139,10 +139,30 @@
                             return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
                         },
                     },                    
-                    {"data": "date_conclusion"},
-                    {"data": "type_of_contract"},
-                    {"data": "subject_contract"},
-                    {"data": "contract_counteragent"},
+                    {
+                        "data": "date_conclusion",
+                        "mRender": function (data, type, row) {
+                            return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
+                        },
+                    },
+                    {
+                        "data": "type_of_contract",
+                        "mRender": function (data, type, row) {
+                            return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
+                        },
+                    },
+                    {
+                        "data": "subject_contract",
+                        "mRender": function (data, type, row) {
+                            return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
+                        },
+                    },
+                    {
+                        "data": "contract_counteragent",
+                        "mRender": function (data, type, row) {
+                            return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
+                        },
+                    },
                     {
                         "data": null,
                         "mRender": function (data, type, row) {
