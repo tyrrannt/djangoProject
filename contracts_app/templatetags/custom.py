@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from django import template
@@ -146,6 +147,21 @@ def change_value(key, value):
         result = datetime.fromtimestamp(ts).strftime('%d.%m.%Y %H:%M:%S')
     return result
 
+@register.filter(name="format_bytes")
+def format_bytes(size):
+    # 2**10 = 1024
+    power = 2 ** 10
+    n = 0
+    power_labels = {0: '', 1: 'К', 2: 'M', 3: 'Г', 4: 'Т'}
+    while size > power:
+        size /= power
+        n += 1
+    return f"{size:.2f} {power_labels[n]}б"
+
+
+@register.filter(name="filename")
+def filename(value):
+    return os.path.basename(value.file.name)
 
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)

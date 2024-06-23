@@ -20,7 +20,7 @@ from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
-    DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups
+    DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
@@ -506,7 +506,7 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
     def get_context_data(self, **kwargs):
         context = super(CounteragentUpdate, self).get_context_data(**kwargs)
-        context['counteragent_users'] = DataBaseUser.objects.all().exclude(username='proxmox').exclude(is_active=False)
+        context['counteragent_docs'] = CounteragentDocuments.objects.filter(package=self.object)
         return context
 
     def post(self, request, *args, **kwargs):

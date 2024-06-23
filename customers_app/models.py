@@ -1,5 +1,6 @@
 import datetime
 import pathlib
+import uuid
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -29,7 +30,6 @@ class Groups(Group):
             "name": self.name,
             "permissions": "; ".join(permissions),
         }
-
 
 
 class ViewDocumentsPhysical(models.Model):
@@ -753,7 +753,7 @@ class Counteragent(models.Model):
     def __str__(self):
         if self.short_name == "":
             if self.full_name == "":
-                self.short_name  =  self.natural_person
+                self.short_name = self.natural_person
             else:
                 self.short_name = self.full_name
             self.save()
@@ -767,6 +767,30 @@ class Counteragent(models.Model):
             "inn": self.inn,
             "kpp": self.kpp,
         }
+
+
+def document_directory_path(instance, filename):
+    name = uuid.uuid4()
+    ext = pathlib.Path(instance.document.name).suffix
+    filename = f"{name}{ext}"
+    return f"hr/counteragent/{instance.package.pk}/{filename}"
+
+
+class CounteragentDocuments(models.Model):
+    class Meta:
+        verbose_name = "Документ контрагента"
+        verbose_name_plural = "Документы контрагента"
+        ordering = ["-date_of_creation"]
+
+    date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True)
+    document = models.FileField(verbose_name='Документ', upload_to=document_directory_path)
+    description = models.CharField(verbose_name='Описание', max_length=400, default='')
+    package = models.ForeignKey(Counteragent, verbose_name='Контрагент', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.document.file}"
+
+
 
 
 class Posts(models.Model):
@@ -875,6 +899,7 @@ class VacationScheduleList(models.Model):
     """
     Класс для хранения расписания отпусков
     """
+
     class Meta:
         verbose_name = "Номер документа графика отпусков"
         verbose_name_plural = "Номера документов графиков отпусков"

@@ -20,7 +20,7 @@ from .models import (
     HappyBirthdayGreetings,
     Affiliation,
     VacationScheduleList,
-    VacationSchedule,
+    VacationSchedule, CounteragentDocuments,
 )
 
 
@@ -65,15 +65,15 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
-    list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active")
-    search_fields = ('pk','title', 'ref_key', 'person_ref_key')
+    list_display = (
+    "pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active")
+    search_fields = ('pk', 'title', 'ref_key', 'person_ref_key')
     ordering = ('last_name', 'first_name')
 
 
 admin.site.register(DataBaseUser, CustomUserAdmin)
 admin.site.register(Posts)
 admin.site.register(Job)
-# admin.site.register(Division)
 admin.site.register(AccessLevel)
 admin.site.register(DataBaseUserProfile)
 admin.site.register(Citizenships)
@@ -86,10 +86,17 @@ admin.site.register(Affiliation)
 admin.site.register(VacationScheduleList)
 admin.site.register(VacationSchedule)
 
+
 @admin.register(IdentityDocuments)
 class IdentityDocumentsAdmin(admin.ModelAdmin):
     list_display = ("series", "number", "issued_by_whom", "date_of_issue",
-                    "division_code", )  #
+                    "division_code",)  #
+
+
+@admin.register(CounteragentDocuments)
+class CounteragentDocumentsAdmin(admin.ModelAdmin):
+    list_display = ("package", "date_of_creation", "description", "document",)  #
+
 
 @admin.register(Counteragent)
 class CounteragentAdmin(admin.ModelAdmin):
@@ -99,6 +106,6 @@ class CounteragentAdmin(admin.ModelAdmin):
 
 @admin.register(Division)
 class CounteragentAdmin(admin.ModelAdmin):
-    list_display = ("pk", "code", "name", "active", )
-    search_fields = ("name", "code", )
-    ordering = ('code', )
+    list_display = ("pk", "code", "name", "active",)
+    search_fields = ("name", "code",)
+    ordering = ('code',)
