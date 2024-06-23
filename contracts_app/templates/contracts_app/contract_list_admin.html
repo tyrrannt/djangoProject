@@ -42,6 +42,7 @@
                                    style="min-width: 750px;">
                                 <thead>
                                 <tr>
+                                    <th width="3%"></th>
                                     <th width="10%">Номер договора</th>
                                     <th width="10%">Дата договора</th>
 {#                                    <th width="12%">Тип документа</th>#}
@@ -133,6 +134,18 @@
                 },
                 
                 "columns": [
+                    {
+                        "data": null,
+                        "mRender": function (data, type, row) {
+                            if (row.actuality)  {
+                                return "<span class='text-success' title='Действующий договор'><i class='bx bx-check-double'></i></span>";
+                            }
+                            else   {
+                                return "<span class='text-danger' title='Срок действия договора истёк'><i class='bx bx-comment-x'></i></span>";
+                            }
+                            
+                        },
+                    },
                     {
                         "data": "contract_number",
                         "mRender": function (data, type, row) {
