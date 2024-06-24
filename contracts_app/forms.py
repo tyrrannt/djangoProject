@@ -75,7 +75,6 @@ class ContractsAddForm(forms.ModelForm):
         super(ContractsAddForm, self).__init__(*args, **kwargs)
         self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.executor_user)
         for field in self.fields:
-            print(field)
             make_custom_field(self.fields[field])
         # self.fields['executor'].widget.attrs.update(
         #     {'class': 'form-control form-control-modern'})
@@ -118,7 +117,6 @@ class ContractsUpdateForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         for field in self.fields:
-            print(type(field))
             make_custom_field(self.fields[field])
 
 

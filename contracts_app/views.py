@@ -15,7 +15,7 @@ from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, Contract
     EstateAddForm, EstateUpdateForm
 from django.urls import reverse, reverse_lazy
 
-from customers_app.models import DataBaseUser, Counteragent
+from customers_app.models import DataBaseUser, Counteragent, CounteragentDocuments
 
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -263,6 +263,7 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             context['not_parent'] = True
         context['posts'] = post
         context['slaves'] = slaves
+        context['counteragent_docs'] = CounteragentDocuments.objects.filter(package=self.object.contract_counteragent)
         return context
 
 
