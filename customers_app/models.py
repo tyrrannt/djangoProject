@@ -672,6 +672,7 @@ class Counteragent(models.Model):
     class Meta:
         verbose_name = "Контрагент"
         verbose_name_plural = "Контрагенты"
+        ordering = ["short_name"]
 
     type_of = [
         ("juridical_person", "юридическое лицо"),
