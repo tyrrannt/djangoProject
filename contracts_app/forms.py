@@ -74,29 +74,32 @@ class ContractsAddForm(forms.ModelForm):
                 logger.error(f'Запись с UIN={self.parent} отсутствует в базе данных')
         super(ContractsAddForm, self).__init__(*args, **kwargs)
         self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.executor_user)
-        self.fields['executor'].widget.attrs.update(
-            {'class': 'form-control form-control-modern'})
-        self.fields['contract_counteragent'].widget.attrs.update({
-            'class': 'form-control mb-4 form-control-modern',
-        })
-        self.fields['contract_number'].widget.attrs.update({
-            'class': 'form-control mb-4 form-control-modern',
-        })
-        self.fields['date_conclusion'].widget.attrs.update({
-            'class': 'form-control mb-4 form-control-modern',
-        })
-        self.fields['closing_date'].widget.attrs.update({
-            'class': 'form-control mb-4 form-control-modern',
-        })
-        self.fields['cost'].widget.attrs.update({
-            'class': 'form-control mb-4 form-control-modern',
-        })
-        self.fields['subject_contract'].widget.attrs.update({
-            'class': 'form-control mb-4 form-control-modern', 'rows': '6'
-        })
-        self.fields['comment'].widget.attrs.update({
-            'class': 'form-control mb-4 form-control-modern', 'rows': '6'
-        })
+        for field in self.fields:
+            print(field)
+            make_custom_field(self.fields[field])
+        # self.fields['executor'].widget.attrs.update(
+        #     {'class': 'form-control form-control-modern'})
+        # self.fields['contract_counteragent'].widget.attrs.update({
+        #     'class': 'form-control mb-4 form-control-modern',
+        # })
+        # self.fields['contract_number'].widget.attrs.update({
+        #     'class': 'form-control mb-4 form-control-modern',
+        # })
+        # self.fields['date_conclusion'].widget.attrs.update({
+        #     'class': 'form-control mb-4 form-control-modern',
+        # })
+        # self.fields['closing_date'].widget.attrs.update({
+        #     'class': 'form-control mb-4 form-control-modern',
+        # })
+        # self.fields['cost'].widget.attrs.update({
+        #     'class': 'form-control mb-4 form-control-modern',
+        # })
+        # self.fields['subject_contract'].widget.attrs.update({
+        #     'class': 'form-control mb-4 form-control-modern', 'rows': '6'
+        # })
+        # self.fields['comment'].widget.attrs.update({
+        #     'class': 'form-control mb-4 form-control-modern', 'rows': '6'
+        # })
 
 
 class ContractsUpdateForm(forms.ModelForm):
@@ -115,6 +118,7 @@ class ContractsUpdateForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         for field in self.fields:
+            print(type(field))
             make_custom_field(self.fields[field])
 
 
