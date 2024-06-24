@@ -121,28 +121,35 @@
                                             <label for="id_subject_contract">Предмет договора</label>
                                             {{ form.subject_contract }}
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="form-group col mb-3">
-                                    <div class="row">
                                         <div class="col-sm-12 col-md-6 text-black-50">
                                             <label for="id_comment">Примечание:</label>
                                             {{ form.comment }}
                                         </div>
                                     </div>
                                 </div>
+                                
                             </div>
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
                                         <div class="form-group row align-items-center">
-                                            <div class="col-md-12 text-black-50">
+                                            <div class="col-sm-12 col-md-5 text-black-50">
                                                 <label for="id_doc_file">Файл документа:</label>
                                                 <input type="file" name="doc_file" class="form-control mb-4"
                                                        id="id_doc_file">
-
+                                            </div>
+                                            <div class="col-sm-12 col-md-5 text-black-50">
+                                                <label for="id_executor">Исполнитель:</label>
+                                                {{ form.executor }}
+                                            </div>
+                                            <div class="col-sm-12 col-md-2 text-black-50">
+                                                <label for="id_comment">Разрешение на публикацию:</label>
+                                                {{ form.allowed_placed }}
                                             </div>
                                         </div>
+                                    </div>
+                                    <div class="form-group col mb-3">
+                                    <div class="row">
                                         <div class="col-md-3 text-black-50">
                                             <label for="id_cost">Стоимость</label>
                                             {{ form.cost }}
@@ -155,22 +162,12 @@
                                             <label for="id_prolongation">Пролонгация</label>
                                             {{ form.prolongation }}
                                         </div>
-
-                                        <p>
+                                        <div class="col-md-3 text-black-50">
                                             <label for="id_access">Уровень доступа к документу:</label>
                                             {{ form.access }}
-                                        </p>
-                                        <p>
-                                            <label for="id_executor">Исполнитель:</label>
-                                            {{ form.executor }}
-                                        </p>
-                                        
-                                        <p>
-                                            <label for="id_comment">Разрешение на публикацию:</label>
-                                            {{ form.allowed_placed }}
-                                        </p>
-                                        
+                                        </div>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                     </section>                    
