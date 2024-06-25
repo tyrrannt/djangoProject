@@ -339,7 +339,8 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
             # в old_instance сохраняем старые значения записи
             old_instance = Contract.objects.get(pk=self.object.pk).__dict__
             refreshed_form = form.save(commit=False)
-            refreshed_form.official_information = refreshed_form.doc_file
+            if refreshed_form.official_information == '':
+                refreshed_form.official_information = refreshed_form.doc_file
             filename = str(refreshed_form.doc_file)
             if refreshed_form.parent_category:
                 refreshed_form.comment = filename.split('/')[-1]
