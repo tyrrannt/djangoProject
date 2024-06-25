@@ -128,14 +128,11 @@
                                     <div class="row">
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_subject_contract">Предмет договора</label>
-                                            <textarea class="form-control form-control-modern" name="subject_contract"
-                                                      rows="4"
-                                                      id="id_subject_contract">{{ object.subject_contract }}</textarea>
+                                            {{ form.subject_contract }}
                                         </div>
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_comment">Примечание:</label>
-                                            <textarea class="form-control form-control-modern" name="comment" rows="4"
-                                                      id="id_comment"></textarea>
+                                            {{ form.comment  }}
                                         </div>
                                     </div>
                                 </div>
