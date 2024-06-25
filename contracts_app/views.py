@@ -335,9 +335,19 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         """
 
         if form.is_valid():
+
             # в old_instance сохраняем старые значения записи
             old_instance = Contract.objects.get(pk=self.object.pk).__dict__
-            form.save()
+            refreshed_form = form.save(commit=False)
+            refreshed_form.official_information = refreshed_form.doc_file
+            filename = str(refreshed_form.doc_file)
+            if refreshed_form.parent_category:
+                refreshed_form.comment = filename.split('/')[-1]
+            else:
+                if refreshed_form.comment == '':
+                    refreshed_form.comment = filename.split('/')[-1]
+
+            refreshed_form.save()
             # в new_instance сохраняем новые значения записи
             new_instance = Contract.objects.get(pk=self.object.pk).__dict__
             # создаем генератор списка
