@@ -783,7 +783,7 @@ def make_custom_field(f: forms.Field):
     if isinstance(f, forms.BooleanField):
         return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
     if isinstance(f, forms.CharField) or isinstance(f, forms.DecimalField) or isinstance(f, forms.IntegerField):
-        return f.widget.attrs.update({"class": "form-control form-control-modern", "autocomplete": "on"})
+        return f.widget.attrs.update({"class": "form-control form-control-modern", "autocomplete": "on", "rows": "3"})
     if isinstance(f, forms.ChoiceField):
         return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
     if isinstance(f, forms.ModelChoiceField):
