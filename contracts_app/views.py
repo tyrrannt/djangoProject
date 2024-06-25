@@ -189,7 +189,9 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         # Проверяем подразделения, если пришел список с 0 значением, то удаляем его
         refreshed_form = form.save(commit=False)
         if refreshed_form.parent_category:
-             refreshed_form.official_information = refreshed_form.doc_file
+            refreshed_form.official_information = refreshed_form.doc_file
+            filename = str(refreshed_form.doc_file)
+            refreshed_form.comment = filename.split('/')[-1]
 
         refreshed_form.save()
 
