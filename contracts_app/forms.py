@@ -112,7 +112,8 @@ class ContractsUpdateForm(forms.ModelForm):
         model = Contract
         fields = ('parent_category', 'contract_counteragent', 'type_of_contract', 'employee', 'contract_number',
                   'date_conclusion', 'closing_date', 'divisions', 'type_property', 'type_of_document', 'access',
-                  'subject_contract', 'cost', 'prolongation', 'allowed_placed', 'doc_file', 'official_information',)
+                  'subject_contract', 'cost', 'prolongation', 'allowed_placed', 'doc_file', 'official_information',
+                  'comment')
 
     def __init__(self, *args, **kwargs):
 
