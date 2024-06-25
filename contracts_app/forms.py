@@ -35,10 +35,11 @@ class ContractsAddForm(forms.ModelForm):
     type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
     type_property.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    official_information = forms.CharField(required=False)
 
     class Meta:
         model = Contract
-        fields = ['parent_category', 'contract_counteragent', 'contract_number',
+        fields = ['parent_category', 'contract_counteragent', 'contract_number', 'official_information',
                   'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
                   'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
                   'comment', 'doc_file', 'access', 'executor', 'type_of_document', 'allowed_placed']

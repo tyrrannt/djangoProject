@@ -180,6 +180,22 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     # success_url = reverse_lazy('contracts_app:index')
     permission_required = 'contracts_app.add_contract'
 
+    def form_valid(self, form):
+        # Сохраняем QueryDict в переменную content для возможности его редактирования
+        # content = QueryDict.copy(self.request.POST)
+        # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
+        # if content['parent_category'] == 'none':
+        #     content.setlist('parent_category', '')
+        # Проверяем подразделения, если пришел список с 0 значением, то удаляем его
+        refreshed_form = form.save(commit=False)
+        if refreshed_form.parent_category:
+             refreshed_form.official_information = refreshed_form.doc_file
+
+        refreshed_form.save()
+
+        return super().form_valid(form)
+
+
     def get_success_url(self):
         obj = self.object
         if obj.parent_category:
