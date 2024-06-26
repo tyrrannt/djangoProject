@@ -14,6 +14,7 @@ from django import forms
 
 class ContractsAddForm(forms.ModelForm):
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'), required=False)
+    executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.none(), required=False)
     employee.widget.attrs.update(
         {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_of_contract = forms.ModelChoiceField(queryset=TypeContract.objects.all())
