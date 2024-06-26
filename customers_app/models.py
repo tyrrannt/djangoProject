@@ -791,6 +791,17 @@ class CounteragentDocuments(models.Model):
     def __str__(self):
         return f"{self.document.file}"
 
+    def get_data(self):
+        return {
+            "pk": self.pk,
+            "document": self.document.name,
+            "description": self.description,
+            "package": self.package.short_name,
+        }
+
+    def get_absolute_url(self):
+        return reverse("customers_app:documents_list")
+
 
 
 

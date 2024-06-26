@@ -25,7 +25,7 @@ from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
     CounteragentAddForm, PostsUpdateForm, GroupAddForm, GroupUpdateForm, ChangePassPraseUpdateForm, \
-    ChangeAvatarUpdateForm
+    ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -1008,3 +1008,69 @@ class HarmfulWorkingConditionsList(LoginRequiredMixin, PermissionRequiredMixin, 
         context = super().get_context_data(object_list=None, **kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Вредные условия труда'
         return context
+
+
+class CounteragentDocumentsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    model = CounteragentDocuments
+    permission_required = "customers_app.view_counteragentdocuments"
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            purpose_list = CounteragentDocuments.objects.all()
+            data = [purpose_item.get_data() for purpose_item in purpose_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Документы контрагентов"
+        return context
+
+
+class CounteragentDocumentsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    model = CounteragentDocuments
+    form_class = CounteragentDocumentsAddForm
+    permission_required = "customers_app.add_counteragentdocuments"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить документ контрагента"
+        return context
+
+    def form_valid(self, form):
+        if form.is_valid():
+            refresh_form = form.save(commit=False)
+            if refresh_form.description == '':
+                filename = str(refresh_form.document)
+                refresh_form.description = filename.split('/')[-1]
+            refresh_form.save()
+        return super().form_valid(form)
+
+
+class CounteragentDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    model = CounteragentDocuments
+    form_class = CounteragentDocumentsUpdateForm
+    permission_required = "customers_app.change_counteragentdocuments"
+    template_name = 'customers_app/counteragentdocuments_form_update.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+    def form_valid(self, form):
+        if form.is_valid():
+            refresh_form = form.save(commit=False)
+            if refresh_form.description == '':
+                filename = str(refresh_form.document)
+                refresh_form.description = filename.split('/')[-1]
+            refresh_form.save()
+        return super().form_valid(form)

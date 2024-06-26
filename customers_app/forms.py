@@ -19,7 +19,7 @@ from .models import (
     Groups,
     HarmfulWorkingConditions,
     AccessLevel,
-    Affiliation,
+    Affiliation, CounteragentDocuments,
 )
 from django import forms
 
@@ -259,10 +259,11 @@ class CounteragentAddForm(forms.ModelForm):
             "natural_person",
         )
 
-    def  __init__(self,  *args,  **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
+
 
 class DivisionsAddForm(forms.ModelForm):
     parent_category = forms.ModelChoiceField(
@@ -464,3 +465,28 @@ class GroupUpdateForm(forms.ModelForm):
     class Meta:
         model = Groups
         fields = ("name", "permissions")
+
+
+class CounteragentDocumentsAddForm(forms.ModelForm):
+    description = forms.CharField(required=False)
+
+    class Meta:
+        model = CounteragentDocuments
+        fields = ('document', 'description', 'package')
+
+    def __init__(self, *args, **kwargs):
+        super(CounteragentDocumentsAddForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class CounteragentDocumentsUpdateForm(forms.ModelForm):
+    class Meta:
+        model = CounteragentDocuments
+        fields = ('document', 'description', 'package')
+
+    def __init__(self, *args, **kwargs):
+        super(CounteragentDocumentsUpdateForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+

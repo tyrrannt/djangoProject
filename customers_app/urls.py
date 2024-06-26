@@ -32,6 +32,9 @@ urlpatterns = [
         views.CounteragentDetail.as_view(),
         name="counteragent",
     ),
+    path("documents/", views.CounteragentDocumentsList.as_view(), name="documents_list"),
+    path("documents/add/", views.CounteragentDocumentsAdd.as_view(), name="documents_add"),
+    path("documents/<int:pk>/update/", views.CounteragentDocumentsUpdate.as_view(), name="documents_update"),
     path(
         "counteragent/<int:pk>/update/",
         views.CounteragentUpdate.as_view(),
