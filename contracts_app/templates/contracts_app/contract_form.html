@@ -26,23 +26,23 @@
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-            <div>
-                {% if form.errors %}
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                            <div class="alert alert-danger">
-                                <strong>{{ field.label }}</strong>: {{ error|escape }}
-                            </div>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
                         <div class="alert alert-danger">
                             <strong>{{ field.label }}</strong>: {{ error|escape }}
                         </div>
                     {% endfor %}
-                {% endif %}
-            </div>
-{#        {% include 'library_app/breadcrumb.html' %}#}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        {#        {% include 'library_app/breadcrumb.html' %}#}
         <div><p></p></div>
         <!-- start: page -->
         <form action="{% url 'contracts_app:create' %}" method="post" enctype="multipart/form-data">
@@ -127,14 +127,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                             </div>
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
                                         <div class="form-group row align-items-center">
                                             <div class="col-sm-12 col-md-5 text-black-50">
-                                                <label for="id_doc_file">Файл документа:</label>                                                
+                                                <label for="id_doc_file">Файл документа:</label>
                                                 {{ form.doc_file }}
                                             </div>
                                             <div class="col-sm-12 col-md-5 text-black-50">
@@ -148,24 +148,24 @@
                                         </div>
                                     </div>
                                     <div class="form-group col mb-3">
-                                    <div class="row">
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_cost">Стоимость</label>
-                                            {{ form.cost }}
-                                        </div>                                        
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_prolongation">Пролонгация</label>
-                                            {{ form.prolongation }}
+                                        <div class="row">
+                                            <div class="col-md-4 text-black-50">
+                                                <label for="id_cost">Стоимость</label>
+                                                {{ form.cost }}
+                                            </div>
+                                            <div class="col-md-4 text-black-50">
+                                                <label for="id_prolongation">Пролонгация</label>
+                                                {{ form.prolongation }}
+                                            </div>
+                                            <div class="col-md-4 text-black-50">
+                                                <label for="id_access">Уровень доступа к документу:</label>
+                                                {{ form.access }}
+                                            </div>
                                         </div>
-                                        <div class="col-md-4 text-black-50">
-                                            <label for="id_access">Уровень доступа к документу:</label>
-                                            {{ form.access }}
-                                        </div>                                        
                                     </div>
                                 </div>
-                                </div>
                             </div>
-                    </section>                    
+                    </section>
                 </div>
             </div>
 
