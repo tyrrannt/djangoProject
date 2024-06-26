@@ -22,6 +22,7 @@ import library_app.views as library_views
 
 handler403 = library_views.show_403
 handler404 = library_views.show_404
+handler500  = library_views.show_500
 
 urlpatterns = [
     path('', include('library_app.urls')),

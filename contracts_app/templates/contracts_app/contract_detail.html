@@ -60,42 +60,26 @@
                                     <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
                                            style="min-width: 380px;">
                                         <thead>
-                                        <tr>
-                                            <th width="8%" class="ps-4">ID</th>
+                                        <tr>                                            
                                             <th width="15%">Тип документа</th>
-                                            <th width="16%" class="text-end">Тип договора</th>
-                                            <th width="15%" class="text-end">Номер документа</th>
-                                            <th width="15%" class="text-end">Дата документа</th>
-                                            <th width="16%" class="text-end">Исполнитель</th>
-                                            <th width="5%" class="text-end">Статус</th>
+                                            <th width="37%" class="text-center">Комментарий</th>
+                                            <th width="22%" class="text-center">Документ</th>
+                                            <th width="10%" class="text-center">Дата документа</th>
+                                            <th width="16%" class="text-center">Исполнитель</th>
                                         </tr>
                                         </thead>
                                         <tbody>
                                         {% for item in slaves %}
-                                            <tr>
-                                                <td class="ps-4"><a
-                                                        href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.pk }}</strong></a>
-                                                </td>
+                                            <tr>                                                
                                                 <td>
                                                     <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.type_of_document }}</strong></a>
                                                 </td>
-                                                <td class="text-end">{{ item.type_of_contract }}</td>
-                                                <td class="text-end">
-                                                    {% if item.contract_number %}
-                                                        {{ item.contract_number }}
-                                                    {% else %}
-                                                        (без номера)
-                                                    {% endif %}
+                                                <td class="text-center">{{ item.comment }}</td>
+                                                <td class="text-center">
+                                                    <a href="{{ item.doc_file.url }}" target="_blank"><strong>{{ item.doc_file | filename }}</strong></a>
                                                 </td>
-                                                <td class="text-end">{{ item.date_conclusion }}</td>
-                                                <td class="text-end">{{ item.executor | FIO_format }}</td>
-                                                <td class="text-end">
-                                                    {% if item.closing_date < now %}
-                                                        Действующий
-                                                    {% else %}
-                                                        Закрыт
-                                                    {% endif %}
-                                                </td>
+                                                <td class="text-center">{{ item.date_conclusion }}</td>
+                                                <td class="text-center">{{ item.executor | FIO_format }}</td>
                                             </tr>
                                         {% endfor %}
                                         </tbody>

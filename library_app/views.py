@@ -34,6 +34,8 @@ def show_403(request, exception=None):
 def show_404(request, exception=None):
     return render(request, "library_app/404.html")
 
+def show_500(request, exception=None):
+    return render(request, "library_app/500.html")
 
 class HelpList(LoginRequiredMixin, ListView):
     model = HelpTopic
