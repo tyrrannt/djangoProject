@@ -32,14 +32,23 @@
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
                     <section class="toggle">
-                        <label>Файл</label>
+                        <label>Мобильная версия</label>
                         <div class="toggle-content">
                             <div class="form-row">
                                 {% if object.doc_file %}
                                     <input type="button" id="btnPreview" value="Preview PDF Document" onclick="LoadPdfFromUrl('{{ object.doc_file.url }}')" />
                                     <hr />
-                                    <div id="pdf_container">
-                                    </div>
+                                    <div id="pdf_container"></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
+                    <section class="toggle">
+                        <label>Файл</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                {% if object.doc_file %}
+                                    
                                     <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
                                     <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"
                                             height="750px">
@@ -426,8 +435,7 @@
                     canvasContext: ctx,
                     viewport: viewport,
                     transform: [resolution, 0, 0, resolution, 0, 0]
-                };
-                
+                };                
                 page.render(renderContext);
             });
         };
