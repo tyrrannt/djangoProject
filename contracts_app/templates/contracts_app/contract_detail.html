@@ -38,7 +38,7 @@
                                 {% if object.doc_file %}
                                     <input type="button" id="btnPreview" value="Preview PDF Document" onclick="LoadPdfFromUrl('{{ object.doc_file.url }}')" />
                                     <hr />
-                                    <div id="pdf_container"></div>
+                                    <div id="pdf_container" style="width: auto"></div>
                                 {% endif %}
                             </div>
                         </div>
