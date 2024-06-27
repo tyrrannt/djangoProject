@@ -4,7 +4,9 @@
 {% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/pdf/pdf_viewer.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
+    <!-- This snippet is used in production (included from viewer.html) -->
+    <link rel="resource" type="application/l10n" href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
 {% endblock %}
 
 {% block custome_script %}
@@ -13,8 +15,8 @@
     <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'admin_templates/pdf/pdf.min.js' %}"></script>
-    <script src="{% static 'admin_templates/pdf/pdf.worker.min.js' %}"></script>
+    <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/pdf/js/viewer.js' %}"></script>
 {% endblock %}
 
 {% block title %}
@@ -26,12 +28,12 @@
     <section role="main" class="content-body content-body-modern mt-0" xmlns="http://www.w3.org/1999/html">
 
         {#        {% include 'library_app/breadcrumb.html' %}#}
-        <style>
-            .showmobile { display: none; }
-            @media only screen
-            and (min-device-width : 320px)
-            and (max-device-width : 480px){ .showmobile { display: inline; }}
-        </style>
+{#        <style>#}
+{#            .showmobile { display: none; }#}
+{#            @media only screen#}
+{#            and (min-device-width : 320px)#}
+{#            and (max-device-width : 480px){ .showmobile { display: inline; }}#}
+{#        </style>#}
         <!-- start: page -->
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-md-12">
@@ -40,11 +42,7 @@
                         <label>Мобильная версия</label>
                         <div class="toggle-content">
                             <div class="form-row">
-                                {% if object.doc_file %}
-                                    <input type="button" id="btnPreview" value="Preview PDF Document" onclick="LoadPdfFromUrl('{{ object.doc_file.url }}')" />
-                                    <hr />
-                                    <div id="pdf_container" ></div>
-                                {% endif %}
+                                {% include 'contracts_app/pdf-js.html' %}
                             </div>
                         </div>
                     </section>
