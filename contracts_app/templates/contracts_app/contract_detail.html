@@ -3,14 +3,7 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% block custome_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.min.css' %}"/>
 {% endblock %}
 
 {% block custome_script %}
@@ -18,6 +11,7 @@
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 {% endblock %}
 
 {% block title %}
@@ -25,13 +19,13 @@
 {% endblock %}
 
 {% block content %}
+
     <section role="main" class="content-body content-body-modern mt-0" xmlns="http://www.w3.org/1999/html">
 
         {#        {% include 'library_app/breadcrumb.html' %}#}
 
         <!-- start: page -->
         <div class="order-details action-buttons-fixed" method="post">
-
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
                     <section class="toggle">
@@ -60,7 +54,7 @@
                                     <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
                                            style="min-width: 380px;">
                                         <thead>
-                                        <tr>                                            
+                                        <tr>
                                             <th width="15%">Тип документа</th>
                                             <th width="37%" class="text-center">Комментарий</th>
                                             <th width="22%" class="text-center">Документ</th>
@@ -70,13 +64,14 @@
                                         </thead>
                                         <tbody>
                                         {% for item in slaves %}
-                                            <tr>                                                
+                                            <tr>
                                                 <td>
                                                     <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.type_of_document }}</strong></a>
                                                 </td>
                                                 <td class="text-center">{{ item.comment }}</td>
                                                 <td class="text-center">
-                                                    <a href="{{ item.doc_file.url }}" target="_blank"><strong>{{ item.doc_file | filename }}</strong></a>
+                                                    <a href="{{ item.doc_file.url }}"
+                                                       target="_blank"><strong>{{ item.doc_file | filename }}</strong></a>
                                                 </td>
                                                 <td class="text-center">{{ item.date_conclusion }}</td>
                                                 <td class="text-center">{{ item.executor | FIO_format }}</td>
@@ -169,10 +164,15 @@
                                     <div class="row">
                                         <div class="col-sm-12 text-black-50">
                                             <label for="contract_counteragent">Контрагент</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="contract_counteragent" disabled
-                                                   value="{{ object.contract_counteragent }}"
-                                                   id="contract_counteragent"/>
+                                            <a href="#" data-bs-toggle="popover"
+                                               title="{{ object.contract_counteragent }}"
+                                               data-bs-content="ИНН: {{ object.contract_counteragent.inn }}<br>КПП: {{ object.contract_counteragent.kpp }}<br>ОГРН: {{ object.contract_counteragent.ogrn }}<br>{{ object.contract_counteragent.get_type_counteragent_display }}<hr>Адрес: {{ object.contract_counteragent.physical_address }}<br>"
+                                               data-bs-trigger="focus" data-bs-html="true">
+                                                <input type="text" class="form-control form-control-modern"
+                                                       name="contract_counteragent" disabled
+                                                       value="{{ object.contract_counteragent }}"
+                                                       id="contract_counteragent"/>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -275,6 +275,7 @@
                                 </div>
                             </div>
                             <code>{{ object.access }}</code>
+                        
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">
@@ -292,7 +293,6 @@
                                                 {% endif %}
                                             </select>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -337,19 +337,15 @@
                             {% endif %}
                         </div>
                     </section>
-
-
                 </div>
             </div>
             <div class="row action-buttons">
-
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'contracts_app:update' object.pk %}"
                        class="submit-button btn btn-primary btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-save text-4 me-2"></i> Изменить документ</a>
                 </div>
-
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                     <a href="{% url 'contracts_app:index' %}"
                        class="cancel-button btn btn-light btn-px-4 py-3 border
@@ -379,4 +375,5 @@
         </div>
         <!-- end: page -->
     </section>
+
 {% endblock %}

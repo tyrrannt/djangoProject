@@ -17,7 +17,11 @@ from djangoProject.settings import BASE_DIR
 
 def contract_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
-    return f'contracts/{instance.contract_counteragent.inn}/{instance.contract_counteragent.kpp}/{filename}'
+    if instance.contract_counteragent.inn == '':
+        inn = f'{instance.contract_counteragent.pk:010}'
+    else:
+        inn = instance.contract_counteragent.inn
+    return f'contracts/{inn}/{instance.contract_counteragent.kpp}/{filename}'
 
 
 class TypeDocuments(models.Model):
@@ -274,14 +278,18 @@ def rename_file_name(sender, instance, **kwargs):
         # Получаем расширение файла
         ext = file_name.split('.')[-1]
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-        uid = '0' * (7 - len(str(instance.pk))) + str(instance.pk)
-        filename = f'{instance.type_of_document.file_name_prefix}-{instance.contract_counteragent.inn}-' \
+        uid = f'{instance.pk:07}'
+        if instance.contract_counteragent.inn == '':
+            inn = f'{instance.contract_counteragent.pk:010}'
+        else:
+            inn = instance.contract_counteragent.inn
+        filename = f'{instance.type_of_document.file_name_prefix}-{inn}-' \
                    f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
         if file_name:
             pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
                                 pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
 
-        instance.doc_file = f'contracts/{instance.contract_counteragent.inn}/' \
+        instance.doc_file = f'contracts/{inn}/' \
                             f'{instance.contract_counteragent.kpp}/{filename}'
         if file_name != filename:
             instance.save()
