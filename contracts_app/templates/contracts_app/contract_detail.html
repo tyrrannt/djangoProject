@@ -60,6 +60,7 @@
                                             просмотреть его: <a
                                                     href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>
                                         </embed>
+                                        <input id="id_contract_number" value="{{ object.doc_file.url }}" hidden="true">
                                     </object>
                                 {% endif %}
                             </div>
@@ -394,5 +395,9 @@
         </div>
         <!-- end: page -->
     </section>
-
+<script>
+    get_filename = function(){
+        return {{object.doc_file.url}};
+    }
+</script>
 {% endblock %}
