@@ -150,15 +150,15 @@
                                     <div class="row text">
                                         <div class="col-lg-12 text-black-50">
                                             <label for="id_doc_file">Файл документа:</label>
-                                            {% if object.doc_file %}
-                                                <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
+                                            {% if object.scan_file %}
+                                                <a href="{{ object.scan_file.url }}" target="_blank">Открыть документ</a>
                                                 <!--@formatter:off-->
-                                                <object data="{{ object.doc_file.url }}" type="application/pdf"
+                                                <object data="{{ object.scan_file.url }}" type="application/pdf"
                                                         width="750px" height="750px">
-                                                    <embed src="{{ object.doc_file.url }}" type="application/pdf">
+                                                    <embed src="{{ object.scan_file.url }}" type="application/pdf">
                                                     <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
                                                         PDF-файл, чтобы просмотреть его: <a
-                                                                href="{{ object.doc_file.url }}">Скачать PDF.</a>.
+                                                                href="{{ object.scan_file.url }}">Скачать PDF.</a>.
                                                     </p></embed>
                                                 </object>
                                                 <!--@formatter:on-->
