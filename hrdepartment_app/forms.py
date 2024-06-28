@@ -315,7 +315,6 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
         )
     )
 
-
     class Meta:
         model = ApprovalOficialMemoProcess
         fields = (
@@ -350,7 +349,8 @@ class ApprovalOficialMemoProcessAddForm(forms.ModelForm):
 
     def clean(self):
         if not self.cleaned_data.get("submit_for_approval"):
-            raise ValidationError("Невозможно запустить бизнес процесс. Не установлен переключатель передачи на согласование.")
+            raise ValidationError(
+                "Невозможно запустить бизнес процесс. Не установлен переключатель передачи на согласование.")
 
 
 class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
@@ -692,30 +692,14 @@ class DocumentsJobDescriptionAddForm(forms.ModelForm):
 
 class DocumentsJobDescriptionUpdateForm(forms.ModelForm):
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
-    employee.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
-    access.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
-    document_order.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     document_division = forms.ModelChoiceField(queryset=Division.objects.all())
-    document_division.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     document_job = forms.ModelChoiceField(queryset=Job.objects.all())
-    document_job.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
 
     class Meta:
         model = DocumentsJobDescription
         fields = (
-            "executor",
             "document_date",
             "document_number",
             "doc_file",
@@ -733,6 +717,11 @@ class DocumentsJobDescriptionUpdateForm(forms.ModelForm):
             "document_job",
         )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 type_of_order = [("1", "Общая деятельность"), ("2", "Личный состав")]
 
@@ -744,26 +733,11 @@ class DocumentsOrderAddForm(forms.ModelForm):
         .exclude(official_memo_type="3"),
         required=False,
     )
-    document_foundation.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
-    document_name.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     document_order_type = forms.ChoiceField(choices=type_of_order, label="Тип приказа")
-    document_order_type.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
-    access.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     employee = forms.ModelMultipleChoiceField(
         queryset=DataBaseUser.objects.all(), label="Ответственные лица"
-    )
-    employee.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
     validity_period_start = forms.DateField(required=False)
     validity_period_end = forms.DateField(required=False)
@@ -788,6 +762,11 @@ class DocumentsOrderAddForm(forms.ModelForm):
             "document_foundation",
         )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
     def clean(self):
         cleaned_data = super().clean()
         scan_file = cleaned_data.get("scan_file")
@@ -804,38 +783,22 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
     document_foundation = forms.ModelChoiceField(
         queryset=OfficialMemo.objects.all(), required=False
     )
-    document_foundation.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     document_name = forms.ModelChoiceField(queryset=OrderDescription.objects.all())
-    document_name.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     document_order_type = forms.ChoiceField(choices=type_of_order)
-    document_order_type.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
-    access.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     employee = forms.ModelMultipleChoiceField(
         queryset=DataBaseUser.objects.all(), label="Ответственные лица"
-    )
-    employee.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
     validity_period_start = forms.DateField(required=False)
     validity_period_end = forms.DateField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.id = kwargs.pop("id")
-        super(DocumentsOrderUpdateForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # self.fields["description"].required = False
         self.fields["description"].widget.attrs.update(
             {"class": "form-control django_ckeditor_5"}
         )
-        # self.fields["document_name"].widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
         self.fields["description"].required = False
         self.fields["document_foundation"].queryset = (
             OfficialMemo.objects.filter(
@@ -844,6 +807,8 @@ class DocumentsOrderUpdateForm(forms.ModelForm):
             .exclude(cancellation=True)
             .exclude(official_memo_type="3")
         )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
     class Meta:
         model = DocumentsOrder
