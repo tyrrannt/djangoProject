@@ -32,7 +32,11 @@
             .showmobile { display: none; }
             @media only screen
             and (min-device-width : 320px)
-            and (max-device-width : 480px){ .showmobile { display: inline; }}
+            and (max-device-width : 640px){ .showmobile { display: inline; }}
+            .hidemobile { display: inline; }
+            @media only screen
+            and (min-device-width : 320px)
+            and (max-device-width : 640px){ .showmobile { display: none; }}
         </style>
         <!-- start: page -->
         <div class="order-details action-buttons-fixed" method="post">
@@ -46,7 +50,7 @@
                             </div>
                         </div>
                     </section>
-                    <section class="toggle">
+                    <section class="toggle hidemobile">
                         <label>Файл</label>
                         <div class="toggle-content">
                             <div class="form-row">
