@@ -41,7 +41,7 @@
                     <section class="toggle showmobile" >
                         <label>Мобильная версия</label>
                         <div class="toggle-content">
-                            <div class="form-row">
+                            <div class="form-row" id="outerContainer" style="height: 600px">
                                 {% include 'contracts_app/pdf-js.html' %}
                             </div>
                         </div>
@@ -90,8 +90,10 @@
                                                 </td>
                                                 <td class="text-center">{{ item.comment }}</td>
                                                 <td class="text-center">
+                                                    {% if item.doc_file %}
                                                     <a href="{{ item.doc_file.url }}"
                                                        target="_blank"><strong>{{ item.doc_file | filename }}</strong></a>
+                                                    {% endif  %}
                                                 </td>
                                                 <td class="text-center">{{ item.date_conclusion }}</td>
                                                 <td class="text-center">{{ item.executor | FIO_format }}</td>

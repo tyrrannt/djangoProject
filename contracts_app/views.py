@@ -3,12 +3,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import QueryDict, JsonResponse
-from django.shortcuts import HttpResponseRedirect, render
+from django.shortcuts import HttpResponseRedirect, render, redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
 from loguru import logger
 from dadata import Dadata
 from administration_app.models import PortalProperty
-from administration_app.utils import int_validate, change_session_queryset, change_session_context, ajax_search
+from administration_app.utils import int_validate, ajax_search
 from contracts_app.models import Contract, Posts, TypeContract, TypeProperty, TypeDocuments, Estate
 from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, ContractsUpdateForm, TypeDocumentsUpdateForm, \
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm, \
@@ -255,6 +255,8 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
 
     def dispatch(self, request, *args, **kwargs):
         try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
             contract_object = self.get_object()
             if request.user.user_access.pk <= contract_object.access.pk or request.user.is_superuser:
                 return super(ContractDetail, self).dispatch(request, *args, **kwargs)
@@ -296,6 +298,8 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
             contract_object = self.get_object()
             if request.user.user_access.pk <= contract_object.access.pk:  # or request.user.is_superuser:
                 return super(ContractUpdate, self).dispatch(request, *args, **kwargs)

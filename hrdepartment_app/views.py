@@ -2016,6 +2016,8 @@ class DocumentsJobDescriptionDetail(
 
     def dispatch(self, request, *args, **kwargs):
         try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
             # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = int(self.get_object().access.level)
             # Получаем уровень доступа к документам у пользователя
@@ -2204,6 +2206,8 @@ class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVi
 
     def dispatch(self, request, *args, **kwargs):
         try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
             # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = self.get_object()
             # Получаем уровень доступа к документам у пользователя
@@ -3011,6 +3015,8 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
 
     def dispatch(self, request, *args, **kwargs):
         try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
             # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = int(self.get_object().access.level)
             # Получаем уровень доступа к документам у пользователя
@@ -3126,6 +3132,8 @@ class GuidanceDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, Detai
 
     def dispatch(self, request, *args, **kwargs):
         try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
             # Получаем уровень доступа для запрашиваемого объекта
             detail_obj = int(self.get_object().access.level)
             # Получаем уровень доступа к документам у пользователя

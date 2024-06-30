@@ -10,12 +10,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.db.models import Q
 from django.http import JsonResponse, QueryDict
 from django.shortcuts import render, HttpResponseRedirect, redirect
-from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_queryset, change_session_context, format_name_initials, get_year_interval
+    change_session_get, change_session_context, format_name_initials, get_year_interval
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
@@ -502,6 +501,8 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
     permission_required = 'customers_app.change_counteragent'
 
     def dispatch(self, request, *args, **kwargs):
+        if request.user.is_anonymous:
+            return redirect(reverse('customers_app:login'))
         return super(CounteragentUpdate, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -578,6 +579,8 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     permission_required = 'customers_app.view_databaseuser'
 
     def dispatch(self, request, *args, **kwargs):
+        if request.user.is_anonymous:
+            return redirect(reverse('customers_app:login'))
         user_object = self.get_object()
         if request.user.pk == user_object.pk or request.user.is_superuser:
             return super().dispatch(request, *args, **kwargs)
@@ -593,6 +596,8 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     permission_required = 'customers_app.change_databaseuser'
 
     def dispatch(self, request, *args, **kwargs):
+        if request.user.is_anonymous:
+            return redirect(reverse('customers_app:login'))
         user_object = self.get_object()
         if request.user.pk == user_object.pk or request.user.is_superuser:
             return super().dispatch(request, *args, **kwargs)
@@ -818,6 +823,8 @@ class DivisionsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     permission_required = 'customers_app.change_division'
 
     def dispatch(self, request, *args, **kwargs):
+        if request.user.is_anonymous:
+            return redirect(reverse('customers_app:login'))
         return super(DivisionsUpdate, self).dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
@@ -945,6 +952,8 @@ class JobsUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     success_url = 'customers_app:jobs_list'
 
     def dispatch(self, request, *args, **kwargs):
+        if request.user.is_anonymous:
+            return redirect(reverse('customers_app:login'))
         return super(JobsUpdate, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

@@ -24,7 +24,9 @@ from django.core.files.storage import FileSystemStorage
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils.html import strip_tags
 from loguru import logger
 from administration_app.models import PortalProperty
@@ -916,3 +918,12 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
                 imaplib.Time2Internaldate(time.time()),
                 msg.as_bytes())
     return 1 # Сообщение успешно отправлено
+
+
+def check_user(request):
+    """Проверка пользователя.
+    :param request: request - объект запроса
+    :return: Если пользователь не аутентифицирован, то перенаправляет на страницу логина
+    """
+    if request.user.is_anonymous:
+        return redirect(reverse('customers_app:login'))

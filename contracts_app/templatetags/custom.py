@@ -161,7 +161,10 @@ def format_bytes(size):
 
 @register.filter(name="filename")
 def filename(value):
-    return os.path.basename(value.file.name)
+    try:
+        return os.path.basename(value.file.name)
+    except FileNotFoundError:
+        return 'Файл отсутствует'
 
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)
