@@ -90,7 +90,7 @@ class ContractListAdmin(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         #     return JsonResponse(response)
         # return super().get(request, *args, **kwargs)
         access = self.request.user.user_access
-        query = Q(type_of_document__type_document='Договор') & Q(access_id__gte=access) & ~Q(doc_file__endswith__lower='.pdf')
+        query = Q(type_of_document__type_document='Договор') & Q(access_id__gte=access) & ~Q(doc_file__endswith__in=['.pdf', '.PDF', '.docx', '.DOCX'])
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['contract_number', 'date_conclusion',
                            'type_of_contract__type_contract', 'subject_contract',
