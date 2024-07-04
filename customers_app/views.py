@@ -581,6 +581,7 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
             return redirect(reverse('customers_app:login'))
+        return super().dispatch(request, *args, **kwargs)
         # user_object = self.get_object()
         # if request.user.pk == user_object.pk or request.user.is_superuser:
         #     return super().dispatch(request, *args, **kwargs)
@@ -598,6 +599,7 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
             return redirect(reverse('customers_app:login'))
+        return super().dispatch(request, *args, **kwargs)
         # user_object = self.get_object()
         # if request.user.pk == user_object.pk or request.user.is_superuser:
         #     return super().dispatch(request, *args, **kwargs)
