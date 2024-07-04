@@ -363,7 +363,7 @@
                                                            value="{{ object.user_work_profile.personal_work_schedule_end | time:"H:i" }}"/>
                                                 </div>
                                             </div>
-                                            {% if user.is_superuser %}
+                                            {% if user|has_group:"password" %}
                                                 <div class="form-group row align-items-center pb-3">
                                                     <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email
                                                         pass</label>
@@ -379,6 +379,9 @@
                                                         {{ form.is_active }}
                                                     </div>
                                                 </div>
+                                            {% endif  %}
+                                            {% if user.is_superuser %}
+                                                
                                                 <div class="form-group row align-items-center pb-3">
                                                     <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус персонала</label>
                                                     <div class="col-lg-7 col-xl-6">
