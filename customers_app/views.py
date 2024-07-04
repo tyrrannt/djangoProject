@@ -581,12 +581,12 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
             return redirect(reverse('customers_app:login'))
-        user_object = self.get_object()
-        if request.user.pk == user_object.pk or request.user.is_superuser:
-            return super().dispatch(request, *args, **kwargs)
-        else:
-            logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
-            raise PermissionDenied
+        # user_object = self.get_object()
+        # if request.user.pk == user_object.pk or request.user.is_superuser:
+        #     return super().dispatch(request, *args, **kwargs)
+        # else:
+        #     logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
+        #     raise PermissionDenied
 
 
 class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -598,12 +598,12 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
             return redirect(reverse('customers_app:login'))
-        user_object = self.get_object()
-        if request.user.pk == user_object.pk or request.user.is_superuser:
-            return super().dispatch(request, *args, **kwargs)
-        else:
-            logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
-            raise PermissionDenied
+        # user_object = self.get_object()
+        # if request.user.pk == user_object.pk or request.user.is_superuser:
+        #     return super().dispatch(request, *args, **kwargs)
+        # else:
+        #     logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
+        #     raise PermissionDenied
 
     def form_valid(self, form):
         if form.is_valid():
