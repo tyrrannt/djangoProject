@@ -55,17 +55,19 @@
                         <div class="toggle-content">
                             <div class="form-row">
                                 {% if object.doc_file %}
-                                    
+                                    <div class="form-row" id="outerContainer" style="height: 600px">
+                                        {% include 'contracts_app/pdf-js.html' %}
+                                    </div>
                                     <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
-                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"
-                                            height="750px">
-                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">
-                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы
-                                            просмотреть его: <a
-                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>
-                                        </embed>
-                                        <input id="id_contract_number" value="{{ object.doc_file.url }}" hidden="true">
-                                    </object>
+{#                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"#}
+{#                                            height="750px">#}
+{#                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">#}
+{#                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы#}
+{#                                            просмотреть его: <a#}
+{#                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>#}
+{#                                        </embed>#}
+{#                                        <input id="id_contract_number" value="{{ object.doc_file.url }}" hidden="true">#}
+{#                                    </object>#}
                                 {% endif %}
                             </div>
                         </div>
