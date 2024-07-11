@@ -157,7 +157,7 @@ class ContractModel(models.Model):
     prolongation = models.CharField(verbose_name='Пролонгация', max_length=40, choices=type_of_prolongation,
                                     help_text='', blank=True, default='', )
     comment = models.TextField(verbose_name='Примечание', blank=True)
-    date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now=True)
+    date_entry = models.DateField(verbose_name='Дата ввода информации', auto_now_add=True)
     executor = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                  null=True,
                                  related_name='contract_executor')
