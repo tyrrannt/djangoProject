@@ -17,17 +17,19 @@ def json_view(request):
 
 
 def get_type_first(job) -> str:
-    if str(job).find('Инженер') >= 0:
+    find_job = job.lower()
+    if 'инженер' in find_job:
         return 'Инженер'
-    elif str(job).find('Техник') >= 0:
+    elif 'техник' in find_job:
         return 'Техник'
-    elif str(job).find('качеству') >= 0:
+    elif 'качеству' in find_job:
         return 'ГКК'
     else:
         return ''
 
 def get_type_second(job) -> str:
-    if str(job).find('систем') >= 0:
+    find_job = job.lower()
+    if 'систем' in find_job:
         return 'АиРЭО'
     else:
         return 'ПиД'
