@@ -54,10 +54,10 @@ def xml_view(request):
     from xml.dom import minidom
     data = DataBaseUser.objects.values_list('service_number', 'last_name', 'first_name', 'surname', 'address',
                                             'birthday', 'gender', 'user_work_profile__job__name').filter(
-        user_work_profile__job__type_of_job='2').exclude(is_active=False)
+        user_work_profile__job__type_of_job='20').exclude(is_active=False)
 
     # Создание корневого элемента XML
-    root = ET.Element('data')
+    root = ET.Element('root')
 
     # Добавление элементов в XML
     for item in data:
