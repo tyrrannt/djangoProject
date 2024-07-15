@@ -54,7 +54,7 @@ def xml_view(request):
     from xml.dom import minidom
     data = DataBaseUser.objects.values_list('service_number', 'last_name', 'first_name', 'surname', 'address',
                                             'birthday', 'gender', 'user_work_profile__job__name').filter(
-        user_work_profile__job__type_of_job='20').exclude(is_active=False)
+        user_work_profile__job__type_of_job='2').exclude(is_active=False)
 
     # Создание корневого элемента XML
     root = ET.Element('root')
@@ -75,7 +75,9 @@ def xml_view(request):
 
     # Преобразование дерева XML в строку
     xml_string = ET.tostring(root, encoding='utf-8', method='xml').decode('utf-8')
-
+    # Добавление заголовка XML
+    xml_with_header = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_string
     # Улучшение форматирования XML
-    xml_pretty_string = minidom.parseString(xml_string).toprettyxml(indent="    ")
+    xml_pretty_string = minidom.parseString(xml_with_header).toprettyxml(indent="    ")
+
     return HttpResponse(xml_pretty_string, content_type='application/xml')
