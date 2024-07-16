@@ -58,7 +58,9 @@ def xml_view(request):
 
     # Создание корневого элемента XML
     root = ET.Element('root')
-    print(request.META.get('REMOTE_ADDR'))
+    # Добавление комментария
+    comment = ET.Comment(request.META.get('REMOTE_ADDR'))
+    root.append(comment)
     # Добавление элементов в XML
     for item in data:
         entry = ET.SubElement(root, 'Сотрудник', id=str(item[0]))
