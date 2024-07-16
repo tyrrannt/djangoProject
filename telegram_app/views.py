@@ -58,10 +58,10 @@ def xml_view(request):
 
     # Создание корневого элемента XML
     root = ET.Element('root')
-
+    print(request.META.get('REMOTE_ADDR'))
     # Добавление элементов в XML
     for item in data:
-        entry = ET.SubElement(root, 'Сотрудник')
+        entry = ET.SubElement(root, 'Сотрудник', id=str(item[0]))
         ET.SubElement(entry, 'Табельный_номер').text = str(item[0])
         ET.SubElement(entry, 'Фамилия').text = str(item[1])
         ET.SubElement(entry, 'Имя').text = str(item[2])
@@ -74,10 +74,20 @@ def xml_view(request):
         ET.SubElement(entry, 'Признак_2').text = get_type_second(str(item[7]))
 
     # Преобразование дерева XML в строку
-    xml_string = ET.tostring(root, encoding='utf-8', method='xml').decode('utf-8')
+    # xml_string = ET.tostring(root, encoding='utf-8', method='xml').decode('utf-8')
     # Добавление заголовка XML
-    xml_with_header = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_string
+    # xml_with_header = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_string
     # Улучшение форматирования XML
-    xml_pretty_string = minidom.parseString(xml_with_header).toprettyxml(indent="    ")
+    # xml_pretty_string = minidom.parseString(xml_with_header).toprettyxml(indent="    ")
+    tree = ET.ElementTree(root)
 
-    return HttpResponse(xml_pretty_string, content_type='application/xml')
+    # Сериализация XML-документа в строку с форматированием
+    def prettify(elem):
+        """Возвращает красиво отформатированную XML-строку для Element."""
+        rough_string = ET.tostring(elem, 'utf-8')
+        reparsed = minidom.parseString(rough_string)
+        return reparsed.toprettyxml(indent="  ")
+
+    pretty_xml_as_string = prettify(root)
+
+    return HttpResponse(pretty_xml_as_string, content_type='application/xml')
