@@ -14,7 +14,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_context, format_name_initials, get_year_interval
+    change_session_get, change_session_context, format_name_initials, get_year_interval, get_client_ip
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
@@ -276,20 +276,6 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
 #             return redirect(url_match)
 #         return super(DataBaseUserUpdate, self).get(request, *args, **kwargs)
 
-
-def get_client_ip(request):
-    # x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    # if x_forwarded_for:
-    #     ip = x_forwarded_for.split(',')[0]
-    # else:
-    #     ip = request.META.get('REMOTE_ADDR')
-    # return ip
-    x_forwarded_for = request.META.get('HTTP_REMOTE_ADDR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
 
 
 def login(request):

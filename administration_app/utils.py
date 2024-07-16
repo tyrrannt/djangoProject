@@ -867,9 +867,9 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
         case 0:
             to_mail = [recipient.email, ]  # адрес получателя
         case 1:
-            to_mail = [recipient.senior_brigade.email, recipient.place.email,]  # адрес получателя
+            to_mail = [recipient.senior_brigade.email, recipient.place.email, ]  # адрес получателя
         case 2:
-            to_mail = [recipient.document.person.email,]
+            to_mail = [recipient.document.person.email, ]
     message = render_to_string(template, context)
     msg = MIMEMultipart()  # Создаем сообщение
     msg["From"] = from_mail  # Добавляем адрес отправителя
@@ -903,7 +903,6 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
         print('Не удалось подключиться к серверу')
         return 0
 
-
     # Сохраняем сообщение в исходящие
     imap = imaplib.IMAP4_SSL(server_imap, 993)  # Подключаемся в почтовому серверу
     imap.login(from_mail, from_passwd)  # Логинимся в свой ящик
@@ -917,7 +916,7 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
     imap.append(box, None,  # Добавляем наше письмо в папку Исходящие
                 imaplib.Time2Internaldate(time.time()),
                 msg.as_bytes())
-    return 1 # Сообщение успешно отправлено
+    return 1  # Сообщение успешно отправлено
 
 
 def check_user(request):
@@ -927,3 +926,13 @@ def check_user(request):
     """
     if request.user.is_anonymous:
         return redirect(reverse('customers_app:login'))
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+

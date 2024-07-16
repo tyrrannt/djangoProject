@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.core import serializers
 
+from administration_app.utils import get_client_ip
 from customers_app.models import DataBaseUser
 
 
@@ -59,7 +60,7 @@ def xml_view(request):
     # Создание корневого элемента XML
     root = ET.Element('root')
     # Добавление комментария
-    comment = ET.Comment(request.META.get('REMOTE_ADDR'))
+    comment = ET.Comment(get_client_ip(request))
     root.append(comment)
     # Добавление элементов в XML
     for item in data:

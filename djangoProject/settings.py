@@ -33,6 +33,8 @@ DEBUG = config("DEBUG", cast=bool)
 
 ALLOWED_HOSTS = ["192.168.10.12", "corp.barkol.ru", "localhost", "127.0.0.1"]
 
+USE_X_FORWARDED_FOR = True
+
 CSRF_TRUSTED_ORIGINS = ["https://corp.barkol.ru", "http://192.168.10.12"]
 
 # Application definition
