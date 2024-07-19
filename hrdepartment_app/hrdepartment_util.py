@@ -27,6 +27,10 @@ from hrdepartment_app.models import (
 
 
 def get_medical_documents():
+    """
+        Функция для получения документов по медицинскому осмотру
+    :return:
+    """
     type_inspection = [
         ("1", "Предварительный"),
         ("2", "Периодический"),
@@ -426,7 +430,11 @@ def get_working_hours(pk, start_date, state=0):
                     ] and record.record_type != "18":
                         record_type = "О"
                     else:
-                        record_type = "ГО"
+                        print(record_type, record.record_type)
+                        if record_type in ["Б",] and record.record_type in ["1", "13"]:
+                            record_type = "Б"
+                        else:
+                            record_type = "ГО"
         if record_type not in [
             "СП",
             "К",
