@@ -60,9 +60,8 @@ MarkupSafe==2.1.3
 msgpack==1.0.8
 msgpack-python==0.5.6
 msoffice2pdf==0.0.8
-multidict==6.0.4
+multidict==6.0.5
 mypy-extensions==1.0.0
-mysqlclient==2.1.1
 numpy==1.26.3
 openpyxl==3.1.2
 packaging==23.2
@@ -108,6 +107,7 @@ tzdata==2023.4
 urllib3==2.1.0
 vine==5.1.0
 wcwidth==0.2.13
+wheel==0.43.0
 xlrd==2.0.1
 yarl==1.9.4
 zope.interface==6.2

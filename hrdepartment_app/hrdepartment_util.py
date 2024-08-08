@@ -430,7 +430,6 @@ def get_working_hours(pk, start_date, state=0):
                     ] and record.record_type != "18":
                         record_type = "О"
                     else:
-                        print(record_type, record.record_type)
                         if record_type in ["Б",] and record.record_type in ["1", "13"]:
                             record_type = "Б"
                         else:

@@ -419,5 +419,15 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
             if request.GET.get('update') == '9':
+                print('sdf')
+                qs = Contract.objects.all()
+                for item in qs:
+                    try:
+                        if item.pk == item.parent_category.pk:
+                            item.parent_category = None
+                            item.save()
+                    except AttributeError:
+                        pass
+            if request.GET.get('update') == '10':
                 pass
         return super().get(request, *args, **kwargs)
