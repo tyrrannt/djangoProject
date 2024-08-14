@@ -242,7 +242,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         user_obj.save()
                     except AttributeError:
                         logger.info(f"У пользователя {user_obj} отсутствуют группы!")
-                        # Установка общих прав пользователя наследованием из групп
+            # Обновить заголовки СЗ
             if request.GET.get('update') == '2':
                 users_list = DataBaseUser.objects.all().exclude(is_superuser=True)
                 user_access = AccessLevel.objects.get(level=3)

@@ -78,6 +78,9 @@ class ContractsAddForm(forms.ModelForm):
                 kwargs['initial'] = initial
             except Contract.DoesNotExist:
                 logger.error(f'Запись с UIN={self.parent} отсутствует в базе данных')
+        else:
+            initial = kwargs.get('initial', {})
+            initial['parent_category'] = None
         super(ContractsAddForm, self).__init__(*args, **kwargs)
 
         for field in self.fields:
