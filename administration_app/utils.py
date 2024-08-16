@@ -504,7 +504,7 @@ def ending_day(value: int) -> str:
     # Последняя цифра используется, когда последние две цифры от 10 до 19
     last_digit = value % 10
 
-    if 10 <= last_two_digits <= 20 or last_digit == 0 or 5 <= last_digit <= 9:
+    if 10 <= last_two_digits <= 20 or last_digit in [0, 5, 6, 7, 8, 9]:
         return f"{value} дней"
     elif last_digit == 1:
         return f"{value} день"
@@ -929,6 +929,16 @@ def check_user(request):
 
 
 def get_client_ip(request):
+    """
+        Возвращает IP-адрес клиента из HTTP-запроса.
+
+        :param request: Объект запроса (HttpRequest)
+        :return: Строка с IP-адресом клиента
+
+        Примечание:
+            Если в HTTP-запросе есть заголовок "X-Forwarded-For", функция будет использовать его для определения IP-адреса.
+            В противном случае, функция будет использовать значение "REMOTE_ADDR" из META-объекта запроса.
+        """
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
