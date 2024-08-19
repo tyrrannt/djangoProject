@@ -102,6 +102,7 @@ class CounteragentDocumentsAdmin(admin.ModelAdmin):
 class CounteragentAdmin(admin.ModelAdmin):
     list_display = ("pk", "short_name", "inn", "kpp", "ogrn", "type_counteragent",)
     search_fields = ("short_name", "inn", "kpp", "ogrn")
+    ordering = ('pk',)
 
 
 @admin.register(Division)
