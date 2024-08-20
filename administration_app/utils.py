@@ -804,35 +804,119 @@ def change_password():
     return count, errors
 
 
+# def make_custom_field(f: forms.Field):
+#     """
+#     Функция make_custom_field принимает в качестве аргумента объект класса forms.Field.
+#         Функция использует тип поля (isinstance) для определения типа поля и настройки соответствующих атрибутов.
+#     :param f:
+#         class: класс CSS для стилизации поля
+#         data-plugin-datepicker: включает дату для поля даты
+#         data-date-language: язык для даты
+#         todayBtn: включает кнопку "Сегодня" для поля даты
+#         clearBtn: включает кнопку "Очистить" для поля даты
+#         data-plugin-options: настройки для плагина даты
+#         autocomplete: включает автодополнение для текстовых полей
+#         rows: количество строк для текстовых полей
+#         data-plugin-selectTwo: включает плагин Select2 для полей выбора
+#         class: класс CSS для стилизации поля выбора
+#         multiple: включает возможность выбора нескольких значений для полей выбора
+#         data-plugin-multiselect: включает плагин MultiSelect для полей выбора
+#         data-plugin-fileinput: включает плагин FileInput для поля файла
+#
+#     :return:
+#         возвращает объект с настроенными атрибутами для отображения поля в формате.
+#     """
+#     if isinstance(f, forms.DateField):
+#         return f.widget.attrs.update(
+#             {"class": "form-control form-control-modern",
+#              "data-plugin-datepicker": True, "type": "text",
+#              "data-date-language": "ru", "todayBtn": True, "clearBtn": True,
+#              "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',
+#              }
+#         )
+#     if isinstance(f, forms.BooleanField):
+#         return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
+#     if isinstance(f, forms.CharField) or isinstance(f, forms.DecimalField) or isinstance(f, forms.IntegerField):
+#         return f.widget.attrs.update({"class": "form-control form-control-modern", "autocomplete": "on", "rows": "3"})
+#     if isinstance(f, forms.ChoiceField):
+#         return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
+#     if isinstance(f, forms.ModelChoiceField):
+#         return f.widget.attrs.update(
+#             {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+#         )
+#     if isinstance(f, forms.ModelMultipleChoiceField):
+#         return f.widget.attrs.update(
+#             {"class": "form-select select2 form-control-modern",
+#              "data-plugin-multiselect": True,
+#              "multiple": "multiple",
+#              "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
+#              }
+#         )
+#     if isinstance(f, forms.FileField):
+#         return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-fileinput": True})
+
+
 def make_custom_field(f: forms.Field):
-    if isinstance(f, forms.DateField):
-        return f.widget.attrs.update(
-            {"class": "form-control form-control-modern",
-             "data-plugin-datepicker": True, "type": "text",
-             "data-date-language": "ru", "todayBtn": True, "clearBtn": True,
-             "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',
-             }
-        )
-    if isinstance(f, forms.BooleanField):
-        return f.widget.attrs.update({"class": "todo-check", "data-plugin-ios-switch": True})
-    if isinstance(f, forms.CharField) or isinstance(f, forms.DecimalField) or isinstance(f, forms.IntegerField):
-        return f.widget.attrs.update({"class": "form-control form-control-modern", "autocomplete": "on", "rows": "3"})
-    if isinstance(f, forms.ChoiceField):
-        return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-selectTwo": True})
-    if isinstance(f, forms.ModelChoiceField):
-        return f.widget.attrs.update(
-            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-        )
-    if isinstance(f, forms.ModelMultipleChoiceField):
-        return f.widget.attrs.update(
-            {"class": "form-select select2 form-control-modern",
-             "data-plugin-multiselect": True,
-             "multiple": "multiple",
-             "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
-             }
-        )
-    if isinstance(f, forms.FileField):
-        return f.widget.attrs.update({"class": "form-control form-control-modern", "data-plugin-fileinput": True})
+    """
+    Функция make_custom_field принимает в качестве аргумента объект класса forms.Field.
+    Функция использует тип поля (isinstance) для определения типа поля и настройки соответствующих атрибутов.
+    :param f:
+    :return: возвращает объект с настроенными атрибутами для отображения поля в формате.
+    """
+    field_attrs = {
+        forms.DateField: {
+            "class": "form-control form-control-modern",
+            "data-plugin-datepicker": True,
+            "type": "date",
+            "data-date-language": "ru",
+            "todayBtn": True,
+            "clearBtn": True,
+            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',
+        },
+        forms.BooleanField: {
+            "class": "todo-check",
+            "data-plugin-ios-switch": True,
+        },
+        forms.CharField: {
+            "class": "form-control form-control-modern",
+            "autocomplete": "on",
+            "rows": "3",
+        },
+        forms.DecimalField: {
+            "class": "form-control form-control-modern",
+            "autocomplete": "on",
+            "rows": "3",
+        },
+        forms.IntegerField: {
+            "class": "form-control form-control-modern",
+            "autocomplete": "on",
+            "rows": "3",
+        },
+        forms.ChoiceField: {
+            "class": "form-control form-control-modern",
+            "data-plugin-selectTwo": True,
+        },
+        forms.ModelChoiceField: {
+            "class": "form-control form-control-modern",
+            "data-plugin-selectTwo": True,
+        },
+        forms.ModelMultipleChoiceField: {
+            "class": "form-select select2 form-control-modern",
+            "data-plugin-multiselect": True,
+            "multiple": "multiple",
+            "data-plugin-options": '{ "maxHeight": 400, "includeSelectAllOption": true }',
+        },
+        forms.FileField: {
+            "class": "form-control form-control-modern",
+            "data-plugin-fileinput": True,
+        },
+    }
+
+    for field_type, attrs in field_attrs.items():
+        if isinstance(f, field_type):
+            return f.widget.attrs.update(attrs)
+
+    return f
 
 
 def ajax_search(request, self, field_list, model_name, query):

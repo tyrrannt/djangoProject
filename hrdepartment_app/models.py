@@ -1571,7 +1571,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/ord.docx")
         )
         sub_doc_file = pathlib.Path.joinpath(
-            pathlib.Path.joinpath(BASE_DIR, filepath), f"subdoc-{filename}.docx"
+            pathlib.Path.joinpath(BASE_DIR, filepath), f"subdoc-{filename}"
         )
         desc_document = Document()
         new_parser = HtmlToDocx()
