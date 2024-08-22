@@ -2790,7 +2790,7 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
             )
             personal_start = datetime.timedelta(
                 hours=personal_start.hour, minutes=personal_start.minute
-            ) - datetime.timedelta(hours=1)
+            ) - datetime.timedelta(hours=3)
             personal_end = (
                 self.request.user.user_work_profile.personal_work_schedule_end
             )
@@ -2802,7 +2802,7 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
             else:
                 personal_end = datetime.timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
-                ) + datetime.timedelta(hours=1)
+                ) + datetime.timedelta(hours=2)
             result = [
                 datetime.datetime.strptime(str(personal_start), "%H:%M:%S")
                 .time()
@@ -2916,7 +2916,7 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
             )
             personal_start = datetime.timedelta(
                 hours=personal_start.hour, minutes=personal_start.minute
-            ) - datetime.timedelta(hours=1)
+            ) - datetime.timedelta(hours=3)
             personal_end = (
                 self.request.user.user_work_profile.personal_work_schedule_end
             )
@@ -2928,7 +2928,7 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
             else:
                 personal_end = datetime.timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
-                ) + datetime.timedelta(hours=1)
+                ) + datetime.timedelta(hours=2)
             result = [
                 datetime.datetime.strptime(str(personal_start), "%H:%M:%S")
                 .time()
