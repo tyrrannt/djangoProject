@@ -15,31 +15,31 @@ from django import forms
 class ContractsAddForm(forms.ModelForm):
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'), required=False)
     executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.none(), required=False)
-    employee.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    # employee.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_of_contract = forms.ModelChoiceField(queryset=TypeContract.objects.all())
-    type_of_contract.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    # type_of_contract.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_of_document = forms.ModelChoiceField(queryset=TypeDocuments.objects.all())
-    type_of_document.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    # type_of_document.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
-    divisions.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    # divisions.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
-    contract_counteragent.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    # contract_counteragent.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     parent_category = forms.ModelChoiceField(
         queryset=Contract.objects.filter(parent_category__isnull=True).select_related('contract_counteragent',
                                                                                       'type_of_contract',
                                                                                       'type_of_document', 'executor'),
         required=False)
 
-    parent_category.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    # parent_category.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
-    type_property.widget.attrs.update(
-        {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
+    # type_property.widget.attrs.update(
+    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     official_information = forms.CharField(required=False)
 
     class Meta:
