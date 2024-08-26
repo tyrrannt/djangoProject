@@ -1296,6 +1296,9 @@ class ApprovalOficialMemoProcessUpdate(
         if request.GET.get("send") == "0":
             obj_item = self.get_object()
             obj_item.send_mail(title="Повторное уведомление", trigger=1)
+        if request.GET.get("send") == "1":
+            obj_item = self.get_object()
+            obj_item.send_mail(title="Повторное уведомление", trigger=2)
             # return redirect('hrdepartment_app:bpmemo_update', obj_item.pk)
         return super().get(request, *args, **kwargs)
 

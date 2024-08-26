@@ -915,7 +915,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                 logger.debug(
                     f"Failed to send second email to {mail_to_copy_second} {mail_to_copy_third}. {_ex}"
                 )
-        if trigger == 1:
+        if trigger == 1 or trigger == 2:
             # Повторное уведомление об СП или СК
             type_of = ["Служебная квартира", "Гостиница"]
 
@@ -973,8 +973,10 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
                     )
                 )
                 wb.close()
-
-                mail_to = self.document.person.email
+                if trigger == 2:
+                    mail_to = self.person_executor.email
+                else:
+                    mail_to = self.document.person.email
                 # mail_to_copy = self.person_executor.email
                 type_trip = (
                     "поездку" if self.document.type_trip == "1" else "командировку"
