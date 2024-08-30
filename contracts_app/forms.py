@@ -14,7 +14,7 @@ from django import forms
 
 class ContractsAddForm(forms.ModelForm):
     employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'), required=False)
-    executor = forms.ModelChoiceField(queryset=DataBaseUser.objects.none(), required=False)
+
     # employee.widget.attrs.update(
     #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_of_contract = forms.ModelChoiceField(queryset=TypeContract.objects.all())
@@ -29,12 +29,11 @@ class ContractsAddForm(forms.ModelForm):
     contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
     # contract_counteragent.widget.attrs.update(
     #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    parent_category = forms.ModelChoiceField(
-        queryset=Contract.objects.filter(parent_category__isnull=True).select_related('contract_counteragent',
-                                                                                      'type_of_contract',
-                                                                                      'type_of_document', 'executor'),
-        required=False)
-
+    # parent_category = forms.ModelChoiceField(
+    #     queryset=Contract.objects.filter(parent_category__isnull=True).select_related('contract_counteragent',
+    #                                                                                   'type_of_contract',
+    #                                                                                   'type_of_document', 'executor'),
+    #     required=False)
     # parent_category.widget.attrs.update(
     #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
@@ -44,7 +43,7 @@ class ContractsAddForm(forms.ModelForm):
 
     class Meta:
         model = Contract
-        fields = ['parent_category', 'contract_counteragent', 'contract_number', 'official_information',
+        fields = [ 'parent_category', 'contract_counteragent', 'contract_number', 'official_information',
                   'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
                   'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
                   'comment', 'doc_file', 'access', 'executor', 'type_of_document', 'allowed_placed']
@@ -82,7 +81,11 @@ class ContractsAddForm(forms.ModelForm):
             initial = kwargs.get('initial', {})
             initial['parent_category'] = None
         super(ContractsAddForm, self).__init__(*args, **kwargs)
-
+        self.fields['executor'].queryset  = DataBaseUser.objects.filter(pk=self.executor_user)
+        if self.parent:
+            self.fields['parent_category'].queryset = Contract.objects.filter(id=self.parent)
+        else:
+            self.fields['parent_category'].queryset = Contract.objects.none()
         for field in self.fields:
             make_custom_field(self.fields[field])
 
@@ -90,29 +93,7 @@ class ContractsAddForm(forms.ModelForm):
         if self.cleaned_data['executor'] == None:
             self.cleaned_data['executor'] = DataBaseUser.objects.get(pk=self.executor_user)
         return self.cleaned_data
-        # self.fields['executor'].widget.attrs.update(
-        #     {'class': 'form-control form-control-modern'})
-        # self.fields['contract_counteragent'].widget.attrs.update({
-        #     'class': 'form-control mb-4 form-control-modern',
-        # })
-        # self.fields['contract_number'].widget.attrs.update({
-        #     'class': 'form-control mb-4 form-control-modern',
-        # })
-        # self.fields['date_conclusion'].widget.attrs.update({
-        #     'class': 'form-control mb-4 form-control-modern',
-        # })
-        # self.fields['closing_date'].widget.attrs.update({
-        #     'class': 'form-control mb-4 form-control-modern',
-        # })
-        # self.fields['cost'].widget.attrs.update({
-        #     'class': 'form-control mb-4 form-control-modern',
-        # })
-        # self.fields['subject_contract'].widget.attrs.update({
-        #     'class': 'form-control mb-4 form-control-modern', 'rows': '6'
-        # })
-        # self.fields['comment'].widget.attrs.update({
-        #     'class': 'form-control mb-4 form-control-modern', 'rows': '6'
-        # })
+
 
 
 class ContractsUpdateForm(forms.ModelForm):
