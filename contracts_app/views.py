@@ -201,6 +201,11 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
         return super().form_valid(form)
 
+    def form_invalid(self, form):
+        # print('Invalid form', form)
+        print(form.errors)
+        return super().form_invalid(form)
+
     def get_success_url(self):
         obj = self.object
         if obj.parent_category:
@@ -212,11 +217,11 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
         content = QueryDict.copy(self.request.POST)
         print(content['parent_category'])
-        if content['parent_category'] == content['contract_counteragent']:
-            print(content['parent_category'], content['contract_counteragent'])
+        # if content['parent_category'] == content['contract_counteragent']:
+        #     print(content['parent_category'], content['contract_counteragent'])
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
-        if content['parent_category'] == 'none':
-            content.setlist('parent_category', '')
+        # if content['parent_category'] == 'none':
+        #     content.setlist('parent_category', '')
         # Проверяем подразделения, если пришел список с 0 значением, то удаляем его из списка, генерируя новый список
         division = list(k for k in content.getlist('divisions') if k != '0')
         type_propertyes = list(k for k in content.getlist('type_property') if k != '0')

@@ -72,9 +72,11 @@ class ContractsAddForm(forms.ModelForm):
                 initial['subject_contract'] = get_obj.subject_contract
                 initial['subject_contract'] = get_obj.subject_contract
                 initial['parent_category'] = get_obj
+                print(initial['parent_category'])
                 initial['executor'] = get_obj.executor
                 initial['allowed_placed'] = get_obj.allowed_placed
                 kwargs['initial'] = initial
+
             except Contract.DoesNotExist:
                 logger.error(f'Запись с UIN={self.parent} отсутствует в базе данных')
         else:
@@ -82,14 +84,17 @@ class ContractsAddForm(forms.ModelForm):
             initial['parent_category'] = None
         super(ContractsAddForm, self).__init__(*args, **kwargs)
         self.fields['executor'].queryset  = DataBaseUser.objects.filter(pk=self.executor_user)
-        if self.parent:
-            self.fields['parent_category'].queryset = Contract.objects.filter(id=self.parent)
-        else:
-            self.fields['parent_category'].queryset = Contract.objects.none()
+        self.fields['parent_category'].queryset = Contract.objects.filter(pk=self.parent)
+        # print(self.parent)
+        # if self.parent:
+        #     self.fields['parent_category'].queryset = Contract.objects.filter(id=self.parent)
+        # else:
+        #     self.fields['parent_category'].queryset = Contract.objects.none()
         for field in self.fields:
             make_custom_field(self.fields[field])
 
     def clean(self):
+        print(self.cleaned_data)
         if self.cleaned_data['executor'] == None:
             self.cleaned_data['executor'] = DataBaseUser.objects.get(pk=self.executor_user)
         return self.cleaned_data
