@@ -219,7 +219,6 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     def post(self, request, *args, **kwargs):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
         content = QueryDict.copy(self.request.POST)
-        print(content['parent_category'])
         # if content['parent_category'] == content['contract_counteragent']:
         #     print(content['parent_category'], content['contract_counteragent'])
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
@@ -340,6 +339,8 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         if self.object.parent_category:
             form.fields['parent_category'].queryset = Contract.objects.filter(
                 parent_category=self.object.parent_category.pk)
+        else:
+            form.fields['parent_category'].queryset = Contract.objects.none()
         return form
 
     def form_valid(self, form):
