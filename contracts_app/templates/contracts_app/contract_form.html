@@ -56,31 +56,35 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-                                        <div class="col-md-6 text-black-50">
-                                            <label for="id_parent_category">Основной документ</label>
-{#                                            <select class="form-control form-control-modern" name="parent_category"#}
-{#                                                    id="id_parent_category" data-plugin-selectTwo>#}
+                                        <input class="form-control form-control-modern" id="id_parent_category" name="parent_category" type="text" value="{{ parent }}" hidden="hidden">
+{#                                        <div class="col-md-6 text-black-50">#}
+{#                                            <label for="id_parent_category" hidden="hidden">Основной документ</label>#}
+{#                                            <select class="form-control form-control-modern" name="parent_category_text"#}
+{#                                                    id="id_parent_category_text" data-plugin-selectTwo>#}
 {#                                                    <option selected value="{{ parent }}">{{ parent }}</option>#}
 {#                                            </select>#}
-                                            {{ form.parent_category }}
-                                        </div>
+{#                                            {{ form.parent_category }}#}
+{#                                            <input class="form-control form-control-modern" id="id_parent_category" name="parent_category" type="text" value="{{ parent }}" hidden="hidden">#}
+{#                                        </div>#}
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_contract_counteragent">Контрагент</label>
                                             {{ form.contract_counteragent }}
                                         </div>
                                         <div class="col-md-6 text-black-50">
+                                                <label for="id_employee">Ответственные лица</label>
+                                                {{ form.employee }}
+                                            </div>
+                                        
+                                        <div class="row text">
+                                            <div class="col-md-6 text-black-50">
                                             <label for="id_type_of_document">Тип документа</label>
                                             {{ form.type_of_document }}
                                         </div>
-                                        <div class="row text">
                                             <div class="col-md-6 text-black-50">
                                                 <label for="id_type_of_contract">Тип договора</label>
                                                 {{ form.type_of_contract }}
                                             </div>
-                                            <div class="col-md-6 text-black-50">
-                                                <label for="id_employee">Ответственные лица</label>
-                                                {{ form.employee }}
-                                            </div>
+                                            
                                         </div>
                                     </div>
                                 </div>

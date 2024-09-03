@@ -185,10 +185,13 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         # Сохраняем QueryDict в переменную content для возможности его редактирования
         # content = QueryDict.copy(self.request.POST)
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
-        # if content['parent_category'] == 'none':
-        #     content.setlist('parent_category', '')
+        # if content['parent_category']:
+            # print(content['parent_category'])
+            # content.setlist('parent_category', '')
         # Проверяем подразделения, если пришел список с 0 значением, то удаляем его
         refreshed_form = form.save(commit=False)
+        # if refreshed_form.parent_category:
+        #     refreshed_form.parent_category = Contract.objects.get(pk=refreshed_form.parent_category)
         refreshed_form.official_information = refreshed_form.doc_file
         filename = str(refreshed_form.doc_file)
         if refreshed_form.parent_category:
@@ -203,7 +206,7 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def form_invalid(self, form):
         # print('Invalid form', form)
-        print(form.errors)
+        # print(form['parent_category'])
         return super().form_invalid(form)
 
     def get_success_url(self):
@@ -233,6 +236,8 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
+        if self.request.GET.get('parent'):
+            context['parent'] = self.request.GET.get('parent')
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить новый договор'
         return context
 
