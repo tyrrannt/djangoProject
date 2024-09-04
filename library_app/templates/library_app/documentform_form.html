@@ -1,22 +1,27 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
+{#{% block custome_css %}#}
+{##}
+{##}
+{##}
+{#{% endblock %}#}
 {% block custome_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+{#    <link rel="stylesheet"#}
+{#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+{#    <link rel="stylesheet"#}
+{#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
 {% endblock %}
 
 {% block custome_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{#        <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
+{#        <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
+{#        <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
 {% endblock %}
 
 {% block title %}
@@ -46,24 +51,76 @@
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxs-buildings"></i>
-                                    <p class="card-big-info-desc">Форма создания бланка.</p>
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        {{ form.as_p }}
-                                    </div>
-                                    
+            {{ form.media }}
+            <div class="col-lg-12">
+                <div class="form-row">
+                    <div class="form-group col mb-3">
+                        <div class="row text">
+                            <div class="col-sm-12 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_title">Наименование:</label>
+                                <div class="col-sm-12">
+                                    {{ form.title }}
                                 </div>
                             </div>
                         </div>
-                    </section>
+
+                        <div class="row text">
+                            <div class="col-sm-12 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_draft">Черновик:</label>
+                                <div class="col-sm-12">
+                                    {{ form.draft }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text">
+                            <div class="col-sm-12 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_scan">Скан копия (Обязательно в формате PDF):</label>
+                                <div class="col-sm-12">
+                                    {{ form.scan }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text">
+                            <div class="col-sm-12 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_sample">Образец заполнения (Обязательно в формате PDF):</label>
+                                <div class="col-sm-12">
+                                    {{ form.sample }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text">
+                            <div class="col-sm-12 col-md-4 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_executor">Исполнитель:</label>
+                                <div class="col-sm-12">
+                                    {{ form.executor }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text">
+                            <div class="col-sm-12 col-md-6 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_division">Подразделения:</label>
+                                <div class="col-sm-12">
+                                    {{ form.division  }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text">
+                            <div class="col-sm-12 col-md-6 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_employee">Ответственное лицо:</label>
+                                <div class="col-sm-12">
+                                    {{ form.employee | attr:"multiple" }}
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
             <div class="row action-buttons">

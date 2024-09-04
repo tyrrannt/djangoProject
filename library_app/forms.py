@@ -61,6 +61,7 @@ class HelpItemUpdateForm(forms.ModelForm):
 
 
 class DocumentFormAddForm(forms.ModelForm):
+    division = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение'))
 
     class Meta:
         model = DocumentForm
@@ -75,9 +76,23 @@ class DocumentFormAddForm(forms.ModelForm):
         super(DocumentFormAddForm, self).__init__(*args, **kwargs)
         self.fields["executor"].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields["employee"].queryset = DataBaseUser.objects.filter(is_active=True).exclude(username="proxmox")
-        self.fields["division"].queryset = Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение')
+        self.fields["division"].widget.attrs.update(
+            {
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["employee"].widget.attrs.update(
+            {
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
         for field in self.fields:
-            make_custom_field(self.fields[field])
+            if field not in ["division", "employee"]:
+                make_custom_field(self.fields[field])
 
 
 class DocumentFormUpdateForm(forms.ModelForm):
