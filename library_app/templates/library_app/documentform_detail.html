@@ -77,7 +77,7 @@
                                                     <label for="id_scan">Скан бланка: </label>
                                                     {% if object.scan %}
                                                         <span id="id_scan"><a
-                                                                href="{{ object.scan.url }}"><img
+                                                                href="{{ object.scan.url }}" target="_blank"><img
                                                                 src="{% static 'Extension/pdf.png' %}"></a></span>
                                                     {% endif %}
                                                 </div>
@@ -85,7 +85,7 @@
                                                     <label for="id_scan">Образец заполнения: </label>
                                                     {% if object.sample %}
                                                         <span id="id_scan"><a
-                                                                href="{{ object.sample.url }}"><img
+                                                                href="{{ object.sample.url }}" target="_blank"><img
                                                                 src="{% static 'Extension/pdf.png' %}"></a></span>
                                                     {% endif %}
                                                 </div>                                            
