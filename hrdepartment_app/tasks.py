@@ -792,7 +792,6 @@ def report_card_separator_daily(year=0, month=0, day=0):
         Q(report_card_day=current_data) & Q(record_type="1")
     )
     for item in rec_obj:
-        print(item)
         item.delete()
     # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
     # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))

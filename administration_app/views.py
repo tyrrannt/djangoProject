@@ -18,7 +18,7 @@ from contracts_app.models import Contract
 
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Counteragent
 from hrdepartment_app.models import ReportCard
-from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json
+from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -338,7 +338,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
                 # Получение неявок на рабочее место.
-                get_sick_leave.delay(2024, 2)
+                get_sick_leave.delay(2024, 1)
                 # report_card_separator_daily(year=2023, month=10, day=30)
                 # vacation_schedule()
                 pass
@@ -414,12 +414,11 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # Получение неявок на рабочее место.
                 get_sick_leave.delay(2024, 2)
             if request.GET.get('update') == '8':
-                # Получение неявок на рабочее место.
+                # Получение неявок на рабочее место - Отгул
                 get_sick_leave.delay(2024, 3)
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
             if request.GET.get('update') == '9':
-                print('sdf')
                 qs = Contract.objects.all()
                 for item in qs:
                     try:
@@ -429,5 +428,5 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     except AttributeError:
                         pass
             if request.GET.get('update') == '10':
-                pass
+                get_vacation.delay()
         return super().get(request, *args, **kwargs)
