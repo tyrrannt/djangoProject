@@ -3,6 +3,8 @@
 ## Основные методы
 - `__init__(**kwargs):` Конструктор класса.
 
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def __init__(self, **kwargs):
@@ -12,12 +14,16 @@ class MyCreateView(CreateView):
 
 - `as_view(**initkwargs):` Возвращает вызываемый объект, который может быть использован для обработки запросов.
 
+Пример:
+
 ```python
 urlpatterns = [
     path('create/', MyCreateView.as_view(), name='create_view'),
 ]
 ```
 - `dispatch(request, *args, **kwargs):` Определяет, какой метод (get или post) должен быть вызван на основе типа запроса.
+
+Пример:
 
 ```python
 class MyCreateView(CreateView):
@@ -29,6 +35,8 @@ class MyCreateView(CreateView):
 
 - `http_method_not_allowed(request, *args, **kwargs):` Возвращает ответ 405, если метод запроса не поддерживается.
 
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def http_method_not_allowed(self, request, *args, **kwargs):
@@ -36,6 +44,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get(request, *args, **kwargs):` Обрабатывает GET-запрос.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get(self, request, *args, **kwargs):
@@ -45,6 +56,9 @@ class MyCreateView(CreateView):
 ```
 
 - `post(request, *args, **kwargs):` Обрабатывает POST-запрос.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def post(self, request, *args, **kwargs):
@@ -57,6 +71,9 @@ class MyCreateView(CreateView):
 ```
 
 - `put(request, *args, **kwargs):` Обрабатывает PUT-запрос (если поддерживается).
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def put(self, request, *args, **kwargs):
@@ -64,6 +81,9 @@ class MyCreateView(CreateView):
 ```
 
 - `delete(request, *args, **kwargs):` Обрабатывает DELETE-запрос (если поддерживается).
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def delete(self, request, *args, **kwargs):
@@ -71,6 +91,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_form_class():` Возвращает класс формы, который будет использоваться.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_form_class(self):
@@ -80,6 +103,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_form(form_class=None):` Возвращает экземпляр формы.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_form(self, form_class=None):
@@ -88,6 +114,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_form_kwargs():` Возвращает аргументы, которые будут переданы в конструктор формы.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_form_kwargs(self):
@@ -97,6 +126,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_initial():` Возвращает начальные данные для формы.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_initial(self):
@@ -106,6 +138,9 @@ class MyCreateView(CreateView):
 ```
 
 - `form_valid(form):` Вызывается, когда форма валидна.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def form_valid(self, form):
@@ -115,6 +150,9 @@ class MyCreateView(CreateView):
 ```
 
 - `form_invalid(form):` Вызывается, когда форма невалидна.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def form_invalid(self, form):
@@ -124,6 +162,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_success_url():` Возвращает URL для перенаправления после успешного создания объекта.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_success_url(self):
@@ -131,6 +172,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_context_data(**kwargs):` Возвращает контекст данных для шаблона.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_context_data(self, **kwargs):
@@ -140,6 +184,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_template_names():` Возвращает список имен шаблонов для рендеринга.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_template_names(self):
@@ -149,6 +196,9 @@ class MyCreateView(CreateView):
 ```
 
 - `render_to_response(context, **response_kwargs):` Рендерит ответ с использованием шаблона и контекста.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def render_to_response(self, context, **response_kwargs):
@@ -157,6 +207,9 @@ class MyCreateView(CreateView):
 
 ## Методы для обработки форм
 - `get_form():` Возвращает экземпляр формы.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_form(self, form_class=None):
@@ -165,6 +218,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_form_kwargs():` Возвращает аргументы, которые будут переданы в конструктор формы.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_form_kwargs(self):
@@ -174,6 +230,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_initial():` Возвращает начальные данные для формы.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_initial(self):
@@ -183,6 +242,9 @@ class MyCreateView(CreateView):
 ```
 
 - `form_valid(form):` Вызывается, когда форма валидна.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def form_valid(self, form):
@@ -192,6 +254,9 @@ class MyCreateView(CreateView):
 ```
 
 - `form_invalid(form):` Вызывается, когда форма невалидна.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def form_invalid(self, form):
@@ -202,6 +267,9 @@ class MyCreateView(CreateView):
 
 ## Методы для рендеринга
 - `render_to_response(context, **response_kwargs):` Рендерит ответ с использованием шаблона и контекста.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def render_to_response(self, context, **response_kwargs):
@@ -209,6 +277,9 @@ class MyCreateView(CreateView):
 ```
 
 - `get_template_names():` Возвращает список имен шаблонов для рендеринга.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_template_names(self):
@@ -217,6 +288,9 @@ class MyCreateView(CreateView):
 
 ## Методы для URL-адресов
 - `get_success_url():` Возвращает URL для перенаправления после успешного создания объекта.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_success_url(self):
@@ -225,6 +299,9 @@ class MyCreateView(CreateView):
 
 ## Методы для контекста
 - `get_context_data(**kwargs):` Возвращает контекст данных для шаблона.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def get_context_data(self, **kwargs):
@@ -235,6 +312,9 @@ class MyCreateView(CreateView):
 
 ## Методы для обработки запросов
 - `dispatch(request, *args, **kwargs):` Определяет, какой метод (get или post) должен быть вызван на основе типа запроса.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def dispatch(self, request, *args, **kwargs):
@@ -244,6 +324,9 @@ class MyCreateView(CreateView):
 ```
 
 - `http_method_not_allowed(request, *args, **kwargs):` Возвращает ответ 405, если метод запроса не поддерживается.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def http_method_not_allowed(self, request, *args, **kwargs):
@@ -252,6 +335,9 @@ class MyCreateView(CreateView):
 
 ## Методы для инициализации
 - `__init__(**kwargs):` Конструктор класса.
+
+Пример:
+
 ```python
 class MyCreateView(CreateView):
     def __init__(self, **kwargs):
@@ -260,6 +346,9 @@ class MyCreateView(CreateView):
 ```
 
 - `as_view(**initkwargs):` Возвращает вызываемый объект, который может быть использован для обработки запросов.
+
+Пример:
+
 ```python
 urlpatterns = [
     path('create/', MyCreateView.as_view(), name='create_view'),

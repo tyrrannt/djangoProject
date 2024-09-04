@@ -62,6 +62,7 @@
                                     <div class="form-row">
                                         <div class="form-group col mb-3">
                                             <div class="row text">
+                                                {% if user|has_group:"Бланки" %}
                                                 <div class="col-sm-12 text-black-50 mt-2 pb-4">
                                                     <label for="id_draft">Файл бланка: </label>
                                                     {% if object.draft %}
@@ -71,6 +72,7 @@
                                                     {% endif %}
                                                 </div>
                                                 <hr>
+                                                {% endif %}
                                                 <div class="col-sm-12 text-black-50 mt-2 pb-4">
                                                     <label for="id_scan">Скан бланка: </label>
                                                     {% if object.scan %}
