@@ -955,7 +955,14 @@ def ajax_search(request, self, field_list, model_name, query):
     counter = 0
     for field in field_list:
         if request.GET.get(f"columns[{counter}][search][value]"):
-            query &= Q(**{field + '__iregex': request.GET.get(f"columns[{counter}][search][value]")})
+            search_value = request.GET.get(f"columns[{counter}][search][value]")
+            search_list = search_value.split('!')
+            if len(search_list) > 1:
+                for search in search_list:
+                    if len(search) > 0:
+                        query &= Q(**{field + '__iregex': search})
+            else:
+                query &= Q(**{field + '__iregex': request.GET.get(f"columns[{counter}][search][value]")})
         counter += 1
     if query:
         order_list = model_name.objects.filter(query)
