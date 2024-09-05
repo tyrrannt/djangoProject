@@ -459,6 +459,35 @@ def report_card_separator():
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
     return dicts
 
+def calc_diff(start, end):
+    today = datetime.date.today()
+    d_start = datetime.datetime.combine(today, start)
+    d_end = datetime.datetime.combine(today, end)
+    diff = d_end - d_start
+    return diff
+
+@app.task()
+def get_year_report():
+    year = datetime.datetime.today().year
+    user_list = ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type__in=["1", "13",])).values_list('employee', flat=True)
+    user_set = set(list(user_list))
+    report_card_list = list()
+
+    for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(employee__in=user_set)):
+        report_card_list.append([report_record.employee.title, report_record.report_card_day, calc_diff(report_record.start_time, report_record.end_time), report_record.record_type])
+    import csv
+
+    # field names
+    # fields = ['Name', 'Branch', 'Year', 'CGPA']
+
+    # data rows of csv file
+
+    with open('GFG.csv', 'w') as f:
+        # using csv.writer method from CSV package
+        write = csv.writer(f)
+
+        # write.writerow(fields)
+        write.writerows(report_card_list)
 
 @app.task()
 def get_vacation():

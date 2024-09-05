@@ -18,7 +18,7 @@ from contracts_app.models import Contract
 
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Counteragent
 from hrdepartment_app.models import ReportCard
-from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation
+from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -429,4 +429,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         pass
             if request.GET.get('update') == '10':
                 get_vacation.delay()
+            if request.GET.get('update') == '11':
+                get_year_report.delay()
         return super().get(request, *args, **kwargs)
