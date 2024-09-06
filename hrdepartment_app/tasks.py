@@ -463,7 +463,10 @@ def calc_diff(start, end):
     today = datetime.date.today()
     d_start = datetime.datetime.combine(today, start)
     d_end = datetime.datetime.combine(today, end)
-    diff = d_end - d_start
+    if d_start < d_end:
+        diff = d_end - d_start
+    else:
+        diff = end
     return diff
 
 @app.task()
@@ -478,7 +481,7 @@ def get_year_report():
     import csv
 
     # field names
-    # fields = ['Name', 'Branch', 'Year', 'CGPA']
+    fields = ["FIO", "Date", "Time", "Type"]
 
     # data rows of csv file
 
@@ -486,13 +489,13 @@ def get_year_report():
         # using csv.writer method from CSV package
         write = csv.writer(f)
 
-        # write.writerow(fields)
+        write.writerow(fields)
         write.writerows(report_card_list)
 
-        def time_to_sec(t):
-            h, m, s = map(int, t.split(":"))
-            result = (h * 3600 + m * 60 + s) / 3600
-            return float(f"{result:.2f}")
+    def time_to_sec(t):
+        h, m, s = map(int, t.split(":"))
+        result = (h * 3600 + m * 60 + s) / 3600
+        return float(f"{result:.2f}")
     import pandas as pd
     pp = pd.read_csv("GFG.csv")
     p_test = pp.sort_values(by=["FIO", "Date"])
