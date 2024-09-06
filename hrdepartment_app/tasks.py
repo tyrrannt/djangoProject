@@ -477,11 +477,11 @@ def get_year_report():
     report_card_list = list()
 
     for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(employee__in=user_set)):
-        report_card_list.append([report_record.employee.title, report_record.report_card_day, calc_diff(report_record.start_time, report_record.end_time), report_record.record_type])
+        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
     import csv
 
     # field names
-    fields = ["FIO", "Date", "Time", "Type"]
+    fields = ["FIO", "Date", "Start", "End","Type"]
 
     # data rows of csv file
 
@@ -492,22 +492,22 @@ def get_year_report():
         write.writerow(fields)
         write.writerows(report_card_list)
 
-    def time_to_sec(t):
-        h, m, s = map(int, t.split(":"))
-        result = (h * 3600 + m * 60 + s) / 3600
-        return float(f"{result:.2f}")
-    import pandas as pd
-    pp = pd.read_csv("GFG.csv")
-    p_test = pp.sort_values(by=["FIO", "Date"])
-    p_test["Time"] = p_test["Time"].apply(time_to_sec)
-    # pprint(p_test.groupby("FIO")["Time"].sum())
-    p_test["day"] = p_test["Date"].str[-2:]
-    p_test["month"] = p_test["Date"].str[-5:-3]
-    p_test["year"] = p_test["Date"].str[:-6]
-    p_test["mm-year"] = p_test["month"] + "-" + p_test["year"]
-    p_test = p_test.groupby(by=["mm-year", "FIO"])["Time"].sum()
-    print(p_test)
-    p_test = p_test.to_csv("pnd.csv")
+    # def time_to_sec(t):
+    #     h, m, s = map(int, t.split(":"))
+    #     result = (h * 3600 + m * 60 + s) / 3600
+    #     return float(f"{result:.2f}")
+    # import pandas as pd
+    # pp = pd.read_csv("GFG.csv")
+    # p_test = pp.sort_values(by=["FIO", "Date"])
+    # p_test["Time"] = p_test["Time"].apply(time_to_sec)
+    # # pprint(p_test.groupby("FIO")["Time"].sum())
+    # p_test["day"] = p_test["Date"].str[-2:]
+    # p_test["month"] = p_test["Date"].str[-5:-3]
+    # p_test["year"] = p_test["Date"].str[:-6]
+    # p_test["mm-year"] = p_test["month"] + "-" + p_test["year"]
+    # p_test = p_test.groupby(by=["mm-year", "FIO"])["Time"].sum()
+    # print(p_test)
+    # p_test = p_test.to_csv("pnd.csv")
 
 @app.task()
 def get_vacation():
