@@ -474,11 +474,12 @@ def calc_diff(start, end):
 @app.task()
 def get_year_report():
     year = datetime.datetime.today().year
+    month = datetime.datetime.today().month - 1
     user_list = ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type__in=["1", "13",])).values_list('employee', flat=True)
     user_set = set(list(user_list))
     report_card_list = list()
 
-    for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(employee__in=user_set)):
+    for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(report_card_day__month=month) & Q(employee__in=user_set)):
         report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
 
     # field names
