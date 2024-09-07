@@ -3,7 +3,9 @@ import datetime
 import json
 import urllib.request
 from random import randrange
-
+import csv
+import pandas as pd
+from dateutil.relativedelta import relativedelta
 import requests
 import telebot
 from dateutil import rrule
@@ -30,7 +32,7 @@ from hrdepartment_app.models import (
     ReportCard,
     WeekendDay,
     check_day,
-    ApprovalOficialMemoProcess,
+    ApprovalOficialMemoProcess, ProductionCalendar,
 )
 from telegram_app.management.commands.bot import send_message_tg
 from telegram_app.models import TelegramNotification, ChatID
@@ -478,36 +480,97 @@ def get_year_report():
 
     for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(employee__in=user_set)):
         report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
-    import csv
 
     # field names
     fields = ["FIO", "Date", "Start", "End","Type"]
 
-    # data rows of csv file
+    # Создание DataFrame
+    df = pd.DataFrame(report_card_list, columns=fields)
 
-    with open('GFG.csv', 'w') as f:
-        # using csv.writer method from CSV package
-        write = csv.writer(f)
+    # Преобразование столбцов в нужные типы данных
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
+    df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
+    df["Type"] = df["Type"].astype(int)
 
-        write.writerow(fields)
-        write.writerows(report_card_list)
+    # Функция для проверки и корректировки пересечений
+    def adjust_time(group):
+        # Сортируем по времени начала
+        group = group.sort_values(by='Start')
 
-    # def time_to_sec(t):
-    #     h, m, s = map(int, t.split(":"))
-    #     result = (h * 3600 + m * 60 + s) / 3600
-    #     return float(f"{result:.2f}")
-    # import pandas as pd
-    # pp = pd.read_csv("GFG.csv")
-    # p_test = pp.sort_values(by=["FIO", "Date"])
-    # p_test["Time"] = p_test["Time"].apply(time_to_sec)
-    # # pprint(p_test.groupby("FIO")["Time"].sum())
-    # p_test["day"] = p_test["Date"].str[-2:]
-    # p_test["month"] = p_test["Date"].str[-5:-3]
-    # p_test["year"] = p_test["Date"].str[:-6]
-    # p_test["mm-year"] = p_test["month"] + "-" + p_test["year"]
-    # p_test = p_test.groupby(by=["mm-year", "FIO"])["Time"].sum()
-    # print(p_test)
-    # p_test = p_test.to_csv("pnd.csv")
+        # Проверяем пересечения для записей с типом 1 или 13
+        for i in range(len(group) - 1):
+            if group.iloc[i]['Type'] in [1, 13] and group.iloc[i + 1]['Type'] in [1, 13]:
+                start1, end1 = group.iloc[i]['Start'], group.iloc[i]['End']
+                start2, end2 = group.iloc[i + 1]['Start'], group.iloc[i + 1]['End']
+
+                # Проверяем пересечение
+                if start2 < end1:
+                    # Корректируем время
+                    group.at[group.index[i + 1], 'Start'] = end1
+                    group.at[group.index[i + 1], 'End'] = max(end1, end2)
+
+        return group
+
+    # Группируем по FIO и Date и применяем функцию
+    df = df.groupby(['FIO', 'Date']).apply(adjust_time).reset_index(drop=True)
+
+    # Вычисление разности между End и Start и сохранение в новом столбце Time
+    df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
+
+    def process_group(group):
+        if any(t in [14, 15, 16, 17, 20] for t in group["Type"].values):
+            return group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
+        elif any(t in range(1, 14) or t == 19 for t in group["Type"].values):
+            return group[group["Type"].isin(list(range(1, 14)) + [19])]["Time"].sum()
+        else:
+            return group["Time"].sum()
+
+    # Группировка по месяцам и ФИО
+    df["Month"] = df["Date"].dt.to_period("M")
+    grouped = df.groupby(["Month", "FIO", "Date"]).apply(process_group).reset_index(name="Time")
+    grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
+    # Вывод результата
+    grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100)
+
+    # Текущая дата
+    current_date = datetime.datetime.now()
+
+    # Начало текущего года
+    start_of_year = datetime.datetime(current_date.year, 1, 1)
+
+    # Список для хранения первых дней каждого месяца
+    first_days_of_months = []
+
+    # Итерация по месяцам с начала года до текущей даты
+    current_month_start = start_of_year
+    while current_month_start <= current_date:
+        first_days_of_months.append(current_month_start)
+        current_month_start += relativedelta(months=1)
+
+    # Словарь с вычитаемыми значениями
+    subtraction_dict = dict()
+    for date in first_days_of_months[:-1]:
+        key = date.strftime('%Y-%m')
+        norm_time = ProductionCalendar.objects.get(calendar_month=date)
+        subtraction_dict[key] = norm_time.get_norm_time()
+
+    grouped = grouped.fillna('')
+
+    # Функция для вычитания значения из словаря
+    def subtract_value(row):
+        month = str(row["Month"])
+        ttime = row["Time"]
+        return ttime - subtraction_dict.get(month, 0)
+
+    # Применение функции к столбцу Time
+    grouped["Time"] = grouped.apply(subtract_value, axis=1)
+
+    pivot_df = grouped.pivot(index="FIO", columns="Month", values="Time")
+    pivot_df = pivot_df.fillna('')
+    # pivot_df.to_csv("pnd.csv", sep=";")
+    html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped mb-0', border=1, justify='center')
+    return html_table
 
 @app.task()
 def get_vacation():

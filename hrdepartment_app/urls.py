@@ -13,7 +13,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     ReportCardListManual, ProvisionsList, ProvisionsAdd, ProvisionsDetail, ProvisionsUpdate, ReportCardListAdmin, \
     ReportCardDelete, ApprovalOficialMemoProcessReportList, OfficialMemoCancel, GuidanceDocumentsList, \
     GuidanceDocumentsAdd, GuidanceDocumentsDetail, GuidanceDocumentsUpdate, CreatingTeamList, CreatingTeamAdd, \
-    CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed, CreatingTeamSetNumber, ExpensesList, expenses_update
+    CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed, CreatingTeamSetNumber, ExpensesList, expenses_update, \
+    ReportCardDetailYear
 
 app_name = 'hrdepartment_app'
 
@@ -59,6 +60,7 @@ urlpatterns = [
     path('report/admin/', ReportCardListAdmin.as_view(), name='reportcard_listadmin'),
     path('report/detail/', ReportCardDetail.as_view(), name='reportcard_detail'),
     path('report/fact/', ReportCardDetailFact.as_view(), name='reportcard_detail_fact'),
+    path('report/year/', ReportCardDetailYear.as_view(), name='reportcard_detail_year'),
     path('report/<int:pk>/update/', ReportCardUpdate.as_view(), name='reportcard_update'),
     path('report/<int:pk>/delete/', ReportCardDelete.as_view(), name='reportcard_delete'),
     path('report/add/', ReportCardAdd.as_view(), name='reportcard_add'),

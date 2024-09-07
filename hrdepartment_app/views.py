@@ -77,7 +77,7 @@ from hrdepartment_app.models import (
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam,
 )
-from hrdepartment_app.tasks import send_mail_notification
+from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
 
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -2570,6 +2570,18 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
 class ReportCardDelete(LoginRequiredMixin, DeleteView):
     model = ReportCard
     success_url = "/hr/report/admin/"
+
+
+class ReportCardDetailYear(LoginRequiredMixin, ListView):
+    # Табель учета рабочего времени - таблица по месяцам
+    model = ReportCard
+    template_name = "hrdepartment_app/reportcard_detail_year.html"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["table"] = get_year_report()
+        print(context["table"])
+        return context
 
 
 class ReportCardDetailFact(LoginRequiredMixin, ListView):
