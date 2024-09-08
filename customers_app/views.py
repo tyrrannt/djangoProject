@@ -2,6 +2,8 @@ import datetime
 import hashlib
 import uuid
 
+import pandas as pd
+from dateutil.rrule import rrule, DAILY
 from decouple import config
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
@@ -30,7 +32,7 @@ from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from hrdepartment_app.hrdepartment_util import get_working_hours
-from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess
+from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -205,6 +207,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     html_obj = ['', '', '']
                 return JsonResponse(html_obj, safe=False)
             if report_year and report_month:
+                """
                 # Получение отработанных дней
                 # data_dict, total_score, first_day, last_day, user_start_time, user_end_time = get_report_card(self.request.user.pk, RY=report_year, RM=report_month)
                 data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(
@@ -214,6 +217,36 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 return JsonResponse(
                     get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end),
                     safe=False)
+                """
+                # Определяем текущую дату
+                current_date = datetime.datetime.now()
+
+                # Определяем начальную дату как первый день текущего месяца
+                start_date = current_date.replace(day=1)
+
+                # Генерируем диапазон дат с начала месяца до текущего дня
+                dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
+                report_card_list = []
+                for report_record in ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day__in=dates)):
+                    report_card_list.append(
+                        [report_record.report_card_day, report_record.start_time,
+                         report_record.end_time, report_record.record_type])
+                # field names
+                fields = ["Дата", "Start", "End", "Статус"]
+
+                # Создание DataFrame
+                df = pd.DataFrame(report_card_list, columns=fields)
+                # Преобразование столбцов в нужные типы данных
+                df["Дата"] = pd.to_datetime(df["Дата"])
+                df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
+                df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
+                df["Статус"] = df["Статус"].astype(int)
+                df['Дата'] = df['Дата'].dt.strftime("%d")
+                # Вычисление разности между End и Start и сохранение в новом столбце Time
+                df["+/-"] = ((df["End"] - df["Start"]).dt.total_seconds() // 3600) + ((((df["End"] - df["Start"]).dt.total_seconds() % 3600) // 60) / 100)
+                html = df.to_html(index=False)
+                return JsonResponse(html, safe=False)
+
             if get_date:
                 # Получение остатка отпусков
                 html = f"<label class='form-control form-control-modern'>Остаток отпуска: {get_vacation_days(self, get_date)} дн.</label>"
