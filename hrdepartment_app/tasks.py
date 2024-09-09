@@ -20,7 +20,7 @@ from loguru import logger
 from administration_app.utils import (
     get_jsons_data_filter2,
     get_date_interval,
-    get_jsons_data_filter,
+    get_jsons_data_filter, process_group, adjust_time,
 )
 from contracts_app.models import Contract
 
@@ -495,24 +495,7 @@ def get_year_report():
     df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
     df["Type"] = df["Type"].astype(int)
 
-    # Функция для проверки и корректировки пересечений
-    def adjust_time(group):
-        # Сортируем по времени начала
-        group = group.sort_values(by='Start')
 
-        # Проверяем пересечения для записей с типом 1 или 13
-        for i in range(len(group) - 1):
-            if group.iloc[i]['Type'] in [1, 13] and group.iloc[i + 1]['Type'] in [1, 13]:
-                start1, end1 = group.iloc[i]['Start'], group.iloc[i]['End']
-                start2, end2 = group.iloc[i + 1]['Start'], group.iloc[i + 1]['End']
-
-                # Проверяем пересечение
-                if start2 < end1:
-                    # Корректируем время
-                    group.at[group.index[i + 1], 'Start'] = end1
-                    group.at[group.index[i + 1], 'End'] = max(end1, end2)
-
-        return group
 
     # Группируем по FIO и Date и применяем функцию
     df = df.groupby(['FIO', 'Date']).apply(adjust_time).reset_index(drop=True)
@@ -520,13 +503,7 @@ def get_year_report():
     # Вычисление разности между End и Start и сохранение в новом столбце Time
     df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
 
-    def process_group(group):
-        if any(t in [14, 15, 16, 17, 20] for t in group["Type"].values):
-            return group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
-        elif any(t in range(1, 14) or t == 19 for t in group["Type"].values):
-            return group[group["Type"].isin(list(range(1, 14)) + [19])]["Time"].sum()
-        else:
-            return group["Time"].sum()
+
 
     # Группировка по месяцам и ФИО
     df["Month"] = df["Date"].dt.to_period("M")

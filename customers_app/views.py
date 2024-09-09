@@ -16,7 +16,8 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_context, format_name_initials, get_year_interval, get_client_ip
+    change_session_get, change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
+    process_group, process_group_interval, seconds_to_hhmm
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
@@ -32,7 +33,7 @@ from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from hrdepartment_app.hrdepartment_util import get_working_hours
-from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard
+from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -219,20 +220,28 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     safe=False)
                 """
                 # Определяем текущую дату
-                current_date = datetime.datetime.now()
 
+                current_date = datetime.datetime.now() - datetime.timedelta(days=1)
                 # Определяем начальную дату как первый день текущего месяца
                 start_date = current_date.replace(day=1)
-
                 # Генерируем диапазон дат с начала месяца до текущего дня
-                dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
+                if int(report_month) == current_date.month and int(report_year) == current_date.year:
+                    dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
+                else:
+                    # Создаем конечную дату (последний день месяца)
+                    # Мы вычисляем его, переходя на следующий месяц и вычитая один день.
+                    if report_month == 12:
+                        end_date = datetime.datetime(int(report_year) + 1, 1, 1) - datetime.timedelta(days=1)
+                    else:
+                        end_date = datetime.datetime(int(report_year), int(report_month) + 1, 1) - datetime.timedelta(days=1)
+                    dates = list(rrule(DAILY, dtstart=datetime.datetime(year=int(report_year), month=int(report_month), day=1), until=end_date))
                 report_card_list = []
                 for report_record in ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day__in=dates)):
                     report_card_list.append(
                         [report_record.report_card_day, report_record.start_time,
                          report_record.end_time, report_record.record_type])
                 # field names
-                fields = ["Дата", "Start", "End", "Статус"]
+                fields = ["Дата", "Start", "End", "Type"]
 
                 # Создание DataFrame
                 df = pd.DataFrame(report_card_list, columns=fields)
@@ -240,11 +249,43 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df["Дата"] = pd.to_datetime(df["Дата"])
                 df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
                 df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
-                df["Статус"] = df["Статус"].astype(int)
-                df['Дата'] = df['Дата'].dt.strftime("%d")
+                df["Type"] = df["Type"].astype(int)
+                df["Дата"] = df["Дата"].dt.strftime("%d")
+                # Группируем по FIO и Date и применяем функцию
+                df = df.groupby(["Дата"]).apply(adjust_time).reset_index(drop=True)
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
-                df["+/-"] = ((df["End"] - df["Start"]).dt.total_seconds() // 3600) + ((((df["End"] - df["Start"]).dt.total_seconds() % 3600) // 60) / 100)
-                html = df.to_html(index=False)
+
+                df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
+
+                # Группируем по дате и применяем функцию
+                df = df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
+
+                # Группируем по FIO и Date и применяем функцию
+                df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
+                # Вычисление разности между End и Start и сохранение в новом столбце Time
+
+                norm_time = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
+
+                df["Time"] = df["Time"] - 30600
+
+                # Применяем функцию к колонке 'Time_in_seconds'
+                df['+/-'] = df['Time'].apply(seconds_to_hhmm)
+
+                total_time = df['Time'].sum()
+                total_time_hhmm = seconds_to_hhmm(total_time)
+
+                # Добавляем новую строку с суммой в конец DataFrame
+                total_row = pd.DataFrame({
+                    'Дата': ['Итого'],
+                    'Интервал': [''],
+                    '+/-': [total_time_hhmm]
+                })
+
+                df = pd.concat([df, total_row], ignore_index=True)
+
+                # Выводим строковое представление интервала
+                df = df.sort_values(by=['Дата'])
+                html = df[["Дата", "Интервал", "+/-"]].to_html(index=False, classes="table table-ecommerce-simple mb-0", justify="right")
                 return JsonResponse(html, safe=False)
 
             if get_date:
