@@ -1215,9 +1215,8 @@ def process_group_interval(group):
 
 
 def seconds_to_hhmm(seconds):
-    delta = timedelta(seconds=abs(seconds))
-    hours = delta.seconds // 3600
-    minutes = (delta.seconds % 3600) // 60
+    hours = int(abs(seconds) // 3600)
+    minutes = int((abs(seconds) % 3600) // 60)
     if seconds < 0:
-        return f"-{hours:02}:{minutes:02}"
-    return f"{hours:02}:{minutes:02}"
+        return f"-{hours:3}:{minutes:02}"
+    return f"{hours:3}:{minutes:02}"

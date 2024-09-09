@@ -2158,6 +2158,45 @@ class ProductionCalendar(models.Model):
                     friday += 1
         return friday
 
+    def get_norm_time_at_day(self):
+        """
+        Подсчет количества рабочих часов в день
+        :return: количество рабочих часов в день
+        """
+        first_day = self.calendar_month + relativedelta(day=1)
+        last_day = self.calendar_month + relativedelta(day=datetime.datetime.today().day)
+        preholiday_time, day_count, preholiday_day_count, friday_count = 0, 0, 0, 0
+
+        preholiday_day = PreHolidayDay.objects.filter(
+            preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
+
+        for days in rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day):
+            if days in preholiday_day:
+                preholiday_day_count += 1
+                day = PreHolidayDay.objects.get(preholiday_day=days)
+                if  day.weekday() == 4:
+                    friday_count += 1
+                    preholiday_time += day.work_time.hour + 1 + day.work_time.minute / 60
+                else:
+                    preholiday_time += day.work_time.hour + day.work_time.minute / 60
+
+            else:
+                if days.weekday() == 4:
+                    friday_count += 1
+                    day_count += 1
+                elif days.weekday() < 4:
+                    day_count += 1
+        return (day_count * 8) + (day_count / 2) - friday_count - (preholiday_day_count * 8.5 - preholiday_time)
+
+    # def get_norm_time_at_month(self):
+    #     """
+    #     Подсчет количества рабочих часов в месяце
+    #     return (
+    #             (self.number_working_days * 8)
+    #             + (self.number_working_days / 2)
+    #             - self.get_friday_count() - (preholiday_day_count * 8.5 - preholiday_time)
+    #     )
+
     def get_norm_time(self):
         """
         Подсчет количества рабочих часов в месяце

@@ -225,11 +225,14 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Определяем начальную дату как первый день текущего месяца
                 start_date = current_date.replace(day=1)
                 # Генерируем диапазон дат с начала месяца до текущего дня
+                norm_time_date = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
+                    norm_time = norm_time_date.get_norm_time_at_day()
                 else:
                     # Создаем конечную дату (последний день месяца)
                     # Мы вычисляем его, переходя на следующий месяц и вычитая один день.
+                    norm_time = norm_time_date.get_norm_time()
                     if report_month == 12:
                         end_date = datetime.datetime(int(report_year) + 1, 1, 1) - datetime.timedelta(days=1)
                     else:
@@ -264,15 +267,13 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
 
-                norm_time = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
-
-                df["Time"] = df["Time"] - 30600
-
+                df["Time"] = df["Time"]
                 # Применяем функцию к колонке 'Time_in_seconds'
                 df['+/-'] = df['Time'].apply(seconds_to_hhmm)
 
                 total_time = df['Time'].sum()
-                total_time_hhmm = seconds_to_hhmm(total_time)
+                delta = (total_time - norm_time*3600)
+                total_time_hhmm = seconds_to_hhmm(delta)
 
                 # Добавляем новую строку с суммой в конец DataFrame
                 total_row = pd.DataFrame({
