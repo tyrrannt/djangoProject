@@ -2165,6 +2165,7 @@ class ProductionCalendar(models.Model):
         """
         first_day = self.calendar_month + relativedelta(day=1)
         last_day = self.calendar_month + relativedelta(day=datetime.datetime.today().day)
+        last_day = last_day - datetime.timedelta(days=1)
         preholiday_time, day_count, preholiday_day_count, friday_count = 0, 0, 0, 0
 
         preholiday_day = PreHolidayDay.objects.filter(
