@@ -20,7 +20,7 @@ from loguru import logger
 from administration_app.utils import (
     get_jsons_data_filter2,
     get_date_interval,
-    get_jsons_data_filter, process_group, adjust_time,
+    get_jsons_data_filter, process_group, adjust_time, process_group_year,
 )
 from contracts_app.models import Contract
 
@@ -484,13 +484,13 @@ def get_year_report():
         report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
 
     # field names
-    fields = ["FIO", "Date", "Start", "End","Type"]
+    fields = ["FIO", "Дата", "Start", "End","Type"]
 
     # Создание DataFrame
     df = pd.DataFrame(report_card_list, columns=fields)
 
     # Преобразование столбцов в нужные типы данных
-    df["Date"] = pd.to_datetime(df["Date"])
+    df["Дата"] = pd.to_datetime(df["Дата"])
     df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
     df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
     df["Type"] = df["Type"].astype(int)
@@ -498,7 +498,7 @@ def get_year_report():
 
 
     # Группируем по FIO и Date и применяем функцию
-    df = df.groupby(['FIO', 'Date']).apply(adjust_time).reset_index(drop=True)
+    df = df.groupby(['FIO', 'Дата']).apply(adjust_time).reset_index(drop=True)
 
     # Вычисление разности между End и Start и сохранение в новом столбце Time
     df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
@@ -506,8 +506,8 @@ def get_year_report():
 
 
     # Группировка по месяцам и ФИО
-    df["Month"] = df["Date"].dt.to_period("M")
-    grouped = df.groupby(["Month", "FIO", "Date"]).apply(process_group).reset_index(name="Time")
+    df["Month"] = df["Дата"].dt.to_period("M")
+    grouped = df.groupby(["Month", "FIO", "Дата"]).apply(process_group_year).reset_index(name="Time")
     grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
     # Вывод результата
     grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100)

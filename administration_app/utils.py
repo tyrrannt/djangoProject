@@ -1094,13 +1094,13 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
-# def process_group(group):
-#     if any(t in [14, 15, 16, 17, 20] for t in group["Type"].values):
-#         return group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
-#     elif any(t in range(1, 14) or t == 19 for t in group["Type"].values):
-#         return group[group["Type"].isin(list(range(1, 14)) + [19])]["Time"].sum()
-#     else:
-#         return group["Time"].sum()
+def process_group_year(group):
+    if any(t in [14, 15, 16, 17, 20] for t in group["Type"].values):
+        return group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
+    elif any(t in range(1, 14) or t == 19 for t in group["Type"].values):
+        return group[group["Type"].isin(list(range(1, 14)) + [19])]["Time"].sum()
+    else:
+        return group["Time"].sum()
 
 
 def process_group(group):

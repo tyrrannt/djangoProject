@@ -360,10 +360,12 @@
 
                                     /* Стили для выделения текста в зависимости от значения */
                                     .positive {
-                                        color: #082e00;
+                                        font-weight: bold;
+                                        color: #116500;
                                     }
 
                                     .negative {
+                                        font-weight: bold;
                                         color: red;
                                     }
 
@@ -373,8 +375,8 @@
                                     }
 
                                     .type-П {
-                                        background-color:yellowgreen;
-                                        color: #f86cca; /* Другой цвет фона */
+                                        font-weight: bold;
+                                        color: #0b7a00; /* Другой цвет фона */
                                     }
                                 </style>
                                 <div class="row">
@@ -534,11 +536,11 @@
 
                     // Применяем класс в зависимости от значения "Тип"
                     if (type === 'В') {
-                        rows[i].classList.add('type-В');
-                        rows[i].classList.add('table-secondary');
+                        rows[i].classList.remove('positive', 'negative');
+                        rows[i].classList.add('type-В', 'table-secondary');
                     } else if (type === 'П') {
-                        rows[i].classList.add('type-П');
-                        rows[i].classList.add('table-info');
+                        rows[i].classList.remove('positive', 'negative');
+                        rows[i].classList.add('type-П', 'table-primary');
                     }
                 }
             }
