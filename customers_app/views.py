@@ -292,7 +292,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 df.style.background_gradient(cmap='viridis')
                 html = df[["Дата", "Интервал", "+/-"]].to_html(
-                    classes='table table-success table-striped-columns table-hover table-bordered mb-0',
+                    classes='table table-light table-striped-columns table-hover table-bordered mb-0',
                     table_id='my_table_id',
                     index=False,
                     header=True,

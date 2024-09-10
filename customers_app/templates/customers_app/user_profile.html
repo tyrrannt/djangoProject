@@ -347,8 +347,23 @@
                                     }
 
                                     /* Дополнительные стили для итоговой строки */
+                                    /* Выделяем последнюю строку жирным шрифтом и добавляем жирную рамку */
                                     #my_table_id tr:last-child td {
-                                        font-weight: bold; /* Жирный шрифт для итоговой строки */
+                                        font-weight: bold;
+                                        border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
+                                    }
+
+                                    #my_table_id tr:first-child td {
+                                        border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
+                                    }
+
+                                    /* Стили для выделения текста в зависимости от значения */
+                                    .positive {
+                                        color: green;
+                                    }
+
+                                    .negative {
+                                        color: red;
                                     }
                                 </style>
                                 <div class="row">
@@ -475,7 +490,31 @@
                     console.log("failure");
                 }
             });
-        };
+        }
+
+        function applyStyles() {
+            const table = document.getElementById('my_table_id');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) { // Начинаем с 1, чтобы пропустить заголовок
+                const cells = rows[i].getElementsByTagName('td');
+                const valueCell = cells[2]; // Предполагаем, что значение находится в третьей ячейке
+
+                if (valueCell) {
+                    const value = valueCell.textContent.trim();
+
+                    // Очищаем предыдущие классы
+                    rows[i].classList.remove('positive', 'negative');
+
+                    // Применяем класс в зависимости от значения
+                    if (value.startsWith('-')) {
+                        rows[i].classList.add('negative');
+                    } else {
+                        rows[i].classList.add('positive');
+                    }
+                }
+            }
+        }
 
         function report_date() {
             report_year = $("#id_report_year").val();
@@ -495,12 +534,13 @@
                     if (data === 'ok') {
                         console.log("success");
                     }
+                    applyStyles();
                 },
                 failure: function (data) {
                     console.log("failure");
                 }
             });
-        };
+        }
 
         function report_vacation() {
             vacation_date = $("#id_vacation_date").val();
@@ -523,6 +563,6 @@
                     console.log("failure");
                 }
             });
-        };
+        }
     </script>
 {% endblock %}
