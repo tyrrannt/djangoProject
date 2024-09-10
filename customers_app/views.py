@@ -292,7 +292,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     20: "ОТ",
                 }
                 df['Тип'] = df['Type'].map(type_of_report)
-                df['Тип'] = df['Тип'].fillna('')
+
+
                 # Генерация полного диапазона дат за месяц
                 full_date_range = pd.date_range(start=dates[0], end=dates[-1], freq='D')
 
@@ -321,7 +322,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 })
                 df["Дата"] = df["Дата"].dt.strftime("%d")
                 df = pd.concat([df, total_row], ignore_index=True)
-
+                df['Тип'] = df['Тип'].fillna(' ')
                 # Выводим строковое представление интервала
                 # df = df.sort_values(by=['Дата'])
 
