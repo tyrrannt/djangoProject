@@ -2116,7 +2116,7 @@ def get_norm_time_at_custom_day(day):
     weekend_day_count = WeekendDay.objects.filter(weekend_day=day).count()
     if weekend_day_count == 0:
         if preholiday_day_count.count() > 0:
-            return preholiday_day_count[0].work_time.second()
+            return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
         else:
             if day.weekday() == 4:
                 return 27000

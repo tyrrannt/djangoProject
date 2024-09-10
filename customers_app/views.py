@@ -258,8 +258,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Группируем по FIO и Date и применяем функцию
                 df = df.groupby(["Дата"]).apply(adjust_time).reset_index(drop=True)
-                # Вычисление разности между End и Start и сохранение в новом столбце Time
 
+                # Вычисление разности между End и Start и сохранение в новом столбце Time
                 df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
 
                 # Группируем по дате и применяем функцию
