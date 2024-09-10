@@ -369,13 +369,12 @@
 
                                     /* Стили для строк с определенными значениями в колонке "Тип" */
                                     .type-В {
-                                        opacity: 0.5; /* Бледный текст */
                                         color: #0a001f;
                                     }
 
                                     .type-П {
-                                        opacity: 0.5; /* Бледный текст */
-                                        background-color: #ff0000; /* Другой цвет фона */
+                                        background-color:yellowgreen;
+                                        color: #f86cca; /* Другой цвет фона */
                                     }
                                 </style>
                                 <div class="row">
@@ -536,8 +535,10 @@
                     // Применяем класс в зависимости от значения "Тип"
                     if (type === 'В') {
                         rows[i].classList.add('type-В');
+                        rows[i].classList.add('table-secondary');
                     } else if (type === 'П') {
                         rows[i].classList.add('type-П');
+                        rows[i].classList.add('table-info');
                     }
                 }
             }
