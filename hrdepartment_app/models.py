@@ -2108,6 +2108,25 @@ class WeekendDay(models.Model):
         return str(self.weekend_day)
 
 
+def get_norm_time_at_custom_day(day):
+    """
+    Подсчет количества рабочих часов в указанном дне
+    """
+    preholiday_day_count = PreHolidayDay.objects.filter(preholiday_day=day)
+    weekend_day_count = WeekendDay.objects.filter(weekend_day=day).count()
+    if weekend_day_count == 0:
+        if preholiday_day_count.count() > 0:
+            return preholiday_day_count[0].work_time.second()
+        else:
+            if day.weekday() == 4:
+                return 27000
+            elif day.weekday() < 4:
+                return 30600
+            else:
+                return 0
+
+
+
 class ProductionCalendar(models.Model):
     """
     Месяц в производственном календаре.
@@ -2189,14 +2208,7 @@ class ProductionCalendar(models.Model):
                     day_count += 1
         return (day_count * 8) + (day_count / 2) - friday_count - (preholiday_day_count * 8.5 - preholiday_time)
 
-    # def get_norm_time_at_month(self):
-    #     """
-    #     Подсчет количества рабочих часов в месяце
-    #     return (
-    #             (self.number_working_days * 8)
-    #             + (self.number_working_days / 2)
-    #             - self.get_friday_count() - (preholiday_day_count * 8.5 - preholiday_time)
-    #     )
+
 
     def get_norm_time(self):
         """

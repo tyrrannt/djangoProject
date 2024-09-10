@@ -33,7 +33,8 @@ from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from hrdepartment_app.hrdepartment_util import get_working_hours
-from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar
+from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
+    get_norm_time_at_custom_day
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -249,11 +250,11 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Создание DataFrame
                 df = pd.DataFrame(report_card_list, columns=fields)
                 # Преобразование столбцов в нужные типы данных
-                df["Дата"] = pd.to_datetime(df["Дата"])
+                df["Дата"] = pd.to_datetime(df["Дата"], format="%d.%m.%Y")
                 df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
                 df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
                 df["Type"] = df["Type"].astype(int)
-                df["Дата"] = df["Дата"].dt.strftime("%d")
+
                 # Группируем по FIO и Date и применяем функцию
                 df = df.groupby(["Дата"]).apply(adjust_time).reset_index(drop=True)
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
@@ -267,11 +268,12 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
 
-                df["Time"] = df["Time"]
-                # Применяем функцию к колонке 'Time_in_seconds'
-                df['+/-'] = df['Time'].apply(seconds_to_hhmm)
-
                 total_time = df['Time'].sum()
+                df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
+                # Применяем функцию к колонке 'Time_in_seconds'
+                df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
+                print(df)
+
                 delta = (total_time - norm_time*3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
 
@@ -281,11 +283,11 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     'Интервал': [''],
                     '+/-': [total_time_hhmm]
                 })
-
+                df["Дата"] = df["Дата"].dt.strftime("%d")
                 df = pd.concat([df, total_row], ignore_index=True)
 
                 # Выводим строковое представление интервала
-                df = df.sort_values(by=['Дата'])
+                # df = df.sort_values(by=['Дата'])
 
                 df.style.background_gradient(cmap='viridis')
                 html = df[["Дата", "Интервал", "+/-"]].to_html(

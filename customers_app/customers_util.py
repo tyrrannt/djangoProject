@@ -732,3 +732,4 @@ def get_vacation_days(self, dates):
     ]
     print(((len(dates) - 1) * (28 / 12)), days)
     return round(((len(dates) - 1) * (28 / 12)) - days)
+

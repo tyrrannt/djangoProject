@@ -1220,3 +1220,4 @@ def seconds_to_hhmm(seconds):
     if seconds < 0:
         return f"-{hours:3}:{minutes:02}"
     return f"{hours:3}:{minutes:02}"
+
