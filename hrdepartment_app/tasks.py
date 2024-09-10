@@ -13,6 +13,7 @@ from decouple import config
 from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
+from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from loguru import logger
@@ -27,7 +28,8 @@ from contracts_app.models import Contract
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings, VacationScheduleList, \
     VacationSchedule, Counteragent
 from djangoProject.celery import app
-from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN, BASE_DIR, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN, BASE_DIR, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, MEDIA_URL, \
+    MEDIA_ROOT
 from hrdepartment_app.models import (
     ReportCard,
     WeekendDay,
@@ -472,7 +474,7 @@ def calc_diff(start, end):
     return diff
 
 @app.task()
-def get_year_report():
+def get_year_report(html_mode=True):
     year = datetime.datetime.today().year
     current_date = datetime.datetime.today()
     first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
@@ -549,9 +551,13 @@ def get_year_report():
     pivot_df = grouped.pivot(index="FIO", columns="Month", values="Time")
     pivot_df = pivot_df.fillna(0)
     pivot_df['Sum'] = pivot_df.sum(axis=1)
-    # pivot_df.to_csv("pnd.csv", sep=";")
-    html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped mb-0', border=1, justify='center')
-    return html_table
+
+    html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped dataTable mb-0', table_id='datatable-editable', border=1, justify='center')
+
+    if html_mode == False:
+        return pivot_df
+    else:
+        return html_table
 
 @app.task()
 def get_vacation():

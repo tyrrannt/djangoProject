@@ -5,7 +5,7 @@ from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import (
@@ -13,7 +13,7 @@ from django.views.generic import (
     CreateView,
     UpdateView,
     DetailView,
-    DeleteView,
+    DeleteView, View,
 )
 from loguru import logger
 
@@ -2571,7 +2571,17 @@ class ReportCardDelete(LoginRequiredMixin, DeleteView):
     model = ReportCard
     success_url = "/hr/report/admin/"
 
+class ReportCardDetailYearXLS(View):
+    def get(self, request, *args, **kwargs):
+        df = get_year_report(html_mode=False)
+        # Создание Excel-файла
+        response = HttpResponse(content_type='application/ms-excel')
+        response['Content-Disposition'] = 'attachment; filename="dataframe.xlsx"'
 
+        # Запись DataFrame в Excel
+        df.to_excel(response, index=True, engine='openpyxl')
+
+        return response
 class ReportCardDetailYear(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
