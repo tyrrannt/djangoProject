@@ -477,7 +477,9 @@ def get_year_report():
     current_date = datetime.datetime.today()
     first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
     user_list = ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type__in=["1", "13",])).values_list('employee', flat=True)
-    user_set = set(list(user_list))
+    all_user_set = set(list(user_list))
+    user_set = [user for user in all_user_set if user.is_active]
+
     report_card_list = list()
 
     for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(report_card_day__lt=first_day_of_current_month ) & Q(employee__in=user_set)):
