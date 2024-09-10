@@ -227,6 +227,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 start_date = current_date.replace(day=1)
                 # Генерируем диапазон дат с начала месяца до текущего дня
                 norm_time_date = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
+
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
                     norm_time = norm_time_date.get_norm_time_at_day()
