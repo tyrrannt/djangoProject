@@ -269,6 +269,20 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
 
+                # Генерация полного диапазона дат за месяц
+                full_date_range = pd.date_range(start=dates[0], end=dates[-1])
+
+                # Создание DataFrame с полным диапазоном дат
+                full_df = pd.DataFrame({'Дата': full_date_range})
+
+                # Объединение существующих данных с полным диапазоном дат
+                df = pd.merge(full_df, df, on='Дата', how='left')
+
+                # Заполнение недостающих данных
+                df['Интервал'] = df['Интервал'].fillna('0:00-0:00')
+                df['Time'] = df['Time'].fillna(0)
+
+
                 total_time = df['Time'].sum()
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Применяем функцию к колонке 'Time_in_seconds'
