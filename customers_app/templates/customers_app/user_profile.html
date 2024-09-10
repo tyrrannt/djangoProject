@@ -366,6 +366,15 @@
                                     .negative {
                                         color: red;
                                     }
+
+                                    /* Стили для строк с определенными значениями в колонке "Тип" */
+                                    .type-В {
+                                        opacity: 0.5; /* Бледный текст */
+                                    }
+
+                                    .type-П {
+                                        background-color: lightblue; /* Другой цвет фона */
+                                    }
                                 </style>
                                 <div class="row">
                                     <div class="col-sm-12">
@@ -500,6 +509,7 @@
             for (let i = 1; i < rows.length; i++) { // Начинаем с 1, чтобы пропустить заголовок
                 const cells = rows[i].getElementsByTagName('td');
                 const valueCell = cells[2]; // Предполагаем, что значение находится в третьей ячейке
+                const typeCell = cells[3]; // Предполагаем, что значение "Тип" находится в четвертой ячейке
 
                 if (valueCell) {
                     const value = valueCell.textContent.trim();
@@ -512,6 +522,20 @@
                         rows[i].classList.add('negative');
                     } else {
                         rows[i].classList.add('positive');
+                    }
+                }
+
+                if (typeCell) {
+                    const type = typeCell.textContent.trim();
+
+                    // Очищаем предыдущие классы
+                    rows[i].classList.remove('type-В', 'type-П');
+
+                    // Применяем класс в зависимости от значения "Тип"
+                    if (type === 'В') {
+                        rows[i].classList.add('type-В');
+                    } else if (type === 'П') {
+                        rows[i].classList.add('type-П');
                     }
                 }
             }
