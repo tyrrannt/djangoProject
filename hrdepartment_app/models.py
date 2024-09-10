@@ -2124,6 +2124,8 @@ def get_norm_time_at_custom_day(day):
                 return 30600
             else:
                 return 0
+    else:
+        return 0
 
 
 
