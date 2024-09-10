@@ -261,17 +261,41 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
                 df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
-
+                print(df)
                 # Группируем по дате и применяем функцию
                 df = df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
 
                 # Группируем по FIO и Date и применяем функцию
-                df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
+                # df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
+                df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(drop=True)
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
-
+                type_of_report = {
+                    1: "Я",
+                    2: "О",
+                    3: "ДО",
+                    4: "Отпуск за свой счет",
+                    5: "ДУ",
+                    6: "ОБ",
+                    7: "ДО",
+                    8: "ОБ",
+                    9: "О",
+                    10: "ДО",
+                    11: "ДО",
+                    12: "О",
+                    13: "Я",
+                    14: "СП",
+                    15: "К",
+                    16: "Б",
+                    17: "М",
+                    18: "ГО",
+                    19: "О",
+                    20: "ОТ",
+                }
+                df['Тип'] = df['Type'].map(type_of_report)
+                df['Тип'] = df['Тип'].fillna('')
                 # Генерация полного диапазона дат за месяц
                 full_date_range = pd.date_range(start=dates[0], end=dates[-1], freq='D')
-                print(full_date_range)
+
                 # Создание DataFrame с полным диапазоном дат
                 full_df = pd.DataFrame({'Дата': full_date_range})
                 # Объединение существующих данных с полным диапазоном дат
@@ -302,7 +326,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # df = df.sort_values(by=['Дата'])
 
                 df.style.background_gradient(cmap='viridis')
-                html = df[["Дата", "Интервал", "+/-"]].to_html(
+                html = df[["Дата", "Интервал", "+/-", "Тип"]].to_html(
                     classes='table table-light table-striped-columns table-hover table-bordered mb-0',
                     table_id='my_table_id',
                     index=False,

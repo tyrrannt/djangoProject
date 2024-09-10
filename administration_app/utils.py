@@ -14,6 +14,7 @@ from email.utils import formatdate
 from urllib.parse import urljoin
 
 import magic
+import pandas as pd
 import requests
 from dateutil import rrule, relativedelta
 from decouple import config
@@ -1093,13 +1094,32 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+# def process_group(group):
+#     if any(t in [14, 15, 16, 17, 20] for t in group["Type"].values):
+#         return group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
+#     elif any(t in range(1, 14) or t == 19 for t in group["Type"].values):
+#         return group[group["Type"].isin(list(range(1, 14)) + [19])]["Time"].sum()
+#     else:
+#         return group["Time"].sum()
+
+
 def process_group(group):
     if any(t in [14, 15, 16, 17, 20] for t in group["Type"].values):
-        return group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
+        new_type = group[group["Type"].isin([14, 15, 16, 17, 20])]["Type"].values[0]
+        new_time = group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
     elif any(t in range(1, 14) or t == 19 for t in group["Type"].values):
-        return group[group["Type"].isin(list(range(1, 14)) + [19])]["Time"].sum()
+        new_type = group[group["Type"].isin(list(range(1, 14)) + [19])]["Type"].values[0]
+        new_time = group[group["Type"].isin(list(range(1, 14)) + [19])]["Time"].sum()
     else:
-        return group["Time"].sum()
+        new_type = group["Type"].values[0]
+        new_time = group["Time"].sum()
+
+    return pd.DataFrame({
+        'Дата': [group['Дата'].iloc[0]],
+        'Интервал': [group['Интервал'].iloc[0]],
+        'Type': [new_type],
+        'Time': [new_time]
+    })
 
 
 # Функция для проверки и корректировки пересечений
