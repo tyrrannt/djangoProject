@@ -261,7 +261,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
                 df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
-                print(df)
+
                 # Группируем по дате и применяем функцию
                 df = df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
 
@@ -307,6 +307,16 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
 
                 total_time = df['Time'].sum()
+                # Фильтрация DataFrame по условию Тип = NaN
+                filtered_df = df[df['Тип'].isna()]
+
+                # Применение функции get_norm_time_at_custom_day к каждой строке
+                filtered_df['Тип'] = filtered_df['Дата'].apply(
+                    lambda day: get_norm_time_at_custom_day(day, True))
+
+                # Обновление поля Тип в исходном DataFrame
+                df.update(filtered_df)
+                print(df)
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Применяем функцию к колонке 'Time_in_seconds'
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
