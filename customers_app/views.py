@@ -286,16 +286,18 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Выводим строковое представление интервала
                 df = df.sort_values(by=['Дата'])
+
+                df.style.background_gradient(cmap='viridis')
                 html = df[["Дата", "Интервал", "+/-"]].to_html(
-                    classes='table table-ecommerce-simple mb-0',
+                    classes='table table-success table-striped-columns table-hover table-bordered mb-0',
                     table_id='my_table_id',
                     index=False,
                     header=True,
                     formatters={'Time': '{:.2f}'.format, },
-                    border=2,
+                    border=1,
                     # attrs={'style': 'border-collapse: collapse;'},
                     # caption='Моя таблица',
-                    justify="right",
+                    justify='right',
                 )
                 return JsonResponse(html, safe=False)
 
