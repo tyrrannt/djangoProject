@@ -12,26 +12,26 @@
 
 {% block content %}
     <section role="main" class="content-body">
-{#        <header class="page-header">#}
-{#            <h2>Профиль пользователя</h2>#}
-{##}
-{#            <div class="right-wrapper text-end">#}
-{#                <ol class="breadcrumbs">#}
-{#                    <li>#}
-{#                        <a href="#">#}
-{#                            <i class="bx bx-home-alt"></i>#}
-{#                        </a>#}
-{#                    </li>#}
-{##}
-{#                    <li><span>Pages</span></li>#}
-{##}
-{#                    <li><span>User Profile</span></li>#}
-{##}
-{#                </ol>#}
-{##}
-{#                <a class="sidebar-right-toggle" data-open="sidebar-right"><i class="fas fa-chevron-left"></i></a>#}
-{#            </div>#}
-{#        </header>#}
+        {#        <header class="page-header">#}
+        {#            <h2>Профиль пользователя</h2>#}
+        {##}
+        {#            <div class="right-wrapper text-end">#}
+        {#                <ol class="breadcrumbs">#}
+        {#                    <li>#}
+        {#                        <a href="#">#}
+        {#                            <i class="bx bx-home-alt"></i>#}
+        {#                        </a>#}
+        {#                    </li>#}
+        {##}
+        {#                    <li><span>Pages</span></li>#}
+        {##}
+        {#                    <li><span>User Profile</span></li>#}
+        {##}
+        {#                </ol>#}
+        {##}
+        {#                <a class="sidebar-right-toggle" data-open="sidebar-right"><i class="fas fa-chevron-left"></i></a>#}
+        {#            </div>#}
+        {#        </header>#}
 
         <!-- start: page -->
 
@@ -42,103 +42,103 @@
                     <h1 id="app"></h1>
                 </section>
                 {% if user.is_superuser %}
-{#                    <section class="card">#}
-{#                        <header class="card-header">#}
-{#                            <div class="card-actions">#}
-{#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
-{#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
-{#                            </div>#}
-{##}
-{#                            <h2 class="card-title">#}
-{#                                <span class="badge badge-primary label-sm font-weight-normal va-middle me-3">298</span>#}
-{#                                <span class="va-middle">Friends</span>#}
-{#                            </h2>#}
-{#                        </header>#}
-{#                        <div class="card-body">#}
-{#                            <div class="content">#}
-{#                                <ul class="simple-user-list">#}
-{#                                    <li>#}
-{#                                        <figure class="image rounded">#}
-{#                                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"#}
-{#                                                 alt="Joseph Doe Junior" class="rounded-circle">#}
-{#                                        </figure>#}
-{#                                        <span class="title">Joseph Doe Junior</span>#}
-{#                                        <span class="message truncate">Lorem ipsum dolor sit.</span>#}
-{#                                    </li>#}
-{#                                </ul>#}
-{#                                <hr class="dotted short">#}
-{#                                <div class="text-end">#}
-{#                                    <a class="text-uppercase text-muted" href="#">(View All)</a>#}
-{#                                </div>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                        <div class="card-footer">#}
-{#                            <div class="input-group">#}
-{#                                <input type="text" class="form-control" name="s" id="s" placeholder="Поиск...">#}
-{#                                <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>#}
-{#                            </div>#}
-{#                        </div>#}
-{#                    </section>#}
-{##}
-{#                    <section class="card">#}
-{#                        <header class="card-header">#}
-{#                            <div class="card-actions">#}
-{#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
-{#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
-{#                            </div>#}
-{##}
-{#                            <h2 class="card-title">Popular Posts</h2>#}
-{#                        </header>#}
-{#                        <div class="card-body">#}
-{#                            <ul class="simple-post-list">#}
-{#                                <li>#}
-{#                                    <div class="post-image">#}
-{#                                        <div class="img-thumbnail">#}
-{#                                            <a href="#">#}
-{#                                                <img src="{% static 'admin_templates/img/post-thumb-1.jpg' %}" alt="">#}
-{#                                            </a>#}
-{#                                        </div>#}
-{#                                    </div>#}
-{#                                    <div class="post-info">#}
-{#                                        <a href="#">Nullam Vitae Nibh Un Odiosters</a>#}
-{#                                        <div class="post-meta">#}
-{#                                            Jan 10, 2021#}
-{#                                        </div>#}
-{#                                    </div>#}
-{#                                </li>#}
-{#                                <li>#}
-{#                                    <div class="post-image">#}
-{#                                        <div class="img-thumbnail">#}
-{#                                            <a href="#">#}
-{#                                                <img src="{% static 'admin_templates/img/post-thumb-2.jpg' %}" alt="">#}
-{#                                            </a>#}
-{#                                        </div>#}
-{#                                    </div>#}
-{#                                    <div class="post-info">#}
-{#                                        <a href="#">Vitae Nibh Un Odiosters</a>#}
-{#                                        <div class="post-meta">#}
-{#                                            Jan 10, 2021#}
-{#                                        </div>#}
-{#                                    </div>#}
-{#                                </li>#}
-{#                                <li>#}
-{#                                    <div class="post-image">#}
-{#                                        <div class="img-thumbnail">#}
-{#                                            <a href="#">#}
-{#                                                <img src="{% static 'admin_templates/img/post-thumb-3.jpg' %}" alt="">#}
-{#                                            </a>#}
-{#                                        </div>#}
-{#                                    </div>#}
-{#                                    <div class="post-info">#}
-{#                                        <a href="#">Odiosters Nullam Vitae</a>#}
-{#                                        <div class="post-meta">#}
-{#                                            Jan 10, 2021#}
-{#                                        </div>#}
-{#                                    </div>#}
-{#                                </li>#}
-{#                            </ul>#}
-{#                        </div>#}
-{#                    </section>#}
+                    {#                    <section class="card">#}
+                    {#                        <header class="card-header">#}
+                    {#                            <div class="card-actions">#}
+                    {#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
+                    {#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
+                    {#                            </div>#}
+                    {##}
+                    {#                            <h2 class="card-title">#}
+                    {#                                <span class="badge badge-primary label-sm font-weight-normal va-middle me-3">298</span>#}
+                    {#                                <span class="va-middle">Friends</span>#}
+                    {#                            </h2>#}
+                    {#                        </header>#}
+                    {#                        <div class="card-body">#}
+                    {#                            <div class="content">#}
+                    {#                                <ul class="simple-user-list">#}
+                    {#                                    <li>#}
+                    {#                                        <figure class="image rounded">#}
+                    {#                                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"#}
+                    {#                                                 alt="Joseph Doe Junior" class="rounded-circle">#}
+                    {#                                        </figure>#}
+                    {#                                        <span class="title">Joseph Doe Junior</span>#}
+                    {#                                        <span class="message truncate">Lorem ipsum dolor sit.</span>#}
+                    {#                                    </li>#}
+                    {#                                </ul>#}
+                    {#                                <hr class="dotted short">#}
+                    {#                                <div class="text-end">#}
+                    {#                                    <a class="text-uppercase text-muted" href="#">(View All)</a>#}
+                    {#                                </div>#}
+                    {#                            </div>#}
+                    {#                        </div>#}
+                    {#                        <div class="card-footer">#}
+                    {#                            <div class="input-group">#}
+                    {#                                <input type="text" class="form-control" name="s" id="s" placeholder="Поиск...">#}
+                    {#                                <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>#}
+                    {#                            </div>#}
+                    {#                        </div>#}
+                    {#                    </section>#}
+                    {##}
+                    {#                    <section class="card">#}
+                    {#                        <header class="card-header">#}
+                    {#                            <div class="card-actions">#}
+                    {#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
+                    {#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
+                    {#                            </div>#}
+                    {##}
+                    {#                            <h2 class="card-title">Popular Posts</h2>#}
+                    {#                        </header>#}
+                    {#                        <div class="card-body">#}
+                    {#                            <ul class="simple-post-list">#}
+                    {#                                <li>#}
+                    {#                                    <div class="post-image">#}
+                    {#                                        <div class="img-thumbnail">#}
+                    {#                                            <a href="#">#}
+                    {#                                                <img src="{% static 'admin_templates/img/post-thumb-1.jpg' %}" alt="">#}
+                    {#                                            </a>#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                    <div class="post-info">#}
+                    {#                                        <a href="#">Nullam Vitae Nibh Un Odiosters</a>#}
+                    {#                                        <div class="post-meta">#}
+                    {#                                            Jan 10, 2021#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                </li>#}
+                    {#                                <li>#}
+                    {#                                    <div class="post-image">#}
+                    {#                                        <div class="img-thumbnail">#}
+                    {#                                            <a href="#">#}
+                    {#                                                <img src="{% static 'admin_templates/img/post-thumb-2.jpg' %}" alt="">#}
+                    {#                                            </a>#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                    <div class="post-info">#}
+                    {#                                        <a href="#">Vitae Nibh Un Odiosters</a>#}
+                    {#                                        <div class="post-meta">#}
+                    {#                                            Jan 10, 2021#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                </li>#}
+                    {#                                <li>#}
+                    {#                                    <div class="post-image">#}
+                    {#                                        <div class="img-thumbnail">#}
+                    {#                                            <a href="#">#}
+                    {#                                                <img src="{% static 'admin_templates/img/post-thumb-3.jpg' %}" alt="">#}
+                    {#                                            </a>#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                    <div class="post-info">#}
+                    {#                                        <a href="#">Odiosters Nullam Vitae</a>#}
+                    {#                                        <div class="post-meta">#}
+                    {#                                            Jan 10, 2021#}
+                    {#                                        </div>#}
+                    {#                                    </div>#}
+                    {#                                </li>#}
+                    {#                            </ul>#}
+                    {#                        </div>#}
+                    {#                    </section>#}
                 {% endif %}
             </div>
             <div class="col-lg-8 col-xl-6">
@@ -193,7 +193,7 @@
                                                             <p class="text-danger mb-0">
                                                                 Ответственный: {{ item.responsible }}</p>
                                                             {% if user == item.responsible %}
-                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
+                                                                <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
                                                             {% endif %}
                                                         </div>
                                                     </li>
@@ -219,7 +219,7 @@
                                                             <p class="text-danger mb-0">
                                                                 Ответственный: {{ item.responsible }}</p>
                                                             {% if user == item.responsible %}
-                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
+                                                                <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
                                                             {% endif %}
                                                         </div>
                                                     </li>
@@ -238,8 +238,9 @@
                                         <select class="form-control select-style-1 filter-by" name="filter_month"
                                                 id="id_filter_month">
                                             {% for key, value in month_dict.items %}
-                                            <option value="{{ key }}" {% if current_month == key %}selected{% endif %}> {{ value }}
-                                            </option>
+                                                <option value="{{ key }}"
+                                                        {% if current_month == key %}selected{% endif %}> {{ value }}
+                                                </option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -247,8 +248,9 @@
                                         <select class="form-control select-style-1 filter-by" name="filter_year"
                                                 id="id_filter_year">
                                             {% for key, value in year_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
-                                            </option>
+                                                <option value="{{ key }}"
+                                                        {% if current_year == key %}selected{% endif %}> {{ value }}
+                                                </option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -256,7 +258,8 @@
                                         <input class="form-control" type="password" id="id_pxmx" value="">
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">OK</button>
+                                        <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">OK
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -297,8 +300,9 @@
                                         <select class="form-control select-style-1 filter-by" name="report_month"
                                                 id="id_report_month">
                                             {% for key, value in month_dict.items %}
-                                            <option value="{{ key }}" {% if current_month == key %}selected{% endif %}> {{ value }}
-                                            </option>
+                                                <option value="{{ key }}"
+                                                        {% if current_month == key %}selected{% endif %}> {{ value }}
+                                                </option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -306,38 +310,67 @@
                                         <select class="form-control select-style-1 filter-by" name="report_year"
                                                 id="id_report_year">
                                             {% for key, value in year_dict.items %}
-                                            <option value="{{ key }}" {% if current_year == key %}selected{% endif %}> {{ value }}
-                                            </option>
+                                                <option value="{{ key }}"
+                                                        {% if current_year == key %}selected{% endif %}> {{ value }}
+                                                </option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="report_date()">OK</button>
+                                        <button class="btn btn-primary" style="width: 100%" onclick="report_date()">OK
+                                        </button>
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">Журнал</button>
+                                        <button class="btn btn-primary" style="width: 100%"
+                                                onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">
+                                            Журнал
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="row">
-                                        <div class="col-sm-12">
-                                            <div id="id_report" class="table-responsive">
+                                <style>
+                                    /* Применяем к таблице с id="my_table_id" */
+                                    #my_table_id {
+                                        width: 100%; /* Таблица занимает всю доступную ширину */
+                                        border-collapse: collapse; /* Убираем отступы между ячейками */
+                                    }
 
-                                            </div>
+                                    /* Выравниваем содержимое всех ячеек по правому краю */
+                                    #my_table_id th,
+                                    #my_table_id td {
+                                        text-align: right;
+                                        padding: 8px; /* Добавляем отступы внутри ячеек */
+                                    }
+
+                                    /* Выравниваем заголовки по левому краю */
+                                    #my_table_id th {
+                                        text-align: right;
+                                    }
+
+                                    /* Дополнительные стили для итоговой строки */
+                                    #my_table_id tr:last-child td {
+                                        font-weight: bold; /* Жирный шрифт для итоговой строки */
+                                    }
+                                </style>
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        <div id="id_report" class="table-responsive">
+
                                         </div>
+                                    </div>
                                 </div>
                                 <hr>
-{#                                <div class="row">#}
-{#                                        <div class="col-sm-12">#}
-{#                                            <p>Обозначение цветов:<br>#}
-{#                                            <strong><span style="color: #0c00ad">Синий</span></strong> - Отпуска;<br>#}
-{#                                            <strong><span style="color: #000000">Черный</span></strong> - Явка;<br>#}
-{#                                            <strong><span>--//--</span></strong> - Уход не зарегистрирован;<br>#}
-{#                                            <strong><span style="color: #ff0000">Красный</span></strong> - Недоработка;<br>#}
-{#                                            <strong><span style="background-color: #b0ffd5">Зеленый фон</span></strong> - Несколько интервалов за день.</p>#}
-{#                                            <p>Сокращения:<br>#}
-{#                                            <strong><span>Я&nbsp;-&nbsp;Явка; СП&nbsp;-&nbsp;Служебная поездка; К&nbsp;-&nbsp;Командировка; О&nbsp;-&nbsp;Отпуск; Б&nbsp;-&nbsp;Больничный; М&nbsp;-&nbsp;Мед осмотр; В&nbsp;-&nbsp;Выходной; П&nbsp;-&nbsp;Праздник; </span><span style="color: #ff0000">Н&nbsp;-&nbsp;Отсутствие.</span></strong><br>#}
-{#                                        </div>#}
-{#                                </div>#}
+                                {#                                <div class="row">#}
+                                {#                                        <div class="col-sm-12">#}
+                                {#                                            <p>Обозначение цветов:<br>#}
+                                {#                                            <strong><span style="color: #0c00ad">Синий</span></strong> - Отпуска;<br>#}
+                                {#                                            <strong><span style="color: #000000">Черный</span></strong> - Явка;<br>#}
+                                {#                                            <strong><span>--//--</span></strong> - Уход не зарегистрирован;<br>#}
+                                {#                                            <strong><span style="color: #ff0000">Красный</span></strong> - Недоработка;<br>#}
+                                {#                                            <strong><span style="background-color: #b0ffd5">Зеленый фон</span></strong> - Несколько интервалов за день.</p>#}
+                                {#                                            <p>Сокращения:<br>#}
+                                {#                                            <strong><span>Я&nbsp;-&nbsp;Явка; СП&nbsp;-&nbsp;Служебная поездка; К&nbsp;-&nbsp;Командировка; О&nbsp;-&nbsp;Отпуск; Б&nbsp;-&nbsp;Больничный; М&nbsp;-&nbsp;Мед осмотр; В&nbsp;-&nbsp;Выходной; П&nbsp;-&nbsp;Праздник; </span><span style="color: #ff0000">Н&nbsp;-&nbsp;Отсутствие.</span></strong><br>#}
+                                {#                                        </div>#}
+                                {#                                </div>#}
                             </div>
                         </div>
                         <div id="sout" class="tab-pane">
@@ -357,11 +390,11 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                        <div class="col-sm-12">
-                                            <div id="id_report" class="table-responsive">
+                                    <div class="col-sm-12">
+                                        <div id="id_report" class="table-responsive">
 
-                                            </div>
                                         </div>
+                                    </div>
                                 </div>
                                 <hr>
 
@@ -375,10 +408,13 @@
                                         <h4>Выберите дату:</h4>
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <input class="form-control form-control-modern" type="date" min="2023-01-01" id="id_vacation_date" name="vacation_date"/>
+                                        <input class="form-control form-control-modern" type="date" min="2023-01-01"
+                                               id="id_vacation_date" name="vacation_date"/>
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="report_vacation()">OK</button>
+                                        <button class="btn btn-primary" style="width: 100%" onclick="report_vacation()">
+                                            OK
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -389,11 +425,11 @@
 
                                 </div>
                                 <div class="row">
-                                        <div class="col-sm-12">
-                                            <div id="id_report" class="table-responsive">
+                                    <div class="col-sm-12">
+                                        <div id="id_report" class="table-responsive">
 
-                                            </div>
                                         </div>
+                                    </div>
                                 </div>
                                 <hr>
 
@@ -440,6 +476,7 @@
                 }
             });
         };
+
         function report_date() {
             report_year = $("#id_report_year").val();
             report_month = $("#id_report_month").val();
@@ -464,6 +501,7 @@
                 }
             });
         };
+
         function report_vacation() {
             vacation_date = $("#id_vacation_date").val();
             $.ajax({
