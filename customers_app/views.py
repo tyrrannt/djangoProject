@@ -222,9 +222,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 """
                 # Определяем текущую дату
 
-                current_date = datetime.datetime.now() - datetime.timedelta(days=1)
+                current_date = datetime.datetime.today() - datetime.timedelta(days=1)
                 # Определяем начальную дату как первый день текущего месяца
-                start_date = current_date.replace(day=1)
+                start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 # Генерируем диапазон дат с начала месяца до текущего дня
                 norm_time_date = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
 
@@ -239,7 +239,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                         end_date = datetime.datetime(int(report_year) + 1, 1, 1) - datetime.timedelta(days=1)
                     else:
                         end_date = datetime.datetime(int(report_year), int(report_month) + 1, 1) - datetime.timedelta(days=1)
-                    dates = list(rrule(DAILY, dtstart=datetime.datetime(year=int(report_year), month=int(report_month), day=1), until=end_date))
+                    dates = list(rrule(DAILY, dtstart=datetime.datetime(year=int(report_year), month=int(report_month), day=1, hour=0, minute=0, second=0), until=end_date))
                 report_card_list = []
                 for report_record in ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day__in=dates)):
                     report_card_list.append(
@@ -270,14 +270,12 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
 
                 # Генерация полного диапазона дат за месяц
-                full_date_range = pd.date_range(start=dates[0], end=dates[-1])
-
+                full_date_range = pd.date_range(start=dates[0], end=dates[-1], freq='D')
+                print(full_date_range)
                 # Создание DataFrame с полным диапазоном дат
                 full_df = pd.DataFrame({'Дата': full_date_range})
-
                 # Объединение существующих данных с полным диапазоном дат
-                df = pd.merge(full_df, df, on='Дата', how='left')
-
+                df = pd.merge(full_df, df, on='Дата', how='outer')
                 # Заполнение недостающих данных
                 df['Интервал'] = df['Интервал'].fillna('0:00-0:00')
                 df['Time'] = df['Time'].fillna(0)
@@ -287,7 +285,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Применяем функцию к колонке 'Time_in_seconds'
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
-                print(df)
 
                 delta = (total_time - norm_time*3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
