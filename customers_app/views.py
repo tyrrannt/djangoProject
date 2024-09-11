@@ -331,7 +331,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     if len(report_card_day) == 1:
                         total_row = pd.DataFrame({
                             'Дата': [report_card_day[0][0]],
-                            'Интервал': [f'{report_card_day[0][1].strftime('%H:%M')} - по н.в.'],
+                            'Интервал': [f"{report_card_day[0][1].strftime('%H:%M')} - по н.в."],
                             '+/-': ['--//--']
                         })
                         total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")
