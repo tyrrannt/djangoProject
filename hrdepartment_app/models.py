@@ -2247,7 +2247,6 @@ class ProductionCalendar(models.Model):
                 preholiday_time += item.work_time.hour + item.work_time.minute / 60
         norm_time = (self.number_working_days * 8) + (self.number_working_days / 2) - self.get_friday_count() - (preholiday_day_count * 8.5 - preholiday_time)
 
-        print(self.number_working_days, self.get_friday_count(), preholiday_day_count, preholiday_time, norm_time)
         return norm_time
 
     def __str__(self):

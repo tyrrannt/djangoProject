@@ -540,10 +540,10 @@ def get_year_report(html_mode=True):
     for date in first_days_of_months[:-1]:
         key = date.strftime('%Y-%m')
         norm_time = ProductionCalendar.objects.get(calendar_month=date)
-        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1)
+        print(date, norm_time.get_norm_time())
+        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1)*10
 
     grouped = grouped.fillna('')
-    print(subtraction_dict)
     # Функция для вычитания значения из словаря
     def subtract_value(row):
         month = str(row["Month"])

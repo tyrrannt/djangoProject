@@ -325,7 +325,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
                 delta = (total_time - norm_time*3600)
-                print(delta, total_time, norm_time*3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
 
                 # Блок для ввода в таблицу строки за текущий день. Если дата равна текущей, то добавляем в dataframe строку с текущей датой
