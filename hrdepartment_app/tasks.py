@@ -34,7 +34,7 @@ from hrdepartment_app.models import (
     ReportCard,
     WeekendDay,
     check_day,
-    ApprovalOficialMemoProcess, ProductionCalendar,
+    ApprovalOficialMemoProcess, ProductionCalendar, get_norm_time_at_custom_day,
 )
 from telegram_app.management.commands.bot import send_message_tg
 from telegram_app.models import TelegramNotification, ChatID
@@ -505,11 +505,15 @@ def get_year_report(html_mode=True):
 
     # Вычисление разности между End и Start и сохранение в новом столбце Time
     df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
-
+    # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
+    df['Time'] = df.apply(
+        lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(
+            row['Дата']), axis=1)
 
 
     # Группировка по месяцам и ФИО
     df["Month"] = df["Дата"].dt.to_period("M")
+
     grouped = df.groupby(["Month", "FIO", "Дата"]).apply(process_group_year).reset_index(name="Time")
     grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
     # Вывод результата
