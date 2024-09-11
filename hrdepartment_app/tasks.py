@@ -541,7 +541,7 @@ def get_year_report(html_mode=True):
         key = date.strftime('%Y-%m')
         norm_time = ProductionCalendar.objects.get(calendar_month=date)
         print(date, norm_time.get_norm_time())
-        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1)*10
+        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1)*60
 
     grouped = grouped.fillna('')
     # Функция для вычитания значения из словаря
