@@ -28,18 +28,60 @@ from hrdepartment_app.models import (
 # Register your models here.
 
 admin.site.register(DocumentsJobDescription)
-admin.site.register(PlaceProductionActivity)
-admin.site.register(MedicalOrganisation)
-admin.site.register(Medical)
 admin.site.register(Purpose)
 
 admin.site.register(Groups)
 admin.site.register(ReasonForCancellation)
-admin.site.register(PreHolidayDay)
-admin.site.register(WeekendDay)
-admin.site.register(ProductionCalendar)
 admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
+
+
+@admin.register(Medical)
+class MedicalAdmin(admin.ModelAdmin):
+    list_display = ("get_person", "get_inspection_view", "number", "date_of_inspection")  #
+
+    def get_inspection_view(self, obj: Medical):
+        return obj.get_type_inspection_display()
+
+    def get_person(self, obj: Medical):
+        return format_name_initials(obj.person.title)
+
+
+@admin.register(MedicalOrganisation)
+class MedicalOrganisationAdmin(admin.ModelAdmin):
+    list_display = ("description", "ogrn", "address", "email", "phone")  #
+    search_fields = ["description"]
+
+
+@admin.register(PlaceProductionActivity)
+class PlaceProductionActivityAdmin(admin.ModelAdmin):
+    list_display = ("name", "address", "short_name", "use_team_orders", "additional_payment", "email")  #
+    list_filter = (
+        "use_team_orders",
+    )
+    search_fields = ["name", "short_name"]
+
+
+@admin.register(ProductionCalendar)
+class ProductionCalendarAdmin(admin.ModelAdmin):
+    list_display = ("calendar_month", "number_calendar_days", "number_working_days", "number_days_off_and_holidays",
+                    "description")  #
+    search_fields = ["calendar_month", ]
+
+
+@admin.register(WeekendDay)
+class WeekendDayAdmin(admin.ModelAdmin):
+    list_display = ("weekend_day", "weekend_type", "description")  #
+    list_filter = (
+        "weekend_type",
+    )
+    search_fields = ["weekend_day", ]
+
+
+@admin.register(PreHolidayDay)
+class PreHolidayDayAdmin(admin.ModelAdmin):
+    list_display = ("preholiday_day", "work_time")  #
+    search_fields = ["preholiday_day", ]
 
 
 @admin.register(DocumentsOrder)
@@ -50,12 +92,14 @@ class DocumentsOrderAdmin(admin.ModelAdmin):
         "actuality", "applying_for_job",
     )
     search_fields = ["document_name", ]
+
     def get_document_order_type(self, obj: DocumentsOrder):
         return obj.get_document_order_type_display()
 
-    def get_employee(self, obj: Provisions):
+    def get_employee(self, obj: DocumentsOrder):
         s = [format_name_initials(item.title) for item in obj.employee.iterator()]
         return '; '.join(s)
+
 
 @admin.register(Provisions)
 class ProvisionsAdmin(admin.ModelAdmin):
@@ -65,41 +109,51 @@ class ProvisionsAdmin(admin.ModelAdmin):
         "actuality", "applying_for_job",
     )
     search_fields = ["document_name", ]
+
     def get_employee(self, obj: Provisions):
         s = [format_name_initials(item.title) for item in obj.employee.iterator()]
         return '; '.join(s)
 
+
 @admin.register(CreatingTeam)
 class CreatingTeamAdmin(admin.ModelAdmin):
     list_display = ("get_document_type", "date_create", "number", "senior_brigade", "get_team_brigade",
-                    "place", "date_start", "date_end", "agreed", "email_send") #
+                    "place", "date_start", "date_end", "agreed", "email_send")  #
     list_filter = (
         "agreed", "email_send",
     )
     search_fields = ["senior_brigade__title", ]
+
     def get_document_type(self, obj: CreatingTeam):
         return obj.get_document_type_display()
 
     def get_team_brigade(self, obj: CreatingTeam):
         s = [format_name_initials(item.title) for item in obj.team_brigade.iterator()]
         return '; '.join(s)
+
+
 @admin.register(BusinessProcessDirection)
 class BusinessProcessDirectionAdmin(admin.ModelAdmin):
     # какие поля будут отображаться
-    list_display = ("business_process_type", "get_person_executor", "get_person_agreement", "get_person_hr", "get_clerk", ) #
+    list_display = (
+        "business_process_type", "get_person_executor", "get_person_agreement", "get_person_hr", "get_clerk",)  #
 
     def get_clerk(self, obj: BusinessProcessDirection):
         s = [item.name for item in obj.clerk.iterator()]
         return '; '.join(s)
+
     def get_person_executor(self, obj: BusinessProcessDirection):
         s = [item.name for item in obj.person_executor.iterator()]
         return '; '.join(s)
+
     def get_person_agreement(self, obj: BusinessProcessDirection):
         s = [item.name for item in obj.person_agreement.iterator()]
         return '; '.join(s)
+
     def get_person_hr(self, obj: BusinessProcessDirection):
         s = [item.name for item in obj.person_hr.iterator()]
         return '; '.join(s)
+
     # какие поля будут использоваться для поиска
     # search_fields = ["employee__title", ]
     # какие поля будут использоваться для фильтрации
@@ -109,7 +163,7 @@ class BusinessProcessDirectionAdmin(admin.ModelAdmin):
     # какие поля будут в виде ссылок
     # list_display_links = ("business_process_type", )
     # какие поля будут использоваться для сортировки
-    ordering = ['business_process_type',  ]
+    ordering = ['business_process_type', ]
     # какие поля будут отображаться в списке
     # list_editable = ("type_trip", "cancellation")
     # сколько строк будут использоваться для постраничного отображения
@@ -118,6 +172,7 @@ class BusinessProcessDirectionAdmin(admin.ModelAdmin):
     empty_value_display = '-empty-'
     # какие поля будут использоваться из других моделей, для уменьшения запросов
     # list_select_related = ("person_executor", "person_agreement", "clerk", "person_hr" )
+
 
 @admin.register(ReportCard)
 class ReportCardAdmin(admin.ModelAdmin):
@@ -134,7 +189,7 @@ class ReportCardAdmin(admin.ModelAdmin):
     # какие поля будут в виде ссылок
     list_display_links = ("employee", "record_type")
     # какие поля будут использоваться для сортировки
-    ordering = ['-report_card_day',  ]
+    ordering = ['-report_card_day', ]
     # какие поля будут отображаться в списке
     # list_editable = ("type_trip", "cancellation")
     # сколько строк будут использоваться для постраничного отображения
@@ -142,7 +197,8 @@ class ReportCardAdmin(admin.ModelAdmin):
     # показывать ли пустые значения
     empty_value_display = '-empty-'
     # какие поля будут использоваться из других моделей, для уменьшения запросов
-    list_select_related = ('employee', )
+    list_select_related = ('employee',)
+
 
 @admin.register(OfficialMemo)
 class OfficialMemoAdmin(admin.ModelAdmin):
@@ -162,7 +218,7 @@ class OfficialMemoAdmin(admin.ModelAdmin):
     # какие поля будут отображаться
     list_display = ("person", "type_trip", "period_from", "period_for", "cancellation")
     # какие поля будут использоваться для поиска
-    search_fields = ["title",]
+    search_fields = ["title", ]
     # какие поля будут использоваться для фильтрации
     list_filter = (
         "purpose_trip",
@@ -180,6 +236,7 @@ class OfficialMemoAdmin(admin.ModelAdmin):
     empty_value_display = '-empty-'
     # какие поля будут использоваться из других моделей, для уменьшения запросов
     list_select_related = ('person', 'purpose_trip')
+
 
 @admin.register(ApprovalOficialMemoProcess)
 class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
