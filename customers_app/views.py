@@ -20,7 +20,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
     process_group, process_group_interval, seconds_to_hhmm
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
-    get_settlement_sheet, get_report_card_table, get_vacation_days
+    get_settlement_sheet, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -30,9 +30,8 @@ from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm,
     ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 
-from hrdepartment_app.hrdepartment_util import get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
     get_norm_time_at_custom_day
 
@@ -221,7 +220,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     safe=False)
                 """
                 # Определяем текущую дату
-
                 current_date = datetime.datetime.today() - datetime.timedelta(days=1)
                 # Определяем начальную дату как первый день текущего месяца
                 start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -229,6 +227,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 norm_time_date = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
 
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
+                    # Если текущий месяц и текущая дата совпадают, то диапазон дат с начала месяца до текущего дня.
                     dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
                     norm_time = norm_time_date.get_norm_time_at_day()
                 else:
@@ -241,6 +240,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                         end_date = datetime.datetime(int(report_year), int(report_month) + 1, 1) - datetime.timedelta(days=1)
                     dates = list(rrule(DAILY, dtstart=datetime.datetime(year=int(report_year), month=int(report_month), day=1, hour=0, minute=0, second=0), until=end_date))
                 report_card_list = []
+
+
                 for report_record in ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day__in=dates)):
                     report_card_list.append(
                         [report_record.report_card_day, report_record.start_time,
@@ -293,7 +294,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 }
                 df['Тип'] = df['Type'].map(type_of_report)
 
-
                 # Генерация полного диапазона дат за месяц
                 full_date_range = pd.date_range(start=dates[0], end=dates[-1], freq='D')
 
@@ -305,7 +305,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df['Интервал'] = df['Интервал'].fillna('0:00-0:00')
                 df['Time'] = df['Time'].fillna(0)
 
-
+                # Получение общей суммы времени за все дни
                 total_time = df['Time'].sum()
                 # Фильтрация DataFrame по условию Тип = NaN
                 filtered_df = df[df['Тип'].isna()]
@@ -316,13 +316,26 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Обновление поля Тип в исходном DataFrame
                 df.update(filtered_df)
-                print(df)
+                # Вычисление разности между временем введенным и временем по производственному календарю
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Применяем функцию к колонке 'Time_in_seconds'
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
 
                 delta = (total_time - norm_time*3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
+
+                if int(report_month) == current_date.month and int(report_year) == current_date.year:
+                    report_card_day = ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day=datetime.datetime.today())).values_list('report_card_day', 'start_time',
+                         'end_time', 'record_type')
+                    if len(report_card_day) == 1:
+                        total_row = pd.DataFrame({
+                            'Дата': [report_card_day[0][0]],
+                            'Интервал': [f'{report_card_day[0][1].strftime('%H:%M')} - по н.в.'],
+                            '+/-': ['--//--']
+                        })
+                        total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")
+                        df = pd.concat([df, total_row], ignore_index=True)
+
 
                 # Добавляем новую строку с суммой в конец DataFrame
                 total_row = pd.DataFrame({

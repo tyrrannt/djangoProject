@@ -2111,6 +2111,8 @@ class WeekendDay(models.Model):
 def get_norm_time_at_custom_day(day, trigger=False):
     """
     Подсчет количества рабочих часов в указанном дне
+    Если переменная trigger=False, то возвращается количество рабочих часов в указанном дне, иначе - возвращается тип
+    дня (П - Праздник, В - Выходной, НБ - Не было на работе)
     """
     preholiday_day_count = PreHolidayDay.objects.filter(preholiday_day=day)
     weekend_day_count = WeekendDay.objects.filter(weekend_day=day).count()
@@ -2240,11 +2242,10 @@ class ProductionCalendar(models.Model):
                 preholiday_time += item.work_time.hour + 1 + item.work_time.minute / 60
             else:
                 preholiday_time += item.work_time.hour + item.work_time.minute / 60
-        return (
-                (self.number_working_days * 8)
-                + (self.number_working_days / 2)
-                - self.get_friday_count() - (preholiday_day_count * 8.5 - preholiday_time)
-        )
+        norm_time = (self.number_working_days * 8) + (self.number_working_days / 2) - self.get_friday_count() - (preholiday_day_count * 8.5 - preholiday_time)
+
+        print(self.number_working_days, self.get_friday_count(), preholiday_day_count, preholiday_time, norm_time)
+        return norm_time
 
     def __str__(self):
         return str(self.calendar_month)
