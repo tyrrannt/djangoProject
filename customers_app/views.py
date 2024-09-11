@@ -329,9 +329,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     report_card_day = ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day=datetime.datetime.today())).values_list('report_card_day', 'start_time',
                          'end_time', 'record_type')
                     if len(report_card_day) == 1:
+                        end_time = 'по н.в.' if report_card_day[0][2] is None else report_card_day[0][2].strftime('%H:%M')
                         total_row = pd.DataFrame({
                             'Дата': [report_card_day[0][0]],
-                            'Интервал': [f"{report_card_day[0][1].strftime('%H:%M')} - по н.в."],
+                            'Интервал': [f"{report_card_day[0][1].strftime('%H:%M')} - {end_time}"],
                             '+/-': ['--//--']
                         })
                         total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")
