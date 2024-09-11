@@ -13,22 +13,27 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from urllib.parse import urljoin
 
+import magic
 import pandas as pd
 import requests
 from dateutil import rrule, relativedelta
 from decouple import config
 from django import forms
 from django.contrib.contenttypes.models import ContentType
+from django.core import mail
 from django.core.files.storage import FileSystemStorage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils.html import strip_tags
 from loguru import logger
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
-from djangoProject.settings import BASE_DIR, EMAIL_HOST, EMAIL_IMAP_HOST, EMAIL_IAS_USER, \
+from djangoProject.settings import BASE_DIR, MEDIA_ROOT, EMAIL_HOST, EMAIL_IMAP_HOST, EMAIL_IAS_USER, \
     EMAIL_IAS_PASSWORD, EMAIL_FLY_USER, EMAIL_FLY_PASSWORD, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
 
 logger.add(

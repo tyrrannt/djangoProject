@@ -20,7 +20,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
     process_group, process_group_interval, seconds_to_hhmm
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
-    get_settlement_sheet, get_vacation_days
+    get_settlement_sheet, get_report_card_table, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments
 from customers_app.models import DataBaseUserProfile as UserProfile
@@ -30,8 +30,9 @@ from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm,
     ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 
+from hrdepartment_app.hrdepartment_util import get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
     get_norm_time_at_custom_day
 
