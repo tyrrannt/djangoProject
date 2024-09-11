@@ -2068,6 +2068,7 @@ class PreHolidayDay(models.Model):
     class Meta:
         verbose_name = "Предпраздничный день"
         verbose_name_plural = "Предпраздничные дни"
+        ordering = ["-preholiday_day"]
 
     preholiday_day = models.DateField(verbose_name="Дата", null=True, blank=True)
     work_time = models.TimeField(verbose_name="Рабочее время", null=True, blank=True)
@@ -2159,6 +2160,7 @@ class ProductionCalendar(models.Model):
     class Meta:
         verbose_name = "Месяц в производственом календаре"
         verbose_name_plural = "Производственный календарь"
+        ordering = ["-calendar_month"]
 
     calendar_month = models.DateField(verbose_name="Месяц", null=True, blank=True)
     number_calendar_days = models.PositiveIntegerField(
