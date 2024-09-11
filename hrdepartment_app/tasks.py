@@ -513,13 +513,14 @@ def get_year_report(html_mode=True):
     grouped = df.groupby(["Month", "FIO", "Дата"]).apply(process_group_year).reset_index(name="Time")
     grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
     # Вывод результата
-    grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100)
+    # grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100) # В часах
+    grouped["Time"] = grouped["Time"] // 60 # В минутах
 
     # Текущая дата
     current_date = datetime.datetime.now()
 
     # Начало текущего года
-    start_of_year = datetime.datetime(current_date.year, 1, 1)
+    start_of_year = datetime.datetime(current_date.year, 1, 1,0,0,0)
 
     # Список для хранения первых дней каждого месяца
     first_days_of_months = []
@@ -535,10 +536,10 @@ def get_year_report(html_mode=True):
     for date in first_days_of_months[:-1]:
         key = date.strftime('%Y-%m')
         norm_time = ProductionCalendar.objects.get(calendar_month=date)
-        subtraction_dict[key] = norm_time.get_norm_time()
+        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1)
 
     grouped = grouped.fillna('')
-
+    print(subtraction_dict)
     # Функция для вычитания значения из словаря
     def subtract_value(row):
         month = str(row["Month"])
@@ -552,6 +553,16 @@ def get_year_report(html_mode=True):
     pivot_df = pivot_df.fillna(0)
     pivot_df['Sum'] = pivot_df.sum(axis=1)
 
+    def convert_time(minutes):
+        # Преобразуем минуты в часы и минуты
+        hours = abs(minutes) // 60
+        minutes_left = abs(minutes) % 60
+        if minutes < 0:
+            return f'-{hours:.0f} ч. {minutes_left:.0f} мин.'
+        else:
+            return f'{hours:.0f} ч. {minutes_left:.0f} мин.'
+
+    pivot_df = pivot_df.applymap(convert_time)
     html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped dataTable mb-0', table_id='datatable-editable', border=1, justify='center')
 
     if html_mode == False:
