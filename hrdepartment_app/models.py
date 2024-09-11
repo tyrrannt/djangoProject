@@ -2091,6 +2091,7 @@ class WeekendDay(models.Model):
     class Meta:
         verbose_name = "Праздничный день"
         verbose_name_plural = "Праздничные дни"
+        ordering = ["weekend_day"]
 
     weekend_day = models.DateField(verbose_name="Дата", null=True, blank=True)
     description = models.CharField(
