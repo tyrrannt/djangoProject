@@ -306,8 +306,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df['Интервал'] = df['Интервал'].fillna('0:00-0:00')
                 df['Time'] = df['Time'].fillna(0)
 
-                # Получение общей суммы времени за все дни
-                total_time = df['Time'].sum()
+
                 # Фильтрация DataFrame по условию Тип = NaN
                 filtered_df = df[df['Тип'].isna()]
 
@@ -317,14 +316,19 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Обновление поля Тип в исходном DataFrame
                 df.update(filtered_df)
+                # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
+                df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Вычисление разности между временем введенным и временем по производственному календарю
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
-                # Применяем функцию к колонке 'Time_in_seconds'
+                # Получение общей суммы времени за все дни
+                total_time = df['Time'].sum()
+                # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
-
                 delta = (total_time - norm_time*3600)
+                print(delta, total_time, norm_time*3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
 
+                # Блок для ввода в таблицу строки за текущий день. Если дата равна текущей, то добавляем в dataframe строку с текущей датой
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     report_card_day = ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day=datetime.datetime.today())).values_list('report_card_day', 'start_time',
                          'end_time', 'record_type')
