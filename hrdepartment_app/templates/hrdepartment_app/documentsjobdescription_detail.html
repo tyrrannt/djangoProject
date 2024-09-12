@@ -34,7 +34,7 @@
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
+{#        {% include 'library_app/breadcrumb.html' %}#}
 
         <!-- start: page -->
 <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="true">
@@ -204,5 +204,9 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
-
+    <script>
+        get_filename = function () {
+            return {{object.scan_file.url}};
+        }
+    </script>
 {% endblock %}
