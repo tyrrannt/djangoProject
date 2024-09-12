@@ -22,8 +22,8 @@
         <div class="widget-content-collapsed">
             <div class="progress progress-xs light">
                 <div class="progress-bar" role="progressbar" aria-valuenow="{{ profile_info }}" aria-valuemin="0"
-                     aria-valuemax="100" style="width: 60%;">
-                    60%
+                     aria-valuemax="100" style="width: {{ profile_info }}%;">
+                    {{ profile_info }}%
                 </div>
             </div>
         </div>
@@ -31,8 +31,8 @@
         <div class="widget-content-expanded">
             <ul class="simple-todo-list mt-3">
                 <li {% if databaseuser.avatar %} class="completed" {% endif %}>Изображение профиля</li>
-                <li class="completed">Личная информация</li>
-                <li>Рабочая информация</li>
+                <li {% if user_private %} class="completed" {% endif %}>Личная информация</li>
+                <li {% if user_work %} class="completed" {% endif %}>Рабочая информация</li>
             </ul>
         </div>
     </div>

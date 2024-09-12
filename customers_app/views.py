@@ -90,26 +90,28 @@ def get_profile_fill(self, context):
     user_object_list = ['first_name', 'last_name', 'email', 'surname', 'avatar', 'birthday', 'address',
                         'personal_phone', 'gender']
     user_private_list = ['citizenship', 'passport', 'snils', 'oms', 'inn']
-    user_work_list = ['date_of_employment', 'internal_phone', 'work_phone', 'job', 'divisions', 'work_email']
+    user_work_list = ['date_of_employment', 'internal_phone', 'job', 'divisions']
     for item in get_model_fields(user_object):
         if str(item).split('.')[2] in user_object_list:
             if getattr(user_object, str(item).split('.')[2]):
-                profile_info += 5
+                profile_info += 5.555555556
     try:
         for item in get_model_fields(user_private):
             if str(item).split('.')[2] in user_private_list:
                 if getattr(user_private, str(item).split('.')[2]):
-                    profile_info += 5
+                    profile_info += 5.555555556
+                    context['user_private'] = True
     except Exception as _ex:
         logger.info(f'{_ex}: Отсутствует блок личной информации')
     try:
         for item in get_model_fields(user_work):
             if str(item).split('.')[2] in user_work_list:
                 if getattr(user_work, str(item).split('.')[2]):
-                    profile_info += 5
+                    profile_info += 5.555555556
+                    context['user_work'] = True
     except Exception as _ex:
         logger.info(f'{_ex}: Отсутствует блок рабочей информации')
-    context['profile_info'] = profile_info
+    context['profile_info'] = f"{profile_info:.0f}"
 
 
 @login_required
