@@ -60,148 +60,140 @@
             }
         </style>
         <!-- start: page -->
+    {% if object.scan_file %}
         <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="true">
-            <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
-                    от {{ object.document_date }} г.</h4>
-                <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                    <section class="toggle active">
-                        <label>Файл</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        {% if object.scan_file %}
-                                            <div class="form-row outerContainer" id="outerContainer"
-                                                 style="height: 1080px">
-                                                {% include 'contracts_app/pdf-js.html' %}
-                                            </div>
-                                            <a href="{{ object.scan_file.url }}" target="_blank">Открыть документ</a>
-                                            {#                                            <object data="{{ object.scan_file.url }}" type="application/pdf"#}
-                                            {#                                                    width="750px"#}
-                                            {#                                                    height="750px">#}
-                                            {#                                                <embed src="{{ object.scan_file.url }}" type="application/pdf">#}
-                                            {#                                                <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите#}
-                                            {#                                                    PDF-файл, чтобы#}
-                                            {#                                                    просмотреть его: <a#}
-                                            {#                                                            href="{{ object.scan_file.url }}">Скачать PDF.</a>.</p>#}
-                                            {#                                                </embed>#}
-                                            {#                                            </object>#}
-                                        {% endif %}
-                                    </div>
+    {% endif %}
+        <div class="col-lg-12">
+            <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
+                от {{ object.document_date }} г.</h4>
+            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                <section class="toggle active">
+                    <label>Файл</label>
+                    <div class="toggle-content">
+                        <div class="form-row">
+                            <div class="form-group col mb-3">
+                                <div class="row text">
+                                    {% if object.scan_file %}
+                                        <div class="form-row outerContainer" id="outerContainer"
+                                             style="height: 1080px">
+                                            {% include 'contracts_app/pdf-js.html' %}
+                                        </div>
+                                        <a href="{{ object.scan_file.url }}" target="_blank">Открыть документ</a>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
-                    </section>
-                    <section class="toggle">
-                        <label>Основные реквизиты</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        <h4>{{ object.document_name }}, №: {{ object.document_number }}
-                                            от: {{ object.document_date | date:"c" }} г.</h4>
-                                        <h4>Действителен с: {{ object.validity_period_start }} г.
-                                            {% if object.validity_period_end %}по:
-                                                {{ object.validity_period_end }}{% endif %}</h4>
-                                        <h4>Место хранения оригинала: {{ object.storage_location_division }}.
-                                            Исполнитель: {{ object.executor | FIO_format }}</h4>
-                                        <h4>Ответственные лица:
-                                            {% for item in object.employee.iterator %}{% if forloop.last %}
-                                                {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
-                                            {% endif %}{% endfor %}</h4>
-                                    </div>
+                    </div>
+                </section>
+                <section class="toggle">
+                    <label>Основные реквизиты</label>
+                    <div class="toggle-content">
+                        <div class="form-row">
+                            <div class="form-group col mb-3">
+                                <div class="row text">
+                                    <h4>{{ object.document_name }}, №: {{ object.document_number }}
+                                        от: {{ object.document_date | date:"c" }} г.</h4>
+                                    <h4>Действителен с: {{ object.validity_period_start }} г.
+                                        {% if object.validity_period_end %}по:
+                                            {{ object.validity_period_end }}{% endif %}</h4>
+                                    <h4>Место хранения оригинала: {{ object.storage_location_division }}.
+                                        Исполнитель: {{ object.executor | FIO_format }}</h4>
+                                    <h4>Ответственные лица:
+                                        {% for item in object.employee.iterator %}{% if forloop.last %}
+                                            {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
+                                        {% endif %}{% endfor %}</h4>
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </div>
+                </section>
 
-                    {% if object.document_form.exists %}
-                        <section class="toggle">
-                            <label>Бланки документов</label>
-                            <div class="toggle-content">
-                                <div class="table-responsive">
-                                    <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
-                                           style="min-width: 380px;">
-                                        <thead>
+                {% if object.document_form.exists %}
+                    <section class="toggle">
+                        <label>Бланки документов</label>
+                        <div class="toggle-content">
+                            <div class="table-responsive">
+                                <table class="table table-ecommerce-simple table-ecommerce-simple-border-bottom table-borderless table-striped mb-0"
+                                       style="min-width: 380px;">
+                                    <thead>
+                                    <tr>
+                                        <th width="8%" class="ps-4">ID</th>
+                                        <th width="30%">Наименование</th>
+                                        <th width="10%" class="text-end">Черновик</th>
+                                        <th width="10%" class="text-end">Скан копия</th>
+                                        <th width="10%" class="text-end">Образец</th>
+                                        <th width="20%" class="text-end">Исполнитель</th>
+                                        <th width="20%" class="text-end">Ответственное лицо</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for item in object.document_form.all %}
                                         <tr>
-                                            <th width="8%" class="ps-4">ID</th>
-                                            <th width="30%">Наименование</th>
-                                            <th width="10%" class="text-end">Черновик</th>
-                                            <th width="10%" class="text-end">Скан копия</th>
-                                            <th width="10%" class="text-end">Образец</th>
-                                            <th width="20%" class="text-end">Исполнитель</th>
-                                            <th width="20%" class="text-end">Ответственное лицо</th>
+                                            <td class="ps-4"><a
+                                                    href="{% url 'library_app:blank' item.pk %}"
+                                                    target="_blank"><strong>{{ item.pk }}</strong></a>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'library_app:blank' item.pk %}"
+                                                   target="_blank"><strong>{{ item.title }}</strong></a>
+                                            </td>
+                                            <td class="text-end">
+                                                {% if item.draft %}
+                                                    <i class='bx bx-check'></i>
+                                                {% else %}
+                                                    <i class='bx bx-x'></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if item.scan %}
+                                                    <i class='bx bx-check'></i>
+                                                {% else %}
+                                                    <i class='bx bx-x'></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if item.sample != '' %}
+                                                    <i class='bx bx-check'></i>
+                                                {% else %}
+                                                    <i class='bx bx-x'></i>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">{{ item.executor | FIO_format }}</td>
+                                            <td class="text-end">
+                                                {% for user_obj in item.employee.all %}{{ user_obj | FIO_format }}
+                                                    ; {% endfor %}
+                                            </td>
                                         </tr>
-                                        </thead>
-                                        <tbody>
-                                        {% for item in object.document_form.all %}
-                                            <tr>
-                                                <td class="ps-4"><a
-                                                        href="{% url 'library_app:blank' item.pk %}"
-                                                        target="_blank"><strong>{{ item.pk }}</strong></a>
-                                                </td>
-                                                <td>
-                                                    <a href="{% url 'library_app:blank' item.pk %}"
-                                                       target="_blank"><strong>{{ item.title }}</strong></a>
-                                                </td>
-                                                <td class="text-end">
-                                                    {% if item.draft %}
-                                                        <i class='bx bx-check'></i>
-                                                    {% else %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">
-                                                    {% if item.scan %}
-                                                        <i class='bx bx-check'></i>
-                                                    {% else %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">
-                                                    {% if item.sample != '' %}
-                                                        <i class='bx bx-check'></i>
-                                                    {% else %}
-                                                        <i class='bx bx-x'></i>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-end">{{ item.executor | FIO_format }}</td>
-                                                <td class="text-end">
-                                                    {% for user_obj in item.employee.all %}{{ user_obj | FIO_format }}
-                                                        ; {% endfor %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
-                        </section>
-                    {% endif %}
-                </div>
+                        </div>
+                    </section>
+                {% endif %}
             </div>
-            <div class="row action-buttons">
-                {% if user|has_group:"Положения" or user.is_superuser %}
-                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                        <a href="{% url 'hrdepartment_app:provisions_update' object.pk %}"
-                           class="submit-button btn btn-primary btn-px-4 py-3 d-flex
+        </div>
+        <div class="row action-buttons">
+            {% if user|has_group:"Положения" or user.is_superuser %}
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                    <a href="{% url 'hrdepartment_app:provisions_update' object.pk %}"
+                       class="submit-button btn btn-primary btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-save text-4 me-2"></i> Изменить</a>
-                    </div>
-                {% endif %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:provisions_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                        <i class="bx bx-save text-4 me-2"></i> Изменить</a>
                 </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                    </div>
-                {% endif %}
+            {% endif %}
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'hrdepartment_app:provisions_list' %}"
+                   class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
             </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                </div>
+            {% endif %}
+        </div>
         <!-- end: page -->
     </section>
     <!-- end: page -->
