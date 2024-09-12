@@ -319,8 +319,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
                 df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
                 # Вычисление разности между временем введенным и временем по производственному календарю
-                for item in dates:
-                    print(get_norm_time_at_custom_day(item))
+
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Получение общей суммы времени за все дни
                 total_time = df['Time'].sum()
