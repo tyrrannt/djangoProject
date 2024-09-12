@@ -2112,11 +2112,12 @@ class WeekendDay(models.Model):
         return str(self.weekend_day)
 
 
-def get_norm_time_at_custom_day(day, trigger=False):
+def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
     """
     Подсчет количества рабочих часов в указанном дне
     Если переменная trigger=False, то возвращается количество рабочих часов в указанном дне, иначе - возвращается тип
     дня (П - Праздник, В - Выходной, НБ - Не было на работе)
+    Если передается переменная type_of_day, то если она равна 14 и 15, то возвращается обычный рабочий день
     """
     preholiday_day_count = PreHolidayDay.objects.filter(preholiday_day=day)
     weekend_day_count = WeekendDay.objects.filter(weekend_day=day).count()
@@ -2137,10 +2138,14 @@ def get_norm_time_at_custom_day(day, trigger=False):
             else:
                 if trigger:
                     return 'В'
+                if type_of_day in [14, 15]:
+                    return 30600
                 return 0
     else:
         if trigger:
             return 'П'
+        if type_of_day in [14, 15]:
+            return 30600
         return 0
 
 
