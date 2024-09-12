@@ -343,9 +343,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                         # Группируем по дате и применяем функцию
                         current_df = current_df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
                         current_df = current_df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(drop=True)
+                        start_interval = (current_df["Интервал"][0].split('-'))[0]
                         total_row = pd.DataFrame({
                             'Дата': [current_df["Дата"][0].strftime('%d.%m.%Y')],
-                            'Интервал': [f"{(current_df["Интервал"][0].split('-'))[0]} - {end_time}"],
+                            'Интервал': [f"{start_interval} - {end_time}"],
                             '+/-': ['--//--']
                         })
                         total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")
