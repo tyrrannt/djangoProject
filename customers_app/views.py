@@ -333,10 +333,19 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                          'end_time', 'record_type')
                     if len(report_card_day) > 0:
                         # ToDo: Обработать блок когда более одной записи
-                        end_time = 'по н.в.' if report_card_day[0][2] is None else report_card_day[0][2].strftime('%H:%M')
+                        end_time = 'по н.в.'
+                        current_df = pd.DataFrame(report_card_day, columns=fields)
+                        current_df["Дата"] = pd.to_datetime(current_df["Дата"], format="%d.%m.%Y")
+                        current_df["Start"] = pd.to_datetime(current_df["Start"], format="%H:%M:%S")
+                        current_df["End"] = pd.to_datetime(current_df["End"], format="%H:%M:%S")
+                        current_df["Type"] = current_df["Type"].astype(int)
+                        current_df["Time"] = (current_df["End"] - current_df["Start"]).dt.total_seconds()
+                        # Группируем по дате и применяем функцию
+                        current_df = current_df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
+                        current_df = current_df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(drop=True)
                         total_row = pd.DataFrame({
-                            'Дата': [report_card_day[0][0]],
-                            'Интервал': [f"{report_card_day[0][1].strftime('%H:%M')} - {end_time}"],
+                            'Дата': [current_df["Дата"][0].strftime('%d.%m.%Y')],
+                            'Интервал': [f"{(current_df["Интервал"][0].split('-'))[0]} - {end_time}"],
                             '+/-': ['--//--']
                         })
                         total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")

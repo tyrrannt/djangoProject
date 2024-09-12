@@ -52,7 +52,9 @@
             {% endif %}
         </div>
         <!-- start: page -->
+    {% if object.scan_file %}
         <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="true">
+    {% endif %}
         <div class="col-lg-12">
             <h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }}
                 от {{ object.document_date }}</h4>
@@ -225,9 +227,12 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
-    <script>
+    {% if object.scan_file %}
+        <script>
         get_filename = function () {
             return {{object.scan_file.url}};
         }
     </script>
+    {% endif %}
+
 {% endblock %}

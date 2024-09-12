@@ -1115,10 +1115,12 @@ def hr_accepted(sender, instance, **kwargs):
                     record_type = "14"
                 else:
                     record_type = "15"
+                # Проверяем день на выходные дни и праздничные дни
                 start_time, end_time, type_of_day = check_day(
                     date,
                     datetime.datetime(1, 1, 1, 9, 30).time(),
                     datetime.datetime(1, 1, 1, 18, 0).time(),
+                    int(record_type)
                 )
                 report_kwargs = {
                     "report_card_day": date,
@@ -2253,7 +2255,7 @@ class ProductionCalendar(models.Model):
         return str(self.calendar_month)
 
 
-def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime.time):
+def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime.time, days_type=0):
     """
     Функция определяющая время начала и окончания рабочего дня на заданную дату
     :param date: дата
@@ -2296,12 +2298,23 @@ def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime
                 )
             type_of_day = "Р"
         else:
-            check_time_end = datetime.timedelta(hours=0, minutes=0)
-            check_time_start = datetime.timedelta(hours=0, minutes=0)
+            if days_type in [14,15]:
+                check_time_end = datetime.timedelta(
+                    hours=time_end.hour, minutes=time_end.minute
+                )
+            else:
+                check_time_end = datetime.timedelta(hours=0, minutes=0)
+                check_time_start = datetime.timedelta(hours=0, minutes=0)
             type_of_day = "В"
     else:
-        check_time_end = datetime.timedelta(hours=0, minutes=0)
-        check_time_start = datetime.timedelta(hours=0, minutes=0)
+        if days_type in [14, 15]:
+            print(type_of_day, "Сработало")
+            check_time_end = datetime.timedelta(
+                hours=time_end.hour, minutes=time_end.minute
+            )
+        else:
+            check_time_end = datetime.timedelta(hours=0, minutes=0)
+            check_time_start = datetime.timedelta(hours=0, minutes=0)
         type_of_day = "П"
 
     return (
