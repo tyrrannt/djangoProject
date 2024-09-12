@@ -16,7 +16,8 @@
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
+{#    <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>#}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js">
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
 {% endblock %}
 
@@ -45,10 +46,10 @@
             {% endif %}
         </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
+
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }} от {{ object.document_date }}</h4>
+                <h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }}
+                    от {{ object.document_date }}</h4>
 
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
@@ -60,22 +61,26 @@
                                         <div class="col-lg-12 text-black-50">
                                             <label for="id_document_name">Наименование документа</label>
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="document_name" value="{{ object.document_name }}" id="id_document_name"/>
+                                                   name="document_name" value="{{ object.document_name }}"
+                                                   id="id_document_name"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_foundation">Документ основание</label>
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="document_foundation" value="{{ object.document_foundation }}" id="id_document_foundation"/>
+                                                   name="document_foundation" value="{{ object.document_foundation }}"
+                                                   id="id_document_foundation"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_date">Дата документа</label>
                                             <input type="date" class="form-control form-control-modern"
-                                                   name="document_date" value="{{ object.document_date | date:'c' }}" id="id_document_date"/>
+                                                   name="document_date" value="{{ object.document_date | date:'c' }}"
+                                                   id="id_document_date"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_number">Номер документа</label>
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="document_number" value="{{ object.document_number }}" id="id_document_number"/>
+                                                   name="document_number" value="{{ object.document_number }}"
+                                                   id="id_document_number"/>
                                         </div>
                                     </div>
                                     <div class="row text">
@@ -87,12 +92,16 @@
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_validity_period_start">Действителен с:</label>
                                             <input type="date" class="form-control form-control-modern"
-                                                   name="validity_period_start" value="{{ object.validity_period_start | date:'c' }}" id="id_validity_period_start"/>
+                                                   name="validity_period_start"
+                                                   value="{{ object.validity_period_start | date:'c' }}"
+                                                   id="id_validity_period_start"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_validity_period_end">Действителен по:</label>
                                             <input type="date" class="form-control form-control-modern"
-                                                   name="validity_period_end" value="{{ object.validity_period_end | date:'c' }}" id="id_validity_period_end"/>
+                                                   name="validity_period_end"
+                                                   value="{{ object.validity_period_end | date:'c' }}"
+                                                   id="id_validity_period_end"/>
                                         </div>
                                     </div>
                                 </div>
@@ -110,7 +119,8 @@
                                             <select class="form-control mb-4 form-control-modern"
                                                     name="executor" id="id_executor"
                                                     data-plugin-selectTwo>
-                                                <option value="{{ object.executor.pk }}" selected>{{ object.executor }}</option>
+                                                <option value="{{ object.executor.pk }}"
+                                                        selected>{{ object.executor }}</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4 text-black-50">
@@ -119,33 +129,38 @@
                                                     name="employee" id="id_employee"
                                                     data-plugin-selectTwo multiple>
                                                 {% for item in object.employee.all %}
-                                                <option value="{{ item.pk }}" selected>{{ item }}</option>
+                                                    <option value="{{ item.pk }}" selected>{{ item }}</option>
                                                 {% endfor %}
                                             </select>
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_order_type">Тип приказа</label>
                                             <input type="text" class="form-control form-control-modern"
-                                                   name="document_order_type" value="{{ object.get_document_order_type_display }}" id="id_document_order_type"/>
+                                                   name="document_order_type"
+                                                   value="{{ object.get_document_order_type_display }}"
+                                                   id="id_document_order_type"/>
                                         </div>
                                     </div>
                                     <div class="row text">
                                         <div class="col-md-4 text-black-50 mt-3">
                                             <label for="id_allowed_placed">Разрешение на публикацию:</label>
                                             <input type="checkbox" class="mt-2"
-                                                   name="allowed_placed" {% if object.allowed_placed %}checked{% endif %}  id="id_allowed_placed"/>
+                                                   name="allowed_placed"
+                                                   {% if object.allowed_placed %}checked{% endif %}
+                                                   id="id_allowed_placed"/>
                                         </div>
                                         <div class="col-md-4 text-black-50 mt-3">
                                             <label for="id_actuality">Актуальность:</label>
                                             <input type="checkbox" class="mt-2"
-                                                   name="actuality" {% if object.actuality %}checked{% endif %} id="id_actuality"/>
+                                                   name="actuality" {% if object.actuality %}checked{% endif %}
+                                                   id="id_actuality"/>
                                         </div>
                                     </div>
                                     <div class="row text">
                                         <div class="col-sm-12 text-black-50 mt-3">
                                             <label for="id_description">Содержание:</label>
                                             <div class="ck ck-content">
-                                                    {{ form.description | safe }}
+                                                {{ form.description | safe }}
                                             </div>
                                         </div>
                                     </div>
@@ -159,19 +174,55 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-                                        <div class="col-lg-6 text-black-50 mt-2">
+                                        <div class="col-lg-4 text-black-50 mt-2">
                                             <label for="id_doc_file">Файл приказа</label>
                                             {% if object.doc_file %}
-                                                <span id="id_doc_file"><a href="{{ object.doc_file.url }}" target="_blank"><img src="{% static 'Extension/docx.png' %}"></a></span>
+                                                <span id="id_doc_file"><a href="{{ object.doc_file.url }}"
+                                                                          target="_blank"><img
+                                                        src="{% static 'Extension/docx.png' %}"></a></span>
                                             {% endif %}
                                         </div>
-{#                                    </div>#}
-{#                                    <div class="row text">#}
-                                        <div class="col-lg-6 text-black-50 mt-2">
+                                        {#                                    </div>#}
+                                        {#                                    <div class="row text">#}
+                                        <div class="col-lg-4 text-black-50 mt-2">
                                             <label for="id_scan_file">Скан приказа</label>
                                             {% if object.scan_file %}
-                                                <span id="id_scan_file"><a href="{{ object.scan_file.url }}"><img src="{% static 'Extension/pdf.png' %}"></a></span>
+                                                <span id="id_scan_file"><a href="{{ object.scan_file.url }}"><img
+                                                        src="{% static 'Extension/pdf.png' %}"></a></span>
                                             {% endif %}
+                                        </div>
+                                        <div class="col-lg-4 text-black-50 mt-2">
+                                            <button onclick="printPDF()">Print PDF</button>
+
+                                            <script>
+                                                async function printPDF() {
+                                                    const loadingTask = pdfjsLib.getDocument('https://corp.barkol.ru{{ object.scan_file.url }}');
+                                                    const pdf = await loadingTask.promise;
+                                                    const page = await pdf.getPage(1);
+
+                                                    const scale = 1.5;
+                                                    const viewport = page.getViewport({scale: scale});
+
+                                                    const canvas = document.createElement('canvas');
+                                                    const context = canvas.getContext('2d');
+                                                    canvas.height = viewport.height;
+                                                    canvas.width = viewport.width;
+
+                                                    const renderContext = {
+                                                        canvasContext: context,
+                                                        viewport: viewport
+                                                    };
+
+                                                    await page.render(renderContext).promise;
+
+                                                    const dataUrl = canvas.toDataURL('image/png');
+                                                    const printWindow = window.open('', '_blank');
+                                                    printWindow.document.write(`<img src="${dataUrl}" style="width:100%;height:auto;"  alt=""/>`);
+                                                    printWindow.document.close();
+                                                    printWindow.focus();
+                                                    printWindow.print();
+                                                }
+                                            </script>
                                         </div>
                                     </div>
                                 </div>
@@ -199,7 +250,6 @@
                     </div>
                 {% endif %}
             </div>
-        </form>
         <!-- end: page -->
     </section>
     <!-- end: page -->
