@@ -1370,20 +1370,12 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
 class ReportCardForm(forms.ModelForm):
     class Meta:
         model = ReportCard
-        fields = ['report_card_day', 'employee', 'start_time', 'end_time', 'place_report_card']
+        fields = ['employee', 'start_time', 'end_time']
         widgets = {
-            'report_card_day': forms.DateInput(attrs={"class": "form-control form-control-modern",
-            "type": "date",
-            "data-date-language": "ru",
-            "todayBtn": True,
-            "clearBtn": True,
-            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',}),
             'employee': forms.Select(attrs={"class": "form-control form-control-modern",
             "data-plugin-selectTwo": True,}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
-            'place_report_card': forms.SelectMultiple(attrs={'class': 'form-select select2 form-control-modern', "data-plugin-multiselect": True,
-            "multiple": "multiple",}),
         }
 
 class TimeSheetForm(forms.ModelForm):
@@ -1391,12 +1383,7 @@ class TimeSheetForm(forms.ModelForm):
         model = TimeSheet
         fields = ['date', 'employee', 'notes', 'time_sheets_place']
         widgets = {
-            'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
-            "type": "date",
-            "data-date-language": "ru",
-            "todayBtn": True,
-            "clearBtn": True,
-            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',}),
+            'date': forms.DateInput(attrs={"class": "form-control form-control-modern", "type": "date"}),
             'employee': forms.Select(attrs={"class": "form-control form-control-modern",
             "data-plugin-selectTwo": True,}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
