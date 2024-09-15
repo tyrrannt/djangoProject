@@ -55,7 +55,7 @@ from hrdepartment_app.forms import (
     ProvisionsUpdateForm,
     ProvisionsAddForm,
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
-    CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm,
+    CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm, ReportCardFormSet,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -75,7 +75,7 @@ from hrdepartment_app.models import (
     PlaceProductionActivity,
     ReportCard,
     ProductionCalendar,
-    Provisions, GuidanceDocuments, CreatingTeam,
+    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
@@ -3603,3 +3603,87 @@ def expenses_update(request,  *args,  **kwargs):
     obj.expenses = True
     obj.save()
     return redirect("hrdepartment_app:expenses_list")
+
+
+class TimeSheetCreateView(CreateView):
+    model = TimeSheet
+    form_class = TimeSheetForm  # Используем созданную форму
+    # template_name = 'timesheet_form.html'
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['report_cards'] = ReportCardFormSet(self.request.POST)
+        else:
+            data['report_cards'] = ReportCardFormSet()
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        report_cards = context['report_cards']
+        self.object = form.save()
+        if report_cards.is_valid():
+            print(form)
+            report_cards.instance = self.object
+            report_cards.save()
+        else:
+            print(report_cards.errors)
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        print(form)
+        return super().form_invalid(form)
+
+class TimeSheetDetailView(DetailView):
+    model = TimeSheet
+    # template_name = 'timesheet_detail.html'
+
+class TimeSheetListView(ListView):
+    model = TimeSheet
+    # template_name = 'timesheet_list.html'
+    context_object_name = 'timesheets'
+
+    def get(self, request, *args, **kwargs):
+        query = Q()
+        # expenses_dicts = TimeSheet.objects.filter(
+        #     Q(document__expenses=False) &
+        #     Q(document__expenses_summ__gt=0) &
+        #     Q(process_accepted=True)).values('document')
+        # expenses_list = [item['document'] for item in expenses_dicts]
+        # query &= Q(id__in=expenses_list)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['date', 'employee__title',
+                           'time_sheets_place__name', 'notes',]
+            context = ajax_search(request, self, search_list, TimeSheet, query)
+            return JsonResponse(context, safe=False)
+        return super(TimeSheetListView, self).get(request, *args, **kwargs)
+
+class TimeSheetUpdateView(UpdateView):
+    model = TimeSheet
+    form_class = TimeSheetForm  # Используем созданную форму
+    # template_name = 'timesheet_form.html'
+
+    def get_context_data(self, **kwargs):
+        data = super().get_context_data(**kwargs)
+        if self.request.POST:
+            data['report_cards'] = ReportCardFormSet(self.request.POST, instance=self.object)
+        else:
+            data['report_cards'] = ReportCardFormSet(instance=self.object)
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        report_cards = context['report_cards']
+        self.object = form.save()
+        if report_cards.is_valid():
+            report_cards.instance = self.object
+            report_cards.save()
+        return super().form_valid(form)
+
+class TimeSheetDeleteView(DeleteView):
+    model = TimeSheet
+    success_url = reverse_lazy('hrdepartment_app:timesheet_list')
+    # template_name = 'timesheet_confirm_delete.html'
+# Create your views here.
+def index(request):
+    return render(request, '1.html')

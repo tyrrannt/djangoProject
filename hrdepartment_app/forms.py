@@ -27,7 +27,7 @@ from hrdepartment_app.models import (
     ReasonForCancellation,
     OrderDescription,
     ReportCard,
-    Provisions, GuidanceDocuments, CreatingTeam,
+    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet,
 )
 
 
@@ -1365,3 +1365,29 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
             return number
         else:
             raise ValidationError("Ошибка! Вы не имеете право задавать номера приказов о старших бригадах.")
+
+
+class ReportCardForm(forms.ModelForm):
+    class Meta:
+        model = ReportCard
+        fields = ['report_card_day', 'employee', 'start_time', 'end_time', 'place_report_card']
+        widgets = {
+            'report_card_day': forms.DateInput(attrs={'type': 'date'}),
+            'employee': forms.Select(attrs={'class': 'form-control'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time'}),
+            'end_time': forms.TimeInput(attrs={'type': 'time'}),
+            'place_report_card': forms.SelectMultiple(attrs={'class': 'form-control'}),
+        }
+
+class TimeSheetForm(forms.ModelForm):
+    class Meta:
+        model = TimeSheet
+        fields = ['date', 'employee', 'notes', 'time_sheets_place']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'employee': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
+            'time_sheets_place': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+ReportCardFormSet = forms.inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)

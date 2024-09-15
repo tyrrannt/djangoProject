@@ -14,7 +14,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     ReportCardDelete, ApprovalOficialMemoProcessReportList, OfficialMemoCancel, GuidanceDocumentsList, \
     GuidanceDocumentsAdd, GuidanceDocumentsDetail, GuidanceDocumentsUpdate, CreatingTeamList, CreatingTeamAdd, \
     CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed, CreatingTeamSetNumber, ExpensesList, expenses_update, \
-    ReportCardDetailYear, ReportCardDetailYearXLS
+    ReportCardDetailYear, ReportCardDetailYearXLS, TimeSheetCreateView, TimeSheetDetailView, TimeSheetUpdateView, \
+    TimeSheetDeleteView, TimeSheetListView
 
 app_name = 'hrdepartment_app'
 
@@ -81,4 +82,9 @@ urlpatterns = [
     path('team/<int:pk>/number/', CreatingTeamSetNumber.as_view(), name='team_number'),
     path('expenses/', ExpensesList.as_view(), name='expenses_list'),
     path('expenses/<int:pk>/update/', expenses_update, name='expenses_update'),
+    path('timesheet/add/', TimeSheetCreateView.as_view(), name='timesheet_add'),
+    path('timesheet/<int:pk>/', TimeSheetDetailView.as_view(), name='timesheet'),
+    path('timesheet/<int:pk>/update/', TimeSheetUpdateView.as_view(), name='timesheet_update'),
+    path('timesheet/<int:pk>/delete/', TimeSheetDeleteView.as_view(), name='timesheet_delete'),
+    path('timesheet/', TimeSheetListView.as_view(), name='timesheet_list'),  # Добавляем маршрут для списка табелей
 ]

@@ -1,0 +1,193 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+{#        {% include 'library_app/breadcrumb.html' %}#}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="{% url 'hrdepartment_app:timesheet_add' %}"
+                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
+                                            Добавить табель </a>
+                                    </div>
+
+{#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                        <input type="checkbox" class="btn-check" id="id_all" autocomplete="off"#}
+{#                                               onclick="CancellationChange()">#}
+{#                                        <label class="btn btn-primary" for="id_all">Все документы</label>#}
+{#                                    </div>#}
+
+{#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+{#                                        <select class="form-select" id="id_all" aria-label="Default select example" onchange="CancellationChange()" >#}
+{#                                          <option selected>Выберите пункт...</option>#}
+{#                                          <option value="1">На согласовании</option>#}
+{#                                          <option value="2">Выбор места проживания</option>#}
+{#                                          <option value="3">Издание приказа</option>#}
+{#                                          <option value="4">Оригиналы</option>#}
+{#                                          <option value="5">Проверка</option>#}
+{#                                          <option value="6">Переданные в бухгалтерию</option>#}
+{#                                          <option value="7">Завершенные</option>#}
+{#                                          <option value="8">Все</option>#}
+{#                                        </select>#}
+{#                                    </div>#}
+
+                                </div>
+                            </div>
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
+                            <table class="table table-ecommerce-simple mb-0 table-hover" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+                                <thead>
+                                <tr>
+                                    <th width="10%">Дата</th>
+                                    <th width="30%">Исполнитель</th>
+                                    <th width="30%">МПД</th>
+                                    <th width="30%">Примечание</th>
+                                </tr>
+                                </thead>
+                            </table>
+                            <hr class="solid mt-5 opacity-4">
+{#                            {% include 'library_app/paginator.html' %}#}
+                            <div class="datatable-footer">
+                                <div class="row align-items-center justify-content-between mt-3">
+                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                        <div class="d-flex align-items-stretch">
+                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-auto text-center order-3 order-lg-2">
+                                        <div class="results-info-wrapper"></div>
+                                    </div>
+                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                        <div class="pagination-wrapper"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            // Setup - add a text input to each footer cell
+            $('#datatable-ecommerce-list thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "ordering": false,
+                "pageLength": 10,
+                "scrollX": true,
+                "sDom": 'BT<"clear">lrtip',
+                "buttons": [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
+                "ajax": "{% url 'hrdepartment_app:timesheet_list' %}",
+                "processing": true,
+                "serverSide": true,
+                "lengthMenu": [[10, 25, 50, 75, 100, 200], [10, 25, 50, 75, 100, 200]],
+                "searching": true,
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    var id = aData['pk'];
+                    if (aData['process_accepted']) {
+                        $(nRow).addClass('text-success fs-6')
+                    } else {
+                        $(nRow).addClass('text-danger fs-6')
+                    }
+                    if (aData['cancellation']) {
+                        $(nRow).addClass('text-decoration-line-through text-danger fs-6')
+                    }
+                    if (aData['originals_received']) {
+                        $('td:eq(8)', nRow).addClass('text-info text-color-inherit');
+                    }
+                    if (aData['expenses_summ_check']) {
+                        if (aData['expenses_summ_check'] == "-") {
+                            $('td:eq(10)', nRow).html('')
+                        } else {
+                            $('td:eq(10)', nRow).html('<i class="bx bx-check-double"></i>')
+                        }
+                    } else {
+                            $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
+                    }
+
+                    $(nRow).attr("href", id + '/update/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+                "columns": [
+                    {"data": "date"},
+                    {"data": "employee"},
+                    {"data": "time_sheets_place"},
+                    {"data": "notes"},
+                ],
+            });
+        });
+
+        function CancellationChange() {
+            var id_all = document.getElementById("id_all").value;
+            $.ajax({
+                type: "GET",
+                url: '{% url 'hrdepartment_app:bpmemo_list' %}',
+                data: {
+                    "id_all": id_all,
+                },
+                dataType: "json",
+                success: function (data) {
+                    $('#datatable-ecommerce-list').DataTable().clear().rows.add(data.data).draw();
+                },
+                failure: function (data) {
+                    console.log("failure");
+                }
+            });
+        };
+    </script>
+{% endblock %}

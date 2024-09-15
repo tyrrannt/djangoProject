@@ -57,7 +57,8 @@ INSTALLED_APPS = [
     "widget_tweaks",
     "django_ckeditor_5",
     "debug_toolbar",
-    'channels',
+    "channels",
+    "dynamic_formsets"
 ]
 
 MIDDLEWARE = [
@@ -163,7 +164,7 @@ STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
     pathlib.Path.joinpath(BASE_DIR, "static_dev"),
-    pathlib.Path.joinpath(BASE_DIR, "static"),
+    pathlib.Path.joinpath(BASE_DIR, 'static'),
 ]
 
 MEDIA_URL = "/media/"

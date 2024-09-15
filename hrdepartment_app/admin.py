@@ -22,7 +22,7 @@ from hrdepartment_app.models import (
     TypesUserworktime,
     Instructions,
     Provisions,
-    CreatingTeam,
+    CreatingTeam, TimeSheet,
 )
 
 # Register your models here.
@@ -36,6 +36,18 @@ admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
 
 
+
+@admin.register(TimeSheet)
+class TimeSheetAdmin(admin.ModelAdmin):
+    list_display = ("date", "get_person", "time_sheets_place", "notes")
+    list_filter = ("employee", "time_sheets_place")
+
+    @admin.display(description="Ответственный")
+    def get_person(self, obj: TimeSheet):
+        return format_name_initials(obj.employee.title)
+
+
+
 @admin.register(Medical)
 class MedicalAdmin(admin.ModelAdmin):
     list_display = ("get_person", "get_inspection_view", "number", "date_of_inspection")  #
@@ -45,7 +57,6 @@ class MedicalAdmin(admin.ModelAdmin):
 
     def get_person(self, obj: Medical):
         return format_name_initials(obj.person.title)
-
 
 @admin.register(MedicalOrganisation)
 class MedicalOrganisationAdmin(admin.ModelAdmin):

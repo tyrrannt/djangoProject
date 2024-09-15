@@ -1,0 +1,163 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load widget_tweaks %}
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+        {% include 'library_app/breadcrumb.html' %}
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <!-- start: page -->
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            <div class="row">
+                <div class="col">
+                    <section class="card card-modern card-big-info">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="form-group row align-items-center pb-3">
+                                        <p class="card-big-info-desc">{% if object %}Редактировать{% else %}
+                                            Создать{% endif %} табель учета рабочего времени</p>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <label class="col"
+                                                   for="id_person_executor">Дата табеля:</label>
+                                            <div class="col">
+                                                {{ form.date }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <label class="col"
+                                                   for="id_person_agreement">МПД:</label>
+                                            <div class="col">
+                                                <span>{{ form.time_sheets_place }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <label class="col"
+                                                   for="id_person_agreement">Ответственный:</label>
+                                            <div class="col">
+                                                <span>{{ form.employee }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <label class="col"
+                                                   for="id_person_agreement">Примечание:</label>
+                                            <div class="col">
+                                                <span>{{ form.notes }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row align-items-center pb-3">
+                                        <h2>Записи в табеле</h2>
+                                        <table id="report-card-table" class="table">
+                                            <thead>
+                                            <tr>
+                                                <th>Дата</th>
+                                                <th>Сотрудник</th>
+                                                <th>Время прихода</th>
+                                                <th>Время ухода</th>
+                                                <th>МПД</th>
+                                                <th></th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {{ report_cards.management_form }}
+                                            {% for form in report_cards.forms %}
+                                                <tr class="formset_row">
+                                                    {% for field in form.visible_fields %}
+                                                        <td>
+                                                            {# Include the hidden fields in the form #}
+                                                            {% if forloop.first %}
+                                                                {% for hidden in form.hidden_fields %}
+                                                                    {{ hidden }}
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                            {{ field.errors.as_ul }}
+                                                            {{ field }}
+                                                        </td>
+                                                    {% endfor %}
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        <button type="submit">Сохранить</button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="row action-buttons">
+                <div class="col-12 col-md-auto">
+                    <button type="submit"
+                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            data-loading-text="Loading...">
+                        <i class="bx bx-save text-4 me-2"></i> Сохранить
+                    </button>
+                </div>
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                    <a href="{% url 'hrdepartment_app:timesheet_list' %}"
+                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                </div>
+                {% if user.is_superuser and object %}
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
+                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    </div>
+                {% endif %}
+            </div>
+        </form>
+        <!-- end: page -->
+    </section>
+    <script type="text/javascript">
+        $('.formset_row').formset({
+            addText: 'Добавить запись',
+            deleteText: 'Удалить',
+            prefix: 'reportcard_set'
+        });
+    </script>
+    <!-- end: page -->
+{% endblock %}
