@@ -3605,10 +3605,10 @@ def expenses_update(request,  *args,  **kwargs):
     return redirect("hrdepartment_app:expenses_list")
 
 
-class TimeSheetCreateView(CreateView):
+class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = TimeSheet
     form_class = TimeSheetForm  # Используем созданную форму
-    # template_name = 'timesheet_form.html'
+    permission_required = "hrdepartment_app.create_timesheet"
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -3634,13 +3634,13 @@ class TimeSheetCreateView(CreateView):
         print(form)
         return super().form_invalid(form)
 
-class TimeSheetDetailView(DetailView):
+class TimeSheetDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = TimeSheet
-    # template_name = 'timesheet_detail.html'
+    permission_required = "hrdepartment_app.view_timesheet"
 
-class TimeSheetListView(ListView):
+class TimeSheetListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = TimeSheet
-    # template_name = 'timesheet_list.html'
+    permission_required = "hrdepartment_app.view_timesheet"
     context_object_name = 'timesheets'
 
     def get(self, request, *args, **kwargs):
@@ -3658,10 +3658,10 @@ class TimeSheetListView(ListView):
             return JsonResponse(context, safe=False)
         return super(TimeSheetListView, self).get(request, *args, **kwargs)
 
-class TimeSheetUpdateView(UpdateView):
+class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = TimeSheet
     form_class = TimeSheetForm  # Используем созданную форму
-    # template_name = 'timesheet_form.html'
+    permission_required = "hrdepartment_app.change_timesheet"
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
@@ -3680,10 +3680,7 @@ class TimeSheetUpdateView(UpdateView):
             report_cards.save()
         return super().form_valid(form)
 
-class TimeSheetDeleteView(DeleteView):
+class TimeSheetDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = TimeSheet
     success_url = reverse_lazy('hrdepartment_app:timesheet_list')
-    # template_name = 'timesheet_confirm_delete.html'
-# Create your views here.
-def index(request):
-    return render(request, '1.html')
+    permission_required = "hrdepartment_app.delete_timesheet"
