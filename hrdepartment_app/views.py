@@ -5,6 +5,7 @@ from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
+from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
@@ -55,7 +56,8 @@ from hrdepartment_app.forms import (
     ProvisionsUpdateForm,
     ProvisionsAddForm,
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
-    CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm, ReportCardFormSet,
+    CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm,
+    ReportCardForm, ReportCardFormSet,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -3605,34 +3607,80 @@ def expenses_update(request,  *args,  **kwargs):
     return redirect("hrdepartment_app:expenses_list")
 
 
+# class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+#     model = TimeSheet
+#     form_class = TimeSheetForm  # Используем созданную форму
+#     permission_required = "hrdepartment_app.create_timesheet"
+#
+#     def get_context_data(self, **kwargs):
+#         data = super().get_context_data(**kwargs)
+#         if self.request.POST:
+#             data['report_cards'] = ReportCardFormSet(self.request.POST)
+#         else:
+#             data['report_cards'] = ReportCardFormSet()
+#         return data
+#
+#     def form_valid(self, form):
+#         context = self.get_context_data()
+#         report_cards = context['report_cards']
+#         for item in report_cards:
+#             print(item)
+#         self.object = form.save()
+#         if report_cards.is_valid():
+#             report_cards.instance = self.object
+#             report_cards.save()
+#         else:
+#             print(report_cards.errors)
+#         return super().form_valid(form)
+#
+#     def form_invalid(self, form):
+#         print(form.errors)
+#         return super().form_invalid(form)
+
 class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = TimeSheet
-    form_class = TimeSheetForm  # Используем созданную форму
+    form_class = TimeSheetForm
     permission_required = "hrdepartment_app.create_timesheet"
 
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['report_cards'] = ReportCardFormSet(self.request.POST)
+            data['report_cards'] = ReportCardFormSet(self.request.POST, self.request.FILES)
         else:
             data['report_cards'] = ReportCardFormSet()
         return data
+
 
     def form_valid(self, form):
         context = self.get_context_data()
         report_cards = context['report_cards']
         self.object = form.save()
         if report_cards.is_valid():
-            print(form)
-            report_cards.instance = self.object
-            report_cards.save()
+            instances = report_cards.save(commit=False)
+            for instance in instances:
+                instance.timesheet = self.object
+                instance.save()
         else:
             print(report_cards.errors)
         return super().form_valid(form)
+    # model = TimeSheet
+    # form_class = TimeSheetForm
+    # permission_required = "hrdepartment_app.create_timesheet"
+    #
+    # def form_valid(self, form):
+    #     # Создаем табель
+    #     timesheet = TimeSheet.objects.create(name=form.cleaned_data['name'])
+    #     # Создаем ReportCard для каждой строки в форме
+    #     report_cards = form.cleaned_data['report_cards']
+    #     for report_card_form in report_cards:
+    #         if report_card_form.is_valid() and report_card_form.cleaned_data:
+    #             report_card = report_card_form.save(commit=False)
+    #             report_card.timesheet = timesheet
+    #             report_card.save()
+    #     return super().form_valid(form)
 
-    def form_invalid(self, form):
-        print(form)
-        return super().form_invalid(form)
+# ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=10)
+
 
 class TimeSheetDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = TimeSheet
@@ -3645,12 +3693,6 @@ class TimeSheetListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         query = Q()
-        # expenses_dicts = TimeSheet.objects.filter(
-        #     Q(document__expenses=False) &
-        #     Q(document__expenses_summ__gt=0) &
-        #     Q(process_accepted=True)).values('document')
-        # expenses_list = [item['document'] for item in expenses_dicts]
-        # query &= Q(id__in=expenses_list)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['date', 'employee__title',
                            'time_sheets_place__name', 'notes',]
@@ -3676,9 +3718,28 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
         report_cards = context['report_cards']
         self.object = form.save()
         if report_cards.is_valid():
-            report_cards.instance = self.object
-            report_cards.save()
+            instances = report_cards.save(commit=False)
+            for instance in instances:
+                instance.timesheet = self.object
+                instance.save()
+        else:
+            print(report_cards.errors)
         return super().form_valid(form)
+    # model = TimeSheet
+    # form_class = TimeSheetForm
+    # permission_required = "hrdepartment_app.change_timesheet"
+    #
+    # def form_valid(self, form):
+    #     # Обновляем табель
+    #     timesheet = form.save()
+    #     # Обновляем ReportCard для каждой строки в форме
+    #     report_cards = form.cleaned_data['report_cards']
+    #     for report_card_form in report_cards:
+    #         if report_card_form.is_valid() and report_card_form.cleaned_data:
+    #             report_card = report_card_form.save(commit=False)
+    #             report_card.timesheet = timesheet
+    #             report_card.save()
+    #     return super().form_valid(form)
 
 class TimeSheetDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = TimeSheet

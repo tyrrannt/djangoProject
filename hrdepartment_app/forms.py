@@ -1370,20 +1370,26 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
 class ReportCardForm(forms.ModelForm):
     class Meta:
         model = ReportCard
-        fields = ['employee', 'start_time', 'end_time']
+        fields = ['timesheet', 'employee', 'start_time', 'end_time']
         widgets = {
-            'employee': forms.Select(attrs={"class": "form-control form-control-modern",
-            "data-plugin-selectTwo": True,}),
+            'employee': forms.Select(attrs={"class": "form-control form-control-modern"}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
         }
+
 
 class TimeSheetForm(forms.ModelForm):
     class Meta:
         model = TimeSheet
         fields = ['date', 'employee', 'notes', 'time_sheets_place']
         widgets = {
-            'date': forms.DateInput(attrs={"class": "form-control form-control-modern", "type": "date"}),
+            'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
+            "data-plugin-datepicker": True,
+            "type": "data",
+            "data-date-language": "ru",
+            "todayBtn": True,
+            "clearBtn": True,
+            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',}),
             'employee': forms.Select(attrs={"class": "form-control form-control-modern",
             "data-plugin-selectTwo": True,}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
@@ -1391,4 +1397,4 @@ class TimeSheetForm(forms.ModelForm):
             "data-plugin-selectTwo": True,}),
         }
 
-ReportCardFormSet = forms.inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)
+ReportCardFormSet = forms.inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=10)

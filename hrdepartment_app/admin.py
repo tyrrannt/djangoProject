@@ -44,7 +44,10 @@ class TimeSheetAdmin(admin.ModelAdmin):
 
     @admin.display(description="Ответственный")
     def get_person(self, obj: TimeSheet):
-        return format_name_initials(obj.employee.title)
+        try:
+            return format_name_initials(obj.employee.title)
+        except AttributeError:
+            return ""
 
 
 
