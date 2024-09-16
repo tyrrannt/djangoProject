@@ -19,58 +19,20 @@
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
+
+{% endblock %}
+{% block SpecificPageVendor %}
     <script type="text/javascript">
-    $(document).ready(function() {
-        $('.formset_row').formset({
-            addText: 'Добавить запись',
-            deleteText: 'Удалить',
-            prefix: 'reportcard_set',
-            addCssClass: 'btn btn-success',  // Класс для кнопки "Добавить запись"
-            deleteCssClass: 'btn btn-danger' // Класс для кнопки "Удалить"
+        $(document).ready(function () {
+            $('.formset_row').formset({
+                addText: 'Добавить запись',
+                deleteText: 'Удалить',
+                prefix: 'reportcard_set',
+                addCssClass: 'btn btn-success',  // Класс для кнопки "Добавить запись"
+                deleteCssClass: 'btn btn-danger' // Класс для кнопки "Удалить"
+            });
         });
-    });
-</script>
-{#    <script>#}
-{#        $(document).ready(function() {#}
-{#            // Handling Normal Formset#}
-{#            let formIdx = {{ formset.total_form_count|add:"-1" }};#}
-{#            $('#add-form').click(function() {#}
-{#                $('#formset').append($('#formset .form-row:last').clone().find('input').each(function() {#}
-{#                    let name = $(this).attr('name').replace(/-\d+-/, '-' + formIdx + '-');#}
-{#                    $(this).attr('name', name).val('');#}
-{#                }).end().find('input[name$=-id]').val('').end().find('.remove-form').show().end());#}
-{#                formIdx++;#}
-{#                $('#id_form-TOTAL_FORMS').val(formIdx);#}
-{#            });#}
-{##}
-{#            $('#formset').on('click', '.remove-form', function() {#}
-{#                $(this).closest('.form-row').remove();#}
-{#                formIdx--;#}
-{#                $('#id_form-TOTAL_FORMS').val(formIdx);#}
-{#            });#}
-{##}
-{#            $('.remove-form').hide(); // Hide remove button for initial forms#}
-{##}
-{#            // Handling Model Formset#}
-{#            let modelFormIdx = {{ model_formset.total_form_count|add:"-1" }};#}
-{#            $('#add-model-form').click(function() {#}
-{#                $('#model_formset').append($('#model_formset .form-row:last').clone().find('input').each(function() {#}
-{#                    let name = $(this).attr('name').replace(/-\d+-/, '-' + modelFormIdx + '-');#}
-{#                    $(this).attr('name', name).val('');#}
-{#                }).end().find('input[name$=-id]').val('').end().find('.remove-form').show().end());#}
-{#                modelFormIdx++;#}
-{#                $('#id_form-TOTAL_FORMS').val(modelFormIdx);#}
-{#            });#}
-{##}
-{#            $('#model_formset').on('click', '.remove-form', function() {#}
-{#                $(this).closest('.form-row').remove();#}
-{#                modelFormIdx--;#}
-{#                $('#id_form-TOTAL_FORMS').val(modelFormIdx);#}
-{#            });#}
-{##}
-{#            $('.remove-form').hide(); // Hide remove button for initial forms#}
-{#        });#}
-{#    </script>#}
+    </script>
 {% endblock %}
 
 {% block title %}
@@ -141,7 +103,7 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <h2>Записи в табеле</h2>
-                                        <table id="report-card-table" class="table">
+                                        <table>
                                             <thead>
                                             <tr>
                                                 <th>Сотрудник</th>

@@ -1397,4 +1397,4 @@ class TimeSheetForm(forms.ModelForm):
             "data-plugin-selectTwo": True,}),
         }
 
-ReportCardFormSet = forms.inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=10)
+ReportCardFormSet = forms.inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1, can_delete=True)
