@@ -22,7 +22,7 @@ from hrdepartment_app.models import (
     TypesUserworktime,
     Instructions,
     Provisions,
-    CreatingTeam, TimeSheet,
+    CreatingTeam, TimeSheet, OperationalWork, PeriodicWork,
 )
 
 # Register your models here.
@@ -335,3 +335,19 @@ class OrderDescriptionAdmin(admin.ModelAdmin):
         if obj:
             return self.fieldsets
         return self.add_fieldsets
+
+@admin.register(OperationalWork)
+class OperationalWorkAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "description", "air_bord_type", )  #
+    list_filter = (
+        "air_bord_type",
+    )
+    search_fields = ["name", 'code']
+
+@admin.register(PeriodicWork)
+class PeriodicWorkAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "description", "air_bord_type", "ratio")  #
+    list_filter = (
+        "air_bord_type",
+    )
+    search_fields = ["name", "code"]

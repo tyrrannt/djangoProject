@@ -25,7 +25,7 @@ from administration_app.utils import (
     timedelta_to_time,
     change_approval_status,
 )
-from contracts_app.models import CompanyProperty, Estate
+from contracts_app.models import CompanyProperty, Estate, TypeProperty
 from customers_app.models import (
     DataBaseUser,
     Counteragent,
@@ -1971,7 +1971,6 @@ class TimeSheet(models.Model):
         related_name="time_sheets_place")
     notes = models.TextField(verbose_name="Примечания", blank=True)
 
-
     class Meta:
         verbose_name = "Табель учета рабочего времени"
         verbose_name_plural = "Табели учета рабочего времени"
@@ -2005,6 +2004,47 @@ class TimeSheet(models.Model):
         }
 
 
+class OperationalWork(models.Model):
+    """
+    Оперативные работы
+    """
+
+    class Meta:
+        verbose_name = "Оперативная работа"
+        verbose_name_plural = "Оперативные работы"
+        ordering = ("name",)
+
+    name = models.TextField(verbose_name="Наименование", blank=True)
+    code = models.TextField(verbose_name="Код", blank=True)
+    description = models.TextField(verbose_name="Описание", blank=True)
+    air_bord_type = models.ForeignKey(TypeProperty, verbose_name="Тип", on_delete=models.SET_NULL, null=True,
+                                      blank=True)
+
+    def get_data(self):
+        return f"{self.name} - {self.code}"
+
+
+class PeriodicWork(models.Model):
+    """
+    Периодические работы
+    """
+
+    class Meta:
+        verbose_name = "Периодическая работа"
+        verbose_name_plural = "Периодические работы"
+        ordering = ("name",)
+
+    name = models.TextField(verbose_name="Наименование", blank=True)
+    code = models.TextField(verbose_name="Код", blank=True)
+    ratio = models.FloatField(verbose_name="Норма-часы", blank=True)
+    description = models.TextField(verbose_name="Описание", blank=True)
+    air_bord_type = models.ForeignKey(TypeProperty, verbose_name="Тип", on_delete=models.SET_NULL, null=True,
+                                      blank=True)
+
+    def get_data(self):
+        return f"{self.name} - {self.code}"
+
+
 class ReportCard(models.Model):
     """
     Атрибуты:
@@ -2019,6 +2059,15 @@ class ReportCard(models.Model):
     reason_adjustment = Причина ручной корректировки;
     doc_ref_key = Уникальный номер документа;
     current_intervals = Текущий интервал;
+    timesheet = Табель учета рабочего времени;
+    lunch_time = Время обеда;
+    flight_hours = Летные часы;
+    operational_work = Оперативные работы;
+    periodic_work = Периодические работы;
+    air_board = Воздушный борт;
+    additional_work = Дополнительные работы;
+    other_work = Другие работы;
+    sign_report_card = Признак табеля рабочего времени;
     """
 
     type_of_report = [
@@ -2079,8 +2128,16 @@ class ReportCard(models.Model):
     )
     timesheet = models.ForeignKey(
         TimeSheet, verbose_name="Табель учета рабочего времени", on_delete=models.CASCADE, related_name="report_cards",
-        null = True, blank = True
+        null=True, blank=True
     )
+    lunch_time = models.IntegerField(verbose_name="Время обеда", null=True, blank=True)
+    flight_hours = models.IntegerField(verbose_name="Летные часы", null=True, blank=True)
+    operational_work = models.ManyToManyField(OperationalWork, verbose_name="Оперативные работы", related_name="report_operational")
+    periodic_work = models.ManyToManyField(PeriodicWork, verbose_name="Периодические работы", related_name="report_periodic")
+    air_board = models.ManyToManyField(Estate, verbose_name="Воздушный борт", related_name='company_air_board')
+    additional_work = models.CharField(verbose_name="Дополнительные работы", max_length=200, default="", blank=True)
+    other_work = models.CharField(verbose_name="Другие работы", max_length=200, default="", blank=True)
+    sign_report_card = models.BooleanField(verbose_name="Признак табеля рабочего времени", default=False)
 
     def get_data(self):
         """
@@ -2200,7 +2257,6 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
         return 0
 
 
-
 class ProductionCalendar(models.Model):
     """
     Месяц в производственном календаре.
@@ -2269,7 +2325,7 @@ class ProductionCalendar(models.Model):
             if days in preholiday_day:
                 preholiday_day_count += 1
                 day = PreHolidayDay.objects.get(preholiday_day=days)
-                if  day.weekday() == 4:
+                if day.weekday() == 4:
                     friday_count += 1
                     preholiday_time += day.work_time.hour + 1 + day.work_time.minute / 60
                 else:
@@ -2282,8 +2338,6 @@ class ProductionCalendar(models.Model):
                 elif days.weekday() < 4:
                     day_count += 1
         return (day_count * 8) + (day_count / 2) - friday_count - (preholiday_day_count * 8.5 - preholiday_time)
-
-
 
     def get_norm_time(self):
         """
@@ -2303,7 +2357,8 @@ class ProductionCalendar(models.Model):
                 preholiday_time += item.work_time.hour + 1 + item.work_time.minute / 60
             else:
                 preholiday_time += item.work_time.hour + item.work_time.minute / 60
-        norm_time = (self.number_working_days * 8) + (self.number_working_days / 2) - self.get_friday_count() - (preholiday_day_count * 8.5 - preholiday_time)
+        norm_time = (self.number_working_days * 8) + (self.number_working_days / 2) - self.get_friday_count() - (
+                    preholiday_day_count * 8.5 - preholiday_time)
 
         return norm_time
 
@@ -2354,7 +2409,7 @@ def check_day(date: datetime.date, time_start: datetime.time, time_end: datetime
                 )
             type_of_day = "Р"
         else:
-            if days_type in [14,15]:
+            if days_type in [14, 15]:
                 check_time_end = datetime.timedelta(
                     hours=time_end.hour, minutes=time_end.minute
                 )

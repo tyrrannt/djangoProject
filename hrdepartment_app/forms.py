@@ -1370,11 +1370,23 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
 class ReportCardForm(forms.ModelForm):
     class Meta:
         model = ReportCard
-        fields = ['timesheet', 'employee', 'start_time', 'end_time']
+        fields = ['timesheet', 'employee', 'start_time', 'end_time', 'lunch_time', 'flight_hours', 'operational_work',
+                  'periodic_work', 'air_board', 'additional_work', 'other_work']
         widgets = {
             'employee': forms.Select(attrs={"class": "form-control form-control-modern"}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
+            # 'lunch_time': forms.IntegerField(attrs={'class': 'form-control form-control-modern'}),
+            # 'flight_hours': forms.IntegerField(attrs={'class': 'form-control form-control-modern'}),
+            'operational_work': forms.Select(attrs={"class": "form-control form-control-modern",
+            "data-plugin-selectTwo": True,}),
+            'periodic_work': forms.Select(attrs={"class": "form-control form-control-modern",
+            "data-plugin-selectTwo": True,}),
+            'air_board': forms.Select(attrs={"class": "form-control form-control-modern",
+            "data-plugin-selectTwo": True,}),
+            # 'additional_work': forms.CharField(attrs={"class": "form-control form-control-modern",}),
+            # 'other_work': forms.CharField(attrs={"class": "form-control form-control-modern",}),
+
         }
 
 
