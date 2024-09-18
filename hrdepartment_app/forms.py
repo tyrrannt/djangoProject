@@ -1376,16 +1376,16 @@ class ReportCardForm(forms.ModelForm):
             'employee': forms.Select(attrs={"class": "form-control form-control-modern"}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
-            # 'lunch_time': forms.IntegerField(attrs={'class': 'form-control form-control-modern'}),
-            # 'flight_hours': forms.IntegerField(attrs={'class': 'form-control form-control-modern'}),
+            'lunch_time': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern'}),
+            'flight_hours': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern'}),
             'operational_work': forms.Select(attrs={"class": "form-control form-control-modern",
-            "data-plugin-selectTwo": True,}),
+                                                    "data-plugin-selectTwo": True, }),
             'periodic_work': forms.Select(attrs={"class": "form-control form-control-modern",
-            "data-plugin-selectTwo": True,}),
+                                                 "data-plugin-selectTwo": True, }),
             'air_board': forms.Select(attrs={"class": "form-control form-control-modern",
-            "data-plugin-selectTwo": True,}),
-            # 'additional_work': forms.CharField(attrs={"class": "form-control form-control-modern",}),
-            # 'other_work': forms.CharField(attrs={"class": "form-control form-control-modern",}),
+                                             "data-plugin-selectTwo": True, }),
+            'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'}),
+            'other_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'}),
 
         }
 
@@ -1396,17 +1396,18 @@ class TimeSheetForm(forms.ModelForm):
         fields = ['date', 'employee', 'notes', 'time_sheets_place']
         widgets = {
             'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
-            "data-plugin-datepicker": True,
-            "type": "data",
-            "data-date-language": "ru",
-            "todayBtn": True,
-            "clearBtn": True,
-            "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}',}),
+                                           "data-plugin-datepicker": True,
+                                           "type": "data",
+                                           "data-date-language": "ru",
+                                           "todayBtn": True,
+                                           "clearBtn": True,
+                                           "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}', }),
             'employee': forms.Select(attrs={"class": "form-control form-control-modern",
-            "data-plugin-selectTwo": True,}),
+                                            "data-plugin-selectTwo": True, }),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             'time_sheets_place': forms.Select(attrs={"class": "form-control form-control-modern",
-            "data-plugin-selectTwo": True,}),
+                                                     "data-plugin-selectTwo": True, }),
         }
+
 
 ReportCardFormSet = forms.inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1, can_delete=True)

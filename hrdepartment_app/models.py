@@ -2020,8 +2020,8 @@ class OperationalWork(models.Model):
     air_bord_type = models.ForeignKey(TypeProperty, verbose_name="Тип", on_delete=models.SET_NULL, null=True,
                                       blank=True)
 
-    def get_data(self):
-        return f"{self.name} - {self.code}"
+    def __str__(self):
+        return self.code
 
 
 class PeriodicWork(models.Model):
@@ -2041,8 +2041,8 @@ class PeriodicWork(models.Model):
     air_bord_type = models.ForeignKey(TypeProperty, verbose_name="Тип", on_delete=models.SET_NULL, null=True,
                                       blank=True)
 
-    def get_data(self):
-        return f"{self.name} - {self.code}"
+    def __str__(self):
+        return self.code
 
 
 class ReportCard(models.Model):
