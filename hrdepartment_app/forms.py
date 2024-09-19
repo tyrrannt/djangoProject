@@ -1385,8 +1385,7 @@ class ReportCardForm(forms.ModelForm):
             'air_board': forms.Select(attrs={"class": "form-control form-control-modern",
                                              "data-plugin-selectTwo": True, }),
             'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'}),
-            'other_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'}),
-
+            'other_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'})
         }
 
 
