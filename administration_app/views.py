@@ -1,6 +1,7 @@
 import datetime
 import json
 
+from celery.bin.control import control
 from django.core.exceptions import MultipleObjectsReturned
 from django.utils.datastructures import MultiValueDictKeyError
 import requests
@@ -254,9 +255,11 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     if item.title == '':
                 #         item.save()
             if request.GET.get('update') == '3':
-                # pass
-                # get_sick_leave(2023, 2)
-                current_data = datetime.datetime.date(datetime.datetime(2024, 9, 19))
+                control_date = request.GET.get('control_date')
+                if control_date:
+                    current_data = datetime.datetime.strptime(control_date, '%Y-%m-%d').date()
+                else:
+                    current_data = datetime.datetime.today().date()
                 rec_obj = ReportCard.objects.filter(Q(report_card_day=current_data) & Q(record_type='1'))
                 for item in rec_obj:
                     print(item)
