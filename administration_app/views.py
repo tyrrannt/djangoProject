@@ -256,7 +256,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '3':
                 # pass
                 # get_sick_leave(2023, 2)
-                current_data = datetime.datetime.date(datetime.datetime(2024, 9, 10))
+                current_data = datetime.datetime.date(datetime.datetime(2024, 9, 19))
                 rec_obj = ReportCard.objects.filter(Q(report_card_day=current_data) & Q(record_type='1'))
                 for item in rec_obj:
                     print(item)
