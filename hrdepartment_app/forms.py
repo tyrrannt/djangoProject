@@ -1379,11 +1379,11 @@ class ReportCardForm(forms.ModelForm):
             'lunch_time': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern'}),
             'flight_hours': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern'}),
             'operational_work': forms.Select(attrs={"class": "form-control form-control-modern",
-                                                    "data-plugin-selectTwo": True, }),
+                                                    "data-plugin-selectTwo": True, "multiple": "multiple",}),
             'periodic_work': forms.Select(attrs={"class": "form-control form-control-modern",
-                                                 "data-plugin-selectTwo": True, }),
+                                                 "data-plugin-selectTwo": True, "multiple": "multiple",}),
             'air_board': forms.Select(attrs={"class": "form-control form-control-modern",
-                                             "data-plugin-selectTwo": True, }),
+                                             "data-plugin-selectTwo": True, "multiple": "multiple",}),
             'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'}),
             'other_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'})
         }
