@@ -2,6 +2,7 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import datetime
+import time
 
 from dateutil.relativedelta import relativedelta
 from decouple import config
@@ -198,6 +199,7 @@ def send_message_tg():
             item.sending_counter -= 1
             item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
             item.save()
+            time.sleep(1)
 
     except Exception as _ex:
         result.append(f"Ошибка telegram бота: {_ex}")
