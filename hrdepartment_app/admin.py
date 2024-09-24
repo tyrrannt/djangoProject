@@ -344,10 +344,19 @@ class OperationalWorkAdmin(admin.ModelAdmin):
     )
     search_fields = ["name", 'code']
 
+
+def copy_periodic_work(modeladmin, request, queryset):
+    for periodic_work in queryset:
+        periodic_work.pk = None  # Устанавливаем pk в None, чтобы создать новую запись
+        periodic_work.save()
+
+copy_periodic_work.short_description = "Копировать выбранные табели"
+
 @admin.register(PeriodicWork)
 class PeriodicWorkAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "description", "air_bord_type", "ratio")  #
+    list_display = ("pk", "code", "name", "description", "air_bord_type", "ratio")  #
     list_filter = (
         "air_bord_type",
     )
     search_fields = ["name", "code"]
+    actions = [copy_periodic_work]
