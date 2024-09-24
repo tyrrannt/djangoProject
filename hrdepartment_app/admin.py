@@ -336,6 +336,13 @@ class OrderDescriptionAdmin(admin.ModelAdmin):
             return self.fieldsets
         return self.add_fieldsets
 
+def copy_operational_work(modeladmin, request, queryset):
+    for operational_work in queryset:
+        operational_work.pk = None  # Устанавливаем pk в None, чтобы создать новую запись
+        operational_work.save()
+
+copy_operational_work.short_description = "Копировать выбранные оперативные работы"
+
 @admin.register(OperationalWork)
 class OperationalWorkAdmin(admin.ModelAdmin):
     list_display = ("code", "name", "description", "air_bord_type", )  #
@@ -343,6 +350,7 @@ class OperationalWorkAdmin(admin.ModelAdmin):
         "air_bord_type",
     )
     search_fields = ["name", 'code']
+    actions = [copy_operational_work]
 
 
 def copy_periodic_work(modeladmin, request, queryset):
@@ -350,7 +358,7 @@ def copy_periodic_work(modeladmin, request, queryset):
         periodic_work.pk = None  # Устанавливаем pk в None, чтобы создать новую запись
         periodic_work.save()
 
-copy_periodic_work.short_description = "Копировать выбранные табели"
+copy_periodic_work.short_description = "Копировать выбранные периодические работы"
 
 @admin.register(PeriodicWork)
 class PeriodicWorkAdmin(admin.ModelAdmin):
