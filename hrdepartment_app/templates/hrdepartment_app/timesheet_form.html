@@ -4,32 +4,33 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% block custome_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
 {% endblock %}
 
 {% block custome_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
+    {#    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
+    {#    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
+    {#    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
+
 
 {% endblock %}
 {% block SpecificPageVendor %}
+    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function () {
             $('.formset_row').formset({
                 addText: 'Добавить запись',
                 deleteText: 'Удалить',
                 prefix: 'reportcard_set',
-                addCssClass: 'btn btn-success',  // Класс для кнопки "Добавить запись"
-                deleteCssClass: 'btn btn-danger' // Класс для кнопки "Удалить"
+                {#addCssClass: 'btn btn-success',  // Класс для кнопки "Добавить запись"#}
+                {#deleteCssClass: 'btn btn-danger' // Класс для кнопки "Удалить"#}
             });
         });
     </script>
@@ -116,6 +117,7 @@
                                                 <th>ВС</th>
                                                 <th>Дополнительные работы</th>
                                                 <th>Другие работы</th>
+                                                <th></th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -170,4 +172,3 @@
 
     <!-- end: page -->
 {% endblock %}
-

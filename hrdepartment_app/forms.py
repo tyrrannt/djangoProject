@@ -4,9 +4,11 @@ from decouple import config
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.forms import inlineformset_factory
 from loguru import logger
 
 from administration_app.utils import make_custom_field
+from contracts_app.models import Estate
 from customers_app.models import (
     Division,
     DataBaseUser,
@@ -27,7 +29,7 @@ from hrdepartment_app.models import (
     ReasonForCancellation,
     OrderDescription,
     ReportCard,
-    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet,
+    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OperationalWork, PeriodicWork,
 )
 
 
@@ -1368,6 +1370,28 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
 
 
 class ReportCardForm(forms.ModelForm):
+    operational_work = forms.ModelMultipleChoiceField(
+        queryset=OperationalWork.objects.all(),
+        widget=forms.SelectMultiple(attrs={"class": "form-control form-control-modern select2",
+                                                    "data-plugin-selectTwo": True, "multiple": True,
+                                                    "style": "width: 100%;" }),
+        required=False
+    )
+    periodic_work = forms.ModelMultipleChoiceField(
+        queryset=PeriodicWork.objects.all(),
+        widget=forms.SelectMultiple(attrs={"class": "form-control form-control-modern select2",
+                                                    "data-plugin-selectTwo": True, "multiple": True,
+                                                    "style": "width: 100%;" }),
+        required=False
+    )
+    air_board = forms.ModelMultipleChoiceField(
+        queryset=Estate.objects.all(),
+        widget=forms.SelectMultiple(attrs={"class": "form-control form-control-modern select2",
+                                                    "data-plugin-selectTwo": True, "multiple": True,
+                                                    "style": "width: 100%;" }),
+        required=False
+    )
+
     class Meta:
         model = ReportCard
         fields = ['timesheet', 'employee', 'start_time', 'end_time', 'lunch_time', 'flight_hours', 'operational_work',
@@ -1376,17 +1400,17 @@ class ReportCardForm(forms.ModelForm):
             'employee': forms.Select(attrs={"class": "form-control form-control-modern"}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
             'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
-            'lunch_time': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern'}),
-            'flight_hours': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern'}),
-            'operational_work': forms.Select(attrs={"class": "form-control form-control-modern",
-                                                    "data-plugin-selectTwo": True, "multiple": "multiple",}),
-            'periodic_work': forms.Select(attrs={"class": "form-control form-control-modern",
-                                                 "data-plugin-selectTwo": True, "multiple": "multiple",}),
-            'air_board': forms.Select(attrs={"class": "form-control form-control-modern",
-                                             "data-plugin-selectTwo": True, "multiple": "multiple",}),
-            'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'}),
-            'other_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern'})
+            'lunch_time': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
+            'flight_hours': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
+            'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern', }),
+            'other_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern', })
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['operational_work'].queryset = OperationalWork.objects.all()
+        self.fields['periodic_work'].queryset = PeriodicWork.objects.all()
+        self.fields['air_board'].queryset = Estate.objects.all()
 
 
 class TimeSheetForm(forms.ModelForm):
@@ -1409,4 +1433,6 @@ class TimeSheetForm(forms.ModelForm):
         }
 
 
-ReportCardFormSet = forms.inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1, can_delete=True)
+ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
+            'end_time', 'lunch_time', 'flight_hours', 'operational_work', 'periodic_work',
+            'air_board', 'additional_work', 'other_work', 'sign_report_card'), extra=1, can_delete=True)

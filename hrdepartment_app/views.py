@@ -3715,16 +3715,29 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
 
     def form_valid(self, form):
         context = self.get_context_data()
-        report_cards = context['report_cards']
-        self.object = form.save()
-        if report_cards.is_valid():
-            instances = report_cards.save(commit=False)
-            for instance in instances:
-                instance.timesheet = self.object
-                instance.save()
+        reportcard_formset = context['report_cards']
+        if reportcard_formset.is_valid():
+            self.object = form.save()
+            reportcard_formset.instance = self.object
+            reportcard_formset.save()
+            return super().form_valid(form)
         else:
-            print(report_cards.errors)
-        return super().form_valid(form)
+            return self.form_invalid(form)
+
+    # def form_valid(self, form):
+    #     context = self.get_context_data()
+    #     report_cards = context['report_cards']
+    #     print(report_cards)
+    #     self.object = form.save()
+    #     if report_cards.is_valid():
+    #         instances = report_cards.save(commit=False)
+    #         print(instances)
+    #         for instance in instances:
+    #             instance.timesheet = self.object
+    #             instance.save()
+    #     else:
+    #         print(report_cards.errors)
+    #     return super().form_valid(form)
     # model = TimeSheet
     # form_class = TimeSheetForm
     # permission_required = "hrdepartment_app.change_timesheet"
