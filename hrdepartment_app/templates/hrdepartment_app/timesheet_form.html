@@ -59,6 +59,37 @@
                 {% endfor %}
             {% endif %}
         </div>
+
+    <style>
+        @media (max-width: 576px) {
+            .table-responsive-sm {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .table-responsive-sm table {
+                width: 100%;
+            }
+            .table-responsive-sm th,
+            .table-responsive-sm td {
+                display: block;
+                width: 100%;
+                text-align: left;
+            }
+            .table-responsive-sm th {
+                font-weight: bold;
+            }
+            .table-responsive-sm td::before {
+                content: attr(data-label);
+                float: left;
+                font-weight: bold;
+                text-transform: uppercase;
+                margin-right: 10px;
+            }
+        }
+    </style>
+
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
             {% csrf_token %}
@@ -104,7 +135,7 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <h2>Записи в табеле</h2>
-                                        <table>
+                                        <table class="table-responsive-sm">
                                             <thead>
                                             <tr>
                                                 <th>Сотрудник</th>
