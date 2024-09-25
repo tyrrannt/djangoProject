@@ -2573,6 +2573,7 @@ class ReportCardDelete(LoginRequiredMixin, DeleteView):
     model = ReportCard
     success_url = "/hr/report/admin/"
 
+
 class ReportCardDetailYearXLS(View):
     def get(self, request, *args, **kwargs):
         df = get_year_report(html_mode=False)
@@ -2584,6 +2585,8 @@ class ReportCardDetailYearXLS(View):
         df.to_excel(response, index=True, engine='openpyxl')
 
         return response
+
+
 class ReportCardDetailYear(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
@@ -3457,7 +3460,7 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 
                 for k in form.changed_data:
                     if old_dict[k] != new_dict[k]:
-                        message += f"{self.object._meta.get_field(k).verbose_name}: <strike>{old_dict[k]}</strike> -> { new_dict[k]}<br>"
+                        message += f"{self.object._meta.get_field(k).verbose_name}: <strike>{old_dict[k]}</strike> -> {new_dict[k]}<br>"
                 self.object.history_change.create(author=self.request.user, body=message)
         return super().form_valid(form)
 
@@ -3577,6 +3580,7 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
                        Q(business_process_type='2'), "person_hr")
         return super().form_valid(form)
 
+
 class ExpensesList(LoginRequiredMixin, ListView):
     model = OfficialMemo
     template_name = "hrdepartment_app/expenses_list.html"
@@ -3600,7 +3604,8 @@ class ExpensesList(LoginRequiredMixin, ListView):
             return JsonResponse(context, safe=False)
         return super(ExpensesList, self).get(request, *args, **kwargs)
 
-def expenses_update(request,  *args,  **kwargs):
+
+def expenses_update(request, *args, **kwargs):
     obj = OfficialMemo.objects.get(pk=kwargs['pk'])
     obj.expenses = True
     obj.save()
@@ -3650,7 +3655,6 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
             data['report_cards'] = ReportCardFormSet()
         return data
 
-
     def form_valid(self, form):
         context = self.get_context_data()
         report_cards = context['report_cards']
@@ -3659,46 +3663,24 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
             instances = report_cards.save(commit=False)
             for instance in instances:
                 instance.timesheet = self.object
+                instance.report_card_day = self.object.date
                 instance.save()
         else:
             print(report_cards.errors)
         return super().form_valid(form)
-    # model = TimeSheet
-    # form_class = TimeSheetForm
-    # permission_required = "hrdepartment_app.create_timesheet"
-    #
     # def form_valid(self, form):
-    #     # Создаем табель
-    #     timesheet = TimeSheet.objects.create(name=form.cleaned_data['name'])
-    #     # Создаем ReportCard для каждой строки в форме
-    #     report_cards = form.cleaned_data['report_cards']
-    #     for report_card_form in report_cards:
-    #         if report_card_form.is_valid() and report_card_form.cleaned_data:
-    #             report_card = report_card_form.save(commit=False)
-    #             report_card.timesheet = timesheet
-    #             report_card.save()
-    #     return super().form_valid(form)
+    #     context = self.get_context_data()
+    #     reportcard_formset = context['report_cards']
+    #     self.object = form.save()
+    #     if reportcard_formset.is_valid():
+    #         self.object = form.save()
+    #         reportcard_formset.instance = self.object
+    #         reportcard_formset.report_card_day = self.object.date
+    #         reportcard_formset.save()
+    #         return super().form_valid(form)
+    #     else:
+    #         return self.form_invalid(form)
 
-# ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=10)
-
-
-class TimeSheetDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
-    model = TimeSheet
-    permission_required = "hrdepartment_app.view_timesheet"
-
-class TimeSheetListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
-    model = TimeSheet
-    permission_required = "hrdepartment_app.view_timesheet"
-    context_object_name = 'timesheets'
-
-    def get(self, request, *args, **kwargs):
-        query = Q()
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            search_list = ['date', 'employee__title',
-                           'time_sheets_place__name', 'notes',]
-            context = ajax_search(request, self, search_list, TimeSheet, query)
-            return JsonResponse(context, safe=False)
-        return super(TimeSheetListView, self).get(request, *args, **kwargs)
 
 class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = TimeSheet
@@ -3719,6 +3701,7 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
         if reportcard_formset.is_valid():
             self.object = form.save()
             reportcard_formset.instance = self.object
+            reportcard_formset.report_card_day = self.object.date
             reportcard_formset.save()
             return super().form_valid(form)
         else:
@@ -3727,14 +3710,15 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
     # def form_valid(self, form):
     #     context = self.get_context_data()
     #     report_cards = context['report_cards']
-    #     print(report_cards)
     #     self.object = form.save()
     #     if report_cards.is_valid():
     #         instances = report_cards.save(commit=False)
-    #         print(instances)
     #         for instance in instances:
     #             instance.timesheet = self.object
+    #             instance.report_card_day = self.object.date
     #             instance.save()
+    #             print(instance.report_card_day)
+    #             # instance.outfit_card.set(report_cards.cleaned_data['outfit_card'])
     #     else:
     #         print(report_cards.errors)
     #     return super().form_valid(form)
@@ -3753,6 +3737,27 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
     #             report_card.timesheet = timesheet
     #             report_card.save()
     #     return super().form_valid(form)
+
+
+class TimeSheetDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    model = TimeSheet
+    permission_required = "hrdepartment_app.view_timesheet"
+
+
+class TimeSheetListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    model = TimeSheet
+    permission_required = "hrdepartment_app.view_timesheet"
+    context_object_name = 'timesheets'
+
+    def get(self, request, *args, **kwargs):
+        query = Q()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['date', 'employee__title',
+                           'time_sheets_place__name', 'notes', ]
+            context = ajax_search(request, self, search_list, TimeSheet, query)
+            return JsonResponse(context, safe=False)
+        return super(TimeSheetListView, self).get(request, *args, **kwargs)
+
 
 class TimeSheetDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = TimeSheet

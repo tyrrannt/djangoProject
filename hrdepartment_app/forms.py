@@ -29,7 +29,7 @@ from hrdepartment_app.models import (
     ReasonForCancellation,
     OrderDescription,
     ReportCard,
-    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OperationalWork, PeriodicWork,
+    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard,
 )
 
 
@@ -1370,32 +1370,17 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
 
 
 class ReportCardForm(forms.ModelForm):
-    operational_work = forms.ModelMultipleChoiceField(
-        queryset=OperationalWork.objects.all(),
+    outfit_card = forms.ModelMultipleChoiceField(
+        queryset=OutfitCard.objects.all(),
         widget=forms.SelectMultiple(attrs={"class": "form-control form-control-modern select2",
-                                                    "data-plugin-selectTwo": True, "multiple": True,
-                                                    "style": "width: 100%;" }),
-        required=False
-    )
-    periodic_work = forms.ModelMultipleChoiceField(
-        queryset=PeriodicWork.objects.all(),
-        widget=forms.SelectMultiple(attrs={"class": "form-control form-control-modern select2",
-                                                    "data-plugin-selectTwo": True, "multiple": True,
-                                                    "style": "width: 100%;" }),
-        required=False
-    )
-    air_board = forms.ModelMultipleChoiceField(
-        queryset=Estate.objects.all(),
-        widget=forms.SelectMultiple(attrs={"class": "form-control form-control-modern select2",
-                                                    "data-plugin-selectTwo": True, "multiple": True,
-                                                    "style": "width: 100%;" }),
-        required=False
+                                                    "data-plugin-selectTwo": True, "multiple": True}),
+        required=False,
+        label="Карта-наряд"
     )
 
     class Meta:
         model = ReportCard
-        fields = ['timesheet', 'employee', 'start_time', 'end_time', 'lunch_time', 'flight_hours', 'operational_work',
-                  'periodic_work', 'air_board', 'additional_work', 'other_work']
+        fields = ['timesheet', 'employee', 'start_time', 'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work', ]
         widgets = {
             'employee': forms.Select(attrs={"class": "form-control form-control-modern"}),
             'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
@@ -1403,14 +1388,13 @@ class ReportCardForm(forms.ModelForm):
             'lunch_time': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
             'flight_hours': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
             'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern', }),
-            'other_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern', })
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['operational_work'].queryset = OperationalWork.objects.all()
-        self.fields['periodic_work'].queryset = PeriodicWork.objects.all()
-        self.fields['air_board'].queryset = Estate.objects.all()
+        self.fields['outfit_card'].queryset = OutfitCard.objects.all()
+    #     self.fields['periodic_work'].queryset = PeriodicWork.objects.all()
+    #     self.fields['air_board'].queryset = Estate.objects.all()
 
 
 class TimeSheetForm(forms.ModelForm):
@@ -1434,5 +1418,4 @@ class TimeSheetForm(forms.ModelForm):
 
 
 ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
-            'end_time', 'lunch_time', 'flight_hours', 'operational_work', 'periodic_work',
-            'air_board', 'additional_work', 'other_work', 'sign_report_card'), extra=1, can_delete=True)
+            'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work'), extra=1, can_delete=True)

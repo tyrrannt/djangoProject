@@ -2044,6 +2044,40 @@ class PeriodicWork(models.Model):
     def __str__(self):
         return self.code
 
+class OutfitCard(models.Model):
+    """
+        Атрибуты:
+        _________
+        outfit_card_date: Дата;
+        employee = Ответственный сотрудник;
+        outfit_card_place = МПД;
+        operational_work = Оперативные работы;
+        periodic_work = Периодические работы;
+        air_board = Воздушный борт;
+        other_work = Другие работы;
+        notes = Примечания;
+        """
+    class Meta:
+        verbose_name = "Карта-наряд"
+        verbose_name_plural = "Карты-наряды"
+        ordering = ("-outfit_card_date",)
+
+    outfit_card_date = models.DateField(verbose_name="Дата", null=True, blank=True) # Дата
+    outfit_card_number = models.CharField(verbose_name="Номер", max_length=20, default="", blank=True)
+    employee = models.ForeignKey(DataBaseUser, verbose_name="Ответственный", on_delete=models.SET_NULL, null=True, blank=True)
+    outfit_card_place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL, null=True, blank=True, related_name="outfit_card_place")
+    air_board = models.ForeignKey(Estate, verbose_name="Воздушный борт", related_name='company_air_board',
+                                  blank=True, on_delete=models.SET_NULL, null=True,)
+    operational_work = models.ManyToManyField(OperationalWork, verbose_name="Оперативные работы",
+                                              related_name="outfit_card_operational", blank=True)
+    periodic_work = models.ManyToManyField(PeriodicWork, verbose_name="Периодические работы",
+                                           related_name="outfit_card_periodic", blank=True)
+    other_work = models.CharField(verbose_name="Другие работы", max_length=200, default="", blank=True)
+    notes = models.TextField(verbose_name="Примечания", blank=True)
+
+    def __str__(self):
+        return self.outfit_card_number
+
 
 class ReportCard(models.Model):
     """
@@ -2124,7 +2158,7 @@ class ReportCard(models.Model):
     )
     confirmed = models.BooleanField(verbose_name="Подтвержденная СП", default=False)
     place_report_card = models.ManyToManyField(
-        PlaceProductionActivity, verbose_name="МПД", related_name="place_report_card"
+        PlaceProductionActivity, verbose_name="МПД", related_name="place_report_card", blank=True
     )
     timesheet = models.ForeignKey(
         TimeSheet, verbose_name="Табель учета рабочего времени", on_delete=models.CASCADE, related_name="report_cards",
@@ -2132,11 +2166,11 @@ class ReportCard(models.Model):
     )
     lunch_time = models.IntegerField(verbose_name="Время обеда", null=True, blank=True)
     flight_hours = models.IntegerField(verbose_name="Летные часы", null=True, blank=True)
-    operational_work = models.ManyToManyField(OperationalWork, verbose_name="Оперативные работы", related_name="report_operational", blank=True)
-    periodic_work = models.ManyToManyField(PeriodicWork, verbose_name="Периодические работы", related_name="report_periodic", blank=True)
-    air_board = models.ManyToManyField(Estate, verbose_name="Воздушный борт", related_name='company_air_board', blank=True)
+    outfit_card = models.ManyToManyField(
+        OutfitCard, verbose_name="Оперативные работы", related_name="outfit_card_report_card", blank=True
+    )
     additional_work = models.CharField(verbose_name="Дополнительные работы", max_length=200, default="", blank=True)
-    other_work = models.CharField(verbose_name="Другие работы", max_length=200, default="", blank=True)
+
     sign_report_card = models.BooleanField(verbose_name="Признак табеля рабочего времени", default=False)
 
     def get_data(self):

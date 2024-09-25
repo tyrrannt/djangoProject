@@ -22,7 +22,7 @@ from hrdepartment_app.models import (
     TypesUserworktime,
     Instructions,
     Provisions,
-    CreatingTeam, TimeSheet, OperationalWork, PeriodicWork,
+    CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard,
 )
 
 # Register your models here.
@@ -49,7 +49,18 @@ class TimeSheetAdmin(admin.ModelAdmin):
         except AttributeError:
             return ""
 
+@admin.register(OutfitCard)
+class OutfitCardAdmin(admin.ModelAdmin):
+    list_display = ("outfit_card_date", "outfit_card_number", "get_person", "outfit_card_place", "air_board")
+    list_filter = ("air_board", "outfit_card_place", "employee", )
+    search_fields = ["outfit_card_number"]
 
+    @admin.display(description="Ответственный")
+    def get_person(self, obj: OutfitCard):
+        try:
+            return format_name_initials(obj.employee.title)
+        except AttributeError:
+            return ""
 
 @admin.register(Medical)
 class MedicalAdmin(admin.ModelAdmin):

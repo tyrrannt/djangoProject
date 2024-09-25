@@ -60,35 +60,79 @@
             {% endif %}
         </div>
 
-    <style>
-        @media (max-width: 576px) {
-            .table-responsive-sm {
-                display: block;
-                width: 100%;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
+        <style>
+            /* Скрыть элемент по умолчанию */
+            .mobile-only {
+                display: none;
             }
-            .table-responsive-sm table {
-                width: 100%;
+
+            /* Показать элемент только на мобильных устройствах */
+            @media (max-width: 767px) {
+                .mobile-only {
+                    display: inline;
+                }
             }
-            .table-responsive-sm th,
-            .table-responsive-sm td {
-                display: block;
-                width: 100%;
-                text-align: left;
+
+            th:nth-child(1), td:nth-child(1) {
+                width: 20%;
             }
-            .table-responsive-sm th {
-                font-weight: bold;
+
+            th:nth-child(2), td:nth-child(2) {
+                width: 5%;
             }
-            .table-responsive-sm td::before {
-                content: attr(data-label);
-                float: left;
-                font-weight: bold;
-                text-transform: uppercase;
-                margin-right: 10px;
+
+            th:nth-child(3), td:nth-child(3) {
+                width: 5%;
             }
-        }
-    </style>
+
+            th:nth-child(4), td:nth-child(4) {
+                width: 5%;
+            }
+
+            th:nth-child(5), td:nth-child(5) {
+                width: 5%;
+            }
+
+            th:nth-child(6), td:nth-child(6) {
+                width: 20%;
+            }
+
+            th:nth-child(7), td:nth-child(7) {
+                width: 40%;
+            }
+
+            @media (max-width: 576px) {
+                .table-responsive-sm {
+                    display: block;
+                    width: 100%;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                .table-responsive-sm table {
+                    width: 100%;
+                }
+
+                .table-responsive-sm th,
+                .table-responsive-sm td {
+                    display: block;
+                    width: 100%;
+                    text-align: left;
+                }
+
+                .table-responsive-sm th {
+                    font-weight: bold;
+                }
+
+                .table-responsive-sm td::before {
+                    content: attr(data-label);
+                    float: left;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    margin-right: 10px;
+                }
+            }
+        </style>
 
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
@@ -143,12 +187,8 @@
                                                 <th>Время ухода</th>
                                                 <th>Время обеда (мин.)</th>
                                                 <th>Летные часы (час)</th>
-                                                <th>Оперативные работы</th>
-                                                <th>Периодические работы</th>
-                                                <th>ВС</th>
+                                                <th>Карты-наряда</th>
                                                 <th>Дополнительные работы</th>
-                                                <th>Другие работы</th>
-                                                <th></th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -164,6 +204,7 @@
                                                                 {% endfor %}
                                                             {% endif %}
                                                             {{ field.errors.as_ul }}
+                                                            <span class="mobile-only">{{ field.label }}</span>
                                                             {{ field }}
                                                         </td>
                                                     {% endfor %}
