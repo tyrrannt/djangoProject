@@ -25,14 +25,14 @@
     <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function () {
-            $('.formset_row').formset({
-                addText: 'Добавить запись',
-                deleteText: 'Удалить',
-                prefix: 'reportcard_set',
-                {#addCssClass: 'btn btn-success',  // Класс для кнопки "Добавить запись"#}
-                {#deleteCssClass: 'btn btn-danger' // Класс для кнопки "Удалить"#}
+            $('#formset-table tbody').formset({
+                prefix: 'report_cards',
+                addText: 'Add Another Book',
+                deleteText: 'Remove',
+                formTemplate: $('#formset-table tbody tr.formset_row:first').clone()
             });
         });
+
     </script>
 {% endblock %}
 
@@ -179,7 +179,7 @@
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <h2>Записи в табеле</h2>
-                                        <table class="table-responsive-sm">
+                                        <table class="table-responsive-sm" id="formset-table">
                                             <thead>
                                             <tr>
                                                 <th>Сотрудник</th>
@@ -212,7 +212,7 @@
                                             {% endfor %}
                                             </tbody>
                                         </table>
-
+                                        <button type="button" id="add-form">Add Another Item</button>
                                         <div class="col-12 col-md-auto">
                                             <button class="btn btn-primary" type="submit">Сохранить</button>
                                         </div>
