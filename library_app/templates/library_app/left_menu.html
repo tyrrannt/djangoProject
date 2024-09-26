@@ -84,7 +84,8 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail_year' %}">
+                                            <a class="nav-link"
+                                               href="{% url 'hrdepartment_app:reportcard_detail_year' %}">
                                                 Табель РВ (годовой)
                                             </a>
                                         </li>
@@ -202,10 +203,10 @@
                             </li>
                             {% if request.user.is_superuser %}
                                 <li>
-                                <a class="nav-link" href="{% url 'contracts_app:index-admin' %}">
-                                    Общий список договоров - admin
-                                </a>
-                            </li>
+                                    <a class="nav-link" href="{% url 'contracts_app:index-admin' %}">
+                                        Общий список договоров - admin
+                                    </a>
+                                </li>
                             {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'contracts_app:counteragent_check' %}">
@@ -280,18 +281,29 @@
                                 </ul>
                             </li>
                         </ul>
+
                         <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:team_list' %}">
-                                    <span>Старшие бригад</span>
-                                </a>                                
-                            </li>
-                        </ul>
-                        <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:timesheet_list' %}">
-                                    <span>Табель МПД</span>
-                                </a>                                
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <span>ИАС</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:team_list' %}">
+                                            <span>Старшие бригад</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:timesheet_list' %}">
+                                            <span>Табель МПД</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:outfit_card_list' %}">
+                                            <span>Журнал карт-нарядов</span>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
                         </ul>
                     </li>

@@ -1,0 +1,211 @@
+{% extends 'customers_app/main.html' %}
+{% load i18n %}
+{% load static %}
+{% load custom %}
+{% load widget_tweaks %}
+{% block custome_css %}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
+{% endblock %}
+
+{% block custome_script %}
+    {#    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
+    {#    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
+    {#    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
+
+
+{% endblock %}
+{% block SpecificPageVendor %}
+    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#formset-table tbody').formset({
+                prefix: 'report_cards',
+                addText: 'Add Another Book',
+                deleteText: 'Remove',
+                formTemplate: $('#formset-table tbody tr.formset_row:first').clone()
+            });
+        });
+
+    </script>
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+        {% include 'library_app/breadcrumb.html' %}
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <style>
+            /* Скрыть элемент по умолчанию */
+            .mobile-only {
+                display: none;
+            }
+
+            /* Показать элемент только на мобильных устройствах */
+            @media (max-width: 767px) {
+                .mobile-only {
+                    display: inline;
+                }
+            }
+
+            th:nth-child(1), td:nth-child(1) {
+                width: 20%;
+            }
+
+            th:nth-child(2), td:nth-child(2) {
+                width: 5%;
+            }
+
+            th:nth-child(3), td:nth-child(3) {
+                width: 5%;
+            }
+
+            th:nth-child(4), td:nth-child(4) {
+                width: 5%;
+            }
+
+            th:nth-child(5), td:nth-child(5) {
+                width: 5%;
+            }
+
+            th:nth-child(6), td:nth-child(6) {
+                width: 20%;
+            }
+
+            th:nth-child(7), td:nth-child(7) {
+                width: 40%;
+            }
+
+            @media (max-width: 576px) {
+                .table-responsive-sm {
+                    display: block;
+                    width: 100%;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                .table-responsive-sm table {
+                    width: 100%;
+                }
+
+                .table-responsive-sm th,
+                .table-responsive-sm td {
+                    display: block;
+                    width: 100%;
+                    text-align: left;
+                }
+
+                .table-responsive-sm th {
+                    font-weight: bold;
+                }
+
+                .table-responsive-sm td::before {
+                    content: attr(data-label);
+                    float: left;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    margin-right: 10px;
+                }
+            }
+        </style>
+
+        <!-- start: page -->
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col">
+                    <section class="card card-modern card-big-info">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="row">
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <div class="form-group">
+                                                {{ form.outfit_card_date.label_tag }}
+                                                {{ form.outfit_card_date }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <div class="form-group">
+                                                {{ form.outfit_card_number.label_tag }}
+                                                {{ form.outfit_card_number }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <div class="form-group">
+                                                {{ form.employee.label_tag }}
+                                                {{ form.employee }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <div class="form-group">
+                                                {{ form.outfit_card_place.label_tag }}
+                                                {{ form.outfit_card_place }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                            <div class="form-group">
+                                        {{ form.air_board.label_tag }}
+                                        {{ form.air_board }}
+                                    </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        {{ form.operational_work.label_tag }}
+                                        {{ form.operational_work }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.periodic_work.label_tag }}
+                                        {{ form.periodic_work }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.other_work.label_tag }}
+                                        {{ form.other_work }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.notes.label_tag }}
+                                        {{ form.notes }}
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="row action-buttons">
+
+            </div>
+        </form>
+        <!-- end: page -->
+    </section>
+
+    <!-- end: page -->
+{% endblock %}

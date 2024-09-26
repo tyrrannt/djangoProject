@@ -13,7 +13,6 @@
 {% endblock %}
 
 {% block custome_script %}
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
 {% endblock %}
 
@@ -30,7 +29,7 @@
                         <i class="fas fa-question-circle"></i>
                     </div>
                     <div class="modal-text">
-                        <p>Вы уверены, что хотите удалить эту запись "{{ object.outfit_card_number }}"?</p>
+                        <p>Вы уверены, что хотите удалить карту-наряд "{{ object.outfit_card_number }}"?</p>
                     </div>
                 </div>
             </div>
@@ -40,7 +39,7 @@
                         <form method="post" class="mt-4">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger">Да, удалить</button>
-                            <a href="{% url 'hrdepartment_app:reportcard_detail' object.pk %}" class="btn btn-secondary">Отмена</a>
+                            <a href="{% url 'hrdepartment_app:outfit_card' object.pk %}" class="btn btn-secondary">Отмена</a>
                         </form>
                     </div>
                 </div>

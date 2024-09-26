@@ -15,7 +15,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     GuidanceDocumentsAdd, GuidanceDocumentsDetail, GuidanceDocumentsUpdate, CreatingTeamList, CreatingTeamAdd, \
     CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed, CreatingTeamSetNumber, ExpensesList, expenses_update, \
     ReportCardDetailYear, ReportCardDetailYearXLS, TimeSheetCreateView, TimeSheetDetailView, TimeSheetUpdateView, \
-    TimeSheetDeleteView, TimeSheetListView
+    TimeSheetDeleteView, TimeSheetListView, OutfitCardListView, OutfitCardCreateView, OutfitCardDetailView, \
+    OutfitCardUpdateView, OutfitCardDeleteView
 
 app_name = 'hrdepartment_app'
 
@@ -87,4 +88,9 @@ urlpatterns = [
     path('timesheet/<int:pk>/update/', TimeSheetUpdateView.as_view(), name='timesheet_update'),
     path('timesheet/<int:pk>/delete/', TimeSheetDeleteView.as_view(), name='timesheet_delete'),
     path('timesheet/', TimeSheetListView.as_view(), name='timesheet_list'),  # Добавляем маршрут для списка табелей
+    path('outfit_cards/', OutfitCardListView.as_view(), name='outfit_card_list'),
+    path('outfit_cards/create/', OutfitCardCreateView.as_view(), name='outfit_card_add'),
+    path('outfit_cards/<int:pk>/', OutfitCardDetailView.as_view(), name='outfit_card'),
+    path('outfit_cards/<int:pk>/update/', OutfitCardUpdateView.as_view(), name='outfit_card_update'),
+    path('outfit_cards/<int:pk>/delete/', OutfitCardDeleteView.as_view(), name='outfit_card_delete'),
 ]

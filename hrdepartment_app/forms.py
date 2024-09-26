@@ -1419,3 +1419,23 @@ class TimeSheetForm(forms.ModelForm):
 
 ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
             'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work'), extra=1, can_delete=True)
+
+
+class OutfitCardForm(forms.ModelForm):
+    class Meta:
+        model = OutfitCard
+        fields = ['outfit_card_date', 'outfit_card_number', 'employee', 'outfit_card_place',
+                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes']
+        widgets = {
+            'notes': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+
+        super(OutfitCardForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])

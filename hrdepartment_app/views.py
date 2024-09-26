@@ -3,7 +3,7 @@ from calendar import monthrange
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.db.models import Q
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
@@ -57,7 +57,7 @@ from hrdepartment_app.forms import (
     ProvisionsAddForm,
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
     CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm,
-    ReportCardForm, ReportCardFormSet,
+    ReportCardForm, ReportCardFormSet, OutfitCardForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -77,7 +77,7 @@ from hrdepartment_app.models import (
     PlaceProductionActivity,
     ReportCard,
     ProductionCalendar,
-    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet,
+    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
@@ -3763,3 +3763,43 @@ class TimeSheetDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteVie
     model = TimeSheet
     success_url = reverse_lazy('hrdepartment_app:timesheet_list')
     permission_required = "hrdepartment_app.delete_timesheet"
+
+
+# Журнал карт-наряда
+class OutfitCardCreateView(LoginRequiredMixin, CreateView):
+    model = OutfitCard
+    form_class = OutfitCardForm
+    success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
+
+class OutfitCardUpdateView(LoginRequiredMixin, UpdateView): #UserPassesTestMixin, UpdateView):
+    model = OutfitCard
+    form_class = OutfitCardForm
+    success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
+
+    # def test_func(self):
+    #     # Проверка, что текущий пользователь является автором карты-наряда
+    #     return self.request.user == self.get_object().employee
+
+class OutfitCardDetailView(LoginRequiredMixin, DetailView):
+    model = OutfitCard
+
+class OutfitCardDeleteView(LoginRequiredMixin, DeleteView):
+    model = OutfitCard
+    success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
+
+    # def test_func(self):
+    #     # Проверка, что текущий пользователь является автором карты-наряда
+    #     return self.request.user == self.get_object().employee
+
+class OutfitCardListView(LoginRequiredMixin, ListView):
+    model = OutfitCard
+    context_object_name = 'outfit_cards'
+
+    def get(self, request, *args, **kwargs):
+        query = Q()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['outfit_card_date', 'air_board__registration_number', 'works',
+                           'outfit_card_number', 'workers', 'employee__title']
+            context = ajax_search(request, self, search_list, OutfitCard, query)
+            return JsonResponse(context, safe=False)
+        return super(OutfitCardListView, self).get(request, *args, **kwargs)

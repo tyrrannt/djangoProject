@@ -30,15 +30,18 @@
                         <i class="fas fa-question-circle"></i>
                     </div>
                     <div class="modal-text">
-                        <p>Вы уверены, что хотите удалить эту запись?</p>
+                        <p>Вы уверены, что хотите удалить эту запись "{{ object.outfit_card_number }}?</p>
                     </div>
                 </div>
             </div>
             <footer class="card-footer">
                 <div class="row">
                     <div class="col-md-12 text-center">
-                        <button class="btn btn-primary modal-confirm">Да</button>
-                        <button class="btn btn-default modal-dismiss">Нет</button>
+                        <form method="post" class="mt-4">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Да, удалить</button>
+                            <a href="{% url 'hrdepartment_app:timesheet' object.pk %}" class="btn btn-secondary">Отмена</a>
+                        </form>
                     </div>
                 </div>
             </footer>

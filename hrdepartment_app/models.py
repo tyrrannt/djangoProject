@@ -2,6 +2,7 @@ import datetime
 import os
 import pathlib
 import uuid
+from gc import get_objects
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
@@ -2077,6 +2078,28 @@ class OutfitCard(models.Model):
 
     def __str__(self):
         return self.outfit_card_number
+
+    def get_workers(self):
+        workers = ReportCard.objects.filter(outfit_card=self)
+        return ', '.join([format_name_initials(worker.employee.title) for worker in workers])
+
+    def get_works(self):
+        works = [item.code for item in self.periodic_work.all()] + [item.code for item in self.operational_work.all()]
+        works.append(self.other_work)
+        return ', '.join(works)
+
+    def get_data(self):
+        self.get_workers()
+        return {
+            "pk": self.pk,
+            "outfit_card_date": f"{self.outfit_card_date:%d.%m.%Y} г.",  # .strftime(''),
+            "air_board": f"{self.air_board.type_property} {self.air_board.registration_number}",
+            "works": self.get_works(),
+            "outfit_card_number": self.outfit_card_number,
+            "workers": self.get_workers(),
+            "employee": format_name_initials(self.employee.title),
+        }
+
 
 
 class ReportCard(models.Model):
