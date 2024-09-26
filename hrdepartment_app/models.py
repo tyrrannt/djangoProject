@@ -2085,7 +2085,8 @@ class OutfitCard(models.Model):
 
     def get_works(self):
         works = [item.code for item in self.periodic_work.all()] + [item.code for item in self.operational_work.all()]
-        works.append(self.other_work)
+        if self.other_work:
+            works.append(self.other_work)
         return ', '.join(works)
 
     def get_data(self):

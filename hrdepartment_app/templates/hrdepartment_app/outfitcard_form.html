@@ -144,16 +144,22 @@
                             <div class="row">
                                 <div class="col-sm-12">
                                     <div class="row">
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                        <div class="col-sm-12 col-md-4 col-lg-2">
                                             <div class="form-group">
                                                 {{ form.outfit_card_date.label_tag }}
                                                 {{ form.outfit_card_date }}
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                        <div class="col-sm-12 col-md-4 col-lg-2">
                                             <div class="form-group">
                                                 {{ form.outfit_card_number.label_tag }}
                                                 {{ form.outfit_card_number }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-4 col-lg-2">
+                                            <div class="form-group">
+                                                {{ form.air_board.label_tag }}
+                                                {{ form.air_board }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-6 col-lg-3">
@@ -168,32 +174,35 @@
                                                 {{ form.outfit_card_place }}
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
-                                            <div class="form-group">
-                                        {{ form.air_board.label_tag }}
-                                        {{ form.air_board }}
                                     </div>
+                                    <div class="row">
+                                        <div class="col-sm-12 col-md-4">
+                                            <div class="form-group">
+                                                {{ form.operational_work.label_tag }}
+                                                {{ form.operational_work }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-4">
+                                            <div class="form-group">
+                                                {{ form.periodic_work.label_tag }}
+                                                {{ form.periodic_work }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-4">
+                                            <div class="form-group">
+                                                {{ form.other_work.label_tag }}
+                                                {{ form.other_work }}
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <div class="form-group">
-                                        {{ form.operational_work.label_tag }}
-                                        {{ form.operational_work }}
+                                    <div class="row">
+                                        <div class="col-sm-12 col-md-12">
+                                            <div class="form-group">
+                                                {{ form.notes.label_tag }}
+                                                {{ form.notes }}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        {{ form.periodic_work.label_tag }}
-                                        {{ form.periodic_work }}
-                                    </div>
-                                    <div class="form-group">
-                                        {{ form.other_work.label_tag }}
-                                        {{ form.other_work }}
-                                    </div>
-                                    <div class="form-group">
-                                        {{ form.notes.label_tag }}
-                                        {{ form.notes }}
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Сохранить</button>
-
                                 </div>
                             </div>
                         </div>
@@ -201,7 +210,24 @@
                 </div>
             </div>
             <div class="row action-buttons">
-
+                <div class="col-12 col-md-auto">
+                    <button type="submit"
+                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            data-loading-text="Loading...">
+                        <i class="bx bx-save text-4 me-2"></i> Сохранить
+                    </button>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
+                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                </div>
+                {% if object and user.is_superuser %}
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
+                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    </div>
+                {% endif %}
             </div>
         </form>
         <!-- end: page -->
