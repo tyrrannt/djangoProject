@@ -135,7 +135,7 @@
         </style>
 
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="row">
                 <div class="col">
@@ -200,6 +200,14 @@
                                             <div class="form-group">
                                                 {{ form.notes.label_tag }}
                                                 {{ form.notes }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12 col-md-12">
+                                            <div class="form-group">
+                                                {{ form.scan_document.label_tag }}
+                                                {{ form.scan_document }}
                                             </div>
                                         </div>
                                     </div>

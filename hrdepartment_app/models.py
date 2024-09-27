@@ -2088,7 +2088,7 @@ class OutfitCard(models.Model):
 
     def get_workers(self):
         workers = ReportCard.objects.filter(outfit_card=self)
-        return ', '.join([format_name_initials(worker.employee.title) for worker in workers])
+        return ', '.join(set([format_name_initials(worker.employee.title) for worker in workers]))
 
     def get_works(self):
         works = [item.code for item in self.periodic_work.all()] + [item.code for item in self.operational_work.all()]

@@ -11,13 +11,19 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
+    <!-- This snippet is used in production (included from viewer.html) -->
+    <link rel="resource" type="application/l10n"
+          href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
 {% endblock %}
 
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-
+    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/pdf/js/viewer.js' %}"></script>
 {% endblock %}
 
 {% block title %}
@@ -49,28 +55,44 @@
             {% csrf_token %}
             <div class="row">
                 <div class="col">
-
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-
-                                <div class="col-sm-12">
-                                    <h1>{{ object.outfit_card_number }}</h1>
-                                    <p><strong>Дата:</strong> {{ object.outfit_card_date }}</p>
-                                    <p><strong>Ответственный:</strong> {{ object.employee }}</p>
-                                    <p><strong>МПД:</strong> {{ object.outfit_card_place }}</p>
-                                    <p><strong>Воздушный борт:</strong> {{ object.air_board }}</p>
-                                    <p><strong>Оперативные
-                                        работы:</strong> {{ object.operational_work.all|join:", " }}</p>
-                                    <p><strong>Периодические
-                                        работы:</strong> {{ object.periodic_work.all|join:", " }}</p>
-                                    <p><strong>Другие работы:</strong> {{ object.other_work }}</p>
-                                    <p><strong>Примечания:</strong> {{ object.notes }}</p>
-                                </div>
-                            </div>
+                    <div class="card text-left">
+                        <div class="card-header">
+                            <h2>Карта-наряд № {{ object.outfit_card_number }} от {{ object.outfit_card_date }}</h2>
                         </div>
-                    </section>
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">МПД:&nbsp;&nbsp;&nbsp;{{ object.outfit_card_place }}</h5>
+                            <h5 class="card-title mb-3">Воздушный
+                                борт:&nbsp;&nbsp;&nbsp;{{ object.air_board.type_property }} {{ object.air_board }}</h5>
+                            {% if object.operational_work.count > 0 %}
+                                <h4 class="card-text">Оперативные
+                                    работы:&nbsp;&nbsp;&nbsp;{{ object.operational_work.all|join:", " }}</h4>
+                            {% endif %}
+                            {% if object.periodic_work.count > 0 %}
+                                <h4 class="card-text">Периодические
+                                    работы:&nbsp;&nbsp;&nbsp;{{ object.periodic_work.all|join:", " }}</h4>
+                            {% endif %}
+                            {% if object.other_work %}
+                                <h4 class="card-text">Другие работы:&nbsp;&nbsp;&nbsp;{{ object.other_work }}</h4>
+                            {% endif %}
+                            {% if object.notes %}
+                                <h4 class="card-text">Примечания:&nbsp;&nbsp;&nbsp;{{ object.notes }}</h4>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-muted">
+                            <h3>Старший бригады:&nbsp;&nbsp;&nbsp;{{ object.employee | FIO_format }}</h3>
+                        </div>
+                    </div>
+                    {% if object.scan_document %}
+                        <div class="card text-left">
+                            <input id="id_contract_number" value="{{ object.scan_document.url }}" hidden="true">
+                            <div class="form-row outerContainer" id="outerContainer" style="height: 1080px">
+                                {% include 'contracts_app/pdf-js.html' %}
+                            </div>
+                            <a href="{{ object.scan_document.url }}" target="_blank">Открыть документ</a>
+                        </div>
+                    {% endif %}
                 </div>
+
             </div>
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">

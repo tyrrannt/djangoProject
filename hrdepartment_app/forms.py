@@ -1377,6 +1377,11 @@ class ReportCardForm(forms.ModelForm):
         required=False,
         label="Карта-наряд"
     )
+    employee = forms.ModelChoiceField(
+        widget=forms.Select(attrs={"class": "form-control form-control-modern",
+                                   "data-plugin-selectTwo": True, }),
+        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
+        label="Сотрудник")
 
     class Meta:
         model = ReportCard
@@ -1398,6 +1403,11 @@ class ReportCardForm(forms.ModelForm):
 
 
 class TimeSheetForm(forms.ModelForm):
+    employee = forms.ModelChoiceField(
+        widget=forms.Select(attrs={"class": "form-control form-control-modern",
+                                            "data-plugin-selectTwo": True, }),
+        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
+        label="Сотрудник")
     class Meta:
         model = TimeSheet
         fields = ['date', 'employee', 'notes', 'time_sheets_place']
@@ -1422,11 +1432,15 @@ ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCard
 
 
 class OutfitCardForm(forms.ModelForm):
-    outfit_card_place = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.filter(use_team_orders=True))
+    outfit_card_place = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.filter(use_team_orders=True),
+                                               label="МПД")
+    employee = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
+        label="Сотрудник")
     class Meta:
         model = OutfitCard
         fields = ['outfit_card_date', 'outfit_card_number', 'employee', 'outfit_card_place',
-                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes']
+                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes', 'scan_document']
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 4}),
         }
