@@ -73,6 +73,8 @@ def team_directory_path(instance, filename):
     year = instance.date_create
     return f"docs/ORD/{year.year}/{year.month}/{filename}"
 
+def outfit_directory_path(instance, filename):
+    return f"docs/CARD/{instance.outfit_card_date.year}/{filename}"
 
 class Documents(models.Model):
     class Meta:
@@ -2045,6 +2047,7 @@ class PeriodicWork(models.Model):
     def __str__(self):
         return self.code
 
+
 class OutfitCard(models.Model):
     """
         Атрибуты:
@@ -2058,22 +2061,26 @@ class OutfitCard(models.Model):
         other_work = Другие работы;
         notes = Примечания;
         """
+
     class Meta:
         verbose_name = "Карта-наряд"
         verbose_name_plural = "Карты-наряды"
         ordering = ("-outfit_card_date",)
 
-    outfit_card_date = models.DateField(verbose_name="Дата", null=True, blank=True) # Дата
+    outfit_card_date = models.DateField(verbose_name="Дата", null=True, blank=True)  # Дата
     outfit_card_number = models.CharField(verbose_name="Номер", max_length=20, default="", blank=True)
-    employee = models.ForeignKey(DataBaseUser, verbose_name="Ответственный", on_delete=models.SET_NULL, null=True, blank=True)
-    outfit_card_place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL, null=True, blank=True, related_name="outfit_card_place")
+    employee = models.ForeignKey(DataBaseUser, verbose_name="Ответственный", on_delete=models.SET_NULL, null=True,
+                                 blank=True)
+    outfit_card_place = models.ForeignKey(PlaceProductionActivity, verbose_name="МПД", on_delete=models.SET_NULL,
+                                          null=True, blank=True, related_name="outfit_card_place")
     air_board = models.ForeignKey(Estate, verbose_name="Воздушный борт", related_name='company_air_board',
-                                  blank=True, on_delete=models.SET_NULL, null=True,)
+                                  blank=True, on_delete=models.SET_NULL, null=True, )
     operational_work = models.ManyToManyField(OperationalWork, verbose_name="Оперативные работы",
                                               related_name="outfit_card_operational", blank=True)
     periodic_work = models.ManyToManyField(PeriodicWork, verbose_name="Периодические работы",
                                            related_name="outfit_card_periodic", blank=True)
     other_work = models.CharField(verbose_name="Другие работы", max_length=200, default="", blank=True)
+    scan_document = models.FileField(verbose_name="Скан документа", upload_to=outfit_directory_path, null=True, blank=True)
     notes = models.TextField(verbose_name="Примечания", blank=True)
 
     def __str__(self):
@@ -2100,7 +2107,6 @@ class OutfitCard(models.Model):
             "workers": self.get_workers(),
             "employee": format_name_initials(self.employee.title),
         }
-
 
 
 class ReportCard(models.Model):
@@ -2416,7 +2422,7 @@ class ProductionCalendar(models.Model):
             else:
                 preholiday_time += item.work_time.hour + item.work_time.minute / 60
         norm_time = (self.number_working_days * 8) + (self.number_working_days / 2) - self.get_friday_count() - (
-                    preholiday_day_count * 8.5 - preholiday_time)
+                preholiday_day_count * 8.5 - preholiday_time)
 
         return norm_time
 

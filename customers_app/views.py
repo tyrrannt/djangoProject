@@ -266,10 +266,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
                 df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
-                pprint(df)
                 # Группируем по дате и применяем функцию
                 df = df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
-                pprint(df)
                 # Группируем по FIO и Date и применяем функцию
                 # df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
                 df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(drop=True)
@@ -325,7 +323,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Получение общей суммы времени за все дни
-                print(df)
                 total_time = df['Time'].sum()
                 # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)

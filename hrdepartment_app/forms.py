@@ -1422,6 +1422,7 @@ ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCard
 
 
 class OutfitCardForm(forms.ModelForm):
+    outfit_card_place = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.filter(use_team_orders=True))
     class Meta:
         model = OutfitCard
         fields = ['outfit_card_date', 'outfit_card_number', 'employee', 'outfit_card_place',
