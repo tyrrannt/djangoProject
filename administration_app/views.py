@@ -447,6 +447,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 
                         groups_dict[item.name] = users_list
                     logger.info(f"Права групп: {groups_dict} ")
+                    with open('groups.json', 'w') as f:
+                        json.dump(groups_dict, f, ensure_ascii=False, indent=4)
                 except Exception as e:
                     logger.error(f"Ошибка при получении прав групп: {e}")
 
