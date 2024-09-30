@@ -445,6 +445,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         users_list += [[user.title, user.user_access.name] for user in DataBaseUser.objects.filter(user_work_profile__job=unit)]
 
                     groups_dict[item.name] = users_list
-                logger.error(f"Права групп: {groups_dict} ")
+                logger.info(f"Права групп: {groups_dict} ")
 
         return super().get(request, *args, **kwargs)
