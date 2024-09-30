@@ -443,7 +443,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         jobs = Job.objects.filter(group=item)
                         users_list = []
                         for unit in jobs:
-                            users_list += [[user.title, user.user_access.name] for user in DataBaseUser.objects.filter(user_work_profile__job=unit)]
+                            users_list += [user.title for user in DataBaseUser.objects.filter(user_work_profile__job=unit).exclude(is_active=False)]
 
                         groups_dict[item.name] = users_list
                     logger.info(f"Права групп: {groups_dict} ")
