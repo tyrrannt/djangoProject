@@ -114,7 +114,7 @@
                                                 <td>
                                                     <a href="{% url 'contracts_app:detail' item.pk %}"><strong>{{ item.type_of_document }}</strong></a>
                                                 </td>
-                                                <td class="text-center">{{ item.comment }}</td>
+                                                <td class="text-left">{{ item.comment }}</td>
                                                 <td class="text-center">
                                                     {% if item.doc_file %}
                                                     <a href="{{ item.doc_file.url }}"
