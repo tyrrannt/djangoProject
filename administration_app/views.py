@@ -26,6 +26,7 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            serialize=config('LOG_SERIALIZE'))
 
 
+
 # Create your views here.
 
 def index(request):
@@ -434,4 +435,16 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 get_vacation.delay()
             if request.GET.get('update') == '11':
                 get_year_report.delay()
+            if request.GET.get('update') == '12':
+                groups = Groups.objects.all()
+                groups_dict = dict()
+                for item in groups:
+                    jobs = Job.objects.filter(group=item)
+                    users_list = []
+                    for unit in jobs:
+                        users_list += [[user.title, user.user_access.name] for user in DataBaseUser.objects.filter(user_work_profile__job=unit)]
+
+                    groups_dict[item.name] = users_list
+                logger.error(f"Права групп: {groups_dict} ")
+
         return super().get(request, *args, **kwargs)

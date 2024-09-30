@@ -3765,6 +3765,17 @@ class TimeSheetDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteVie
     permission_required = "hrdepartment_app.delete_timesheet"
 
 
+class OutfitCardReportView(PermissionRequiredMixin, LoginRequiredMixin):
+    model = OutfitCard
+    permission_required = "hrdepartment_app.view_outfitcard"
+    template_name = 'hrdepartment_app/outfit_card_report.html'
+    context_object_name = 'outfit_cards'
+
+    def get_context_data(self, **kwargs):
+        context = super(OutfitCardReportView, self).get_context_data(**kwargs)
+        # context['outfit_cards'] = OutfitCard.objects.filter(employee=self.request.user)
+        return context
+
 # Журнал карт-наряда
 class OutfitCardCreateView(LoginRequiredMixin, CreateView):
     model = OutfitCard
