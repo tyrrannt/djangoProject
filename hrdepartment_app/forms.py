@@ -1427,8 +1427,8 @@ class TimeSheetForm(forms.ModelForm):
         }
 
 
-ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
-            'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work'), extra=1, can_delete=True)
+# ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
+#             'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work'), extra=1, can_delete=True)
 
 
 class OutfitCardForm(forms.ModelForm):

@@ -57,7 +57,7 @@ from hrdepartment_app.forms import (
     ProvisionsAddForm,
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
     CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm,
-    ReportCardForm, ReportCardFormSet, OutfitCardForm,
+    ReportCardForm, OutfitCardForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -3648,26 +3648,48 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
     permission_required = "hrdepartment_app.create_timesheet"
 
     def get_context_data(self, **kwargs):
-        data = super().get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['report_cards'] = ReportCardFormSet(self.request.POST, self.request.FILES)
+            context['reportcard_formset'] = ReportCardFormSet(self.request.POST)
         else:
-            data['report_cards'] = ReportCardFormSet()
-        return data
+            context['reportcard_formset'] = ReportCardFormSet()
+        return context
 
     def form_valid(self, form):
         context = self.get_context_data()
-        report_cards = context['report_cards']
-        self.object = form.save()
-        if report_cards.is_valid():
-            instances = report_cards.save(commit=False)
-            for instance in instances:
-                instance.timesheet = self.object
-                instance.report_card_day = self.object.date
-                instance.save()
+        reportcard_formset = context['reportcard_formset']
+        if reportcard_formset.is_valid():
+            self.object = form.save()
+            reportcard_formset.instance = self.object
+            reportcard_formset.save()
+            return super().form_valid(form)
         else:
-            print(report_cards.errors)
-        return super().form_valid(form)
+            return self.form_invalid(form)
+
+ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
+            'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work'), extra=1)
+
+    # def get_context_data(self, **kwargs):
+    #     data = super().get_context_data(**kwargs)
+    #     if self.request.POST:
+    #         data['report_cards'] = ReportCardFormSet(self.request.POST, self.request.FILES)
+    #     else:
+    #         data['report_cards'] = ReportCardFormSet()
+    #     return data
+    #
+    # def form_valid(self, form):
+    #     context = self.get_context_data()
+    #     report_cards = context['report_cards']
+    #     self.object = form.save()
+    #     if report_cards.is_valid():
+    #         instances = report_cards.save(commit=False)
+    #         for instance in instances:
+    #             instance.timesheet = self.object
+    #             instance.report_card_day = self.object.date
+    #             instance.save()
+    #     else:
+    #         print(report_cards.errors)
+    #     return super().form_valid(form)
     # def form_valid(self, form):
     #     context = self.get_context_data()
     #     reportcard_formset = context['report_cards']

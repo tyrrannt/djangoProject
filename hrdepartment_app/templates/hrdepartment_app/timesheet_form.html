@@ -22,18 +22,70 @@
 
 {% endblock %}
 {% block SpecificPageVendor %}
-    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $('#formset-table tbody').formset({
-                prefix: 'report_cards',
-                addText: 'Add Another Book',
-                deleteText: 'Remove',
-                formTemplate: $('#formset-table tbody tr.formset_row:first').clone()
-            });
-        });
+{#    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>#}
+        <script>
+            $(document).ready(function() {
+    const addFormButton = $('#add-reportcard-form');
+    const formList = $('#reportcard-form-list');
+    const totalFormsField = $('[name="report_cards-TOTAL_FORMS"]');
 
-    </script>
+    let formCount = parseInt(totalFormsField.val(), 10);
+
+    addFormButton.on('click', function() {
+        const newForm = createNewReportCardForm(formCount);
+        formList.append(newForm);
+        totalFormsField.val(formCount + 1);
+        formCount++;
+    });
+
+    formList.on('click', '.remove-form-row', function() {
+        $(this).closest('.reportcard-form').remove();
+        totalFormsField.val(formCount - 1);
+        formCount--;
+    });
+
+    function createNewReportCardForm(index) {
+        const newForm = `
+            <tr class="reportcard-form">
+                <td>${createSelectField('employee', index)}</td>
+                <td><input type="time" class="form-control form-control-modern" name="report_cards-${index}-start_time" id="id_report_cards-${index}-start_time"></td>
+                <td><input type="time" class="form-control form-control-modern" name="report_cards-${index}-end_time" id="id_report_cards-${index}-end_time"></td>
+                <td><input type="number" class="form-control form-control-modern" name="report_cards-${index}-lunch_time" id="id_report_cards-${index}-lunch_time"></td>
+                <td><input type="number" class="form-control form-control-modern" name="report_cards-${index}-flight_hours" id="id_report_cards-${index}-flight_hours"></td>
+                <td>${createMultipleSelectField('outfit_card', index)}</td>
+                <td><input type="text" class="form-control form-control-modern" name="report_cards-${index}-additional_work" id="id_report_cards-${index}-additional_work"></td>
+                <td><button type="button" class="btn btn-danger btn-sm remove-form-row">Удалить</button></td>
+            </tr>
+        `;
+        return $(newForm);
+    }
+
+    function createSelectField(fieldName, index) {
+        const selectField = `
+            <select name="report_cards-${index}-${fieldName}" id="id_report_cards-${index}-${fieldName}" class="form-control form-control-modern">
+                {% for choice in form.fields.employee.choices %}
+                <option class="select2-selection__rendered" value="{{ choice.0 }}">{{ choice.1 }}</option>
+                {% endfor %}
+            </select>
+        `;
+        return selectField;
+    }
+
+    function createMultipleSelectField(fieldName, index) {
+        const multipleSelectField = `
+            <select name="report_cards-${index}-${fieldName}" id="id_report_cards-${index}-${fieldName}" data-select2-id="id_report_cards-${index}-${fieldName}" class="form-control form-control-modern select2" data-plugin-selecttwo multiple>
+                {% for choice in form.fields.outfit_card.iterator %}
+                <option value="{{ choice.0 }}" data-select2-id="42">{{ choice.1 }}</option>
+                {% endfor %}
+            </select>
+        `;
+        return multipleSelectField;
+    }
+});
+
+        </script>
+    <script src="{% static 'admin_templates/vendor/jquery36/jquery-3.6.0.js' %}"></script>
+{#    <script src="{% static 'admin_templates/js/timesheet_form.js' %}"></script>#}
 {% endblock %}
 
 {% block title %}
@@ -135,110 +187,54 @@
         </style>
 
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <p class="card-big-info-desc">{% if object %}Редактировать{% else %}
-                                            Создать{% endif %} табель учета рабочего времени</p>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
-                                            <label class="col"
-                                                   for="id_date">Дата табеля:</label>
-                                            <div class="col">
-                                                {{ form.date }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
-                                            <label class="col"
-                                                   for="id_time_sheets_place">МПД:</label>
-                                            <div class="col">
-                                                <span>{{ form.time_sheets_place }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
-                                            <label class="col"
-                                                   for="id_employee">Ответственный:</label>
-                                            <div class="col">
-                                                <span>{{ form.employee }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
-                                            <label class="col"
-                                                   for="id_notes">Примечание:</label>
-                                            <div class="col">
-                                                <span>{{ form.notes }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <h2>Записи в табеле</h2>
-                                        <table class="table-responsive-sm" id="formset-table">
-                                            <thead>
-                                            <tr>
-                                                <th>Сотрудник</th>
-                                                <th>Время прихода</th>
-                                                <th>Время ухода</th>
-                                                <th>Время обеда (мин.)</th>
-                                                <th>Летные часы (час)</th>
-                                                <th>Карты-наряда</th>
-                                                <th>Дополнительные работы</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {{ report_cards.management_form }}
-                                            {% for form in report_cards.forms %}
-                                                <tr class="formset_row">
-                                                    {% for field in form.visible_fields %}
-                                                        <td>
-                                                            {# Include the hidden fields in the form #}
-                                                            {% if forloop.first %}
-                                                                {% for hidden in form.hidden_fields %}
-                                                                    {{ hidden }}
-                                                                {% endfor %}
-                                                            {% endif %}
-                                                            {{ field.errors.as_ul }}
-                                                            <span class="mobile-only">{{ field.label }}</span>
-                                                            {{ field }}
-                                                        </td>
-                                                    {% endfor %}
-                                                </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                        <button type="button" id="add-form">Add Another Item</button>
-                                        <div class="col-12 col-md-auto">
-                                            <button class="btn btn-primary" type="submit">Сохранить</button>
-                                        </div>
-                                        <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                                            <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                                               class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
-                                        </div>
-                                        {% if user.is_superuser and object %}
-                                            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                                                <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                                                   class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                                                    <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                                            </div>
-                                        {% endif %}
-                                    </div>
+<div class="container">
+    <h1>{% if object %}Редактировать{% else %}Создать{% endif %} Табель учета рабочего времени</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            {{ form.as_p }}
+        </div>
 
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
+        <h2>Записи ReportCard</h2>
+        {{ reportcard_formset.management_form }}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Сотрудник</th>
+                    <th>Время прихода</th>
+                    <th>Время ухода</th>
+                    <th>Время обеда</th>
+                    <th>Летные часы</th>
+                    <th>Оперативные работы</th>
+                    <th>Дополнительные работы</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="reportcard-form-list">
+                {% for form in reportcard_formset %}
+                <tr class="reportcard-form">
+                    <td>{{ form.employee }}</td>
+                    <td>{{ form.start_time }}</td>
+                    <td>{{ form.end_time }}</td>
+                    <td>{{ form.lunch_time }}</td>
+                    <td>{{ form.flight_hours }}</td>
+                    <td>{{ form.outfit_card }}</td>
+                    <td>{{ form.additional_work }}</td>
+                    <td>
+                        {% if form.instance.pk %}
+                        <button type="button" class="btn btn-danger btn-sm remove-form-row">Удалить</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="button" id="add-reportcard-form" class="btn btn-primary">Добавить запись</button>
+        <button type="submit" class="btn btn-success">Сохранить</button>
+    </form>
+</div>
 
-            </div>
-        </form>
+
         <!-- end: page -->
     </section>
 
