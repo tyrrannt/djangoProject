@@ -229,7 +229,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 # Генерируем диапазон дат с начала месяца до текущего дня
                 norm_time_date = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
-                print(report_year, report_month, current_date, start_date, norm_time_date)
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     # Если текущий месяц и текущая дата совпадают, то диапазон дат с начала месяца до текущего дня.
                     dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
@@ -321,7 +320,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
                 df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
                 # Вычисление разности между временем введенным и временем по производственному календарю
-
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
                 # Получение общей суммы времени за все дни
                 total_time = df['Time'].sum()

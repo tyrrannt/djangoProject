@@ -506,9 +506,8 @@ def get_year_report(html_mode=True):
     # Вычисление разности между End и Start и сохранение в новом столбце Time
     df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
     # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
-    df['Time'] = df.apply(
-        lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(
-            row['Дата']), axis=1)
+    # df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата']), axis=1)
+    df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
 
 
     # Группировка по месяцам и ФИО
@@ -540,7 +539,6 @@ def get_year_report(html_mode=True):
     for date in first_days_of_months[:-1]:
         key = date.strftime('%Y-%m')
         norm_time = ProductionCalendar.objects.get(calendar_month=date)
-        print(date, norm_time.get_norm_time())
         subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1)*60
 
     grouped = grouped.fillna('')
