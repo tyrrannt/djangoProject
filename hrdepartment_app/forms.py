@@ -1396,7 +1396,7 @@ class TimeSheetForm(forms.ModelForm):
 class ReportCardForm(forms.ModelForm):
     outfit_card = forms.ModelMultipleChoiceField(
         queryset=OutfitCard.objects.all(),
-        widget=forms.SelectMultiple(attrs={"class": "form-select", "size": "1", "multiple": True}),
+        widget=forms.SelectMultiple(attrs={"class": "form-select", "data-plugin-selectTwo": True, "multiple": True}),
         required=False,
         label="Карта-наряд"
     )

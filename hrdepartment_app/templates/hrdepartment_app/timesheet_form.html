@@ -158,41 +158,73 @@
         <h2>{% if object %}Изменить{% else %}Создать{% endif %} табель</h2>
         <form method="post">
             {% csrf_token %}
-            {{ form.as_p }}
-
+            <div class="row text">
+                <div class="col-sm-12 col-md-4 text-black-50">
+                    {{ form.date }}
+                </div>
+                <div class="col-sm-12 col-md-4 text-black-50">
+                    {{ form.employee }}
+                </div>
+                <div class="col-sm-12 col-md-4 text-black-50">
+                    {{ form.time_sheets_place }}
+                </div>
+            </div>
+            <div class="row text">
+                <div class="col-sm-12 text-black-50">
+                    {{ form.notes }}
+                </div>
+            </div>
             <h3>Табель учета рабочего времени</h3>
             {{ reportcard_formset.management_form }}
-            <button type="button" class="btn btn-primary" id="add-reportcard">Добавить</button>
-            <button type="submit" class="btn btn-success">Сохранить</button>
-            <table class="table" id="id_reportcard_set">
-                <thead>
-                <tr>
-                    <th>ФИО</th>
-                    <th>Время прихода</th>
-                    <th>Время ухода</th>
-                    <th>Обед (мин.)</th>
-                    <th>Летные часы</th>
-                    <th>Карты-наряда</th>
-                    <th>Дополнительные работы</th>
-                    <th>Действия</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for form in reportcard_formset %}
+            <div class="row action-buttons">
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <button type="submit"
+                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            data-loading-text="Loading...">
+                        <i class="bx bx-save text-4 me-2"></i> Сохранить
+                    </button>
+                </div>
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                    <a href="{% url 'hrdepartment_app:timesheet_list' %}"
+                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                </div>
+                {% if object and user.is_superuser %}
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
+                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table" id="id_reportcard_set">
+                    <thead>
                     <tr>
-                        <td>{{ form.employee }}</td>
-                        <td>{{ form.start_time }}</td>
-                        <td>{{ form.end_time }}</td>
-                        <td>{{ form.lunch_time }}</td>
-                        <td>{{ form.flight_hours }}</td>
-                        <td>{{ form.outfit_card }}</td>
-                        <td>{{ form.additional_work }}</td>
-                        <td>{{ form.id }}</td>
+                        <th>ФИО</th>
+                        <th>Время прихода</th>
+                        <th>Время ухода</th>
+                        <th>Обед (мин.)</th>
+                        <th>Летные часы</th>
+                        <th>Карты-наряда</th>
+                        <th>Дополнительные работы</th>
                     </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-
+                    </thead>
+                    <tbody>
+                    {% for form in reportcard_formset %}
+                        <tr>
+                            <td>{{ form.employee }}</td>
+                            <td>{{ form.start_time }}</td>
+                            <td>{{ form.end_time }}</td>
+                            <td>{{ form.lunch_time }}</td>
+                            <td>{{ form.flight_hours }}</td>
+                            <td>{{ form.outfit_card }}</td>
+                            <td>{{ form.additional_work }}</td>
+                            <td>{{ form.id }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-primary" id="add-reportcard">Добавить</button>
         </form>       <!-- end: page -->
     </section>
     <!-- end: page -->

@@ -3651,9 +3651,9 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(self.request.POST)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=15)(self.request.POST)
         else:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)()
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=15)()
         return data
 
     def form_valid(self, form):
@@ -3662,10 +3662,37 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
         if reportcard_formset.is_valid():
             self.object = form.save()
             reportcard_formset.instance = self.object
-            reportcard_formset.save()
+            self.save_formset(reportcard_formset)
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
+
+    def save_formset(self, formset):
+        """
+        Переопределение метода save_formset:
+            Метод save_formset переопределяется для внесения изменений в поле custom_field модели ReportCard.
+            В этом примере поле sign_report_card устанавливается в значение True, но вы можете заменить его на любое
+            другое значение или логику.
+        Сохранение формсета:
+            В методе form_valid после проверки валидности формсета, вызывается метод save_formset для сохранения
+            формсета с внесенными изменениями.
+        Сохранение связанных объектов:
+            Метод save_m2m вызывается для сохранения связанных объектов, если они есть.
+        Примечания:
+            Убедитесь, что 'поле' существует в модели ReportCard.
+            Вы можете изменить логику установки значения поля custom_field в зависимости от ваших требований.
+            Этот подход позволяет внести изменения в поле модели, которое не присутствует в форме, но имеется в
+            самой модели.
+        """
+        instances = formset.save(commit=False)
+        for instance in instances:
+            # Внесите изменения в поле, которое не присутствует в форме
+            instance.report_card_day = self.object.date
+            instance.sign_report_card = True
+            instance.record_type = "13"
+            instance.save()
+            instance.place_report_card.set([self.object.time_sheets_place.pk, ])
+        formset.save_m2m()  # Сохраняем связанные объекты, если есть
 
     # def get_context_data(self, **kwargs):
     #     data = super().get_context_data(**kwargs)
@@ -3710,9 +3737,9 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(self.request.POST, instance=self.object)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(self.request.POST, instance=self.object)
         else:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(instance=self.object)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(instance=self.object)
         return data
 
     def form_valid(self, form):
@@ -3721,10 +3748,36 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
         if reportcard_formset.is_valid():
             self.object = form.save()
             reportcard_formset.instance = self.object
-            reportcard_formset.save()
+            self.save_formset(reportcard_formset)
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
+
+    def save_formset(self, formset):
+        """
+        Переопределение метода save_formset:
+            Метод save_formset переопределяется для внесения изменений в поле custom_field модели ReportCard.
+            В этом примере поле sign_report_card устанавливается в значение True, но вы можете заменить его на любое
+            другое значение или логику.
+        Сохранение формсета:
+            В методе form_valid после проверки валидности формсета, вызывается метод save_formset для сохранения
+            формсета с внесенными изменениями.
+        Сохранение связанных объектов:
+            Метод save_m2m вызывается для сохранения связанных объектов, если они есть.
+        Примечания:
+            Убедитесь, что 'поле' существует в модели ReportCard.
+            Вы можете изменить логику установки значения поля custom_field в зависимости от ваших требований.
+            Этот подход позволяет внести изменения в поле модели, которое не присутствует в форме, но имеется в
+            самой модели.
+        """
+        instances = formset.save(commit=False)
+        for instance in instances:
+            # Внесите изменения в поле, которое не присутствует в форме
+            instance.report_card_day = self.object.date
+            instance.sign_report_card = True
+            instance.place_report_card.set([self.object.time_sheets_place.pk,])
+            instance.save()
+        formset.save_m2m()  # Сохраняем связанные объекты, если есть
 
     # def form_valid(self, form):
     #     context = self.get_context_data()
