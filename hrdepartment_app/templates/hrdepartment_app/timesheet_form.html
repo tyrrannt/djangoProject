@@ -73,7 +73,7 @@
 
     function createMultipleSelectField(fieldName, index) {
         const multipleSelectField = `
-            <select name="report_cards-${index}-${fieldName}" id="id_report_cards-${index}-${fieldName}" data-select2-id="id_report_cards-${index}-${fieldName}" class="form-control form-control-modern select2" data-plugin-selecttwo multiple>
+            <select name="report_cards-${index}-${fieldName}" class="form-control form-control-modern select2" id="id_report_cards-${index}-${fieldName}" data-select2-id="id_report_cards-${index}-${fieldName}" data-plugin-selecttwo multiple>
                 {% for choice in form.fields.outfit_card.iterator %}
                 <option value="{{ choice.0 }}" data-select2-id="42">{{ choice.1 }}</option>
                 {% endfor %}
