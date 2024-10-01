@@ -5,7 +5,6 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import inlineformset_factory
-from django_select2.forms import Select2MultipleWidget
 from loguru import logger
 
 from administration_app.utils import make_custom_field
