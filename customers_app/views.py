@@ -233,7 +233,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     # Если текущий месяц и текущая дата совпадают, то диапазон дат с начала месяца до текущего дня.
                     dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
-                    print(dates)
                     norm_time = norm_time_date.get_norm_time_at_day()
                 else:
                     # Создаем конечную дату (последний день месяца)
@@ -266,7 +265,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df = df.groupby(["Дата"]).apply(adjust_time).reset_index(drop=True)
 
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
-                df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
+
+                df["Time"] = (df["End"] - df["Start"]).apply(lambda x: x.total_seconds() if x.total_seconds() > 0 else 0)   # В часах
                 # Группируем по дате и применяем функцию
                 df = df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
                 # Группируем по FIO и Date и применяем функцию
