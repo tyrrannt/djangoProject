@@ -2296,26 +2296,26 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
     if weekend_day_count == 0:
         if preholiday_day_count.count() > 0:
             if trigger:
-                return 'НБ'
+                return 'Не было на работе'
             return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
         else:
             if day.weekday() == 4:
                 if trigger:
-                    return 'НБ'
+                    return 'Не было на работе'
                 return 27000
             elif day.weekday() < 4:
                 if trigger:
-                    return 'НБ'
+                    return 'Не было на работе'
                 return 30600
             else:
                 if trigger:
-                    return 'В'
+                    return 'Выходной'
                 if type_of_day in [14, 15]:
                     return 30600
                 return 0
     else:
         if trigger:
-            return 'П'
+            return 'Праздничный день'
         if type_of_day in [14, 15]:
             return 30600
         return 0
