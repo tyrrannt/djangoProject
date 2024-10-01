@@ -224,15 +224,16 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     safe=False)
                 """
                 # Определяем текущую дату
-                current_date = datetime.datetime.today() - datetime.timedelta(days=1)
+                current_date = datetime.datetime.today() #- datetime.timedelta(days=1)
                 # Определяем начальную дату как первый день текущего месяца
                 start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 # Генерируем диапазон дат с начала месяца до текущего дня
                 norm_time_date = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
-
+                print(report_year, report_month, current_date, start_date, norm_time_date)
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     # Если текущий месяц и текущая дата совпадают, то диапазон дат с начала месяца до текущего дня.
                     dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
+                    print(dates)
                     norm_time = norm_time_date.get_norm_time_at_day()
                 else:
                     # Создаем конечную дату (последний день месяца)
@@ -330,7 +331,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 total_time_hhmm = seconds_to_hhmm(delta)
 
                 # Блок для ввода в таблицу строки за текущий день. Если дата равна текущей, то добавляем в dataframe строку с текущей датой
-                if int(report_month) == current_date.month and int(report_year) == current_date.year:
+                if int(report_month) == current_date.month and int(report_year) == current_date.year and current_date.day != 1:
                     report_card_day = ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day=datetime.datetime.today())).values_list('report_card_day', 'start_time',
                          'end_time', 'record_type')
                     if len(report_card_day) > 0:

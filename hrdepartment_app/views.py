@@ -5,6 +5,7 @@ from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.db.models import Q
+from django import forms
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
@@ -3648,12 +3649,12 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
     permission_required = "hrdepartment_app.create_timesheet"
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        data = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['reportcard_formset'] = ReportCardFormSet(self.request.POST)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(self.request.POST)
         else:
-            context['reportcard_formset'] = ReportCardFormSet()
-        return context
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)()
+        return data
 
     def form_valid(self, form):
         context = self.get_context_data()
@@ -3665,9 +3666,6 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
-
-ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
-            'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work'), extra=1)
 
     # def get_context_data(self, **kwargs):
     #     data = super().get_context_data(**kwargs)
@@ -3712,18 +3710,17 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['report_cards'] = ReportCardFormSet(self.request.POST, instance=self.object)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(self.request.POST, instance=self.object)
         else:
-            data['report_cards'] = ReportCardFormSet(instance=self.object)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(instance=self.object)
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
-        reportcard_formset = context['report_cards']
+        reportcard_formset = context['reportcard_formset']
         if reportcard_formset.is_valid():
             self.object = form.save()
             reportcard_formset.instance = self.object
-            reportcard_formset.report_card_day = self.object.date
             reportcard_formset.save()
             return super().form_valid(form)
         else:

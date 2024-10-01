@@ -22,70 +22,38 @@
 
 {% endblock %}
 {% block SpecificPageVendor %}
-{#    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>#}
-        <script>
-            $(document).ready(function() {
-    const addFormButton = $('#add-reportcard-form');
-    const formList = $('#reportcard-form-list');
-    const totalFormsField = $('[name="report_cards-TOTAL_FORMS"]');
 
-    let formCount = parseInt(totalFormsField.val(), 10);
+    <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
+    <script>
+        $(function () {
+            $('#add-reportcard').click(function () {
+                var totalForms = $('#id_report_cards-TOTAL_FORMS');
+                var getItem = document.getElementById('id_report_cards-TOTAL_FORMS').value - 1;
+                var formNum = totalForms.val();
+                totalForms.val(parseInt(formNum) + 1);
 
-    addFormButton.on('click', function() {
-        const newForm = createNewReportCardForm(formCount);
-        formList.append(newForm);
-        totalFormsField.val(formCount + 1);
-        formCount++;
-    });
+                // Клонируем последнюю строку таблицы
+                var newForm = $('#id_reportcard_set tbody tr:last').clone();
 
-    formList.on('click', '.remove-form-row', function() {
-        $(this).closest('.reportcard-form').remove();
-        totalFormsField.val(formCount - 1);
-        formCount--;
-    });
+                // Очищаем значения в новых полях
+                newForm.find('input, select').each(function () {
+                    var name = $(this).attr('name').replace(getItem.toString(), formNum);
+                    var id = 'id_' + name;
+                    $(this).attr({'name': name, 'id': id, 'data-select2-id': id}).val('').removeAttr('checked');
+                });
 
-    function createNewReportCardForm(index) {
-        const newForm = `
-            <tr class="reportcard-form">
-                <td>${createSelectField('employee', index)}</td>
-                <td><input type="time" class="form-control form-control-modern" name="report_cards-${index}-start_time" id="id_report_cards-${index}-start_time"></td>
-                <td><input type="time" class="form-control form-control-modern" name="report_cards-${index}-end_time" id="id_report_cards-${index}-end_time"></td>
-                <td><input type="number" class="form-control form-control-modern" name="report_cards-${index}-lunch_time" id="id_report_cards-${index}-lunch_time"></td>
-                <td><input type="number" class="form-control form-control-modern" name="report_cards-${index}-flight_hours" id="id_report_cards-${index}-flight_hours"></td>
-                <td>${createMultipleSelectField('outfit_card', index)}</td>
-                <td><input type="text" class="form-control form-control-modern" name="report_cards-${index}-additional_work" id="id_report_cards-${index}-additional_work"></td>
-                <td><button type="button" class="btn btn-danger btn-sm remove-form-row">Удалить</button></td>
-            </tr>
-        `;
-        return $(newForm);
-    }
+                // Обновляем атрибуты label
+                newForm.find('label').each(function () {
+                    var newFor = $(this).attr('for').replace(getItem.toString(), formNum);
+                    $(this).attr('for', newFor);
+                });
 
-    function createSelectField(fieldName, index) {
-        const selectField = `
-            <select name="report_cards-${index}-${fieldName}" id="id_report_cards-${index}-${fieldName}" class="form-control form-control-modern">
-                {% for choice in form.fields.employee.choices %}
-                <option class="select2-selection__rendered" value="{{ choice.0 }}">{{ choice.1 }}</option>
-                {% endfor %}
-            </select>
-        `;
-        return selectField;
-    }
+                // Добавляем новую строку в таблицу
+                newForm.appendTo('#id_reportcard_set tbody');
+            });
+        });
+    </script>
 
-    function createMultipleSelectField(fieldName, index) {
-        const multipleSelectField = `
-            <select name="report_cards-${index}-${fieldName}" class="form-control form-control-modern select2" id="id_report_cards-${index}-${fieldName}" data-select2-id="id_report_cards-${index}-${fieldName}" data-plugin-selecttwo multiple>
-                {% for choice in form.fields.outfit_card.iterator %}
-                <option value="{{ choice.0 }}" data-select2-id="42">{{ choice.1 }}</option>
-                {% endfor %}
-            </select>
-        `;
-        return multipleSelectField;
-    }
-});
-
-        </script>
-    <script src="{% static 'admin_templates/vendor/jquery36/jquery-3.6.0.js' %}"></script>
-{#    <script src="{% static 'admin_templates/js/timesheet_form.js' %}"></script>#}
 {% endblock %}
 
 {% block title %}
@@ -187,56 +155,45 @@
         </style>
 
         <!-- start: page -->
-<div class="container">
-    <h1>{% if object %}Редактировать{% else %}Создать{% endif %} Табель учета рабочего времени</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
+        <h2>{% if object %}Изменить{% else %}Создать{% endif %} табель</h2>
+        <form method="post">
+            {% csrf_token %}
             {{ form.as_p }}
-        </div>
 
-        <h2>Записи ReportCard</h2>
-        {{ reportcard_formset.management_form }}
-        <table class="table">
-            <thead>
+            <h3>Табель учета рабочего времени</h3>
+            {{ reportcard_formset.management_form }}
+            <button type="button" class="btn btn-primary" id="add-reportcard">Добавить</button>
+            <button type="submit" class="btn btn-success">Сохранить</button>
+            <table class="table" id="id_reportcard_set">
+                <thead>
                 <tr>
-                    <th>Сотрудник</th>
+                    <th>ФИО</th>
                     <th>Время прихода</th>
                     <th>Время ухода</th>
-                    <th>Время обеда</th>
+                    <th>Обед (мин.)</th>
                     <th>Летные часы</th>
-                    <th>Оперативные работы</th>
+                    <th>Карты-наряда</th>
                     <th>Дополнительные работы</th>
                     <th>Действия</th>
                 </tr>
-            </thead>
-            <tbody id="reportcard-form-list">
+                </thead>
+                <tbody>
                 {% for form in reportcard_formset %}
-                <tr class="reportcard-form">
-                    <td>{{ form.employee }}</td>
-                    <td>{{ form.start_time }}</td>
-                    <td>{{ form.end_time }}</td>
-                    <td>{{ form.lunch_time }}</td>
-                    <td>{{ form.flight_hours }}</td>
-                    <td>{{ form.outfit_card }}</td>
-                    <td>{{ form.additional_work }}</td>
-                    <td>
-                        {% if form.instance.pk %}
-                        <button type="button" class="btn btn-danger btn-sm remove-form-row">Удалить</button>
-                        {% endif %}
-                    </td>
-                </tr>
+                    <tr>
+                        <td>{{ form.employee }}</td>
+                        <td>{{ form.start_time }}</td>
+                        <td>{{ form.end_time }}</td>
+                        <td>{{ form.lunch_time }}</td>
+                        <td>{{ form.flight_hours }}</td>
+                        <td>{{ form.outfit_card }}</td>
+                        <td>{{ form.additional_work }}</td>
+                        <td>{{ form.id }}</td>
+                    </tr>
                 {% endfor %}
-            </tbody>
-        </table>
-        <button type="button" id="add-reportcard-form" class="btn btn-primary">Добавить запись</button>
-        <button type="submit" class="btn btn-success">Сохранить</button>
-    </form>
-</div>
+                </tbody>
+            </table>
 
-
-        <!-- end: page -->
+        </form>       <!-- end: page -->
     </section>
-
     <!-- end: page -->
 {% endblock %}

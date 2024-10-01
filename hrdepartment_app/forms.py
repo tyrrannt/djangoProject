@@ -5,6 +5,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import inlineformset_factory
+from django_select2.forms import Select2MultipleWidget
 from loguru import logger
 
 from administration_app.utils import make_custom_field
@@ -1369,48 +1370,15 @@ class CreatingTeamSetNumberForm(forms.ModelForm):
             raise ValidationError("Ошибка! Вы не имеете право задавать номера приказов о старших бригадах.")
 
 
-class ReportCardForm(forms.ModelForm):
-    outfit_card = forms.ModelMultipleChoiceField(
-        queryset=OutfitCard.objects.all(),
-        widget=forms.SelectMultiple(attrs={"class": "form-control form-control-modern select2",
-                                                    "data-plugin-selectTwo": True, "multiple": True}),
-        required=False,
-        label="Карта-наряд"
-    )
+class TimeSheetForm(forms.ModelForm):
     employee = forms.ModelChoiceField(
         widget=forms.Select(attrs={"class": "form-control form-control-modern",
                                    "data-plugin-selectTwo": True, }),
         queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
         label="Сотрудник")
-
-    class Meta:
-        model = ReportCard
-        fields = ['timesheet', 'employee', 'start_time', 'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work', ]
-        widgets = {
-            'employee': forms.Select(attrs={"class": "form-control form-control-modern"}),
-            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
-            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
-            'lunch_time': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
-            'flight_hours': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
-            'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern', }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['outfit_card'].queryset = OutfitCard.objects.all()
-    #     self.fields['periodic_work'].queryset = PeriodicWork.objects.all()
-    #     self.fields['air_board'].queryset = Estate.objects.all()
-
-
-class TimeSheetForm(forms.ModelForm):
-    employee = forms.ModelChoiceField(
-        widget=forms.Select(attrs={"class": "form-control form-control-modern",
-                                            "data-plugin-selectTwo": True, }),
-        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
-        label="Сотрудник")
     class Meta:
         model = TimeSheet
-        fields = ['date', 'employee', 'notes', 'time_sheets_place']
+        fields = ['date', 'employee', 'time_sheets_place', 'notes']
         widgets = {
             'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
                                            "data-plugin-datepicker": True,
@@ -1426,9 +1394,34 @@ class TimeSheetForm(forms.ModelForm):
                                                      "data-plugin-selectTwo": True, }),
         }
 
+class ReportCardForm(forms.ModelForm):
+    outfit_card = forms.ModelMultipleChoiceField(
+        queryset=OutfitCard.objects.all(),
+        widget=forms.SelectMultiple(attrs={"class": "form-select", "size": "1", "multiple": True}),
+        required=False,
+        label="Карта-наряд"
+    )
+    employee = forms.ModelChoiceField(
+        widget=forms.Select(attrs={"class": "form-control form-control-modern"}),
+        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
+        label="Сотрудник")
+    # outfit_card = forms.ModelMultipleChoiceField(
+    #     queryset=OutfitCard.objects.all(),
+    #     widget=Select2MultipleWidget(attrs={"class": "form-control form-control-modern", "multiple": True, }),
+    #     required=False
+    # )
 
-# ReportCardFormSet = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, fields=('employee', 'start_time',
-#             'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work'), extra=1, can_delete=True)
+    class Meta:
+        model = ReportCard
+        fields = ['employee', 'start_time', 'end_time', 'lunch_time', 'flight_hours', 'outfit_card', 'additional_work']
+        widgets = {
+            'employee': forms.Select(attrs={"class": "form-control form-control-modern"}),
+            'start_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
+            'end_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
+            'lunch_time': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
+            'flight_hours': forms.TextInput(attrs={'type': 'number', 'class': 'form-control form-control-modern', }),
+            'additional_work': forms.TextInput(attrs={'type': 'text', 'class': 'form-control form-control-modern', }),
+        }
 
 
 class OutfitCardForm(forms.ModelForm):
