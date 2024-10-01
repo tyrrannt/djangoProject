@@ -386,6 +386,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     # caption='Моя таблица',
                     justify='right',
                 )
+                print(html)
                 return JsonResponse(html, safe=False)
 
             if get_date:

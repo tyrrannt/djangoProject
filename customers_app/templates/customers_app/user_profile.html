@@ -535,10 +535,10 @@
                     rows[i].classList.remove('type-В', 'type-П');
 
                     // Применяем класс в зависимости от значения "Тип"
-                    if (type === 'В') {
+                    if (type === 'Выходной') {
                         rows[i].classList.remove('positive', 'negative');
                         rows[i].classList.add('type-В', 'table-secondary');
-                    } else if (type === 'П') {
+                    } else if (type === 'Праздничный день') {
                         rows[i].classList.remove('positive', 'negative');
                         rows[i].classList.add('type-П', 'table-primary');
                     }
