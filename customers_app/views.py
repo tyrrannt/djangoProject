@@ -350,7 +350,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                             '+/-': ['--//--']
                         })
                         total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")
-                        df = pd.concat([df, total_row], ignore_index=True)
+                        # df = pd.concat([df, total_row], ignore_index=True)
                     else:
                         total_row = pd.DataFrame({
                             'Дата': [datetime.datetime.today()],
@@ -358,7 +358,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                             '+/-': ['--//--']
                         })
                         total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")
-                        df = pd.concat([df, total_row], ignore_index=True)
+                        # df = pd.concat([df, total_row], ignore_index=True)
 
 
                 # Добавляем новую строку с суммой в конец DataFrame
