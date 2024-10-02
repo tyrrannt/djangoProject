@@ -1442,7 +1442,14 @@ class OutfitCardForm(forms.ModelForm):
         :param args:
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
-
+        self.user = kwargs.pop("user")
         super(OutfitCardForm, self).__init__(*args, **kwargs)
+        place = CreatingTeam.objects.filter(senior_brigade=self.user).exclude(cancellation=True).values_list('date_start', 'date_end', 'place', )
+        self.fields["employee"].queryset = DataBaseUser.objects.none()
+        self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.none()
+        for item in place:
+            if item[0] <= datetime.date.today() <= item[1]:
+                self.fields["employee"].queryset = DataBaseUser.objects.filter(pk=self.user.pk)
+                self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.filter(pk=item[2])
         for field in self.fields:
             make_custom_field(self.fields[field])

@@ -3849,34 +3849,44 @@ class OutfitCardReportView(PermissionRequiredMixin, LoginRequiredMixin):
         return context
 
 # Журнал карт-наряда
-class OutfitCardCreateView(LoginRequiredMixin, CreateView):
+class OutfitCardCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = OutfitCard
     form_class = OutfitCardForm
     success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
+    permission_required = "hrdepartment_app.create_outfitcard"
 
-class OutfitCardUpdateView(LoginRequiredMixin, UpdateView): #UserPassesTestMixin, UpdateView):
+    def get_form_kwargs(self):
+        kwargs = super(OutfitCardCreateView, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+class OutfitCardUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView): #UserPassesTestMixin, UpdateView):
     model = OutfitCard
     form_class = OutfitCardForm
     success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
+    permission_required = "hrdepartment_app.change_outfitcard"
 
     # def test_func(self):
     #     # Проверка, что текущий пользователь является автором карты-наряда
     #     return self.request.user == self.get_object().employee
 
-class OutfitCardDetailView(LoginRequiredMixin, DetailView):
+class OutfitCardDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = OutfitCard
+    permission_required = "hrdepartment_app.view_outfitcard"
 
-class OutfitCardDeleteView(LoginRequiredMixin, DeleteView):
+class OutfitCardDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = OutfitCard
     success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
+    permission_required = "hrdepartment_app.delete_outfitcard"
 
     # def test_func(self):
     #     # Проверка, что текущий пользователь является автором карты-наряда
     #     return self.request.user == self.get_object().employee
 
-class OutfitCardListView(LoginRequiredMixin, ListView):
+class OutfitCardListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = OutfitCard
     context_object_name = 'outfit_cards'
+    permission_required = "hrdepartment_app.view_outfitcard"
 
     def get(self, request, *args, **kwargs):
         query = Q()
