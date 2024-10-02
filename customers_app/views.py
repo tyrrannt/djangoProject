@@ -329,11 +329,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 total_time_hhmm = seconds_to_hhmm(delta)
 
                 # Блок для ввода в таблицу строки за текущий день. Если дата равна текущей, то добавляем в dataframe строку с текущей датой
-                if int(report_month) == current_date.month and int(report_year) == current_date.year and current_date.day != 1:
+                if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     report_card_day = ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day=datetime.datetime.today())).values_list('report_card_day', 'start_time',
                          'end_time', 'record_type')
                     if len(report_card_day) > 0:
-                        # ToDo: Обработать блок когда более одной записи
                         end_time = 'по н.в.'
                         current_df = pd.DataFrame(report_card_day, columns=fields)
                         current_df["Дата"] = pd.to_datetime(current_df["Дата"], format="%d.%m.%Y")

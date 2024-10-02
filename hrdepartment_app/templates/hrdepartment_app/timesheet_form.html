@@ -91,6 +91,9 @@
                 .mobile-only {
                     display: inline;
                 }
+                .desktop-only {
+                display: none;
+            }
             }
 
             th:nth-child(1), td:nth-child(1) {
@@ -160,17 +163,21 @@
             {% csrf_token %}
             <div class="row text">
                 <div class="col-sm-12 col-md-4 text-black-50">
+                    <label for="id_date">Дата:</label>
                     {{ form.date }}
                 </div>
                 <div class="col-sm-12 col-md-4 text-black-50">
+                    <label for="id_employee">Старший бригады:</label>
                     {{ form.employee }}
                 </div>
                 <div class="col-sm-12 col-md-4 text-black-50">
+                    <label for="id_time_sheets_place">МПД:</label>
                     {{ form.time_sheets_place }}
                 </div>
             </div>
             <div class="row text">
                 <div class="col-sm-12 text-black-50">
+                    <label for="id_notes">Примечание:</label>
                     {{ form.notes }}
                 </div>
             </div>
@@ -197,9 +204,9 @@
                 {% endif %}
             </div>
             <div class="table-responsive">
-                <table class="table" id="id_reportcard_set">
+                <table class="table table-responsive-sm" id="id_reportcard_set">
                     <thead>
-                    <tr>
+                    <tr class="desktop-only">
                         <th>ФИО</th>
                         <th>Время прихода</th>
                         <th>Время ухода</th>
@@ -212,14 +219,14 @@
                     <tbody>
                     {% for form in reportcard_formset %}
                         <tr>
-                            <td>{{ form.employee }}</td>
-                            <td>{{ form.start_time }}</td>
-                            <td>{{ form.end_time }}</td>
-                            <td>{{ form.lunch_time }}</td>
-                            <td>{{ form.flight_hours }}</td>
-                            <td>{{ form.outfit_card }}</td>
-                            <td>{{ form.additional_work }}</td>
-                            <td>{{ form.id }}</td>
+                            <td><label for="id_employee" class="mobile-only">ФИО:</label>{{ form.employee }}</td>
+                            <td><label for="id_start_time" class="mobile-only">Время прихода:</label>{{ form.start_time }}</td>
+                            <td><label for="id_end_time" class="mobile-only">Время ухода:</label>{{ form.end_time }}</td>
+                            <td><label for="id_lunch_time" class="mobile-only">Обед (мин.):</label>{{ form.lunch_time }}</td>
+                            <td><label for="id_flight_hours" class="mobile-only">Летные часы:</label>{{ form.flight_hours }}</td>
+                            <td><label for="id_outfit_card" class="mobile-only">Карты-наряда:</label>{{ form.outfit_card }}</td>
+                            <td><label for="id_additional_work" class="mobile-only">Дополнительные работы:</label>{{ form.additional_work }}</td>
+                            <td><label for="id_id" class="mobile-only"></label>{{ form.id }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
