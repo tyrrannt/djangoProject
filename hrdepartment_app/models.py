@@ -129,7 +129,7 @@ class Documents(models.Model):
     )
     actuality = models.BooleanField(verbose_name="Актуальность", default=False)
     previous_document = models.URLField(
-        verbose_name="Предшествующий документ", blank=True
+        verbose_name="Примечание к предшествующему документу", blank=True
     )
     parent_document = models.ForeignKey(
         "self", verbose_name="Предшествующий документ", on_delete=models.SET_NULL, null=True, blank=True
@@ -2682,6 +2682,7 @@ class Provisions(Documents):
     )
 
     def get_data(self):
+        get_actual = Provisions.objects.filter(parent_document=self.pk).count()
         return {
             "pk": self.pk,
             "document_name": self.document_name,
@@ -2689,7 +2690,7 @@ class Provisions(Documents):
             "document_date": f"{self.document_date:%d.%m.%Y} г.",
             "document_division": str(self.storage_location_division),
             "document_order": str(self.document_order),
-            "actuality": "Да" if self.actuality else "Нет",
+            "actuality": "Да" if get_actual == 0 else "Нет",
             "executor": format_name_initials(self.executor),
         }
 
@@ -2698,7 +2699,6 @@ class Provisions(Documents):
 
     def __str__(self):
         return self.document_name
-
 
 @receiver(post_save, sender=Provisions)
 def rename_file_name_provisions(sender, instance, **kwargs):

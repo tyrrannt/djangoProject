@@ -966,7 +966,7 @@ class ProvisionsAddForm(forms.ModelForm):
             "document_order",
             "validity_period_end",
             "actuality",
-            "previous_document",
+            "parent_document",
             "document_name",
             "document_form",
             "applying_for_job",
@@ -1009,6 +1009,8 @@ class ProvisionsAddForm(forms.ModelForm):
         self.fields["applying_for_job"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class ProvisionsUpdateForm(forms.ModelForm):
@@ -1027,6 +1029,7 @@ class ProvisionsUpdateForm(forms.ModelForm):
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
 
+
     class Meta:
         model = Provisions
         fields = (
@@ -1039,7 +1042,7 @@ class ProvisionsUpdateForm(forms.ModelForm):
             "employee",
             "validity_period_start",
             "validity_period_end",
-            "previous_document",
+            "parent_document",
             "allowed_placed",
             "actuality",
             "document_name",
@@ -1082,6 +1085,9 @@ class ProvisionsUpdateForm(forms.ModelForm):
         self.fields["applying_for_job"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+        self.fields["parent_document"].queryset = Provisions.objects.all().exclude(pk=self.instance.pk)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class OrderDescriptionForm(forms.ModelForm):

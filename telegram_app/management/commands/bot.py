@@ -205,6 +205,53 @@ def send_message_tg():
         result.append(f"Ошибка telegram бота: {_ex}")
     return result
 
+# def send_message_tg():
+#     time_list = [0, 15, 5]
+#     dt = datetime.datetime.now()
+#     result = []
+#
+#     try:
+#         bot = telebot.TeleBot(API_TOKEN, skip_pending=True)
+#         notify_list = TelegramNotification.objects.filter(
+#             send_time__hour=dt.hour,
+#             send_time__minute=dt.minute,
+#             send_date=dt.date()
+#         )
+#
+#         for item in notify_list:
+#             for chat_id in item.respondents.all():
+#                 if item.sending_counter > 0:
+#                     message_text = item.message
+#                     if item.document_url:
+#                         message_text += f'\n <a href="{item.document_url}">Ссылка на документ</a>\n <blockquote>Время отправки: {item.send_date.strftime("%d.%m.%Y")} {item.send_time.strftime("%H:%M")}</blockquote>'
+#                         result.append(
+#                             f"Сообщение для {chat_id.chat_id}: {item.message}. "
+#                             f"Ссылка на документ: {item.document_url}"
+#                         )
+#                         logger.info(
+#                             f"Сообщение для {chat_id.chat_id} отправлено. "
+#                             f"Текст: {item.message}. Ссылка: {item.document_url}"
+#                         )
+#                     else:
+#                         result.append(
+#                             f"Сообщение для {chat_id.chat_id}: {item.message}."
+#                         )
+#                         logger.info(
+#                             f"Сообщение для {chat_id.chat_id} отправлено. Текст: {item.message}."
+#                         )
+#
+#                     bot.send_message(chat_id.chat_id, f'<b>{message_text}</b>', parse_mode="HTML")
+#
+#             item.sending_counter -= 1
+#             item.send_time = dt + relativedelta(minutes=time_list[item.sending_counter])
+#             item.save()
+#             time.sleep(1)
+#
+#     except Exception as _ex:
+#         result.append(f"Ошибка telegram бота: {_ex}")
+#
+#     return result
+
 
 class Command(BaseCommand):
     help = "Запускет бота"

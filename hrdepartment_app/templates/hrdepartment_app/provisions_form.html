@@ -72,9 +72,9 @@
                                                    name="document_number" value="{{ object.document_number }}" id="id_document_number"/>
                                         </div>
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_previous_document">Предшествующий документ:</label>
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="previous_document" value="{{ object.previous_document }}" id="id_previous_document"/>
+                                            <label for="id_parent_document">Предшествующий документ:</label>
+                                            {{ form.parent_document }}
+
                                         </div>
                                     </div>
                                     <div class="row text">
