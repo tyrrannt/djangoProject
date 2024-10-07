@@ -475,7 +475,43 @@ def calc_diff(start, end):
 
 @app.task()
 def save_report():
-    export_persons_to_csv('данные.csv', ReportCard)
+    type_of_report = {
+        1: "Явка",
+        2: "Отпуск",
+        3: "Дополнительный ежегодный отпуск",
+        4: "Отпуск за свой счет",
+        5: "Дополнительный учебный отпуск",
+        6: "Отпуск по уходу за ребенком",
+        7: "Дополнительный неоплачиваемый отпуск",
+        8: "Отпуск по беременности и родам",
+        9: "Отпуск без оплаты согласно ТК РФ",
+        10: "Дополнительный отпуск",
+        11: "Дополнительный оплачиваемый отпуск",
+        12: "Основной",
+        13: "Ручной ввод",
+        14: "Служебная поездка",
+        15: "Командировка",
+        16: "Больничный",
+        17: "Мед осмотр",
+        18: "График отпусков",
+        19: "Отпуск на санаторно курортное лечение",
+        20: "Отгул",
+    }
+    fields = ["FIO", "Дата", "Начало", "Окончание", "Type"]
+    dates = ReportCard.objects.all().exclude(employee=None)
+    report_card_list = list()
+    for report_record in dates:
+        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
+    # Преобразуем QuerySet в DataFrame
+    df = pd.DataFrame.from_records(report_card_list, columns=fields)
+    df["Дата"] = pd.to_datetime(df["Дата"], format="%d.%m.%Y")
+    df["Начало"] = pd.to_datetime(df["Начало"], format="%H:%M:%S")
+    df["Окончание"] = pd.to_datetime(df["Окончание"], format="%H:%M:%S")
+    # print(df["Type"].unique())
+    df["Type"] = pd.to_numeric(df["Type"], errors='coerce').fillna(0).astype(int)
+    df['Тип'] = df['Type'].map(type_of_report)
+    # Сохраняем DataFrame в CSV-файл
+    df.to_csv('dates.csv', sep=';', index=False, encoding='utf-8', na_rep='')
 
 @app.task()
 def get_year_report(html_mode=True):
