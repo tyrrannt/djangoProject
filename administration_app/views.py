@@ -19,7 +19,8 @@ from contracts_app.models import Contract
 
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Counteragent
 from hrdepartment_app.models import ReportCard
-from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report
+from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report, \
+    save_report
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -452,6 +453,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 except Exception as e:
                     logger.error(f"Ошибка при получении прав групп: {e}")
             if request.GET.get('update') == '13':
-                get_year_report.delay()
+                save_report.delay()
 
         return super().get(request, *args, **kwargs)
