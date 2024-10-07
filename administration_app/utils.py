@@ -23,7 +23,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import mail
 from django.core.files.storage import FileSystemStorage
 from django.core.mail import EmailMessage, EmailMultiAlternatives
-from django.db.models import Q
+from django.db.models import Q, Model
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
@@ -1286,3 +1286,27 @@ def seconds_to_hhmm(seconds):
         return f"-{hours:3}:{minutes:02}"
     return f"{hours:3}:{minutes:02}"
 
+
+def export_persons_to_csv(file_path: str, model):
+    """
+        Эта функция экспортирует все записи из указанной модели в CSV-файл.
+
+        Аргументы:
+        file_path (str): Путь к файлу, куда будут экспортированы данные.
+        model (django.db.models.Model): Модель Django, из которой будут получены данные.
+
+        Возвращает:
+        None
+
+        Примечание:
+        Функция использует pandas для преобразования QuerySet в DataFrame и сохранения его в CSV-файл.
+        Если в DataFrame есть пропущенные значения, они будут заменены на пустую строку ('').
+        """
+    # Получаем все записи из модели model
+    dates = model.objects.all().values()
+
+    # Преобразуем QuerySet в DataFrame
+    df = pd.DataFrame.from_records(dates)
+
+    # Сохраняем DataFrame в CSV-файл
+    df.to_csv(file_path, sep=';', index=False, encoding='utf-8', na_rep='')

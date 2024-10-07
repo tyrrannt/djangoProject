@@ -21,7 +21,7 @@ from loguru import logger
 from administration_app.utils import (
     get_jsons_data_filter2,
     get_date_interval,
-    get_jsons_data_filter, process_group, adjust_time, process_group_year,
+    get_jsons_data_filter, process_group, adjust_time, process_group_year, export_persons_to_csv,
 )
 from contracts_app.models import Contract
 
@@ -472,6 +472,10 @@ def calc_diff(start, end):
     else:
         diff = end
     return diff
+
+@app.task()
+def save_report():
+    export_persons_to_csv('данные.csv', ReportCard)
 
 @app.task()
 def get_year_report(html_mode=True):

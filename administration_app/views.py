@@ -451,5 +451,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         json.dump(groups_dict, f, ensure_ascii=False, indent=4)
                 except Exception as e:
                     logger.error(f"Ошибка при получении прав групп: {e}")
+            if request.GET.get('update') == '13':
+                get_year_report.delay()
 
         return super().get(request, *args, **kwargs)
