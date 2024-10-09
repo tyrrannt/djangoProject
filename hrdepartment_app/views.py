@@ -10,6 +10,8 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     ListView,
     CreateView,
@@ -2705,6 +2707,74 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         return context
 
 
+class ReportCardDetailIAS(LoginRequiredMixin, ListView):
+    # Табель учета рабочего времени - таблица по месяцам
+    model = ReportCard
+    template_name = "hrdepartment_app/reportcard_detail_ias.html"
+
+    def post(self, request):  # ***** this method required! ******
+        self.object_list = self.get_queryset()
+        return HttpResponseRedirect(reverse("hrdepartment_app:reportcard_detail"))
+
+    def get_queryset(self):
+        queryset = ReportCard.objects.all()
+        return queryset
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        month = self.request.GET.get("report_month", None)
+        year = self.request.GET.get("report_year", None)
+
+        if month and year:
+            current_day = datetime.datetime(int(year), int(month), 1)
+        else:
+            current_day = datetime.datetime.today() + relativedelta(day=1)
+
+        first_day = current_day + relativedelta(day=1)
+        last_day = current_day + relativedelta(day=31)
+        # Выбираем пользователей, кто отмечался в течении интервала
+        report_obj_list = (
+            ReportCard.objects.filter(
+                Q(report_card_day__gte=first_day)
+                & Q(sign_report_card=True)
+                & Q(report_card_day__lte=last_day)
+            )
+            .values("employee")
+            .order_by("employee__last_name")
+        )
+        users_obj_list = []
+        for item in report_obj_list:
+            if item["employee"] not in users_obj_list:
+                users_obj_list.append(item["employee"])
+        users_obj_set = dict()
+        for item in users_obj_list:
+            users_obj_set[item] = DataBaseUser.objects.get(pk=item)
+
+        month_obj = get_month(current_day)
+        all_dict = dict()
+        norm_time = ProductionCalendar.objects.get(calendar_month=current_day)
+        # Итерируемся по списку сотрудников
+
+        month_dict, year_dict = get_year_interval(2020)
+        context["range"] = [item for item in range(1, 17)]
+        context["range2"] = [item for item in range(16, 32)]
+        context["year_dict"] = year_dict
+        context["month_dict"] = month_dict
+        context["month_obj"] = month_obj
+        context["first_day"] = first_day
+        context["norm_time"] = norm_time.get_norm_time()
+        context["norm_day"] = norm_time.number_working_days
+        context["holidays"] = norm_time.number_days_off_and_holidays
+        context["last_day"] = last_day
+        context["current_year"] = datetime.datetime.today().year
+        context["current_month"] = str(datetime.datetime.today().month)
+        context["tabel_month"] = first_day
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени (факт)"
+        return context
+
+
 class ReportCardDetail(LoginRequiredMixin, ListView):
     # Табель учета рабочего времени - таблица по месяцам
     model = ReportCard
@@ -3779,36 +3849,16 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
             instance.save()
         formset.save_m2m()  # Сохраняем связанные объекты, если есть
 
-    # def form_valid(self, form):
-    #     context = self.get_context_data()
-    #     report_cards = context['report_cards']
-    #     self.object = form.save()
-    #     if report_cards.is_valid():
-    #         instances = report_cards.save(commit=False)
-    #         for instance in instances:
-    #             instance.timesheet = self.object
-    #             instance.report_card_day = self.object.date
-    #             instance.save()
-    #             print(instance.report_card_day)
-    #             # instance.outfit_card.set(report_cards.cleaned_data['outfit_card'])
-    #     else:
-    #         print(report_cards.errors)
-    #     return super().form_valid(form)
-    # model = TimeSheet
-    # form_class = TimeSheetForm
-    # permission_required = "hrdepartment_app.change_timesheet"
-    #
-    # def form_valid(self, form):
-    #     # Обновляем табель
-    #     timesheet = form.save()
-    #     # Обновляем ReportCard для каждой строки в форме
-    #     report_cards = form.cleaned_data['report_cards']
-    #     for report_card_form in report_cards:
-    #         if report_card_form.is_valid() and report_card_form.cleaned_data:
-    #             report_card = report_card_form.save(commit=False)
-    #             report_card.timesheet = timesheet
-    #             report_card.save()
-    #     return super().form_valid(form)
+
+@require_POST
+@csrf_exempt
+def filter_outfit_cards(request):
+    time_sheets_place_id = request.POST.get('time_sheets_place')
+    if time_sheets_place_id:
+        outfit_cards = OutfitCard.objects.filter(outfit_card_place=time_sheets_place_id)
+        data = [{'id': oc.pk, 'name': oc.outfit_card_number} for oc in outfit_cards]
+        return JsonResponse(data, safe=False)
+    return JsonResponse([], safe=False)
 
 
 class TimeSheetDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
@@ -3865,6 +3915,11 @@ class OutfitCardUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVi
     form_class = OutfitCardForm
     success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
     permission_required = "hrdepartment_app.change_outfitcard"
+
+    def get_form_kwargs(self):
+        kwargs = super(OutfitCardUpdateView, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     # def test_func(self):
     #     # Проверка, что текущий пользователь является автором карты-наряда

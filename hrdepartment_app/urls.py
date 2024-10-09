@@ -16,7 +16,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed, CreatingTeamSetNumber, ExpensesList, expenses_update, \
     ReportCardDetailYear, ReportCardDetailYearXLS, TimeSheetCreateView, TimeSheetDetailView, TimeSheetUpdateView, \
     TimeSheetDeleteView, TimeSheetListView, OutfitCardListView, OutfitCardCreateView, OutfitCardDetailView, \
-    OutfitCardUpdateView, OutfitCardDeleteView
+    OutfitCardUpdateView, OutfitCardDeleteView, ReportCardDetailIAS, filter_outfit_cards
 
 app_name = 'hrdepartment_app'
 
@@ -62,6 +62,7 @@ urlpatterns = [
     path('report/admin/', ReportCardListAdmin.as_view(), name='reportcard_listadmin'),
     path('report/detail/', ReportCardDetail.as_view(), name='reportcard_detail'),
     path('report/fact/', ReportCardDetailFact.as_view(), name='reportcard_detail_fact'),
+    path('report/ias/', ReportCardDetailIAS.as_view(), name='reportcard_detail_ias'),
     path('report/year/', ReportCardDetailYear.as_view(), name='reportcard_detail_year'),
     path('report/year-xls/', ReportCardDetailYearXLS.as_view(), name='reportcard_detail_year_xls'),
     path('report/<int:pk>/update/', ReportCardUpdate.as_view(), name='reportcard_update'),
@@ -88,6 +89,7 @@ urlpatterns = [
     path('timesheet/<int:pk>/update/', TimeSheetUpdateView.as_view(), name='timesheet_update'),
     path('timesheet/<int:pk>/delete/', TimeSheetDeleteView.as_view(), name='timesheet_delete'),
     path('timesheet/', TimeSheetListView.as_view(), name='timesheet_list'),  # Добавляем маршрут для списка табелей
+    path('timesheet/filter-outfit-cards/', filter_outfit_cards, name='filter_outfit_cards'),
     path('outfit_cards/', OutfitCardListView.as_view(), name='outfit_card_list'),
     path('outfit_cards/create/', OutfitCardCreateView.as_view(), name='outfit_card_add'),
     path('outfit_cards/<int:pk>/', OutfitCardDetailView.as_view(), name='outfit_card'),

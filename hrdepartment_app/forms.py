@@ -1401,7 +1401,7 @@ class TimeSheetForm(forms.ModelForm):
 
 class ReportCardForm(forms.ModelForm):
     outfit_card = forms.ModelMultipleChoiceField(
-        queryset=OutfitCard.objects.all(),
+        queryset=OutfitCard.objects.none(),
         widget=forms.SelectMultiple(attrs={"class": "form-select", "data-plugin-selectTwo": True, "multiple": True}),
         required=False,
         label="Карта-наряд"
@@ -1438,7 +1438,7 @@ class OutfitCardForm(forms.ModelForm):
     class Meta:
         model = OutfitCard
         fields = ['outfit_card_date', 'outfit_card_number', 'employee', 'outfit_card_place',
-                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes', 'scan_document']
+                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes', 'scan_document', 'outfit_card_date_end']
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 4}),
         }
@@ -1459,3 +1459,9 @@ class OutfitCardForm(forms.ModelForm):
                 self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.filter(pk=item[2])
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+    def clean(self):
+        cleaned_data = super(OutfitCardForm, self).clean()
+        if cleaned_data['outfit_card_date_end']:
+            if cleaned_data['outfit_card_date'] > cleaned_data['outfit_card_date_end']:
+                raise ValidationError("Дата окончания должна быть больше чем дата начала")

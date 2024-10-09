@@ -54,6 +54,35 @@
         });
     </script>
 
+    <script>
+        $(document).ready(function () {
+            $('#id_time_sheets_place').change(function () {
+                var time_sheets_place_id = $(this).val();
+                $.ajax({
+                    url: "{% url 'hrdepartment_app:filter_outfit_cards' %}",
+                    type: "POST",
+                    data: {
+                        'time_sheets_place': time_sheets_place_id,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function (data) {
+                        // Обновляем все списки outfit_card, которые соответствуют шаблону
+                        $('select[id^="id_report_cards-"][id$="-outfit_card"]').each(function () {
+                            var outfit_card_select = $(this);
+                            outfit_card_select.empty();
+                            $.each(data, function (index, outfit_card) {
+                                outfit_card_select.append($('<option>', {
+                                    value: outfit_card.id,
+                                    text: outfit_card.name
+                                }));
+                            });
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+
 {% endblock %}
 
 {% block title %}
@@ -91,9 +120,10 @@
                 .mobile-only {
                     display: inline;
                 }
+
                 .desktop-only {
-                display: none;
-            }
+                    display: none;
+                }
             }
 
             th:nth-child(1), td:nth-child(1) {
@@ -220,12 +250,18 @@
                     {% for form in reportcard_formset %}
                         <tr>
                             <td><label for="id_employee" class="mobile-only">ФИО:</label>{{ form.employee }}</td>
-                            <td><label for="id_start_time" class="mobile-only">Время прихода:</label>{{ form.start_time }}</td>
-                            <td><label for="id_end_time" class="mobile-only">Время ухода:</label>{{ form.end_time }}</td>
-                            <td><label for="id_lunch_time" class="mobile-only">Обед (мин.):</label>{{ form.lunch_time }}</td>
-                            <td><label for="id_flight_hours" class="mobile-only">Летные часы:</label>{{ form.flight_hours }}</td>
-                            <td><label for="id_outfit_card" class="mobile-only">Карты-наряда:</label>{{ form.outfit_card }}</td>
-                            <td><label for="id_additional_work" class="mobile-only">Дополнительные работы:</label>{{ form.additional_work }}</td>
+                            <td><label for="id_start_time" class="mobile-only">Время
+                                прихода:</label>{{ form.start_time }}</td>
+                            <td><label for="id_end_time" class="mobile-only">Время ухода:</label>{{ form.end_time }}
+                            </td>
+                            <td><label for="id_lunch_time" class="mobile-only">Обед (мин.):</label>{{ form.lunch_time }}
+                            </td>
+                            <td><label for="id_flight_hours" class="mobile-only">Летные
+                                часы:</label>{{ form.flight_hours }}</td>
+                            <td><label for="id_outfit_card"
+                                       class="mobile-only">Карты-наряда:</label>{{ form.outfit_card }}</td>
+                            <td><label for="id_additional_work" class="mobile-only">Дополнительные
+                                работы:</label>{{ form.additional_work }}</td>
                             <td><label for="id_id" class="mobile-only"></label>{{ form.id }}</td>
                         </tr>
                     {% endfor %}
@@ -234,5 +270,6 @@
                 <button type="button" class="btn btn-primary" id="add-reportcard">Добавить</button>
         </form>       <!-- end: page -->
     </section>
+
     <!-- end: page -->
 {% endblock %}

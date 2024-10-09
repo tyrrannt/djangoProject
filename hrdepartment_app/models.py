@@ -2080,6 +2080,7 @@ class OutfitCard(models.Model):
     periodic_work = models.ManyToManyField(PeriodicWork, verbose_name="Периодические работы",
                                            related_name="outfit_card_periodic", blank=True)
     other_work = models.CharField(verbose_name="Другие работы", max_length=200, default="", blank=True)
+    outfit_card_date_end = models.DateField(verbose_name="Дата окончания", null=True, blank=True)
     scan_document = models.FileField(verbose_name="Скан документа", upload_to=outfit_directory_path, null=True, blank=True)
     notes = models.TextField(verbose_name="Примечания", blank=True)
 

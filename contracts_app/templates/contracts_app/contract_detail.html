@@ -5,14 +5,12 @@
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
-    <!-- This snippet is used in production (included from viewer.html) -->
     <link rel="resource" type="application/l10n" href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
 {% endblock %}
 
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-{#    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>#}
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>
@@ -47,7 +45,7 @@
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
-                    <input id="id_contract_number" value="{{ object.doc_file.url }}" hidden="true"> 
+                    <input id="id_contract_number" value="{{ object.doc_file.url }}" hidden="true">
 {#                    <section class="toggle active showmobile" >#}
 {#                        <label>Мобильная версия</label>#}
 {#                        <div class="toggle-content">#}
@@ -86,7 +84,7 @@
 {#                                            просмотреть его: <a#}
 {#                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>#}
 {#                                        </embed>#}
-                                        
+
 {#                                    </object>#}
                                 {% endif %}
                             </div>
@@ -323,7 +321,7 @@
                                 </div>
                             </div>
                             <code>{{ object.access }}</code>
-                        
+
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row">

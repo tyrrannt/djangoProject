@@ -1,0 +1,174 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+        <style>
+            .table-ecommerce-simple {
+                overflow-x: auto;
+                position: relative;
+            }
+
+            .table-ecommerce-simple th {
+                position: -webkit-sticky;
+                position: sticky;
+                top: -3px;
+            / / при нуле в chrome остаётся странный зазор z-index: 2;
+            }
+        </style>
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+                <div class="card card-modern">
+                    <form action="{% url 'hrdepartment_app:reportcard_detail' %}" method="get">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                <select class="form-control select-style-1 filter-by" name="report_month"
+                                        id="id_report_month">
+                                    {% for key, value in month_dict.items %}
+                                        <option value="{{ key }}"
+                                                {% if current_month == key %}selected{% endif %}> {{ value }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                <select class="form-control select-style-1 filter-by" name="report_year"
+                                        id="id_report_year">
+                                    {% for key, value in year_dict.items %}
+                                        <option value="{{ key }}"
+                                                {% if current_year == key %}selected{% endif %}> {{ value }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-12 col-md-6 col-lg-3">
+                                <input type="submit"
+                                       class="submit btn btn-success btn-px-4 py-3 border font-weight-semibold text-color-dark text-3"
+                                       value="Сформировать"/>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <h5>Табель учета рабочего времени за {{ tabel_month | date:"M Y" }} г. (Норма
+                            дней: {{ norm_day }}; Норма часов: {{ norm_time }}).
+                            <h5>Сокращения: <span>Я&nbsp;-&nbsp;Явка; СП&nbsp;-&nbsp;Служебная поездка; К&nbsp;-&nbsp;Командировка; О&nbsp;-&nbsp;Отпуск; Б&nbsp;-&nbsp;Больничный; М&nbsp;-&nbsp;Мед осмотр; В&nbsp;-&nbsp;Выходной; П&nbsp;-&nbsp;Праздник; </span><span
+                                    style="color: #ff0000">Н&nbsp;-&nbsp;Отсутствие.</span></h5>
+                            <div id="id_tables" class="table-responsive">
+                                <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
+                                       style="min-width: 1000px; display: block; height: 700px; overflow: auto;">
+                                    <tbody>
+                                    <tr>
+                                        <th style="border-style:solid; border-width: 1px;width:144pt;">
+                                            ФИО
+                                        </th>
+                                        {% for key, value in month_obj %}
+                                            <th style="border-style:solid; border-width: 1px;height:48.75pt;width:18pt; background-color: #ffffff">
+                                                {{ key | date:"d" }}
+                                            </th>
+                                        {% endfor %}
+                                        <th style="border-style:solid; border-width: 1px;width:26pt;">
+                                            Итого дней
+                                        </th>
+                                        <th style="border-style:solid; border-width: 1px;width:36pt;">
+                                            Итого часов
+                                        </th>
+                                        <th style="border-style:solid; border-width: 1px;width:37pt;">
+                                            Неявки, дней (часов)
+                                        </th>
+                                        <th style="border-style:solid; border-width: 1px;width:63pt;">
+                                            Количество ВХ и ПР дней
+                                        </th>
+                                    </tr>
+                                    {% for key, value in all_dict.items %}
+                                        <tr>
+                                            <td style="border-style:solid; border-width: 1px;width:144pt;  background-color: #ffffff"
+                                                rowspan="2">
+                                                {{ key }}
+                                            </td>
+                                            {% for item1, item2, item3 in value.dict_count %}
+                                                <td style="{% if item2 == 'В' %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;">
+                                                    {{ item2 }}
+                                                </td>
+                                            {% endfor %}
+                                            <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
+                                                rowspan="2">
+                                                {{ value.days_count }}
+                                            </td>
+                                            <td style="{% if value.vacation_time < norm_time %}background-color:#ff0116;{% else %}background-color:#D9D9D9;{% endif %}border-style:solid; border-width: 1px;"
+                                                rowspan="2">
+                                                {{ value.time_count_hour | safe }}
+                                            </td>
+                                            <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
+                                                style="border-left-style:none;">
+                                                {{ value.absences }}
+                                            </td>
+                                            <td style="background-color:#D9D9D9;border-style:solid; border-width: 1px;"
+                                                rowspan="2">
+                                                {{ value.holidays }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            {% for item1, item2, item3 in value.dict_count %}
+                                                <td style="border-style:solid; border-width: 1px;height:11.25pt;">
+                                                    {{ item3 }}
+                                                </td>
+                                            {% endfor %}
+
+                                            <td style="border-style:solid; border-width: 1px;">
+                                                {{ value.absences | multiply:8 }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                                <hr class="solid mt-5 opacity-4">
+                            </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+{% endblock %}
+
+{% block custome_script %}
+    {#    <script>#}
+    {#        $(document).ready(function () {#}
+    {#            var table = $('#datatable-ecommerce-list').DataTable({#}
+    {#                "scrollX": true,#}
+    {#                "sDom": 'T<"clear">lfrtip',#}
+    {#                "ajax": "{% url 'hrdepartment_app:reportcard_list' %}",#}
+    {#                "language": {#}
+    {#                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"#}
+    {#                },#}
+    {#                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {#}
+    {#                    var id = aData['pk'];#}
+    {#                    $(nRow).attr("href", id + '/update/');#}
+    {#                    $(nRow).css('cursor', 'pointer');#}
+    {#                    $(nRow).click(function () {#}
+    {#                        window.location = $(this).attr('href');#}
+    {#                        return false;#}
+    {#                    });#}
+    {#                },#}
+    {#                "columns": [#}
+    {#                    {"data": "report_card_day"},#}
+    {#                    {"data": "employee"},#}
+    {#                    {"data": "start_time"},#}
+    {#                    {"data": "end_time"},#}
+    {#                ],#}
+    {#            });#}
+    {#        });#}
+    {#    </script>#}
+{% endblock %}
