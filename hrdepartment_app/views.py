@@ -2213,6 +2213,10 @@ class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVi
     permission_required = "hrdepartment_app.view_documentsorder"
 
     def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
         try:
             if request.user.is_anonymous:
                 return redirect(reverse('customers_app:login'))
@@ -2230,7 +2234,8 @@ class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVi
             # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
             url_match = reverse_lazy("hrdepartment_app:order_list")
             return redirect(url_match)
-        return super(DocumentsOrderDetail, self).dispatch(request, *args, **kwargs)
+
+        return response
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)

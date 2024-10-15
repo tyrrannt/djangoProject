@@ -1649,27 +1649,27 @@ def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
             DocumentsOrder.objects.filter(pk=instance.pk).update(
                 doc_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{filename}"
             )
-        if scanname != scan_name:
-            try:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR,
-                        "media",
-                        f"docs/ORD/{date_doc.year}/{date_doc.month}",
-                        scan_name,
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR,
-                        "media",
-                        f"docs/ORD/{date_doc.year}/{date_doc.month}",
-                        scanname,
-                    ),
-                )
-            except Exception as _ex0:
-                logger.error(f"Ошибка переименования файла: {_ex0}")
-            DocumentsOrder.objects.filter(pk=instance.pk).update(
-                scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
+        # if scanname != scan_name:
+        try:
+            pathlib.Path.rename(
+                pathlib.Path.joinpath(
+                    BASE_DIR,
+                    "media",
+                    f"docs/ORD/{date_doc.year}/{date_doc.month}",
+                    scan_name,
+                ),
+                pathlib.Path.joinpath(
+                    BASE_DIR,
+                    "media",
+                    f"docs/ORD/{date_doc.year}/{date_doc.month}",
+                    scanname,
+                ),
             )
+        except Exception as _ex0:
+            logger.error(f"Ошибка переименования файла: {_ex0}")
+        DocumentsOrder.objects.filter(pk=instance.pk).update(
+            scan_file=f"docs/ORD/{date_doc.year}/{date_doc.month}/{scanname}"
+        )
 
 
 class CreatingTeam(models.Model):

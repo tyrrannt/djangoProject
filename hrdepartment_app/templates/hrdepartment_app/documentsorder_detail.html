@@ -188,28 +188,34 @@
                                     <div class="col-lg-4 text-black-50 mt-2">
                                         <label for="id_scan_file">Скан приказа</label>
                                         {% if object.scan_file %}
-                                            <span id="id_scan_file"><a href="{{ object.scan_file.url }}"><img
+                                            <span id="id_scan_file"><a href="{{ object.scan_file.url }}"
+                                                                       target="_blank"><img
                                                     src="{% static 'Extension/pdf.png' %}"></a></span>
                                         {% endif %}
                                     </div>
                                     <div class="col-lg-4 text-black-50 mt-2">
-                                        <button class="btn btn-warning mt-2" onclick="printPDF()">Распечатать приказ</button>
-                                        <iframe id="pdfFrame" src="{{ object.scan_file.url }}" hidden="hidden"></iframe>
-                                        <script>
-                                            function printPDF() {
-                                                var iframe = document.getElementById('pdfFrame');
-                                                if (iframe.contentWindow) {
-                                                    iframe.contentWindow.print();
-                                                } else {
-                                                    console.error("PDF is not loaded yet.");
+                                        <button class="btn btn-warning mt-2" onclick="printPDF()">Распечатать приказ
+                                        </button>
+                                        {% if object.scan_file %}
+                                            <iframe id="pdfFrame" src="{{ object.scan_file.url }}"
+                                                    hidden="hidden"></iframe>
+                                            <script>
+                                                function printPDF() {
+                                                    var iframe = document.getElementById('pdfFrame');
+                                                    if (iframe.contentWindow) {
+                                                        iframe.contentWindow.print();
+                                                    } else {
+                                                        console.error("PDF is not loaded yet.");
+                                                    }
                                                 }
-                                            }
-                                            // Проверка загрузки PDF
-                                            var iframe = document.getElementById('pdfFrame');
-                                            iframe.onload = function () {
-                                                console.log("PDF loaded successfully.");
-                                            };
-                                        </script>
+
+                                                // Проверка загрузки PDF
+                                                var iframe = document.getElementById('pdfFrame');
+                                                iframe.onload = function () {
+                                                    console.log("PDF loaded successfully.");
+                                                };
+                                            </script>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <div class="row text">
