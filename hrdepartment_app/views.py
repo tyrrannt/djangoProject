@@ -3854,6 +3854,12 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
             instance.save()
         formset.save_m2m()  # Сохраняем связанные объекты, если есть
 
+    def form_invalid(self, form):
+        return super(TimeSheetUpdateView, self).form_invalid(form)
+        
+
+
+
 
 @require_POST
 @csrf_exempt
