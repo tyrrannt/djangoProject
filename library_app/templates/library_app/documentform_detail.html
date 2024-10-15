@@ -63,32 +63,33 @@
                                         <div class="form-group col mb-3">
                                             <div class="row text">
                                                 {% if object.draft_visible %}
-                                                <div class="col-sm-12 text-black-50 mt-2 pb-4">
-                                                    <label for="id_draft">Файл бланка: </label>
-                                                    {% if object.draft %}
-                                                        <span id="id_draft"><a href="{{ object.draft.url }}"
-                                                                               target="_blank"><img
-                                                                src="{% static 'Extension/docx.png' %}"></a></span>
-                                                    {% endif %}
-                                                </div>
-                                                <hr>
+                                                    <div class="col-sm-12 text-black-50 mt-2 pb-4">
+                                                        <label for="id_draft">Файл бланка: </label>
+                                                        {% if object.draft %}
+                                                            <span id="id_draft"><a href="{{ object.draft.url }}"
+                                                                                   target="_blank"><img
+                                                                    src="{% static 'Extension/docx.png' %}"></a></span>
+                                                        {% endif %}
+                                                    </div>
                                                 {% endif %}
-                                                <div class="col-sm-12 text-black-50 mt-2 pb-4">
-                                                    <label for="id_scan">Скан бланка: </label>
-                                                    {% if object.scan %}
+                                                {% if object.scan %}
+                                                    <hr>
+                                                    <div class="col-sm-12 text-black-50 mt-2 pb-4">
+                                                        <label for="id_scan">Скан бланка: </label>
                                                         <span id="id_scan"><a
                                                                 href="{{ object.scan.url }}" target="_blank"><img
                                                                 src="{% static 'Extension/pdf.png' %}"></a></span>
-                                                    {% endif %}
-                                                </div>
-                                                <div class="col-sm-12 text-black-50 mt-2 pb-4">
-                                                    <label for="id_scan">Образец заполнения: </label>
-                                                    {% if object.sample %}
+                                                    </div>
+                                                {% endif %}
+                                                {% if object.sample %}
+                                                    <hr>
+                                                    <div class="col-sm-12 text-black-50 mt-2 pb-4">
+                                                        <label for="id_scan">Образец заполнения: </label>
                                                         <span id="id_scan"><a
                                                                 href="{{ object.sample.url }}" target="_blank"><img
                                                                 src="{% static 'Extension/pdf.png' %}"></a></span>
-                                                    {% endif %}
-                                                </div>                                            
+                                                    </div>
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
