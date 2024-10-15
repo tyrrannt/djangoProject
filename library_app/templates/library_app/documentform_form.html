@@ -66,11 +66,18 @@
                         </div>
 
                         <div class="row text">
-                            <div class="col-sm-12 text-black-50 mt-3">
+                            <div class="col-sm-12 col-md-10 text-black-50 mt-3">
                                 <label class="col-sm-12 control-label mb-0"
                                        for="id_draft">Черновик:</label>
                                 <div class="col-sm-12">
                                     {{ form.draft }}
+                                </div>
+                            </div>
+                            <div class="col-sm-12 col-md-2 text-black-50 mt-3">
+                                <label class="col-sm-12 control-label mb-0"
+                                       for="id_draft_visible">Показывать черновик:</label>
+                                <div class="col-sm-12">
+                                    {{ form.draft_visible }}
                                 </div>
                             </div>
                         </div>

@@ -62,7 +62,7 @@
                                     <div class="form-row">
                                         <div class="form-group col mb-3">
                                             <div class="row text">
-                                                {% if user|has_group:"Бланки документов" %}
+                                                {% if object.draft_visible %}
                                                 <div class="col-sm-12 text-black-50 mt-2 pb-4">
                                                     <label for="id_draft">Файл бланка: </label>
                                                     {% if object.draft %}

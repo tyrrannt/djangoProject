@@ -10,6 +10,8 @@ from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import (
@@ -239,6 +241,7 @@ class MedicalExaminationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateV
         # return reverse_lazy('hrdepartment_app:', {'pk': self.object.pk})
 
 
+@method_decorator(never_cache, name='dispatch')
 class MedicalExaminationUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Medical
     form_class = MedicalExaminationUpdateForm
@@ -2207,16 +2210,13 @@ class DocumentsOrderAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView)
         return super().get(request, *args, **kwargs)
 
 
+@method_decorator(never_cache, name='dispatch')
 class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     # Приказ - просмотр
     model = DocumentsOrder
     permission_required = "hrdepartment_app.view_documentsorder"
 
     def dispatch(self, request, *args, **kwargs):
-        response = super().dispatch(request, *args, **kwargs)
-        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response['Pragma'] = 'no-cache'
-        response['Expires'] = '0'
         try:
             if request.user.is_anonymous:
                 return redirect(reverse('customers_app:login'))
@@ -2235,7 +2235,7 @@ class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVi
             url_match = reverse_lazy("hrdepartment_app:order_list")
             return redirect(url_match)
 
-        return response
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
@@ -3111,6 +3111,7 @@ class ProvisionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         return kwargs
 
 
+@method_decorator(never_cache, name='dispatch')
 class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
     Положения - просмотр
@@ -3228,6 +3229,7 @@ class GuidanceDocumentsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateVi
         return kwargs
 
 
+@method_decorator(never_cache, name='dispatch')
 class GuidanceDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
     Руководящий документ - просмотр
@@ -3402,6 +3404,7 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
+@method_decorator(never_cache, name='dispatch')
 class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
     Приказы о старших бригад - просмотр
@@ -3726,7 +3729,8 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=15)(self.request.POST)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=15)(
+                self.request.POST)
         else:
             data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=15)()
         return data
@@ -3812,9 +3816,11 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(self.request.POST, instance=self.object)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(
+                self.request.POST, instance=self.object)
         else:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(instance=self.object)
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(
+                instance=self.object)
         return data
 
     def form_valid(self, form):
@@ -3850,15 +3856,12 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
             # Внесите изменения в поле, которое не присутствует в форме
             instance.report_card_day = self.object.date
             instance.sign_report_card = True
-            instance.place_report_card.set([self.object.time_sheets_place.pk,])
+            instance.place_report_card.set([self.object.time_sheets_place.pk, ])
             instance.save()
         formset.save_m2m()  # Сохраняем связанные объекты, если есть
 
     def form_invalid(self, form):
         return super(TimeSheetUpdateView, self).form_invalid(form)
-        
-
-
 
 
 @require_POST
@@ -3909,6 +3912,7 @@ class OutfitCardReportView(PermissionRequiredMixin, LoginRequiredMixin):
         # context['outfit_cards'] = OutfitCard.objects.filter(employee=self.request.user)
         return context
 
+
 # Журнал карт-наряда
 class OutfitCardCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = OutfitCard
@@ -3921,7 +3925,9 @@ class OutfitCardCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVi
         kwargs['user'] = self.request.user
         return kwargs
 
-class OutfitCardUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView): #UserPassesTestMixin, UpdateView):
+
+class OutfitCardUpdateView(PermissionRequiredMixin, LoginRequiredMixin,
+                           UpdateView):  # UserPassesTestMixin, UpdateView):
     model = OutfitCard
     form_class = OutfitCardForm
     success_url = reverse_lazy('hrdepartment_app:outfit_card_list')
@@ -3936,9 +3942,11 @@ class OutfitCardUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVi
     #     # Проверка, что текущий пользователь является автором карты-наряда
     #     return self.request.user == self.get_object().employee
 
+
 class OutfitCardDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = OutfitCard
     permission_required = "hrdepartment_app.view_outfitcard"
+
 
 class OutfitCardDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = OutfitCard
@@ -3948,6 +3956,7 @@ class OutfitCardDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteVi
     # def test_func(self):
     #     # Проверка, что текущий пользователь является автором карты-наряда
     #     return self.request.user == self.get_object().employee
+
 
 class OutfitCardListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = OutfitCard

@@ -1,3 +1,5 @@
+from dataclasses import fields
+
 from django import forms
 from django_ckeditor_5.widgets import CKEditor5Widget
 
@@ -65,7 +67,7 @@ class DocumentFormAddForm(forms.ModelForm):
 
     class Meta:
         model = DocumentForm
-        fields = ("title", "draft", "scan", "sample", "division", "employee", "executor")
+        fields = ("title", "draft", "draft_visible", "scan", "sample", "division", "employee", "executor")
 
     def __init__(self, *args, **kwargs):
         """
@@ -90,6 +92,15 @@ class DocumentFormAddForm(forms.ModelForm):
                 "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
             }
         )
+        self.fields["draft"].widget.attrs.update(
+            {"accept": ".doc, .docx, .xls, .xlsx"}
+        )
+        self.fields["scan"].widget.attrs.update(
+            {"accept": ".pdf"}
+        )
+        self.fields["sample"].widget.attrs.update(
+            {"accept": ".jpg, .jpeg, .png, .pdf"}
+        )
         for field in self.fields:
             if field not in ["division", "employee"]:
                 make_custom_field(self.fields[field])
@@ -110,11 +121,20 @@ class DocumentFormUpdateForm(forms.ModelForm):
 
     class Meta:
         model = DocumentForm
-        fields = ("title", "draft", "scan", "sample", "division", "employee")
+        fields = ("title", "draft", "draft_visible", "scan", "sample", "division", "employee")
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super(DocumentFormUpdateForm, self).__init__(*args, **kwargs)
         self.fields["division"].queryset = Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение')
+        self.fields["draft"].widget.attrs.update(
+            {"accept": ".doc, .docx, .xls, .xlsx"}
+        )
+        self.fields["scan"].widget.attrs.update(
+            {"accept": ".pdf"}
+        )
+        self.fields["sample"].widget.attrs.update(
+            {"accept": ".jpg, .jpeg, .png, .pdf"}
+        )
         for field in self.fields:
             make_custom_field(self.fields[field])

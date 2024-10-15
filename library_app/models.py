@@ -19,17 +19,22 @@ from djangoProject.settings import BASE_DIR
 
 
 def draft_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
-    return f'blank/draft/{filename}'
+    # Получаем расширение файла
+    draft_ext = filename.split('.')[-1]
+    # Формируем новое название файла
+    filename_draft = f'BLK-{instance.ref_key}-DRAFT.{draft_ext}'
+    return f'blank/draft/{filename_draft}'
 
 
 def scan_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
-    return f'blank/scan/{filename}'
+    scan_ext = filename.split('.')[-1]
+    filename_scan = f'BLK-{instance.ref_key}-SCAN.{scan_ext}'
+    return f'blank/scan/{filename_scan}'
 
 def sample_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
-    return f'blank/sample/{filename}'
+    sample_ext = filename.split('.')[-1]
+    filename_sample = f'BLK-{instance.ref_key}-SAMPLE.{sample_ext}'
+    return f'blank/sample/{filename_sample}'
 
 
 class HashTag(models.Model):
@@ -89,6 +94,7 @@ class DocumentForm(models.Model):
     ref_key = models.UUIDField(verbose_name='Уникальный номер', default=uuid.uuid4, unique=True)
     title = models.CharField(verbose_name='Наименование', max_length=200, default='Бланк ')
     draft = models.FileField(verbose_name='Черновик', upload_to=draft_directory_path, blank=True)
+    draft_visible = models.BooleanField(verbose_name='Показывать черновик', default=False)
     scan = models.FileField(verbose_name='Скан копия', upload_to=scan_directory_path, blank=True)
     sample = models.FileField(verbose_name='Образец заполнения', upload_to=sample_directory_path, blank=True)
     division = models.ManyToManyField(Division, blank=True, verbose_name='Подразделение')
@@ -111,53 +117,53 @@ class DocumentForm(models.Model):
         return self.title
 
 
-@receiver(post_save, sender=DocumentForm)
-def rename_file_name(sender, instance: DocumentForm, **kwargs):
-    try:
-        change = 0
-        if instance.draft:
-            # Получаем имя сохраненного файла
-            draft_file_name = pathlib.Path(instance.draft.name).name
-            # Получаем путь к файлу
-            draft_path_name = pathlib.Path(instance.draft.name).parent
-            # Получаем расширение файла
-            draft_ext = draft_file_name.split('.')[-1]
-            filename_draft = f'BLK-{instance.ref_key}-DRAFT.{draft_ext}'
-            if draft_file_name != filename_draft:
-                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, draft_file_name),
-                                    pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, filename_draft))
-                instance.draft = f'{draft_path_name}/{filename_draft}'
-                change = 1
-
-        if instance.scan:
-            # Получаем имя сохраненного файла
-            scan_file_name = pathlib.Path(instance.scan.name).name
-            # Получаем путь к файлу
-            scan_path_name = pathlib.Path(instance.scan.name).parent
-            # Получаем расширение файла
-            scan_ext = scan_file_name.split('.')[-1]
-            filename_scan = f'BLK-{instance.ref_key}-SCAN.pdf'
-            if scan_file_name != filename_scan:
-                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, scan_file_name),
-                                    pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, filename_scan))
-                instance.scan = f'{scan_path_name}/{filename_scan}'
-                change = 1
-
-        if instance.sample:
-            # Получаем имя сохраненного файла
-            sample_file_name = pathlib.Path(instance.sample.name).name
-            # Получаем путь к файлу
-            sample_path_name = pathlib.Path(instance.sample.name).parent
-            # Получаем расширение файла
-            sample_ext = sample_file_name.split('.')[-1]
-            filename_sample = f'BLK-{instance.ref_key}-SAMPLE.pdf'
-            if sample_file_name != filename_sample:
-                pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', sample_path_name, sample_file_name),
-                                    pathlib.Path.joinpath(BASE_DIR, 'media', sample_path_name, filename_sample))
-                instance.sample = f'{sample_path_name}/{filename_sample}'
-                change = 1
-
-        if change == 1:
-            instance.save()
-    except Exception as _ex:
-        logger.exception(f'Ошибка при переименовании файла {_ex}')
+# @receiver(post_save, sender=DocumentForm)
+# def rename_file_name(sender, instance: DocumentForm, **kwargs):
+#     try:
+#         change = 0
+#         # if instance.draft:
+#         #     # Получаем имя сохраненного файла
+#         #     draft_file_name = pathlib.Path(instance.draft.name).name
+#         #     # Получаем путь к файлу
+#         #     draft_path_name = pathlib.Path(instance.draft.name).parent
+#         #     # Получаем расширение файла
+#         #     draft_ext = draft_file_name.split('.')[-1]
+#         #     filename_draft = f'BLK-{instance.ref_key}-DRAFT.{draft_ext}'
+#         #     if draft_file_name != filename_draft:
+#         #         pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, draft_file_name),
+#         #                             pathlib.Path.joinpath(BASE_DIR, 'media', draft_path_name, filename_draft))
+#         #         instance.draft = f'{draft_path_name}/{filename_draft}'
+#         #         change = 1
+#
+#         if instance.scan:
+#             # Получаем имя сохраненного файла
+#             scan_file_name = pathlib.Path(instance.scan.name).name
+#             # Получаем путь к файлу
+#             scan_path_name = pathlib.Path(instance.scan.name).parent
+#             # Получаем расширение файла
+#             scan_ext = scan_file_name.split('.')[-1]
+#             filename_scan = f'BLK-{instance.ref_key}-SCAN.pdf'
+#             if scan_file_name != filename_scan:
+#                 pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, scan_file_name),
+#                                     pathlib.Path.joinpath(BASE_DIR, 'media', scan_path_name, filename_scan))
+#                 instance.scan = f'{scan_path_name}/{filename_scan}'
+#                 change = 1
+#
+#         if instance.sample:
+#             # Получаем имя сохраненного файла
+#             sample_file_name = pathlib.Path(instance.sample.name).name
+#             # Получаем путь к файлу
+#             sample_path_name = pathlib.Path(instance.sample.name).parent
+#             # Получаем расширение файла
+#             sample_ext = sample_file_name.split('.')[-1]
+#             filename_sample = f'BLK-{instance.ref_key}-SAMPLE.pdf'
+#             if sample_file_name != filename_sample:
+#                 pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', sample_path_name, sample_file_name),
+#                                     pathlib.Path.joinpath(BASE_DIR, 'media', sample_path_name, filename_sample))
+#                 instance.sample = f'{sample_path_name}/{filename_sample}'
+#                 change = 1
+#
+#         if change == 1:
+#             instance.save()
+#     except Exception as _ex:
+#         logger.exception(f'Ошибка при переименовании файла {_ex}')

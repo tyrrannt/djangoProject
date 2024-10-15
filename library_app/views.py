@@ -4,6 +4,8 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from loguru import logger
 
@@ -123,7 +125,7 @@ class DocumentFormList(LoginRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
-
+@method_decorator(never_cache, name='dispatch')
 class DocumentFormItem(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = DocumentForm
     permission_required = "library_app.view_documentform"
