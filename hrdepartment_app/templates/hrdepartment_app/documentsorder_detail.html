@@ -180,17 +180,13 @@
                                     <div class="col-lg-4 text-black-50 mt-2">
                                         <label for="id_doc_file">Файл приказа</label>
                                         {% if object.doc_file %}
-                                            <span id="id_doc_file"><a href="{{ object.doc_file.url }}"
-                                                                      target="_blank"><img
-                                                    src="{% static 'Extension/docx.png' %}"></a></span>
+                                            <span id="id_doc_file"><a href="{{ object.doc_file.url }}" target="_blank"><img src="{% static 'Extension/docx.png' %}"></a></span>
                                         {% endif %}
                                     </div>
                                     <div class="col-lg-4 text-black-50 mt-2">
                                         <label for="id_scan_file">Скан приказа</label>
                                         {% if object.scan_file %}
-                                            <span id="id_scan_file"><a href="{{ object.scan_file.url }}"
-                                                                       target="_blank"><img
-                                                    src="{% static 'Extension/pdf.png' %}"></a></span>
+                                            <span id="id_scan_file"><a href="{{ object.scan_file.url }}" target="_blank"><img src="{% static 'Extension/pdf.png' %}"></a></span>
                                         {% endif %}
                                     </div>
                                     <div class="col-lg-4 text-black-50 mt-2">
