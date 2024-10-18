@@ -11,7 +11,7 @@ from administration_app.utils import (
     transliterate,
     timedelta_to_time,
     get_json_vacation,
-    timedelta_to_string,
+    timedelta_to_string, get_active_user,
 )
 from customers_app.models import (
     DataBaseUser,
@@ -276,6 +276,7 @@ def get_database_user():
                     main_obj_item, main_created = DataBaseUser.objects.update_or_create(
                         ref_key=item["Ref_Key"], defaults={**divisions_kwargs}
                     )
+
                     if main_created:
                         main_obj_item.username = username
                 except Exception as _ex:

@@ -30,6 +30,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import strip_tags
 from loguru import logger
+# from twisted.conch.ssh.agent import value
+
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
@@ -281,7 +283,6 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
         f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
     )
     source_url = url
-    print(url)
     try:
         if base_index == 0:
             response = requests.get(
@@ -350,6 +351,21 @@ def get_jsons_data_filter(
         logger.debug(f"{_ex}")
         return {"value": ""}
     return json.loads(response.text)
+
+def get_active_user(ref_key):
+    # ur1 = (f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%2765f4800d-970f-11e3-84fb-00e05301b4e4%27%20and%20Состояние%20eq%20%27Увольнение%27")
+    url = (f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27%20and%20Состояние%20eq%20%27Увольнение%27")
+    response = requests.get(
+        url, auth=(config("HRM_LOGIN"), config("HRM_PASS"))
+    )
+    dicts = json.loads(response.text)
+    if dicts['value'] == []:
+        return True
+    else:
+        if dicts['value'][0]['Active'] == 'true':
+            print('true')
+        return False
+
 
 
 def get_json_vacation(ref_key):

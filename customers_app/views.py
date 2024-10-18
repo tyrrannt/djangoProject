@@ -18,7 +18,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
-    process_group, process_group_interval, seconds_to_hhmm
+    process_group, process_group_interval, seconds_to_hhmm, get_active_user
 from contracts_app.models import TypeDocuments, Contract
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
@@ -708,6 +708,14 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return qs
 
     def get(self, request, *args, **kwargs):
+
+        if self.request.GET.get('update') == '3':
+            users_set = DataBaseUser.objects.all()
+            for user in users_set:
+                if not get_active_user(user.ref_key):
+                    user.is_active = False
+                    user.save()
+
 
         if self.request.GET.get('update') == '2':
             get_identity_documents()
