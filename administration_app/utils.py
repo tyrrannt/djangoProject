@@ -362,9 +362,8 @@ def get_active_user(ref_key):
     if dicts['value'] == []:
         return True
     else:
-        if dicts['value'][0]['Active'] == 'true':
-            print('true')
-        return False
+        if dicts['value'][0]['Active'] == True:
+            return False
 
 
 
