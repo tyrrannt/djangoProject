@@ -41,8 +41,9 @@ def get_medical_documents():
     harmfuls = HarmfulWorkingConditions.objects.all()
     # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
     for item in todos["value"]:
+        print(item)
         if item["Posted"]:
-            db_user = db_users.filter(person_ref_key=item["ФизическоеЛицо_Key"])
+            db_user = db_users.filter(person_ref_key=item["ФизическоеЛицо_Key"], is_active=True)
             db_med_org = item["МедицинскаяОрганизация_Key"]
             if (
                     db_user.count() > 0
