@@ -5,7 +5,8 @@
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
-    <link rel="resource" type="application/l10n" href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
+    <link rel="resource" type="application/l10n"
+          href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
 {% endblock %}
 
 {% block custome_script %}
@@ -36,38 +37,47 @@
             {#and (min-device-width : 320px)#}
             {#and (max-device-width : 920px){ .hidemobile { display: none; }}#}
             @media only screen
-            and (min-device-width : 320px)
-            and (max-device-width : 920px){ .outerContainer { height: 600px; }}
+            and (min-device-width: 320px)
+            and (max-device-width: 920px) {
+                .outerContainer {
+                    height: 600px;
+                }
+            }
+
             @media only screen
-            and (min-device-width : 921px){ .outerContainer { height: 1080px; }}
+            and (min-device-width: 921px) {
+                .outerContainer {
+                    height: 1080px;
+                }
+            }
         </style>
         <!-- start: page -->
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
                     <input id="id_contract_number" value="{{ object.doc_file.url }}" hidden="true">
-{#                    <section class="toggle active showmobile" >#}
-{#                        <label>Мобильная версия</label>#}
-{#                        <div class="toggle-content">#}
-{#                            <div class="form-row">#}
-{#                                {% if object.doc_file %}#}
-{#                                    <div class="form-row" id="outerContainer" style="height: 600px">#}
-{#                                        {% include 'contracts_app/pdf-js.html' %}#}
-{#                                    </div>#}
-{#                                    <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>#}
-{#                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"#}
-{#                                            height="750px">#}
-{#                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">#}
-{#                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы#}
-{#                                            просмотреть его: <a#}
-{#                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>#}
-{#                                        </embed>#}
-{#                                        #}
-{#                                    </object>#}
-{#                                {% endif %}#}
-{#                            </div>#}
-{#                        </div>#}
-{#                    </section>#}
+                    {#                    <section class="toggle active showmobile" >#}
+                    {#                        <label>Мобильная версия</label>#}
+                    {#                        <div class="toggle-content">#}
+                    {#                            <div class="form-row">#}
+                    {#                                {% if object.doc_file %}#}
+                    {#                                    <div class="form-row" id="outerContainer" style="height: 600px">#}
+                    {#                                        {% include 'contracts_app/pdf-js.html' %}#}
+                    {#                                    </div>#}
+                    {#                                    <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>#}
+                    {#                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"#}
+                    {#                                            height="750px">#}
+                    {#                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">#}
+                    {#                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы#}
+                    {#                                            просмотреть его: <a#}
+                    {#                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>#}
+                    {#                                        </embed>#}
+                    {#                                        #}
+                    {#                                    </object>#}
+                    {#                                {% endif %}#}
+                    {#                            </div>#}
+                    {#                        </div>#}
+                    {#                    </section>#}
                     <section class="toggle active">
                         <label>Файл</label>
                         <div class="toggle-content">
@@ -77,15 +87,15 @@
                                         {% include 'contracts_app/pdf-js.html' %}
                                     </div>
                                     <a href="{{ object.doc_file.url }}" target="_blank">Открыть документ</a>
-{#                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"#}
-{#                                            height="750px">#}
-{#                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">#}
-{#                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы#}
-{#                                            просмотреть его: <a#}
-{#                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>#}
-{#                                        </embed>#}
+                                    {#                                    <object data="{{ object.doc_file.url }}" type="application/pdf" width="750px"#}
+                                    {#                                            height="750px">#}
+                                    {#                                        <embed src="{{ object.doc_file.url }}" type="application/pdf">#}
+                                    {#                                        <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите PDF-файл, чтобы#}
+                                    {#                                            просмотреть его: <a#}
+                                    {#                                                    href="{{ object.doc_file.url }}">Скачать PDF.</a>.</p>#}
+                                    {#                                        </embed>#}
 
-{#                                    </object>#}
+                                    {#                                    </object>#}
                                 {% endif %}
                             </div>
                         </div>
@@ -115,9 +125,9 @@
                                                 <td class="text-left">{{ item.comment }}</td>
                                                 <td class="text-center">
                                                     {% if item.doc_file %}
-                                                    <a href="{{ item.doc_file.url }}"
-                                                       target="_blank"><strong>{{ item.doc_file | filename }}</strong></a>
-                                                    {% endif  %}
+                                                        <a href="{{ item.doc_file.url }}"
+                                                           target="_blank"><strong>{{ item.doc_file | filename }}</strong></a>
+                                                    {% endif %}
                                                 </td>
                                                 <td class="text-center">{{ item.date_conclusion }}</td>
                                                 <td class="text-center">{{ item.executor | FIO_format }}</td>
@@ -397,6 +407,30 @@
                        class="cancel-button btn btn-light btn-px-4 py-3 border
                        font-weight-semibold text-color-dark text-3">Закрыть документ</a>
                 </div>
+                <div class="col-lg-4 text-black-50 mt-2">
+                    <button class="btn btn-warning mt-2" onclick="printPDF()">Распечатать
+                    </button>
+                    {% if object.doc_file %}
+                        <iframe id="pdfFrame" src="{{ object.doc_file.url }}"
+                                hidden="hidden"></iframe>
+                        <script>
+                            function printPDF() {
+                                var iframe = document.getElementById('pdfFrame');
+                                if (iframe.contentWindow) {
+                                    iframe.contentWindow.print();
+                                } else {
+                                    console.error("PDF is not loaded yet.");
+                                }
+                            }
+
+                            // Проверка загрузки PDF
+                            var iframe = document.getElementById('pdfFrame');
+                            iframe.onload = function () {
+                                console.log("PDF loaded successfully.");
+                            };
+                        </script>
+                    {% endif %}
+                </div>
                 {% if not_parent %}
                     <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                         <a href="{% url 'contracts_app:create' %}?parent={{ object.pk }}"
@@ -421,9 +455,9 @@
         </div>
         <!-- end: page -->
     </section>
-<script>
-    get_filename = function(){
-        return {{object.doc_file.url}};
-    }
-</script>
+    <script>
+        get_filename = function () {
+            return {{object.doc_file.url}};
+        }
+    </script>
 {% endblock %}

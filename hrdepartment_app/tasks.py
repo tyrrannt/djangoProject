@@ -497,19 +497,19 @@ def save_report():
         19: "Отпуск на санаторно курортное лечение",
         20: "Отгул",
     }
-    fields = ["FIO", "Дата", "Начало", "Окончание", "Type"]
+    fields = ["user", "date", "start", "end", "type", "manual_input"]
     dates = ReportCard.objects.all().exclude(employee=None)
     report_card_list = list()
     for report_record in dates:
-        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
+        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type, report_record.manual_input])
     # Преобразуем QuerySet в DataFrame
     df = pd.DataFrame.from_records(report_card_list, columns=fields)
-    df["Дата"] = pd.to_datetime(df["Дата"], format="%d.%m.%Y")
-    df["Начало"] = pd.to_datetime(df["Начало"], format="%H:%M:%S")
-    df["Окончание"] = pd.to_datetime(df["Окончание"], format="%H:%M:%S")
+    df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y")
+    df["start"] = pd.to_datetime(df["start"], format="%H:%M:%S")
+    df["end"] = pd.to_datetime(df["end"], format="%H:%M:%S")
     # print(df["Type"].unique())
-    df["Type"] = pd.to_numeric(df["Type"], errors='coerce').fillna(0).astype(int)
-    df['Тип'] = df['Type'].map(type_of_report)
+    df["type"] = pd.to_numeric(df["type"], errors='coerce').fillna(0).astype(int)
+    df['types'] = df['type'].map(type_of_report)
     # Сохраняем DataFrame в CSV-файл
     df.to_csv('dates.csv', sep=';', index=False, encoding='utf-8', na_rep='')
 
