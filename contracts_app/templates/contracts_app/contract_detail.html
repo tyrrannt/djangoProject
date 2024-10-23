@@ -407,9 +407,13 @@
                        class="cancel-button btn btn-light btn-px-4 py-3 border
                        font-weight-semibold text-color-dark text-3">Закрыть документ</a>
                 </div>
-                <div class="col-lg-4 text-black-50 mt-2">
-                    <button class="btn btn-warning mt-2" onclick="printPDF()">Распечатать
-                    </button>
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                    <a href="#" onclick="printPDF()"
+                       class="submit-button btn btn-warning btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-printer'></i> Распечатать</a>
+{#                    <button class="btn btn-warning mt-2">Распечатать#}
+{#                    </button>#}
                     {% if object.doc_file %}
                         <iframe id="pdfFrame" src="{{ object.doc_file.url }}"
                                 hidden="hidden"></iframe>
