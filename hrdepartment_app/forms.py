@@ -872,8 +872,8 @@ class ReportCardAddForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         report_card_day = cleaned_data.get("report_card_day")
-        yesterday = datetime.date.today() - datetime.timedelta(days=7)
-        tomorrow = datetime.date.today() + datetime.timedelta(days=2)
+        yesterday = datetime.date.today() - datetime.timedelta(days=10)
+        tomorrow = datetime.date.today() + datetime.timedelta(days=4)
         if yesterday > report_card_day or report_card_day > tomorrow:
             raise ValidationError(
                 f"Ошибка! Дата может быть только из диапазона c {yesterday.strftime('%d.%m.%Y')} г. "
@@ -910,8 +910,8 @@ class ReportCardUpdateForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         report_card_day = cleaned_data.get("report_card_day")
-        yesterday = datetime.date.today() - datetime.timedelta(days=7)
-        tomorrow = datetime.date.today() + datetime.timedelta(days=2)
+        yesterday = datetime.date.today() - datetime.timedelta(days=10)
+        tomorrow = datetime.date.today() + datetime.timedelta(days=4)
         user_obj = DataBaseUser.objects.get(pk=self.user)
         if not user_obj.is_superuser:
             if yesterday > report_card_day or report_card_day > tomorrow:
