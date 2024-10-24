@@ -3,22 +3,22 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% block custome_css %}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
-{#    <link rel="stylesheet"#}
-{#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
-{#    <link rel="stylesheet"#}
-{#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/autocomplete/src/jquery-ui.css' %}"/>
 {% endblock %}
 
 {% block custome_script %}
-{#    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>#}
+    {#    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>#}
     <script src="{% static 'admin_templates/vendor/autocomplete/src/jquery-ui.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/autocomplete/src/custom.autocomplete.js' %}"></script>
 
-{#<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.devbridge-autocomplete/1.4.2/jquery.autocomplete.min.js"></script>#}
+    {#<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.devbridge-autocomplete/1.4.2/jquery.autocomplete.min.js"></script>#}
 {% endblock %}
 
 {% block title %}
@@ -76,20 +76,25 @@
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'logistics_app:waybill_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>
@@ -98,7 +103,7 @@
     </section>
     <!-- end: page -->
     <script type="text/javascript">
-            function memo_type_change() {
+        function memo_type_change() {
             document_type = document.getElementById("id_document_type").value;
             $.ajax({
                 type: "GET",

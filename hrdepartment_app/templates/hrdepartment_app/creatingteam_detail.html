@@ -61,6 +61,7 @@
                                     <input type="text" class="form-control form-control-modern" disabled
                                            name="company_property" value="
 
+
                                             {% for item in object.company_property.iterator %}{% if forloop.last %}{{ item }}{% else %}{{ item }}, {% endif %}{% endfor %}"
                                            id="id_company_property"/>
 
@@ -77,6 +78,7 @@
                                     <label for="id_team_brigade">Состав бригады:</label>
                                     <input type="text" class="form-control form-control-modern" disabled
                                            name="team_brigade" value="
+
 
                                             {% for item in object.team_brigade.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }}, {% endif %}{% endfor %}"
                                            id="id_team_brigade"/>
@@ -194,7 +196,7 @@
                         <a href="{% url 'hrdepartment_app:team_update' object.pk %}"
                            class="btn btn-outline-success btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                    <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
+                            <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
                     </div>
                 {% endif %}
                 {% if is_agreement %}
@@ -202,7 +204,7 @@
                         <a href="{% url 'hrdepartment_app:team_agreed' object.pk %}"
                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class='bx bxs-analyse text-4 me-2' ></i> Согласовать</a>
+                            <i class='bx bxs-analyse text-4 me-2'></i> Согласовать</a>
                     </div>
                 {% endif %}
                 {% if is_hr %}
@@ -210,7 +212,7 @@
                         <a href="{% url 'hrdepartment_app:team_number' object.pk %}"
                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
-                            <i class='bx bx-comment-edit text-4 me-2' ></i> Присвоить номер</a>
+                            <i class='bx bx-comment-edit text-4 me-2'></i> Присвоить номер</a>
                     </div>
                 {% endif %}
                 {% if email_send %}
@@ -218,7 +220,7 @@
                         <a href="{% url 'hrdepartment_app:team' object.pk %}?sm=1"
                            class="btn btn-outline-warning btn-px-4 py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
-                            <i class='bx bx-mail-send text-4 me-2' ></i> Отправить письмо</a>
+                            <i class='bx bx-mail-send text-4 me-2'></i> Отправить письмо</a>
                     </div>
                 {% endif %}
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">

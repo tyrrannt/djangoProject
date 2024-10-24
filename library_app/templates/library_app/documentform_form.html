@@ -8,20 +8,20 @@
 {##}
 {#{% endblock %}#}
 {% block custome_css %}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
-{#    <link rel="stylesheet"#}
-{#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
-{#    <link rel="stylesheet"#}
-{#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
-{#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
 {% endblock %}
 
 {% block custome_script %}
-{#        <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
-{#        <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
-{#        <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
+    {#        <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
+    {#        <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
+    {#        <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
 {% endblock %}
 
 {% block title %}
@@ -113,7 +113,7 @@
                                 <label class="col-sm-12 control-label mb-0"
                                        for="id_division">Подразделения:</label>
                                 <div class="col-sm-12">
-                                    {{ form.division  }}
+                                    {{ form.division }}
                                 </div>
                             </div>
                         </div>
@@ -134,8 +134,8 @@
 
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
@@ -143,15 +143,16 @@
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'library_app:blank_list' %}"
                        class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
                            class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>

@@ -8,26 +8,21 @@
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-
         {% include 'library_app/breadcrumb.html' %}
-
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:bptrip_add' %}"
-                                               class="btn btn-outline-primary btn-px-4 py-3 d-flex
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="{% url 'hrdepartment_app:bptrip_add' %}"
+                                           class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить новое направление </a>
-                                        </div>
-
+                                            <i class='bx bx-list-plus text-4 me-2'></i> Добавить новое направление </a>
+                                    </div>
                                     <div class="col-8 col-lg-auto ms-auto ml-auto mb-3 mb-lg-0">
                                         <div class="d-flex align-items-lg-center flex-column flex-lg-row">
                                             <label for="portal_paginator"
@@ -64,10 +59,8 @@
                                     </div>
                                 </div>
                             </div>
-
                             <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
-
                                 <thead>
                                 <tr>
                                     <th width="6%">Тип</th>
@@ -81,7 +74,6 @@
                                 </thead>
                                 <tbody>
                                 {% for item in object_list %}
-
                                     <tr style="color: {% if item.document_accepted %} green  {% else %} {% if item.comments %} blue {% else %} {% if item.order_number %} black {% else %} red {% endif %} {% endif %} {% endif %}">
                                         <td>
                                             <strong>{{ item.get_business_process_type_display }}</strong>
@@ -106,10 +98,7 @@
                                         <td>
                                             <span>По: {{ item.date_end | date:'d-m-Y' }}</span>&nbsp;
                                         </td>
-
                                     </tr>
-
-
                                 {% endfor %}
                                 </tbody>
                             </table>
@@ -130,11 +119,8 @@
                                     </div>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>

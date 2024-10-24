@@ -47,7 +47,6 @@
         <!-- start: page -->
         <form action="{% url 'contracts_app:create' %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
-
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
                     <section class="toggle active">
@@ -56,35 +55,36 @@
                             <div class="form-row">
                                 <div class="form-group col mb-3">
                                     <div class="row text">
-                                        <input class="form-control form-control-modern" id="id_parent_category" name="parent_category" type="text" value="{{ parent }}" hidden="hidden">
-{#                                        <div class="col-md-6 text-black-50">#}
-{#                                            <label for="id_parent_category" hidden="hidden">Основной документ</label>#}
-{#                                            <select class="form-control form-control-modern" name="parent_category_text"#}
-{#                                                    id="id_parent_category_text" data-plugin-selectTwo>#}
-{#                                                    <option selected value="{{ parent }}">{{ parent }}</option>#}
-{#                                            </select>#}
-{#                                            {{ form.parent_category }}#}
-{#                                            <input class="form-control form-control-modern" id="id_parent_category" name="parent_category" type="text" value="{{ parent }}" hidden="hidden">#}
-{#                                        </div>#}
+                                        <input class="form-control form-control-modern" id="id_parent_category"
+                                               name="parent_category" type="text" value="{{ parent }}" hidden="hidden">
+                                        {#                                        <div class="col-md-6 text-black-50">#}
+                                        {#                                            <label for="id_parent_category" hidden="hidden">Основной документ</label>#}
+                                        {#                                            <select class="form-control form-control-modern" name="parent_category_text"#}
+                                        {#                                                    id="id_parent_category_text" data-plugin-selectTwo>#}
+                                        {#                                                    <option selected value="{{ parent }}">{{ parent }}</option>#}
+                                        {#                                            </select>#}
+                                        {#                                            {{ form.parent_category }}#}
+                                        {#                                            <input class="form-control form-control-modern" id="id_parent_category" name="parent_category" type="text" value="{{ parent }}" hidden="hidden">#}
+                                        {#                                        </div>#}
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_contract_counteragent">Контрагент</label>
                                             {{ form.contract_counteragent }}
                                         </div>
                                         <div class="col-md-6 text-black-50">
-                                                <label for="id_employee">Ответственные лица</label>
-                                                {{ form.employee }}
-                                            </div>
-                                        
+                                            <label for="id_employee">Ответственные лица</label>
+                                            {{ form.employee }}
+                                        </div>
+
                                         <div class="row text">
                                             <div class="col-md-6 text-black-50">
-                                            <label for="id_type_of_document">Тип документа</label>
-                                            {{ form.type_of_document }}
-                                        </div>
+                                                <label for="id_type_of_document">Тип документа</label>
+                                                {{ form.type_of_document }}
+                                            </div>
                                             <div class="col-md-6 text-black-50">
                                                 <label for="id_type_of_contract">Тип договора</label>
                                                 {{ form.type_of_contract }}
                                             </div>
-                                            
+
                                         </div>
                                     </div>
                                 </div>
@@ -135,7 +135,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                             <div class="form-row">
                                 <div class="form-group col mb-3">
@@ -176,7 +175,6 @@
                     </section>
                 </div>
             </div>
-
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
                     <button type="submit"
@@ -190,7 +188,7 @@
                     <a href="{% url 'contracts_app:index' %}"
                        class="btn btn-outline-dark btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2' ></i> Закрыть </a>
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="#"

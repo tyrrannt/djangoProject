@@ -69,7 +69,6 @@
             {% csrf_token %}
             <div class="row">
                 <div class="col">
-
                     <section class="card card-modern card-big-info">
                         <div class="card-body">
                             <div class="row">
@@ -139,7 +138,8 @@
                                         </div>
                                     </div>
                                     <div class="form-group row pb-3">
-                                        <label class="col-lg-3 control-label text-lg-end pt-2">Подтверждаю, что документ введен задним числом</label>
+                                        <label class="col-lg-3 control-label text-lg-end pt-2">Подтверждаю, что документ
+                                            введен задним числом</label>
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.creation_retroactively }}
                                         </div>
@@ -151,7 +151,6 @@
                                             <span>{{ form.place_departure }}</span>
                                         </div>
                                     </div>
-
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_place_production_activity">Место назначения:</label>
@@ -200,23 +199,27 @@
                 </div>
             </div>
             <div class="row action-buttons">
-
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'hrdepartment_app:memo_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>
@@ -231,15 +234,15 @@
             diff = new Date(period_for - period_from);
             summ = diff.getUTCDate();
             if (summ > 0) {
-                if (summ <16) {
-                    document.getElementById("test_off").innerHTML = "Ориентировочная сумма аванса: " + summ*700;
-                }
-                else {
-                    document.getElementById("test_off").innerHTML = "Ориентировочная сумма аванса: " + 15*700;
+                if (summ < 16) {
+                    document.getElementById("test_off").innerHTML = "Ориентировочная сумма аванса: " + summ * 700;
+                } else {
+                    document.getElementById("test_off").innerHTML = "Ориентировочная сумма аванса: " + 15 * 700;
                 }
 
             }
         }
+
         function minimumPeriodFor() {
             period_from = document.getElementById("id_period_from").value;
             var period_for = document.getElementById("id_period_for");

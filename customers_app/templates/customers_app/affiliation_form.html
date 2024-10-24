@@ -14,7 +14,6 @@
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
@@ -35,11 +34,15 @@
                                 </div>
                             </div>
                             <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Сохранить</button>
-  </form>
-
+                                {% csrf_token %}
+                                {{ form.as_p }}
+                                <button type="submit"
+                                        class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
+                                        data-loading-text="Loading...">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                            </form>
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}
                             <div class="datatable-footer">
@@ -57,11 +60,8 @@
                                     </div>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>

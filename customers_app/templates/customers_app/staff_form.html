@@ -57,14 +57,15 @@
                                         <div class="thumb-info mb-3">
                                             {% if object.avatar %}
                                                 <img src="{{ object.avatar.url }}" class="rounded img-fluid"
-                                                    alt="{{ object.username }}">
+                                                     alt="{{ object.username }}">
                                             {% else %}
-                                                <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
-                                                alt="{{ object.username }}">
+                                                <img src="{% static 'admin_templates/img/!logged-user.jpg' %}"
+                                                     class="rounded img-fluid"
+                                                     alt="{{ object.username }}">
                                             {% endif %}
                                             <div class="thumb-info-title">
                                                 <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}</span>
-{#                                                <span class="thumb-info-type">{{ object.user_work_profile.job }}</span>#}
+                                                {#                                                <span class="thumb-info-type">{{ object.user_work_profile.job }}</span>#}
                                             </div>
                                         </div>
                                         <a class="nav-link active" id="general-tab" data-bs-toggle="pill"
@@ -95,7 +96,7 @@
                                                     <input type="text" class="form-control form-control-modern"
                                                            name="last_name" id="id_last_name"
                                                            value="{{ object.last_name|empty_item }}"
-                                                          />
+                                                    />
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -103,7 +104,7 @@
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern"
                                                            name="first_name" id="id_first_name"
-                                                           value="{{ object.first_name|empty_item }}" />
+                                                           value="{{ object.first_name|empty_item }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -148,7 +149,7 @@
                                                     <input type="file" class="form-control form-control-modern"
                                                            name="avatar" id="id_avatar"
                                                            placeholder="Данные отсутствуют..."
-                                                           />
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
@@ -348,18 +349,22 @@
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время прихода</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время
+                                                    прихода</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="time" class="form-control form-control-modern"
-                                                           name="personal_work_schedule_start" id="id_personal_work_schedule_start"
+                                                           name="personal_work_schedule_start"
+                                                           id="id_personal_work_schedule_start"
                                                            value="{{ object.user_work_profile.personal_work_schedule_start | time:"H:i" }}"/>
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время ухода</label>
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время
+                                                    ухода</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="time" class="form-control form-control-modern"
-                                                           name="personal_work_schedule_end" id="id_personal_work_schedule_end"
+                                                           name="personal_work_schedule_end"
+                                                           id="id_personal_work_schedule_end"
                                                            value="{{ object.user_work_profile.personal_work_schedule_end | time:"H:i" }}"/>
                                                 </div>
                                             </div>
@@ -374,30 +379,34 @@
                                                     </div>
                                                 </div>
                                                 <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус активности</label>
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
+                                                        активности</label>
                                                     <div class="col-lg-7 col-xl-6">
                                                         {{ form.is_active }}
                                                     </div>
                                                 </div>
-                                            {% endif  %}
+                                            {% endif %}
                                             {% if user.is_superuser %}
-                                                
+
                                                 <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус персонала</label>
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
+                                                        персонала</label>
                                                     <div class="col-lg-7 col-xl-6">
                                                         {{ form.is_staff }}
                                                     </div>
                                                 </div>
                                                 <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус суперпользователя</label>
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
+                                                        суперпользователя</label>
                                                     <div class="col-lg-7 col-xl-6">
                                                         {{ form.is_superuser }}
                                                     </div>
                                                 </div>
                                                 <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Права доступа</label>
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Права
+                                                        доступа</label>
                                                     <div class="col-lg-7 col-xl-6">
-                                                        {{ form.user_access}}
+                                                        {{ form.user_access }}
                                                     </div>
                                                 </div>
                                             {% endif %}
@@ -411,21 +420,25 @@
             </div>
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
-                    <button type="submit" prefix="main"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                    <button type="submit"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
-
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'customers_app:staff_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="#"
-                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
                 </div>
             </div>
         </form>

@@ -14,7 +14,6 @@
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
@@ -35,13 +34,11 @@
                                 </div>
                             </div>
                             <h1>Удалить принадлежность "{{ affiliation.name }}"?</h1>
-  <p>Вы уверены, что хотите удалить эту принадлежность?</p>
-
-  <form method="post">
-    {% csrf_token %}
-    <button type="submit">Да, удалить</button>
-  </form>
-
+                            <p>Вы уверены, что хотите удалить эту принадлежность?</p>
+                            <form method="post">
+                                {% csrf_token %}
+                                <button type="submit">Да, удалить</button>
+                            </form>
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}
                             <div class="datatable-footer">
@@ -58,17 +55,13 @@
                                     </div>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
         <!-- end: page -->
     </section>
-
 {% endblock %}
 
 {% block custome_script %}

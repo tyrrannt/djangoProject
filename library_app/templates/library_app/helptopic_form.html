@@ -36,14 +36,14 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_title">Заголовок</label>
-                                        <div class="col-lg-7 col-xl-6" id="period_from_id">
-                                            <input type="text" id="id_title"
-                                                   class="form-control form-control-modern"
-                                                   name="title" value="{{ object.title }}"/>
-                                        </div>
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_title">Заголовок</label>
+                                    <div class="col-lg-7 col-xl-6" id="period_from_id">
+                                        <input type="text" id="id_title"
+                                               class="form-control form-control-modern"
+                                               name="title" value="{{ object.title }}"/>
                                     </div>
+                                </div>
                                 <div class="form-group row align-items-center pb-3">
                                     <div class="col-sm-6">
                                         <label class="col"
@@ -64,7 +64,7 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <label for="id_text">Текст справки</label>
                                         <div class="ck ck-content">
-                                                {{ form.text }}
+                                            {{ form.text }}
                                         </div>
                                     </div>
                                 </div>
@@ -75,23 +75,28 @@
             </div>
             <div class="row action-buttons">
                 {% if user.is_superuser %}
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
+                    <div class="col-12 col-md-auto">
+                        <button type="submit"
+                                class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
+                                data-loading-text="Loading...">
+                            <i class="bx bx-save text-4 me-2"></i> Сохранить
+                        </button>
+                    </div>
                 {% endif %}
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'library_app:help_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>

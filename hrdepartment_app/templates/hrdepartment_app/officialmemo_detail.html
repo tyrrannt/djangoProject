@@ -25,7 +25,6 @@
 {% endblock %}
 
 {% block content %}
-
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
         <div>
@@ -58,7 +57,6 @@
                                     <div class="form-group row align-items-center pb-3">
                                         <h4 style="text-align: center">Направление в служебную поездку</h4>
                                     </div>
-
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
                                                for="id_official_memo_type">Тип служебной поездки:</label>
@@ -95,8 +93,8 @@
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
                                                 <input type="date" id="id_period_from"
-                                                   class="form-control form-control-modern"
-                                                   name="period_from" value="{{ object.period_from | date:'c' }}"/>
+                                                       class="form-control form-control-modern"
+                                                       name="period_from" value="{{ object.period_from | date:'c' }}"/>
                                             </div>
                                         </div>
                                     </div>
@@ -108,8 +106,8 @@
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
                                                 <input type="date" id="id_period_for"
-                                                   class="form-control form-control-modern"
-                                                   name="period_for" value="{{ object.period_for | date:'c' }}"/>
+                                                       class="form-control form-control-modern"
+                                                       name="period_for" value="{{ object.period_for | date:'c' }}"/>
                                             </div>
                                         </div>
                                     </div>
@@ -129,7 +127,8 @@
                                             <textarea type="text" id="id_place_production_activity"
                                                       class="form-control form-control-modern"
                                                       name="place_production_activity"
-                                                      value="">{% for item in object.place_production_activity.all %}{{ item }}&nbsp;{% endfor %}</textarea>
+                                                      value="">{% for item in object.place_production_activity.all %}
+                                                {{ item }}&nbsp;{% endfor %}</textarea>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -183,21 +182,28 @@
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'hrdepartment_app:memo_update' object.pk %}"
-                       class="btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
+                       class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
                 </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'hrdepartment_app:memo_cancel' object.pk %}"
-                       class="cancel-button btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">{% if object.cancellation %}Восстановить{% else %}Отменить{% endif %}</a>
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                       align-items-center font-weight-semibold line-height-1">{% if object.cancellation %}Восстановить{% else %}Отменить{% endif %}</a>
                 </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <a href="{% url 'hrdepartment_app:memo_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                       align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>

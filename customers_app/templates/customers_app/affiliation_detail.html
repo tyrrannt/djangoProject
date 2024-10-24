@@ -36,14 +36,14 @@
                             </div>
                             <h1>{{ affiliation.name }}</h1>
 
-  <p><strong>Название:</strong> {{ affiliation.name }}</p>
+                            <p><strong>Название:</strong> {{ affiliation.name }}</p>
 
-  <div>
-    <a href="{% url 'customers_app:affiliation-update' affiliation.pk %}">Редактировать</a>
-  </div>
-  <div>
-    <a href="{% url 'customers_app:affiliation-delete' affiliation.pk %}">Удалить</a>
-  </div>
+                            <div>
+                                <a href="{% url 'customers_app:affiliation-update' affiliation.pk %}">Редактировать</a>
+                            </div>
+                            <div>
+                                <a href="{% url 'customers_app:affiliation-delete' affiliation.pk %}">Удалить</a>
+                            </div>
 
                             <hr class="solid mt-5 opacity-4">
                             {% include 'library_app/paginator.html' %}

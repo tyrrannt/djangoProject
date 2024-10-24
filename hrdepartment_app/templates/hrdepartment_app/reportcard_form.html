@@ -64,8 +64,9 @@
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
                                                 <input type="date" id="id_report_card_day" onchange="set_interval()"
-                                                   class="form-control form-control-modern"
-                                                   name="report_card_day" value="{{ object.report_card_day | date:"c" }}"/>
+                                                       class="form-control form-control-modern"
+                                                       name="report_card_day"
+                                                       value="{{ object.report_card_day | date:"c" }}"/>
                                             </div>
                                         </div>
                                     </div>
@@ -77,8 +78,9 @@
                                                     <i class="far fa-clock"></i>
                                                 </span>
                                                 <input type="time" id="id_start_time"
-                                                   class="form-control form-control-modern" disabled="disabled"
-                                                   name="start_time" value="{{ object.start_time | date:"%H:%b" }}"/>
+                                                       class="form-control form-control-modern" disabled="disabled"
+                                                       name="start_time"
+                                                       value="{{ object.start_time | date:"%H:%b" }}"/>
                                             </div>
                                         </div>
                                     </div>
@@ -90,14 +92,15 @@
                                                     <i class="far fa-clock"></i>
                                                 </span>
                                                 <input type="time" id="id_end_time"
-                                                   class="form-control form-control-modern" disabled="disabled"
-                                                   name="end_time" value="{{ object.end_time | date:"%H:%b" }}"/>
+                                                       class="form-control form-control-modern" disabled="disabled"
+                                                       name="end_time" value="{{ object.end_time | date:"%H:%b" }}"/>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-sm-12 control-label text-center mb-0"
-                                               >Внимание! Если у вас на данный день имеется СЛУЖЕБНАЯ ПОЕЗДКА или КОМАНДИРОВКА, то вносить ручную запись не нужно!</label>
+                                        >Внимание! Если у вас на данный день имеется СЛУЖЕБНАЯ ПОЕЗДКА или КОМАНДИРОВКА,
+                                            то вносить ручную запись не нужно!</label>
 
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
@@ -116,23 +119,27 @@
                 </div>
             </div>
             <div class="row action-buttons">
-
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0" style="background-color: #b0ffd5">
                     <a href="{% url 'customers_app:profile' user.pk %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>
@@ -144,7 +151,7 @@
         function printNumbers(from, to) {
             let current = from;
 
-            let timerId = setInterval(function() {
+            let timerId = setInterval(function () {
                 alert(current);
                 if (current == to) {
                     clearInterval(timerId);
@@ -152,6 +159,7 @@
                 current++;
             }, 10000);
         };
+
         function set_interval() {
             current_date = document.getElementById("id_report_card_day").value;
             var start_time = document.getElementById("id_start_time");

@@ -8,45 +8,40 @@
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-
-{#        {% include 'library_app/breadcrumb.html' %}#}
-
+        {#        {% include 'library_app/breadcrumb.html' %}#}
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-
                                     <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                         <a href="{% url 'hrdepartment_app:timesheet_add' %}"
                                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить табель </a>
+                                            <i class='bx bx-list-plus text-4 me-2'></i> Добавить табель </a>
                                     </div>
+                                    {#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+                                    {#                                        <input type="checkbox" class="btn-check" id="id_all" autocomplete="off"#}
+                                    {#                                               onclick="CancellationChange()">#}
+                                    {#                                        <label class="btn btn-primary" for="id_all">Все документы</label>#}
+                                    {#                                    </div>#}
 
-{#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
-{#                                        <input type="checkbox" class="btn-check" id="id_all" autocomplete="off"#}
-{#                                               onclick="CancellationChange()">#}
-{#                                        <label class="btn btn-primary" for="id_all">Все документы</label>#}
-{#                                    </div>#}
-
-{#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
-{#                                        <select class="form-select" id="id_all" aria-label="Default select example" onchange="CancellationChange()" >#}
-{#                                          <option selected>Выберите пункт...</option>#}
-{#                                          <option value="1">На согласовании</option>#}
-{#                                          <option value="2">Выбор места проживания</option>#}
-{#                                          <option value="3">Издание приказа</option>#}
-{#                                          <option value="4">Оригиналы</option>#}
-{#                                          <option value="5">Проверка</option>#}
-{#                                          <option value="6">Переданные в бухгалтерию</option>#}
-{#                                          <option value="7">Завершенные</option>#}
-{#                                          <option value="8">Все</option>#}
-{#                                        </select>#}
-{#                                    </div>#}
+                                    {#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
+                                    {#                                        <select class="form-select" id="id_all" aria-label="Default select example" onchange="CancellationChange()" >#}
+                                    {#                                          <option selected>Выберите пункт...</option>#}
+                                    {#                                          <option value="1">На согласовании</option>#}
+                                    {#                                          <option value="2">Выбор места проживания</option>#}
+                                    {#                                          <option value="3">Издание приказа</option>#}
+                                    {#                                          <option value="4">Оригиналы</option>#}
+                                    {#                                          <option value="5">Проверка</option>#}
+                                    {#                                          <option value="6">Переданные в бухгалтерию</option>#}
+                                    {#                                          <option value="7">Завершенные</option>#}
+                                    {#                                          <option value="8">Все</option>#}
+                                    {#                                        </select>#}
+                                    {#                                    </div>#}
 
                                 </div>
                             </div>
@@ -72,7 +67,7 @@
                                 </thead>
                             </table>
                             <hr class="solid mt-5 opacity-4">
-{#                            {% include 'library_app/paginator.html' %}#}
+                            {#                            {% include 'library_app/paginator.html' %}#}
                             <div class="datatable-footer">
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
@@ -154,7 +149,7 @@
                             $('td:eq(10)', nRow).html('<i class="bx bx-check-double"></i>')
                         }
                     } else {
-                            $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
+                        $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
                     }
 
                     $(nRow).attr("href", id + '/update/');

@@ -27,44 +27,44 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-lg-9">
-                                    <div class="row">
-                                        <!-- Button trigger modal -->
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="#"
-                                               class="btn btn-outline-primary btn-px-4 py-3 d-flex
+                                <div class="row">
+                                    <!-- Button trigger modal -->
+                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                        <a href="#"
+                                           class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить запись</a>
-                                        </div>
+                                            <i class='bx bx-list-plus text-4 me-2'></i> Добавить запись</a>
+                                    </div>
 
-                                        <!-- Modal -->
-                                        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
-                                             data-bs-keyboard="false" tabindex="-1"
-                                             aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <form action="{% url 'logistics_app:waybill_add' %}" method="post">
-                                                        {% csrf_token %}
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="staticBackdropLabel">Modal
-                                                                title</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                                    aria-label="Close"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                                {{ form.as_p }}
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary"
-                                                                    data-bs-dismiss="modal">Close
-                                                            </button>
-                                                            <button type="button" class="btn btn-primary">Understood
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                </div>
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
+                                         data-bs-keyboard="false" tabindex="-1"
+                                         aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form action="{% url 'logistics_app:waybill_add' %}" method="post">
+                                                    {% csrf_token %}
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="staticBackdropLabel">Modal
+                                                            title</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                                aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        {{ form.as_p }}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                                data-bs-dismiss="modal">Close
+                                                        </button>
+                                                        <button type="button" class="btn btn-primary">Understood
+                                                        </button>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                             </div>
                         </div>
                         <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
@@ -178,22 +178,26 @@
                     {"data": "responsible"},
                     {"data": "executor"},
                     {"data": "urgency"},
-                    {"data": null,
-                        "mRender":function(data,type,full){
+                    {
+                        "data": null,
+                        "mRender": function (data, type, full) {
                             {
-                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/update/" target="_BLANK"><i class="bx bxs-edit-alt" ></i></a>';
+                                ret = '<a class="underline" href="/logistics/waybill/' + data.pk + '/update/" target="_BLANK"><i class="bx bxs-edit-alt" ></i></a>';
                                 return ret;
                             }
                             return data.name;
-                        }},
-                    {"data": null,
-                        "mRender":function(data,type,full){
+                        }
+                    },
+                    {
+                        "data": null,
+                        "mRender": function (data, type, full) {
                             {
-                                ret ='<a class="underline" href="/logistics/waybill/'+data.pk+'/delete/" target="_BLANK"><i class="bx bx-trash"></i></a>';
+                                ret = '<a class="underline" href="/logistics/waybill/' + data.pk + '/delete/" target="_BLANK"><i class="bx bx-trash"></i></a>';
                                 return ret;
                             }
                             return data.name;
-                        }},
+                        }
+                    },
 
                 ],
             });

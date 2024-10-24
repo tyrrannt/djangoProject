@@ -48,7 +48,8 @@
             {% csrf_token %}
             {{ form.media }}
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }} от {{ object.document_date }}</h4>
+                <h4 class="font-weight-bold text-dark">Приказ № {{ object.document_number }}
+                    от {{ object.document_date }}</h4>
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
                         <label>Основные реквизиты</label>
@@ -62,7 +63,7 @@
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_foundation">Документ основание</label>
-                                            {{ form.document_foundation | attr:"onchange=DocumentsChange()"}}
+                                            {{ form.document_foundation | attr:"onchange=DocumentsChange()" }}
                                         </div>
                                         <div class="col-md-4 text-black-50">
                                             <label for="id_document_date">Дата документа</label>
@@ -143,7 +144,7 @@
                                         <div class="col-sm-12 text-black-50 mt-3">
                                             <label for="id_description">Содержание:</label>
                                             <div class="ck ck-content">
-                                                    {{ form.description | safe }}
+                                                {{ form.description | safe }}
                                             </div>
                                         </div>
                                     </div>
@@ -182,20 +183,25 @@
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'hrdepartment_app:order_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>
@@ -203,7 +209,7 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
-<script type="text/javascript">
+    <script type="text/javascript">
         function DocumentsChange() {
             document_foundation = document.getElementById("id_document_foundation").value;
             var validity_period_start = document.getElementById("id_validity_period_start");
@@ -229,7 +235,8 @@
                     {#$("#id_document_date").trigger("create")#}
                     if (data === 'ok') {
                         console.log("success");
-                    };
+                    }
+                    ;
                     DocumentsDateChange();
                 },
                 failure: function (data) {
@@ -237,17 +244,19 @@
                 }
             });
         };
+
         /**
          * ChangeSelect - изменяет поля Select в приказе: id_access - Общий доступ;
          * id_document_order_type - Личный состав; id_employee - Кирюшкина Ирина Алексеевна
          */
-        function ChangeSelect () {
+        function ChangeSelect() {
             $('#id_access').val(4).change();
             $('#id_document_order_type').val(2).change();
             var text = 'Кирюшкина Ирина Алексеевна';
-            var index = $('#id_employee option:contains('+text+')').val();
+            var index = $('#id_employee option:contains(' + text + ')').val();
             $('#id_employee').val(index).change();
         };
+
         /**
          * DocumentsDateChange - отправляет на сервер значение даты документа, и получает последний номер приказа
          * за этот день, и номера отмененных приказов.

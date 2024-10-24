@@ -62,15 +62,23 @@
                             <tbody id="item-variants">
                             {% for item in way_bills %}
                                 <tr>
-                                    <td>{{ item.document_date | date:"d.m.Y" }}<span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.place_of_departure }} <span style="color: red;" class="required">*</span></td>
+                                    <td>{{ item.document_date | date:"d.m.Y" }}<span style="color: red;"
+                                                                                     class="required">*</span></td>
+                                    <td>{{ item.place_of_departure }} <span style="color: red;"
+                                                                            class="required">*</span></td>
                                     <td>{{ item.comment }} <span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.place_division }} <span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.sender | FIO_format }} <span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.get_state_display }} <span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.responsible | FIO_format }} <span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.executor | FIO_format }} <span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.get_urgency_display }} <span style="color: red;" class="required">*</span></td>
+                                    <td>{{ item.place_division }} <span style="color: red;" class="required">*</span>
+                                    </td>
+                                    <td>{{ item.sender | FIO_format }} <span style="color: red;"
+                                                                             class="required">*</span></td>
+                                    <td>{{ item.get_state_display }} <span style="color: red;" class="required">*</span>
+                                    </td>
+                                    <td>{{ item.responsible | FIO_format }} <span style="color: red;"
+                                                                                  class="required">*</span></td>
+                                    <td>{{ item.executor | FIO_format }} <span style="color: red;"
+                                                                               class="required">*</span></td>
+                                    <td>{{ item.get_urgency_display }} <span style="color: red;"
+                                                                             class="required">*</span></td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -83,20 +91,25 @@
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                     <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'logistics_app:waybill_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>

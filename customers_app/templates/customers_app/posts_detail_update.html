@@ -85,19 +85,20 @@
                             </div>
                         </div>
                         <div class="form-group row align-items-center pb-3">
-                                        <div class="col-md-4 text-black-50 mt-3">
-                                            <label for="id_allowed_placed">Разрешение на публикацию:</label>
-                                            <input type="checkbox" name="allowed_placed" id="id_allowed_placed"
-                                                   {% if object.allowed_placed %}checked{% endif %}>
-                                        </div>
-                                    </div>
+                            <div class="col-md-4 text-black-50 mt-3">
+                                <label for="id_allowed_placed">Разрешение на публикацию:</label>
+                                <input type="checkbox" name="allowed_placed" id="id_allowed_placed"
+                                       {% if object.allowed_placed %}checked{% endif %}>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>

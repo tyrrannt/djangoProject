@@ -69,8 +69,8 @@
 
                 <div class="col-12 col-md-auto">
                     <button type="submit" {% if not user.is_superuser %}{% if object.executor != user %} disabled {% endif %}{% endif %}
-                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
@@ -78,15 +78,16 @@
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                     <a href="{% url 'library_app:blank_list' %}"
                        class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2' ></i> Закрыть </a>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
                     </div>
                 {% endif %}
             </div>
