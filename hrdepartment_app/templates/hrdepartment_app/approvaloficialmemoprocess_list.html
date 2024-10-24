@@ -8,32 +8,27 @@
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-
         {#        {% include 'library_app/breadcrumb.html' %}#}
-
         <!-- start: page -->
         <div class="row">
             <div class="col">
-
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
-
                                     <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                         <a href="{% url 'hrdepartment_app:memo_add' %}"
                                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
                                             <i class='bx bx-list-plus text-4 me-2'></i> Добавить служебную записку </a>
                                     </div>
-
                                     <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                         <a href="{% url 'hrdepartment_app:bpmemo_add' %}"
-                                           class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                            Запустить процесс </a>
+                                           class="btn btn-outline-info btn-px-4 py-3 d-flex
+                                                align-items-center font-weight-semibold line-height-1">
+                                            <i class='bx bxl-graphql text-4 me-2'></i> Запустить процесс </a>
                                     </div>
-
                                     {#                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
                                     {#                                        <input type="checkbox" class="btn-check" id="id_all" autocomplete="off"#}
                                     {#                                               onclick="CancellationChange()">#}
