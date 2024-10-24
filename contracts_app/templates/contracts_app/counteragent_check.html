@@ -26,7 +26,7 @@
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
-{#        {% include 'library_app/breadcrumb.html' %}#}
+        {#        {% include 'library_app/breadcrumb.html' %}#}
         <div>
             {% if form.errors %}
                 {% for field in form %}
@@ -52,66 +52,80 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-sm-12">
-                                {% if query %}
-                                    {% for field in query  %}
-                                        <h2>Результат поиска</h2>
-                                        <ul>
-                                        {% for key, value in field.items %}
-                                            {% if key == 'data' %}
-                                                <li><strong>{{key | change_key}}:</strong>
-                                                <ol>
-                                                {% for key2, value2 in value.items %}
-                                                    {% if key2 in 'state, opf, name, address, finance, management, fio'%}
-                                                        <li><strong>{{key2 | change_key}}:</strong>
-                                                        <ul>
-                                                            {% for key3, value3 in value2.items %}
-                                                                {% if key3 == 'data'%}
-                                                                    <li><strong>{{key3 | change_key}}:</strong>
-                                                                        <ol>
-                                                                            {% for key4, value4 in value3.items %}
-                                                                                {% if key4 == 'metro'%}
-                                                                                    <li><strong>{{key4 | change_key}}:</strong>
-                                                                                        <ul>
-                                                                                            {% for key5, value5 in value4.items %}
-                                                                                                {%  if value5 %}
-                                                                                                <li><strong>{{key5 | change_key}}:</strong> - {{ key5 | change_value:value5 }}</li>
-                                                                                                {% endif %}
-                                                                                            {% endfor %}
-                                                                                        </ul>
-                                                                                    </li>
-                                                                                {% else %}
-                                                                                    {%  if value4 %}
-                                                                                        <li><strong>{{key4 | change_key}}:</strong> - {{ key4 | change_value:value4 }}</li>
+                                    {% if query %}
+                                        {% for field in query %}
+                                            <h2>Результат поиска</h2>
+                                            <ul>
+                                                {% for key, value in field.items %}
+                                                    {% if key == 'data' %}
+                                                        <li><strong>{{ key | change_key }}:</strong>
+                                                            <ol>
+                                                                {% for key2, value2 in value.items %}
+                                                                    {% if key2 in 'state, opf, name, address, finance, management, fio' %}
+                                                                        <li><strong>{{ key2 | change_key }}:</strong>
+                                                                            <ul>
+                                                                                {% for key3, value3 in value2.items %}
+                                                                                    {% if key3 == 'data' %}
+                                                                                        <li>
+                                                                                            <strong>{{ key3 | change_key }}:</strong>
+                                                                                            <ol>
+                                                                                                {% for key4, value4 in value3.items %}
+                                                                                                    {% if key4 == 'metro' %}
+                                                                                                        <li>
+                                                                                                            <strong>{{ key4 | change_key }}:</strong>
+                                                                                                            <ul>
+                                                                                                                {% for key5, value5 in value4.items %}
+                                                                                                                    {% if value5 %}
+                                                                                                                        <li>
+                                                                                                                            <strong>{{ key5 | change_key }}:</strong>
+                                                                                                                            - {{ key5 | change_value:value5 }}
+                                                                                                                        </li>
+                                                                                                                    {% endif %}
+                                                                                                                {% endfor %}
+                                                                                                            </ul>
+                                                                                                        </li>
+                                                                                                    {% else %}
+                                                                                                        {% if value4 %}
+                                                                                                            <li>
+                                                                                                                <strong>{{ key4 | change_key }}:</strong>
+                                                                                                                - {{ key4 | change_value:value4 }}
+                                                                                                            </li>
+                                                                                                        {% endif %}
+                                                                                                    {% endif %}
+                                                                                                {% endfor %}
+                                                                                            </ol>
+                                                                                        </li>
+                                                                                    {% else %}
+                                                                                        {% if value3 %}
+                                                                                            <li>
+                                                                                                <strong>{{ key3 | change_key }}:</strong>
+                                                                                                - {{ key3 | change_value:value3 }}
+                                                                                            </li>
+                                                                                        {% endif %}
                                                                                     {% endif %}
-                                                                                {% endif %}
-                                                                            {% endfor %}
-                                                                        </ol>
-                                                                    </li>
-                                                                {% else %}
-                                                                    {%  if value3 %}
-                                                                        <li><strong>{{key3 | change_key}}:</strong> - {{ key3 | change_value:value3 }}</li>
+                                                                                {% endfor %}
+                                                                            </ul>
+                                                                        </li>
+                                                                    {% else %}
+                                                                        {% if value2 %}
+                                                                            <li>
+                                                                                <strong>{{ key2 | change_key }}:</strong>
+                                                                                - {{ key2 | change_value:value2 }}</li>
+                                                                        {% endif %}
                                                                     {% endif %}
-                                                                {% endif %}
-                                                            {% endfor %}
-                                                        </ul>
+                                                                {% endfor %}
+                                                            </ol>
                                                         </li>
                                                     {% else %}
-                                                        {%  if value2 %}
-                                                            <li><strong>{{key2 | change_key}}:</strong> - {{ key2 | change_value:value2  }}</li>
+                                                        {% if value %}
+                                                            <li><strong>{{ key | change_key }}:</strong>
+                                                                - {{ key | change_value:value }}</li>
                                                         {% endif %}
                                                     {% endif %}
                                                 {% endfor %}
-                                                </ol>
-                                                </li>
-                                            {% else %}
-                                                {%  if value %}
-                                                    <li><strong>{{key | change_key}}:</strong> - {{ key | change_value:value }}</li>
-                                                {% endif %}
-                                            {% endif %}
+                                            </ul>
                                         {% endfor %}
-                                        </ul>
-                                    {% endfor %}
-                                {% endif %}
+                                    {% endif %}
                                 </div>
                                 <div class="col-lg-2-5 col-xl-1-5">
                                     <i class="card-big-info-icon bx bxl-netlify"></i>
@@ -119,18 +133,21 @@
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <label for="id_counteragent">ИНН:</label>
-                                    <input type="text" name="counteragent" class="form-control mb-4" id="id_counteragent" placeholder="ИНН">
+                                    <input type="text" name="counteragent" class="form-control mb-4"
+                                           id="id_counteragent" placeholder="ИНН">
                                     <label for="id_counteragent_kpp">КПП:</label>
-                                    <input type="text" name="counteragent_kpp" class="form-control mb-4" id="id_counteragent_kpp" placeholder="КПП можно не указывать">
-                                </div>  
-                            <hr>
+                                    <input type="text" name="counteragent_kpp" class="form-control mb-4"
+                                           id="id_counteragent_kpp" placeholder="КПП можно не указывать">
+                                </div>
+                                <hr>
                                 <div class="col-lg-2-5 col-xl-1-5">
                                     <i class="card-big-info-icon bx bxl-netlify"></i>
                                     <p class="card-big-info-desc">Форма поиска контрагента по наименованию</p>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <label for="id_counteragent_name">Наименование:</label>
-                                    <input type="text" name="counteragent_name" class="form-control mb-4" id="id_counteragent_name" placeholder="Регистр не имеет значение">                                    
+                                    <input type="text" name="counteragent_name" class="form-control mb-4"
+                                           id="id_counteragent_name" placeholder="Регистр не имеет значение">
                                 </div>
                             </div>
                         </div>
@@ -141,17 +158,20 @@
 
                 <div class="col-12 col-md-auto">
                     <button type="submit"
-                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
                             data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Поиск
+                        <i class='bx bx-search-alt text-4 me-2'></i> Поиск
                     </button>
                 </div>
-                
+
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
                     </div>
                 {% endif %}
             </div>

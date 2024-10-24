@@ -13,7 +13,6 @@
                                 <a href="{% url 'contracts_app:post_del' item.contract_number.pk %}?pk={{ item.pk }}"
                                    class="card-action card-action-dismiss"></a>
                             </div>
-
                             <h2 class="card-title">{{ item.creation_date }}</h2>
                             <p class="card-subtitle">Автор: {{ item.responsible_person }}</p>
                         </header>

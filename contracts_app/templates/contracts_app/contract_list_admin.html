@@ -9,7 +9,7 @@
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
 
-{#        {% include 'library_app/breadcrumb.html' %}#}
+        {#        {% include 'library_app/breadcrumb.html' %}#}
 
         <!-- start: page -->
         <div class="row">
@@ -25,7 +25,7 @@
                                         <a href="{% url 'contracts_app:create' %}"
                                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить договор </a>
+                                            <i class='bx bx-list-plus text-4 me-2'></i> Добавить договор </a>
                                     </div>
                                 </div>
                             </div>
@@ -46,7 +46,7 @@
                                     <th width="3%"></th>
                                     <th width="10%">Номер договора</th>
                                     <th width="10%">Дата договора</th>
-{#                                    <th width="12%">Тип документа</th>#}
+                                    {#                                    <th width="12%">Тип документа</th>#}
                                     <th width="12%">Тип договора</th>
                                     <th width="34%">Предмет договора</th>
                                     <th width="25%">Контрагент</th>
@@ -58,7 +58,7 @@
                             </table>
 
                             <hr class="solid mt-5 opacity-4">
-{#                            {% include 'library_app/paginator.html' %}#}
+                            {#                            {% include 'library_app/paginator.html' %}#}
                             <div class="datatable-footer">
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
@@ -133,26 +133,25 @@
 
                     {#тут блок ниже#}
                 },
-                
+
                 "columns": [
                     {
                         "data": null,
                         "mRender": function (data, type, row) {
-                            if (row.actuality)  {
+                            if (row.actuality) {
                                 return "<span class='text-success' title='Действующий договор'><i class='bx bx-check-double'></i></span>";
-                            }
-                            else   {
+                            } else {
                                 return "<span class='text-danger' title='Срок действия договора истёк'><i class='bx bx-comment-x'></i></span>";
                             }
-                            
+
                         },
                     },
                     {
                         "data": "contract_number",
                         "mRender": function (data, type, row) {
-                            return "<a href=/contracts/"+row.pk+"/"+">" + data + "</a>";
+                            return "<a href=/contracts/" + row.pk + "/" + ">" + data + "</a>";
                         },
-                    },                    
+                    },
                     {"data": "date_conclusion"},
                     {"data": "type_of_contract"},
                     {"data": "subject_contract"},
@@ -160,7 +159,7 @@
                     {
                         "data": null,
                         "mRender": function (data, type, row) {
-                            return "<a href=/contracts/"+row.pk+"/update/"+"><i class='bx bxs-edit'></i></a>";
+                            return "<a href=/contracts/" + row.pk + "/update/" + "><i class='bx bxs-edit'></i></a>";
                         },
                     },
                 ],
