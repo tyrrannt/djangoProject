@@ -22,29 +22,28 @@
                                 <div class="row align-items-center mb-3">
                                     {% if user.is_staff %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="#"
-                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Добавить физическое лицо </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'customers_app:staff_list' %}?update=0"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Синхронизация сотрудников </a>
+                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
+                                                align-items-center font-weight-semibold line-height-1">
+                                                <i class='bx bx-sync text-4 me-2' ></i> Синхронизация с 1С </a>
                                         </div>
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'customers_app:staff_list' %}?update=1"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить рабочие данные </a>
+                                               class="btn btn-outline-success btn-px-4 py-3 d-flex
+                                                align-items-center font-weight-semibold line-height-1">
+                                                <i class='bx bx-cloud-upload text-4 me-2' ></i> Обновить рабочие данные </a>
                                         </div>
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'customers_app:staff_list' %}?update=2"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Обновить персональные данные </a>
+                                               class="btn btn-outline-success btn-px-4 py-3 d-flex
+                                                align-items-center font-weight-semibold line-height-1">
+                                                <i class='bx bx-cloud-upload text-4 me-2' ></i> Обновить персональные данные </a>
                                         </div>
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'customers_app:staff_list' %}?update=3"
-                                               class="btn btn-danger btn-md font-weight-semibold btn-py-2 px-4">+
-                                                Скрыть уволенных  </a>
+                                               class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                                                align-items-center font-weight-semibold line-height-1">
+                                                <i class='bx bx-hide text-4 me-2' ></i> Скрыть уволенных </a>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -180,7 +179,7 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
-                    $(nRow).attr("href", id + '/' );
+                    $(nRow).attr("href", id + '/');
                     $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {
                         window.location = $(this).attr('href');
