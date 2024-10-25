@@ -171,7 +171,9 @@
                     <div class="tab-content">
                         <div id="overview" class="tab-pane active">
                             <div class="p-3">
-                                <a href="{% url 'customers_app:post_add' %}" class="btn btn-primary btn-xs">Добавить</a>
+                                <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3
+                                                align-items-left font-weight-semibold line-height-1">
+                                    <i class='bx bx-list-plus text-4 me-2'></i> Добавить</a>
                                 <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
                                 <div class="timeline timeline-simple mt-3 mb-3">
                                     <div class="tm-body">
@@ -258,7 +260,7 @@
                                         <input class="form-control" type="password" id="id_pxmx" value="">
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">OK
+                                        <button class="btn btn-outline-primary" style="width: 100%" onclick="filter_date()"><i class='bx bxs-file-find text-4 me-2'></i> Сформировать
                                         </button>
                                     </div>
                                 </div>
@@ -317,13 +319,14 @@
                                         </select>
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="report_date()">OK
+                                        <button class="btn btn-outline-primary" style="width: 100%" onclick="report_date()">
+                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
                                         </button>
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" style="width: 100%"
+                                        <button class="btn btn-outline-info" style="width: 100%"
                                                 onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">
-                                            Журнал
+                                            <i class='bx bxs-book-content text-4 me-2'></i> Журнал
                                         </button>
                                     </div>
                                 </div>
@@ -440,8 +443,8 @@
                                                id="id_vacation_date" name="vacation_date"/>
                                     </div>
                                     <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="report_vacation()">
-                                            OK
+                                        <button class="btn btn-outline-primary" style="width: 100%" onclick="report_vacation()">
+                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
                                         </button>
                                     </div>
                                 </div>
