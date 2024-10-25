@@ -1,4 +1,5 @@
 from decouple import config
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
@@ -8,6 +9,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from loguru import logger
+
 
 from administration_app.models import PortalProperty
 from library_app.forms import (
@@ -187,3 +189,11 @@ class DocumentFormUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         kwargs = super().get_form_kwargs()
         kwargs.update({"user": self.request.user.pk})
         return kwargs
+
+
+@login_required
+def video(request):
+
+    types_count = ''
+
+    return render(request, 'library_app/video.html', context={'types_count': types_count})

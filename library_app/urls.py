@@ -6,6 +6,7 @@ app_name = 'library_app'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('video/', views.video, name='video'),
     path('help/', views.HelpList.as_view(), name='help_list'),
     path('help/<int:pk>/', views.HelpItem.as_view(), name='help'),
     path('help/<int:pk>/update/', views.HelpItemUpdate.as_view(), name='help_update'),
