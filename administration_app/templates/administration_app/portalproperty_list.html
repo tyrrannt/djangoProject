@@ -27,47 +27,140 @@
                                                        name="control_date">
                                             </label>
                                         </div>
-                                        <div class="btn-group pb-2">
-                                            <a href="{% url 'administration_app:property_list' %}?update=0"
-                                               class="btn btn-primary">Выдать общие права</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=1"
-                                               class="btn btn-primary">Обновить права</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=2"
-                                               class="btn btn-primary">Установить права всем пользователям - Общие</a>
-                                            <a href="#" id="update-timecontrol" class="btn btn-primary">Обновить данные
-                                                с TimeControl</a>
+
+                                        <div class="container-fluid">
+                                            <div class="row">
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <!-- Содержимое элемента -->
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <!-- Содержимое элемента -->
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <!-- Содержимое элемента -->
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <!-- Содержимое элемента -->
+                                                </div>
+                                            </div>
                                         </div>
-                                        <br>
-                                        <div class="btn-group pb-2">
-                                            <a href="{% url 'administration_app:property_list' %}?update=4"
-                                               class="btn btn-primary">Обновить пароли</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=5"
-                                               class="btn btn-primary">Больничные</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=6"
-                                               class="btn btn-primary">День рождения</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=7"
-                                               class="btn btn-primary">Медосмотры</a>
+                                        <div class="container-fluid">
+                                            <div class="row">
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=0"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-cog text-4 me-2'></i> Выдать общие права</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=1"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-reset text-4 me-2'></i> Обновить права</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=2"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-cog text-4 me-2'></i> Установить права всем
+                                                        пользователям - Общие</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="#" id="update-timecontrol"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные с
+                                                        TimeControl</a>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="btn-group pb-2">
-                                            <a href="{% url 'administration_app:property_list' %}?update=8"
-                                               class="btn btn-primary">Отгулы</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=9"
-                                               class="btn btn-primary">Проверка договоров на ошибки</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=10"
-                                               class="btn btn-primary">Обновить данные по отпускам</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=11"
-                                               class="btn btn-primary">Годовой отчет</a>
+
+                                        <div class="container-fluid">
+                                            <div class="row">
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=4"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-reset text-4 me-2'></i> Обновить пароли</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=5"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-capsule text-4 me-2'></i> Больничные</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=6"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-cog text-4 me-2'></i> День рождения</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=7"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные по медосмотрам</a>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="btn-group pb-2">
-                                            <a href="{% url 'administration_app:property_list' %}?update=12"
-                                               class="btn btn-primary">Группы</a>
-                                            <a href="{% url 'administration_app:property_list' %}?update=13"
-                                               class="btn btn-primary">Выгрузить модель в файл</a>
-{#                                            <a href="{% url 'administration_app:property_list' %}?update=10"#}
-{#                                               class="btn btn-primary">Обновить данные по отпускам</a>#}
-{#                                            <a href="{% url 'administration_app:property_list' %}?update=11"#}
-{#                                               class="btn btn-primary">Годовой отчет</a>#}
+
+                                        <div class="container-fluid">
+                                            <div class="row">
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=8"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные по отгулам</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=9"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-check-double text-4 me-2'></i> Проверка договоров на
+                                                        ошибки</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=10"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-sync text-4 me-2'></i> Обновить данные по
+                                                        отпускам</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=11"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bxs-report text-4 me-2'></i> Годовой отчет</a>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        <div class="container-fluid">
+                                            <div class="row">
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=12"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-group text-4 me-2'></i> Группы</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <a href="{% url 'administration_app:property_list' %}?update=13"
+                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex 
+                                                align-items-center font-weight-semibold line-height-1">
+                                                        <i class='bx bx-cloud-download text-4 me-2'></i> Выгрузить модель в
+                                                        файл</a>
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    {#                                            <a href="{% url 'administration_app:property_list' %}?update=14"#}
+                                                    {#                                               class="btn btn-primary">Обновить данные по отпускам</a>#}
+                                                </div>
+                                                <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    {#                                            <a href="{% url 'administration_app:property_list' %}?update=15"#}
+                                                    {#                                               class="btn btn-primary">Годовой отчет</a>#}
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <select name="grops" id="id_groups"
                                                     class="form-control form-control-modern">
@@ -91,7 +184,7 @@
                                 </tr>
                                 </thead>
                             </table>
-                            
+
 
                             <hr class="solid mt-5 opacity-4">
 
