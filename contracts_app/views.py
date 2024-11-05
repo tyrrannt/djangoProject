@@ -394,10 +394,10 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         # except Exception as _ex:
         #     url_match = reverse_lazy('contracts_app:index')
         #     return redirect(url_match)
-        contragent = request.GET.get("contragent", None)
-        print(contragent)
-        if contragent:
-            print(contragent)
+        # contragent = request.GET.get("contragent", None)
+        # print(contragent)
+        # if contragent:
+        #     print(contragent)
         return super(ContractUpdate, self).get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

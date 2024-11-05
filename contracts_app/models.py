@@ -2,7 +2,7 @@ import datetime
 import pathlib
 
 from django.db import models
-from django.db.models import F
+from django.db.models import F, Max
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -21,6 +21,15 @@ def contract_directory_path(instance, filename):
         inn = f'{instance.contract_counteragent.pk:010}'
     else:
         inn = instance.contract_counteragent.inn
+
+    ext = filename.split('.')[-1]
+    # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+    max_pk = Contract.objects.aggregate(Max('pk'))['pk__max']
+    max_pk += 1
+    uid = f'{max_pk:07}'
+    filename = f'{instance.type_of_document.file_name_prefix}-{inn}-' \
+               f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
+
     return f'contracts/{inn}/{instance.contract_counteragent.kpp}/{filename}'
 
 
@@ -171,6 +180,12 @@ class ContractModel(models.Model):
 
     @property
     def is_past_due(self):
+        """
+        Этот метод проверяет, прошёл ли срок завершения контракта.
+        Он возвращает True, если срок завершения контракта уже прошёл или если срок завершения равен None
+        (что вызывает ошибку TypeError при сравнении с today.date()). В противном случае возвращает False.
+        :return: bool
+        """
         try:
             today = datetime.datetime.today()
             return today.date() < self.closing_date
@@ -268,31 +283,31 @@ class Posts(models.Model):
 #         return f'{self.name}'
 
 
-@receiver(post_save, sender=Contract)
-def rename_file_name(sender, instance, **kwargs):
-    try:
-        # Получаем имя сохраненного файла
-        file_name = pathlib.Path(instance.doc_file.name).name
-        # Получаем путь к файлу
-        path_name = pathlib.Path(instance.doc_file.name).parent
-        # Получаем расширение файла
-        ext = file_name.split('.')[-1]
-        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-        uid = f'{instance.pk:07}'
-        if instance.contract_counteragent.inn == '':
-            inn = f'{instance.contract_counteragent.pk:010}'
-        else:
-            inn = instance.contract_counteragent.inn
-        filename = f'{instance.type_of_document.file_name_prefix}-{inn}-' \
-                   f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
-        if file_name:
-            pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
-                                pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
-
-        instance.doc_file = f'contracts/{inn}/' \
-                            f'{instance.contract_counteragent.kpp}/{filename}'
-        if file_name != filename:
-            instance.save()
-    except Exception as _ex:
-        # print(_ex)
-        pass
+# @receiver(post_save, sender=Contract)
+# def rename_file_name(sender, instance, **kwargs):
+#     try:
+#         # Получаем имя сохраненного файла
+#         file_name = pathlib.Path(instance.doc_file.name).name
+#         # Получаем путь к файлу
+#         path_name = pathlib.Path(instance.doc_file.name).parent
+#         # Получаем расширение файла
+#         ext = file_name.split('.')[-1]
+#         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+#         uid = f'{instance.pk:07}'
+#         if instance.contract_counteragent.inn == '':
+#             inn = f'{instance.contract_counteragent.pk:010}'
+#         else:
+#             inn = instance.contract_counteragent.inn
+#         filename = f'{instance.type_of_document.file_name_prefix}-{inn}-' \
+#                    f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
+#         if file_name:
+#             pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
+#                                 pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
+#
+#         instance.doc_file = f'contracts/{inn}/' \
+#                             f'{instance.contract_counteragent.kpp}/{filename}'
+#         if file_name != filename:
+#             instance.save()
+#     except Exception as _ex:
+#         # print(_ex)
+#         pass
