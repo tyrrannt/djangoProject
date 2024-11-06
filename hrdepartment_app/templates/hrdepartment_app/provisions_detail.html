@@ -182,6 +182,34 @@
                         <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
                 </div>
             {% endif %}
+            <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                <a href="#" onclick="printPDF()"
+                   class="btn btn-outline-secondary btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-printer text-4 me-2'></i> Распечатать</a>
+                {#                    <button class="btn btn-warning mt-2">Распечатать#}
+                {#                    </button>#}
+                {% if object.scan_file %}
+                    <iframe id="pdfFrame" src="{{ object.scan_file.url }}"
+                            hidden="hidden"></iframe>
+                    <script>
+                        function printPDF() {
+                            var iframe = document.getElementById('pdfFrame');
+                            if (iframe.contentWindow) {
+                                iframe.contentWindow.print();
+                            } else {
+                                console.error("PDF is not loaded yet.");
+                            }
+                        }
+
+                        // Проверка загрузки PDF
+                        var iframe = document.getElementById('pdfFrame');
+                        iframe.onload = function () {
+                            console.log("PDF loaded successfully.");
+                        };
+                    </script>
+                {% endif %}
+            </div>
             <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
                 <a href="{% url 'hrdepartment_app:provisions_list' %}"
                    class="btn btn-outline-dark btn-px-4 py-3 d-flex
