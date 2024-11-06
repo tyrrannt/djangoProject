@@ -38,176 +38,209 @@
 
         <!-- start: page -->
         <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="true">
-        <div class="col-lg-12">
-            <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
-                от {{ object.document_date }} г.</h4>
-            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                <section class="toggle active">
-                    <label>Файл</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-lg-12 text-black-50">
-                                        <label for="id_doc_file">Файл документа:</label>
-                                        {% if object.scan_file %}
-                                            <div class="form-row outerContainer" id="outerContainer"
-                                                 style="height: 1080px">
-                                                {% include 'contracts_app/pdf-js.html' %}
-                                            </div>
-                                            <a href="{{ object.scan_file.url }}" target="_blank">Открыть документ</a>
-                                            {#                                            <object data="{{ object.scan_file.url }}" type="application/pdf"#}
-                                            {#                                                    width="750px"#}
-                                            {#                                                    height="750px">#}
-                                            {#                                                <embed src="{{ object.scan_file.url }}" type="application/pdf">#}
-                                            {#                                                <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите#}
-                                            {#                                                    PDF-файл, чтобы#}
-                                            {#                                                    просмотреть его: <a#}
-                                            {#                                                            href="{{ object.scan_file.url }}">Скачать PDF.</a>.</p>#}
-                                            {#                                                </embed>#}
-                                            {#                                            </object>#}
-                                        {% endif %}
+        <div class="order-details action-buttons-fixed" method="post">
+            <div class="col-lg-12">
+                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
+                    от {{ object.document_date }} г.</h4>
+                <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                    <section class="toggle active">
+                        <label>Файл</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row text">
+                                        <div class="col-lg-12 text-black-50">
+                                            <label for="id_doc_file">Файл документа:</label>
+                                            {% if object.scan_file %}
+                                                <div class="form-row outerContainer" id="outerContainer"
+                                                     style="height: 1080px">
+                                                    {% include 'contracts_app/pdf-js.html' %}
+                                                </div>
+                                                <a href="{{ object.scan_file.url }}" target="_blank">Открыть
+                                                    документ</a>
+                                                {#                                            <object data="{{ object.scan_file.url }}" type="application/pdf"#}
+                                                {#                                                    width="750px"#}
+                                                {#                                                    height="750px">#}
+                                                {#                                                <embed src="{{ object.scan_file.url }}" type="application/pdf">#}
+                                                {#                                                <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите#}
+                                                {#                                                    PDF-файл, чтобы#}
+                                                {#                                                    просмотреть его: <a#}
+                                                {#                                                            href="{{ object.scan_file.url }}">Скачать PDF.</a>.</p>#}
+                                                {#                                                </embed>#}
+                                                {#                                            </object>#}
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
-                <section class="toggle">
-                    <label>Основные реквизиты</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-lg-12 text-black-50">
-                                        <label for="id_document_name">Наименование документа</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="document_name" value="{{ object.document_name }}"
-                                               id="id_document_name"/>
+                    </section>
+                    <section class="toggle">
+                        <label>Основные реквизиты</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row text">
+                                        <div class="col-lg-12 text-black-50">
+                                            <label for="id_document_name">Наименование документа</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="document_name" value="{{ object.document_name }}"
+                                                   id="id_document_name"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_type_of_document">Тип документа</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="type_of_document" value="{{ object.type_of_document }}"
+                                                   id="id_type_of_document"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_date">Дата документа</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="document_date" value="{{ object.document_date }}"
+                                                   id="id_document_date"
+                                                   disabled data-plugin-datepicker
+                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_number">Номер документа</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="document_number" value="{{ object.document_number }}"
+                                                   id="id_document_number"/>
+                                        </div>
                                     </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_type_of_document">Тип документа</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="type_of_document" value="{{ object.type_of_document }}"
-                                               id="id_type_of_document"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_date">Дата документа</label>
-                                        <input type="text" class="form-control form-control-modern"
-                                               name="document_date" value="{{ object.document_date }}"
-                                               id="id_document_date"
-                                               disabled data-plugin-datepicker
-                                               data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_number">Номер документа</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="document_number" value="{{ object.document_number }}"
-                                               id="id_document_number"/>
-                                    </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_access">Уровень доступа</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="access" value="{{ object.access }}" id="id_access"/>
+                                    <div class="row text">
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_access">Уровень доступа</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="access" value="{{ object.access }}" id="id_access"/>
 
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_validity_period_start">Действителен с:</label>
-                                        <input type="text" class="form-control form-control-modern"
-                                               name="validity_period_start" id="id_validity_period_start"
-                                               disabled data-plugin-datepicker
-                                               value="{{ object.validity_period_start }}"
-                                               data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_validity_period_start">Действителен с:</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="validity_period_start" id="id_validity_period_start"
+                                                   disabled data-plugin-datepicker
+                                                   value="{{ object.validity_period_start }}"
+                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
 
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_validity_period_end">Действителен по:</label>
-                                        <input type="text" class="form-control form-control-modern"
-                                               name="validity_period_end" id="id_validity_period_end"
-                                               disabled data-plugin-datepicker
-                                               value="{{ object.validity_period_end }}"
-                                               data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_validity_period_end">Действителен по:</label>
+                                            <input type="text" class="form-control form-control-modern"
+                                                   name="validity_period_end" id="id_validity_period_end"
+                                                   disabled data-plugin-datepicker
+                                                   value="{{ object.validity_period_end }}"
+                                                   data-plugin-options='{"orientation": "bottom", "format": "yyyy-mm-dd"}'/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
-                <section class="toggle">
-                    <label>Служебная информация</label>
-                    <div class="toggle-content">
-                        <div class="form-row">
-                            <div class="form-group col mb-3">
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_division">Подразделение</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="document_division" value="{{ object.document_division }}"
-                                               id="id_document_division"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_document_job">Должность</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="document_job" value="{{ object.document_job }}"
-                                               id="id_document_job"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_executor">Исполнитель</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="executor" value="{{ object.executor | FIO_format }}"
-                                               id="id_executor"/>
-                                    </div>
-                                    <div class="col-md-4 text-black-50">
-                                        <label for="id_employee">Ответственное лицо</label>
-                                        <input type="text" class="form-control form-control-modern" disabled
-                                               name="employee" value="
+                    </section>
+                    <section class="toggle">
+                        <label>Служебная информация</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row text">
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_division">Подразделение</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="document_division" value="{{ object.document_division }}"
+                                                   id="id_document_division"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_document_job">Должность</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="document_job" value="{{ object.document_job }}"
+                                                   id="id_document_job"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_executor">Исполнитель</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="executor" value="{{ object.executor | FIO_format }}"
+                                                   id="id_executor"/>
+                                        </div>
+                                        <div class="col-md-4 text-black-50">
+                                            <label for="id_employee">Ответственное лицо</label>
+                                            <input type="text" class="form-control form-control-modern" disabled
+                                                   name="employee" value="
 
-                                                {% for item in object.employee.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }},{% endif %}{% endfor %}"
-                                               id="id_employee"/>
+
+
+                                                    {% for item in object.employee.iterator %}{% if forloop.last %}{{ item | FIO_format }}{% else %}{{ item | FIO_format }},{% endif %}{% endfor %}"
+                                                   id="id_employee"/>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="row text">
-                                    <div class="col-md-4 text-black-50 mt-3">
-                                        <label for="id_allowed_placed">Разрешение на публикацию:</label>
-                                        <input type="checkbox" name="allowed_placed" id="id_allowed_placed"
-                                               {% if object.allowed_placed %}checked{% endif %}>
-                                    </div>
-                                    <div class="col-md-4 text-black-50 mt-3">
-                                        <label for="id_actuality">Актуальность:</label>
-                                        <input type="checkbox" name="actuality" id="id_actuality"
-                                               {% if object.actuality %}checked{% endif %}>
+                                    <div class="row text">
+                                        <div class="col-md-4 text-black-50 mt-3">
+                                            <label for="id_allowed_placed">Разрешение на публикацию:</label>
+                                            <input type="checkbox" name="allowed_placed" id="id_allowed_placed"
+                                                   {% if object.allowed_placed %}checked{% endif %}>
+                                        </div>
+                                        <div class="col-md-4 text-black-50 mt-3">
+                                            <label for="id_actuality">Актуальность:</label>
+                                            <input type="checkbox" name="actuality" id="id_actuality"
+                                                   {% if object.actuality %}checked{% endif %}>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
-            </div>
-        </div>
-        <div class="row action-buttons">
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                <a href="{% url 'hrdepartment_app:jobdescription_update' object.pk %}"
-                   class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
-            </div>
-            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                <a href="{% url 'hrdepartment_app:jobdescription_list' %}"
-                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-            </div>
-            {% if user.is_superuser %}
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="#"
-                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-trash text-4 me-2"></i> Удалить
-                    </a>
+                    </section>
                 </div>
-            {% endif %}
+            </div>
+            <div class="row action-buttons">
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                    <a href="{% url 'hrdepartment_app:jobdescription_update' object.pk %}"
+                       class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
+                </div>
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                    <a href="#" onclick="printPDF()"
+                       class="btn btn-outline-secondary btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-printer text-4 me-2'></i> Распечатать</a>
+                    {#                    <button class="btn btn-warning mt-2">Распечатать#}
+                    {#                    </button>#}
+                    {% if object.scan_file %}
+                        <iframe id="pdfFrame" src="{{ object.scan_file.url }}"
+                                hidden="hidden"></iframe>
+                        <script>
+                            function printPDF() {
+                                var iframe = document.getElementById('pdfFrame');
+                                if (iframe.contentWindow) {
+                                    iframe.contentWindow.print();
+                                } else {
+                                    console.error("PDF is not loaded yet.");
+                                }
+                            }
+
+                            // Проверка загрузки PDF
+                            var iframe = document.getElementById('pdfFrame');
+                            iframe.onload = function () {
+                                console.log("PDF loaded successfully.");
+                            };
+                        </script>
+                    {% endif %}
+                </div>
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                    <a href="{% url 'hrdepartment_app:jobdescription_list' %}"
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+                </div>
+                {% if user.is_superuser %}
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="#"
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
         <!-- end: page -->
     </section>
