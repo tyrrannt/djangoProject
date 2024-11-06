@@ -73,6 +73,11 @@ urlpatterns = [
         views.ChangeAvatarUpdate.as_view(),
         name="avatar_update",
     ),
+    # path(
+    #     "password/<int:pk>/update/",
+    #     views.ChangeAvatarUpdate.as_view(),
+    #     name="avatar_update",
+    # ),
     # path("affiliation/", AffiliationListView.as_view(), name="affiliation-list"),
     # path(
     #     "affiliation/<int:pk>",

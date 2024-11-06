@@ -36,6 +36,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from hrdepartment_app.hrdepartment_util import get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
     get_norm_time_at_custom_day
+from hrdepartment_app.tasks import send_email_single_notification
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -406,6 +407,19 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
     form_class = ChangeAvatarUpdateForm
     template_name = 'customers_app/change_avatar.html'
 
+# def change_password(request):
+#
+#     if request.method == 'POST':
+#         form = ChangePasswordForm(request.POST)
+#         if form.is_valid():
+#             user = request.user
+#             user.set_password(form.cleaned_data['new_password'])
+#             user.save()
+#             update_session_auth_hash(request, user)
+#             return redirect('customers_app:profile')
+#     else:
+#         form = ChangePasswordForm()
+#     return render(request, 'customers_app/change_password.html', {'form': form})
 
 # class DataBaseUserUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 #     model = DataBaseUser
@@ -754,6 +768,42 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         else:
             logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
             raise PermissionDenied
+
+    # def get(self, request, *args, **kwargs):
+    #     if self.request.GET.get('update') == '0':
+    #         user_object = self.get_object()
+    #         if user_object.user_work_profile.work_email_password:
+    #             user_object.set_password(user_object.user_work_profile.work_email_password)
+    #             user_object.save()
+    #             print(f'changed to <<{user_object.user_work_profile.work_email_password}>> successfully')
+    #         else:
+    #             context = {
+    #                 'error': 'Не смог изменить пароль'
+    #             }
+    #             self.get_context_data(context)
+    #     return super(StaffDetail, self).get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Получаем параметр запроса 'value'
+        value = self.request.GET.get('update')
+
+        if value == '0':
+            try:
+                user_object = self.get_object()
+                if user_object.user_work_profile.work_email_password != '':
+                    user_object.set_password(user_object.user_work_profile.work_email_password)
+                    user_object.save()
+                    pk = user_object.pk
+                    send_email_single_notification.delay(pk)
+                    context['pass_change'] = 'changed to <<' + user_object.user_work_profile.work_email_password + '>> successfully'
+                else:
+                    context['pass_change'] = 'User has no password'
+
+            except ValueError:
+                context['pass_change'] = "Invalid value"
+
+        return context
 
 
 class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):

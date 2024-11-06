@@ -107,6 +107,42 @@ def send_email_notification():
         logger.debug(f"Failed to change {errors} passwords!")
     return count, errors
 
+@app.task()
+def send_email_single_notification(pk):
+    item = DataBaseUser.objects.get(pk=pk)
+    mail_to = item.email
+    subject_mail = (
+        f"Уведомление о доступе к Вашей учетной записи на портале"
+    )
+    current_context = {
+        "name": item.first_name,
+        "surname": item.surname,
+        "text": f"Уведомляем Вас, что для Вам открыт доступ к корпоративному порталу. Данные для авторизации указаны ниже:",
+        "sign": f"Ваш логин: <u>{item.username}</u><br>Ваш пароль: <u>{item.user_work_profile.work_email_password}</u>",
+        "color": "white",
+    }
+    text_content = render_to_string(
+        "hrdepartment_app/change_password.html", current_context
+    )
+    html_content = render_to_string(
+        "hrdepartment_app/change_password.html", current_context
+    )
+    plain_message = strip_tags(html_content)
+    try:
+        mail.send_mail(
+            subject_mail,
+            plain_message,
+            EMAIL_HOST_USER,
+            [
+                mail_to,
+                EMAIL_HOST_USER,
+            ],
+            html_message=html_content,
+        )
+        logger.info(f"Сообщение для {mail_to} отправлено!")
+    except Exception as _ex:
+        logger.debug(f"Failed to send email to {mail_to} because {_ex}")
+
 
 def change_sign():
     list_obj = HappyBirthdayGreetings.objects.all()
