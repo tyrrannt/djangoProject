@@ -42,6 +42,7 @@ class ContractsAddForm(forms.ModelForm):
     #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     official_information = forms.CharField(required=False)
 
+
     class Meta:
         model = Contract
         fields = [ 'parent_category', 'contract_counteragent', 'contract_number', 'official_information',
@@ -55,6 +56,7 @@ class ContractsAddForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.parent = kwargs.pop('parent')
         self.executor_user = kwargs.pop('executor')
+
         if self.parent:
             initial = kwargs.get('initial', {})
             try:
@@ -84,6 +86,7 @@ class ContractsAddForm(forms.ModelForm):
             initial['parent_category'] = None
         super(ContractsAddForm, self).__init__(*args, **kwargs)
         self.fields['executor'].queryset  = DataBaseUser.objects.filter(pk=self.executor_user)
+        self.fields["executor"].required = False
         # self.fields['parent_category'].queryset = Contract.objects.filter(pk=self.parent)
         # print(self.parent)
         # if self.parent:
