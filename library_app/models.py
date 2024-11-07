@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
+from django.utils import timezone
 from django_ckeditor_5.fields import CKEditor5Field
 from loguru import logger
 
@@ -115,6 +116,34 @@ class DocumentForm(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Contest(models.Model):
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    voting_end_date = models.DateTimeField()
+
+    def is_submission_open(self):
+        return self.start_date <= timezone.now() < self.end_date
+
+    def is_voting_open(self):
+        return self.end_date <= timezone.now() < self.voting_end_date
+
+class Poem(models.Model):
+    user = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255, verbose_name='Название стиха')
+    content = models.TextField(verbose_name='Содержание стиха')
+    contest = models.ForeignKey(Contest, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+class Vote(models.Model):
+    user = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE)
+    poem = models.ForeignKey(Poem, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'poem')
 
 
 # @receiver(post_save, sender=DocumentForm)

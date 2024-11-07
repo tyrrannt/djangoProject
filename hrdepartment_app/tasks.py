@@ -350,10 +350,14 @@ def happy_birthday():
             description = f"Сегодня {item} празднует свой {age}-й день рождения!"
         else:
             description = f"Сегодня {item} празднует свой 18-й день рождения!"
+        try:
+            responsible = DataBaseUser.objects.get(pk=1)
+        except Exception as _ex:
+            responsible = DataBaseUser.objects.get(username='proxmox')
         posts_dict = {
             "post_description": description,
             "allowed_placed": True,
-            "responsible": DataBaseUser.objects.get(pk=1),
+            "responsible": responsible,
             "post_date_start": datetime.datetime.today(),
             "post_date_end": datetime.datetime.today(),
         }

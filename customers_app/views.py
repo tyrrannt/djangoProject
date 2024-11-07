@@ -268,8 +268,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 df["Time"] = (df["End"] - df["Start"]).apply(lambda x: x.total_seconds() if x.total_seconds() > 0 else 0)   # В часах
                 # Группируем по дате и применяем функцию
+
                 df = df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
                 # Группируем по FIO и Date и применяем функцию
+
                 # df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
                 df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(drop=True)
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
@@ -302,9 +304,11 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Создание DataFrame с полным диапазоном дат
                 full_df = pd.DataFrame({'Дата': full_date_range})
+
                 # Объединение существующих данных с полным диапазоном дат
                 df = pd.merge(full_df, df, on='Дата', how='outer')
                 # Заполнение недостающих данных
+
                 df['Интервал'] = df['Интервал'].fillna('0:00-0:00')
                 df['Time'] = df['Time'].fillna(0)
 
@@ -318,14 +322,18 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Обновление поля Тип в исходном DataFrame
                 df.update(filtered_df)
+
                 # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
                 df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
+
                 # Вычисление разности между временем введенным и временем по производственному календарю
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
+
                 # Получение общей суммы времени за все дни
                 total_time = df['Time'].sum()
                 # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
+                print(total_time, norm_time*3600)
                 delta = (total_time - norm_time*3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
 

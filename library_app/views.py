@@ -1,9 +1,9 @@
-from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.db import IntegrityError
 from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
@@ -16,9 +16,10 @@ from library_app.forms import (
     HelpItemAddForm,
     HelpItemUpdateForm,
     DocumentFormAddForm,
-    DocumentFormUpdateForm,
+    DocumentFormUpdateForm, PoemForm, VoteConfirmationForm,
 )
-from library_app.models import HelpTopic, HelpCategory, DocumentForm
+from library_app.models import HelpTopic, HelpCategory, DocumentForm, Contest, Poem, Vote
+
 
 # Create your views here.
 # logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
@@ -197,3 +198,81 @@ def video(request):
     types_count = ''
 
     return render(request, 'library_app/video.html', context={'types_count': types_count})
+
+
+@login_required
+def submit_poem(request):
+    contest = Contest.objects.latest('start_date')
+    if not contest.is_submission_open():
+        return render(request, 'library_app/contest_closed.html')
+
+    try:
+        poem = Poem.objects.get(user=request.user, contest=contest)
+    except Poem.DoesNotExist:
+        poem = None
+
+    if request.method == 'POST':
+        form = PoemForm(request.POST, instance=poem)
+        if form.is_valid():
+            poem = form.save(commit=False)
+            poem.user = request.user
+            poem.contest = contest
+            poem.save()
+            return redirect('library_app:submit_poem')
+    else:
+        form = PoemForm(instance=poem)
+
+    return render(request, 'library_app/submit_poem.html', {'form': form})
+
+@login_required
+def vote(request):
+    contest = Contest.objects.latest('start_date')
+    if not contest.is_voting_open():
+        return render(request, 'library_app/voting_closed.html')
+
+    poems = Poem.objects.filter(contest=contest)
+    if request.method == 'POST':
+        poem_id = request.POST.get('poem')
+        poem = get_object_or_404(Poem, id=poem_id)
+
+        try:
+            Vote.objects.create(user=request.user, poem=poem)
+            return redirect('library_app:vote_success')
+        except IntegrityError:
+            # Пользователь уже проголосовал, предлагаем переголосовать
+            if 'confirm_vote' in request.POST:
+                # Удаляем старый голос и создаем новый
+                Vote.objects.filter(user=request.user).delete()
+                Vote.objects.create(user=request.user, poem=poem)
+                return redirect('library_app:vote_success')
+            else:
+                # Показываем форму для подтверждения переголосования
+                form = VoteConfirmationForm()
+                return render(request, 'library_app/confirm_vote.html', {'form': form, 'poem': poem})
+
+    return render(request, 'library_app/vote.html', {'poems': poems})
+
+
+
+@login_required
+def vote_success(request):
+    return render(request, 'library_app/vote_success.html')
+
+@login_required
+def results(request):
+    contest = Contest.objects.latest('start_date')
+    poems = Poem.objects.filter(contest=contest)
+    votes = Vote.objects.filter(poem__in=poems)
+
+    # Подсчет голосов
+    vote_count = {}
+    for vote in votes:
+        if vote.poem.id in vote_count:
+            vote_count[vote.poem.id] += 1
+        else:
+            vote_count[vote.poem.id] = 1
+
+    # Сортировка по количеству голосов
+    sorted_poems = sorted(poems, key=lambda x: vote_count.get(x.id, 0), reverse=True)
+
+    return render(request, 'library_app/results.html', {'poems': sorted_poems[:3]})

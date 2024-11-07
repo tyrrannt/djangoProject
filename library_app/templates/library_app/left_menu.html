@@ -96,12 +96,12 @@
                                             </a>
                                         </li>
                                     {% endif %}
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:reportcard_detail_ias' %}">
-                                                Табель РВ (ИАС)
-                                            </a>
-                                        </li>
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'hrdepartment_app:reportcard_detail_ias' %}">
+                                            Табель РВ (ИАС)
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
                             <li class="nav-parent">
@@ -381,6 +381,31 @@
                             <span>Справка</span>
                         </a>
                     </li>
+                {% if user.is_superuser %}
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                            <span>Конкурс</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
+                                    Прием стихов
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:vote' %}">
+                                    Голосование
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:results' %}">
+                                    Результаты
+                                </a>
+                            </li>                            
+                        </ul>
+                    </li>
+                {% endif %}
                 </ul>
             </nav>
             <hr class="separator"/>
