@@ -537,7 +537,7 @@ def save_report():
         19: "Отпуск на санаторно курортное лечение",
         20: "Отгул",
     }
-    fields = ["user", "date", "start", "end", "type", "manual_input"]
+    fields = ["user", "date", "start", "end", "type", "manual_input", "reason"]
     dates = ReportCard.objects.all().exclude(employee=None)
     report_card_list = list()
     for report_record in dates:
@@ -547,7 +547,6 @@ def save_report():
     df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y")
     df["start"] = pd.to_datetime(df["start"], format="%H:%M:%S")
     df["end"] = pd.to_datetime(df["end"], format="%H:%M:%S")
-    # print(df["Type"].unique())
     df["type"] = pd.to_numeric(df["type"], errors='coerce').fillna(0).astype(int)
     df['types'] = df['type'].map(type_of_report)
     # Сохраняем DataFrame в CSV-файл
