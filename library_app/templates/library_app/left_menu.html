@@ -381,7 +381,7 @@
                             <span>Справка</span>
                         </a>
                     </li>
-                {% if user.is_superuser %}
+                
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class='bx bxs-help-circle' aria-hidden="true"></i>
@@ -393,6 +393,7 @@
                                     Прием стихов
                                 </a>
                             </li>
+                    {% if user.is_superuser %}
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:vote' %}">
                                     Голосование
@@ -402,10 +403,11 @@
                                 <a class="nav-link" href="{% url 'library_app:results' %}">
                                     Результаты
                                 </a>
-                            </li>                            
+                            </li> 
+                            {% endif %}
                         </ul>
                     </li>
-                {% endif %}
+                
                 </ul>
             </nav>
             <hr class="separator"/>
