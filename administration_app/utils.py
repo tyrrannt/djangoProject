@@ -58,13 +58,16 @@ def time_it(func):
        Примечание:
            Декоратор должен быть применен к функции перед вызовом последней.
        """
+
     def wrapper(*args, **kwargs):
         start = time.time()
         res = func(*args, **kwargs)
         end = time.time()
         print(f'Время выполнения {func.__name__}: {end - start:.4f} сек.')
         return res
+
     return wrapper
+
 
 def get_history(self, model):
     """
@@ -352,9 +355,11 @@ def get_jsons_data_filter(
         return {"value": ""}
     return json.loads(response.text)
 
+
 def get_active_user(ref_key):
     # ur1 = (f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%2765f4800d-970f-11e3-84fb-00e05301b4e4%27%20and%20Состояние%20eq%20%27Увольнение%27")
-    url = (f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27%20and%20Состояние%20eq%20%27Увольнение%27")
+    url = (
+        f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=Сотрудник_Key%20eq%20guid%27{ref_key}%27%20and%20Состояние%20eq%20%27Увольнение%27")
     response = requests.get(
         url, auth=(config("HRM_LOGIN"), config("HRM_PASS"))
     )
@@ -364,7 +369,6 @@ def get_active_user(ref_key):
     else:
         if dicts['value'][0]['Active'] == True:
             return False
-
 
 
 def get_json_vacation(ref_key):
@@ -935,7 +939,7 @@ def make_custom_field(f: forms.Field):
     return f
 
 
-def ajax_search(request, self, field_list, model_name, query):
+def ajax_search(request, self, field_list, model_name, query, contract=False):
     """
     Метод для поиска по модели.
     Цель:
@@ -967,23 +971,53 @@ def ajax_search(request, self, field_list, model_name, query):
     draw = int(data.get("draw"))
     start = int(data.get("start"))
     length = int(data.get("length"))
-
     counter = 0
-    for field in field_list:
-        if request.GET.get(f"columns[{counter}][search][value]"):
-            search_value = request.GET.get(f"columns[{counter}][search][value]")
-            search_list = search_value.split('!')
-            if len(search_list) > 1:
-                for search in search_list:
-                    if len(search) > 0:
-                        query &= Q(**{field + '__iregex': search})
-            else:
-                query &= Q(**{field + '__iregex': request.GET.get(f"columns[{counter}][search][value]")})
-        counter += 1
-    if query:
-        order_list = model_name.objects.filter(query)
+
+    if contract:
+        for field in field_list:
+            if request.GET.get(f"columns[{counter}][search][value]"):
+                search_value = request.GET.get(f"columns[{counter}][search][value]")
+                search_list = search_value.split('!')
+                if len(search_list) > 1:
+                    for search in search_list:
+                        if len(search) > 0:
+                            if field == 'contract_counteragent__short_name':
+                                multiply_search = Q(
+                                    **{'contract_counteragent__short_name' + '__iregex': search_value}) | Q(
+                                    **{'contract_counteragent__full_name' + '__iregex': search_value}) | Q(
+                                    **{'contract_counteragent__inn' + '__iregex': search_value})
+                            else:
+                                multiply_search = Q(**{field + '__iregex': search_value})
+                            query &= multiply_search
+                else:
+                    if field == 'contract_counteragent__short_name':
+                        multiply_search = Q(**{'contract_counteragent__short_name' + '__iregex': search_value}) | Q(
+                            **{'contract_counteragent__full_name' + '__iregex': search_value}) | Q(
+                            **{'contract_counteragent__inn' + '__iregex': search_value})
+                    else:
+                        multiply_search = Q(**{field + '__iregex': search_value})
+                    query &= multiply_search
+            counter += 1
+        if query:
+            order_list = model_name.objects.filter(query)
+        else:
+            order_list = model_name.objects.all()
     else:
-        order_list = model_name.objects.all()
+        for field in field_list:
+            if request.GET.get(f"columns[{counter}][search][value]"):
+                search_value = request.GET.get(f"columns[{counter}][search][value]")
+                search_list = search_value.split('!')
+                if len(search_list) > 1:
+                    for search in search_list:
+                        if len(search) > 0:
+                            query &= Q(**{field + '__iregex': search})
+                else:
+                    query &= Q(**{field + '__iregex': request.GET.get(f"columns[{counter}][search][value]")})
+            counter += 1
+        if query:
+            order_list = model_name.objects.filter(query)
+        else:
+            order_list = model_name.objects.all()
 
     total = order_list.count()  # Получаем общее количество записей в таблице
     context["recordsTotal"] = total  # Общее количество записей в таблице
@@ -1109,6 +1143,7 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+
 def process_group_year(group):
     if any(t in [14, 15, 16, 17, 20] for t in group["Type"].values):
         return group[group["Type"].isin([14, 15, 16, 17, 20])]["Time"].values[0]
@@ -1174,6 +1209,7 @@ def adjust_time(group):
                 group.at[group.index[i + 1], 'End'] = max(end1, end2)
 
     return group
+
 
 """
 Задан датафрейм:
@@ -1247,6 +1283,8 @@ Copy code
 5  1900-01-01  11:12:54  18:00:00     1  24426.0  09:12:00:18:00:00
 Этот код корректно обрабатывает записи в соответствии с заданными условиями и устанавливает значения в новом столбце "Интервал".
 """
+
+
 # Функция для обработки групп
 def process_group_interval(group):
     """
@@ -1282,7 +1320,8 @@ def process_group_interval(group):
         if any(t in [14, 15, 16, 17, 20] for t in group['Type']):
             # Если есть хотя бы одна запись с Type в [14, 15, 16, 17, 20]
             interval_record = group[group['Type'].isin([14, 15, 16, 17, 20])].iloc[0]
-            group['Интервал'] = f"{interval_record['Start'].strftime('%H:%M')}-{interval_record['End'].strftime('%H:%M')}"
+            group[
+                'Интервал'] = f"{interval_record['Start'].strftime('%H:%M')}-{interval_record['End'].strftime('%H:%M')}"
         elif any(t in [1, 13] for t in group['Type']):
             # Если есть хотя бы одна запись с Type в [1, 13]
             min_start = group['Start'].min()
