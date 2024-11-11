@@ -541,7 +541,7 @@ def save_report():
     dates = ReportCard.objects.all().exclude(employee=None)
     report_card_list = list()
     for report_record in dates:
-        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type, report_record.manual_input])
+        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type, report_record.manual_input, report_record.reason_adjustment, ])
     # Преобразуем QuerySet в DataFrame
     df = pd.DataFrame.from_records(report_card_list, columns=fields)
     df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y")
