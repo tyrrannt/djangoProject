@@ -2386,9 +2386,10 @@ class ProductionCalendar(models.Model):
         last_day = self.calendar_month + relativedelta(day=datetime.datetime.today().day)
         last_day = last_day - datetime.timedelta(days=1)
         preholiday_time, day_count, preholiday_day_count, friday_count = 0, 0, 0, 0
-        preholiday_day_list = []
+
         preholiday_day = PreHolidayDay.objects.filter(
             preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
+        preholiday_day_list = []
         for item in preholiday_day:
             preholiday_day_list.append(item.preholiday_day)
         for days in rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day):
@@ -2409,7 +2410,6 @@ class ProductionCalendar(models.Model):
                     day_count += 1
                 elif days.weekday() < 4:
                     day_count += 1
-        print((day_count * 8) + (day_count / 2) - friday_count - (preholiday_day_count * 8.5 - preholiday_time))
         return (day_count * 8) + (day_count / 2) - friday_count - (preholiday_day_count * 8.5 - preholiday_time)
 
     def get_norm_time(self):
@@ -2424,6 +2424,7 @@ class ProductionCalendar(models.Model):
 
         preholiday_day = PreHolidayDay.objects.filter(
             preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
+
         for item in preholiday_day:
             preholiday_day_count += 1
             if item.preholiday_day.weekday() == 4:

@@ -1,8 +1,8 @@
 {% extends 'customers_app/main.html' %}
+{% load static %}
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
         <div>
             {% if form.errors %}
                 {% for field in form %}
@@ -19,11 +19,162 @@
                 {% endfor %}
             {% endif %}
         </div>
-<h1>Загрузите свой стих</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Отправить</button>
-</form>
+<h1 class="new-year-title">Загрузите свой новогодний стих</h1>
+        <div class="new-year-container">
+            
+            <form method="post" class="new-year-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ form.title.label_tag }}
+                    {{ form.title }}
+                </div>
+                <div class="form-group">
+                    {{ form.content.label_tag }}
+                    {{ form.content }}
+                </div>
+                <button type="submit" class="new-year-button">Отправить</button>
+            </form>
+        </div>
+
     </section>
+{% endblock %}
+
+{% block custome_css %}
+    <style>
+        .new-year-container {
+            background: url('{% static 'admin_templates/img/christmas-lights.png' %}'), #f0f8ff;
+          
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .new-year-title {
+            color: #ff6f61;
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .new-year-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #4a4a4a;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .new-year-button {
+            background-color: #ff6f61;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .new-year-button:hover {
+            background-color: #e55b50;
+        }
+
+        /* Новогодние декорации */
+        .new-year-container::before, .new-year-container::after {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-size: cover;
+        }
+
+        {#.new-year-container::before {#}
+        {#    background-image: url('{% static 'admin_templates/img/christmas-lights.png' %}');#}
+        {#    top: 10px;#}
+        {#    left: 10px;#}
+        {#}#}
+        {##}
+        {#.new-year-container::after {#}
+        {#    background-image: url('{% static 'admin_templates/img/christmas-lights.png' %}');#}
+        {#    bottom: 10px;#}
+        {#    right: 10px;#}
+        {#}#}
+
+        .new-year-container .snowflake {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: snowfall 10s linear infinite;
+        }
+
+        @keyframes snowfall {
+            0% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+
+        .new-year-container .snowflake:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-duration: 5s;
+        }
+
+        .new-year-container .snowflake:nth-child(2) {
+            top: 20%;
+            left: 20%;
+            animation-duration: 7s;
+        }
+
+        .new-year-container .snowflake:nth-child(3) {
+            top: 30%;
+            left: 30%;
+            animation-duration: 6s;
+        }
+
+        .new-year-container .snowflake:nth-child(4) {
+            top: 40%;
+            left: 40%;
+            animation-duration: 8s;
+        }
+
+        .new-year-container .snowflake:nth-child(5) {
+            top: 50%;
+            left: 50%;
+            animation-duration: 9s;
+        }
+    </style>
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.querySelector('.new-year-container');
+            for (let i = 0; i < 5; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                container.appendChild(snowflake);
+            }
+        });
+    </script>
 {% endblock %}
