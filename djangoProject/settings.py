@@ -309,3 +309,17 @@ WEBHOOK_SSL_CERTIFICATE = pathlib.Path.joinpath(
 WEBHOOK_SSL_PRIVATE = pathlib.Path.joinpath(
     BASE_DIR, config("KEY_PEM_PATH")
 )  # Путь к приватному ключу
+
+# Устанавливаем SESSION_COOKIE_SECURE в True, чтобы сессионные куки передавались только по HTTPS
+SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE")
+
+# Устанавливаем CSRF_COOKIE_SECURE в True, чтобы CSRF-токены передавались только по HTTPS
+CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE")
+
+# Перенаправляем все запросы на HTTPS
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT")
+
+# Включаем HTTP Strict Transport Security (HSTS)
+SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS")
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS")
+SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD")
