@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
-if not config("DEBUG", cast=bool):
+if not config("DEBUG", default=False, cast=bool):
     # Устанавливаем SESSION_ENGINE на использование подписанных кук
     SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
@@ -33,7 +33,7 @@ if not config("DEBUG", cast=bool):
 SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", cast=bool)
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = ["192.168.10.12", "corp.barkol.ru", "localhost", "127.0.0.1"]
 
@@ -314,22 +314,23 @@ WEBHOOK_SSL_PRIVATE = pathlib.Path.joinpath(
     BASE_DIR, config("KEY_PEM_PATH")
 )  # Путь к приватному ключу
 
-if not config("DEBUG"):
-    # Устанавливаем SESSION_COOKIE_SECURE в True, чтобы сессионные куки передавались только по HTTPS
-    SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", cast=bool)
+# Устанавливаем SESSION_COOKIE_SECURE в True, чтобы сессионные куки передавались только по HTTPS
+SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=False, cast=bool)
 
-    # Устанавливаем SESSION_COOKIE_HTTPONLY в True, чтобы куки были доступны только через HTTP
-    SESSION_COOKIE_HTTPONLY = config("SESSION_COOKIE_HTTPONLY", cast=bool)
+# Устанавливаем SESSION_COOKIE_HTTPONLY в True, чтобы куки были доступны только через HTTP
+SESSION_COOKIE_HTTPONLY = config("SESSION_COOKIE_HTTPONLY", default=False, cast=bool)
 
-    # Устанавливаем CSRF_COOKIE_SECURE в True, чтобы CSRF-токены передавались только по HTTPS
-    CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", cast=bool)
+# Устанавливаем CSRF_COOKIE_SECURE в True, чтобы CSRF-токены передавались только по HTTPS
+CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=False, cast=bool)
 
-    # Перенаправляем все запросы на HTTPS
-    SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", cast=bool)
+# Перенаправляем все запросы на HTTPS
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)
 
+if not config("DEBUG", default=False, cast=bool):
     # Включаем HTTP Strict Transport Security (HSTS)
     SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS")
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", cast=bool)
-    SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", cast=bool)
-
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False, cast=bool)
+SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
+if not config("DEBUG", default=False, cast=bool):
+    # Устанавливаем SESSION_COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = config("SESSION_COOKIE_DOMAIN")
