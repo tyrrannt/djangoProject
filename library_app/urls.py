@@ -18,5 +18,6 @@ urlpatterns = [
     path('vote/', views.vote, name='vote'),
     path('vote/success/', views.vote_success, name='vote_success'),
     path('results/', views.results, name='results'),
+    path('check_session_cookie_secure/', views.check_session_cookie_secure, name='check_session_cookie_secure'),
 
 ]

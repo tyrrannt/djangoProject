@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db import IntegrityError
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
@@ -12,6 +12,7 @@ from loguru import logger
 
 
 from administration_app.models import PortalProperty
+from djangoProject import settings
 from library_app.forms import (
     HelpItemAddForm,
     HelpItemUpdateForm,
@@ -30,6 +31,12 @@ from library_app.models import HelpTopic, HelpCategory, DocumentForm, Contest, P
 def index(request):
     # return render(request, 'library_app/base.html')
     return redirect("/users/login/")
+
+def check_session_cookie_secure(request):
+    if settings.SESSION_COOKIE_SECURE:
+        return HttpResponse("SESSION_COOKIE_SECURE is enabled.")
+    else:
+        return HttpResponse("SESSION_COOKIE_SECURE is not enabled.")
 
 
 def show_403(request, exception=None):
