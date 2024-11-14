@@ -25,6 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
+if not config("DEBUG", cast=bool):
+    # Устанавливаем SESSION_ENGINE на использование подписанных кук
+    SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config("SECRET_KEY")
 
@@ -310,16 +314,22 @@ WEBHOOK_SSL_PRIVATE = pathlib.Path.joinpath(
     BASE_DIR, config("KEY_PEM_PATH")
 )  # Путь к приватному ключу
 
-# Устанавливаем SESSION_COOKIE_SECURE в True, чтобы сессионные куки передавались только по HTTPS
-SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE")
+if not config("DEBUG"):
+    # Устанавливаем SESSION_COOKIE_SECURE в True, чтобы сессионные куки передавались только по HTTPS
+    SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", cast=bool)
 
-# Устанавливаем CSRF_COOKIE_SECURE в True, чтобы CSRF-токены передавались только по HTTPS
-CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE")
+    # Устанавливаем SESSION_COOKIE_HTTPONLY в True, чтобы куки были доступны только через HTTP
+    SESSION_COOKIE_HTTPONLY = config("SESSION_COOKIE_HTTPONLY", cast=bool)
 
-# Перенаправляем все запросы на HTTPS
-SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT")
+    # Устанавливаем CSRF_COOKIE_SECURE в True, чтобы CSRF-токены передавались только по HTTPS
+    CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", cast=bool)
 
-# Включаем HTTP Strict Transport Security (HSTS)
-SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS")
-SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS")
-SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD")
+    # Перенаправляем все запросы на HTTPS
+    SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", cast=bool)
+
+    # Включаем HTTP Strict Transport Security (HSTS)
+    SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS")
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", cast=bool)
+    SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", cast=bool)
+
+    SESSION_COOKIE_DOMAIN = config("SESSION_COOKIE_DOMAIN")
