@@ -25,3 +25,37 @@ class EchoConsumer(AsyncWebsocketConsumer):
     #     self.send(text_data=json.dumps({
     #         'message': data['message']
     #     }))
+
+class OnlineUsersConsumer(AsyncWebsocketConsumer):
+    online_users = set()
+
+    async def connect(self):
+        await self.accept()
+        user = self.scope['user']
+        if user.is_authenticated:
+            self.online_users.add(user.title)
+            await self.channel_layer.group_add('online_users', self.channel_name)
+            await self.send_online_users()
+
+    async def disconnect(self, close_code):
+        user = self.scope['user']
+        if user.is_authenticated:
+            self.online_users.discard(user.username)
+            await self.channel_layer.group_discard('online_users', self.channel_name)
+            await self.send_online_users()
+
+    async def send_online_users(self):
+        await self.channel_layer.group_send(
+            'online_users',
+            {
+                'type': 'online_users_message',
+                'users': list(self.online_users)
+            }
+        )
+
+    async def online_users_message(self, event):
+        users = event['users']
+        await self.send(text_data=json.dumps({
+            'type': 'online_users',
+            'users': users
+        }))

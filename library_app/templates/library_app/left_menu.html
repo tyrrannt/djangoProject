@@ -381,7 +381,7 @@
                             <span>Справка</span>
                         </a>
                     </li>
-                
+
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class='bx bxs-help-circle' aria-hidden="true"></i>
@@ -393,21 +393,21 @@
                                     Прием стихов
                                 </a>
                             </li>
-                    {% if user.is_superuser %}
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:vote' %}">
-                                    Голосование
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:results' %}">
-                                    Результаты
-                                </a>
-                            </li> 
+                            {% if user.is_superuser %}
+                                <li>
+                                    <a class="nav-link" href="{% url 'library_app:vote' %}">
+                                        Голосование
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'library_app:results' %}">
+                                        Результаты
+                                    </a>
+                                </li>
                             {% endif %}
                         </ul>
                     </li>
-                
+
                 </ul>
             </nav>
             <hr class="separator"/>
@@ -465,6 +465,41 @@
                         </div>
                     </div>
                 </div>
+                <div class="widget-content">
+                    <div class="card-body">
+                        <div class="widget-summary">
+
+                            <div class="widget-summary-col">
+                                <div class="summary">
+                                    <h5 class="title">Сотрудники OnLine</h5>
+                                    <ul id="online-users"></ul>
+
+                                    <script>
+                                        const socket = new WebSocket('ws://localhost:8000/ws/online_users/');
+
+                                        socket.onmessage = function (event) {
+                                            const data = JSON.parse(event.data);
+                                            if (data.type === 'online_users') {
+                                                const usersList = document.getElementById('online-users');
+                                                usersList.innerHTML = '';
+                                                data.users.forEach(user => {
+                                                    const li = document.createElement('li');
+                                                    li.textContent = user;
+                                                    usersList.appendChild(li);
+                                                });
+                                            }
+                                        };
+
+                                        socket.onclose = function (event) {
+                                            console.error('WebSocket closed unexpectedly');
+                                        };
+                                    </script>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
         <script>
