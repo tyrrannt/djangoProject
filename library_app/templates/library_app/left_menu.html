@@ -475,7 +475,7 @@
                                     <ul id="online-users"></ul>
 
                                     <script>
-                                        var online_users = "ws://localhost:8000/ws/online_users/";
+                                        var online_users = "wss://localhost:8000/ws/online_users/";
                                         const socket_online_users = new WebSocket(online_users);
 
                                         socket_online_users.onmessage = function (event) {
