@@ -31,21 +31,24 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         await self.accept()
+        channel_layer = get_channel_layer()
         user = self.scope['user']
         if user.is_authenticated:
             self.online_users.add(user.title)
-            await self.channel_layer.group_add('online_users', self.channel_name)
+            await channel_layer.group_add('online_users', self.channel_name)
             await self.send_online_users()
 
     async def disconnect(self, close_code):
+        channel_layer = get_channel_layer()
         user = self.scope['user']
         if user.is_authenticated:
             self.online_users.discard(user.username)
-            await self.channel_layer.group_discard('online_users', self.channel_name)
+            await channel_layer.group_discard('online_users', self.channel_name)
             await self.send_online_users()
 
     async def send_online_users(self):
-        await self.channel_layer.group_send(
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
             'online_users',
             {
                 'type': 'online_users_message',
