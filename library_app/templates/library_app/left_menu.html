@@ -475,9 +475,9 @@
                                     <ul id="online-users"></ul>
 
                                     <script>
-                                        const socket = new WebSocket('ws://localhost:8000/ws/online_users/');
+                                        const socket_online_users = new WebSocket('ws://localhost:8000/ws/online_users/');
 
-                                        socket.onmessage = function (event) {
+                                        socket_online_users.onmessage = function (event) {
                                             const data = JSON.parse(event.data);
                                             if (data.type === 'online_users') {
                                                 const usersList = document.getElementById('online-users');
@@ -490,7 +490,7 @@
                                             }
                                         };
 
-                                        socket.onclose = function (event) {
+                                        socket_online_users.onclose = function (event) {
                                             console.error('WebSocket closed unexpectedly');
                                         };
                                     </script>
