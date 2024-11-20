@@ -6,12 +6,18 @@
     <title>{{ title }}</title>
 {% endblock %}
 
+{% block custome_css %}
+    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@latest/index.js"></script>
+{% endblock %}
+
 {% block content %}
+
     <section role="main" class="content-body content-body-modern mt-0">
-        <h1>Chat Room: {{ room_name }}</h1>
+            <h1>Chat Room: {{ room_name }}</h1>
     <textarea id="chat-log" cols="100" rows="20"></textarea><br>
     <input id="chat-message-input" type="text" size="100"><br>
     <input id="chat-message-submit" type="button" value="Send">
+    <emoji-picker id="emoji-picker"></emoji-picker>
 
     <script>
         const roomName = "{{ room_name }}";
@@ -44,6 +50,13 @@
             }));
             messageInputDom.value = '';
         };
+
+        const emojiPicker = document.querySelector('#emoji-picker');
+        emojiPicker.addEventListener('emoji-click', event => {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            messageInputDom.value += event.detail.unicode;
+        });
     </script>
+
     </section>
 {% endblock %}

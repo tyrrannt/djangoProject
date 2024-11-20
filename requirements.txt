@@ -39,6 +39,7 @@ docopt==0.6.2
 docx2pdf==0.1.8
 docxcompose==1.4.0
 docxtpl==0.16.7
+emoji==2.14.0
 et-xmlfile==1.1.0
 flower==2.0.1
 frozenlist==1.4.1
