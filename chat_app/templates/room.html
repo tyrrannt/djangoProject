@@ -8,14 +8,22 @@
 
 {% block custome_css %}
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
-    <script src="{% static 'admin_templates/vendor/color-hash/color-hash.min.js' %}"></script>
     <style>
         .message {
             padding: 5px;
             margin: 5px;
             border-radius: 5px;
-            font-size: 18px; /* Увеличенный шрифт */
         }
+        .message.user-1 {
+            background-color: #aaffaa;
+        }
+        .message.user-2 {
+            background-color: #aaccff;
+        }
+        .message.user-3 {
+            background-color: #ffaaff;
+        }
+        /* Добавьте больше классов для других пользователей */
     </style>
 {% endblock %}
 
@@ -31,17 +39,14 @@
     <script>
         const roomName = "{{ room_name }}";
         const chatSocket = new WebSocket(
-            'wss://corp.barkol.ru/ws/chat/' + roomName + '/'
+            'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
         );
-
-        const colorHash = new ColorHash();
 
         chatSocket.onmessage = function(event) {
             const data = JSON.parse(event.data);
             const message = data.username + ': ' + data.message;
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-            messageDiv.style.backgroundColor = colorHash.hex(data.username);
+            messageDiv.className = 'message user-' + getUserColorClass(data.username);
             messageDiv.textContent = message;
             document.querySelector('#chat-log').appendChild(messageDiv);
             document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
@@ -72,6 +77,13 @@
             const messageInputDom = document.querySelector('#chat-message-input');
             messageInputDom.value += event.detail.unicode;
         });
+
+        function getUserColorClass(username) {
+            // Простая функция для определения класса цвета в зависимости от имени пользователя
+            const colors = ['user-1', 'user-2', 'user-3']; // Добавьте больше классов для других пользователей
+            const index = username.charCodeAt(0) % colors.length;
+            return colors[index];
+        }
     </script>
 
     </section>
