@@ -87,21 +87,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
+        username = FIO_format(self.scope['user'].title)  # Получаем имя пользователя)
 
         # Отправка сообщения в группу
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': message
+                'message': message,
+                'username': username,
             }
         )
 
     # Получение сообщения от группы
     async def chat_message(self, event):
         message = event['message']
+        username = event['username']
 
         # Отправка сообщения в WebSocket
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': message,
+            'username': username,
         }))
