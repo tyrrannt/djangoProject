@@ -475,7 +475,7 @@
                                     <ul id="online-users"></ul>
 
                                     <script>
-                                        var online_users = "ws://corp.barkol.ru/ws/online_users/";
+                                        var online_users = "wss://corp.barkol.ru/ws/online_users/";
                                         const socket_online_users = new WebSocket(online_users);
 
                                         socket_online_users.onmessage = function (event) {
