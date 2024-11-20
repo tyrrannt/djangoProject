@@ -31,6 +31,13 @@
 
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+            {% if pass_change %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>{{ pass_change }}</strong>.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
+                            aria-label="Close"></button>
+                </div>
+            {% endif %}
             <div class="row">
                 <div class="col">
                     <section class="card card-modern card-big-info">
@@ -306,7 +313,7 @@
                                                            value="{{ object.user_access.name }}"/>
                                                 </div>
                                             </div>
-                                            
+
                                         </div>
                                     </div>
                                 </div>
@@ -332,7 +339,6 @@
                            align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-edit text-4 me-2"></i> Изменить пароль
                         </a>
-                        {{ pass_change }}
                     </div>
                 {% endif %}
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">

@@ -188,6 +188,47 @@
                                                            value="{{ object.email|empty_item }}"/>
                                                 </div>
                                             </div>
+                                            {% if user|has_group:"password" %}
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email
+                                                        pass</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        <input type="text" class="form-control form-control-modern"
+                                                               name="work_email_password" id="id_work_email_password"
+                                                               value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
+                                                        активности</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        {{ form.is_active }}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            {% if user.is_superuser %}
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
+                                                        персонала</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        {{ form.is_staff }}
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
+                                                        суперпользователя</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        {{ form.is_superuser }}
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Права
+                                                        доступа</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        {{ form.user_access }}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Номер
                                                     телефона</label>
@@ -368,48 +409,7 @@
                                                            value="{{ object.user_work_profile.personal_work_schedule_end | time:"H:i" }}"/>
                                                 </div>
                                             </div>
-                                            {% if user|has_group:"password" %}
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email
-                                                        pass</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        <input type="text" class="form-control form-control-modern"
-                                                               name="work_email_password" id="id_work_email_password"
-                                                               value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
-                                                    </div>
-                                                </div>
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
-                                                        активности</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        {{ form.is_active }}
-                                                    </div>
-                                                </div>
-                                            {% endif %}
-                                            {% if user.is_superuser %}
 
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
-                                                        персонала</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        {{ form.is_staff }}
-                                                    </div>
-                                                </div>
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Статус
-                                                        суперпользователя</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        {{ form.is_superuser }}
-                                                    </div>
-                                                </div>
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Права
-                                                        доступа</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        {{ form.user_access }}
-                                                    </div>
-                                                </div>
-                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

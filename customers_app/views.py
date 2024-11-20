@@ -20,6 +20,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
     process_group, process_group_interval, seconds_to_hhmm, get_active_user
 from contracts_app.models import TypeDocuments, Contract
+from contracts_app.templatetags.custom import FIO_format
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
@@ -804,9 +805,9 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
                     user_object.save()
                     pk = user_object.pk
                     send_email_single_notification.delay(pk)
-                    context['pass_change'] = 'changed to <<' + user_object.user_work_profile.work_email_password + '>> successfully'
+                    context['pass_change'] = f'Для сотрудника: {FIO_format(user_object.title)} изменен пароль для входа на корпоративный сайт, на: {user_object.user_work_profile.work_email_password}, успешно. Письмо с учетными данными отправлено сотруднику на почту.'
                 else:
-                    context['pass_change'] = 'User has no password'
+                    context['pass_change'] = 'Отсутствует пароль!'
 
             except ValueError:
                 context['pass_change'] = "Invalid value"
