@@ -162,8 +162,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = text_data_json['message']
         username = self.scope['user'].username  # Получаем имя пользователя
 
-        # Сохранение сообщения в базе данных
-        await self.save_message(username, message)
+        # # Сохранение сообщения в базе данных
+        # await self.save_message(username, message)
 
         # Отправка сообщения в группу
         await self.channel_layer.group_send(
