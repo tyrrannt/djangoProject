@@ -62,7 +62,8 @@ INSTALLED_APPS = [
     "django_ckeditor_5",
     "debug_toolbar",
     "channels",
-    "dynamic_formsets"
+    "dynamic_formsets",
+    "chat_app.apps.ChatAppConfig",
 ]
 
 MIDDLEWARE = [
