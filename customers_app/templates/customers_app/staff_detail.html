@@ -159,6 +159,26 @@
                                                            value="{{ object.email|empty_item }}"/>
                                                 </div>
                                             </div>
+                                            {% if user|has_group:"password" %}
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Логин:</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        <input type="text" class="form-control form-control-modern"
+                                                               disabled
+                                                               name="username" id="id_username"
+                                                               value="{{ object.username }}"/>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Пароль:</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        <input type="text" class="form-control form-control-modern"
+                                                               disabled
+                                                               name="work_email_password" id="id_work_email_password"
+                                                               value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
                                             <div class="form-group row align-items-center pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Номер
                                                     телефона</label>
@@ -286,26 +306,7 @@
                                                            value="{{ object.user_access.name }}"/>
                                                 </div>
                                             </div>
-                                            {% if user|has_group:"password" %}
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Логин:</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        <input type="text" class="form-control form-control-modern"
-                                                               disabled
-                                                               name="username" id="id_username"
-                                                               value="{{ object.username }}"/>
-                                                    </div>
-                                                </div>
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Пароль:</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        <input type="text" class="form-control form-control-modern"
-                                                               disabled
-                                                               name="work_email_password" id="id_work_email_password"
-                                                               value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
-                                                    </div>
-                                                </div>
-                                            {% endif %}
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -324,7 +325,7 @@
                         </a>
                     </div>
                 {% endif %}
-                {% if user.is_superuser %}
+                {% if user.is_staff or user.is_superuser %}
                     <div class="col-12 col-md-auto">
                         <a href="{% url 'customers_app:staff' object.pk %}?update=0"
                            class="btn btn-outline-success btn-px-4 py-3 d-flex
