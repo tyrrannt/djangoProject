@@ -136,8 +136,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        # Загрузка истории чата
-        await self.load_chat_history()
+        # # Загрузка истории чата
+        # await self.load_chat_history()
 
     async def disconnect(self, close_code):
         # Отправка уведомления об отключении пользователя
@@ -197,15 +197,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'username': username,
         }))
 
-    @database_sync_to_async
-    def save_message(self, username, message):
-        Message.objects.create(room_name=self.room_name, username=username, message=message)
-
-    @database_sync_to_async
-    def load_chat_history(self):
-        messages = Message.objects.filter(room_name=self.room_name).order_by('timestamp')
-        for message in messages:
-            self.send(text_data=json.dumps({
-                'message': message.message,
-                'username': message.username,
-            }))
+    # @database_sync_to_async
+    # def save_message(self, username, message):
+    #     Message.objects.create(room_name=self.room_name, username=username, message=message)
+    #
+    # @database_sync_to_async
+    # def load_chat_history(self):
+    #     messages = Message.objects.filter(room_name=self.room_name).order_by('timestamp')
+    #     for message in messages:
+    #         self.send(text_data=json.dumps({
+    #             'message': message.message,
+    #             'username': message.username,
+    #         }))
