@@ -50,7 +50,7 @@
                 messageDiv.className = 'notification';
             } else {
                 messageDiv.className = 'message';
-                messageDiv.style.backgroundColor = colorHash.hex(data.username);
+                messageDiv.style.color = colorHash.hex(data.username);
             }
             messageDiv.textContent = message;
             document.querySelector('#chat-log').appendChild(messageDiv);
