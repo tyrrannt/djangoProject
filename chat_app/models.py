@@ -14,3 +14,7 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.room_name} | {self.username}: {self.message}'
+
+    def save(self, *args, **kwargs):
+        super(Message, self).save(*args, **kwargs)
+        self.message = str(self.message.encode('unicode_escape'))
