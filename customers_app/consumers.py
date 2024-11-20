@@ -3,10 +3,12 @@ import random
 from asyncio import sleep
 
 import emoji
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 import json
 
+from chat_app.models import Message
 from contracts_app.templatetags.custom import FIO_format
 
 
@@ -124,7 +126,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        # Отправка уведомления о подключении пользователя
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'user_notification',
+                'message': f'{self.scope["user"].username} подключился к чату',
+                'username': 'Система',
+            }
+        )
+
+        # Загрузка истории чата
+        await self.load_chat_history()
+
     async def disconnect(self, close_code):
+        # Отправка уведомления об отключении пользователя
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'user_notification',
+                'message': f'{self.scope["user"].username} покинул чат',
+                'username': 'Система',
+            }
+        )
+
         # Покидание группы
         await self.channel_layer.group_discard(
             self.room_group_name,
@@ -135,10 +160,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
-        username = FIO_format(self.scope['user'].title)  # Получаем имя пользователя
+        username = self.scope['user'].username  # Получаем имя пользователя
 
-        # Преобразуем текстовые смайлы в графические смайлы
-        message = emoji.emojize(message, language='alias')
+        # Сохранение сообщения в базе данных
+        await self.save_message(username, message)
 
         # Отправка сообщения в группу
         await self.channel_layer.group_send(
@@ -160,3 +185,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': message,
             'username': username,
         }))
+
+    # Получение уведомления от группы
+    async def user_notification(self, event):
+        message = event['message']
+        username = event['username']
+
+        # Отправка уведомления в WebSocket
+        await self.send(text_data=json.dumps({
+            'message': message,
+            'username': username,
+        }))
+
+    @database_sync_to_async
+    def save_message(self, username, message):
+        Message.objects.create(room_name=self.room_name, username=username, message=message)
+
+    @database_sync_to_async
+    def load_chat_history(self):
+        messages = Message.objects.filter(room_name=self.room_name).order_by('timestamp')
+        for message in messages:
+            self.send(text_data=json.dumps({
+                'message': message.message,
+                'username': message.username,
+            }))
