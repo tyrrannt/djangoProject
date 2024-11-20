@@ -6,6 +6,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.layers import get_channel_layer
 import json
 
+from contracts_app.templatetags.custom import FIO_format
+
 
 class EchoConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -33,14 +35,14 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
         await self.accept()
         user = self.scope['user']
         if user.is_authenticated:
-            self.online_users.add(user.username)
+            self.online_users.add(FIO_format(user.title))
             await self.channel_layer.group_add('online_users', self.channel_name)
             await self.send_online_users()
 
     async def disconnect(self, close_code):
         user = self.scope['user']
         if user.is_authenticated:
-            self.online_users.discard(user.username)
+            self.online_users.discard(FIO_format(user.title))
             await self.channel_layer.group_discard('online_users', self.channel_name)
             await self.send_online_users()
 
