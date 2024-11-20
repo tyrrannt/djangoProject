@@ -37,7 +37,7 @@
         import ColorHash from '{% static 'admin_templates/vendor/color-hash/dist/esm.js' %}';
         const roomName = "{{ room_name }}";
         const chatSocket = new WebSocket(
-            'wss://' + window.location.host + '/ws/chat/' + roomName + '/'
+            'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
         );
 
         const colorHash = new ColorHash();
