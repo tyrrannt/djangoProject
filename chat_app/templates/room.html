@@ -8,13 +8,22 @@
 
 {% block custome_css %}
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/color-hash@2.0.0/dist/color-hash.min.js"></script>
+    <style>
+        .message {
+            padding: 5px;
+            margin: 5px;
+            border-radius: 5px;
+            font-size: 18px; /* Увеличенный шрифт */
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
             <h1>Chat Room: {{ room_name }}</h1>
-    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
+    <div id="chat-log" style="width: 600px; height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;"></div>
     <input id="chat-message-input" type="text" size="100"><br>
     <input id="chat-message-submit" type="button" value="Send">
     <emoji-picker id="emoji-picker"></emoji-picker>
@@ -25,10 +34,17 @@
             'wss://corp.barkol.ru/ws/chat/' + roomName + '/'
         );
 
+        const colorHash = new ColorHash();
+
         chatSocket.onmessage = function(event) {
             const data = JSON.parse(event.data);
             const message = data.username + ': ' + data.message;
-            document.querySelector('#chat-log').value += (message + '\n');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.style.backgroundColor = colorHash.hex(data.username);
+            messageDiv.textContent = message;
+            document.querySelector('#chat-log').appendChild(messageDiv);
+            document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
         };
 
         chatSocket.onclose = function(event) {
