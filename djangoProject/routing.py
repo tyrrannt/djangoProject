@@ -9,4 +9,5 @@ websocket_urlpatterns = [
     path('ws/chat/<str:room_name>/', consumers.ChatConsumer.as_asgi()),
     path('ws/monitor/', consumers.MonitorConsumer.as_asgi()),
     path('ws/video_conference/<str:room_name>/', consumers.VideoConferenceConsumer.as_asgi()),
+    path('ws/audio_conference/<str:room_name>/', consumers.AudioConferenceConsumer.as_asgi()),
 ]

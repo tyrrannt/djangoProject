@@ -20,5 +20,6 @@ urlpatterns = [
     path('results/', views.results, name='results'),
     path('check_session_cookie_secure/', views.check_session_cookie_secure, name='check_session_cookie_secure'),
     path('video_conference/<str:room_name>/', views.video_conference, name='video_conference'),
+    path('audio_conference/<str:room_name>/', views.audio_conference, name='audio_conference'),
 
 ]

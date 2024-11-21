@@ -287,3 +287,7 @@ def results(request):
 @login_required
 def video_conference(request, room_name):
     return render(request, 'library_app/video_conference.html', {'room_name': room_name})
+
+@login_required
+def audio_conference(request, room_name):
+    return render(request, 'library_app/audio_conference.html', {'room_name': room_name})
