@@ -283,3 +283,11 @@ def results(request):
     sorted_poems = sorted(poems, key=lambda x: vote_count.get(x.id, 0), reverse=True)
 
     return render(request, 'library_app/results.html', {'poems': sorted_poems[:3]})
+
+@login_required
+def video_conference(request):
+    return render(request, 'library_app/video_conference.html')
+
+@login_required
+def interactive_lesson(request):
+    return render(request, 'library_app/interactive_lesson.html')

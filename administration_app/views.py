@@ -2,6 +2,7 @@ import datetime
 import json
 
 from celery.bin.control import control
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import MultipleObjectsReturned
 from django.utils.datastructures import MultiValueDictKeyError
 import requests
@@ -457,5 +458,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 
         return super().get(request, *args, **kwargs)
 
+@login_required
 def system_monitor(request):
     return render(request, 'administration_app/system_monitor.html')

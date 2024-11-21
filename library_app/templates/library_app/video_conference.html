@@ -1,0 +1,72 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load widget_tweaks %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <style>
+        .text-big {
+            font-size: 16px;
+        }
+    </style>
+    <section role="main" class="content-body content-body-modern mt-0">
+        {% include 'library_app/breadcrumb.html' %}
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <!-- start: page -->
+        <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+
+    <script src="{% static 'admin_templates/vendor/simplewebrtc/simplewebrtc.bundle.min.js' %}"></script>
+    <script>
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+
+        const webrtc = new SimpleWebRTC({
+            localVideoEl: 'localVideo',
+            remoteVideosEl: 'remoteVideo',
+            autoRequestMedia: true,
+        });
+
+        webrtc.on('readyToCall', () => {
+            webrtc.joinRoom('video_conference');
+        });
+
+        const socket = new WebSocket('wss://' + window.location.host + '/ws/video_conference/');
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log('Message from server:', data.message);
+        };
+
+        socket.onopen = function() {
+            console.log('WebSocket connected');
+        };
+
+        socket.onclose = function() {
+            console.log('WebSocket disconnected');
+        };
+    </script>
+        <!-- end: page -->
+    </section>
+    <!-- end: page -->
+
+{% endblock %}

@@ -14,58 +14,47 @@ from chat_app.models import Message
 from contracts_app.templatetags.custom import FIO_format
 
 
-class EchoConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        await self.accept()
-        channel_layer = get_channel_layer()
-        for i in range(1000):
-            num = random.randint(0,1000)
-            await self.send(json.dumps({"value": num}))
-            channel_layer.group_send('notifications', {})
-            await sleep(1)
-
-    def disconnect(self, close_code):
-        pass
-
-    # def receive(self, text_data):
-    #     data = json.loads(text_data)
-    #     self.send(text_data=json.dumps({
-    #         'message': data['message']
-    #     }))
-
 class OnlineUsersConsumer(AsyncWebsocketConsumer):
-    online_users = set()
+    """Класс для обработки соединений с веб-сокетами и отправки списка онлайн пользователей."""
+
+    online_users = set()  # Множество для хранения имен пользователей, которые в данный момент онлайн
 
     async def connect(self):
-        await self.accept()
-        user = self.scope['user']
-        if user.is_authenticated:
-            self.online_users.add(FIO_format(user.title))
-            await self.channel_layer.group_add('online_users', self.channel_name)
-            await self.send_online_users()
+        """Метод для установки соединения и добавления пользователя в список онлайн пользователей."""
+        await self.accept()  # Принимаем соединение
+        user = self.scope['user']  # Получаем объект пользователя из scope
+        if user.is_authenticated:  # Проверяем, авторизован ли пользователь
+            self.online_users.add(FIO_format(user.title))  # Добавляем имя пользователя в множество online_users
+            await self.channel_layer.group_add('online_users', self.channel_name)  # Добавляем соединение в группу online_users
+            await self.send_online_users()  # Отправляем список онлайн пользователей
 
     async def disconnect(self, close_code):
-        user = self.scope['user']
-        if user.is_authenticated:
-            self.online_users.discard(FIO_format(user.title))
-            await self.channel_layer.group_discard('online_users', self.channel_name)
-            await self.send_online_users()
+        """Метод для обработки разрыва соединения и удаления пользователя из списка онлайн пользователей."""
+        user = self.scope['user']  # Получаем объект пользователя из scope
+        if user.is_authenticated:  # Проверяем, авторизован ли пользователь
+            self.online_users.discard(FIO_format(user.title))  # Удаляем имя пользователя из множества online_users
+            await self.channel_layer.group_discard('online_users', self.channel_name)  # Удаляем соединение из группы online_users
+            await self.send_online_users()  # Отправляем список онлайн пользователей
 
     async def send_online_users(self):
+        """Метод для отправки списка онлайн пользователей."""
         await self.channel_layer.group_send(
             'online_users',
             {
-                'type': 'online_users_message',
-                'users': list(self.online_users)
+                'type': 'online_users_message',  # Тип сообщения
+                'users': list(self.online_users)  # Список онлайн пользователей
             }
         )
 
     async def online_users_message(self, event):
-        users = event['users']
+        """Метод для обработки сообщения о списке онлайн пользователей."""
+        users = event['users']  # Получаем список онлайн пользователей из события
         await self.send(text_data=json.dumps({
-            'type': 'online_users',
-            'users': users
+            'type': 'online_users',  # Тип сообщения
+            'users': users  # Список онлайн пользователей
         }))
+
+
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -256,4 +245,68 @@ class MonitorConsumer(AsyncWebsocketConsumer):
         pass  # Ничего не делаем при разрыве соединения
 
 
+class VideoConferenceConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add(
+            "video_conference",
+            self.channel_name
+        )
+        await self.accept()
 
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            "video_conference",
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        message = text_data_json['message']
+
+        await self.channel_layer.group_send(
+            "video_conference",
+            {
+                'type': 'video_message',
+                'message': message
+            }
+        )
+
+    async def video_message(self, event):
+        message = event['message']
+
+        await self.send(text_data=json.dumps({
+            'message': message
+        }))
+
+class InteractiveLessonConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add(
+            "interactive_lesson",
+            self.channel_name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            "interactive_lesson",
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        question = text_data_json['question']
+
+        await self.channel_layer.group_send(
+            "interactive_lesson",
+            {
+                'type': 'lesson_question',
+                'question': question
+            }
+        )
+
+    async def lesson_question(self, event):
+        question = event['question']
+
+        await self.send(text_data=json.dumps({
+            'question': question
+        }))
