@@ -5,6 +5,17 @@
 
 {% block title %}
     <title>{{ title }}</title>
+    <style>
+        #videos {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        video {
+            width: 300px;
+            height: 200px;
+            margin: 10px;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -32,22 +43,39 @@
             {% endif %}
         </div>
         <!-- start: page -->
+        <div id="videos">
         <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
+    </div>
 
     <script src="{% static 'admin_templates/vendor/simplewebrtc/simplewebrtc.bundle.min.js' %}"></script>
     <script>
         const localVideo = document.getElementById('localVideo');
-        const remoteVideo = document.getElementById('remoteVideo');
+        const videosContainer = document.getElementById('videos');
 
         const webrtc = new SimpleWebRTC({
             localVideoEl: 'localVideo',
-            remoteVideosEl: 'remoteVideo',
+            remoteVideosEl: '',
             autoRequestMedia: true,
         });
 
         webrtc.on('readyToCall', () => {
             webrtc.joinRoom('video_conference');
+        });
+
+        webrtc.on('videoAdded', (video, peer) => {
+            const videoElement = document.createElement('video');
+            videoElement.srcObject = video.stream;
+            videoElement.autoplay = true;
+            videoElement.muted = (peer && peer.local) ? true : false;
+            videoElement.id = 'video_' + webrtc.getDomId(peer);
+            videosContainer.appendChild(videoElement);
+        });
+
+        webrtc.on('videoRemoved', (video, peer) => {
+            const videoElement = document.getElementById('video_' + webrtc.getDomId(peer));
+            if (videoElement) {
+                videosContainer.removeChild(videoElement);
+            }
         });
 
         const socket = new WebSocket('wss://' + window.location.host + '/ws/video_conference/');
