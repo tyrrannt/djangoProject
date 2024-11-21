@@ -297,17 +297,21 @@ class AudioConferenceConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
+        print(f'WebSocket connected to room {self.room_name}')
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
+        print(f'WebSocket disconnected from room {self.room_name}')
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         audio_data = text_data_json['audio_data']
         user_id = text_data_json['user_id']
+
+        print(f'Received audio data from user {user_id}')
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -321,6 +325,8 @@ class AudioConferenceConsumer(AsyncWebsocketConsumer):
     async def send_audio(self, event):
         audio_data = event['audio_data']
         user_id = event['user_id']
+
+        print(f'Sending audio data to user {user_id}')
 
         await self.send(text_data=json.dumps({
             'audio_data': audio_data,
