@@ -67,7 +67,7 @@
                 }
             });
 
-            const ws = new WebSocket('ws://' + window.location.host + '/ws/monitor/');
+            const ws = new WebSocket('wss://' + window.location.host + '/ws/monitor/');
 
             ws.onmessage = function (event) {
                 const data = JSON.parse(event.data);
