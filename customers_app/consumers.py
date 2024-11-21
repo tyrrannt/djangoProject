@@ -1,6 +1,7 @@
 # consumers.py
 import random
 from asyncio import sleep
+import psutil
 
 import emoji
 from channels.db import database_sync_to_async
@@ -209,3 +210,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #             'message': message.message,
     #             'username': message.username,
     #         }))
+
+
+class MonitorConsumer(AsyncWebsocketConsumer):
+    """Класс для обработки соединений с веб-сокетами и отправки данных о загрузке процессора и памяти.
+    В этом коде определен класс MonitorConsumer, который наследуется от AsyncWebsocketConsumer.
+    Этот класс используется для обработки соединений с веб-сокетами и отправки данных о загрузке
+    процессора и памяти каждую секунду. В методе connect происходит установка соединения и отправка
+    данных о загрузке процессора и памяти каждую секунду. В методе disconnect происходит обработка
+    разрыва соединения.
+    """
+
+    async def connect(self):
+        """Метод для установки соединения и отправки данных о загрузке процессора и памяти каждую секунду."""
+        await self.accept()  # Принимаем соединение
+        while True:
+            cpu_percent = psutil.cpu_percent(interval=1)  # Получаем процент загрузки процессора
+            memory_percent = psutil.virtual_memory().percent  # Получаем процент загрузки памяти
+            await self.send(text_data=json.dumps({
+                'cpu_percent': cpu_percent,  # Отправляем данные о загрузке процессора
+                'memory_percent': memory_percent,  # Отправляем данные о загрузке памяти
+            }))
+            await sleep(1)  # Ждем 1 секунду перед отправкой следующих данных
+
+    async def disconnect(self, close_code):
+        """Метод для обработки разрыва соединения."""
+        pass  # Ничего не делаем при разрыве соединения

@@ -456,3 +456,6 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 save_report.delay()
 
         return super().get(request, *args, **kwargs)
+
+def system_monitor(request):
+    return render(request, 'administration_app/system_monitor.html')

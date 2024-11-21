@@ -8,5 +8,6 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('property/', PortalPropertyList.as_view(), name='property_list'),
     path('json/', views.import_data, name='json'),
+    path('monitoring/', views.system_monitor, name='monitoring'),
 
 ]
