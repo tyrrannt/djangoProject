@@ -285,9 +285,5 @@ def results(request):
     return render(request, 'library_app/results.html', {'poems': sorted_poems[:3]})
 
 @login_required
-def video_conference(request):
-    return render(request, 'library_app/video_conference.html')
-
-@login_required
-def interactive_lesson(request):
-    return render(request, 'library_app/interactive_lesson.html')
+def video_conference(request, room_name):
+    return render(request, 'library_app/video_conference.html', {'room_name': room_name})

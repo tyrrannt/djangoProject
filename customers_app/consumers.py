@@ -247,66 +247,41 @@ class MonitorConsumer(AsyncWebsocketConsumer):
 
 class VideoConferenceConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        self.room_name = self.scope['url_route']['kwargs']['room_name']
+        self.room_group_name = 'video_conference_%s' % self.room_name
+
         await self.channel_layer.group_add(
-            "video_conference",
+            self.room_group_name,
             self.channel_name
         )
+
         await self.accept()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
-            "video_conference",
+            self.room_group_name,
             self.channel_name
         )
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        message = text_data_json['message']
+        signal = text_data_json['signal']
+        user_id = text_data_json['user_id']
 
         await self.channel_layer.group_send(
-            "video_conference",
+            self.room_group_name,
             {
-                'type': 'video_message',
-                'message': message
+                'type': 'send_signal',
+                'signal': signal,
+                'user_id': user_id
             }
         )
 
-    async def video_message(self, event):
-        message = event['message']
+    async def send_signal(self, event):
+        signal = event['signal']
+        user_id = event['user_id']
 
         await self.send(text_data=json.dumps({
-            'message': message
-        }))
-
-class InteractiveLessonConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        await self.channel_layer.group_add(
-            "interactive_lesson",
-            self.channel_name
-        )
-        await self.accept()
-
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            "interactive_lesson",
-            self.channel_name
-        )
-
-    async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        question = text_data_json['question']
-
-        await self.channel_layer.group_send(
-            "interactive_lesson",
-            {
-                'type': 'lesson_question',
-                'question': question
-            }
-        )
-
-    async def lesson_question(self, event):
-        question = event['question']
-
-        await self.send(text_data=json.dumps({
-            'question': question
+            'signal': signal,
+            'user_id': user_id
         }))

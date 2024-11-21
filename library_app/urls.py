@@ -19,7 +19,6 @@ urlpatterns = [
     path('vote/success/', views.vote_success, name='vote_success'),
     path('results/', views.results, name='results'),
     path('check_session_cookie_secure/', views.check_session_cookie_secure, name='check_session_cookie_secure'),
-    path('video_conference/', views.video_conference, name='video_conference'),
-    path('interactive_lesson/', views.interactive_lesson, name='interactive_lesson'),
+    path('video_conference/<str:room_name>/', views.video_conference, name='video_conference'),
 
 ]
