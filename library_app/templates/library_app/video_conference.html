@@ -45,7 +45,10 @@
         </div>
         <!-- start: page -->
         <div id="videos"></div>
-
+    <script>
+        const ROOM_ID = "{{ room_name }}";
+        const USER_ID = Math.random().toString(36).substring(2, 15);
+    </script>
     <script src="{% static 'admin_templates/vendor/simplewebrtc/socket.io.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/simplewebrtc/simplepeer.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/simplewebrtc/video_conference.js' %}"></script>
