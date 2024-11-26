@@ -147,7 +147,10 @@
                             <p>Отчёт по встрече: <a href="{{ event.event_report.url }}">Скачать</a></p>
                         {% endif %}
                         {% if event.event_media %}
-                            <audio controls="controls" crossorigin="anonymous" style="width:100%;" controlsList="nodownload"><source src="{{ event.event_media.url }}" type="audio/mpeg"></audio>
+                            <audio controls="controls" crossorigin="anonymous" style="width:100%;"
+                                   controlsList="nodownload">
+                                <source src="{{ event.event_media.url }}" type="audio/mpeg">
+                            </audio>
                             <p>Медиафайл: <a href="{{ event.event_media.url }}">Скачать</a></p>
                         {% endif %}
                     </div>
@@ -155,11 +158,24 @@
                 <section class="toggle">
                     <label>Участники</label>
                     <div class="toggle-content">
-                        <ul>
-                            {% for participant in event.participants.all %}
-                                <li>{{ participant.title }}</li>
+                        <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>ФИО</th>
+                                <th>Должность</th>                                
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for item in event.participants.all %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ item.title }}</td>
+                                    <td>{{ item.user_work_profile.job.get_title }}</td>
+                                </tr>
                             {% endfor %}
-                        </ul>
+                            </tbody>
+                        </table>
                     </div>
                 </section>
                 <section class="toggle">
