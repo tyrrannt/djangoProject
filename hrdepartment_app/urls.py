@@ -16,7 +16,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     CreatingTeamDetail, CreatingTeamUpdate, CreatingTeamAgreed, CreatingTeamSetNumber, ExpensesList, expenses_update, \
     ReportCardDetailYear, ReportCardDetailYearXLS, TimeSheetCreateView, TimeSheetDetailView, TimeSheetUpdateView, \
     TimeSheetDeleteView, TimeSheetListView, OutfitCardListView, OutfitCardCreateView, OutfitCardDetailView, \
-    OutfitCardUpdateView, OutfitCardDeleteView, ReportCardDetailIAS, filter_outfit_cards
+    OutfitCardUpdateView, OutfitCardDeleteView, ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
+    unacknowledge_document
 
 app_name = 'hrdepartment_app'
 
@@ -95,4 +96,6 @@ urlpatterns = [
     path('outfit_cards/<int:pk>/', OutfitCardDetailView.as_view(), name='outfit_card'),
     path('outfit_cards/<int:pk>/update/', OutfitCardUpdateView.as_view(), name='outfit_card_update'),
     path('outfit_cards/<int:pk>/delete/', OutfitCardDeleteView.as_view(), name='outfit_card_delete'),
+    path('acknowledge/', acknowledge_document, name='acknowledge_document'),
+    path('unacknowledge/', unacknowledge_document, name='unacknowledge_document'),
 ]

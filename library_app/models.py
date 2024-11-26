@@ -146,6 +146,31 @@ class Vote(models.Model):
         unique_together = ('user', 'poem')
 
 
+class CompanyEvent(models.Model):
+    class Meta:
+        verbose_name = 'Событие'
+        verbose_name_plural = 'События'
+
+    title = models.CharField('Заголовок', max_length=200)
+    event_date = models.DateField('Дата', null=True, blank=True)
+    decoding = CKEditor5Field('Расшифровка', config_name='extends', blank=True)
+    results = CKEditor5Field('Итоги', config_name='extends', blank=True)
+    event_report = models.FileField(verbose_name='Отчёт по встрече', upload_to=scan_directory_path, blank=True)
+    event_media = models.FileField(verbose_name='Медиафайл', upload_to=scan_directory_path, blank=True)
+    participants = models.ManyToManyField(DataBaseUser, verbose_name='Участники', blank=True,
+                                      related_name='%(app_label)s_%(class)s_employee')
+
+    def __str__(self):
+        return self.title
+
+    def get_data(self):
+        return {
+            'pk': self.pk,
+            'title': self.title,
+            'event_date': self.event_date,
+        }
+
+
 # @receiver(post_save, sender=DocumentForm)
 # def rename_file_name(sender, instance: DocumentForm, **kwargs):
 #     try:

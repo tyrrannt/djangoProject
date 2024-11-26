@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
@@ -7,19 +8,19 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from loguru import logger
-
 
 from administration_app.models import PortalProperty
 from djangoProject import settings
+from hrdepartment_app.models import DocumentAcknowledgment
 from library_app.forms import (
     HelpItemAddForm,
     HelpItemUpdateForm,
     DocumentFormAddForm,
-    DocumentFormUpdateForm, PoemForm, VoteConfirmationForm,
+    DocumentFormUpdateForm, PoemForm, VoteConfirmationForm, CompanyEventForm,
 )
-from library_app.models import HelpTopic, HelpCategory, DocumentForm, Contest, Poem, Vote
+from library_app.models import HelpTopic, HelpCategory, DocumentForm, Contest, Poem, Vote, CompanyEvent
 
 
 # Create your views here.
@@ -31,6 +32,7 @@ from library_app.models import HelpTopic, HelpCategory, DocumentForm, Contest, P
 def index(request):
     # return render(request, 'library_app/base.html')
     return redirect("/users/login/")
+
 
 def check_session_cookie_secure(request):
     if settings.SESSION_COOKIE_SECURE:
@@ -46,8 +48,10 @@ def show_403(request, exception=None):
 def show_404(request, exception=None):
     return render(request, "library_app/404.html")
 
+
 def show_500(request, exception=None):
     return render(request, "library_app/500.html")
+
 
 class HelpList(LoginRequiredMixin, ListView):
     model = HelpTopic
@@ -135,6 +139,7 @@ class DocumentFormList(LoginRequiredMixin, ListView):
             return JsonResponse(response)
         return super().get(request, *args, **kwargs)
 
+
 @method_decorator(never_cache, name='dispatch')
 class DocumentFormItem(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = DocumentForm
@@ -201,7 +206,6 @@ class DocumentFormUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 
 @login_required
 def video(request):
-
     types_count = ''
 
     return render(request, 'library_app/video.html', context={'types_count': types_count})
@@ -230,6 +234,7 @@ def submit_poem(request):
         form = PoemForm(instance=poem)
 
     return render(request, 'library_app/submit_poem.html', {'form': form})
+
 
 @login_required
 def vote(request):
@@ -260,10 +265,10 @@ def vote(request):
     return render(request, 'library_app/vote.html', {'poems': poems})
 
 
-
 @login_required
 def vote_success(request):
     return render(request, 'library_app/vote_success.html')
+
 
 @login_required
 def results(request):
@@ -284,10 +289,53 @@ def results(request):
 
     return render(request, 'library_app/results.html', {'poems': sorted_poems[:3]})
 
+
 @login_required
 def video_conference(request, room_name):
     return render(request, 'library_app/video_conference.html', {'room_name': room_name})
 
+
 @login_required
 def audio_conference(request, room_name):
     return render(request, 'library_app/audio_conference.html', {'room_name': room_name})
+
+
+class CompanyEventListView(ListView):
+    model = CompanyEvent
+    context_object_name = 'events'
+
+
+class CompanyEventDetailView(DetailView):
+    model = CompanyEvent
+    context_object_name = 'event'
+
+    def get_context_data(self, **kwargs):
+        # context = super().get_context_data(**kwargs)
+        context = super().get_context_data(object_list=None, **kwargs)
+        content_type_id = ContentType.objects.get_for_model(self.object).id
+        document_id = self.object.id
+        user = self.request.user
+        agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
+                                                      user=user).exists()
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
+                                                           user=user)
+        context['list_agree'] = list_agree
+        context['agree'] = agree
+        context['title'] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        return context
+
+
+class CompanyEventUpdateView(UpdateView):
+    model = CompanyEvent
+    form_class = CompanyEventForm
+
+
+class CompanyEventDeleteView(DeleteView):
+    model = CompanyEvent
+    success_url = reverse_lazy('company_event:event_list')
+
+
+class CompanyEventCreateView(CreateView):
+    model = CompanyEvent
+    form_class = CompanyEventForm
+    success_url = reverse_lazy('company_event:event_list')

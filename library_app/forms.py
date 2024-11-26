@@ -5,7 +5,7 @@ from django_ckeditor_5.widgets import CKEditor5Widget
 
 from administration_app.utils import make_custom_field
 from customers_app.models import DataBaseUser, Division
-from library_app.models import HelpTopic, HelpCategory, HashTag, DocumentForm, Poem
+from library_app.models import HelpTopic, HelpCategory, HashTag, DocumentForm, Poem, CompanyEvent
 
 
 class HelpItemAddForm(forms.ModelForm):
@@ -151,3 +151,22 @@ class PoemForm(forms.ModelForm):
 
 class VoteConfirmationForm(forms.Form):
     confirm_vote = forms.BooleanField(label='Подтвердите переголосование')
+
+
+class CompanyEventForm(forms.ModelForm):
+    class Meta:
+        model = CompanyEvent
+        fields = ['title', 'event_date', 'decoding', 'results', 'event_report', 'event_media', 'participants']
+        widgets = {
+            "decoding": CKEditor5Widget(
+                attrs={"class": "django_ckeditor_5"}, config_name="comment"
+            ),
+            "results": CKEditor5Widget(
+                attrs={"class": "django_ckeditor_5"}, config_name="comment"
+            )
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])

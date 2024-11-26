@@ -22,7 +22,7 @@ from hrdepartment_app.models import (
     TypesUserworktime,
     Instructions,
     Provisions,
-    CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard,
+    CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment,
 )
 
 # Register your models here.
@@ -34,7 +34,7 @@ admin.site.register(Groups)
 admin.site.register(ReasonForCancellation)
 admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
-
+admin.site.register(DocumentAcknowledgment)
 
 
 @admin.register(TimeSheet)

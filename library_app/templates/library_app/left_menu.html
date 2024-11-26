@@ -23,24 +23,26 @@
                             </a>
                             <ul class="nav nav-children">
                                 <li>
-                                    <a class="nav-link" href="{% url 'chat_app:room' room_name='shakirov'%}">
+                                    <a class="nav-link" href="{% url 'chat_app:room' room_name='shakirov' %}">
                                         Shakirov
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="nav-link" href="{% url 'library_app:video_conference' room_name='shakirov'%}">
+                                    <a class="nav-link"
+                                       href="{% url 'library_app:video_conference' room_name='shakirov' %}">
                                         Видеоконференция
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="nav-link" href="{% url 'library_app:audio_conference' room_name='shakirov'%}">
+                                    <a class="nav-link"
+                                       href="{% url 'library_app:audio_conference' room_name='shakirov' %}">
                                         Аудиоконференция
                                     </a>
                                 </li>
                             </ul>
                         </li>
                     {% endif %}
-                
+
                     {% if user.is_superuser %}
                         <li class="nav-parent">
                             <a class="nav-link" href="#">
@@ -150,7 +152,13 @@
                                             Отчет по сотрудникам
                                         </a>
                                     </li>
+
                                 </ul>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:event_list' %}">
+                                    Мероприятия
+                                </a>
                             </li>
                         </ul>
                     </li>

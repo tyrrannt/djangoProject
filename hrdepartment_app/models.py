@@ -6,7 +6,8 @@ from gc import get_objects
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
-from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.db.models import Q, Choices
@@ -2866,3 +2867,18 @@ def rename_file_name_guidance_documents(sender, instance, **kwargs):
             instance.save()
     except Exception as _ex:
         logger.error(f"Ошибка при переименовании файла {_ex}")
+
+
+class DocumentAcknowledgment(models.Model):
+    document_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        limit_choices_to={'model__in': ('documentsorder', 'creatingteam', 'documentsjobdescription', 'provisions', 'guidancedocuments', 'companyevent')}
+    )
+    document_id = models.PositiveIntegerField()
+    document = GenericForeignKey('document_type', 'document_id')
+    user = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE, related_name='document_acknowledgments')
+    acknowledgment_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} ознакомился с документом '{self.document}'"

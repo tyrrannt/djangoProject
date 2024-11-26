@@ -1,0 +1,50 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+        <section role="main" class="content-body content-body-modern mt-0">
+            <header class="card-header">
+                <h2 class="card-title">Вы уверены?</h2>
+            </header>
+            <div class="card-body">
+                <div class="modal-wrapper">
+                    <div class="modal-icon">
+
+                    </div>
+                    <div class="modal-text">
+                        <h3><i class='bx bxs-trash text-4 me-2' ></i> Вы уверены, что хотите удалить эту запись "{{ object }}"?</h3>
+                    </div>
+                </div>
+            </div>
+            <footer class="card-footer">
+                <div class="row">
+                    <div class="col-md-12 text-center">
+                        <form method="post" class="mt-4">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger"><i class='bx bx-trash text-4 me-2' ></i> Да, удалить</button>
+                            <a href="{% url 'library_app:event_list' object.pk %}" class="btn btn-outline-secondary">Отмена</a>
+                        </form>
+                    </div>
+                </div>
+            </footer>
+        </section>
+    </form>
+{% endblock %}

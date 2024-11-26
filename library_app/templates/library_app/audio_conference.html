@@ -11,15 +11,16 @@
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
-        <button id="muteButton">Mute</button>
-        <button id="unmuteButton">Unmute</button>
+<button id="muteButton">Mute</button>
+    <button id="unmuteButton">Unmute</button>
 
-        <script>
-            const ROOM_ID = "{{ room_name }}";
-            const USER_ID = Math.random().toString(36).substring(2, 15);
-        </script>
-        <script src="{% static 'admin_templates/vendor/simplewebrtc/audio_conference.js' %}"></script>
-
+    <script>
+        const ROOM_ID = "{{ room_name }}";
+        const USER_ID = Math.random().toString(36).substring(2, 15);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mediasoup-client@3.6.31/lib/index.js"></script>
+        
+    <script src="{% static 'admin_templates/vendor/simplewebrtc/audio_conference.js' %}"></script>
         <!-- end: page -->
     </section>
     <!-- end: page -->

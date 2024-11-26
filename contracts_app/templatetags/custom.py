@@ -3,8 +3,14 @@ from datetime import datetime
 
 from django import template
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 
 register = template.Library()
+
+
+@register.filter
+def content_type_id(obj):
+    return ContentType.objects.get_for_model(obj).id
 
 
 def media_folder_products(string):

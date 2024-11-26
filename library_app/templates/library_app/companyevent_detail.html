@@ -1,14 +1,14 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% load widget_tweaks %}
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="
+            {% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
 {% endblock %}
@@ -16,7 +16,10 @@
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}
+            "></script>
+
     <script>
         $(document).ready(function () {
             $('#acknowledgment-checkbox').change(function () {
@@ -89,62 +92,41 @@
 
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
-
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" id="acknowledgment-form">
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
-        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-            <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
-                    от {{ object.document_date }} г.</h4>
-                <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                    <section class="toggle active">
-                        <label>Основные реквизиты</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        <h4>{{ object.document_name }}, №: {{ object.document_number }}
-                                            от: {{ object.document_date | date:"c" }} г.</h4>
-                                        <h4>Действителен с: {{ object.validity_period_start }}
-                                            {% if object.validity_period_end %} по:
-                                                {{ object.validity_period_end }}{% endif %}</h4>
-                                        <h4>Место хранения оригинала: {{ object.storage_location_division }}.</h4>
-                                        <h4>Исполнитель: {{ object.executor | FIO_format }}</h4>
-                                        <h4>Ответственные лица:
-                                            {% for item in object.employee.iterator %}{% if forloop.last %}
-                                                {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
-                                            {% endif %}{% endfor %}</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    <section class="toggle">
-                        <label>Файл</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        {% if object.scan_file %}
-                                            <a href="{{ object.scan_file.url }}" target="_blank">Открыть документ</a>
-                                            <object data="{{ object.scan_file.url }}" type="application/pdf"
-                                                    width="750px"
-                                                    height="750px">
-                                                <embed src="{{ object.scan_file.url }}" type="application/pdf">
-                                                <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
-                                                    PDF-файл, чтобы
-                                                    просмотреть его: <a
-                                                            href="{{ object.scan_file.url }}">Скачать PDF.</a>.</p>
-                                                </embed>
-                                            </object>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                <section class="toggle">
+            <div class="row">
+                <h1>{{ event.title }}</h1>
+                <p>Дата: {{ event.event_date }}</p>
+                <p>Расшифровка: {{ event.decoding }}</p>
+                <p>Итоги: {{ event.results }}</p>
+                <p>Отчёт по встрече: <a href="{{ event.event_report.url }}">Скачать</a></p>
+                <p>Медиафайл: <a href="{{ event.event_media.url }}">Скачать</a></p>
+                <p>Участники:
+                <ul>
+                    {% for participant in event.participants.all %}
+                        <li>{{ participant.username }}</li>
+                    {% endfor %}
+                </ul>
+                </p>
+            </div>
+        <section class="toggle">
                         <label>Лист ознакомления</label>
                         <div class="toggle-content">
                             <div class="form-row">
@@ -182,38 +164,38 @@
                             </div>
                         </div>
                     </section>
-                </div>
-            </div>
+
             <div class="row action-buttons">
-                {% if user|has_group:"Положения" or user.is_superuser %}
-                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                        <a href="{% url 'hrdepartment_app:guidance_documents_update' object.pk %}"
-                           class="btn btn-outline-success btn-px-4 py-3 d-flex
+
+                <div class="col-12 col-md-auto">
+                    <a href="{% url 'library_app:event_update' object.pk %}"
+                       class="btn btn-outline-success btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
-                    </div>
-                {% endif %}
+                        <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
+                </div>
                 <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:guidance_documents_list' %}"
+                    <a href="{% url 'library_app:event_list' %}"
                        class="btn btn-outline-dark btn-px-4 py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
+                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
                 </div>
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-
                     <div class="switch switch-lg switch-success">
                         <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
                                data-plugin-ios-switch {% if agree %}checked{% endif %}>
                     </div>
                     <label for="acknowledgment-checkbox">Я ознакомился</label>
+                    <form id="acknowledgment-form" method="post" style="display: none;">
+                        {% csrf_token %}
+                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                    </form>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
+                        <a href="{% url 'library_app:event_delete' object.pk %}"
                            class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
                     </div>
                 {% endif %}
             </div>
