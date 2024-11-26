@@ -300,12 +300,28 @@ def audio_conference(request, room_name):
     return render(request, 'library_app/audio_conference.html', {'room_name': room_name})
 
 
-class CompanyEventListView(ListView):
+class CompanyEventListView(LoginRequiredMixin, ListView):
     model = CompanyEvent
     context_object_name = 'events'
 
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            provisions_list = CompanyEvent.objects.all()
+            data = [provisions_item.get_data() for provisions_item in provisions_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
 
-class CompanyEventDetailView(DetailView):
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Мероприятия компании"
+        return context
+
+
+class CompanyEventDetailView(LoginRequiredMixin, DetailView):
     model = CompanyEvent
     context_object_name = 'event'
 
@@ -317,24 +333,28 @@ class CompanyEventDetailView(DetailView):
         user = self.request.user
         agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
                                                       user=user).exists()
-        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id).order_by('user')
         context['list_agree'] = list_agree
         context['agree'] = agree
         context['title'] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
         return context
 
 
-class CompanyEventUpdateView(UpdateView):
+class CompanyEventUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = CompanyEvent
     form_class = CompanyEventForm
+    permission_required = "library_app.change_companyevent"
+    success_url = reverse_lazy('library_app:event_list')
 
 
-class CompanyEventDeleteView(DeleteView):
+class CompanyEventDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = CompanyEvent
-    success_url = reverse_lazy('company_event:event_list')
+    permission_required = "library_app.delete_companyevent"
+    success_url = reverse_lazy('library_app:event_list')
 
 
-class CompanyEventCreateView(CreateView):
+class CompanyEventCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     model = CompanyEvent
     form_class = CompanyEventForm
-    success_url = reverse_lazy('company_event:event_list')
+    permission_required = "library_app.add_companyevent"
+    success_url = reverse_lazy('library_app:event_list')

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import fields
 
 from django import forms
@@ -159,14 +160,22 @@ class CompanyEventForm(forms.ModelForm):
         fields = ['title', 'event_date', 'decoding', 'results', 'event_report', 'event_media', 'participants']
         widgets = {
             "decoding": CKEditor5Widget(
-                attrs={"class": "django_ckeditor_5"}, config_name="comment"
+                attrs={"class": "django_ckeditor_5"}, config_name="extends"
             ),
             "results": CKEditor5Widget(
-                attrs={"class": "django_ckeditor_5"}, config_name="comment"
+                attrs={"class": "django_ckeditor_5"}, config_name="extends"
             )
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
+        self.fields["results"].required = False
+        self.fields["event_report"].required = False
+        self.fields["event_media"].required = False
+        self.fields["participants"].required = False
+        custom_fields = self.fields.copy()
+        custom_fields.pop("results")
+        custom_fields.pop("decoding")
+
+        for field in custom_fields:
             make_custom_field(self.fields[field])

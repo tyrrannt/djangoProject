@@ -56,10 +56,28 @@
                 <div class="form-row">
                     <div class="form-group col mb-3">
                         <h1>{% if object %}Редактирование события{% else %}Создание нового события{% endif %}</h1>
-                        <form method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                        </form>
+                        <label for="id_title">Название события</label>
+                        {{ form.title }}
+                        <label for="id_event_date">Дата проведения</label>
+                        {{ form.event_date }}
+                        <div class="col-lg-12 ck-content">
+                            {% autoescape on %}
+                                <label for="id_decoding">Расшифровка события</label>
+                                {{ form.decoding | safe }}
+                            {% endautoescape %}
+                        </div>
+                        <div class="col-lg-12 ck-content">
+                            {% autoescape on %}
+                                <label for="id_results">Итоги</label>
+                                {{ form.results | safe }}
+                            {% endautoescape %}
+                        </div>
+                        <label for="id_event_report">Отчет</label>
+                        {{ form.event_report }}
+                        <label for="id_event_media">Медиа</label>
+                        {{ form.event_media }}
+                        <label for="id_participants">Участники</label>
+                        {{ form.participants }}
                     </div>
                 </div>
             </div>
@@ -81,7 +99,7 @@
                 </div>
                 {% if user.is_superuser and object %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{%  url 'library_app:event_delete' object.pk %}"
+                        <a href="{% url 'library_app:event_delete' object.pk %}"
                            class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-trash text-4 me-2"></i> Удалить

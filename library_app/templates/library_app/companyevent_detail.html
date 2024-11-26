@@ -1,6 +1,8 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
+
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -109,64 +111,96 @@
             {% endif %}
         </div>
         <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data"
+              id="acknowledgment-form">
             {% csrf_token %}
-            <div class="row">
-                <h1>{{ event.title }}</h1>
-                <p>Дата: {{ event.event_date }}</p>
-                <p>Расшифровка: {{ event.decoding }}</p>
-                <p>Итоги: {{ event.results }}</p>
-                <p>Отчёт по встрече: <a href="{{ event.event_report.url }}">Скачать</a></p>
-                <p>Медиафайл: <a href="{{ event.event_media.url }}">Скачать</a></p>
-                <p>Участники:
-                <ul>
-                    {% for participant in event.participants.all %}
-                        <li>{{ participant.username }}</li>
-                    {% endfor %}
-                </ul>
-                </p>
-            </div>
-        <section class="toggle">
-                        <label>Лист ознакомления</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <section class="card">
-                                    <header class="card-header">
-                                        <div class="card-actions">
-                                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-{#                                            <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
-                                        </div>
-                                        <h2 class="card-title">Список сотрудников</h2>
-                                    </header>
-                                    <div class="card-body">
-                                        <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
-                                            <thead>
-                                            <tr>
-                                                <th>№</th>
-                                                <th>ФИО</th>
-                                                <th class="text-end">Дата и время ознакомления</th>
-                                                <th class="text-end">Ознакомлен</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for item in list_agree %}
-                                                <tr>
-                                                    <td>{{ forloop.counter }}</td>
-                                                    <td>{{ item.user.title }}</td>
-                                                    <td class="text-end">{{ item.acknowledgment_date }}</td>
-                                                    <td class="text-end">Ознакомлен</td>
-                                                </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </section>
-                            </div>
+            <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                <div class="row">
+                    <h3>{{ event.title }} от {{ event.event_date }}</h3>
+                </div>
+                <section class="toggle">
+                    <label>Расшифровка</label>
+                    <div class="toggle-content">
+                        <div class="col-lg-12 ck-content text">
+                            {% autoescape off %}
+                                {{ event.decoding }}
+                            {% endautoescape %}
                         </div>
-                    </section>
-
+                    </div>
+                </section>
+                <section class="toggle">
+                    <label>Итоги</label>
+                    <div class="toggle-content">
+                        <div class="col-lg-12 ck-content text">
+                            {% autoescape off %}
+                                {{ event.result }}
+                            {% endautoescape %}
+                        </div>
+                    </div>
+                </section>
+                <section class="toggle">
+                    <label>Список документов</label>
+                    <div class="toggle-content">
+                        {% if event.event_report %}
+                            <p>Отчёт по встрече: <a href="{{ event.event_report.url }}">Скачать</a></p>
+                        {% endif %}
+                        {% if event.event_media %}
+                            <p>Медиафайл: <a href="{{ event.event_media.url }}">Скачать</a></p>
+                        {% endif %}
+                    </div>
+                </section>
+                <section class="toggle">
+                    <label>Участники</label>
+                    <div class="toggle-content">
+                        <ul>
+                            {% for participant in event.participants.all %}
+                                <li>{{ participant.title }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </section>
+                <section class="toggle">
+                    <label>Лист ознакомления</label>
+                    <div class="toggle-content">
+                        <div class="form-row">
+                            <section class="card">
+                                <header class="card-header">
+                                    <div class="card-actions">
+                                        <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                                    </div>
+                                    <h2 class="card-title">Список сотрудников</h2>
+                                </header>
+                                <div class="card-body">
+                                    <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
+                                        <thead>
+                                        <tr>
+                                            <th>№</th>
+                                            <th>ФИО</th>
+                                            <th>Должность</th>
+                                            <th class="text-end">Дата и время ознакомления</th>
+                                            <th class="text-end">Ознакомлен</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for item in list_agree %}
+                                            <tr>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ item.user.title }}</td>
+                                                <td>{{ item.user.user_work_profile.job.get_title }}</td>
+                                                <td class="text-end">{{ item.acknowledgment_date }}</td>
+                                                <td class="text-end">Ознакомлен</td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </section>
+            </div>
             <div class="row action-buttons">
-
                 <div class="col-12 col-md-auto">
                     <a href="{% url 'library_app:event_update' object.pk %}"
                        class="btn btn-outline-success btn-px-4 py-3 d-flex
@@ -185,10 +219,6 @@
                                data-plugin-ios-switch {% if agree %}checked{% endif %}>
                     </div>
                     <label for="acknowledgment-checkbox">Я ознакомился</label>
-                    <form id="acknowledgment-form" method="post" style="display: none;">
-                        {% csrf_token %}
-                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-                    </form>
                 </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
@@ -203,5 +233,4 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
-
 {% endblock %}

@@ -32,14 +32,17 @@
                 <div class="card card-modern">
                     <div class="card-body">
                         <div class="datatables-header-footer-wrapper">
+                            
                             <div class="datatable-header">
                                 <div class="row align-items-center mb-3">
+                                    {% if user.is_superuser %}
                                         <div class="col-12 col-lg-auto mb-3 mb-lg-0">
                                             <a href="{% url 'library_app:event_create' %}"
                                                class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
                                                 <i class='bx bx-list-plus text-4 me-2' ></i> Создать новое событие</a>
                                         </div>
+                                    {% endif %}
                                 </div>
                             </div>
 
@@ -47,10 +50,8 @@
                                    style="min-width: 750px;">
                                 <thead>
                                 <tr>
-                                    <th width="55%">Наименование</th>
-                                    <th width="15%">Черновик</th>
-                                    <th width="15%">Скан-копия</th>
-                                    <th width="15%">Образец</th>
+                                    <th width="15%">Дата</th>
+                                    <th width="55%">Наименование</th>                                    
                                 </tr>
                                 </thead>
                             </table>
@@ -90,7 +91,7 @@
             var table = $('#datatable-ecommerce-list').DataTable({
                 "scrollX": true,
                 "sDom": 'T<"clear">lfrtip',
-                "ajax": "{% url 'library_app:blank_list' %}",
+                "ajax": "{% url 'library_app:event_list' %}",
                 "language": {
                     "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
                 },
@@ -104,10 +105,8 @@
                     });
                 },
                 "columns": [
+                    {"data": "event_date"},
                     {"data": "title"},
-                    {"data": "draft"},
-                    {"data": "scan"},
-                    {"data": "sample"},
                 ],
             });
         });

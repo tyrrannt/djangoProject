@@ -166,8 +166,8 @@ class CompanyEvent(models.Model):
     def get_data(self):
         return {
             'pk': self.pk,
-            'title': self.title,
             'event_date': self.event_date,
+            'title': self.title,
         }
 
 
