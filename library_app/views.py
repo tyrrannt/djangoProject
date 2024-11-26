@@ -317,8 +317,7 @@ class CompanyEventDetailView(DetailView):
         user = self.request.user
         agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
                                                       user=user).exists()
-        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
-                                                           user=user)
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
         context['agree'] = agree
         context['title'] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"

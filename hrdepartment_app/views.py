@@ -2056,8 +2056,7 @@ class DocumentsJobDescriptionDetail(
         content_type_id = ContentType.objects.get_for_model(self.object).id
         document_id = self.object.id
         user = self.request.user
-        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
-                                                           user=user)
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
         agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id, user=user).exists()
         context[
@@ -3160,8 +3159,7 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
                                                       user=user).exists()
         context['agree'] = agree
-        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
-                                                           user=user)
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
         context[
             "title"
@@ -3287,8 +3285,7 @@ class GuidanceDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, Detai
         agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
                                                       user=user).exists()
         context['agree'] = agree
-        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
-                                                           user=user)
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
         context[
             "title"
@@ -4035,7 +4032,7 @@ def unacknowledge_document(request):
         content_type = ContentType.objects.get_for_id(content_type_id)
         document = content_type.get_object_for_this_type(pk=object_id)
     except (ContentType.DoesNotExist, document.DoesNotExist):
-        return JsonResponse({'success': False, 'error': 'Document not found'}, status=404)
+        return JsonResponse({'success': False, 'error': 'Документ не найден'}, status=404)
 
     acknowledgment = DocumentAcknowledgment.objects.filter(
         document_type=content_type,
@@ -4044,7 +4041,10 @@ def unacknowledge_document(request):
     ).first()
 
     if acknowledgment:
-        acknowledgment.delete()
-        return JsonResponse({'success': True})
+        if acknowledgment.acknowledgment_date.date() == datetime.datetime.today().date():
+            acknowledgment.delete()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': 'Нельзя отменить ознакомление с документом'})
     else:
-        return JsonResponse({'success': False, 'error': 'Acknowledgment does not exist'})
+        return JsonResponse({'success': False, 'error': 'Ознакомление с документом не найдено'})
