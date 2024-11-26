@@ -251,25 +251,27 @@
                                     </header>
                                     <div class="card-body">
                                         <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
-                                            <thead>
+                                        <thead>
+                                        <tr>
+                                            <th>№</th>
+                                            <th>ФИО</th>
+                                            <th>Должность</th>
+                                            <th class="text-end">Дата и время ознакомления</th>
+                                            <th class="text-end">Ознакомлен</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for item in list_agree %}
                                             <tr>
-                                                <th>№</th>
-                                                <th>ФИО</th>
-                                                <th class="text-end">Дата и время ознакомления</th>
-                                                <th class="text-end">Ознакомлен</th>
+                                                <td>{{ forloop.counter }}</td>
+                                                <td>{{ item.user.title }}</td>
+                                                <td>{{ item.user.user_work_profile.job.get_title }}</td>
+                                                <td class="text-end">{{ item.acknowledgment_date }}</td>
+                                                <td class="text-end">Ознакомлен</td>
                                             </tr>
-                                            </thead>
-                                            <tbody>
-                                            {% for item in list_agree %}
-                                                <tr>
-                                                    <td>{{ forloop.counter }}</td>
-                                                    <td>{{ item.user.title }}</td>
-                                                    <td class="text-end">{{ item.acknowledgment_date }}</td>
-                                                    <td class="text-end">Ознакомлен</td>
-                                                </tr>
-                                            {% endfor %}
-                                            </tbody>
-                                        </table>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
                                     </div>
                                 </section>
                             </div>
