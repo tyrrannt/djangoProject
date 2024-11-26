@@ -185,7 +185,7 @@ class CompanyEvent(models.Model):
     def get_data(self):
         return {
             'pk': self.pk,
-            'event_date': self.event_date,
+            'event_date': self.event_date.strftime('%d.%m.%Y'),
             'title': self.title,
         }
 
