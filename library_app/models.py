@@ -32,6 +32,25 @@ def scan_directory_path(instance, filename):
     filename_scan = f'BLK-{instance.ref_key}-SCAN.{scan_ext}'
     return f'blank/scan/{filename_scan}'
 
+def get_file_name(instance, label):
+    ref_key = f'{uuid.uuid4()}'
+    year = instance.event_date.year
+    month = instance.event_date.month
+    day = instance.event_date.day
+    return f'EVT-{ref_key}-{label}-{day}-{month}-{year}'
+
+def event_report_directory_path(instance, filename):
+    report_ext = filename.split('.')[-1]
+    year = instance.event_date.year
+    filename_report = f'{get_file_name(instance, "REPORT")}.{report_ext}'
+    return f'event/{year}/{filename_report}'
+
+def event_media_directory_path(instance, filename):
+    report_ext = filename.split('.')[-1]
+    year = instance.event_date.year
+    filename_report = f'{get_file_name(instance, "MEDIA")}.{report_ext}'
+    return f'event/{year}/{filename_report}'
+
 def sample_directory_path(instance, filename):
     sample_ext = filename.split('.')[-1]
     filename_sample = f'BLK-{instance.ref_key}-SAMPLE.{sample_ext}'
@@ -155,8 +174,8 @@ class CompanyEvent(models.Model):
     event_date = models.DateField('Дата', null=True, blank=True)
     decoding = CKEditor5Field('Расшифровка', config_name='extends', blank=True)
     results = CKEditor5Field('Итоги', config_name='extends', blank=True)
-    event_report = models.FileField(verbose_name='Отчёт по встрече', upload_to=scan_directory_path, blank=True)
-    event_media = models.FileField(verbose_name='Медиафайл', upload_to=scan_directory_path, blank=True)
+    event_report = models.FileField(verbose_name='Отчёт по встрече', upload_to=event_report_directory_path, blank=True)
+    event_media = models.FileField(verbose_name='Медиафайл', upload_to=event_media_directory_path, blank=True)
     participants = models.ManyToManyField(DataBaseUser, verbose_name='Участники', blank=True,
                                       related_name='%(app_label)s_%(class)s_employee')
 
