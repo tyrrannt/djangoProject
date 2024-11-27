@@ -176,6 +176,7 @@ class CompanyEvent(models.Model):
     results = CKEditor5Field('Итоги', config_name='extends', blank=True)
     event_report = models.FileField(verbose_name='Отчёт по встрече', upload_to=event_report_directory_path, blank=True)
     event_media = models.FileField(verbose_name='Медиафайл', upload_to=event_media_directory_path, blank=True)
+    event_video = models.URLField(verbose_name="Видео", blank=True)
     participants = models.ManyToManyField(DataBaseUser, verbose_name='Участники', blank=True,
                                       related_name='%(app_label)s_%(class)s_employee')
 
