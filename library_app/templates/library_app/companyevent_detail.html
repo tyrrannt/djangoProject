@@ -150,11 +150,11 @@
                             <p>Видео-файл: <a href="{{ event.event_video }}" target="_blank">Посмотреть</a></p>
                         {% endif %}
                         {% if event.event_media %}
+                            <p>Аудио-файл:</p>
                             <audio controls="controls" crossorigin="anonymous" style="width:100%;"
                                    controlsList="nodownload">
                                 <source src="{{ event.event_media.url }}" type="audio/mpeg">
                             </audio>
-                            <p>Аудио-файл: <a href="{{ event.event_media.url }}">Скачать</a></p>
                         {% endif %}
                     </div>
                 </section>
