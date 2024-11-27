@@ -172,6 +172,7 @@ class CompanyEventForm(forms.ModelForm):
         self.fields["results"].required = False
         self.fields["event_report"].required = False
         self.fields["event_media"].required = False
+        self.fields["event_video"].required = False
         self.fields["participants"].required = False
         custom_fields = self.fields.copy()
         custom_fields.pop("results")
