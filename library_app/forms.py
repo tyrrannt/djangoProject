@@ -157,7 +157,7 @@ class VoteConfirmationForm(forms.Form):
 class CompanyEventForm(forms.ModelForm):
     class Meta:
         model = CompanyEvent
-        fields = ['title', 'event_date', 'decoding', 'results', 'event_report', 'event_media', 'participants']
+        fields = ['title', 'event_date', 'decoding', 'results', 'event_report', 'event_media', 'event_video', 'participants']
         widgets = {
             "decoding": CKEditor5Widget(
                 attrs={"class": "django_ckeditor_5"}, config_name="extends"
