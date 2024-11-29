@@ -1,0 +1,168 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load widget_tweaks %}
+
+
+
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+
+    <style>
+        body.show-lock-screen {
+            overflow: hidden;
+        }
+
+        .mfp-lock-screen {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .body-sign, .body-locked, .body-locked-inline {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f0f0;
+        }
+
+        .center-sign {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .user-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.body.classList.add('overlay-active');
+        });
+    </script>
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+    <style>
+        /* Стили для затемнения всей страницы */
+        body.overlay-active::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* Полупрозрачный черный фон */
+            z-index: 999; /* Убедитесь, что этот слой находится над всем остальным контентом */
+        }
+
+        /* Стили для секции, которую нужно оставить видимой */
+        #LockScreenInline {
+            position: relative;
+            top: 50%;
+            
+            z-index: 1000; /* Убедитесь, что эта секция находится над затемненным фоном */
+        }
+    </style>
+
+{% endblock %}
+
+{% block left_menu %}
+    <aside id="sidebar-left" class="sidebar-left">
+        <!-- Левое меню -->
+    </aside>
+{% endblock %}
+
+{% block notifications %}
+    <div class="header-right">
+
+    </div>
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0">
+        {#        {% include 'library_app/breadcrumb.html' %}#}
+        <!-- start: page -->
+        <section id="LockScreenInline" class="body-sign body-locked body-locked-inline">
+            <div class="center-sign">
+                <div class="panel card-sign">
+                    <div class="card-body">
+                        <form action="#" method="post">
+                            {% csrf_token %}
+                            <div class="current-user text-center">
+                                {% if user.avatar %}
+                                    <img id="LockUserPicture" src="/media/{{ request.user.avatar }}"
+                                         class="rounded-circle user-image"/>
+                                {% else %}
+                                    <img id="LockUserPicture" src="{% static 'admin_templates/img/!logged-user.jpg' %}"
+                                         class="rounded-circle user-image"/>
+                                {% endif %}
+                                <h2 id="LockUserName" class="user-name text-dark m-0">{{ request.user.title }}</h2>
+                                <p id="LockUserEmail" class="user-email m-0">{{ request.user.email }}</p>
+                            </div>
+                            <div class="form-group mb-lg">
+                                <div class="input-group">
+                                    <div class="col-10">
+                                        <input id="pwd" name="pwd" type="password" class="form-control form-control-lg"
+                                           placeholder="Password"/>
+                                    </div>
+                                    <div class="col-2">
+                                        <span class="form-control form-control-lg"><i class="fas fa-lock"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-2">                                
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary pull-right">Разблокировать</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- end: page -->
+    </section>
+    <!-- end: page -->
+
+{% endblock %}

@@ -493,7 +493,6 @@
                 <div class="widget-content">
                     <div class="card-body">
                         <div class="widget-summary">
-
                             <div class="widget-summary-col">
                                 <div class="summary">
                                     <h5 class="title">QR код</h5>
@@ -505,18 +504,21 @@
                     </div>
                 </div>
                 <div class="widget-content">
+                    <section class="card">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                        </div>
+                        <h2 class="card-title">Сотрудники OnLine</h2>
+                    </header>
                     <div class="card-body">
                         <div class="widget-summary">
-
                             <div class="widget-summary-col">
                                 <div class="summary">
-                                    <h5 class="title">Сотрудники OnLine</h5>
                                     <ul id="online-users"></ul>
-
                                     <script>
                                         var online_users = "wss://corp.barkol.ru/ws/online_users/";
                                         const socket_online_users = new WebSocket(online_users);
-
                                         socket_online_users.onmessage = function (event) {
                                             const data = JSON.parse(event.data);
                                             if (data.type === 'online_users') {
@@ -529,7 +531,6 @@
                                                 });
                                             }
                                         };
-
                                         socket_online_users.onclose = function (event) {
                                             console.error('WebSocket closed unexpectedly');
                                         };
@@ -538,8 +539,8 @@
                             </div>
                         </div>
                     </div>
+                    </section>
                 </div>
-
             </div>
         </div>
         <script>

@@ -6,6 +6,7 @@ from pprint import pprint
 import pandas as pd
 from dateutil.rrule import rrule, DAILY
 from decouple import config
+from django.contrib.auth import authenticate
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from loguru import logger
@@ -43,6 +44,22 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
            serialize=config('LOG_SERIALIZE'))
 
+@login_required
+def lock_screen(request):
+    print(request.user.username, request.POST.get('pwd'))
+    if request.method == 'POST':
+        password = request.POST.get('pwd')
+        print(request.user.username)
+        user = auth.authenticate(username=request.user.username, password=password)
+        # user = authenticate(request, username=request.user.username, password=password)
+        if user is not None:
+            auth.login(request, user)
+            request.session['locked'] = False  # Снимаем блокировку
+            return redirect('customers_app:profile', pk=request.user.pk)# Перенаправляем на страницу профиля
+        else:
+            return render(request, 'customers_app/lock_screen.html', {'error': 'Неверный пароль'})
+    request.session['locked'] = True  # Устанавливаем блокировку
+    return render(request, 'customers_app/lock_screen.html')
 
 class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Groups

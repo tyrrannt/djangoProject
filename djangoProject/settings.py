@@ -77,6 +77,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # 'administration_app.middleware.RequestMiddleware',
     "xff.middleware.XForwardedForMiddleware",
+    "customers_app.middleware.LockScreenMiddleware",
 ]
 
 XFF_TRUSTED_PROXY_DEPTH = 2
@@ -350,3 +351,5 @@ SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
 if not config("DEBUG", default=False, cast=bool):
     # Устанавливаем SESSION_COOKIE_DOMAIN
     SESSION_COOKIE_DOMAIN = config("SESSION_COOKIE_DOMAIN")
+# Устанавливает, что сессия истекает при закрытии браузера
+SESSION_EXPIRE_AT_BROWSER_CLOSE = config("SESSION_EXPIRE_AT_BROWSER_CLOSE", default=False, cast=bool)

@@ -83,34 +83,34 @@
         </div>
 
         <!-- start: search & user box -->
-        <div class="header-right">
-
-            <form action="#" class="search nav-form">
-                <div class="input-group">
-                    <input type="text" class="form-control" name="q" id="q" placeholder="Поиск...">
-                    <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>
-                </div>
-            </form>
-
-            <span class="separator"></span>
-
-            {% include 'library_app/notifications.html' %}
-
-            <span class="separator"></span>
-
-            {% include 'library_app/user-dropdown-menu.html' %}
-
-        </div>
+        {% block notifications %}
+            <div class="header-right">
+                <form action="#" class="search nav-form">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="q" id="q" placeholder="Поиск...">
+                        <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>
+                    </div>
+                </form>
+                <span class="separator"></span>
+                {% include 'library_app/notifications.html' %}
+                <span class="separator"></span>
+                {% include 'library_app/user-dropdown-menu.html' %}
+            </div>
+        {% endblock %}
+        
         <!-- end: search & user box -->
     </header>
     <!-- end: header -->
 
     <div class="inner-wrapper">
         <!-- start: sidebar -->
-        <aside id="sidebar-left" class="sidebar-left">
+        {% block left_menu %}
+            <aside id="sidebar-left" class="sidebar-left">
             <!-- Левое меню -->
             {% include 'library_app/left_menu.html' %}
-        </aside>
+            </aside>
+        {% endblock %}
+        
         <!-- end: sidebar -->
         <!-- БЛОК КОНТЕНТА -->
         {% block content %}
@@ -170,6 +170,37 @@
 <script id="myAdminSpinnerScript" src="{% static 'admin_templates/js/examples/examples.loading.overlay.js' %}"></script>
 {% block SpecificPageVendor %}
 {% endblock %}
+
+<!-- Вставьте этот скрипт в ваш шаблон, например, в base.html -->
+<script>
+    let inactivityTime = function () {
+        let time;
+        window.onload = resetTimer;
+        document.onmousemove = resetTimer;
+        document.onkeypress = resetTimer;
+
+        function lockScreen() {
+            fetch('{% url "customers_app:lock_screen" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'password='
+            }).then(() => {
+                window.location.href = "{% url 'customers_app:lock_screen' %}";
+            });
+        }
+
+        function resetTimer() {
+            clearTimeout(time);
+            time = setTimeout(lockScreen, 3600000); // 60000 мс = 1 минута
+        }
+    };
+
+    inactivityTime();
+</script>
+
 
 </body>
 </html>

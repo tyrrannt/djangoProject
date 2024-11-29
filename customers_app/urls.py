@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from .views import lock_screen
+
 # from .views import (
 #     AffiliationListView,
 #     AffiliationDetailView,
@@ -73,6 +75,7 @@ urlpatterns = [
         views.ChangeAvatarUpdate.as_view(),
         name="avatar_update",
     ),
+    path('lock-screen/', lock_screen, name='lock_screen'),
     # path(
     #     "password/<int:pk>/update/",
     #     views.ChangeAvatarUpdate.as_view(),
