@@ -46,10 +46,8 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
 
 @login_required
 def lock_screen(request):
-    print(request.user.username, request.POST.get('pwd'))
     if request.method == 'POST':
         password = request.POST.get('pwd')
-        print(request.user.username)
         user = auth.authenticate(username=request.user.username, password=password)
         # user = authenticate(request, username=request.user.username, password=password)
         if user is not None:
