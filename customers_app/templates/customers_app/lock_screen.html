@@ -99,8 +99,17 @@
         #LockScreenInline {
             position: relative;
             top: 50%;
-            
+
             z-index: 1000; /* Убедитесь, что эта секция находится над затемненным фоном */
+        }
+
+        .user-image {
+            width: 150px; /* Фиксированная ширина картинки */
+            height: 150px; /* Фиксированная высота картинки */
+            object-fit: cover; /* Сохранение пропорций и обрезка лишнего */
+            display: block; /* Блочный элемент для центрирования */
+            margin: 0 auto; /* Центрирование картинки */
+            border-radius: 50%; /* Закругление углов для создания круглой формы */
         }
     </style>
 
@@ -144,14 +153,14 @@
                                 <div class="input-group">
                                     <div class="col-10">
                                         <input id="pwd" name="pwd" type="password" class="form-control form-control-lg"
-                                           placeholder="Password"/>
+                                               placeholder="Password"/>
                                     </div>
                                     <div class="col-2">
                                         <span class="form-control form-control-lg"><i class="fas fa-lock"></i></span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="row mb-2">                                
+                            <div class="row mb-2">
                                 <div class="col-12">
                                     <button type="submit" class="btn btn-primary pull-right">Разблокировать</button>
                                 </div>
