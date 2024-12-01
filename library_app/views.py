@@ -239,8 +239,9 @@ def submit_poem(request):
 @login_required
 def vote(request):
     contest = Contest.objects.latest('start_date')
-    if not contest.is_voting_open():
-        return render(request, 'library_app/voting_closed.html')
+    if not request.user.is_superuser:
+        if not contest.is_voting_open():
+            return render(request, 'library_app/voting_closed.html')
 
     poems = Poem.objects.filter(contest=contest)
     if request.method == 'POST':
