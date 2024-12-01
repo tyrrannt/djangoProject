@@ -2870,6 +2870,11 @@ def rename_file_name_guidance_documents(sender, instance, **kwargs):
 
 
 class DocumentAcknowledgment(models.Model):
+    class Meta:
+        verbose_name = "Подтверждение документа"
+        verbose_name_plural = "Подтверждения документов"
+
+
     document_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,

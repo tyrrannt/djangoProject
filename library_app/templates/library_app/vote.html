@@ -1,11 +1,11 @@
 {% extends 'customers_app/main.html' %}
 
 {% block content %}
-    
+
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
         <div>
-        {{ message }}
+            {{ message }}
             {% if form.errors %}
                 {% for field in form %}
                     {% for error in field.errors %}
@@ -21,18 +21,35 @@
                 {% endfor %}
             {% endif %}
         </div>
-    
-<h1>Голосование за лучший стих</h1>
-<form method="post">
-    {% csrf_token %}
-    
-    {% for poem in poems %}
-    <div>
-        <input type="radio" name="poem" value="{{ poem.id }}" id="poem{{ poem.id }}">
-        <label for="poem{{ poem.id }}">{{ poem.title }}</label>
-    </div>
-    {% endfor %}
-    <button type="submit">Проголосовать</button>
-</form>
+
+        <h1>Голосование за лучший стих</h1>
+        <form method="post">
+            {% csrf_token %}
+            <div class="row">
+
+            </div>
+            {% for poem in poems %}
+                <div class="col-md-6">
+                    <section class="card card-featured card-featured-primary card-collapsed mb-4">
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
+                            <input type="radio" name="poem" value="{{ poem.id }}" id="poem{{ poem.id }}">
+                            <label for="poem{{ poem.id }}" class="card-title">&nbsp;&nbsp;&nbsp;&quot;{{ poem.title }}&quot;</label>
+                        </header>
+                        <div class="card-body text-5">
+                            {{ poem.content|linebreaksbr }}
+                        </div>
+                        {% if request.user.is_superuser %}
+                            <div class="card-footer">
+                                <p class="card-subtitle">Автор: {{ poem.user }}</p>
+                            </div>
+                        {% endif %}
+                    </section>
+                </div>
+            {% endfor %}
+            <button type="submit">Проголосовать</button>
+        </form>
     </section>
 {% endblock %}

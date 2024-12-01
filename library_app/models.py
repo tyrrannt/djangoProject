@@ -138,6 +138,10 @@ class DocumentForm(models.Model):
 
 
 class Contest(models.Model):
+    class Meta:
+        verbose_name = 'Конкурс'
+        verbose_name_plural = 'Конкурсы'
+
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     voting_end_date = models.DateTimeField()
@@ -149,6 +153,10 @@ class Contest(models.Model):
         return self.end_date <= timezone.now() < self.voting_end_date
 
 class Poem(models.Model):
+    class Meta:
+        verbose_name = 'Стих'
+        verbose_name_plural = 'Стихи'
+
     user = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, verbose_name='Название стиха')
     content = models.TextField(verbose_name='Содержание стиха')
@@ -158,11 +166,15 @@ class Poem(models.Model):
         return self.title
 
 class Vote(models.Model):
+    class Meta:
+        verbose_name = 'Голос'
+        verbose_name_plural = 'Голоса'
+        unique_together = ('user', 'poem')
+
     user = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE)
     poem = models.ForeignKey(Poem, on_delete=models.CASCADE)
 
-    class Meta:
-        unique_together = ('user', 'poem')
+
 
 
 class CompanyEvent(models.Model):

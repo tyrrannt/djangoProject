@@ -246,7 +246,6 @@ def vote(request):
     if request.method == 'POST':
         poem_id = request.POST.get('poem')
         poem = get_object_or_404(Poem, id=poem_id)
-
         try:
             Vote.objects.create(user=request.user, poem=poem)
             return redirect('library_app:vote_success')
