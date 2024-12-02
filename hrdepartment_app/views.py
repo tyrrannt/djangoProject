@@ -2618,8 +2618,10 @@ class ReportCardDetailYear(LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["table"] = get_year_report()
-        print(context["table"])
+        try:
+            context["table"] = get_year_report()
+        except Exception as e:
+            print(e)
         return context
 
 
