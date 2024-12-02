@@ -243,7 +243,7 @@ def vote(request):
         if not contest.is_voting_open():
             return render(request, 'library_app/voting_closed.html')
 
-    poems = Poem.objects.filter(contest=contest)
+    poems = Poem.objects.filter(contest=contest).order_by('?')
     if request.method == 'POST':
         poem_id = request.POST.get('poem')
         poem = get_object_or_404(Poem, id=poem_id)

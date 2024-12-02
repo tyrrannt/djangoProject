@@ -242,33 +242,33 @@
                                     <header class="card-header">
                                         <div class="card-actions">
                                             <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-{#                                            <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
+                                            {#                                            <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
                                         </div>
                                         <h2 class="card-title">Список сотрудников</h2>
                                     </header>
                                     <div class="card-body">
                                         <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
-                                        <thead>
-                                        <tr>
-                                            <th>№</th>
-                                            <th>ФИО</th>
-                                            <th>Должность</th>
-                                            <th class="text-end">Дата и время ознакомления</th>
-                                            <th class="text-end">Ознакомлен</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {% for item in list_agree %}
+                                            <thead>
                                             <tr>
-                                                <td>{{ forloop.counter }}</td>
-                                                <td>{{ item.user.title }}</td>
-                                                <td>{{ item.user.user_work_profile.job.get_title }}</td>
-                                                <td class="text-end">{{ item.acknowledgment_date }}</td>
-                                                <td class="text-end">Ознакомлен</td>
+                                                <th>№</th>
+                                                <th>ФИО</th>
+                                                <th>Должность</th>
+                                                <th class="text-end">Дата и время ознакомления</th>
+                                                <th class="text-end">Ознакомлен</th>
                                             </tr>
-                                        {% endfor %}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                            {% for item in list_agree %}
+                                                <tr>
+                                                    <td>{{ forloop.counter }}</td>
+                                                    <td>{{ item.user.title }}</td>
+                                                    <td>{{ item.user.user_work_profile.job.get_title }}</td>
+                                                    <td class="text-end">{{ item.acknowledgment_date }}</td>
+                                                    <td class="text-end">Ознакомлен</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </section>
                             </div>
@@ -345,10 +345,11 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
-    <script>
-        get_filename = function () {
-            return {{object.scan_file.url}};
-        }
-    </script>
-
+    {% if object.scan_file %}
+        <script>
+            get_filename = function () {
+                return {{object.scan_file.url}};
+            }
+        </script>
+    {% endif %}
 {% endblock %}

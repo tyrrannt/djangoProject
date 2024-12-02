@@ -1,5 +1,5 @@
 {% extends 'customers_app/main.html' %}
-
+{% load static %}
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
@@ -19,11 +19,43 @@
                 {% endfor %}
             {% endif %}
         </div>
-<h1>Результаты голосования</h1>
-<ol>
-    {% for poem in poems %}
-    <li>{{ poem.title }} - {{ poem.user.username }}</li>
-    {% endfor %}
-</ol>
+        <h1>Результаты голосования</h1>
+        <ol>
+            {% for poem in poems %}
+
+                <section class="card card-featured-left card-featured-primary mb-4">
+                    <div class="card-body">
+                        <div class="widget-summary">
+                            <div class="widget-summary-col widget-summary-col-icon">
+                                <div class="summary-icon ">
+                                    <img src="
+                                        {% if user.avatar %}
+                                            {{ user.avatar.url }}
+                                        {% else %}
+                                            {% static 'admin_templates/img/!logged-user.jpg' %}
+                                         {% endif %}"
+                                         alt="{{ user.last_name }} {{ user.first_name }}"
+                                         class="img-thumbnail" width="64"
+                                         data-lock-picture="{% static 'admin_templates/img/!logged-user.jpg' %}"/>
+                                </div>
+                            </div>
+                            <div class="widget-summary-col">
+                                <div class="summary">
+                                    <h4 class="title">{{ forloop.counter }} - Место</h4>
+                                    <div class="info">
+                                        <strong class="amount">{{ poem.count }}</strong>
+                                        <span class="text-primary">{{ poem.title }}</span>
+                                        <span class="text-primary">{{ poem.user.title }}</span>
+                                    </div>
+                                </div>
+                                <div class="summary-footer">
+                                    <a class="text-muted text-uppercase">(report)</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            {% endfor %}
+        </ol>
     </section>
 {% endblock %}
