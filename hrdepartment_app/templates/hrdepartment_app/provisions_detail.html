@@ -131,11 +131,14 @@
                 <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
                     от {{ object.document_date }} г.</h4>
                 {% if object.parent_document %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>Внимание!</strong> Данный документ потерял свою актуальность. Имеется новая версия документа: <a href="{% url 'hrdepartment_app:provisions' object.parent_document.pk %}" class="alert-link">{{ object.parent_document }}</a>, перейдите по ссылке для ознакомления с новой версией.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
-                            aria-label="Close"></button>
-                </div>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Внимание!</strong> Данный документ потерял свою актуальность. Имеется новая версия
+                        документа: <a href="{% url 'hrdepartment_app:provisions' object.parent_document.pk %}"
+                                      class="alert-link">{{ object.parent_document }}</a>, перейдите по ссылке для
+                        ознакомления с новой версией.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
+                                aria-label="Close"></button>
+                    </div>
                 {% endif %}
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
@@ -327,21 +330,23 @@
                        align-items-center font-weight-semibold line-height-1">
                         <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                 </div>
-                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                 {% if object.parent_document %}
-                    <label for="acknowledgment-checkbox" class="danger">Документ устарел.</label>
-                {% else %}
-                    <div class="switch switch-lg switch-success">
-                        <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
-                               data-plugin-ios-switch {% if agree %}checked{% endif %}>
+                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                        <label for="acknowledgment-checkbox" class="danger">Документ устарел.</label>
                     </div>
-                    <label for="acknowledgment-checkbox">Я ознакомился</label>
-                    <form id="acknowledgment-form" method="post" style="display: none;">
-                        {% csrf_token %}
-                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-                    </form>
-                </div>
-                {% endif %}`
+                {% else %}
+                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                        <div class="switch switch-lg switch-success">
+                            <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
+                                   data-plugin-ios-switch {% if agree %}checked{% endif %}>
+                        </div>
+                        <label for="acknowledgment-checkbox">Я ознакомился</label>
+                        <form id="acknowledgment-form" method="post" style="display: none;">
+                            {% csrf_token %}
+                            <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                        </form>
+                    </div>
+                {% endif %}
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
