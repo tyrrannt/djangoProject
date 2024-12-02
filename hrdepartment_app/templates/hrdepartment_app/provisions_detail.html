@@ -332,7 +332,11 @@
                 </div>
                 {% if object.parent_document %}
                     <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                        <label for="acknowledgment-checkbox" class="danger">Документ устарел.</label>
+                        <a href="{% url 'hrdepartment_app:provisions' object.parent_document.pk %}"
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Документ устарел
+                        </a>
                     </div>
                 {% else %}
                     <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
