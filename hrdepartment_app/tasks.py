@@ -554,17 +554,22 @@ def save_report():
 
 @app.task()
 def get_year_report(html_mode=True):
+    errors = []
     year = datetime.datetime.today().year
     current_date = datetime.datetime.today()
     first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
-    user_list = ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type__in=["1", "13",])&Q(employee__is_active=True)).values_list('employee', flat=True)
-    user_set = set(list(user_list))
-
+    try:
+        user_list = ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type__in=["1", "13",])&Q(employee__is_active=True)).values_list('employee', flat=True)
+        user_set = set(list(user_list))
+    except Exception as e:
+        errors.append(e)
     report_card_list = list()
 
-    for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(report_card_day__lt=first_day_of_current_month ) & Q(employee__in=user_set)):
-        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
-
+    try:
+        for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(report_card_day__lt=first_day_of_current_month ) & Q(employee__in=user_set)):
+            report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
+    except Exception as e:
+        errors.append(e)
     # field names
     fields = ["FIO", "Дата", "Start", "End","Type"]
 
@@ -646,6 +651,8 @@ def get_year_report(html_mode=True):
     pivot_df = pivot_df.applymap(convert_time)
     html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped dataTable mb-0', table_id='datatable-editable', border=1, justify='center')
 
+    if errors:
+        return errors
     if html_mode == False:
         return pivot_df
     else:
