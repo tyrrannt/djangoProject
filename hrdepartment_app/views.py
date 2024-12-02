@@ -3203,9 +3203,24 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         return kwargs
 
     def get_form(self, form_class=None):
+        """
+        В данном случае, queryset содержит все объекты Provisions, кроме объекта, который соответствует текущему
+        экземпляру класса (self.object). Это может быть полезно, если вы хотите ограничить выбор определенных объектов
+        в поле формы.
+
+        :param form_class: Установлен в текущем экземпляре класса. Это позволяет получить экземпляр формы, который
+                            в дальнейшем будет использоваться в представлении.
+        :return: Возвращаем модифицированную форму.
+        """
+        # Получаем экземпляр формы, используя родительский метод `get_form`
         form = super().get_form(form_class=self.form_class)
+
+        # Добавляем дополнительное поле 'parent_document' в форму
         form.fields['parent_document'].queryset = Provisions.objects.all().exclude(pk=self.object.pk)
+
+        # Возвращаем модифицированную форму
         return form
+
 
 
 # Руководящие документы
