@@ -2621,7 +2621,7 @@ class ReportCardDetailYear(LoginRequiredMixin, ListView):
         try:
             context["table"] = get_year_report()
         except Exception as e:
-            print(e)
+            context["table_error"] = e
         return context
 
 

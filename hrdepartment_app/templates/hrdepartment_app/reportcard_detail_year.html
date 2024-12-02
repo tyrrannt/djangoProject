@@ -67,6 +67,7 @@
 {#                            <a class="btn btn-secondary buttons-pdf buttons-html5" tabindex="0" aria-controls="datatable-editable" href="#"><span>PDF</span></a>#}
 {#                            <a class="btn btn-secondary buttons-print" tabindex="0" aria-controls="datatable-editable" href="#"><span>Print</span></a> #}
                         </div>
+                        {{ table_error }}
                         <div id="id_tables" class="table-responsive">
                             {{ table | safe }}
                         </div>
