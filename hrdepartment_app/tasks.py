@@ -575,13 +575,14 @@ def get_year_report(html_mode=True):
 
     # Создание DataFrame
     df = pd.DataFrame(report_card_list, columns=fields)
-
-    # Преобразование столбцов в нужные типы данных
-    df["Дата"] = pd.to_datetime(df["Дата"])
-    df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
-    df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
-    df["Type"] = df["Type"].astype(int)
-
+    try:
+        # Преобразование столбцов в нужные типы данных
+        df["Дата"] = pd.to_datetime(df["Дата"])
+        df["Start"] = pd.to_datetime(df["Start"], format="%H:%M:%S")
+        df["End"] = pd.to_datetime(df["End"], format="%H:%M:%S")
+        df["Type"] = df["Type"].astype(int)
+    except Exception as e:
+        errors.append(e)
 
 
     # Группируем по FIO и Date и применяем функцию
