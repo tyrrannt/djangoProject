@@ -124,12 +124,12 @@
         </style>
         <!-- start: page -->
         {% if object.scan_file %}
-            <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="true">
+            <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="hidden">
         {% endif %}
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-lg-12">
                 <h4 class="font-weight-bold text-dark">{{ object.document_name }} № {{ object.document_number }}
-                    от {{ object.document_date }} г.</h4>
+                    от {{ object.document_date }}</h4>
                 {% if previous %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <strong>Внимание!</strong> Данный документ потерял свою актуальность. Имеется новая версия

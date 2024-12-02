@@ -25,7 +25,7 @@
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
+{#        {% include 'library_app/breadcrumb.html' %}#}
         <div>
             {% if form.errors %}
                 {% for field in form %}
@@ -48,7 +48,7 @@
               method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">Изменение документа: {{ object }}</h4>
+                <h4 class="font-weight-bold text-dark">Изменение должностной инструкции: {{ object }}</h4>
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
                         <label>Основные реквизиты</label>
@@ -70,8 +70,8 @@
                                             {{ form.document_number }}
                                         </div>
                                         <div class="col-md-4 text-black-50">
-                                            <label for="id_previous_document">Предыдущий документ:</label>
-                                            {{ form.previous_document }}
+                                            <label for="id_parent_document">Предшествующий документ:</label>
+                                            {{ form.parent_document }}
                                         </div>
                                     </div>
                                     <div class="row text">

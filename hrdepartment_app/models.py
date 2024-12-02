@@ -74,8 +74,10 @@ def team_directory_path(instance, filename):
     year = instance.date_create
     return f"docs/ORD/{year.year}/{year.month}/{filename}"
 
+
 def outfit_directory_path(instance, filename):
     return f"docs/CARD/{instance.outfit_card_date.year}/{filename}"
+
 
 class Documents(models.Model):
     class Meta:
@@ -1916,6 +1918,7 @@ class DocumentsJobDescription(Documents):
     )
 
     def get_data(self):
+        get_actual = Provisions.objects.filter(parent_document=self.pk).count()
         return {
             "pk": self.pk,
             "document_number": self.document_number,
@@ -1923,7 +1926,7 @@ class DocumentsJobDescription(Documents):
             "document_job": str(self.document_job),
             "document_division": str(self.document_division),
             "document_order": str(self.document_order),
-            "actuality": "Да" if self.actuality else "Нет",
+            "actuality": "Да" if get_actual == 0 else "Нет",
             "executor": str(self.executor),
         }
 
@@ -2082,7 +2085,8 @@ class OutfitCard(models.Model):
                                            related_name="outfit_card_periodic", blank=True)
     other_work = models.CharField(verbose_name="Другие работы", max_length=200, default="", blank=True)
     outfit_card_date_end = models.DateField(verbose_name="Дата окончания", null=True, blank=True)
-    scan_document = models.FileField(verbose_name="Скан документа", upload_to=outfit_directory_path, null=True, blank=True)
+    scan_document = models.FileField(verbose_name="Скан документа", upload_to=outfit_directory_path, null=True,
+                                     blank=True)
     notes = models.TextField(verbose_name="Примечания", blank=True)
 
     def __str__(self):
@@ -2711,6 +2715,7 @@ class Provisions(Documents):
     def __str__(self):
         return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"
 
+
 @receiver(post_save, sender=Provisions)
 def rename_file_name_provisions(sender, instance, **kwargs):
     try:
@@ -2874,11 +2879,11 @@ class DocumentAcknowledgment(models.Model):
         verbose_name = "Подтверждение документа"
         verbose_name_plural = "Подтверждения документов"
 
-
     document_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
-        limit_choices_to={'model__in': ('documentsorder', 'creatingteam', 'documentsjobdescription', 'provisions', 'guidancedocuments', 'companyevent')}
+        limit_choices_to={'model__in': (
+        'documentsorder', 'creatingteam', 'documentsjobdescription', 'provisions', 'guidancedocuments', 'companyevent')}
     )
     document_id = models.PositiveIntegerField()
     document = GenericForeignKey('document_type', 'document_id')

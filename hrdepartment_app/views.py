@@ -2059,6 +2059,8 @@ class DocumentsJobDescriptionDetail(
         list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
         agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id, user=user).exists()
+        previous = DocumentsJobDescription.objects.filter(parent_document=document_id).values_list('pk').last()
+        context['previous'] = previous[0] if previous else False
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
@@ -2093,6 +2095,11 @@ class DocumentsJobDescriptionUpdate(
                                                          args=[refresh_form.parent_document.pk])
             refresh_form.save()
         return super().form_valid(form)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class=self.form_class)
+        form.fields['parent_document'].queryset = DocumentsJobDescription.objects.all().exclude(pk=self.object.pk)
+        return form
 
     # def get_form_kwargs(self):
     #     """
@@ -3194,6 +3201,11 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs.update({"user": self.request.user.pk})
         return kwargs
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class=self.form_class)
+        form.fields['parent_document'].queryset = Provisions.objects.all().exclude(pk=self.object.pk)
+        return form
 
 
 # Руководящие документы

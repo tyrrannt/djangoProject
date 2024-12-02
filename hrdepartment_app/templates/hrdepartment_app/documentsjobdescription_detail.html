@@ -101,11 +101,23 @@
         {#        {% include 'library_app/breadcrumb.html' %}#}
 
         <!-- start: page -->
-        <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="true">
+        {% if object.scan_file %}
+            <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="hidden">
+        {% endif %}
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
-                    от {{ object.document_date }} г.</h4>
+                <h4 class="font-weight-bold text-dark">{{ object.document_name }} № {{ object.document_number }}
+                    от {{ object.document_date }}</h4>
+                {% if previous %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Внимание!</strong> Данный документ потерял свою актуальность. Имеется новая версия
+                        документа: <a href="{% url 'hrdepartment_app:provisions' previous %}"
+                                      class="alert-link">&quot;ССЛЫЛКА НА ДОКУМЕНТ&quot;</a>, перейдите по ссылке для
+                        ознакомления с новой версией.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
+                                aria-label="Close"></button>
+                    </div>
+                {% endif %}
                 <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
                     <section class="toggle active">
                         <label>Файл</label>
@@ -114,7 +126,6 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
                                         <div class="col-lg-12 text-black-50">
-                                            <label for="id_doc_file">Файл документа:</label>
                                             {% if object.scan_file %}
                                                 <div class="form-row outerContainer" id="outerContainer"
                                                      style="height: 1080px">
@@ -320,17 +331,27 @@
                            align-items-center font-weight-semibold line-height-1">
                         <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
                 </div>
-                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                    <div class="switch switch-lg switch-success">
-                        <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
-                               data-plugin-ios-switch {% if agree %}checked{% endif %}>
+                {% if previous %}
+                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                        <a href="{% url 'hrdepartment_app:provisions' previous %}"
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class='bx bx-notification-off'></i> &nbsp;&nbsp;&nbsp;Документ устарел
+                        </a>
                     </div>
-                    <label for="acknowledgment-checkbox">Я ознакомился</label>
-                    <form id="acknowledgment-form" method="post" style="display: none;">
-                        {% csrf_token %}
-                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-                    </form>
-                </div>
+                {% else %}
+                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                        <div class="switch switch-lg switch-success">
+                            <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
+                                   data-plugin-ios-switch {% if agree %}checked{% endif %}>
+                        </div>
+                        <label for="acknowledgment-checkbox">Я ознакомился</label>
+                        <form id="acknowledgment-form" method="post" style="display: none;">
+                            {% csrf_token %}
+                            <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                        </form>
+                    </div>
+                {% endif %}
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
@@ -345,9 +366,11 @@
         <!-- end: page -->
     </section>
     <!-- end: page -->
-    <script>
-        get_filename = function () {
-            return {{object.scan_file.url}};
-        }
-    </script>
+    {% if object.scan_file %}
+        <script>
+            get_filename = function () {
+                return {{object.scan_file.url}};
+            }
+        </script>
+    {% endif %}
 {% endblock %}

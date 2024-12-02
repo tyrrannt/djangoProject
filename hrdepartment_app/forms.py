@@ -715,6 +715,7 @@ class DocumentsJobDescriptionUpdateForm(forms.ModelForm):
             "allowed_placed",
             "actuality",
             "document_name",
+            "parent_document",
             "document_order",
             "document_job",
         )
@@ -1085,7 +1086,6 @@ class ProvisionsUpdateForm(forms.ModelForm):
         self.fields["applying_for_job"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
-        self.fields["parent_document"].queryset = Provisions.objects.all().exclude(pk=self.instance.pk)
         for field in self.fields:
             make_custom_field(self.fields[field])
 
