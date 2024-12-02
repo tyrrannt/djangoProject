@@ -1918,7 +1918,7 @@ class DocumentsJobDescription(Documents):
     )
 
     def get_data(self):
-        get_actual = Provisions.objects.filter(parent_document=self.pk).count()
+        get_actual = DocumentsJobDescription.objects.filter(parent_document=self.pk).count()
         return {
             "pk": self.pk,
             "document_number": self.document_number,
