@@ -2709,7 +2709,7 @@ class Provisions(Documents):
         return reverse("hrdepartment_app:provisions_list")
 
     def __str__(self):
-        return self.document_name
+        return f"{self.document_name} от {self.document_date.strftime('%d.%m.%Y')}"
 
 @receiver(post_save, sender=Provisions)
 def rename_file_name_provisions(sender, instance, **kwargs):
