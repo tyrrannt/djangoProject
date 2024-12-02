@@ -2330,8 +2330,7 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
         if trigger:
             return 'Праздничный день'
         if type_of_day in [14, 15]:
-            if preholiday_day_count > 0:
-                print('test')
+            if preholiday_day_count.count() > 0:
                 return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
             else:
                 return 30600
