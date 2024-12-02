@@ -111,7 +111,7 @@
                 {% if previous %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <strong>Внимание!</strong> Данный документ потерял свою актуальность. Имеется новая версия
-                        документа: <a href="{% url 'hrdepartment_app:provisions' previous %}"
+                        документа: <a href="{% url 'hrdepartment_app:jobdescription' previous %}"
                                       class="alert-link">&quot;ССЛЫЛКА НА ДОКУМЕНТ&quot;</a>, перейдите по ссылке для
                         ознакомления с новой версией.
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
@@ -333,7 +333,7 @@
                 </div>
                 {% if previous %}
                     <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                        <a href="{% url 'hrdepartment_app:provisions' previous %}"
+                        <a href="{% url 'hrdepartment_app:jobdescription' previous %}"
                            class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                             <i class='bx bx-notification-off'></i> &nbsp;&nbsp;&nbsp;Документ устарел

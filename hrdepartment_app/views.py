@@ -2087,14 +2087,14 @@ class DocumentsJobDescriptionUpdate(
         ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
         return context
 
-    def form_valid(self, form):
-        if form.is_valid():
-            refresh_form = form.save(commit=False)
-            if refresh_form.parent_document:
-                refresh_form.previous_document = reverse('hrdepartment_app:jobdescription_update',
-                                                         args=[refresh_form.parent_document.pk])
-            refresh_form.save()
-        return super().form_valid(form)
+    # def form_valid(self, form):
+    #     if form.is_valid():
+    #         refresh_form = form.save(commit=False)
+    #         if refresh_form.parent_document:
+    #             refresh_form.previous_document = reverse('hrdepartment_app:jobdescription_update',
+    #                                                      args=[refresh_form.parent_document.pk])
+    #         refresh_form.save()
+    #     return super().form_valid(form)
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class=self.form_class)

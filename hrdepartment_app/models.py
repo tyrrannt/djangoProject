@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMultiAlternatives
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q, Choices
 from django.db.models.signals import post_save, pre_save
@@ -1902,10 +1903,16 @@ class DocumentsJobDescription(Documents):
         # default_related_name = 'job'
 
     doc_file = models.FileField(
-        verbose_name="Файл документа", upload_to=jds_directory_path, blank=True
+        verbose_name="Файл документа", upload_to=jds_directory_path, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['doc', 'docx']),
+        ]
     )
     scan_file = models.FileField(
-        verbose_name="Скан документа", upload_to=jds_directory_path, blank=True
+        verbose_name="Скан документа", upload_to=jds_directory_path, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+        ]
     )
     document_division = models.ForeignKey(
         Division, verbose_name="Подразделение", on_delete=models.SET_NULL, null=True
@@ -2672,10 +2679,16 @@ class Provisions(Documents):
         ordering = ['-document_date']
 
     doc_file = models.FileField(
-        verbose_name="Файл документа", upload_to=prv_directory_path, blank=True
+        verbose_name="Файл документа", upload_to=prv_directory_path, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['doc', 'docx']),
+        ]
     )
     scan_file = models.FileField(
-        verbose_name="Скан документа", upload_to=prv_directory_path, blank=True
+        verbose_name="Скан документа", upload_to=prv_directory_path, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+        ]
     )
     storage_location_division = models.ForeignKey(
         Division,
@@ -2778,10 +2791,16 @@ class GuidanceDocuments(Documents):
         verbose_name_plural = "Руководящие документы"
 
     doc_file = models.FileField(
-        verbose_name="Файл документа", upload_to=prv_directory_path, blank=True
+        verbose_name="Файл документа", upload_to=prv_directory_path, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['doc', 'docx']),
+        ]
     )
     scan_file = models.FileField(
-        verbose_name="Скан документа", upload_to=prv_directory_path, blank=True
+        verbose_name="Скан документа", upload_to=prv_directory_path, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+        ]
     )
     storage_location_division = models.ForeignKey(
         Division,
