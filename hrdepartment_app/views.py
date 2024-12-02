@@ -3161,6 +3161,8 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         context['agree'] = agree
         list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
+        previous = Provisions.objects.filter(parent_document=document_id).values_list('pk').last()
+        context['previous'] = previous[0] if previous else False
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"

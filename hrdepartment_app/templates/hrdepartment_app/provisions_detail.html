@@ -128,13 +128,13 @@
         {% endif %}
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
+                <h4 class="font-weight-bold text-dark">{{ object.document_name }} № {{ object.document_number }}
                     от {{ object.document_date }} г.</h4>
-                {% if object.parent_document %}
+                {% if previous %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <strong>Внимание!</strong> Данный документ потерял свою актуальность. Имеется новая версия
-                        документа: <a href="{% url 'hrdepartment_app:provisions' object.parent_document.pk %}"
-                                      class="alert-link">{{ object.parent_document }}</a>, перейдите по ссылке для
+                        документа: <a href="{% url 'hrdepartment_app:provisions' previous %}"
+                                      class="alert-link">&quot;ССЛЫЛКА НА ДОКУМЕНТ&quot;</a>, перейдите по ссылке для
                         ознакомления с новой версией.
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
                                 aria-label="Close"></button>
@@ -330,12 +330,12 @@
                        align-items-center font-weight-semibold line-height-1">
                         <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                 </div>
-                {% if object.parent_document %}
+                {% if previous %}
                     <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                        <a href="{% url 'hrdepartment_app:provisions' object.parent_document.pk %}"
+                        <a href="{% url 'hrdepartment_app:provisions' previous %}"
                            class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                            <i class='bx bx-notification-off'></i> Документ устарел
+                            <i class='bx bx-notification-off'></i> &nbsp;&nbsp;&nbsp;Документ устарел
                         </a>
                     </div>
                 {% else %}
