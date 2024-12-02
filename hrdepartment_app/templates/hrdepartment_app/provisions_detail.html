@@ -328,6 +328,9 @@
                         <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                 </div>
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                {% if object.parent_document %}
+                    <label for="acknowledgment-checkbox" class="danger">Документ устарел.</label>
+                {% else %}
                     <div class="switch switch-lg switch-success">
                         <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
                                data-plugin-ios-switch {% if agree %}checked{% endif %}>
@@ -338,6 +341,7 @@
                         <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
                     </form>
                 </div>
+                {% endif %}`
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
