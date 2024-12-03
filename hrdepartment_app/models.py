@@ -2709,7 +2709,8 @@ class Provisions(Documents):
     )
 
     def get_data(self):
-        get_actual = Provisions.objects.filter(parent_document=self.pk).count()
+        get_date = False if self.validity_period_end > datetime.datetime.now() else True
+        get_actual = False if Provisions.objects.filter(parent_document=self.pk).count() > 0 else True
         return {
             "pk": self.pk,
             "document_name": self.document_name,
@@ -2717,7 +2718,7 @@ class Provisions(Documents):
             "document_date": f"{self.document_date:%d.%m.%Y} г.",
             "document_division": str(self.storage_location_division),
             "document_order": str(self.document_order),
-            "actuality": "Да" if get_actual == 0 else "Нет",
+            "actuality": "Да" if (get_actual and get_date) else "Нет",
             "executor": format_name_initials(self.executor),
         }
 

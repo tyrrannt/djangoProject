@@ -1,4 +1,4 @@
-{% extends 'customers_app/main.html' %}
+я{% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
 
@@ -26,75 +26,75 @@
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/jquery.easy-pie-chart/jquery.easypiechart.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/jquery.easy-pie-chart/chart.min.js' %}"></script>
-    <script>
-        $(function () {
-            // Инициализация easyPieChart для элементов с классом chart
-            $('.chart').easyPieChart({
-                barColor: '#2ecc71',
-                trackColor: '#e6e6e6',
-                scaleColor: false,
-                lineWidth: 10,
-                lineCap: 'round',
-                size: 160,
-                animate: 1000
-            });
+<script>
+    $(function() {
+      // Инициализация easyPieChart для элементов с классом chart
+      $('.chart').easyPieChart({
+        barColor: '#2ecc71',
+        trackColor: '#e6e6e6',
+        scaleColor: false,
+        lineWidth: 10,
+        lineCap: 'round',
+        size: 160,
+        animate: 1000
+      });
 
-            // Инициализация Chart.js для сетевого трафика
-            const ctx = document.getElementById('network-chart').getContext('2d');
-            const networkChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Sent (MB)',
-                        data: [],
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        fill: false
-                    }, {
-                        label: 'Received (MB)',
-                        data: [],
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        fill: false
-                    }]
-                },
-                options: {
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
+      // Инициализация Chart.js для сетевого трафика
+      const ctx = document.getElementById('network-chart').getContext('2d');
+      const networkChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Sent (MB)',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            fill: false
+          }, {
+            label: 'Received (MB)',
+            data: [],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            fill: false
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom'
+            }
+          }
+        }
+      });
 
-            const ws = new WebSocket('wss://' + window.location.host + '/ws/monitor/');
+      const ws = new WebSocket('wss://' + window.location.host + '/ws/monitor/');
 
-            ws.onmessage = function (event) {
-                const data = JSON.parse(event.data);
-                $('#cpu-chart').data('easyPieChart').update(data.cpu_percent);
-                $('#cpu-chart span').text(data.cpu_percent);
-                $('#memory-chart').data('easyPieChart').update(data.memory_percent);
-                $('#memory-chart span').text(data.memory_percent);
-                $('#disk-chart').data('easyPieChart').update(data.disk_percent);
-                $('#disk-chart span').text(data.disk_percent);
-                $('#processes-chart').data('easyPieChart').update(data.processes);
-                $('#processes-chart span').text(data.processes);
-                $('#connections-chart').data('easyPieChart').update(data.connections);
-                $('#connections-chart span').text(data.connections);
+      ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        $('#cpu-chart').data('easyPieChart').update(data.cpu_percent);
+        $('#cpu-chart span').text(data.cpu_percent);
+        $('#memory-chart').data('easyPieChart').update(data.memory_percent);
+        $('#memory-chart span').text(data.memory_percent);
+        $('#disk-chart').data('easyPieChart').update(data.disk_percent);
+        $('#disk-chart span').text(data.disk_percent);
+        $('#processes-chart').data('easyPieChart').update(data.processes);
+        $('#processes-chart span').text(data.processes);
+        $('#connections-chart').data('easyPieChart').update(data.connections);
+        $('#connections-chart span').text(data.connections);
 
-                if (data.cpu_temp !== null) {
-                    $('#cpu-temp-chart').data('easyPieChart').update(data.cpu_temp);
-                    $('#cpu-temp-chart span').text(data.cpu_temp + '°C');
-                }
+        if (data.cpu_temp !== null) {
+          $('#cpu-temp-chart').data('easyPieChart').update(data.cpu_temp);
+          $('#cpu-temp-chart span').text(data.cpu_temp + '°C');
+        }
 
-                // Обновление данных для сетевого трафика
-                networkChart.data.labels.push(networkChart.data.labels.length + 1);
-                networkChart.data.datasets[0].data.push(data.net_sent);
-                networkChart.data.datasets[1].data.push(data.net_recv);
-                networkChart.update();
-            };
-        });
-    </script>
+        // Обновление данных для сетевого трафика
+        networkChart.data.labels.push(networkChart.data.labels.length + 1);
+        networkChart.data.datasets[0].data.push(data.net_sent);
+        networkChart.data.datasets[1].data.push(data.net_recv);
+        networkChart.update();
+      };
+    });
+  </script>
 {% endblock %}
 
 {% block content %}
@@ -104,57 +104,56 @@
 
         <!-- start: page -->
         <div class="container">
-            <h1 class="mt-4">Мониторинг сервера</h1>
-            <section class="card">
-                <header class="card-header">
-                    <div class="card-actions">
-                        <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                        <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>
-                    </div>
-                    <h2 class="card-title">Server Usage</h2>
-                    <p class="card-subtitle">It's easy to create custom graphs on Porto Admin Template, there are
-                        several graph types that you can use.</p>
-                </header>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="chart" id="cpu-chart" data-percent="0"><span>0</span>%</div>
-                            <h4 class="text-center">CPU Usage</h4>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="chart" id="memory-chart" data-percent="0"><span>0</span>%</div>
-                            <h4 class="text-center">Memory Usage</h4>
-                        </div>
-                    </div>
-                    <div class="row mt-4">
-                        <div class="col-md-6">
-                            <div class="chart" id="disk-chart" data-percent="0"><span>0</span>%</div>
-                            <h4 class="text-center">Disk Usage</h4>
-                        </div>
-                        <div class="col-md-6">
-                            <canvas id="network-chart" width="400" height="400"></canvas>
-                            <h4 class="text-center">Network Traffic</h4>
-                        </div>
-                    </div>
-                    <div class="row mt-4">
-                        <div class="col-md-6">
-                            <div class="chart" id="processes-chart" data-percent="0"><span>0</span></div>
-                            <h4 class="text-center">Processes</h4>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="chart" id="connections-chart" data-percent="0"><span>0</span></div>
-                            <h4 class="text-center">Connections</h4>
-                        </div>
-                    </div>
-                    <div class="row mt-4">
-                        <div class="col-md-6">
-                            <div class="chart" id="cpu-temp-chart" data-percent="0"><span>0</span>°C</div>
-                            <h4 class="text-center">CPU Temperature</h4>
-                        </div>
-                    </div>
-                </div>
-            </section>
+    <h1 class="mt-4">Мониторинг сервера</h1>
+    <section class="card">
+      <header class="card-header">
+        <div class="card-actions">
+          <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+          <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>
         </div>
+        <h2 class="card-title">Server Usage</h2>
+        <p class="card-subtitle">It's easy to create custom graphs on Porto Admin Template, there are several graph types that you can use.</p>
+      </header>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="chart" id="cpu-chart" data-percent="0"><span>0</span>%</div>
+            <h4 class="text-center">CPU Usage</h4>
+          </div>
+          <div class="col-md-6">
+            <div class="chart" id="memory-chart" data-percent="0"><span>0</span>%</div>
+            <h4 class="text-center">Memory Usage</h4>
+          </div>
+        </div>
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <div class="chart" id="disk-chart" data-percent="0"><span>0</span>%</div>
+            <h4 class="text-center">Disk Usage</h4>
+          </div>
+          <div class="col-md-6">
+            <canvas id="network-chart" width="400" height="400"></canvas>
+            <h4 class="text-center">Network Traffic</h4>
+          </div>
+        </div>
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <div class="chart" id="processes-chart" data-percent="0"><span>0</span></div>
+            <h4 class="text-center">Processes</h4>
+          </div>
+          <div class="col-md-6">
+            <div class="chart" id="connections-chart" data-percent="0"><span>0</span></div>
+            <h4 class="text-center">Connections</h4>
+          </div>
+        </div>
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <div class="chart" id="cpu-temp-chart" data-percent="0"><span>0</span>°C</div>
+            <h4 class="text-center">CPU Temperature</h4>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 
 
         <!-- end: page -->
