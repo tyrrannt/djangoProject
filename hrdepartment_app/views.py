@@ -3170,9 +3170,9 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         previous = Provisions.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
         try:
-            context['get_date'] = False if self.object.validity_period_end < datetime.date.today() else True
+            context['get_date'] = True if self.object.validity_period_end < datetime.date.today() else False
         except TypeError:
-            context['get_date'] = True
+            context['get_date'] = False
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
