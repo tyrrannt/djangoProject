@@ -3169,6 +3169,10 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         context['list_agree'] = list_agree
         previous = Provisions.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
+        try:
+            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+        except TypeError:
+            context['outdated'] = False
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
