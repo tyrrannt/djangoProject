@@ -332,7 +332,7 @@
                         </a>
                     </div>
                 {% endif %}
-                {% if user.is_staff or user.is_superuser %}
+                {% if user|has_group:"password" %}
                     <div class="col-12 col-md-auto">
                         <a href="{% url 'customers_app:staff' object.pk %}?update=0"
                            class="btn btn-outline-success btn-px-4 py-3 d-flex
