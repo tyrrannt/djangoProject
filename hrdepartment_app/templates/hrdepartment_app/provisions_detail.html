@@ -330,27 +330,17 @@
                        align-items-center font-weight-semibold line-height-1">
                         <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                 </div>
-                {% if get_date %}
-                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                        <a href="{% url 'hrdepartment_app:provisions' previous %}"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class='bx bx-notification-off'></i> &nbsp;&nbsp;&nbsp;Документ устарел
-                        </a>
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                    <div class="switch switch-lg switch-success">
+                        <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
+                               data-plugin-ios-switch {% if agree %}checked{% endif %}>
                     </div>
-                {% else %}
-                    <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                        <div class="switch switch-lg switch-success">
-                            <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
-                                   data-plugin-ios-switch {% if agree %}checked{% endif %}>
-                        </div>
-                        <label for="acknowledgment-checkbox">Я ознакомился</label>
-                        <form id="acknowledgment-form" method="post" style="display: none;">
-                            {% csrf_token %}
-                            <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-                        </form>
-                    </div>
-                {% endif %}
+                    <label for="acknowledgment-checkbox">Я ознакомился</label>
+                    <form id="acknowledgment-form" method="post" style="display: none;">
+                        {% csrf_token %}
+                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                    </form>
+                </div>
                 {% if user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
                         <a href="#"
