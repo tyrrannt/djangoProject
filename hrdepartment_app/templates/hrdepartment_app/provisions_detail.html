@@ -330,7 +330,7 @@
                        align-items-center font-weight-semibold line-height-1">
                         <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                 </div>
-                {% if previous %}
+                {% if get_date %}
                     <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                         <a href="{% url 'hrdepartment_app:provisions' previous %}"
                            class="btn btn-outline-danger btn-px-4 py-3 d-flex
