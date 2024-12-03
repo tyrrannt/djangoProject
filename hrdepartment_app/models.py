@@ -2709,7 +2709,10 @@ class Provisions(Documents):
     )
 
     def get_data(self):
-        get_date = False if self.validity_period_end > datetime.datetime.today().date() else True
+        try:
+            get_date = False if self.validity_period_end < datetime.date.today() else True
+        except TypeError:
+            get_date = True
         get_actual = False if Provisions.objects.filter(parent_document=self.pk).count() > 0 else True
         return {
             "pk": self.pk,
