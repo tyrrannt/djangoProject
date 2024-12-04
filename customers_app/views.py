@@ -76,8 +76,6 @@ def generate_qr_code(request, current_url):
 
     # Получаем текущий URL
 
-    print(current_url, request)
-
     # Создаем параметры для URL
     params = {
         'token': token,
