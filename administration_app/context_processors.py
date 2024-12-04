@@ -1,6 +1,9 @@
 import pathlib
 
+from django.core.cache import cache
 from django.db.models import Q
+from django.views.decorators.cache import cache_page
+
 from contracts_app.models import Contract
 from customers_app.models import DataBaseUser, Posts
 from djangoProject.settings import MEDIA_ROOT
@@ -20,14 +23,57 @@ from loguru import logger
 # ToDo: Создать модель в которую будет записываться вся статистика,
 #  а занесение информации будет посредством метода моделей save()
 
+# @cache_page(60 * 15)  # Кэшировать результат на 15 минут
+# def get_all_contracts(request):
+#     # make_menu()
+#     contracts_count = Contract.objects.filter(
+#         Q(parent_category=None),
+#         Q(allowed_placed=True),
+#         Q(type_of_document__type_document="Договор"),
+#     ).count()
+#     if not request.user.is_anonymous:
+#         try:
+#             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False))
+#             documents_not_published = DocumentsJobDescription.objects.filter(
+#                 Q(allowed_placed=False)
+#             )
+#         except Exception as _ex:
+#             contracts_not_published = Contract.objects.filter(allowed_placed=False)
+#             documents_not_published = DocumentsJobDescription.objects.filter(
+#                 allowed_placed=False
+#             )
+#         contracts_not_published_count = contracts_not_published.count()
+#         documents_not_published_count = documents_not_published.count()
+#     else:
+#         contracts_not_published = ""
+#         contracts_not_published_count = 0
+#         documents_not_published = ""
+#         documents_not_published_count = 0
+#     posts_not_published = Posts.objects.filter(allowed_placed=False)
+#     posts_not_published_count = Posts.objects.filter(allowed_placed=False).count()
+#     return {
+#         "contracts_count": contracts_count,
+#         "contracts_not_published": contracts_not_published,
+#         "posts_not_published": posts_not_published,
+#         "contracts_not_published_count": contracts_not_published_count,
+#         "documents_not_published": documents_not_published,
+#         "documents_not_published_count": documents_not_published_count,
+#         "posts_not_published_count": posts_not_published_count,
+#     }
 
 def get_all_contracts(request):
-    # make_menu()
+    cache_key = f"get_all_contracts_{request.user.id}"
+    cached_data = cache.get(cache_key)
+
+    if cached_data is not None:
+        return cached_data
+
     contracts_count = Contract.objects.filter(
         Q(parent_category=None),
         Q(allowed_placed=True),
         Q(type_of_document__type_document="Договор"),
     ).count()
+
     if not request.user.is_anonymous:
         try:
             contracts_not_published = Contract.objects.filter(Q(allowed_placed=False))
@@ -46,9 +92,11 @@ def get_all_contracts(request):
         contracts_not_published_count = 0
         documents_not_published = ""
         documents_not_published_count = 0
+
     posts_not_published = Posts.objects.filter(allowed_placed=False)
     posts_not_published_count = Posts.objects.filter(allowed_placed=False).count()
-    return {
+
+    data = {
         "contracts_count": contracts_count,
         "contracts_not_published": contracts_not_published,
         "posts_not_published": posts_not_published,
@@ -57,6 +105,9 @@ def get_all_contracts(request):
         "documents_not_published_count": documents_not_published_count,
         "posts_not_published_count": posts_not_published_count,
     }
+
+    cache.set(cache_key, data, 60 * 15)  # Кэшировать результат на 15 минут
+    return data
 
 
 def make_list(n):
