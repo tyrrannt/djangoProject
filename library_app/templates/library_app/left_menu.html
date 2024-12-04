@@ -508,8 +508,13 @@
                             <div class="widget-summary">
                                 <div class="widget-summary-col">
                                     <div class="summary">
-                                        <img src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
+                                        <img id="qr-code-image"
+                                             src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
                                              alt="QR Code" width="50%">
+                                        <div id="countdown" style="margin-top: 10px;"></div>
+                                        <div id="expired-message" style="display: none; margin-top: 10px; color: red;">
+                                            QR код устарел
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -566,6 +571,30 @@
                     sidebarLeft.scrollTop = initialPosition;
                 }
             }
+        </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const countdownElement = document.getElementById('countdown');
+                const qrCodeImage = document.getElementById('qr-code-image');
+                const expiredMessage = document.getElementById('expired-message');
+
+                let timeLeft = 30;
+
+                function updateCountdown() {
+                    countdownElement.textContent = `QR код действителен еще ${timeLeft} секунд`;
+                    timeLeft--;
+
+                    if (timeLeft < 0) {
+                        clearInterval(countdownInterval);
+                        countdownElement.style.display = 'none';
+                        qrCodeImage.style.display = 'none';
+                        expiredMessage.style.display = 'block';
+                    }
+                }
+
+                updateCountdown();
+                const countdownInterval = setInterval(updateCountdown, 1000);
+            });
         </script>
     </div>
 </aside>
