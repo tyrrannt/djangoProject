@@ -31,7 +31,6 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Contract
     permission_required = 'contracts_app.view_contract'
 
-    @cache_page(60 * 15)
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // База договоров'
@@ -235,7 +234,6 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         self.request.POST = content
         return super(ContractAdd, self).post(request, *args, **kwargs)
 
-    @cache_page(60 * 15)
     def get_context_data(self, **kwargs):
         context = super(ContractAdd, self).get_context_data(**kwargs)
         if self.request.GET.get('parent'):
@@ -279,7 +277,6 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         except PermissionDenied:
             return render(request, "library_app/403.html")
 
-    @cache_page(60 * 15)
     def get_context_data(self, **kwargs):
         context = super(ContractDetail, self).get_context_data(**kwargs)
         # if context.get('contract').access.level < int(self.request.user.access_level.contracts_access_view):
@@ -404,7 +401,6 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         #     print(contragent)
         return super(ContractUpdate, self).get(request, *args, **kwargs)
 
-    @cache_page(60 * 15)
     def get_context_data(self, **kwargs):
 
         context = super(ContractUpdate, self).get_context_data(**kwargs)
