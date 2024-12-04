@@ -508,8 +508,6 @@
                             <div class="widget-summary">
                                 <div class="widget-summary-col">
                                     <div class="summary">
-                                        {#                                        <img src="{{ qrcode }}" alt="" width="50%"/>#}
-                                        
                                         <img src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
                                              alt="QR Code" width="50%">
                                     </div>
