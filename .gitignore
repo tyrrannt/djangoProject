@@ -10,6 +10,7 @@ __pycache__
 db.sqlite3
 media
 static
+django_cache
 venv
 debug.*
 rsync

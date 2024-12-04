@@ -33,6 +33,7 @@ Django==5.0.6
 django-ckeditor-5==0.2.12
 django-debug-toolbar==4.3.0
 django-dynamic-formsets==0.0.8
+django-redis==5.4.0
 django-widget-tweaks==1.5.0
 django-xff==1.4.0
 docopt==0.6.2

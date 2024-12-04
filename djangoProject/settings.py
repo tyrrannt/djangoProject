@@ -305,6 +305,29 @@ CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 
+if not config("DEBUG", default=False, cast=bool):
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://" + REDIS_HOST + ":" + REDIS_PORT + "/1",  # Адрес и порт Redis сервера
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
+        }
+    }
+else:
+    # A CACHES dictionary, which contains caching configurations.
+    CACHES = {
+        # we use "default" as the alias.
+        "default": {
+            # Here, we're using the file-based cache backend.
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+
+            # LOCATION parameter to specify the file system path where cached data will be stored.
+            "LOCATION": pathlib.Path.joinpath(BASE_DIR, 'django_cache'),
+        }
+    }
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
