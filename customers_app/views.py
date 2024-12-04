@@ -117,7 +117,10 @@ def auth_with_token(request):
     if token:
         # Создаем уникальный ключ для кеша с использованием токена
         cache_key = f"auth_token_{token}"
-        user_id = cache.get(cache_key)
+        try:
+            user_id = cache.get(cache_key).split('_')[1]
+        except Exception as _ex:
+            user_id = False
         if user_id:
             try:
                 user = DataBaseUser.objects.get(id=user_id)
