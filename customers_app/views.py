@@ -71,8 +71,11 @@ def generate_qr_code(request, current_url):
     # Генерируем уникальный токен для авторизации
     token = get_random_string(length=32)
 
+    # Создаем уникальный ключ для кеша с использованием идентификатора пользователя и токена
+    cache_key = f"auth_token_{request.user.id}_{token}"
+
     # Сохраняем токен в кеше с привязкой к пользователю
-    cache.set(token, request.user.id, timeout=60 * 1)  # Токен действителен 5 минут
+    cache.set(cache_key, request.user.id, timeout=60 * 1)  # Токен действителен 5 минут
 
     # Получаем текущий URL
 
@@ -112,13 +115,14 @@ def auth_with_token(request):
     token = request.GET.get('token')
     next_url = request.GET.get('next')
     if token:
-        user_id = cache.get(token)
+        # Создаем уникальный ключ для кеша с использованием токена
+        cache_key = f"auth_token_{token}"
+        user_id = cache.get(cache_key)
         if user_id:
             try:
                 user = DataBaseUser.objects.get(id=user_id)
                 auth.login(request, user)
-                cache.delete(token)  # Удаляем токен после использования
-                cache.delete(next_url)  # Удаляем токен после использования
+                cache.delete(cache_key)  # Удаляем токен после использования
                 return redirect(next_url)  # Перенаправляем на указанный URL
             except DataBaseUser.DoesNotExist:
                 pass
