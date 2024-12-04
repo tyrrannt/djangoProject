@@ -72,7 +72,7 @@ def generate_qr_code(request, current_url):
     token = get_random_string(length=32)
 
     # Сохраняем токен в кеше с привязкой к пользователю
-    cache.set(token, request.user.id, timeout=60)  # Токен действителен 5 минут
+    cache.set(token, request.user.id, timeout=30)  # Токен действителен 5 минут
 
     # Создаем параметры для URL
     params = {
