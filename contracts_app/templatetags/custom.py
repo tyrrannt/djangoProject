@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from urllib.parse import quote
 
 from django import template
 from django.conf import settings
@@ -7,6 +8,10 @@ from django.contrib.contenttypes.models import ContentType
 
 register = template.Library()
 
+
+@register.filter
+def url_encode(value):
+    return quote(value)
 
 @register.filter
 def content_type_id(obj):

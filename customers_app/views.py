@@ -1,18 +1,24 @@
 import datetime
 import hashlib
 import uuid
+from io import BytesIO
 from pprint import pprint
+from pydoc import pager
+from urllib.parse import urlencode
 
 import pandas as pd
+import qrcode
 from dateutil.rrule import rrule, DAILY
 from decouple import config
 from django.contrib.auth import authenticate
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.utils.crypto import get_random_string
 from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
-from django.http import JsonResponse, QueryDict
+from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
@@ -58,6 +64,67 @@ def lock_screen(request):
             return render(request, 'customers_app/lock_screen.html', {'error': 'Неверный пароль'})
     request.session['locked'] = True  # Устанавливаем блокировку
     return render(request, 'customers_app/lock_screen.html')
+
+
+@login_required
+def generate_qr_code(request, current_url):
+    # Генерируем уникальный токен для авторизации
+    token = get_random_string(length=32)
+
+    # Сохраняем токен в кеше с привязкой к пользователю
+    cache.set(token, request.user.id, timeout=60 * 5)  # Токен действителен 5 минут
+
+    # Получаем текущий URL
+
+    print(current_url, request)
+
+    # Создаем параметры для URL
+    params = {
+        'token': token,
+        'next': current_url,
+    }
+
+    # Получаем полный URL для авторизации с токеном и текущим URL
+    auth_url_string = reverse('customers_app:auth_with_token')
+    auth_url = request.build_absolute_uri(auth_url_string) + '?' + urlencode(params)
+
+    # Создаем QR-код
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(auth_url)
+    qr.make(fit=True)
+
+    # Создаем изображение QR-кода
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # Сохраняем изображение в буфер
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    # Возвращаем изображение в ответе
+    return HttpResponse(buffer.getvalue(), content_type="image/png")
+
+
+def auth_with_token(request):
+    token = request.GET.get('token')
+    next_url = request.GET.get('next')
+    if token:
+        user_id = cache.get(token)
+        if user_id:
+            try:
+                user = DataBaseUser.objects.get(id=user_id)
+                auth.login(request, user)
+                cache.delete(token)  # Удаляем токен после использования
+                return redirect(next_url)  # Перенаправляем на указанный URL
+            except DataBaseUser.DoesNotExist:
+                pass
+    return redirect('customers_app:login')  # Перенаправляем на страницу входа, если токен недействителен
+
 
 class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Groups

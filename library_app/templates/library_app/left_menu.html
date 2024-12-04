@@ -1,5 +1,6 @@
 {% load static %}
 {% load custom %}
+
 <!-- start: sidebar -->
 <aside id="sidebar-left" class="sidebar-left">
     <div class="sidebar-header">
@@ -468,77 +469,92 @@
                     <h6>СТАТИСТИКА КОМПАНИИ</h6>
                     <div class="widget-toggle">+</div>
                 </div>
-                <div class="widget-content">
-                    <div class="card-body">
-                        <div class="widget-summary">
-                            <div class="widget-summary-col widget-summary-col-icon">
-                                <div class="summary-icon bg-tertiary">
-                                    <i class="bx bx-book-bookmark"></i>
-                                </div>
-                            </div>
-                            <div class="widget-summary-col">
-                                <div class="summary">
-                                    <h5 class="title">Всего договоров</h5>
-                                    <div class="info">
-                                        <strong class="amount">{{ contracts_count }}</strong>
-                                    </div>
-                                </div>
-                                <div class="summary-footer">
-                                    <a href="{% url 'contracts_app:index' %}" class="text-uppercase">Открыть базу</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="widget-content">
-                    <div class="card-body">
-                        <div class="widget-summary">
-                            <div class="widget-summary-col">
-                                <div class="summary">
-                                    <h5 class="title">QR код</h5>
-                                    <hr>
-                                    <img src="{{ qrcode }}" alt="" width="50%"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
                 <div class="widget-content">
                     <section class="card">
-                    <header class="card-header">
-                        <div class="card-actions">
-                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                        </div>
-                        <h2 class="card-title">Сотрудники OnLine</h2>
-                    </header>
-                    <div class="card-body">
-                        <div class="widget-summary">
-                            <div class="widget-summary-col">
-                                <div class="summary">
-                                    <ul id="online-users"></ul>
-                                    <script>
-                                        var online_users = "wss://corp.barkol.ru/ws/online_users/";
-                                        const socket_online_users = new WebSocket(online_users);
-                                        socket_online_users.onmessage = function (event) {
-                                            const data = JSON.parse(event.data);
-                                            if (data.type === 'online_users') {
-                                                const usersList = document.getElementById('online-users');
-                                                usersList.innerHTML = '';
-                                                data.users.forEach(user => {
-                                                    const li = document.createElement('li');
-                                                    li.textContent = user;
-                                                    usersList.appendChild(li);
-                                                });
-                                            }
-                                        };
-                                        socket_online_users.onclose = function (event) {
-                                            console.error('WebSocket closed unexpectedly');
-                                        };
-                                    </script>
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
+                            <h2 class="card-title">Всего договоров</h2>
+                        </header>
+                        <div class="card-body">
+                            <div class="widget-summary">
+                                <div class="widget-summary-col">
+                                    <div class="summary">
+                                        <div class="info">
+                                            <strong class="amount">{{ contracts_count }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="summary-footer">
+                                        <a href="{% url 'contracts_app:index' %}" class="text-uppercase">Открыть
+                                            базу</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
+                </div>
+
+                <div class="widget-content">
+                    <section class="card">
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
+                            <h2 class="card-title">QR код</h2>
+                        </header>
+                        <div class="card-body">
+                            <div class="widget-summary">
+                                <div class="widget-summary-col">
+                                    <div class="summary">
+                                        {#                                        <img src="{{ qrcode }}" alt="" width="50%"/>#}
+                                        
+                                        <img src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
+                                             alt="QR Code" width="50%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="widget-content">
+                    <section class="card">
+                        <header class="card-header">
+                            <div class="card-actions">
+                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                            </div>
+                            <h2 class="card-title">Сотрудники OnLine</h2>
+                        </header>
+                        <div class="card-body">
+                            <div class="widget-summary">
+                                <div class="widget-summary-col">
+                                    <div class="summary">
+                                        <ul id="online-users"></ul>
+                                        <script>
+                                            var online_users = "wss://corp.barkol.ru/ws/online_users/";
+                                            const socket_online_users = new WebSocket(online_users);
+                                            socket_online_users.onmessage = function (event) {
+                                                const data = JSON.parse(event.data);
+                                                if (data.type === 'online_users') {
+                                                    const usersList = document.getElementById('online-users');
+                                                    usersList.innerHTML = '';
+                                                    data.users.forEach(user => {
+                                                        const li = document.createElement('li');
+                                                        li.textContent = user;
+                                                        usersList.appendChild(li);
+                                                    });
+                                                }
+                                            };
+                                            socket_online_users.onclose = function (event) {
+                                                console.error('WebSocket closed unexpectedly');
+                                            };
+                                        </script>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </section>
                 </div>
             </div>
