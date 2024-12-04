@@ -480,7 +480,7 @@
                         </header>
                         <div class="card-body">
                             <div class="widget-summary">
-                                <div class="widget-summary-col">
+                                <div class="widget-summary-col text-center">
                                     <div class="summary">
                                         <div class="info">
                                             <strong class="amount">{{ contracts_count }}</strong>
@@ -506,11 +506,13 @@
                         </header>
                         <div class="card-body">
                             <div class="widget-summary">
-                                <div class="widget-summary-col">
+                                <div class="widget-summary-col text-center">
                                     <div class="summary">
                                         <img id="qr-code-image"
                                              src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
                                              alt="QR Code" width="50%">
+                                        <br>
+                                        <span id="qr-code-message" class="text-3">QR код действителен еще:</span>
                                         <div id="countdown" style="margin-top: 10px;"></div>
                                         <div id="expired-message" style="display: none; margin-top: 10px; color: red;">
                                             QR код устарел
@@ -577,17 +579,19 @@
                 const countdownElement = document.getElementById('countdown');
                 const qrCodeImage = document.getElementById('qr-code-image');
                 const expiredMessage = document.getElementById('expired-message');
+                const qrCodeMessage = document.getElementById('qr-code-message');
 
                 let timeLeft = 30;
 
                 function updateCountdown() {
-                    countdownElement.textContent = `QR код действителен еще ${timeLeft} секунд`;
+                    countdownElement.textContent = `${timeLeft} секунд`;
                     timeLeft--;
 
                     if (timeLeft < 0) {
                         clearInterval(countdownInterval);
                         countdownElement.style.display = 'none';
                         qrCodeImage.style.display = 'none';
+                        qrCodeMessage.style.display = 'none';
                         expiredMessage.style.display = 'block';
                     }
                 }
