@@ -81,7 +81,7 @@ def generate_qr_code(request, current_url):
 
     # Создаем параметры для URL
     params = {
-        'token': token,
+        'token': f"{request.user.id}_{token}",
         'next': request.build_absolute_uri(current_url),
     }
 
