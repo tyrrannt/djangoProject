@@ -79,7 +79,7 @@ def generate_qr_code(request, current_url):
     # Создаем параметры для URL
     params = {
         'token': token,
-        'next': current_url,
+        'next': request.build_absolute_uri(current_url),
     }
 
     # Получаем полный URL для авторизации с токеном и текущим URL
