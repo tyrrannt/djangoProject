@@ -94,7 +94,7 @@ class ContractListAdmin(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         query = (Q(type_of_document__type_document='Договор') & Q(access_id__gte=access) &
                  ~Q(doc_file__iendswith='.pdf') & ~Q(doc_file__iendswith='.docx'))
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            search_list = ['contract_number', 'date_conclusion',
+            search_list = ['actuality', 'contract_number', 'date_conclusion',
                            'type_of_contract__type_contract', 'subject_contract',
                            'contract_counteragent__short_name', ]
             context = ajax_search(request, self, search_list, Contract, query)
