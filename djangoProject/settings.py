@@ -98,7 +98,7 @@ TEMPLATES = [
                 # Подключаем context processors из приложения administration_app
                 "administration_app.context_processors.get_all_contracts",
                 "administration_app.context_processors.get_approval_oficial_memo_process",
-                "administration_app.context_processors.get_qrcode",
+                # "administration_app.context_processors.get_qrcode",
             ],
         },
     },

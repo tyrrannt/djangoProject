@@ -274,13 +274,13 @@ def get_approval_oficial_memo_process(request):
     else:
         return {}
 
-
-def get_qrcode(request):
-    import qrcode
-
-    img = qrcode.make(request.build_absolute_uri())
-    try:
-        img.save(pathlib.Path.joinpath(MEDIA_ROOT, f"qr/{request.user.ref_key}.png"))
-        return {"qrcode": f"/media/qr/{request.user.ref_key}.png"}
-    except AttributeError:
-        return {}
+#
+# def get_qrcode(request):
+#     import qrcode
+#
+#     img = qrcode.make(request.build_absolute_uri())
+#     try:
+#         img.save(pathlib.Path.joinpath(MEDIA_ROOT, f"qr/{request.user.ref_key}.png"))
+#         return {"qrcode": f"/media/qr/{request.user.ref_key}.png"}
+#     except AttributeError:
+#         return {}
