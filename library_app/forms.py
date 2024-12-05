@@ -28,7 +28,7 @@ class HelpItemAddForm(forms.ModelForm):
         fields = "__all__"
         widgets = {
             "text": CKEditor5Widget(
-                attrs={"class": "django_ckeditor_5"}, config_name="comment"
+                attrs={"class": "django_ckeditor_5"}, config_name="extends"
             )
         }
 
