@@ -46,7 +46,7 @@
                                     <th width="3%"></th>
                                     <th width="10%">Номер договора</th>
                                     <th width="10%">Дата договора</th>
-{#                                    <th width="12%">Тип документа</th>#}
+                                    <th width="12%">Тип документа</th>
                                     <th width="12%">Тип договора</th>
                                     <th width="34%">Предмет договора</th>
                                     <th width="25%">Контрагент</th>
@@ -156,6 +156,12 @@
                     },                    
                     {
                         "data": "date_conclusion",
+                        "mRender": function (data, type, row) {
+                            return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
+                        },
+                    },
+                    {
+                        "data": "type_of_document",
                         "mRender": function (data, type, row) {
                             return "<a href="+" "+row.pk+"/"+">" + data + "</a>";
                         },
