@@ -308,7 +308,7 @@ class CompanyEventListView(LoginRequiredMixin, ListView):
     def get(self, request, *args, **kwargs):
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            provisions_list = CompanyEvent.objects.all()
+            provisions_list = CompanyEvent.objects.all().order_by('event_date')
             data = [provisions_item.get_data() for provisions_item in provisions_list]
             response = {"data": data}
             return JsonResponse(response)
