@@ -181,6 +181,7 @@ class CompanyEvent(models.Model):
     class Meta:
         verbose_name = 'Событие'
         verbose_name_plural = 'События'
+        ordering = ['-event_date']
 
     title = models.CharField('Заголовок', max_length=200)
     event_date = models.DateField('Дата', null=True, blank=True)
