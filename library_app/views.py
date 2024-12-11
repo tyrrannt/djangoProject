@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime
 
 from django.contrib.auth.decorators import login_required
@@ -277,18 +278,32 @@ def results(request):
     poems = Poem.objects.filter(contest=contest)
     votes = Vote.objects.filter(poem__in=poems)
 
-    # Подсчет голосов
+    # Подсчет голосов для каждого стиха
     vote_count = {}
     for vote in votes:
-        if vote.poem.id in vote_count:
-            vote_count[vote.poem.id] += 1
-        else:
-            vote_count[vote.poem.id] = 1
+        vote_count[vote.poem.id] = vote_count.get(vote.poem.id, 0) + 1
 
-    # Сортировка по количеству голосов
+    # Сортировка стихов по количеству голосов в порядке убывания
     sorted_poems = sorted(poems, key=lambda x: vote_count.get(x.id, 0), reverse=True)
 
-    return render(request, 'library_app/results.html', {'poems': sorted_poems[:3]})
+    # Группировка стихов по местам с учетом количества голосов
+    grouped_poems = []
+    current_votes = None
+
+    for poem in sorted_poems:
+        votes = vote_count.get(poem.id, 0)
+        if votes != current_votes:
+            # Если количество голосов изменилось, добавляем новое место
+            current_votes = votes
+            grouped_poems.append({
+                'votes': votes,  # Количество голосов для текущего места
+                'poems': {}  # Словарь стихов для текущего места
+            })
+        # Добавляем стих в словарь текущего места
+        grouped_poems[-1]['poems'][poem.id] = poem
+    print(vote_count)
+    print(grouped_poems[:3])
+    return render(request, 'library_app/results.html', {'grouped_poems': grouped_poems})
 
 
 @login_required

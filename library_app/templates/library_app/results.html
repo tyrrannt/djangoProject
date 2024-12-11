@@ -20,6 +20,18 @@
             {% endif %}
         </div>
         <h1>Результаты голосования</h1>
+    
+    {% for place in grouped_poems %}
+    <h2>Место {{ forloop.counter }} ({{ place.votes }} голосов)</h2>
+    <ul>
+        {% for poem in place.poems.values %}
+            <li>{{ poem.title }} ({{ poem.id }})</li>
+        {% endfor %}
+    </ul>
+{% endfor %}
+    
+    
+    
         <ol>
             {% for poem in poems %}
 
