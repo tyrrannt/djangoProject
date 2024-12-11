@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
@@ -12,6 +14,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from loguru import logger
 
 from administration_app.models import PortalProperty
+from customers_app.models import DataBaseUser
 from djangoProject import settings
 from hrdepartment_app.models import DocumentAcknowledgment
 from library_app.forms import (
@@ -239,35 +242,33 @@ def submit_poem(request):
 @login_required
 def vote(request):
     contest = Contest.objects.latest('start_date')
+    vote_count = Vote.objects.all().count()
+
+    vote_days = contest.voting_end_date.day - datetime.today().day
     if not request.user.is_superuser:
         if not contest.is_voting_open():
             return render(request, 'library_app/voting_closed.html')
-
+    admin_user = DataBaseUser.objects.get(pk=314)
     poems = Poem.objects.filter(contest=contest).order_by('?')
     if request.method == 'POST':
         poem_id = request.POST.get('poem')
         poem = get_object_or_404(Poem, id=poem_id)
         try:
+            if Vote.objects.filter(user=request.user).exists():
+                raise Exception('Вы уже голосовали')
             Vote.objects.create(user=request.user, poem=poem)
-            return redirect('library_app:vote_success')
-        except IntegrityError:
-            # Пользователь уже проголосовал, предлагаем переголосовать
-            if 'confirm_vote' in request.POST:
-                # Удаляем старый голос и создаем новый
-                Vote.objects.filter(user=request.user).delete()
-                Vote.objects.create(user=request.user, poem=poem)
-                return redirect('library_app:vote_success')
-            else:
-                # Показываем форму для подтверждения переголосования
-                form = VoteConfirmationForm()
-                return render(request, 'library_app/confirm_vote.html', {'form': form, 'poem': poem})
+            return render(request, 'library_app/vote_success.html', {'poem': poem, 'admin_user': admin_user, 'poem_count': len(poems), 'vote_count': vote_count, 'vote_days': vote_days})
+        except Exception as _ex:
+            my_vote = Vote.objects.get(user=request.user)
+            return render(request, 'library_app/vote_success.html', {'poem': poem, 'admin_user': admin_user, 'poem_count': len(poems), 'vote_count': vote_count, 'my_vote': my_vote, 'vote_days': vote_days})
 
     return render(request, 'library_app/vote.html', {'poems': poems})
 
 
 @login_required
 def vote_success(request):
-    return render(request, 'library_app/vote_success.html')
+    admin_user = DataBaseUser.objects.get(pk=314)
+    return render(request, 'library_app/vote_success.html', {'admin_user': admin_user})
 
 
 @login_required

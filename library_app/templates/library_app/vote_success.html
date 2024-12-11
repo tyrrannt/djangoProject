@@ -19,7 +19,90 @@
                 {% endfor %}
             {% endif %}
         </div>
-<h1>Спасибо за ваш голос!</h1>
-<p>Ваш голос успешно учтен.</p>
     </section>
+    {% if not my_vote %}
+        <section class="content-body content-body-modern mt-0">
+            <div class="widget-twitter-profile col-lg-6 col-sm-12">
+                <div class="top-image">
+                    <img src="#" alt="">
+                </div>
+                <div class="profile-info">
+                    <div class="profile-picture">
+                        <img src="{{ admin_user.avatar.url }}" alt="">
+                    </div>
+                    <div class="profile-account">
+                        <h3 class="name font-weight-semibold">{{ admin_user.title }}</h3>
+                        <a href="https://t.me/ShakirovVitaliy" class="account">@ShakirovVitaliy</a> 
+                    </div>
+                    <ul class="profile-stats">
+                        <li>
+                            <h5 class="stat text-uppercase">Количество участников</h5>
+                            <h4 class="count">{{ poem_count }}</h4>
+                        </li>
+                        <li>
+                            <h5 class="stat text-uppercase">Количество голосов</h5>
+                            <h4 class="count">{{ vote_count }}</h4>
+                        </li>
+                       <li>
+                            <h5 class="stat text-uppercase">До окончания<br> голосования</h5>
+                            <h4 class="count">{{ vote_days }} дн.</h4>
+                        </li>
+                    </ul>
+                </div>
+                <div class="profile-quote">
+                    <blockquote>
+                        <p>
+                            Спасибо за ваш голос! Ваш голос успешно учтен.
+                        </p>
+                    </blockquote>
+                    <div class="quote-footer">
+                        <span class="datetime">4:27 PM - 15 Jul 2021</span>
+                        -
+                        <a href="#">Details</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    {% else %}
+        <section class="content-body content-body-modern mt-0">
+            <div class="widget-twitter-profile  col-lg-6 col-sm-12">
+                <div class="top-image">
+                    <img src="#" alt="">
+                </div>
+                <div class="profile-info">
+                    <div class="profile-picture">
+                        <img src="{{ admin_user.avatar.url }}" alt="">
+                    </div>
+                    <div class="profile-account">
+                        <h3 class="name font-weight-semibold">{{ admin_user.title }}</h3>
+                        <a href="https://t.me/ShakirovVitaliy" class="account">@ShakirovVitaliy</a> 
+                    </div>
+                    <ul class="profile-stats">
+                        <li>
+                            <h5 class="stat text-uppercase">Количество<br> участников</h5>
+                            <h4 class="count">{{ poem_count }}</h4>
+                        </li>
+                        <li>
+                            <h5 class="stat text-uppercase">Количество<br> голосов</h5>
+                            <h4 class="count">{{ vote_count }}</h4>
+                        </li>
+                        <li>
+                            <h5 class="stat text-uppercase">До окончания<br> голосования</h5>
+                            <h4 class="count">{{ vote_days }} дн.</h4>
+                        </li>
+                    </ul>
+                </div>
+                <div class="profile-quote">
+                    <blockquote>
+                        <p>
+                            Простите, но Вы уже проголосовали за стих <strong>&quot;{{ my_vote.poem }}&quot;</strong>. Правила голосования были указаны на странице голосования, в пункте <a href="{%  url 'library_app:vote' %}"><span style="color: lightyellow">Инструкция</span></a>.
+                        </p>
+                    </blockquote>
+                    <div class="quote-footer">
+                        <span class="datetime"> {% now "d.m.Y" %} </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    {% endif %}
 {% endblock %}

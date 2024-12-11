@@ -22,34 +22,117 @@
             {% endif %}
         </div>
 
-        <h1>Голосование за лучший стих</h1>
+        <h1>Голосование за лучший стих</h1>        
         <form method="post">
             {% csrf_token %}
             <div class="row">
-
             </div>
-            {% for poem in poems %}
-                <div class="col-md-6">
-                    <section class="card card-featured card-featured-primary card-collapsed mb-4">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            </div>
-                            <input type="radio" name="poem" value="{{ poem.id }}" id="poem{{ poem.id }}">
-                            <label for="poem{{ poem.id }}" class="card-title">&nbsp;&nbsp;&nbsp;&quot;{{ poem.title }}&quot;</label>
-                        </header>
+            <div class="col-lg-6 col-sm-12 accordion" id="accordion">
+                <div class="accordion-item card card-light">
+                    <div class="card-header">
+                        <h4 class="card-title m-0">
+                            <a class="accordion-toggle" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                               data-bs-target="#collapseRules">
+                                <span style="color: #9D1E15">Инструкция</span>
+                            </a>
+                        </h4>
+                    </div>
+                    <div id="collapseRules" class="collapse" data-bs-parent="#accordion">
                         <div class="card-body text-5">
-                            {{ poem.content|linebreaksbr }}
+                            <ol>
+                                <li>
+                                    <p><strong>Ознакомление с текстом стиха</strong><br/></p>
+                                    <ul>
+                                        <li>
+                                            <p>Для просмотра полного текста стиха, нажмите на его заголовок. После
+                                                нажатия, текст
+                                                стиха будет отображен под заголовком. Это позволит вам ознакомиться с
+                                                содержанием и оценить его перед голосованием.</p>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <p><strong>Голосование за стих</strong></p>
+                                        <p>После ознакомления со всеми стихами, вы можете проголосовать за самый лучший на Ваш взгляд. Для этого:
+                                    </p>
+                                    <ul>
+                                        <li>
+                                            <p>Раскройте поле с понравившимся Вам стихом. Найдите поле для голосования под текстом стиха.</p>
+                                        </li>
+                                        <li>
+                                            <p>Выберите радио-кнопку возле надписи <u><strong>Я голосую за этот стих</strong></u>, которая соответствует этому стиху.</p>
+                                        </li>
+                                        <li>
+                                            <p>Нажмите на кнопку <u><strong>Проголосовать</strong></u>, (расположенную внизу под всеми стихами), чтобы подтвердить ваш выбор.</p>
+                                        </li>                                        
+                                    </ul>
+                                </li>
+                                <li>
+                                    <p><strong>Ограничение на количество голосов</strong></p>
+                                    <ul>
+                                        <li>
+                                            <p>Вы можете проголосовать <strong>только за один стих</strong>.</p>
+                                        </li>
+                                        <li>
+                                            <p>После того как вы выбрали один стих, голосование будет завершено, и вы не
+                                                сможете изменить свой выбор.</p>
+                                        </li>
+                                        <li>
+                                            <p>Убедитесь, что вы выбрали стих, который вам действительно понравился, так
+                                                как возможность голосовать повторно отсутствует.</p>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <p><strong>Важное уведомление</strong></p>
+                                    <ul>
+                                        <li>
+                                            <p>Голосование является конфиденциальным, как для Вас, так и для участников конкурса, и ваш выбор будет учтен в
+                                                общем подсчете голосов.</p>
+                                        </li>
+                                        <li>
+                                            <p>Пожалуйста, будьте внимательны при выборе стиха, чтобы ваш голос был
+                                                максимально объективным и честным.</p>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ol>
                         </div>
-                        {% if request.user.is_superuser %}
-                            <div class="card-footer">
-                                <p class="card-subtitle">Автор: {{ poem.user }}</p>
-                            </div>
-                        {% endif %}
-                    </section>
+                        <div class="card-footer">
+                            <label class="card-title">Эти правила разработаны для обеспечения честного и прозрачного
+                                процесса голосования, а также для удобства участников конкурса. Спасибо за ваше
+                                участие!</label>
+                        </div>
+                    </div>
                 </div>
-            {% endfor %}
-            <button type="submit">Проголосовать</button>
+                <p>&nbsp;</p>
+                {% for poem in poems %}
+                    <div class="accordion-item card card-default">
+                        <div class="card-header">
+                            <h4 class="card-title m-0">
+                                <a class="accordion-toggle" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                   data-bs-target="#collapse{{ poem.pk }}">
+                                    &quot;{{ poem.title }}&quot;
+                                </a>
+                            </h4>
+                        </div>
+                        <div id="collapse{{ poem.pk }}" class="collapse" data-bs-parent="#accordion">
+                            <div class="card-body text-5">
+                                {{ poem.content|linebreaksbr }}
+                            </div>
+                            <div class="card-footer">
+                                <label class="card-title" for="poem{{ poem.id }}">&nbsp;&nbsp;&nbsp;Я&nbsp;голосую&nbsp;за&nbsp;этот&nbsp;стих:&nbsp;&nbsp;&nbsp;</label>
+                                <input type="radio" name="poem" value="{{ poem.id }}" id="poem{{ poem.id }}">
+                                {% if request.user.is_superuser %}
+                                    <p class="card-subtitle">Автор: {{ poem.user }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        <br>
+            <button type="submit" class="btn btn-primary-scale-2">Проголосовать</button>
         </form>
     </section>
 {% endblock %}
