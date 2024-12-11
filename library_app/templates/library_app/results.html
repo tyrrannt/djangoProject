@@ -29,12 +29,12 @@
                             <div class="widget-summary-col widget-summary-col-icon">
                                 <div class="summary-icon ">
                                     <img src="
-                                        {% if user.avatar %}
-                                            {{ user.avatar.url }}
+                                        {% if poem.user.avatar %}
+                                            {{ poem.user.avatar.url }}
                                         {% else %}
                                             {% static 'admin_templates/img/!logged-user.jpg' %}
                                          {% endif %}"
-                                         alt="{{ user.last_name }} {{ user.first_name }}"
+                                         alt="{{ poem.user.last_name }} {{ poem.user.first_name }}"
                                          class="img-thumbnail" width="64"
                                          data-lock-picture="{% static 'admin_templates/img/!logged-user.jpg' %}"/>
                                 </div>
