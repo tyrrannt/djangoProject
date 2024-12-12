@@ -53,7 +53,7 @@
                         <div class="row">
                             {% for key, value in grouped_poems.0.poems.items %}
                                 <div class="col-sm-3">
-                                    <div class="card inner-card ">
+                                    <div class="card inner-card shadow-lg">
                                         <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
@@ -78,7 +78,7 @@
                         <div class="row">
                             {% for key, value in grouped_poems.1.poems.items %}
                                 <div class="col-sm-3">
-                                    <div class="card inner-card ">
+                                    <div class="card inner-card shadow-lg">
                                         <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
@@ -103,7 +103,7 @@
                         <div class="row">
                             {% for key, value in grouped_poems.2.poems.items %}
                                 <div class="col-sm-3">
-                                    <div class="card inner-card ">
+                                    <div class="card inner-card shadow-lg">
                                         <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
