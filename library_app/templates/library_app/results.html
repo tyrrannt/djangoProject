@@ -42,32 +42,82 @@
         </style>
 
         <h1>Результаты голосования</h1>
-
-        {% for place in grouped_poems %}
-            {% if forloop.counter == 1 %}
-                <h2 class="first-place">Место {{ forloop.counter }} ({{ place.votes }} голосов)</h2>
-            {% elif forloop.counter == 2 %}
-                <h2 class="second-place">Место {{ forloop.counter }} ({{ place.votes }} голосов)</h2>
-            {% elif forloop.counter == 3 %}
-                <h2 class="third-place">Место {{ forloop.counter }} ({{ place.votes }} голосов)</h2>
-            {% else %}
-                <h2>Место {{ forloop.counter }} ({{ place.votes }} голосов)</h2>
-            {% endif %}
-            <div class="row">
-                {% for poem in place.poems.values %}
-                    <div class="col-sm-3">
-                        <div class="card">
-                            <img src="
-                                    {% if poem.user.avatar %}{{ poem.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
-                                 class="card-img-top" alt="...">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ poem.user.title | FIO_format }}</h5>
-                                <p class="card-text">{{ poem.title }}</p>
-                            </div>
+    
+        {% if grouped_poems.0 %}
+            <div class="col-sm-12">
+                <section class="card outer-card card-warning mb-4">
+                    <header class="card-header">
+                        <h2 class="card-title">1 МЕСТО ({{ grouped_poems.0.votes }} голосов)</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for key, value in grouped_poems.0.poems.items %}
+                                <div class="col-sm-3">
+                                    <div class="card inner-card ">
+                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                             class="card-img-top" alt="...">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-primary">{{ value.user }}</h5>
+                                            <h4 class="card-text">{{ value.title }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
+                </section>
             </div>
-        {% endfor %}
+        {% endif %}
+        {% if grouped_poems.1 %}
+            <div class="col-sm-12">
+                <section class="card outer-card card-warning mb-4">
+                    <header class="card-header">
+                        <h2 class="card-title">1 МЕСТО ({{ grouped_poems.0.votes }} голосов)</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for key, value in grouped_poems.0.poems.items %}
+                                <div class="col-sm-3">
+                                    <div class="card inner-card ">
+                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                             class="card-img-top" alt="...">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-primary">{{ value.user }}</h5>
+                                            <h4 class="card-text">{{ value.title }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+            </div>
+        {% endif %}
+        {% if grouped_poems.2 %}
+            <div class="col-sm-12">
+                <section class="card outer-card card-warning mb-4">
+                    <header class="card-header">
+                        <h2 class="card-title">1 МЕСТО ({{ grouped_poems.0.votes }} голосов)</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for key, value in grouped_poems.0.poems.items %}
+                                <div class="col-sm-3">
+                                    <div class="card inner-card ">
+                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                             class="card-img-top" alt="...">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-primary">{{ value.user }}</h5>
+                                            <h4 class="card-text">{{ value.title }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+            </div>
+        {% endif %}
+
     </section>
 {% endblock %}
