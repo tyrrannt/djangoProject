@@ -110,14 +110,7 @@ ASGI_APPLICATION = "djangoProject.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-if DEBUG:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
-else:
+if not DEBUG:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -125,6 +118,13 @@ else:
             "HOST": config("DATABASE_HOST"),
             "USER": config("DATABASE_USERNAME"),
             "PASSWORD": config("DATABASE_PASSWORD"),
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
@@ -369,10 +369,8 @@ SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)
 if not config("DEBUG", default=False, cast=bool):
     # Включаем HTTP Strict Transport Security (HSTS)
     SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS")
+    SESSION_COOKIE_DOMAIN = config("SESSION_COOKIE_DOMAIN")
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False, cast=bool)
 SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
-if not config("DEBUG", default=False, cast=bool):
-    # Устанавливаем SESSION_COOKIE_DOMAIN
-    SESSION_COOKIE_DOMAIN = config("SESSION_COOKIE_DOMAIN")
 # Устанавливает, что сессия истекает при закрытии браузера
 SESSION_EXPIRE_AT_BROWSER_CLOSE = config("SESSION_EXPIRE_AT_BROWSER_CLOSE", default=False, cast=bool)
