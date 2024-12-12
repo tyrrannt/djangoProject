@@ -268,7 +268,7 @@ def vote(request):
 
 @login_required
 def vote_success(request):
-    admin_user = DataBaseUser.objects.get(pk=314)
+    admin_user = DataBaseUser.objects.get(pk=52)
     return render(request, 'library_app/vote_success.html', {'admin_user': admin_user})
 
 
