@@ -73,6 +73,7 @@
                                     {% if user|has_group:"password" %}
                                         <th width="10%">Pass</th>
                                         <th width="10%">Telegram</th>
+                                        <th width="10%">Права</th>
                                     {% endif %}
                                 </tr>
                                 </thead>
@@ -198,6 +199,7 @@
                     {% if user.is_superuser or user.is_staff %}
                         {"data": "password"},
                         {"data": "telegram_id"},
+                        {"data": "rules"},
                     {% endif %}
                 ],
             });

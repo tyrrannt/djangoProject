@@ -592,6 +592,7 @@ class DataBaseUser(AbstractUser):
             if self.user_work_profile
             else "",
             "telegram_id": str(self.telegram_id),
+            "rules": self.user_access.name if self.user_access else "",
         }
 
     def get_absolute_url(self):
