@@ -174,6 +174,9 @@ class Vote(models.Model):
     user = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE)
     poem = models.ForeignKey(Poem, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f'{self.user.username} - {self.poem.title}'
+
 
 
 
