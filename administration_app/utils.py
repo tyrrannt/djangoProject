@@ -998,7 +998,6 @@ def ajax_search(request, self, field_list, model_name, query, contract=False):
                         multiply_search = Q(**{field + '__iregex': search_value})
                     query &= multiply_search
             counter += 1
-        print(query)
         if query:
             order_list = model_name.objects.filter(query)
         else:
