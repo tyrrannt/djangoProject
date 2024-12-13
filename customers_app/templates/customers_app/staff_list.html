@@ -202,7 +202,37 @@
                         {"data": "rules"},
                     {% endif %}
                 ],
+                "pageLength": 25, // Устанавливаем 25 элементов на странице по умолчанию
+                "createdRow": function (row, data, dataIndex) {
+                    // Генерируем цвет на основе текста в колонке "division"
+                    // var division = data.division;
+                    // var color = getColorFromText(division);
+
+                    // Устанавливаем цвет текста для всей строки
+                    // $(row).css('color', color);
+
+                    // Добавляем класс fs-6 ко всем ячейкам строки
+                    $(row).find('td').addClass('fs-6 text-dark');
+                }
             });
         });
+
+        // Функция для генерации цвета на основе текста
+        // function getColorFromText(text) {
+            // Используем хэш-функцию для преобразования текста в число
+            // var hash = 0;
+            // for (var i = 0; i < text.length; i++) {
+            //     hash = text.charCodeAt(i) + ((hash << 5) - hash);
+            // }
+
+            // Преобразуем хэш в цвет в формате HEX
+            // var color = '#';
+            // for (var i = 0; i < 3; i++) {
+            //     var value = (hash >> (i * 8)) & 0xFF;
+            //     color += ('00' + value.toString(16)).substr(-2);
+            // }
+
+            // return color;
+        // }
     </script>
 {% endblock %}

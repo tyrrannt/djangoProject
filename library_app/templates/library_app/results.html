@@ -54,11 +54,11 @@
                             {% for key, value in grouped_poems.0.poems.items %}
                                 <div class="col-sm-3">
                                     <div class="card inner-card shadow-lg border-warning">
+                                        <h3 class="card-header-top text-warning text-center">{{ value.user }}</h3>
                                         <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
-                                            <h5 class="card-title text-primary">{{ value.user }}</h5>
-                                            <h4 class="card-text">{{ value.title }}</h4>
+                                            <h4 class="card-text text-center">{{ value.title }}</h4>
                                         </div>
                                     </div>
                                 </div>
@@ -79,11 +79,11 @@
                             {% for key, value in grouped_poems.1.poems.items %}
                                 <div class="col-sm-3">
                                     <div class="card inner-card shadow-lg border-success">
+                                        <h3 class="card-header-top text-success text-center">{{ value.user }}</h3>
                                         <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
-                                            <h5 class="card-title text-primary">{{ value.user }}</h5>
-                                            <h4 class="card-text">{{ value.title }}</h4>
+                                            <h4 class="card-text text-center">{{ value.title }}</h4>
                                         </div>
                                     </div>
                                 </div>
@@ -104,11 +104,11 @@
                             {% for key, value in grouped_poems.2.poems.items %}
                                 <div class="col-sm-3">
                                     <div class="card inner-card shadow-lg border-info">
+                                        <h3 class="card-header-top text-info text-center">{{ value.user }}</h3>
                                         <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
-                                            <h5 class="card-title text-primary">{{ value.user }}</h5>
-                                            <h4 class="card-text">{{ value.title }}</h4>
+                                            <h4 class="card-text text-center">{{ value.title }}</h4>
                                         </div>
                                     </div>
                                 </div>
