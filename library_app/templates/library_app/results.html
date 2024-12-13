@@ -42,7 +42,7 @@
         </style>
 
         <h1>Результаты голосования</h1>
-    
+
         {% if grouped_poems.0 %}
             <div class="col-sm-12">
                 <section class="card outer-card card-warning mb-4">
@@ -55,7 +55,8 @@
                                 <div class="col-sm-3">
                                     <div class="card inner-card shadow-lg border-warning">
                                         <h3 class="card-header-top text-warning text-center">{{ value.user }}</h3>
-                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                        <img src="
+                                                {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
                                             <h4 class="card-text text-center">{{ value.title }}</h4>
@@ -80,7 +81,8 @@
                                 <div class="col-sm-3">
                                     <div class="card inner-card shadow-lg border-success">
                                         <h3 class="card-header-top text-success text-center">{{ value.user }}</h3>
-                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                        <img src="
+                                                {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
                                             <h4 class="card-text text-center">{{ value.title }}</h4>
@@ -105,7 +107,8 @@
                                 <div class="col-sm-3">
                                     <div class="card inner-card shadow-lg border-info">
                                         <h3 class="card-header-top text-info text-center">{{ value.user }}</h3>
-                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                        <img src="
+                                                {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
                                              class="card-img-top" alt="...">
                                         <div class="card-body">
                                             <h4 class="card-text text-center">{{ value.title }}</h4>
@@ -118,6 +121,35 @@
                 </section>
             </div>
         {% endif %}
-
+        {% if user.is_superuser %}
+            {% for item in grouped_poems %}
+                {% if forloop.counter > 3 %}
+                <div class="col-sm-12">
+                    <section class="card outer-card card-info mb-4">
+                        <header class="card-header">
+                            <h2 class="card-title">{{ forloop.counter }} МЕСТО ({{ item.votes }} голосов)</h2>
+                        </header>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for key, value in item.poems.items %}
+                                    <div class="col-sm-3">
+                                        <div class="card inner-card shadow-lg border-info">
+                                            <h3 class="card-header-top text-info text-center">{{ value.user }}</h3>
+                                            <img src="
+                                                    {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                                 class="card-img-top" alt="...">
+                                            <div class="card-body">
+                                                <h4 class="card-text text-center">{{ value.title }}</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
     </section>
 {% endblock %}
