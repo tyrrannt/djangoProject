@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 import pandas as pd
 import qrcode
+from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, DAILY
 from decouple import config
 from django.contrib.auth import authenticate
@@ -25,7 +26,7 @@ from django.views.generic import DetailView, UpdateView, CreateView, ListView
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_get, change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
-    process_group, process_group_interval, seconds_to_hhmm, get_active_user
+    process_group, process_group_interval, seconds_to_hhmm, get_active_user, get_today_data_delta
 from contracts_app.models import TypeDocuments, Contract
 from contracts_app.templatetags.custom import FIO_format
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
@@ -872,12 +873,15 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user_object = self.get_object()
+        context['birthday_difference'] = get_today_data_delta(user_object.birthday, 1)
+        context['employment_difference'] = get_today_data_delta(user_object.user_work_profile.date_of_employment, 0)
         # Получаем параметр запроса 'value'
         value = self.request.GET.get('update')
 
         if value == '0':
             try:
-                user_object = self.get_object()
+
                 if user_object.user_work_profile.work_email_password != '':
                     user_object.set_password(user_object.user_work_profile.work_email_password)
                     user_object.save()

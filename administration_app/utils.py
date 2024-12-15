@@ -1364,3 +1364,41 @@ def export_persons_to_csv(file_path: str, model):
 
     # Сохраняем DataFrame в CSV-файл
     df.to_csv(file_path, sep=';', index=False, encoding='utf-8', na_rep='')
+
+def get_year_suffix(years):
+    try:
+        if years % 10 == 1 and years % 100 != 11:
+            return "год"
+        elif 2 <= years % 10 <= 4 and (years % 100 < 10 or years % 100 >= 20):
+            return "года"
+        else:
+            return "лет"
+    except:
+        return ""
+
+def get_month_suffix(months):
+    if months % 10 == 1 and months % 100 != 11:
+        return "месяц"
+    elif 2 <= months % 10 <= 4 and (months % 100 < 10 or months % 100 >= 20):
+        return "месяца"
+    else:
+        return "месяцев"
+
+def get_day_suffix(days):
+    if days % 10 == 1 and days % 100 != 11:
+        return "день"
+    elif 2 <= days % 10 <= 4 and (days % 100 < 10 or days % 100 >= 20):
+        return "дня"
+    else:
+        return "дней"
+
+def get_today_data_delta(dtstart, trigger):
+    start = datetime.combine(dtstart, datetime.min.time())
+    until = datetime.today()
+    delta = relativedelta.relativedelta(until, start)
+    print(delta)
+    match trigger:
+        case 0:
+            return f"{delta.years} {get_year_suffix(delta.years)} {delta.months} {get_month_suffix(delta.months)} {delta.days} {get_day_suffix(delta.days)}"
+        case 1:
+            return f"{delta.years} {get_year_suffix(delta.years)}"
