@@ -837,6 +837,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 is_active=False)
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
+            print('lll', data)
             return JsonResponse(response)
 
         return super(StaffListView, self).get(request, *args, **kwargs)
