@@ -289,6 +289,9 @@ def results(request):
     # Группировка стихов по местам с учетом количества голосов
     grouped_poems = []
     current_votes = None
+    users_vote = {}
+    for poem in poems:
+        users_vote[poem.pk] = Vote.objects.filter(poem=poem)
 
     for poem in sorted_poems:
         votes = vote_count.get(poem.id, 0)
@@ -302,8 +305,8 @@ def results(request):
         # Добавляем стих в словарь текущего места
         grouped_poems[-1]['poems'][poem.id] = poem
     print(vote_count)
-    print(grouped_poems[:3])
-    return render(request, 'library_app/results.html', {'grouped_poems': grouped_poems})
+    print(users_vote)
+    return render(request, 'library_app/results.html', {'grouped_poems': grouped_poems, 'users_vote': users_vote})
 
 
 @login_required
