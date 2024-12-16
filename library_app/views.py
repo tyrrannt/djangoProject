@@ -304,8 +304,6 @@ def results(request):
             })
         # Добавляем стих в словарь текущего места
         grouped_poems[-1]['poems'][poem.id] = poem
-    print(vote_count)
-    print(users_vote)
     return render(request, 'library_app/results.html', {'grouped_poems': grouped_poems, 'users_vote': users_vote})
 
 
