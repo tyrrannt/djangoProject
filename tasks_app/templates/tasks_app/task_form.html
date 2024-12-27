@@ -1,0 +1,209 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load widget_tweaks %}
+{% load django_bootstrap5 %}
+{#{% block custome_css %}#}
+{##}
+{##}
+{##}
+{#{% endblock %}#}
+{% block custome_css %}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
+    {#    <link rel="stylesheet"#}
+    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
+    <!-- Стили для отображения файлов -->
+    <style>
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .file-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-icon {
+            font-size: 48px;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .file-info h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .file-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #777;
+        }
+
+        .file-info p {
+            word-wrap: break-word; /* Переносит длинные слова на новую строку */
+            max-width: 150px; /* Ограничивает ширину блока */
+        }
+    </style>
+{% endblock %}
+
+{% block custome_script %}
+    {#        <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
+    {#        <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
+    {#        <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
+    <script>
+        // Инициализация Dropzone.js
+        Dropzone.autoDiscover = false;  // Отключаем автоинициализацию
+
+        const dropzone = new Dropzone("#dropzone", {
+            url: "{% url 'tasks_app:upload-files-ajax' %}",  // URL для загрузки файлов
+            paramName: "files",  // Имя параметра для файлов
+            maxFilesize: 50,  // Максимальный размер файла (в MB)
+            maxFiles: 25,  // Максимальное количество файлов
+            acceptedFiles: ".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.mp3,.mp4,.ppt,.pptx",
+            addRemoveLinks: true,  // Показывать ссылку для удаления файла
+            dictDefaultMessage: "Перетащите файлы сюда или нажмите для загрузки",
+            dictRemoveFile: "Удалить файл",
+            dictFileTooBig: "Файл слишком большой ({{filesize}}MB). Максимальный размер: {{maxFilesize}}MB.",
+            dictInvalidFileType: "Этот тип файла не поддерживается.",
+            dictMaxFilesExceeded: "Вы не можете загрузить больше {{maxFiles}} файлов.",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"  // Передаем CSRF-токен
+            },
+            params: {
+                task_id: "{{ task.id }}"  // Передаем task_id в запросе
+            },
+            init: function () {
+                this.on("success", function (file, response) {
+                    toastr.success('Задача создана!', response);
+                });
+                this.on("error", function (file, errorMessage) {
+                    toastr.error('Ошибка при загрузке файла:', errorMessage);
+                });
+            }
+        });
+    </script>
+{% endblock %}
+
+{% block title %}
+    <title>{% if object %}Редактировать задачу{% else %}Добавить задачу{% endif %}</title>
+    {% bootstrap_css %}
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0">
+        <div>
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <!-- start: page -->
+        <div class="container mt-5">
+            <h1 class="mb-4">{% if object %}Редактировать задачу{% else %}Добавить задачу{% endif %}</h1>
+            <form method="post" class="form" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <!-- Контейнер для Dropzone.js -->
+                <div class="form-group">
+                    <label for="files">Прикрепить файлы:</label>
+                    <div id="dropzone" class="dropzone"></div>
+                </div>
+
+                <!-- Настройка значений для полей даты и времени -->
+                {% if form.instance.start_date %}
+                    <script>
+                        document.querySelector('input[name="start_date"]').value = '{{ form.instance.start_date|date:"Y-m-d" }}T{{ form.instance.start_date|time:"H:i" }}';
+                    </script>
+                {% endif %}
+                {% if form.instance.end_date %}
+                    <script>
+                        document.querySelector('input[name="end_date"]').value = '{{ form.instance.end_date|date:"Y-m-d" }}T{{ form.instance.end_date|time:"H:i" }}';
+                    </script>
+                {% endif %}
+                <button type="submit" class="btn btn-success">Сохранить</button>
+                <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary">Отмена</a>
+            </form>
+
+            <div class="container">
+                <h4>Загруженные файлы:</h4>
+                <div class="file-grid">
+                    {% for document in task.files.all %}
+                        {% with file_extension=document.file.name|split:"."|last|lower %}
+                            <div class="file-item" onclick="window.open('{{ document.file.url }}', '_blank')">
+                    <i class="file-icon {% get_file_icon file_extension %}"></i>
+                    <div class="file-info">
+                        <h4>{{ document.title }}</h4>
+                        <p>{{ document.file.name|basename }}</p>
+                    </div>
+                </div>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% bootstrap_javascript %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const repeatField = document.querySelector('select[name="repeat"]');
+                    const dueDateField = document.querySelector('input[name="due_date"]');
+                    const startDateField = document.querySelector('input[name="start_date"]');
+                    const endDateField = document.querySelector('input[name="end_date"]');
+
+                    function toggleFields() {
+                        if (repeatField.value === 'none') {
+                            // Показываем due_date и скрываем start_date и end_date
+
+                            startDateField.parentElement.classList.add('hidden');
+                            endDateField.parentElement.classList.add('hidden');
+                        } else {
+                            // Скрываем due_date и показываем start_date и end_date
+
+                            startDateField.parentElement.classList.remove('hidden');
+                            endDateField.parentElement.classList.remove('hidden');
+                        }
+                    }
+
+                    // Инициализация состояния полей
+                    toggleFields();
+
+                    // Слушаем изменения в поле repeat
+                    repeatField.addEventListener('change', toggleFields);
+                });
+            </script>
+            <!-- end: page -->
+    </section>
+    <!-- end: page -->
+
+{% endblock %}

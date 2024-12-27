@@ -9,9 +9,45 @@ from django.contrib.contenttypes.models import ContentType
 register = template.Library()
 
 
+@register.simple_tag
+def get_file_icon(file_extension):
+    file_icons = {
+        'pdf': 'far fa-file-pdf',
+        'doc': 'far fa-file-word',
+        'docx': 'far fa-file-word',
+        'xls': 'far fa-file-excel',
+        'xlsx': 'far fa-file-excel',
+        'jpg': 'far fa-file-image',
+        'jpeg': 'far fa-file-image',
+        'png': 'far fa-file-image',
+        'txt': 'far fa-file-alt',
+        'zip': 'far fa-file-archive',
+        'rar': 'far fa-file-archive',
+        'mp3': 'far fa-file-audio',
+        'mp4': 'far fa-file-video',
+        'ppt': 'far fa-file-powerpoint',
+        'pptx': 'far fa-file-powerpoint',
+        'default': 'far fa-file'
+    }
+    return file_icons.get(file_extension, file_icons['default'])
+
+
+@register.filter
+def split(value, delimiter):
+    """Разделяет строку по разделителю и возвращает список."""
+    return value.split(delimiter)
+
+
+@register.filter
+def basename(value):
+    """Возвращает имя файла из полного пути."""
+    return os.path.basename(value)
+
+
 @register.filter
 def url_encode(value):
     return quote(value)
+
 
 @register.filter
 def content_type_id(obj):
@@ -120,12 +156,12 @@ def change_key(key2):
         "region": "Регион",
         "region_type": "Тип региона",
         "region_type_full": "Полное наименование региона",
-        "status":  "Статус",
-        "code":  "Код",
-        "data":  "Данные",
+        "status": "Статус",
+        "code": "Код",
+        "data": "Данные",
         "fio": "ФИО",
-        "surname":  "Фамилия",
-        "patronymic":  "Отчество",
+        "surname": "Фамилия",
+        "patronymic": "Отчество",
     }
     result = result_dict[key2] if key2 in result_dict else ""
     return result if result != "" else key2
@@ -153,10 +189,11 @@ def change_value(key, value):
         result = value
     if key in ["actuality_date", "registration_date", "liquidation_date", "issue_date", "valid_from",
                "valid_to", "ogrn_date", ]:
-        ts = int(value)/1000
+        ts = int(value) / 1000
         print(ts)
         result = datetime.fromtimestamp(ts).strftime('%d.%m.%Y %H:%M:%S')
     return result
+
 
 @register.filter(name="format_bytes")
 def format_bytes(size):
@@ -176,6 +213,7 @@ def filename(value):
         return os.path.basename(value.file.name)
     except FileNotFoundError:
         return 'Файл отсутствует'
+
 
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)

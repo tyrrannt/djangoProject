@@ -58,12 +58,14 @@ INSTALLED_APPS = [
     "hrdepartment_app.apps.HrdepartmentAppConfig",
     "logistics_app.apps.LogisticsAppConfig",
     "telegram_app.apps.TelegramAppConfig",
+    "tasks_app.apps.TasksAppConfig",
     "widget_tweaks",
     "django_ckeditor_5",
     "debug_toolbar",
     "channels",
     "dynamic_formsets",
     "chat_app.apps.ChatAppConfig",
+    "django_bootstrap5",  # Если используем django-bootstrap5
 ]
 
 MIDDLEWARE = [

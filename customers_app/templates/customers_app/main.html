@@ -36,11 +36,16 @@
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
 {#    <link rel="stylesheet" href="{% static 'admin_templates/css/content-styles.css' %}"  type="text/css"/>#}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}" />
+{% if request.resolver_match.app_name == 'tasks_app' %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/toastr/toastr.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/fullcalendar/fullcalendar.css' %}" />
+{% endif %}
 
     <!-- Theme CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}" />
@@ -135,6 +140,17 @@
 <script src="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/magnific-popup/jquery.magnific-popup.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
+{% if request.resolver_match.app_name == 'tasks_app' %}
+    <script src="{% static 'admin_templates/vendor/jquery-ui/jquery-ui.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/jqueryui-touch-punch/jquery.ui.touch-punch.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/moment/moment.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/fullcalendar/index.global.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.index.global.min.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/fullcalendar/locales-all.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/dropzone/dropzone.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/toastr/toastr.min.js' %}"></script>
+{% endif %}
 
 
 <!-- Specific Page Vendor -->
