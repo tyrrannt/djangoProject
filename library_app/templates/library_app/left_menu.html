@@ -434,21 +434,22 @@
                             <span>Конкурс</span>
                         </a>
                         <ul class="nav nav-children">
-                        {% if user.is_superuser %}
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
-                                    Прием стихов
-                                </a>
-                            </li>
+                            {% if user.is_superuser %}
+                                <li>
+                                    <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
+                                        Прием стихов
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="nav-link" href="{% url 'library_app:vote' %}">
+                                        Голосование
+                                    </a>
+                                </li>
+                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:results' %}">
                                     Результаты
-                                </a>
-                            </li>
-                       {% endif %}
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:vote' %}">
-                                    Голосование
                                 </a>
                             </li>
 
