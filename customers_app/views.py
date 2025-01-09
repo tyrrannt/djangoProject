@@ -333,17 +333,13 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 })
             elif isinstance(item, Task):  # Проверяем, является ли элемент объектом Task
                 # Обработка для tasks_list
-                task_date_start = datetime.datetime.combine(item.start_date, datetime.datetime.min.time(),
-                                                            tzinfo=datetime.timezone.utc)
-                task_date_end = datetime.datetime.combine(item.end_date, datetime.datetime.min.time(),
-                                                          tzinfo=datetime.timezone.utc)
                 if (self.request.user == item.user) or ( self.request.user in item.shared_with.iterator()):
                     repeat_tasks.append({
                         'title': self.get_task_title_with_icon(item),  # Получаем название задачи
                         'rrule': {
                             'freq': 'daily',  # Используем поле repeat для freq
-                            'dtstart': task_date_start.isoformat(),  # Начальная дата с временной зоной
-                            'until': task_date_end.isoformat(),  # Конечная дата с временной зоной
+                            'dtstart': item.start_date.isoformat(),  # Начальная дата с временной зоной
+                            'until': item.start_date.isoformat(),  # Конечная дата с временной зоной
                         },
                         'url': reverse('tasks_app:task-update', args=[item.pk]),
                         'color': item.priority,
