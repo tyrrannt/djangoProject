@@ -253,7 +253,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 return task.title
         if isinstance(task, Posts):
             if "День рождения" in task.post_title:
-                return f'<i class="fa fa-cake-candles"></i> {task.post_title}'
+                return f'<i class="fas fa-birthday-cake"></i> {task.post_title}'
             else:
                 return task.post_title
 
