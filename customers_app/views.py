@@ -2,12 +2,14 @@ import datetime
 import hashlib
 import uuid
 from io import BytesIO
+from itertools import chain
 from pprint import pprint
 from pydoc import pager
 from urllib.parse import urlencode
 
 import pandas as pd
 import qrcode
+# from celery.worker.consumer import Tasks
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, DAILY
 from decouple import config
@@ -47,6 +49,7 @@ from hrdepartment_app.hrdepartment_util import get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
     get_norm_time_at_custom_day
 from hrdepartment_app.tasks import send_email_single_notification
+from tasks_app.models import Task
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -265,20 +268,59 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         get_profile_fill(self, context)
 
         posts_list = Posts.objects.all()
+        tasks_list = Task.objects.all()
         repeat_tasks = []
-        for task in posts_list:
-            post_date_start = datetime.datetime.combine(task.post_date_start, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
-            post_date_end = datetime.datetime.combine(task.post_date_end, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
-            repeat_tasks.append({
-                'title': task.post_title,  # Получаем название задачи с иконкой task.title,
-                'rrule': {
-                    'freq': 'daily',  # Используем поле repeat для freq
-                    'dtstart': post_date_start.isoformat(), # Начальная дата с временной зоной
-                    'until': post_date_end.isoformat(), # Конечная дата с временной зоной
-                },
-                'url': reverse('customers_app:post', args=[task.pk]),
-                'color': 'info',
-            })
+        # for task in posts_list:
+        #     post_date_start = datetime.datetime.combine(task.post_date_start, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
+        #     post_date_end = datetime.datetime.combine(task.post_date_end, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
+        #     repeat_tasks.append({
+        #         'title': task.post_title,  # Получаем название задачи с иконкой task.title,
+        #         'rrule': {
+        #             'freq': 'daily',  # Используем поле repeat для freq
+        #             'dtstart': post_date_start.isoformat(), # Начальная дата с временной зоной
+        #             'until': post_date_end.isoformat(), # Конечная дата с временной зоной
+        #         },
+        #         'url': reverse('customers_app:post', args=[task.pk]),
+        #         'color': 'info',
+        #     })
+        # Объединяем оба списка в один итерируемый объект
+        combined_list = chain(posts_list, tasks_list)
+
+        for item in combined_list:
+            if isinstance(item, Posts):  # Проверяем, является ли элемент объектом Posts
+                # Обработка для posts_list
+                post_date_start = datetime.datetime.combine(item.post_date_start, datetime.datetime.min.time(),
+                                                            tzinfo=datetime.timezone.utc)
+                post_date_end = datetime.datetime.combine(item.post_date_end, datetime.datetime.min.time(),
+                                                          tzinfo=datetime.timezone.utc)
+
+                repeat_tasks.append({
+                    'title': item.post_title,  # Получаем название задачи
+                    'rrule': {
+                        'freq': 'daily',  # Используем поле repeat для freq
+                        'dtstart': post_date_start.isoformat(),  # Начальная дата с временной зоной
+                        'until': post_date_end.isoformat(),  # Конечная дата с временной зоной
+                    },
+                    'url': reverse('customers_app:post', args=[item.pk]),
+                    'color': 'info',
+                })
+            elif isinstance(item, Task):  # Проверяем, является ли элемент объектом Task
+                # Обработка для tasks_list
+                task_date_start = datetime.datetime.combine(item.start_date, datetime.datetime.min.time(),
+                                                            tzinfo=datetime.timezone.utc)
+                task_date_end = datetime.datetime.combine(item.end_date, datetime.datetime.min.time(),
+                                                          tzinfo=datetime.timezone.utc)
+                if (self.request.user == item.user) or ( self.request.user in item.shared_with):
+                    repeat_tasks.append({
+                        'title': item.title,  # Получаем название задачи
+                        'rrule': {
+                            'freq': 'daily',  # Используем поле repeat для freq
+                            'dtstart': task_date_start.isoformat(),  # Начальная дата с временной зоной
+                            'until': task_date_end.isoformat(),  # Конечная дата с временной зоной
+                        },
+                        'url': reverse('tasks_app:task-update', args=[item.pk]),
+                        'color': item.priority,
+                    })
         context['repeat_tasks'] = repeat_tasks
 
         print(repeat_tasks)
