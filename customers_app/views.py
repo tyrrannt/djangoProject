@@ -15,6 +15,7 @@ from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models.signals import post_save
 from django.utils.crypto import get_random_string
 from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -263,6 +264,24 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         context['current_month'] = str(datetime.datetime.today().month)
         get_profile_fill(self, context)
 
+        posts_list = Posts.objects.all()
+        repeat_tasks = []
+        for task in posts_list:
+            post_date_start = datetime.datetime.combine(task.post_date_start, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
+            post_date_end = datetime.datetime.combine(task.post_date_end, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
+            repeat_tasks.append({
+                'title': task.post_title,  # Получаем название задачи с иконкой task.title,
+                'rrule': {
+                    'freq': 'daily',  # Используем поле repeat для freq
+                    'dtstart': post_date_start.isoformat(), # Начальная дата с временной зоной
+                    'until': post_date_end.isoformat(), # Конечная дата с временной зоной
+                },
+                'url': reverse('customers_app:post', args=[task.pk]),
+                'color': 'info',
+            })
+        context['repeat_tasks'] = repeat_tasks
+
+        print(repeat_tasks)
         # context.update(groups())
         return context
 
@@ -318,8 +337,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     # Создаем конечную дату (последний день месяца)
                     # Мы вычисляем его, переходя на следующий месяц и вычитая один день.
                     norm_time = norm_time_date.get_norm_time()
-                    if report_month == 12:
-                        end_date = datetime.datetime(int(report_year) + 1, 1, 1) - datetime.timedelta(days=1)
+                    print(report_month)
+                    if int(report_month) == 12:
+                        end_date = datetime.datetime(int(report_year), 12, 31)
                     else:
                         end_date = datetime.datetime(int(report_year), int(report_month) + 1, 1) - datetime.timedelta(days=1)
                     dates = list(rrule(DAILY, dtstart=datetime.datetime(year=int(report_year), month=int(report_month), day=1, hour=0, minute=0, second=0), until=end_date))
@@ -652,6 +672,9 @@ class PostsListView(LoginRequiredMixin, ListView):
 class PostsDetailView(LoginRequiredMixin, DetailView):
     template_name = 'customers_app/posts_detail.html'
     model = Posts
+
+    def get_success_url(self):
+        return reverse('customers_app:profile', kwargs={'pk': self.request.user.pk})
 
 
 class PostsUpdateView(LoginRequiredMixin, UpdateView):

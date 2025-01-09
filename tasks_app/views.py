@@ -119,13 +119,14 @@ class TaskListView(LoginRequiredMixin, ListView):
                 'title': self.get_task_title_with_icon(task),  # Получаем название задачи с иконкой task.title,
                 'rrule': {
                             'freq': task.repeat,  # Используем поле repeat для freq
-                            'dtstart': task.start_date.isoformat(),  # Начальная дата с временной зоной
+                            'dtstart': task.start_date.isoformat(),   # Начальная дата с временной зоной
                             'until': task.end_date.isoformat()  # Конечная дата с временной зоной
                         },
                 'url': reverse('tasks_app:task-update', args=[task.pk]),
                 'color': task.priority,
             })
         context['repeat_tasks'] = repeat_tasks
+        print(repeat_tasks)
         context['users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name').exclude(is_superuser=True)
         return context
 

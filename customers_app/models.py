@@ -819,6 +819,7 @@ class Posts(models.Model):
         verbose_name = "Новость"
         verbose_name_plural = "Сообщения"
 
+    post_title = models.CharField(verbose_name="Заголовок", max_length=100, blank=True)
     creation_date = models.DateField(verbose_name="Дата создания", auto_now_add=True)
     post_description = CKEditor5Field("Содержание", config_name="extends", blank=True)
     post_divisions = models.ManyToManyField(

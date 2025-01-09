@@ -7,7 +7,166 @@
 {% endblock %}
 
 {% block custome_script %}
-    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            {% for task in tasks %}
+                {% if task.due_date and task.due_date|date:"Y-m-d" == today %}
+                    toastr.warning('Задача "{{ task.title }}" скоро истекает!');
+                {% endif %}
+            {% endfor %}
+        });
+    </script>
+    <script>
+        (function ($) {
+
+            'use strict';
+
+            // Функция для инициализации перетаскивания событий
+            var initCalendarDragNDrop = function () {
+                var Draggable = FullCalendar.Draggable;
+
+                // Инициализация перетаскивания для внешних событий
+                $('#external-events div.external-event').each(function () {
+                    new Draggable($(this)[0], {
+                        itemSelector: '.external-event',
+                        eventData: function (eventEl) {
+                            var eventObj = $(eventEl).data('event');
+                            return eventObj;
+                        }
+                    });
+                });
+            };
+
+            // Функция для инициализации календаря
+            var initCalendar = function () {
+                var $calendar = $('#calendar');
+                var date = new Date();
+                var d = date.getDate();
+                var m = date.getMonth();
+                var y = date.getFullYear();
+
+                // Создание экземпляра календаря
+                var $calendarInstance = new FullCalendar.Calendar($calendar[0], {
+                    themeSystem: 'bootstrap',
+                    locale: 'ru',  // Устанавливаем русский язык
+                    eventDisplay: 'block',
+                    initialView: 'dayGridMonth', // Начальный вид: неделя с временной сеткой
+                    eventOrder: ['start', 'priority'], // Сортировка по времени начала, затем по приоритету
+                    // eventOverlap: false, // Запрещаем перекрытие событий
+                    slotDuration: '01:00:00', // Интервалы в 1 час
+                    slotLabelInterval: '01:00:00', // Метки на сетке каждый час
+                    slotLabelFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        omitZeroMinute: false,
+                        meridiem: 'short'
+                    },
+                    allDaySlot: false, // Скрыть слот "Весь день"
+                    headerToolbar: {
+                        start: 'prev,next today',
+                        center: 'title',
+                        end: 'timeGridDay,dayGridWeek,dayGridMonth' // Добавляем timeGridDay и timeGridWeek
+                    },
+                    bootstrapFontAwesome: {
+                        close: 'fa-times',
+                        prev: 'fa-caret-left',
+                        next: 'fa-caret-right',
+                        prevYear: 'fa-angle-double-left',
+                        nextYear: 'fa-angle-double-right'
+                    },
+                    editable: true,
+                    droppable: true, // Разрешаем перетаскивание событий
+                    drop: function (info) { // Обработчик события перетаскивания
+                        // Получаем данные о событии
+                        var eventData = $(info.draggedEl).data('event');
+
+                        // Отправляем AJAX-запрос на сервер для создания задачи
+                        $.ajax({
+                            url: "{% url 'tasks_app:task-create-ajax' %}",
+                            type: "POST",
+                            data: {
+                                title: eventData.title,
+                                start_date: new Date().toISOString(), // Устанавливаем текущую дату и время
+                                end_date: moment().add(1, 'hours').format('YYYY-MM-DDTHH:mm'), // Добавляем 1 час к текущему времени
+                                priority: eventData.priority, // Передаем приоритет
+                                shared_with: $('#shared_with').val(), // Передаем выбранных пользователей
+                                freq: 'daily',
+                                csrfmiddlewaretoken: '{{ csrf_token }}'
+                            },
+                            success: function (response) {
+                                // Добавляем созданную задачу в календарь
+                                $calendarInstance.addEvent({
+                                    id: response.id,
+                                    title: response.title,
+                                    start: response.start_date,
+                                    end: response.end_date, // Добавляем end_date в календарь
+                                    url: response.url,
+                                    color: response.color // Используем цвет из ответа
+                                });
+                                console.log($('#shared_with').val());
+                                toastr.success('Задача создана!');
+                            },
+                            error: function () {
+                                toastr.error('Ошибка при создании задачи');
+                            }
+                        });
+
+                        // Удаляем элемент, если чекбокс "Удалить после перетаскивания" отмечен
+                        if ($('#RemoveAfterDrop').is(':checked')) {
+                            info.draggedEl.parentNode.removeChild(info.draggedEl);
+                        }
+                    },
+                    events: [
+                        {% for task in repeat_tasks %}
+                            {
+                                id: '{{ task.id }}',
+                                title: '{{ task.title|safe }}', // Используем иконку
+                                rrule: {{ task.rrule|safe }},  // Передаем rrule как строку
+                                url: '{{ task.url }}',
+                                className: 'fc-event-{{ task.color }}'  // Используем приоритет как цвет
+                            },
+                        {% endfor %}
+                    ],
+                    eventContent: function (info) {
+                        var title = info.event.title;
+                        var div = document.createElement('div');
+                        div.className = 'fc-event-title';
+                        div.style.whiteSpace = 'normal'; // Разрешаем перенос строки
+                        div.style.wordWrap = 'break-word'; // Перенос слов
+                        div.style.overflow = 'hidden'; // Скрываем выходящий текст
+                        div.style.textOverflow = 'ellipsis'; // Добавляем многоточие
+                        div.innerHTML = title;
+                        return {domNodes: [div]};
+                    }
+                });
+
+                // Отрисовка календаря
+                $calendarInstance.render();
+
+                // Настройка кнопок календаря под Bootstrap
+                var $calendarButtons = $calendar.find('.fc-header-right > span');
+                $calendarButtons
+                    .filter('.fc-button-prev, .fc-button-today, .fc-button-next')
+                    .wrapAll('<div class="btn-group mt-sm mr-md mb-sm ml-sm"></div>')
+                    .parent()
+                    .after('<br class="hidden"/>');
+
+                $calendarButtons
+                    .not('.fc-button-prev, .fc-button-today, .fc-button-next')
+                    .wrapAll('<div class="btn-group mb-sm mt-sm"></div>');
+
+                $calendarButtons
+                    .attr({'class': 'btn btn-sm btn-default'});
+            };
+
+            // Инициализация календаря и перетаскивания
+            $(function () {
+                initCalendar();
+                initCalendarDragNDrop();
+            });
+
+        }).apply(this, [jQuery]);
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -40,6 +199,7 @@
                 <section class="card">
                     {% include 'customers_app/block_personal_info.html' %}
                     <h1 id="app"></h1>
+                    {% include 'customers_app/block_statistics.html' %}
                 </section>
                 {% if user.is_superuser %}
                     {#                    <section class="card">#}
@@ -141,11 +301,17 @@
                     {#                    </section>#}
                 {% endif %}
             </div>
-            <div class="col-lg-8 col-xl-6">
+            <div class="col-lg-8">
 
                 <div class="tabs">
                     <ul class="nav nav-tabs tabs-primary">
+                        {% if user.is_superuser %}
                         <li class="nav-item active">
+                            <button class="nav-link" data-bs-target="#tasks" data-bs-toggle="tab">Планировщик событий
+                            </button>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
                             <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Лента событий
                             </button>
                         </li>
@@ -169,7 +335,12 @@
                         </li>
                     </ul>
                     <div class="tab-content">
-                        <div id="overview" class="tab-pane active">
+                        <div id="tasks" class="tab-pane active">
+                            <div class="p-3">
+                                <div id="calendar"></div>
+                            </div>
+                        </div>
+                        <div id="overview" class="tab-pane">
                             <div class="p-3">
                                 <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3
                                                 align-items-left font-weight-semibold line-height-1">
@@ -473,9 +644,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-xl-3">
-                {% include 'customers_app/block_statistics.html' %}
-            </div>
+
 
         </div>
         <!-- end: page -->

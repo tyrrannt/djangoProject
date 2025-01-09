@@ -22,7 +22,7 @@
           rel="stylesheet" type="text/css">
 
     <!-- Vendor CSS -->
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/hover/hover.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/hover/hover.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/animate/animate.compat.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/font-awesome/css/all.min.css' %}"/>
@@ -38,17 +38,21 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
 
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/datatables/media/css/dataTables.bootstrap5.css' %}"/>
-{#    <link rel="stylesheet" href="{% static 'admin_templates/css/content-styles.css' %}"  type="text/css"/>#}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}" />
-{% if request.resolver_match.app_name == 'tasks_app' %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/toastr/toastr.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/fullcalendar/fullcalendar.css' %}" />
-{% endif %}
+    {#    <link rel="stylesheet" href="{% static 'admin_templates/css/content-styles.css' %}"  type="text/css"/>#}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
+
+    {% with my_list="tasks_app,customers_app"|split:"," %}
+        {% if request.resolver_match.app_name in my_list %}
+            <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+            <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+            <link rel="stylesheet" href="{% static 'admin_templates/vendor/toastr/toastr.min.css' %}"/>
+            <link rel="stylesheet" href="{% static 'admin_templates/vendor/fullcalendar/fullcalendar.css' %}"/>
+        {% endif %}
+    {% endwith %}
+
 
     <!-- Theme CSS -->
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}" />
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/jstree/themes/default/style.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/css/theme.css' %}"/>
 
     <!-- Skin CSS -->
@@ -76,7 +80,8 @@
     <!-- start: header -->
     <header class="header">
         <div class="logo-container">
-            <a href="{% if user.is_superuser %}/bklproxmoxadmin/{% else %}/users/profile/{{ user.pk }}/{% endif %}" class="logo">
+            <a href="{% if user.is_superuser %}/bklproxmoxadmin/{% else %}/users/profile/{{ user.pk }}/{% endif %}"
+               class="logo">
                 <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Панель администрирования"/>
             </a>
 
@@ -90,19 +95,19 @@
         <!-- start: search & user box -->
         {% block notifications %}
             <div class="header-right">
-{#                <form action="#" class="search nav-form">#}
-{#                    <div class="input-group">#}
-{#                        <input type="text" class="form-control" name="q" id="q" placeholder="Поиск...">#}
-{#                        <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>#}
-{#                    </div>#}
-{#                </form>#}
+                {#                <form action="#" class="search nav-form">#}
+                {#                    <div class="input-group">#}
+                {#                        <input type="text" class="form-control" name="q" id="q" placeholder="Поиск...">#}
+                {#                        <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>#}
+                {#                    </div>#}
+                {#                </form>#}
                 <span class="separator"></span>
                 {% include 'library_app/notifications.html' %}
                 <span class="separator"></span>
                 {% include 'library_app/user-dropdown-menu.html' %}
             </div>
         {% endblock %}
-        
+
         <!-- end: search & user box -->
     </header>
     <!-- end: header -->
@@ -111,11 +116,11 @@
         <!-- start: sidebar -->
         {% block left_menu %}
             <aside id="sidebar-left" class="sidebar-left">
-            <!-- Левое меню -->
-            {% include 'library_app/left_menu.html' %}
+                <!-- Левое меню -->
+                {% include 'library_app/left_menu.html' %}
             </aside>
         {% endblock %}
-        
+
         <!-- end: sidebar -->
         <!-- БЛОК КОНТЕНТА -->
         {% block content %}
@@ -135,23 +140,26 @@
 <script src="{% static 'admin_templates/vendor/popper/umd/popper.min.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
-<script src="{% static 'admin_templates/vendor/bootstrap-datepicker/locales/bootstrap-datepicker.ru.min.js' %}" charset="UTF-8"></script>
+<script src="{% static 'admin_templates/vendor/bootstrap-datepicker/locales/bootstrap-datepicker.ru.min.js' %}"
+        charset="UTF-8"></script>
 <script src="{% static 'admin_templates/vendor/common/common.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/magnific-popup/jquery.magnific-popup.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
-{% if request.resolver_match.app_name == 'tasks_app' %}
-    <script src="{% static 'admin_templates/vendor/jquery-ui/jquery-ui.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/jqueryui-touch-punch/jquery.ui.touch-punch.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/moment/moment.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/fullcalendar/index.global.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.index.global.min.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/fullcalendar/locales-all.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/dropzone/dropzone.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/toastr/toastr.min.js' %}"></script>
-{% endif %}
 
+{% with my_list="tasks_app,customers_app"|split:"," %}
+    {% if request.resolver_match.app_name in my_list %}
+        <script src="{% static 'admin_templates/vendor/jquery-ui/jquery-ui.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/jqueryui-touch-punch/jquery.ui.touch-punch.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/moment/moment.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.min.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/fullcalendar/index.global.min.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/fullcalendar/rrule.index.global.min.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/fullcalendar/locales-all.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/dropzone/dropzone.js' %}"></script>
+        <script src="{% static 'admin_templates/vendor/toastr/toastr.min.js' %}"></script>
+    {% endif %}
+{% endwith %}
 
 <!-- Specific Page Vendor -->
 <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
