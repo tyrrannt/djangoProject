@@ -72,7 +72,7 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(DataBaseUser, CustomUserAdmin)
-admin.site.register(Posts)
+# admin.site.register(Posts)
 admin.site.register(Job)
 admin.site.register(AccessLevel)
 admin.site.register(DataBaseUserProfile)
@@ -104,6 +104,12 @@ class CounteragentAdmin(admin.ModelAdmin):
     search_fields = ("short_name", "inn", "kpp", "ogrn")
     ordering = ('pk',)
 
+@admin.register(Posts)
+class PostsAdmin(admin.ModelAdmin):
+    list_display = ("pk", "post_title", "creation_date", "allowed_placed", "email_send", "post_date_start", "post_date_end")
+    search_fields = ("post_title", "creation_date")
+    ordering = ('pk',)
+    list_filter = ("creation_date", "allowed_placed", "email_send",)
 
 @admin.register(Division)
 class CounteragentAdmin(admin.ModelAdmin):
