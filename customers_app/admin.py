@@ -108,7 +108,7 @@ class CounteragentAdmin(admin.ModelAdmin):
 class PostsAdmin(admin.ModelAdmin):
     list_display = ("pk", "post_title", "creation_date", "allowed_placed", "email_send", "post_date_start", "post_date_end")
     search_fields = ("post_title", "creation_date")
-    ordering = ('pk',)
+    ordering = ('-pk',)
     list_filter = ("creation_date", "allowed_placed", "email_send",)
 
 @admin.register(Division)
