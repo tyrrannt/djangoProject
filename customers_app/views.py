@@ -232,6 +232,33 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             qs = qs.filter(pk=self.request.user.pk)
         return qs
 
+    def get_task_title_with_icon(self, task):
+        """
+        Возвращает название задачи с иконкой в зависимости от приоритета.
+        """
+        if isinstance(task, Task):
+            if task.user != self.request.user:
+                return f'<i class="fas fa-user-friends"></i> {task.title}'
+            if task.priority == 'primary':
+                return f'<i class="fas fa-star"></i> {task.title}'  # Звезда для основного приоритета
+            elif task.priority == 'warning':
+                return f'<i class="fas fa-exclamation-triangle"></i> {task.title}'  # Предупреждение для предупреждающего приоритета
+            elif task.priority == 'info':
+                return f'<i class="fas fa-info-circle"></i> {task.title}'  # Информация для информационного приоритета
+            elif task.priority == 'danger':
+                return f'<i class="fas fa-exclamation-circle"></i> {task.title}'  # Ошибка для опасного приоритета
+            elif task.priority == 'dark':
+                return f'<i class="fas fa-moon"></i> {task.title}'  # Луна для темного приоритета
+            else:
+                return task.title
+        if isinstance(task, Posts):
+            if "День рождения" in task.post_title:
+                return f'<i class="fa fa-cake-candles"></i> {task.post_title}'
+            else:
+                return task.post_title
+
+
+
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
         user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
@@ -295,7 +322,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                                                           tzinfo=datetime.timezone.utc)
 
                 repeat_tasks.append({
-                    'title': item.post_title,  # Получаем название задачи
+                    'title': self.get_task_title_with_icon(item),  # Получаем название задачи
                     'rrule': {
                         'freq': 'daily',  # Используем поле repeat для freq
                         'dtstart': post_date_start.isoformat(),  # Начальная дата с временной зоной
@@ -312,7 +339,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                                                           tzinfo=datetime.timezone.utc)
                 if (self.request.user == item.user) or ( self.request.user in item.shared_with):
                     repeat_tasks.append({
-                        'title': item.title,  # Получаем название задачи
+                        'title': self.get_task_title_with_icon(item),  # Получаем название задачи
                         'rrule': {
                             'freq': 'daily',  # Используем поле repeat для freq
                             'dtstart': task_date_start.isoformat(),  # Начальная дата с временной зоной
