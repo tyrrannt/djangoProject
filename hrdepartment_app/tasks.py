@@ -21,7 +21,7 @@ from loguru import logger
 from administration_app.utils import (
     get_jsons_data_filter2,
     get_date_interval,
-    get_jsons_data_filter, process_group, adjust_time, process_group_year, export_persons_to_csv,
+    get_jsons_data_filter, process_group, adjust_time, process_group_year, export_persons_to_csv, format_name_initials,
 )
 from contracts_app.models import Contract
 
@@ -355,6 +355,7 @@ def happy_birthday():
         except Exception as _ex:
             responsible = DataBaseUser.objects.get(username='proxmox')
         posts_dict = {
+            "post_title": f"День рождения: {format_name_initials(item.title)}",
             "post_description": description,
             "allowed_placed": True,
             "responsible": responsible,
