@@ -45,12 +45,15 @@
                 var m = date.getMonth();
                 var y = date.getFullYear();
 
+                // Определение вида календаря в зависимости от ширины экрана
+                var initialView = $(window).width() < 768 ? 'timeGridDay' : 'dayGridMonth';
+
                 // Создание экземпляра календаря
                 var $calendarInstance = new FullCalendar.Calendar($calendar[0], {
                     themeSystem: 'bootstrap',
                     locale: 'ru',  // Устанавливаем русский язык
                     eventDisplay: 'block',
-                    initialView: 'dayGridMonth', // Начальный вид: неделя с временной сеткой
+                    initialView: initialView, // Начальный вид: неделя с временной сеткой
                     eventOrder: ['start', 'priority'], // Сортировка по времени начала, затем по приоритету
                     // eventOverlap: false, // Запрещаем перекрытие событий
                     slotDuration: '01:00:00', // Интервалы в 1 час
@@ -65,7 +68,7 @@
                     headerToolbar: {
                         start: 'prev,next today',
                         center: 'title',
-                        end: 'timeGridDay,dayGridWeek,dayGridMonth' // Добавляем timeGridDay и timeGridWeek
+                        end: $(window).width() < 768 ? 'timeGridDay' : 'timeGridDay,dayGridWeek,dayGridMonth' // Компактная панель для мобильных
                     },
                     bootstrapFontAwesome: {
                         close: 'fa-times',
@@ -163,6 +166,14 @@
             $(function () {
                 initCalendar();
                 initCalendarDragNDrop();
+            });
+
+            // Обработка изменения размера окна
+            $(window).on('resize', function () {
+                var $calendar = $('#calendar');
+                var calendarInstance = $calendar.fullCalendar('getCalendar');
+                var newView = $(window).width() < 768 ? 'timeGridDay' : 'dayGridMonth';
+                calendarInstance.changeView(newView);
             });
 
         }).apply(this, [jQuery]);
