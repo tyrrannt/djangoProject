@@ -1068,6 +1068,8 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
             to_mail = [recipient.senior_brigade.email, recipient.place.email, ]  # адрес получателя
         case 2:
             to_mail = [recipient.document.person.email, ]
+        case _:
+            to_mail = [recipient, ]
     message = render_to_string(template, context)
     msg = MIMEMultipart()  # Создаем сообщение
     msg["From"] = from_mail  # Добавляем адрес отправителя
@@ -1088,7 +1090,7 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
     try:
         smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
     except Exception as _ex:
-        print(_ex)
+        print("Ошибка", _ex)
     try:
         smtp.login(from_mail, from_passwd)  # Логинимся в свой ящик
         smtp.sendmail(from_mail, to_mail, msg.as_string())  # Отправляем сообщения

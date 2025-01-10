@@ -879,7 +879,7 @@ def vacation_schedule_send():
             # msg.attach_alternative(html_content, "text/html")
             try:
                 send_notification(sender, mail_to, subject_mail, "administration_app/vacation_send.html",
-                                  current_context, attachment='', division=3, document=0)
+                                  current_context, attachment='', division=3, document=3)
                 # res = msg.send()
                 # time.sleep(random.randint(5, 10))
             except Exception as _ex:

@@ -456,7 +456,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '13':
                 save_report.delay()
             if request.GET.get('update') == '14':
-                vacation_schedule_send.delay()
+                # vacation_schedule_send.delay()
+                vacation_schedule_send()
             if request.GET.get('update') == '15':
                 vacation_check.delay()
 
