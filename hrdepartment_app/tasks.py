@@ -794,7 +794,7 @@ def get_vacation():
 
     return logger.info(f"Создано {len(objs)} записей")
 
-
+@app.task()
 def vacation_check():
     obj = VacationSchedule.objects.all()
     for item in obj:
@@ -837,11 +837,12 @@ def vacation_check():
         logger.error(f"Ошибка синхронизации графика отпусков {_ex}")
     return logger.info(f"Создано {len(objs)} записей")
 
-
+@app.task()
 def vacation_schedule_send():
-    employee = DataBaseUser.objects.all().exclude(is_active=False)
+    # employee = DataBaseUser.objects.all().exclude(is_active=False)
+    employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
     for item in employee:
-        get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2024)
+        get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2025)
         message = ""
         for unit in get_vacation_shedule:
             message += f"С {unit.start_date.strftime('%d.%m.%Y')} на {unit.days} календарных дней. <br />"

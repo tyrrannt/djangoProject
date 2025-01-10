@@ -21,7 +21,7 @@ from contracts_app.models import Contract
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Counteragent
 from hrdepartment_app.models import ReportCard
 from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report, \
-    save_report, send_email_notification
+    save_report, send_email_notification, vacation_schedule_send, vacation_check
 
 logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -309,7 +309,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # change_password()
                 result = send_email_notification.delay()
                 # birthday_telegram()
-                #vacation_schedule_send()
+
                 pass
                 #vacation_check()
                 # for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
@@ -455,6 +455,10 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     logger.error(f"Ошибка при получении прав групп: {e}")
             if request.GET.get('update') == '13':
                 save_report.delay()
+            if request.GET.get('update') == '14':
+                vacation_schedule_send.delay()
+            if request.GET.get('update') == '15':
+                vacation_check.delay()
 
         return super().get(request, *args, **kwargs)
 
