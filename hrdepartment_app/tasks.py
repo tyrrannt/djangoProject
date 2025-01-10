@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import datetime
 import json
+import random
+import time
 import urllib.request
 from random import randrange
 import csv
@@ -843,39 +845,41 @@ def vacation_schedule_send():
     employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
     for item in employee:
         get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2025)
-        message = ""
-        for unit in get_vacation_shedule:
-            message += f"С {unit.start_date.strftime('%d.%m.%Y')} на {unit.days} календарных дней. <br />"
-        current_context = {
-            "greetings": "Уважаемый"
-            if item.gender == "male"
-            else "Уважаемая",
-            "person": str(item),
-            "message": message,
-        }
-        print(current_context)
-        logger.debug(f"Email string: {current_context}")
-        text_content = render_to_string(
-            "administration_app/vacation_send.html", current_context
-        )
-        html_content = render_to_string(
-            "administration_app/vacation_send.html", current_context
-        )
-        subject_mail = "График отпусков"
-        mail_to = item.email
-        msg = EmailMultiAlternatives(
-            subject_mail,
-            text_content,
-            EMAIL_HOST_USER,
-            [
-                mail_to,
-            ],
-        )
-        msg.attach_alternative(html_content, "text/html")
-        try:
-            res = msg.send()
-        except Exception as _ex:
-            logger.debug(f"Failed to send email. {_ex}")
+        if len(get_vacation_shedule) > 0:
+            message = ""
+            for unit in get_vacation_shedule:
+                message += f"С {unit.start_date.strftime('%d.%m.%Y')} на {unit.days} календарных дней. <br />"
+            current_context = {
+                "greetings": "Уважаемый"
+                if item.gender == "male"
+                else "Уважаемая",
+                "person": str(item),
+                "message": message,
+            }
+            print(current_context)
+            logger.debug(f"Email string: {current_context}")
+            text_content = render_to_string(
+                "administration_app/vacation_send.html", current_context
+            )
+            html_content = render_to_string(
+                "administration_app/vacation_send.html", current_context
+            )
+            subject_mail = "График отпусков"
+            mail_to = item.email
+            msg = EmailMultiAlternatives(
+                subject_mail,
+                text_content,
+                EMAIL_HOST_USER,
+                [
+                    mail_to,
+                ],
+            )
+            msg.attach_alternative(html_content, "text/html")
+            try:
+                res = msg.send()
+                time.sleep(random.randint(5, 10))
+            except Exception as _ex:
+                logger.debug(f"Failed to send email. {_ex}")
 
 
 @app.task()
