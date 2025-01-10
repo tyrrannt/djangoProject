@@ -24,6 +24,7 @@ from administration_app.utils import (
     get_jsons_data_filter2,
     get_date_interval,
     get_jsons_data_filter, process_group, adjust_time, process_group_year, export_persons_to_csv, format_name_initials,
+    send_notification,
 )
 from contracts_app.models import Contract
 
@@ -841,7 +842,9 @@ def vacation_check():
 
 @app.task()
 def vacation_schedule_send():
-    employee = DataBaseUser.objects.all().exclude(is_active=False)
+    # employee = DataBaseUser.objects.all().exclude(is_active=False)
+    employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
+    sender = DataBaseUser.objects.get(last_name="Кирюшкина")
     for item in employee:
         get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2025)
         if len(get_vacation_shedule) > 0:
@@ -855,28 +858,30 @@ def vacation_schedule_send():
                 "person": str(item),
                 "message": message,
             }
-            print(current_context)
+            # print(current_context)
             logger.debug(f"Email string: {current_context}")
-            text_content = render_to_string(
-                "administration_app/vacation_send.html", current_context
-            )
-            html_content = render_to_string(
-                "administration_app/vacation_send.html", current_context
-            )
+            # text_content = render_to_string(
+            #     "administration_app/vacation_send.html", current_context
+            # )
+            # html_content = render_to_string(
+            #     "administration_app/vacation_send.html", current_context
+            # )
             subject_mail = "График отпусков"
             mail_to = item.email
-            msg = EmailMultiAlternatives(
-                subject_mail,
-                text_content,
-                EMAIL_HOST_USER,
-                [
-                    mail_to,
-                ],
-            )
-            msg.attach_alternative(html_content, "text/html")
+            # msg = EmailMultiAlternatives(
+            #     subject_mail,
+            #     text_content,
+            #     EMAIL_HOST_USER,
+            #     [
+            #         mail_to,
+            #     ],
+            # )
+            # msg.attach_alternative(html_content, "text/html")
             try:
-                res = msg.send()
-                time.sleep(random.randint(5, 10))
+                send_notification(sender, mail_to, subject_mail, "administration_app/vacation_send.html",
+                                  current_context, attachment='', division=3, document=0)
+                # res = msg.send()
+                # time.sleep(random.randint(5, 10))
             except Exception as _ex:
                 logger.debug(f"Failed to send email. {_ex}")
 
