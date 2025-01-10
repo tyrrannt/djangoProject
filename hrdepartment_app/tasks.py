@@ -841,8 +841,7 @@ def vacation_check():
 
 @app.task()
 def vacation_schedule_send():
-    # employee = DataBaseUser.objects.all().exclude(is_active=False)
-    employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
+    employee = DataBaseUser.objects.all().exclude(is_active=False)
     for item in employee:
         get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2025)
         if len(get_vacation_shedule) > 0:
