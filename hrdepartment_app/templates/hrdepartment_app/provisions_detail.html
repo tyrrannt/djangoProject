@@ -183,6 +183,10 @@
                                             {% for item in object.employee.iterator %}{% if forloop.last %}
                                                 {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
                                             {% endif %}{% endfor %}</h4>
+                                        {% if object.doc_file %}
+                                            <h4>Бланк документа: {{ object.doc_file }}</h4>
+                                            <a href="{{ object.doc_file.url }}">Скачать бланк</a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
