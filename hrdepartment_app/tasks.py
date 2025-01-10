@@ -43,9 +43,9 @@ from telegram_app.management.commands.bot import send_message_tg
 from telegram_app.models import TelegramNotification, ChatID
 
 
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
+logger.add("debug_task.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 def xldate_to_datetime(xldate):
