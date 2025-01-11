@@ -344,7 +344,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
                 # Получение неявок на рабочее место.
-                get_sick_leave.delay(2024, 1)
+                get_sick_leave.delay(2025, 1)
                 # report_card_separator_daily(year=2023, month=10, day=30)
                 # vacation_schedule()
                 pass
@@ -418,10 +418,10 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #                     all_records += 1
             if request.GET.get('update') == '7':
                 # Получение неявок на рабочее место.
-                get_sick_leave.delay(2024, 2)
+                get_sick_leave.delay(2025, 2)
             if request.GET.get('update') == '8':
                 # Получение неявок на рабочее место - Отгул
-                get_sick_leave.delay(2024, 3)
+                get_sick_leave.delay(2025, 3)
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
             if request.GET.get('update') == '9':
@@ -434,7 +434,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     except AttributeError:
                         pass
             if request.GET.get('update') == '10':
-                get_vacation.delay(2024)
+                get_vacation.delay()
             if request.GET.get('update') == '11':
                 get_year_report.delay()
             if request.GET.get('update') == '12':
