@@ -434,7 +434,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     except AttributeError:
                         pass
             if request.GET.get('update') == '10':
-                get_vacation.delay()
+                get_vacation.delay(2024)
             if request.GET.get('update') == '11':
                 get_year_report.delay()
             if request.GET.get('update') == '12':
@@ -456,8 +456,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '13':
                 save_report.delay()
             if request.GET.get('update') == '14':
-                # vacation_schedule_send.delay()
-                vacation_schedule_send()
+                vacation_schedule_send.delay()
+                # vacation_schedule_send()
             if request.GET.get('update') == '15':
                 vacation_check.delay()
 

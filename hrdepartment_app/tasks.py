@@ -664,7 +664,7 @@ def get_year_report(html_mode=True):
         return html_table
 
 @app.task()
-def get_vacation():
+def get_vacation(year=None):
     type_of_report = {
         "2": "Ежегодный",
         "3": "Дополнительный ежегодный отпуск",
@@ -681,7 +681,8 @@ def get_vacation():
     }
     all_records = 0
     exclude_list = ["proxmox", "shakirov"]
-    year = datetime.datetime.today().year
+    if not year:
+        year = datetime.datetime.today().year
     for report_record in ReportCard.objects.filter(
             Q(report_card_day__year=year)
             & Q(
