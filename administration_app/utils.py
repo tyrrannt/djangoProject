@@ -1040,9 +1040,7 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
                         if len(search) > 0:
                             if field == 'document__type_trip':
                                 if search.lower() in 'сп':
-
                                     multiply_search = Q(**{'document__type_trip' + '__iregex': "1"})
-                                    print(multiply_search)
                                 elif search.lower() in 'к':
                                     multiply_search = Q(**{'document__type_trip' + '__iregex': "2"})
                                 elif search.lower() in 'сп+':
@@ -1061,11 +1059,11 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
                                     search = "1"
                                 else:
                                     search = "0"
+                                query &= Q(**{field + '__iregex': search})
                             else:
                                 query &= Q(**{field + '__iregex': search})
             counter += 1
         if query:
-            print(query)
             order_list = model_name.objects.filter(query)
         else:
             order_list = model_name.objects.all()
