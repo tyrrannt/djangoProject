@@ -23,6 +23,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core import mail
 from django.core.files.storage import FileSystemStorage
 from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.db import transaction
 from django.db.models import Q, Model
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -39,7 +40,7 @@ from djangoProject.settings import BASE_DIR, MEDIA_ROOT, EMAIL_HOST, EMAIL_IMAP_
     EMAIL_IAS_PASSWORD, EMAIL_FLY_USER, EMAIL_FLY_PASSWORD, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
 
 logger.add(
-    "debug.json",
+    "debug_administration.json",
     format=config("LOG_FORMAT"),
     level=config("LOG_LEVEL"),
     rotation=config("LOG_ROTATION"),
@@ -812,15 +813,41 @@ def change_approval_status(self):
     return ""
 
 
+# def change_password():
+#     count, errors = 0, 0
+#     for item in DataBaseUser.objects.all().exclude(is_superuser=True):
+#         if item.user_work_profile.work_email_password:
+#             item.set_password(item.user_work_profile.work_email_password)
+#             item.save()
+#             count += 1
+#         else:
+#             errors += 1
+#
+#     return count, errors
+
 def change_password():
+    """
+    Изменяет пароли пользователей в базе данных на пароли из профиля пользователя.
+
+    Returns:
+    - tuple: Кортеж, содержащий два значения:
+        - count (int): Количество успешно измененных паролей.
+        - errors (int): Количество пользователей, у которых пароль не был изменен
+          (например, отсутствует work_email_password).
+
+    """
     count, errors = 0, 0
-    for item in DataBaseUser.objects.all().exclude(is_superuser=True):
-        if item.user_work_profile.work_email_password:
-            item.set_password(item.user_work_profile.work_email_password)
-            item.save()
-            count += 1
-        else:
-            errors += 1
+
+    # Используем транзакцию для обеспечения атомарности операции
+    with transaction.atomic():
+        for item in DataBaseUser.objects.filter(is_superuser=False).exclude(user_work_profile__work_email_password__isnull=True):
+            try:
+                item.set_password(item.user_work_profile.work_email_password)
+                item.save()
+                count += 1
+            except Exception as e:
+                errors += 1
+                print(f"Ошибка смены пароля для пользователя {item.username}: {e}")
 
     return count, errors
 
@@ -1337,11 +1364,22 @@ def process_group_interval(group):
 
 
 def seconds_to_hhmm(seconds):
-    hours = int(abs(seconds) // 3600)
-    minutes = int((abs(seconds) % 3600) // 60)
-    if seconds < 0:
-        return f"-{hours:3}:{minutes:02}"
-    return f"{hours:3}:{minutes:02}"
+    """
+    Описание:
+        Функция seconds_to_hhmm преобразует количество секунд в строку, форматированную как "HHH:MM".
+        Если входное значение отрицательное, строка будет начинаться с минуса.
+    Параметры
+        seconds (int): Количество секунд для преобразования. Может быть положительным или отрицательным.
+    Возвращаемое значение
+        str : Строка, представляющая время в формате "HHH:MM". Если входное значение отрицательное, строка будет
+        начинаться с минуса.
+    """
+    is_negative = seconds < 0
+    total_seconds = abs(seconds)
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    sign = "-" if is_negative else ""
+    return f"{sign}{hours:03}:{minutes:02}"
 
 
 def export_persons_to_csv(file_path: str, model):
@@ -1368,7 +1406,17 @@ def export_persons_to_csv(file_path: str, model):
     # Сохраняем DataFrame в CSV-файл
     df.to_csv(file_path, sep=';', index=False, encoding='utf-8', na_rep='')
 
+
 def get_year_suffix(years):
+    """
+        Возвращает правильное окончание для слова "год" в зависимости от числа лет.
+
+        Parameters:
+        - years (int): Количество лет.
+
+        Returns:
+        - str: Окончание для слова "год" ('год', 'года', 'лет').
+        """
     try:
         if years % 10 == 1 and years % 100 != 11:
             return "год"
@@ -1379,7 +1427,18 @@ def get_year_suffix(years):
     except:
         return ""
 
+
 def get_month_suffix(months):
+    """
+        Возвращает правильное окончание для слова "месяц" в зависимости от числа месяцев.
+
+        Parameters:
+        - months (int): Количество месяцев.
+
+        Returns:
+        - str: Окончание для слова "месяц" ('месяц', 'месяца', 'месяцев').
+
+        """
     if months % 10 == 1 and months % 100 != 11:
         return "месяц"
     elif 2 <= months % 10 <= 4 and (months % 100 < 10 or months % 100 >= 20):
@@ -1387,7 +1446,18 @@ def get_month_suffix(months):
     else:
         return "месяцев"
 
+
 def get_day_suffix(days):
+    """
+        Возвращает правильное окончание для слова "день" в зависимости от числа дней.
+
+        Parameters:
+        - days (int): Количество дней.
+
+        Returns:
+        - str: Окончание для слова "день" ('день', 'дня', 'дней').
+
+        """
     if days % 10 == 1 and days % 100 != 11:
         return "день"
     elif 2 <= days % 10 <= 4 and (days % 100 < 10 or days % 100 >= 20):
@@ -1395,13 +1465,28 @@ def get_day_suffix(days):
     else:
         return "дней"
 
+
 def get_today_data_delta(dtstart, trigger):
+    """
+        Возвращает строку с разницей между датой начала и сегодняшней датой в зависимости от триггера.
+
+        Parameters:
+        - dtstart (datetime.date): Дата начала.
+        - trigger (int): Триггер для выбора формата вывода:
+            - 0: Полный формат (годы, месяцы, дни).
+            - 1: Только годы.
+
+        Returns:
+        - str: Строка с разницей между датами в указанном формате.
+
+        """
     start = datetime.combine(dtstart, datetime.min.time())
     until = datetime.today()
     delta = relativedelta.relativedelta(until, start)
-    print(delta)
     match trigger:
         case 0:
             return f"{delta.years} {get_year_suffix(delta.years)} {delta.months} {get_month_suffix(delta.months)} {delta.days} {get_day_suffix(delta.days)}"
         case 1:
             return f"{delta.years} {get_year_suffix(delta.years)}"
+        case _:
+            raise ValueError("Недопустимое значение триггера. Ожидается 0 или 1.")

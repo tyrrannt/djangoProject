@@ -19,9 +19,9 @@ from django.urls import reverse, reverse_lazy
 from customers_app.models import DataBaseUser, Counteragent, CounteragentDocuments
 
 
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
+logger.add("debug_contracts.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
@@ -49,13 +49,18 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         #     # report_card_separator()
         #     return JsonResponse(response)
         # return super().get(request, *args, **kwargs)
+
         access = self.request.user.user_access
         query = (Q(parent_category__isnull=True))& Q(access_id__gte=access)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['actuality', 'contract_number', 'date_conclusion', 'type_of_document__type_document',
                            'type_of_contract__type_contract', 'subject_contract',
                            'contract_counteragent__short_name', ]
-            context = ajax_search(request, self, search_list, Contract, query, contract=True)
+            try:
+                context = ajax_search(request, self, search_list, Contract, query, contract=True)
+            except Exception as e:
+                context = ajax_search(request, self, search_list, Contract, query, contract=True)
+                logger.error(e)
             return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
 
