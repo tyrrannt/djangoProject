@@ -1019,11 +1019,11 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
                             query &= multiply_search
                 else:
                     if field == 'contract_counteragent__short_name':
-                        multiply_search = Q(**{'contract_counteragent__short_name' + '__iregex': search}) | Q(
-                            **{'contract_counteragent__full_name' + '__iregex': search}) | Q(
-                            **{'contract_counteragent__inn' + '__iregex': search})
+                        multiply_search = Q(**{'contract_counteragent__short_name' + '__iregex': search_value}) | Q(
+                            **{'contract_counteragent__full_name' + '__iregex': search_value}) | Q(
+                            **{'contract_counteragent__inn' + '__iregex': search_value})
                     else:
-                        multiply_search = Q(**{field + '__iregex': search})
+                        multiply_search = Q(**{field + '__iregex': search_value})
                     query &= multiply_search
             counter += 1
         if query:
