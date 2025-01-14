@@ -1039,12 +1039,19 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
                     for search in search_list:
                         if len(search) > 0:
                             if field == 'document__type_trip':
-                                if search.lower() in ['сп', 'с', 'п', 'c', 'cg', 'g']:
-                                    search = "1"
-                                elif search.lower() in ['к', 'r']:
-                                    search = "2"
+                                if search.lower() in 'сп':
+                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "1"})
+                                elif search.lower() in 'к':
+                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "2"})
+                                elif search.lower() in 'сп+':
+                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "1"}) & Q(
+                                        **{'document__official_memo_type' + '__iregex': "2"})
+                                elif search.lower() in 'к+':
+                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "2"}) & Q(
+                                        **{'document__official_memo_type' + '__iregex': "2"})
                                 else:
-                                    search = "0"
+                                    multiply_search = Q(**{field + '__iregex': search})
+                                query &= multiply_search
                             if field == 'accommodation':
                                 if search.lower() in "гостиница":
                                     search = "2"
