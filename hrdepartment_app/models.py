@@ -823,6 +823,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             )
         return {
             "pk": self.pk,
+            "document_type": "К" if self.document.type_trip == "2" else "СП",
             "document": str(self.document.title),
             "submit_for_approval": format_name_initials(self.person_executor, self)
             if self.submit_for_approval

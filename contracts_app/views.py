@@ -57,9 +57,9 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                            'type_of_contract__type_contract', 'subject_contract',
                            'contract_counteragent__short_name', ]
             try:
-                context = ajax_search(request, self, search_list, Contract, query, contract=True)
+                context = ajax_search(request, self, search_list, Contract, query, triger=1)
             except Exception as e:
-                context = ajax_search(request, self, search_list, Contract, query, contract=True)
+                context = ajax_search(request, self, search_list, Contract, query, triger=1)
                 logger.error(e)
             return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
@@ -425,6 +425,12 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+
+class ContractDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = Contract
+    permission_required = "contracts_app.delete_contract"
+    success_url = reverse_lazy('library_app:event_list')
 
 
 class ContractPostAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):

@@ -863,12 +863,12 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
                            request.user.user_work_profile.job.division_affiliation.pk)
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            search_list = ['document__title', 'person_executor__title',
+            search_list = ['document__type_trip', 'document__title', 'person_executor__title',
                            'person_agreement__title', 'person_distributor__title',
                            'person_department_staff__title', 'person_accounting__title',
                            'accommodation', 'order__document_number', 'document__comments',
                            ]
-            context = ajax_search(request, self, search_list, ApprovalOficialMemoProcess, query)
+            context = ajax_search(request, self, search_list, ApprovalOficialMemoProcess, query, triger=2)
             return JsonResponse(context, safe=False)
         return super().get(request, *args, **kwargs)
 

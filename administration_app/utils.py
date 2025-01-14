@@ -967,7 +967,7 @@ def make_custom_field(f: forms.Field):
     return f
 
 
-def ajax_search(request, self, field_list, model_name, query, contract=False):
+def ajax_search(request, self, field_list, model_name, query, triger=None):
     """
     Метод для поиска по модели.
     Цель:
@@ -1001,7 +1001,7 @@ def ajax_search(request, self, field_list, model_name, query, contract=False):
     length = int(data.get("length"))
     counter = 0
 
-    if contract:
+    if triger == 1: #Поиск в договорах
         for field in field_list:
             if request.GET.get(f"columns[{counter}][search][value]"):
                 search_value = request.GET.get(f"columns[{counter}][search][value]")
@@ -1025,6 +1025,34 @@ def ajax_search(request, self, field_list, model_name, query, contract=False):
                     else:
                         multiply_search = Q(**{field + '__iregex': search_value})
                     query &= multiply_search
+            counter += 1
+        if query:
+            order_list = model_name.objects.filter(query)
+        else:
+            order_list = model_name.objects.all()
+    elif triger == 2: # Поиск в бизнес-процессах
+        for field in field_list:
+            if request.GET.get(f"columns[{counter}][search][value]"):
+                search_value = request.GET.get(f"columns[{counter}][search][value]")
+                search_list = search_value.split('!')
+                if len(search_list) > 0:
+                    for search in search_list:
+                        if len(search) > 0:
+                            if field == 'document__type_trip':
+                                if search.lower() in ['сп', 'с', 'п', 'c', 'cg', 'g']:
+                                    search = "1"
+                                elif search.lower() in ['к', 'r']:
+                                    search = "2"
+                                else:
+                                    search = "0"
+                            if field == 'accommodation':
+                                if search.lower() in "гостиница":
+                                    search = "2"
+                                elif search.lower() in "квартира":
+                                    search = "1"
+                                else:
+                                    search = "0"
+                            query &= Q(**{field + '__iregex': search})
             counter += 1
         if query:
             order_list = model_name.objects.filter(query)
