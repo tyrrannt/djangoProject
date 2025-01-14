@@ -966,134 +966,193 @@ def make_custom_field(f: forms.Field):
 
     return f
 
-
 def ajax_search(request, self, field_list, model_name, query, triger=None):
     """
-    Метод для поиска по модели.
-    Цель:
-        Метод ajax_search предназначен для выполнения поиска по указанной модели с помощью AJAX-запросов. Он принимает
-        четыре параметра: request, self, field_list, model_name и query.
-    Параметры:
-        request: Объект HTTP-запроса.
-        self: Экземпляр класса, к которому принадлежит этот метод.
-        field_list: Список полей, которые нужно искать в модели.
-        model_name: Имя модели Django, которую нужно искать.
-        query: Строка поиска.
-    Описание метода:
-        Метод ajax_search выполняет следующие задачи:
-        Он получает параметры поиска из AJAX-запроса.
-        Он проходит по списку field_list и применяет строку поиска к каждому полю с помощью ORM-объекта Q.
-        Если строка поиска не пуста, он фильтрует экземпляры модели с помощью метода filter. В противном случае он
-        возвращает все экземпляры модели.
-        Он рассчитывает общее количество записей в таблице и устанавливает ключ recordsTotal в контексте.
-        Он устанавливает ключ draw в контексте в значение текущей страницы.
-        Он устанавливает ключ recordsFiltered в контексте в значение общего количества записей.
-        Он устанавливает ключ iDisplayStart в контексте в значение начальной позиции страницы.
-        Он пагинирует результаты поиска с помощью атрибута paginate_by и устанавливает ключ data в контексте в значение
-        пагинированных результатов.
-    Возвращаемое значение:
-        Метод возвращает словарь, содержащий результаты поиска и метаданные пагинации.
+    Оптимизированный метод для поиска по модели с использованием AJAX-запросов.
     """
-    context = {}
     data = request.GET
-    draw = int(data.get("draw"))
-    start = int(data.get("start"))
-    length = int(data.get("length"))
-    counter = 0
+    draw = int(data.get("draw", 1))
+    start = int(data.get("start", 0))
+    length = int(data.get("length", 10))
+    context = {
+        "draw": draw,
+        "iDisplayStart": start,
+    }
 
-    if triger == 1: #Поиск в договорах
-        for field in field_list:
-            if request.GET.get(f"columns[{counter}][search][value]"):
-                search_value = request.GET.get(f"columns[{counter}][search][value]")
-                search_list = search_value.split('!')
-                if len(search_list) > 1:
-                    for search in search_list:
-                        if len(search) > 0:
-                            if field == 'contract_counteragent__short_name':
-                                multiply_search = Q(
-                                    **{'contract_counteragent__short_name' + '__iregex': search}) | Q(
-                                    **{'contract_counteragent__full_name' + '__iregex': search}) | Q(
-                                    **{'contract_counteragent__inn' + '__iregex': search})
-                            else:
-                                multiply_search = Q(**{field + '__iregex': search})
-                            query &= multiply_search
-                else:
-                    if field == 'contract_counteragent__short_name':
-                        multiply_search = Q(**{'contract_counteragent__short_name' + '__iregex': search_value}) | Q(
-                            **{'contract_counteragent__full_name' + '__iregex': search_value}) | Q(
-                            **{'contract_counteragent__inn' + '__iregex': search_value})
-                    else:
-                        multiply_search = Q(**{field + '__iregex': search_value})
-                    query &= multiply_search
-            counter += 1
-        if query:
-            order_list = model_name.objects.filter(query)
-        else:
-            order_list = model_name.objects.all()
-    elif triger == 2: # Поиск в бизнес-процессах
-        for field in field_list:
-            if request.GET.get(f"columns[{counter}][search][value]"):
-                search_value = request.GET.get(f"columns[{counter}][search][value]")
-                search_list = search_value.split('!')
-                if len(search_list) > 0:
-                    for search in search_list:
-                        if len(search) > 0:
-                            if field == 'document__type_trip':
-                                if search.lower() in 'сп':
-                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "1"})
-                                elif search.lower() in 'к':
-                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "2"})
-                                elif search.lower() in 'сп+':
-                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "1"}) & Q(
-                                        **{'document__official_memo_type' + '__iregex': "2"})
-                                elif search.lower() in 'к+':
-                                    multiply_search = Q(**{'document__type_trip' + '__iregex': "2"}) & Q(
-                                        **{'document__official_memo_type' + '__iregex': "2"})
-                                else:
-                                    multiply_search = Q(**{field + '__iregex': search})
-                                query &= multiply_search
-                            elif field == 'accommodation':
-                                if search.lower() in "гостиница":
-                                    search = "2"
-                                elif search.lower() in "квартира":
-                                    search = "1"
-                                else:
-                                    search = "0"
-                                query &= Q(**{field + '__iregex': search})
-                            else:
-                                query &= Q(**{field + '__iregex': search})
-            counter += 1
-        if query:
-            order_list = model_name.objects.filter(query)
-        else:
-            order_list = model_name.objects.all()
-    else:
-        for field in field_list:
-            if request.GET.get(f"columns[{counter}][search][value]"):
-                search_value = request.GET.get(f"columns[{counter}][search][value]")
-                search_list = search_value.split('!')
-                if len(search_list) > 1:
-                    for search in search_list:
-                        if len(search) > 0:
-                            query &= Q(**{field + '__iregex': search})
-                else:
-                    query &= Q(**{field + '__iregex': request.GET.get(f"columns[{counter}][search][value]")})
-            counter += 1
-        if query:
-            order_list = model_name.objects.filter(query)
-        else:
-            order_list = model_name.objects.all()
+    # Функция для создания Q-объектов для поиска
+    def build_query(field, search_value):
+        if triger == 1 and field == 'contract_counteragent__short_name':
+            return (
+                Q(contract_counteragent__short_name__iregex=search_value) |
+                Q(contract_counteragent__full_name__iregex=search_value) |
+                Q(contract_counteragent__inn__iregex=search_value)
+            )
+        elif triger == 2 and field == 'document__type_trip':
+            if search_value.lower() in 'сп':
+                return Q(document__type_trip__iregex="1")
+            elif search_value.lower() in 'к':
+                return Q(document__type_trip__iregex="2")
+            elif search_value.lower() in 'сп+':
+                return Q(document__type_trip__iregex="1") & Q(document__official_memo_type__iregex="2")
+            elif search_value.lower() in 'к+':
+                return Q(document__type_trip__iregex="2") & Q(document__official_memo_type__iregex="2")
+        elif triger == 2 and field == 'accommodation':
+            if search_value.lower() in "гостиница":
+                return Q(accommodation__iregex="2")
+            elif search_value.lower() in "квартира":
+                return Q(accommodation__iregex="1")
+            else:
+                return Q(accommodation__iregex="0")
+        return Q(**{f"{field}__iregex": search_value})
 
-    total = order_list.count()  # Получаем общее количество записей в таблице
-    context["recordsTotal"] = total  # Общее количество записей в таблице
-    context["draw"] = draw  # Количество записей на странице
-    context["recordsFiltered"] = total  # Общее количество записей в таблице
-    context['iDisplayStart'] = start  # Стартовая позиция
-    order_list = order_list[start:start + length]
-    self.paginate_by = int(length)
+    # Построение общего запроса
+    for counter, field in enumerate(field_list):
+        search_value = data.get(f"columns[{counter}][search][value]")
+        if search_value:
+            search_list = search_value.split('!')
+            for search in search_list:
+                if search:
+                    query &= build_query(field, search)
 
-    context["data"] = [order_item.get_data() for order_item in order_list]
+    # Фильтрация данных
+    order_list = model_name.objects.filter(query) if query else model_name.objects.all()
+
+    # Пагинация и формирование контекста
+    total = order_list.count()
+    context.update({
+        "recordsTotal": total,
+        "recordsFiltered": total,
+        "data": [order_item.get_data() for order_item in order_list[start:start + length]],
+    })
+
     return context
+# def ajax_search(request, self, field_list, model_name, query, triger=None):
+#     """
+#     Метод для поиска по модели.
+#     Цель:
+#         Метод ajax_search предназначен для выполнения поиска по указанной модели с помощью AJAX-запросов. Он принимает
+#         четыре параметра: request, self, field_list, model_name и query.
+#     Параметры:
+#         request: Объект HTTP-запроса.
+#         self: Экземпляр класса, к которому принадлежит этот метод.
+#         field_list: Список полей, которые нужно искать в модели.
+#         model_name: Имя модели Django, которую нужно искать.
+#         query: Строка поиска.
+#     Описание метода:
+#         Метод ajax_search выполняет следующие задачи:
+#         Он получает параметры поиска из AJAX-запроса.
+#         Он проходит по списку field_list и применяет строку поиска к каждому полю с помощью ORM-объекта Q.
+#         Если строка поиска не пуста, он фильтрует экземпляры модели с помощью метода filter. В противном случае он
+#         возвращает все экземпляры модели.
+#         Он рассчитывает общее количество записей в таблице и устанавливает ключ recordsTotal в контексте.
+#         Он устанавливает ключ draw в контексте в значение текущей страницы.
+#         Он устанавливает ключ recordsFiltered в контексте в значение общего количества записей.
+#         Он устанавливает ключ iDisplayStart в контексте в значение начальной позиции страницы.
+#         Он пагинирует результаты поиска с помощью атрибута paginate_by и устанавливает ключ data в контексте в значение
+#         пагинированных результатов.
+#     Возвращаемое значение:
+#         Метод возвращает словарь, содержащий результаты поиска и метаданные пагинации.
+#     """
+#     context = {}
+#     data = request.GET
+#     draw = int(data.get("draw"))
+#     start = int(data.get("start"))
+#     length = int(data.get("length"))
+#     counter = 0
+#
+#     if triger == 1: #Поиск в договорах
+#         for field in field_list:
+#             if request.GET.get(f"columns[{counter}][search][value]"):
+#                 search_value = request.GET.get(f"columns[{counter}][search][value]")
+#                 search_list = search_value.split('!')
+#                 if len(search_list) > 1:
+#                     for search in search_list:
+#                         if len(search) > 0:
+#                             if field == 'contract_counteragent__short_name':
+#                                 multiply_search = Q(
+#                                     **{'contract_counteragent__short_name' + '__iregex': search}) | Q(
+#                                     **{'contract_counteragent__full_name' + '__iregex': search}) | Q(
+#                                     **{'contract_counteragent__inn' + '__iregex': search})
+#                             else:
+#                                 multiply_search = Q(**{field + '__iregex': search})
+#                             query &= multiply_search
+#                 else:
+#                     if field == 'contract_counteragent__short_name':
+#                         multiply_search = Q(**{'contract_counteragent__short_name' + '__iregex': search_value}) | Q(
+#                             **{'contract_counteragent__full_name' + '__iregex': search_value}) | Q(
+#                             **{'contract_counteragent__inn' + '__iregex': search_value})
+#                     else:
+#                         multiply_search = Q(**{field + '__iregex': search_value})
+#                     query &= multiply_search
+#             counter += 1
+#         if query:
+#             order_list = model_name.objects.filter(query)
+#         else:
+#             order_list = model_name.objects.all()
+#     elif triger == 2: # Поиск в бизнес-процессах
+#         for field in field_list:
+#             if request.GET.get(f"columns[{counter}][search][value]"):
+#                 search_value = request.GET.get(f"columns[{counter}][search][value]")
+#                 search_list = search_value.split('!')
+#                 if len(search_list) > 0:
+#                     for search in search_list:
+#                         if len(search) > 0:
+#                             if field == 'document__type_trip':
+#                                 if search.lower() in 'сп':
+#                                     multiply_search = Q(**{'document__type_trip' + '__iregex': "1"})
+#                                 elif search.lower() in 'к':
+#                                     multiply_search = Q(**{'document__type_trip' + '__iregex': "2"})
+#                                 elif search.lower() in 'сп+':
+#                                     multiply_search = Q(**{'document__type_trip' + '__iregex': "1"}) & Q(
+#                                         **{'document__official_memo_type' + '__iregex': "2"})
+#                                 elif search.lower() in 'к+':
+#                                     multiply_search = Q(**{'document__type_trip' + '__iregex': "2"}) & Q(
+#                                         **{'document__official_memo_type' + '__iregex': "2"})
+#                                 else:
+#                                     multiply_search = Q(**{field + '__iregex': search})
+#                                 query &= multiply_search
+#                             elif field == 'accommodation':
+#                                 if search.lower() in "гостиница":
+#                                     search = "2"
+#                                 elif search.lower() in "квартира":
+#                                     search = "1"
+#                                 else:
+#                                     search = "0"
+#                                 query &= Q(**{field + '__iregex': search})
+#                             else:
+#                                 query &= Q(**{field + '__iregex': search})
+#             counter += 1
+#         if query:
+#             order_list = model_name.objects.filter(query)
+#         else:
+#             order_list = model_name.objects.all()
+#     else:
+#         for field in field_list:
+#             if request.GET.get(f"columns[{counter}][search][value]"):
+#                 search_value = request.GET.get(f"columns[{counter}][search][value]")
+#                 search_list = search_value.split('!')
+#                 if len(search_list) > 1:
+#                     for search in search_list:
+#                         if len(search) > 0:
+#                             query &= Q(**{field + '__iregex': search})
+#                 else:
+#                     query &= Q(**{field + '__iregex': request.GET.get(f"columns[{counter}][search][value]")})
+#             counter += 1
+#         if query:
+#             order_list = model_name.objects.filter(query)
+#         else:
+#             order_list = model_name.objects.all()
+#
+#     total = order_list.count()  # Получаем общее количество записей в таблице
+#     context["recordsTotal"] = total  # Общее количество записей в таблице
+#     context["draw"] = draw  # Количество записей на странице
+#     context["recordsFiltered"] = total  # Общее количество записей в таблице
+#     context['iDisplayStart'] = start  # Стартовая позиция
+#     order_list = order_list[start:start + length]
+#     self.paginate_by = int(length)
+#
+#     context["data"] = [order_item.get_data() for order_item in order_list]
+#     return context
 
 
 def send_notification(sender: DataBaseUser, recipient, subject: str, template: str, context: dict,
