@@ -3,11 +3,11 @@ from calendar import monthrange
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from django import forms
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
@@ -28,7 +28,6 @@ from loguru import logger
 from administration_app.models import PortalProperty, Notification
 from administration_app.utils import (
     change_session_context,
-    change_session_queryset,
     change_session_get,
     format_name_initials,
     get_jsons_data,
@@ -89,9 +88,9 @@ from hrdepartment_app.models import (
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
 
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
+logger.add("debug_hrdepartment.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
+           serialize=config('LOG_SERIALIZE'))
 
 
 # Create your views here.

@@ -1,18 +1,11 @@
 import datetime
-import pathlib
 
 from django.db import models
-from django.db.models import F, Max
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.db.models import Max
 from django.urls import reverse
 
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
 from djangoProject import settings
-from djangoProject.settings import BASE_DIR
-
-
-# from hrdepartment_app.models import PlaceProductionActivity
 
 
 def contract_directory_path(instance, filename):
@@ -170,7 +163,8 @@ class ContractModel(models.Model):
     executor = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Исполнитель', on_delete=models.SET_NULL,
                                  null=True,
                                  related_name='contract_executor')
-    doc_file = models.FileField(verbose_name='Файл документа', max_length=150, upload_to=contract_directory_path, blank=True)
+    doc_file = models.FileField(verbose_name='Файл документа', max_length=150, upload_to=contract_directory_path,
+                                blank=True)
     access = models.ForeignKey(AccessLevel, verbose_name='Уровень доступа к документу', on_delete=models.SET_NULL,
                                null=True, default=5)
     allowed_placed = models.BooleanField(verbose_name='Разрешение на публикацию', default=False)
@@ -261,7 +255,6 @@ class Posts(models.Model):
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
     responsible_person = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо',
                                            on_delete=models.SET_NULL, null=True)
-
 
 # class Hotel(models.Model):
 #     """
