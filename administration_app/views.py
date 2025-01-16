@@ -114,42 +114,25 @@ def export_users_to_csv(file_path):
         writer = csv.writer(file, delimiter=';')
 
         # Записываем заголовки
-        headers = [
-            "Name", "FullName", "Description", "Enable", "DataSource", "Authentication",
-            "Role", "Groups", "MailAddress", "EmailForwarding", "ItemLimit", "DiskSizeLimit (kB)",
-            "ConsumedItems", "ConsumedSize (kB)", "OutgoingMessageLimit (kB)", "LastLogin (UTC)",
-            "PublishInGAL", "CleanOutItems", "DomainRestriction"
-        ]
+        headers = ["Name", "Password", "FullName", "Description", "MailAddress", "Groups"]
         writer.writerow(headers)
 
         # Получаем данные из модели DataBaseUser
-        users = DataBaseUser.objects.all().exclude(is_active=False)
+        users = DataBaseUser.objects.select_related('user_work_profile').all()
 
         # Записываем данные для каждого пользователя
         for user in users:
             email = user.email.split('@')[0] if user.email else ''
             full_name = user.get_title()
+            password = user.user_work_profile.work_email_password if user.user_work_profile else ''
 
             row = [
                 email,  # Name
+                password,  # Password
                 full_name,  # FullName
                 "",  # Description
-                "Yes",  # Enable
-                "Internal",  # DataSource
-                "Internal",  # Authentication
-                "No rights",  # Role
-                "",  # Groups
                 email,  # MailAddress
-                "",  # EmailForwarding
-                "",  # ItemLimit
-                "",  # DiskSizeLimit (kB)
-                "",  # ConsumedItems
-                "",  # ConsumedSize (kB)
-                "",  # OutgoingMessageLimit (kB)
-                "",  # LastLogin (UTC)
-                "Yes",  # PublishInGAL
-                "Domain defined",  # CleanOutItems
-                "No"  # DomainRestriction
+                "",  # Groups
             ]
             writer.writerow(row)
 
