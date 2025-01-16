@@ -1,9 +1,8 @@
+import csv
 import datetime
 import json
 
-from celery.bin.control import control
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import MultipleObjectsReturned
 from django.utils.datastructures import MultiValueDictKeyError
 import requests
 from decouple import config
@@ -18,7 +17,7 @@ from loguru import logger
 from administration_app.models import PortalProperty
 from contracts_app.models import Contract
 
-from customers_app.models import DataBaseUser, Groups, Job, AccessLevel, Counteragent
+from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
 from hrdepartment_app.models import ReportCard
 from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report, \
     save_report, send_email_notification, vacation_schedule_send, vacation_check
@@ -107,6 +106,52 @@ def import_data(request):
         error = {'error': 'Не выбран файл'}
         return render(request, 'administration_app/json.html', context=error)
     return render(request, 'administration_app/json.html', context=error)
+
+
+def export_users_to_csv(file_path):
+    # Открываем файл для записи
+    with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, delimiter=';')
+
+        # Записываем заголовки
+        headers = [
+            "Name", "FullName", "Description", "Enable", "DataSource", "Authentication",
+            "Role", "Groups", "MailAddress", "EmailForwarding", "ItemLimit", "DiskSizeLimit (kB)",
+            "ConsumedItems", "ConsumedSize (kB)", "OutgoingMessageLimit (kB)", "LastLogin (UTC)",
+            "PublishInGAL", "CleanOutItems", "DomainRestriction"
+        ]
+        writer.writerow(headers)
+
+        # Получаем данные из модели DataBaseUser
+        users = DataBaseUser.objects.all()
+
+        # Записываем данные для каждого пользователя
+        for user in users:
+            email = user.email.split('@')[0] if user.email else ''
+            full_name = user.get_title()
+
+            row = [
+                email,  # Name
+                full_name,  # FullName
+                "",  # Description
+                "Yes",  # Enable
+                "Internal",  # DataSource
+                "Internal",  # Authentication
+                "No rights",  # Role
+                "",  # Groups
+                email,  # MailAddress
+                "",  # EmailForwarding
+                "",  # ItemLimit
+                "",  # DiskSizeLimit (kB)
+                "",  # ConsumedItems
+                "",  # ConsumedSize (kB)
+                "",  # OutgoingMessageLimit (kB)
+                "",  # LastLogin (UTC)
+                "Yes",  # PublishInGAL
+                "Domain defined",  # CleanOutItems
+                "No"  # DomainRestriction
+            ]
+            writer.writerow(row)
 
     # error = {'error': ''}
     # updated = 0
@@ -460,6 +505,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # vacation_schedule_send()
             if request.GET.get('update') == '15':
                 vacation_check.delay()
+            if request.GET.get('update') == '16':
+                export_users_to_csv('users_export.csv')
 
         return super().get(request, *args, **kwargs)
 
