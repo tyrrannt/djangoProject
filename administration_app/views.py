@@ -123,7 +123,7 @@ def export_users_to_csv(file_path):
         writer.writerow(headers)
 
         # Получаем данные из модели DataBaseUser
-        users = DataBaseUser.objects.all()
+        users = DataBaseUser.objects.all().exclude(is_active=False)
 
         # Записываем данные для каждого пользователя
         for user in users:
