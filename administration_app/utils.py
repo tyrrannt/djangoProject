@@ -1459,24 +1459,49 @@ def process_group_interval(group):
     return group
 
 
+# def seconds_to_hhmm(seconds):
+#     """
+#     Описание:
+#         Функция seconds_to_hhmm преобразует количество секунд в строку, форматированную как "HHH:MM".
+#         Если входное значение отрицательное, строка будет начинаться с минуса.
+#     Параметры
+#         seconds (int): Количество секунд для преобразования. Может быть положительным или отрицательным.
+#     Возвращаемое значение
+#         str : Строка, представляющая время в формате "HHH:MM". Если входное значение отрицательное, строка будет
+#         начинаться с минуса.
+#     """
+#     is_negative = seconds < 0
+#     total_seconds = abs(seconds)
+#     hours = int(total_seconds // 3600)
+#     minutes = int((total_seconds % 3600) // 60)
+#     sign = "-" if is_negative else ""
+#     return f"{sign}{hours:03}:{minutes:02}"
 def seconds_to_hhmm(seconds):
     """
     Описание:
-        Функция seconds_to_hhmm преобразует количество секунд в строку, форматированную как "HHH:MM".
+        Функция seconds_to_hhmm преобразует количество секунд в строку, форматированную как "HH:MM".
         Если входное значение отрицательное, строка будет начинаться с минуса.
-    Параметры
-        seconds (int): Количество секунд для преобразования. Может быть положительным или отрицательным.
-    Возвращаемое значение
-        str : Строка, представляющая время в формате "HHH:MM". Если входное значение отрицательное, строка будет
-        начинаться с минуса.
-    """
-    is_negative = seconds < 0
-    total_seconds = abs(seconds)
-    hours = total_seconds // 3600
-    minutes = (total_seconds % 3600) // 60
-    sign = "-" if is_negative else ""
-    return f"{sign}{hours:03}:{minutes:02}"
+        Количество символов в часах зависит от их значения (например, 1 → "01", 10 → "10").
 
+    Параметры:
+        seconds (int): Количество секунд для преобразования. Может быть положительным или отрицательным.
+
+    Возвращаемое значение:
+        str: Строка, представляющая время в формате "HH:MM" (или "-HH:MM" для отрицательных значений).
+    """
+    # Определяем знак и абсолютное значение секунд
+    sign = "-" if seconds < 0 else ""
+    total_seconds = abs(seconds)
+
+    # Вычисляем часы и минуты
+    hours = int(total_seconds // 3600)
+    minutes = int((total_seconds % 3600) // 60)
+
+    # Форматируем часы с динамическим количеством символов
+    hours_str = f"{hours:01}"  # Всегда минимум 2 символа (например, 1 → "01", 10 → "10")
+
+    # Возвращаем отформатированную строку
+    return f"{sign}{hours_str}:{minutes:02}"
 
 def export_persons_to_csv(file_path: str, model):
     """
@@ -1586,3 +1611,5 @@ def get_today_data_delta(dtstart, trigger):
             return f"{delta.years} {get_year_suffix(delta.years)}"
         case _:
             raise ValueError("Недопустимое значение триггера. Ожидается 0 или 1.")
+
+

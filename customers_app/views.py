@@ -418,6 +418,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # field names
                 fields = ["Дата", "Start", "End", "Type"]
 
+
                 # Создание DataFrame
                 df = pd.DataFrame(report_card_list, columns=fields)
                 # Преобразование столбцов в нужные типы данных
@@ -439,6 +440,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(name="Time")
                 df = df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(drop=True)
+
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
                 type_of_report = {
                     1: "Явка",
@@ -476,6 +478,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 df['Интервал'] = df['Интервал'].fillna('0:00-0:00')
                 df['Time'] = df['Time'].fillna(0)
+                df['Type'] = df['Type'].fillna(100)
 
 
                 # Фильтрация DataFrame по условию Тип = NaN
@@ -489,16 +492,14 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df.update(filtered_df)
 
                 # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
-                df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
+                df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20, 100] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
 
                 # Вычисление разности между временем введенным и временем по производственному календарю
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
-
                 # Получение общей суммы времени за все дни
                 total_time = df['Time'].sum()
                 # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
-                print(total_time, norm_time*3600)
                 delta = (total_time - norm_time*3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
 
@@ -546,7 +547,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df['Тип'] = df['Тип'].fillna(' ')
                 # Выводим строковое представление интервала
                 # df = df.sort_values(by=['Дата'])
-
+                print(df.head(31), '\n')
                 df.style.background_gradient(cmap='viridis')
                 html = df[["Дата", "Интервал", "+/-", "Тип"]].to_html(
                     classes='table table-light table-striped-columns table-hover table-bordered mb-0',

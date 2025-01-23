@@ -2298,6 +2298,46 @@ class WeekendDay(models.Model):
         return str(self.weekend_day)
 
 
+# def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
+#     """
+#     Подсчет количества рабочих часов в указанном дне
+#     Если переменная trigger=False, то возвращается количество рабочих часов в указанном дне, иначе - возвращается тип
+#     дня (П - Праздник, В - Выходной, НБ - Не было на работе)
+#     Если передается переменная type_of_day, то если она равна 14 и 15, то возвращается обычный рабочий день
+#     """
+#     preholiday_day_count = PreHolidayDay.objects.filter(preholiday_day=day)
+#     weekend_day_count = WeekendDay.objects.filter(weekend_day=day).count()
+#     if weekend_day_count == 0:
+#         if preholiday_day_count.count() > 0:
+#             if trigger:
+#                 return 'Не было на работе'
+#             return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
+#         else:
+#             if day.weekday() == 4:
+#                 if trigger:
+#                     return 'Не было на работе'
+#                 return 27000
+#             elif day.weekday() < 4:
+#                 if trigger:
+#                     return 'Не было на работе'
+#                 return 30600
+#             else:
+#                 if trigger:
+#                     return 'Выходной'
+#                 if type_of_day in [14, 15]:
+#                     return 30600
+#                 return 0
+#     else:
+#         if trigger:
+#             return 'Праздничный день'
+#         if type_of_day in [14, 15]:
+#             if preholiday_day_count.count() > 0:
+#                 return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
+#             else:
+#                 return 30600
+#         if type_of_day == None:
+#             return 30600
+#         # return 0
 def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
     """
     Подсчет количества рабочих часов в указанном дне
@@ -2305,38 +2345,33 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
     дня (П - Праздник, В - Выходной, НБ - Не было на работе)
     Если передается переменная type_of_day, то если она равна 14 и 15, то возвращается обычный рабочий день
     """
-    preholiday_day_count = PreHolidayDay.objects.filter(preholiday_day=day)
-    weekend_day_count = WeekendDay.objects.filter(weekend_day=day).count()
-    if weekend_day_count == 0:
-        if preholiday_day_count.count() > 0:
-            if trigger:
-                return 'Не было на работе'
-            return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
-        else:
-            if day.weekday() == 4:
-                if trigger:
-                    return 'Не было на работе'
-                return 27000
-            elif day.weekday() < 4:
-                if trigger:
-                    return 'Не было на работе'
-                return 30600
-            else:
-                if trigger:
-                    return 'Выходной'
-                if type_of_day in [14, 15]:
-                    return 30600
-                return 0
-    else:
+    # Константы для времени в секундах
+    WORK_DAY_TIME = 30600  # 8 часов 30 минут
+    SHORT_DAY_TIME = 27000  # 7 часов 30 минут
+
+    # Проверка на праздничный день
+    if WeekendDay.objects.filter(weekend_day=day).exists():
         if trigger:
             return 'Праздничный день'
-        if type_of_day in [14, 15]:
-            if preholiday_day_count.count() > 0:
-                return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
-            else:
-                return 30600
-        return 0
+        return WORK_DAY_TIME if type_of_day in [14, 15] else 0
 
+    # Проверка на предпраздничный день
+    preholiday_day = PreHolidayDay.objects.filter(preholiday_day=day).first()
+    if preholiday_day:
+        if trigger:
+            return 'Не было на работе'
+        return preholiday_day.work_time.hour * 3600 + preholiday_day.work_time.minute * 60
+
+    # Проверка на обычный рабочий день
+    if day.weekday() < 5:  # Понедельник - Пятница
+        if trigger:
+            return 'Не было на работе'
+        return SHORT_DAY_TIME if day.weekday() == 4 else WORK_DAY_TIME
+
+    # Выходной день
+    if trigger:
+        return 'Выходной'
+    return WORK_DAY_TIME if type_of_day in [14, 15] else 0
 
 class ProductionCalendar(models.Model):
     """
@@ -2399,13 +2434,16 @@ class ProductionCalendar(models.Model):
         last_day = last_day - datetime.timedelta(days=1)
         preholiday_time, day_count, preholiday_day_count, friday_count = 0, 0, 0, 0
 
-        preholiday_day = PreHolidayDay.objects.filter(
-            preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
-        preholiday_day_list = []
-        for item in preholiday_day:
-            preholiday_day_list.append(item.preholiday_day)
-        for days in rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day):
+        # preholiday_day = PreHolidayDay.objects.filter(
+        #     preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
+        # weekday_day = WeekendDay.objects.filter(
+        #     weekend_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
+        preholiday_day_list = [item.preholiday_day for item in PreHolidayDay.objects.filter(preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))]
+        weekday_day_list = [item.weekend_day for item in WeekendDay.objects.filter(weekend_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))]
 
+        # for item in preholiday_day:
+        #     preholiday_day_list.append(item.preholiday_day)
+        for days in rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day):
             if datetime.date(days.year, days.month, days.day) in preholiday_day_list:
                 preholiday_day_count += 1
 
@@ -2415,13 +2453,15 @@ class ProductionCalendar(models.Model):
                     preholiday_time += day.work_time.hour + 1 + day.work_time.minute / 60
                 else:
                     preholiday_time += day.work_time.hour + day.work_time.minute / 60
-
+            elif datetime.date(days.year, days.month, days.day) in weekday_day_list:
+                pass
             else:
                 if days.weekday() == 4:
                     friday_count += 1
                     day_count += 1
                 elif days.weekday() < 4:
                     day_count += 1
+
         return (day_count * 8) + (day_count / 2) - friday_count - (preholiday_day_count * 8.5 - preholiday_time)
 
     def get_norm_time(self):
