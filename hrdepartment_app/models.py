@@ -2434,15 +2434,11 @@ class ProductionCalendar(models.Model):
         last_day = last_day - datetime.timedelta(days=1)
         preholiday_time, day_count, preholiday_day_count, friday_count = 0, 0, 0, 0
 
-        # preholiday_day = PreHolidayDay.objects.filter(
-        #     preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
-        # weekday_day = WeekendDay.objects.filter(
-        #     weekend_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))
-        preholiday_day_list = [item.preholiday_day for item in PreHolidayDay.objects.filter(preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))]
-        weekday_day_list = [item.weekend_day for item in WeekendDay.objects.filter(weekend_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))]
+        preholiday_day_list = [item.preholiday_day for item in PreHolidayDay.objects.filter(
+            preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))]
+        weekday_day_list = [item.weekend_day for item in WeekendDay.objects.filter(
+            weekend_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))]
 
-        # for item in preholiday_day:
-        #     preholiday_day_list.append(item.preholiday_day)
         for days in rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day):
             if datetime.date(days.year, days.month, days.day) in preholiday_day_list:
                 preholiday_day_count += 1

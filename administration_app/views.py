@@ -136,6 +136,65 @@ def export_users_to_csv(file_path):
             ]
             writer.writerow(row)
 
+def new_export_users_to_csv(file_path):
+    # Открываем файл для записи
+    with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, delimiter=';')
+
+        # Записываем заголовки
+        headers = [
+            "Порядковый номер", "Подразделение", "Табельный номер", "Фамилия", "Имя", "Отчество",
+            "Дата рождения", "Должность", "Email"
+        ]
+        writer.writerow(headers)
+
+        # Получаем данные из модели DataBaseUser с предварительной выборкой связанных данных
+        users = DataBaseUser.objects.select_related(
+            'user_work_profile', 'user_work_profile__divisions', 'user_work_profile__job'
+        ).filter(is_active=True).order_by('user_work_profile__divisions__code', 'last_name')
+
+        # Счетчик для порядкового номера
+        counter = 1
+
+        # Переменная для хранения текущего подразделения
+        current_division = None
+
+        # Записываем данные для каждого пользователя
+        for user in users:
+            # Получаем данные из связанных моделей
+            work_profile = user.user_work_profile
+            division = work_profile.divisions.name if work_profile and work_profile.divisions else "Не указано"
+            job = work_profile.job.name if work_profile and work_profile.job else "Не указано"
+            service_number = user.service_number if user.service_number else "Не указано"
+            surname = user.surname if user.surname else ""
+            first_name = user.first_name if user.first_name else ""
+            last_name = user.last_name if user.last_name else ""
+            birthday = user.birthday.strftime("%d.%m.%Y") if user.birthday else "Не указано"
+            email = user.email if user.email else "Не указано"
+
+            # Если подразделение изменилось, добавляем пустую строку для разделения
+            if division != current_division:
+                writer.writerow([])  # Пустая строка для разделения
+                current_division = division
+
+            # Формируем строку для записи в CSV
+            row = [
+                counter,  # Порядковый номер
+                division,  # Подразделение
+                service_number,  # Табельный номер
+                last_name,  # Фамилия
+                first_name,  # Имя
+                surname,  # Отчество
+                birthday,  # Дата рождения
+                job,  # Должность
+                email,  # Email
+            ]
+            writer.writerow(row)
+
+            # Увеличиваем счетчик
+            counter += 1
+
+
     # error = {'error': ''}
     # updated = 0
     # create = 0
@@ -489,7 +548,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '15':
                 vacation_check.delay()
             if request.GET.get('update') == '16':
-                export_users_to_csv('users_export.csv')
+                new_export_users_to_csv('users_export.csv')
 
         return super().get(request, *args, **kwargs)
 
