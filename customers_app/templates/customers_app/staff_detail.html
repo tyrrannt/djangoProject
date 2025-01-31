@@ -342,6 +342,11 @@
                     </div>
                 {% endif %}
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                    <a href="{% url 'customers_app:generate_config_file' %}" class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"><i class="bx bx-edit text-4 me-2"></i>Скачать конфигурацию</a>
+                </div>
+
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                     <a href="{% url 'customers_app:avatar_update' object.pk %}"
                        class="btn btn-outline-success btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">

@@ -18,12 +18,13 @@ from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models.signals import post_save
+from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse, QueryDict, HttpResponse
-from django.shortcuts import render, HttpResponseRedirect, redirect
+from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
 
 from administration_app.models import PortalProperty
@@ -55,6 +56,7 @@ logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
            serialize=config('LOG_SERIALIZE'))
 
+
 @login_required
 def lock_screen(request):
     if request.method == 'POST':
@@ -64,7 +66,7 @@ def lock_screen(request):
         if user is not None:
             auth.login(request, user)
             request.session['locked'] = False  # Снимаем блокировку
-            return redirect('customers_app:profile', pk=request.user.pk)# Перенаправляем на страницу профиля
+            return redirect('customers_app:profile', pk=request.user.pk)  # Перенаправляем на страницу профиля
         else:
             return render(request, 'customers_app/lock_screen.html', {'error': 'Неверный пароль'})
     request.session['locked'] = True  # Устанавливаем блокировку
@@ -257,8 +259,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             else:
                 return task.post_title
 
-
-
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
         user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
@@ -333,7 +333,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 })
             elif isinstance(item, Task):  # Проверяем, является ли элемент объектом Task
                 # Обработка для tasks_list
-                if (self.request.user == item.user) or ( self.request.user in item.shared_with.iterator()):
+                if (self.request.user == item.user) or (self.request.user in item.shared_with.iterator()):
                     repeat_tasks.append({
                         'title': self.get_task_title_with_icon(item),  # Получаем название задачи
                         'rrule': {
@@ -389,11 +389,12 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     safe=False)
                 """
                 # Определяем текущую дату
-                current_date = datetime.datetime.today() #- datetime.timedelta(days=1)
+                current_date = datetime.datetime.today()  #- datetime.timedelta(days=1)
                 # Определяем начальную дату как первый день текущего месяца
                 start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 # Генерируем диапазон дат с начала месяца до текущего дня
-                norm_time_date = ProductionCalendar.objects.get(calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
+                norm_time_date = ProductionCalendar.objects.get(
+                    calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     # Если текущий месяц и текущая дата совпадают, то диапазон дат с начала месяца до текущего дня.
                     dates = list(rrule(DAILY, dtstart=start_date, until=current_date))
@@ -406,18 +407,20 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     if int(report_month) == 12:
                         end_date = datetime.datetime(int(report_year), 12, 31)
                     else:
-                        end_date = datetime.datetime(int(report_year), int(report_month) + 1, 1) - datetime.timedelta(days=1)
-                    dates = list(rrule(DAILY, dtstart=datetime.datetime(year=int(report_year), month=int(report_month), day=1, hour=0, minute=0, second=0), until=end_date))
+                        end_date = datetime.datetime(int(report_year), int(report_month) + 1, 1) - datetime.timedelta(
+                            days=1)
+                    dates = list(rrule(DAILY,
+                                       dtstart=datetime.datetime(year=int(report_year), month=int(report_month), day=1,
+                                                                 hour=0, minute=0, second=0), until=end_date))
                 report_card_list = []
 
-
-                for report_record in ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day__in=dates)):
+                for report_record in ReportCard.objects.filter(
+                        Q(employee=self.request.user) & Q(report_card_day__in=dates)):
                     report_card_list.append(
                         [report_record.report_card_day, report_record.start_time,
                          report_record.end_time, report_record.record_type])
                 # field names
                 fields = ["Дата", "Start", "End", "Type"]
-
 
                 # Создание DataFrame
                 df = pd.DataFrame(report_card_list, columns=fields)
@@ -432,7 +435,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 # Вычисление разности между End и Start и сохранение в новом столбце Time
 
-                df["Time"] = (df["End"] - df["Start"]).apply(lambda x: x.total_seconds() if x.total_seconds() > 0 else 0)   # В часах
+                df["Time"] = (df["End"] - df["Start"]).apply(
+                    lambda x: x.total_seconds() if x.total_seconds() > 0 else 0)  # В часах
                 # Группируем по дате и применяем функцию
 
                 df = df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
@@ -480,7 +484,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df['Time'] = df['Time'].fillna(0)
                 df['Type'] = df['Type'].fillna(100)
 
-
                 # Фильтрация DataFrame по условию Тип = NaN
                 filtered_df = df[df['Тип'].isna()]
 
@@ -492,7 +495,9 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df.update(filtered_df)
 
                 # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
-                df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20, 100] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
+                df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20,
+                                                                                     100] else get_norm_time_at_custom_day(
+                    row['Дата'], type_of_day=row['Type']), axis=1)
 
                 # Вычисление разности между временем введенным и временем по производственному календарю
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
@@ -500,13 +505,15 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 total_time = df['Time'].sum()
                 # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
                 df['+/-'] = df['+/-'].apply(seconds_to_hhmm)
-                delta = (total_time - norm_time*3600)
+                delta = (total_time - norm_time * 3600)
                 total_time_hhmm = seconds_to_hhmm(delta)
 
                 # Блок для ввода в таблицу строки за текущий день. Если дата равна текущей, то добавляем в dataframe строку с текущей датой
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
-                    report_card_day = ReportCard.objects.filter(Q(employee=self.request.user)&Q(report_card_day=datetime.datetime.today())).values_list('report_card_day', 'start_time',
-                         'end_time', 'record_type')
+                    report_card_day = ReportCard.objects.filter(
+                        Q(employee=self.request.user) & Q(report_card_day=datetime.datetime.today())).values_list(
+                        'report_card_day', 'start_time',
+                        'end_time', 'record_type')
                     if len(report_card_day) > 0:
                         end_time = 'по н.в.'
                         current_df = pd.DataFrame(report_card_day, columns=fields)
@@ -517,7 +524,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                         current_df["Time"] = (current_df["End"] - current_df["Start"]).dt.total_seconds()
                         # Группируем по дате и применяем функцию
                         current_df = current_df.groupby('Дата').apply(process_group_interval).reset_index(drop=True)
-                        current_df = current_df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(drop=True)
+                        current_df = current_df.groupby(["Дата", "Интервал"]).apply(process_group).reset_index(
+                            drop=True)
                         start_interval = (current_df["Интервал"][0].split('-'))[0]
                         total_row = pd.DataFrame({
                             'Дата': [current_df["Дата"][0].strftime('%d.%m.%Y')],
@@ -534,7 +542,6 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                         })
                         total_row["Дата"] = pd.to_datetime(total_row["Дата"], format="%d.%m.%Y")
                         # df = pd.concat([df, total_row], ignore_index=True)
-
 
                 # Добавляем новую строку с суммой в конец DataFrame
                 total_row = pd.DataFrame({
@@ -580,6 +587,7 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
     model = DataBaseUser
     form_class = ChangeAvatarUpdateForm
     template_name = 'customers_app/change_avatar.html'
+
 
 # def change_password(request):
 #
@@ -636,7 +644,6 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
 #             url_match = reverse('customers_app:profile', kwargs={"pk": self.request.user.pk})
 #             return redirect(url_match)
 #         return super(DataBaseUserUpdate, self).get(request, *args, **kwargs)
-
 
 
 def login(request):
@@ -907,7 +914,6 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                     user.is_active = False
                     user.save()
 
-
         if self.request.GET.get('update') == '2':
             get_identity_documents()
 
@@ -977,7 +983,8 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
                     user_object.save()
                     pk = user_object.pk
                     send_email_single_notification.delay(pk)
-                    context['pass_change'] = f'Для сотрудника: {FIO_format(user_object.title)} изменен пароль для входа на корпоративный сайт, на: {user_object.user_work_profile.work_email_password}, успешно. Письмо с учетными данными отправлено сотруднику на почту.'
+                    context[
+                        'pass_change'] = f'Для сотрудника: {FIO_format(user_object.title)} изменен пароль для входа на корпоративный сайт, на: {user_object.user_work_profile.work_email_password}, успешно. Письмо с учетными данными отправлено сотруднику на почту.'
                 else:
                     context['pass_change'] = 'Отсутствует пароль!'
 
@@ -1482,3 +1489,33 @@ class CounteragentDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, U
                 refresh_form.description = filename.split('/')[-1]
             refresh_form.save()
         return super().form_valid(form)
+
+
+@login_required
+def generate_config_file(request):
+    user = request.user  # Получаем текущего пользователя
+
+    # Если ваш пользователь не связан напрямую с базовой моделью пользователя Django,
+    # вам нужно будет получить его через связь, например:
+    # db_user = get_object_or_404(DataBaseUser, ref_key=user.ref_key)
+
+    db_user = get_object_or_404(DataBaseUser, email=user.email)  # Пример получения объекта по email
+
+    # Определите контекст для замены плейсхолдеров
+    context = {
+        'ref_key': db_user.ref_key,
+        'email': db_user.email,
+        'title': db_user.title,
+    }
+
+    # Загрузите шаблон XML
+    xml_content = render_to_string('customers_app/k9settings_template.xml', context)
+
+    # Сформируйте имя файла на основе ref_key
+    filename = f'thunderbird_settings_{db_user.ref_key}.k9s'
+
+    # Создайте ответ для скачивания файла
+    response = HttpResponse(xml_content, content_type='application/xml')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response

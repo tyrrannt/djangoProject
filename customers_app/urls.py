@@ -78,6 +78,7 @@ urlpatterns = [
     path('lock-screen/', lock_screen, name='lock_screen'),
     path('generate_qr_code/<path:current_url>/', views.generate_qr_code, name='generate_qr_code'),
     path('auth_with_token/', views.auth_with_token, name='auth_with_token'),
+    path('generate-config/', views.generate_config_file, name='generate_config_file'),
     # path(
     #     "password/<int:pk>/update/",
     #     views.ChangeAvatarUpdate.as_view(),
