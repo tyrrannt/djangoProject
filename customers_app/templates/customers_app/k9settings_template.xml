@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<k9settings version="101" format="1">
+  <accounts>
+    <account uuid="{{ ref_key }}">
+      <name>{{ email }}</name>
+      <incoming-server type="IMAP">
+        <host>imap.barkol.ru</host>
+        <port>993</port>
+        <connection-security>SSL_TLS_REQUIRED</connection-security>
+        <authentication-type>PLAIN</authentication-type>
+        <username>{{ email }}</username>
+        <extra>
+          <value key="autoDetectNamespace">true</value>
+          <value key="pathPrefix" />
+        </extra>
+      </incoming-server>
+      <outgoing-server type="SMTP">
+        <host>sm.barkol.ru</host>
+        <port>465</port>
+        <connection-security>SSL_TLS_REQUIRED</connection-security>
+        <authentication-type>PLAIN</authentication-type>
+        <username>{{ email }}</username>
+      </outgoing-server>
+      <settings>
+        <value key="alwaysShowCcBcc">false</value>
+        <value key="archiveFolderSelection">AUTOMATIC</value>
+        <value key="autocryptMutualMode">false</value>
+        <value key="automaticCheckIntervalMinutes">60</value>
+        <value key="chipColor">#1976d2</value>
+        <value key="defaultQuotedTextShown">true</value>
+        <value key="deletePolicy">DELETE</value>
+        <value key="displayCount">100</value>
+        <value key="draftsFolderSelection">AUTOMATIC</value>
+        <value key="expungePolicy">EXPUNGE_IMMEDIATELY</value>
+        <value key="idleRefreshMinutes">24</value>
+        <value key="ignoreChatMessages">false</value>
+        <value key="markMessageAsReadOnDelete">true</value>
+        <value key="markMessageAsReadOnView">true</value>
+        <value key="maxPushFolders">10</value>
+        <value key="maximumAutoDownloadMessageSize">131072</value>
+        <value key="maximumPolledMessageAge">-1</value>
+        <value key="messageFormat">HTML</value>
+        <value key="messageFormatAuto">false</value>
+        <value key="messageReadReceipt">false</value>
+        <value key="notificationLight">Disabled</value>
+        <value key="notifyContactsMailOnly">false</value>
+        <value key="notifyMailCheck">false</value>
+        <value key="notifyNewMail">true</value>
+        <value key="notifySelfNewMail">true</value>
+        <value key="openPgpEncryptAllDrafts">false</value>
+        <value key="openPgpEncryptSubject">false</value>
+        <value key="openPgpHideSignOnly">false</value>
+        <value key="quotePrefix">&gt;</value>
+        <value key="quoteStyle">PREFIX</value>
+        <value key="remoteSearchFullText">false</value>
+        <value key="remoteSearchNumResults">25</value>
+        <value key="replyAfterQuote">false</value>
+        <value key="ring">true</value>
+        <value key="ringtone">content://settings/system/notification_sound</value>
+        <value key="sendClientInfo">true</value>
+        <value key="sentFolderSelection">AUTOMATIC</value>
+        <value key="showPicturesEnum">NEVER</value>
+        <value key="signatureBeforeQuotedText">false</value>
+        <value key="sortAscending">false</value>
+        <value key="sortTypeEnum">SORT_DATE</value>
+        <value key="spamFolderSelection">AUTOMATIC</value>
+        <value key="stripSignature">true</value>
+        <value key="subscribedFoldersOnly">false</value>
+        <value key="syncRemoteDeletions">true</value>
+        <value key="trashFolderSelection">AUTOMATIC</value>
+        <value key="uploadSentMessages">true</value>
+        <value key="useCompression">true</value>
+        <value key="vibrate">false</value>
+        <value key="vibratePattern">0</value>
+        <value key="vibrateTimes">5</value>
+        <value key="autoExpandFolderName">INBOX</value>
+        <value key="draftsFolderName">Drafts</value>
+        <value key="sentFolderName">Sent Items</value>
+        <value key="spamFolderName">Junk E-mail</value>
+        <value key="trashFolderName">Deleted Items</value>
+      </settings>
+      <identities>
+        <identity>
+          <name>{{ title }}</name>
+          <email>{{ email }}</email>
+          <description>Основная роль</description>
+          <settings>
+            <value key="signatureUse">false</value>
+          </settings>
+        </identity>
+      </identities>
+      <folders>
+        <folder name="INBOX">
+          <value key="integrate">true</value>
+          <value key="inTopGroup">false</value>
+          <value key="syncEnabled">true</value>
+          <value key="visible">true</value>
+          <value key="notificationsEnabled">true</value>
+          <value key="pushEnabled">false</value>
+        </folder>
+      </folders>
+    </account>
+  </accounts>
+</k9settings>
