@@ -52,7 +52,7 @@ from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, Re
 from hrdepartment_app.tasks import send_email_single_notification
 from tasks_app.models import Task
 
-logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
+logger.add("debug_users.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
            serialize=config('LOG_SERIALIZE'))
 
@@ -1493,29 +1493,32 @@ class CounteragentDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, U
 
 @login_required
 def generate_config_file(request):
-    user = request.user  # Получаем текущего пользователя
+    try:
+        user = request.user  # Получаем текущего пользователя
 
-    # Если ваш пользователь не связан напрямую с базовой моделью пользователя Django,
-    # вам нужно будет получить его через связь, например:
-    # db_user = get_object_or_404(DataBaseUser, ref_key=user.ref_key)
+        # Если ваш пользователь не связан напрямую с базовой моделью пользователя Django,
+        # вам нужно будет получить его через связь, например:
+        # db_user = get_object_or_404(DataBaseUser, ref_key=user.ref_key)
 
-    db_user = get_object_or_404(DataBaseUser, email=user.email)  # Пример получения объекта по email
+        db_user = get_object_or_404(DataBaseUser, email=user.email)  # Пример получения объекта по email
 
-    # Определите контекст для замены плейсхолдеров
-    context = {
-        'ref_key': db_user.ref_key,
-        'email': db_user.email,
-        'title': db_user.title,
-    }
+        # Определите контекст для замены плейсхолдеров
+        context = {
+            'ref_key': db_user.ref_key,
+            'email': db_user.email,
+            'title': db_user.title,
+        }
 
-    # Загрузите шаблон XML
-    xml_content = render_to_string('customers_app/k9settings_template.xml', context)
+        # Загрузите шаблон XML
+        xml_content = render_to_string('customers_app/k9settings_template.xml', context)
 
-    # Сформируйте имя файла на основе ref_key
-    filename = f'thunderbird_settings_{db_user.ref_key}.k9s'
+        # Сформируйте имя файла на основе ref_key
+        filename = f'thunderbird_settings_{db_user.ref_key}.k9s'
 
-    # Создайте ответ для скачивания файла
-    response = HttpResponse(xml_content, content_type='application/xml')
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
+        # Создайте ответ для скачивания файла
+        response = HttpResponse(xml_content, content_type='application/xml')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    except Exception as e:
+        logger.error(f'Error generating K9 settings file: {e}')
+        return HttpResponse(status=404, content=f'Error generating K9 settings file: {e}')
     return response
