@@ -1500,7 +1500,7 @@ def generate_config_file(request):
         # вам нужно будет получить его через связь, например:
         # db_user = get_object_or_404(DataBaseUser, ref_key=user.ref_key)
 
-        db_user = get_object_or_404(DataBaseUser, email=user.email)  # Пример получения объекта по email
+        db_user = get_object_or_404(DataBaseUser, pk=user.pk)  # Пример получения объекта по email
 
         # Определите контекст для замены плейсхолдеров
         context = {
