@@ -650,6 +650,7 @@ def login(request):
     content = {'title': 'вход'}
     login_form = DataBaseUserLoginForm(data=request.POST)
     content['login_form'] = login_form
+    logger.info(get_client_ip(request))
     if request.method == 'POST' and login_form.is_valid():
         username = request.POST['username']
         password = request.POST['password']

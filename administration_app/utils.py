@@ -1213,17 +1213,19 @@ def send_notification(sender: DataBaseUser, recipient, subject: str, template: s
     try:
         smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
     except Exception as _ex:
-        print("Ошибка", _ex)
+        logger.error(f"Ошибка: {_ex}")
     try:
         smtp.login(from_mail, from_passwd)  # Логинимся в свой ящик
         smtp.sendmail(from_mail, to_mail, msg.as_string())  # Отправляем сообщения
         smtp.quit()  # Закрываем соединение
     except smtplib.SMTPAuthenticationError:
+        logger.error(f"SMTPAuthenticationError")
         return 0
     except smtplib.SMTPRecipientsRefused:
+        logger.error(f"SMTPRecipientsRefused")
         return 0
     except Exception as _ex:
-        print('Не удалось подключиться к серверу')
+        logger.error(f"Не удалось подключиться к серверу: {_ex}")
         return 0
 
     # Сохраняем сообщение в исходящие
