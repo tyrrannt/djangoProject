@@ -420,6 +420,12 @@ class PlaceProductionActivity(models.Model):
     additional_payment = models.DecimalField(verbose_name="Дополнительная оплата", default=0, blank=True,
                                              decimal_places=2, max_digits=10)
     email = models.EmailField(verbose_name="Электронная почта", max_length=250, blank=True)
+    work_email_password = models.CharField(
+        verbose_name="Пароль от корпоративной почты",
+        max_length=50,
+        blank=True,
+        default="",
+    )
 
     def __str__(self):
         return str(self.name)
