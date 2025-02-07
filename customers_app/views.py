@@ -1525,9 +1525,8 @@ def generate_config_file(request):
     return response
 
 
-def generate_employee_file(request):
-    user = request.user  # Получаем текущего пользователя
-    db_user = get_object_or_404(DataBaseUser, pk=user.pk)
+def generate_employee_file(request, pk):
+    db_user = get_object_or_404(DataBaseUser, pk=pk)
 
     # Создаем текстовый файл
     file_content = ""
