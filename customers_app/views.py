@@ -1545,7 +1545,7 @@ def generate_employee_file(request, pk):
     file_content += f"Пароль для электронной почты: {db_user.user_work_profile.work_email_password}\n"
     file_content += "\n" + "=" * 50 + "\n\n"
     file_content += f"Параметры для ручной настройки почтовых клиентов\n"
-    file_content += f"Входящий сервер (IMAP/POP3): imap.barkol.ru\n"
+    file_content += f"Входящий сервер (IMAP): imap.barkol.ru\n"
     file_content += f"Порт входящего сервера: 993\n"
     file_content += f"Защита соединения: SSL/TLS\n"
     file_content += f"Исходящий сервер (SMTP): sm.barkol.ru\n"
