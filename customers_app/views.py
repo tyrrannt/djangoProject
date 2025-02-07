@@ -1523,3 +1523,38 @@ def generate_config_file(request):
         logger.error(f'Error generating K9 settings file: {e}')
         return HttpResponse(status=404, content=f'Error generating K9 settings file: {e}')
     return response
+
+
+def generate_employee_file(request):
+    user = request.user  # Получаем текущего пользователя
+    db_user = get_object_or_404(DataBaseUser, pk=user.pk)
+
+    # Создаем текстовый файл
+    file_content = ""
+    file_content += "\n" + "=" * 50 + "\n\n"
+    file_content += f"ФИО работника: {db_user.title}\n"
+    file_content += f"Должность: {db_user.user_work_profile.job.name}\n"
+    file_content += "\n" + "=" * 50 + "\n\n"
+    file_content += f"Корпоративный сайт\n"
+    file_content += f"URL корпоративного сайта: https://corp.barkol.ru/\n"
+    file_content += f"Логин для корпоративного сайта: {db_user.username}\n"
+    file_content += f"Пароль для корпоративного сайта: {db_user.user_work_profile.work_email_password}\n"
+    file_content += "\n" + "=" * 50 + "\n\n"
+    file_content += f"Электронная почта\n"
+    file_content += f"URL для доступа к электронной почте: https://ms.barkol.ru/\n"
+    file_content += f"Логин для электронной почты: {db_user.email}\n"
+    file_content += f"Пароль для электронной почты: {db_user.user_work_profile.work_email_password}\n"
+    file_content += "\n" + "=" * 50 + "\n\n"
+    file_content += f"Параметры для ручной настройки почтовых клиентов\n"
+    file_content += f"Входящий сервер (IMAP/POP3): imap.barkol.ru\n"
+    file_content += f"Порт входящего сервера: 993\n"
+    file_content += f"Защита соединения: SSL/TLS\n"
+    file_content += f"Исходящий сервер (SMTP): sm.barkol.ru\n"
+    file_content += f"Порт исходящего сервера: 465\n"
+    file_content += f"Защита соединения: SSL/TLS\n"
+    file_content += "\n" + "=" * 50 + "\n\n"
+
+    # Возвращаем файл как HTTP-ответ
+    response = HttpResponse(file_content, content_type='text/plain')
+    response['Content-Disposition'] = f'attachment; filename="{db_user.username}_credentials.txt"'
+    return response
