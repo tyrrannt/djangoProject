@@ -162,6 +162,7 @@
 
                                 </ul>
                             </li>
+                        {% if user.is_staff %}
                             <li class="nav-parent">
                                 <a class="nav-link" href="#">
                                     <span>Персонал</span>
@@ -180,6 +181,7 @@
 
                                 </ul>
                             </li>
+                        {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:event_list' %}">
                                     Мероприятия
