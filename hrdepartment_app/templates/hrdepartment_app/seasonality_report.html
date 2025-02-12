@@ -26,17 +26,35 @@
 
         <!-- Форма выбора года -->
         <form method="GET" action="{% url 'hrdepartment_app:seasonality-report' %}">
-            <label for="year">Выберите год:</label>
-            <select name="year" id="year" class="form-control">
-                {% for year in years %}
-                    <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Применить</button>
+            <div class="row">
+                <div class="col-md-2">
+                    <label for="year">Выберите год:</label>
+                </div>
+                <div class="col-md-8 col-sm-12">
+                    <select name="year" id="year" class="form-control">
+                        {% for year in years %}
+                            <option value="{{ year }}"
+                                    {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit">Применить</button>
+                </div>
+            </div>
+
+
         </form>
 
         <!-- График распределения отпусков -->
-        <canvas id="vacationChart" width="400" height="200"></canvas>
+        <div class="row">
+            <div class="col-md-2"></div>
+            <div class="col-md-8 col-sm-12">
+                <canvas id="vacationChart" width="400" height="200"></canvas>
+            </div>
+            <div class="col-md-2"></div>
+        </div>
+
 
         <!-- Статистические данные -->
         <h2>Статистика</h2>
@@ -55,7 +73,7 @@
                 data: {
                     labels: {{ months|safe }},
                     datasets: [{
-                        label: 'Количество отпусков',
+                        label: 'Количество отпусков (в днях)',
                         data: {{ vacation_counts|safe }},
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         borderColor: 'rgba(75, 192, 192, 1)',
