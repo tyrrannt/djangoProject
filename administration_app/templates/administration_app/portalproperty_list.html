@@ -125,7 +125,8 @@
                                                 <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
                                                     <a href="{% url 'administration_app:property_list' %}?update=10"
                                                        class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1">
+                                                align-items-center font-weight-semibold line-height-1"
+                                                       id="submit_vacation">
                                                         <i class='bx bx-sync text-4 me-2'></i> Обновить данные по
                                                         отпускам</a>
                                                 </div>
@@ -175,7 +176,8 @@
                                                     <a href="{% url 'administration_app:property_list' %}?update=16"
                                                        class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                        <i class='bx bx-group text-4 me-2'></i> Выгрузка данных для Kerio Connect</a>
+                                                        <i class='bx bx-group text-4 me-2'></i> Выгрузка данных для
+                                                        Kerio Connect</a>
                                                 </div>
                                             </div>
                                         </div>
@@ -248,6 +250,36 @@
 
             // Перенаправляем пользователя на новый URL
             window.location.href = newUrl;
+        });
+    </script>
+    <script>
+        document.getElementById('submit_vacation').addEventListener('click', function (event) {
+            // Предотвращаем стандартное поведение ссылки
+            event.preventDefault();
+
+            // Получаем значение из input с id="control_date"
+            const controlDate = document.getElementById('control_date').value;
+
+            // Определяем год: если дата не указана, используем текущий год
+            let year;
+            if (controlDate) {
+                year = new Date(controlDate).getFullYear();
+            } else {
+                year = new Date().getFullYear(); // Текущий год
+            }
+
+            // Получаем текущий URL из атрибута href
+            let currentUrl = this.href;
+
+            // Добавляем параметр "year" к URL
+            if (currentUrl.includes('?')) {
+                currentUrl += `&year=${year}`;
+            } else {
+                currentUrl += `?year=${year}`;
+            }
+
+            // Переходим по обновленному URL
+            window.location.href = currentUrl;
         });
     </script>
     <script>

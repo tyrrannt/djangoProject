@@ -521,7 +521,11 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     except AttributeError:
                         pass
             if request.GET.get('update') == '10':
-                get_vacation.delay()
+                try:
+                    year = int(request.GET.get('year'))
+                    get_vacation.delay(year)
+                except Exception as _ex:
+                    logger.error(f"Ошибка при получении отпусков {_ex}")
             if request.GET.get('update') == '11':
                 get_year_report.delay()
             if request.GET.get('update') == '12':
