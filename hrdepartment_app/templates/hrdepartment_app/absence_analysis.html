@@ -43,20 +43,27 @@
 
     <!-- Форма для выбора периода -->
     <form method="get" action="">
-        <label for="year">Год:</label>
-        <input type="number" id="year" name="year" min="2020" max="2100" value="{{ selected_year }}">
-
-        <label for="month">Месяц:</label>
-        <select id="month" name="month">
+        <div class="row">
+            <div class="col-md-2 text-end"><h4>Год:</h4></div>
+            <div class="col-md-2"><input type="number" id="year" name="year" min="2020" max="2100" value="{{ selected_year }}" class="form-control"></div>
+            <div class="col-md-2 text-end"><h4>Месяц:</h4></div>
+            <div class="col-md-2"><select id="month" name="month"  class="form-control">
             <option value="">Все месяцы</option>
             {% for month in months %}
             <option value="{{ month.value }}" {% if month.value == selected_month %}selected{% endif %}>
                 {{ month.name }}
             </option>
             {% endfor %}
-        </select>
+        </select></div>
+            <div class="col-md-2"><button type="submit"  class="btn btn-primary">Применить</button></div>
+        </div>
 
-        <button type="submit">Применить</button>
+
+
+
+
+
+
     </form>
 
     <!-- График -->
