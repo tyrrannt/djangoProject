@@ -507,8 +507,12 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # Получение неявок на рабочее место.
                 get_sick_leave.delay(2025, 2)
             if request.GET.get('update') == '8':
+                try:
+                    year = int(request.GET.get('year'))
+                    get_sick_leave.delay(year, 3)
+                except Exception as _ex:
+                    logger.error(f"Ошибка при получении отгулов {_ex}")
                 # Получение неявок на рабочее место - Отгул
-                get_sick_leave.delay(2025, 3)
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
             if request.GET.get('update') == '9':
