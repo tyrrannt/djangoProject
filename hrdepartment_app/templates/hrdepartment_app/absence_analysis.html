@@ -41,86 +41,83 @@
     <section role="main" class="content-body content-body-modern mt-0">
         <h1>Анализ пропусков работы</h1>
 
-    <!-- Форма для выбора периода -->
-    <form method="get" action="">
-        <div class="row">
-            <div class="col-md-2 text-end"><h4>Год:</h4></div>
-            <div class="col-md-2"><input type="number" id="year" name="year" min="2020" max="2100" value="{{ selected_year }}" class="form-control"></div>
-            <div class="col-md-2 text-end"><h4>Месяц:</h4></div>
-            <div class="col-md-2"><select id="month" name="month"  class="form-control">
-            <option value="">Все месяцы</option>
-            {% for month in months %}
-            <option value="{{ month.value }}" {% if month.value == selected_month %}selected{% endif %}>
-                {{ month.name }}
-            </option>
-            {% endfor %}
-        </select></div>
-            <div class="col-md-2"><button type="submit"  class="btn btn-primary">Применить</button></div>
-        </div>
+        <!-- Форма для выбора периода -->
+        <form method="get" action="">
+            <div class="row">
+                <div class="col-md-2 text-end"><h4>Год:</h4></div>
+                <div class="col-md-2"><input type="number" id="year" name="year" min="2020" max="2100"
+                                             value="{{ selected_year }}" class="form-control"></div>
+                <div class="col-md-2 text-end"><h4>Месяц:</h4></div>
+                <div class="col-md-2"><select id="month" name="month" class="form-control">
+                    <option value="">Все месяцы</option>
+                    {% for month in months %}
+                        <option value="{{ month.value }}" {% if month.value == selected_month %}selected{% endif %}>
+                            {{ month.name }}
+                        </option>
+                    {% endfor %}
+                </select></div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">Применить</button>
+                </div>
+            </div>
+        </form>
 
+        <!-- График -->
+        <canvas id="absenceChart" width="400" height="200"></canvas>
 
-
-
-
-
-
-    </form>
-
-    <!-- График -->
-    <canvas id="absenceChart" width="400" height="200"></canvas>
-
-    <!-- Таблица с сотрудниками -->
-    <h2>Сотрудники с высокой частотой пропусков</h2>
-    <table>
-        <thead>
+        <!-- Таблица с сотрудниками -->
+        <h2>Сотрудники с высокой частотой пропусков</h2>
+        <table>
+            <thead>
             <tr>
                 <th>ФИО</th>
                 <th>Количество пропусков</th>
                 <th>Детали</th>
             </tr>
-        </thead>
-        <tbody>
+            </thead>
+            <tbody>
             {% for employee in employee_absences %}
-            <tr>
-                <td>{{ employee.employee__first_name }} {{ employee.employee__last_name }}</td>
-                <td>{{ employee.total_absences }}</td>
-                <td>
-                    <a href="{% url 'hrdepartment_app:employee_absence_details' employee.employee__username %}?year={{ selected_year }}&month={{ selected_month }}">
-                        Подробнее
-                    </a>
-                </td>
-            </tr>
+                <tr>
+                    <td>{{ employee.employee__first_name }} {{ employee.employee__last_name }}</td>
+                    <td>{{ employee.total_absences }}</td>
+                    <td>
+                        <a href="{% url 'hrdepartment_app:employee_absence_details' employee.employee__username %}?year={{ selected_year }}&month={{ selected_month }}">
+                            Подробнее
+                        </a>
+                    </td>
+                </tr>
             {% endfor %}
-        </tbody>
-    </table>
+            </tbody>
+        </table>
 
-    <!-- Кнопка экспорта -->
-    <a href="{% url 'hrdepartment_app:export_absence_data' %}?year={{ selected_year }}&month={{ selected_month }}" download>
-        <button>Экспорт данных (CSV)</button>
-    </a>
+        <!-- Кнопка экспорта -->
+        <a href="{% url 'hrdepartment_app:export_absence_data' %}?year={{ selected_year }}&month={{ selected_month }}"
+           download>
+            <button>Экспорт данных (CSV)</button>
+        </a>
 
-    <script>
-        const ctx = document.getElementById('absenceChart').getContext('2d');
-        const absenceChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ employee_names|safe }},
-                datasets: [{
-                    label: 'Количество пропусков',
-                    data: {{ absence_counts|safe }},
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+        <script>
+            const ctx = document.getElementById('absenceChart').getContext('2d');
+            const absenceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ employee_names|safe }},
+                    datasets: [{
+                        label: 'Количество пропусков',
+                        data: {{ absence_counts|safe }},
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
-    </script>
+            });
+        </script>
     </section>
 {% endblock %}
