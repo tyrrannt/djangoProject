@@ -4190,7 +4190,7 @@ def export_seasonality_data(request):
 
 def absence_analysis(request):
     # Типы записей, которые считаются пропусками
-    absence_types = ["4", "7", "9", "16", "17"]
+    absence_types = ["4", "7", "9", "16", "17", "20"]
 
     # Получаем выбранный год и месяц из запроса
     selected_year = request.GET.get('year', '')
@@ -4243,7 +4243,7 @@ def absence_analysis(request):
 
 def export_absence_data(request):
     # Типы записей, которые считаются пропусками
-    absence_types = ["4", "7", "9", "16", "17"]
+    absence_types = ["4", "7", "9", "16", "17", "20"]
 
     # Получаем выбранный год и месяц из запроса
     selected_year = request.GET.get('year', '')
@@ -4278,7 +4278,7 @@ def export_absence_data(request):
 
 def employee_absence_details(request, username):
     # Типы записей, которые считаются пропусками
-    absence_types = ["4", "7", "9", "16", "17"]
+    absence_types = ["4", "7", "9", "16", "17", "20"]
 
     # Получаем выбранный год и месяц из запроса
     selected_year = request.GET.get('year', '')
