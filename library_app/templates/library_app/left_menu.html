@@ -162,6 +162,24 @@
 
                                 </ul>
                             </li>
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <span>Персонал</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
+                                            Сезонность отпусков
+                                        </a>
+                                    </li>
+{#                                    <li>#}
+{#                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_report' %}">#}
+{#                                            Отчет по сотрудникам#}
+{#                                        </a>#}
+{#                                    </li>#}
+
+                                </ul>
+                            </li>
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:event_list' %}">
                                     Мероприятия

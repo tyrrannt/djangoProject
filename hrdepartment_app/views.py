@@ -1,6 +1,9 @@
+import csv
 import datetime
 from calendar import monthrange
+from io import StringIO
 
+import pandas as pd
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from decouple import config
@@ -4079,3 +4082,78 @@ def unacknowledge_document(request):
             return JsonResponse({'success': False, 'error': 'Нельзя отменить ознакомление с документом'})
     else:
         return JsonResponse({'success': False, 'error': 'Ознакомление с документом не найдено'})
+
+
+def seasonality_report(request):
+    # Получение выбранного года из GET-параметров
+    selected_year = request.GET.get("year")
+    current_year = datetime.datetime.now().year
+
+    # Определение списка доступных лет
+    years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
+
+    if selected_year and selected_year.isdigit():
+        selected_year = int(selected_year)
+    else:
+        selected_year = current_year
+
+    # Фильтрация данных по выбранному году и типу записи "Отпуск"
+    report_cards = ReportCard.objects.filter(
+        report_card_day__year=selected_year,
+        record_type__in=["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "19"]
+    )
+
+    # Подсчет количества отпусков по месяцам
+    vacation_counts = [0] * 12
+    for card in report_cards:
+        month = card.report_card_day.month
+        vacation_counts[month - 1] += 1
+
+    # Статистический анализ
+    df = pd.DataFrame({"Months": range(1, 13), "Vacations": vacation_counts})
+    avg_vacations = df["Vacations"].mean()
+    std_deviation = df["Vacations"].std()
+
+    # Передача данных в шаблон
+    context = {
+        "months": [f"{i}-й месяц" for i in range(1, 13)],
+        "vacation_counts": vacation_counts,
+        "years": years,
+        "selected_year": selected_year,
+        "avg_vacations": round(avg_vacations, 2),
+        "std_deviation": round(std_deviation, 2),
+    }
+
+    return render(request, "hrdepartment_app/seasonality_report.html", context)
+
+def export_seasonality_data(request):
+    # Получение выбранного года из GET-параметров
+    selected_year = request.GET.get("year")
+    if not selected_year or not selected_year.isdigit():
+        selected_year = datetime.datetime.now().year
+    else:
+        selected_year = int(selected_year)
+
+    # Фильтрация данных по выбранному году и типу записи "Отпуск"
+    report_cards = ReportCard.objects.filter(
+        report_card_day__year=selected_year,
+        record_type__in=["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "19"]
+    )
+
+    # Создание CSV-файла
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Month", "Vacation Count"])
+
+    vacation_counts = [0] * 12
+    for card in report_cards:
+        month = card.report_card_day.month
+        vacation_counts[month - 1] += 1
+
+    for month, count in enumerate(vacation_counts, start=1):
+        writer.writerow([month, count])
+
+    # Возвращение файла
+    response = HttpResponse(output.getvalue(), content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="vacation_seasonality_{selected_year}.csv"'
+    return response

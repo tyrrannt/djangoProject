@@ -17,7 +17,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     ReportCardDetailYear, ReportCardDetailYearXLS, TimeSheetCreateView, TimeSheetDetailView, TimeSheetUpdateView, \
     TimeSheetDeleteView, TimeSheetListView, OutfitCardListView, OutfitCardCreateView, OutfitCardDetailView, \
     OutfitCardUpdateView, OutfitCardDeleteView, ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
-    unacknowledge_document
+    unacknowledge_document, seasonality_report, export_seasonality_data
 
 app_name = 'hrdepartment_app'
 
@@ -98,4 +98,7 @@ urlpatterns = [
     path('outfit_cards/<int:pk>/delete/', OutfitCardDeleteView.as_view(), name='outfit_card_delete'),
     path('acknowledge/', acknowledge_document, name='acknowledge_document'),
     path('unacknowledge/', unacknowledge_document, name='unacknowledge_document'),
+    path("seasonality-report/", seasonality_report, name="seasonality-report"),
+    path("export-seasonality-data/", export_seasonality_data, name="export-seasonality-data"),
+
 ]

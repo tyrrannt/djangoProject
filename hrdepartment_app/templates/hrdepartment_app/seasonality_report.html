@@ -1,0 +1,75 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0">
+        <h1>Анализ сезонности отпусков</h1>
+
+        <!-- Форма выбора года -->
+        <form method="GET" action="{% url 'hrdepartment_app:seasonality-report' %}">
+            <label for="year">Выберите год:</label>
+            <select name="year" id="year" class="form-control">
+                {% for year in years %}
+                    <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Применить</button>
+        </form>
+
+        <!-- График распределения отпусков -->
+        <canvas id="vacationChart" width="400" height="200"></canvas>
+
+        <!-- Статистические данные -->
+        <h2>Статистика</h2>
+        <h3>Среднее количество дней отпусков в месяц: {{ avg_vacations }}</h3>
+        <h3>Стандартное отклонение: {{ std_deviation }}</h3>
+
+        <!-- Экспорт данных -->
+        <a href="{% url 'hrdepartment_app:export-seasonality-data' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт
+            данных</a>
+
+        <script>
+            // Отображение графика
+            const ctx = document.getElementById('vacationChart').getContext('2d');
+            const vacationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ months|safe }},
+                    datasets: [{
+                        label: 'Количество отпусков',
+                        data: {{ vacation_counts|safe }},
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        </script>
+    </section>
+{% endblock %}
