@@ -1,8 +1,12 @@
 import csv
 import datetime
+import json
 from calendar import monthrange
+from collections import defaultdict
 from io import StringIO
 
+import plotly
+import plotly.figure_factory as ff
 import pandas as pd
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
@@ -10,7 +14,7 @@ from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
@@ -4157,3 +4161,142 @@ def export_seasonality_data(request):
     response = HttpResponse(output.getvalue(), content_type="text/csv")
     response["Content-Disposition"] = f'attachment; filename="vacation_seasonality_{selected_year}.csv"'
     return response
+
+# def absence_analysis(request):
+#     # Типы записей, которые считаются пропусками
+#     absence_types = ["4", "7", "9", "16", "17"]
+#
+#     # Фильтруем записи по типам пропусков
+#     absences = ReportCard.objects.filter(record_type__in=absence_types).exclude(employee__is_active=False)
+#
+#     # Группируем данные по сотрудникам и считаем количество пропусков
+#     employee_absences = absences.values(
+#         'employee__username', 'employee__first_name', 'employee__last_name'
+#     ).annotate(
+#         total_absences=Count('id')
+#     ).order_by('-total_absences')
+#
+#     # Подготовка данных для графика
+#     employee_names = [f"{emp['employee__first_name']} {emp['employee__last_name']}" for emp in employee_absences]
+#     absence_counts = [emp['total_absences'] for emp in employee_absences]
+#
+#     # Передаем данные в шаблон
+#     context = {
+#         'employee_absences': employee_absences,
+#         'employee_names': employee_names,
+#         'absence_counts': absence_counts,
+#     }
+#     return render(request, 'hrdepartment_app/absence_analysis.html', context)
+
+def absence_analysis(request):
+    # Типы записей, которые считаются пропусками
+    absence_types = ["4", "7", "9", "16", "17"]
+
+    # Получаем выбранный год и месяц из запроса
+    selected_year = request.GET.get('year', '')
+    selected_month = request.GET.get('month', '')
+
+    # Фильтруем записи по типам пропусков и выбранному периоду
+    absences = ReportCard.objects.filter(record_type__in=absence_types).exclude(employee__is_active=False)
+    if selected_year:
+        absences = absences.filter(report_card_day__year=selected_year)
+    if selected_month:
+        absences = absences.filter(report_card_day__month=selected_month)
+
+    # Группируем данные по сотрудникам и считаем количество пропусков
+    employee_absences = absences.values(
+        'employee__username', 'employee__first_name', 'employee__last_name'
+    ).annotate(
+        total_absences=Count('id')
+    ).order_by('-total_absences')
+
+    # Подготовка данных для графика
+    employee_names = [f"{emp['employee__first_name']} {emp['employee__last_name']}" for emp in employee_absences]
+    absence_counts = [emp['total_absences'] for emp in employee_absences]
+
+    # Месяцы для выпадающего списка
+    months = [
+        {'value': '1', 'name': 'Январь'},
+        {'value': '2', 'name': 'Февраль'},
+        {'value': '3', 'name': 'Март'},
+        {'value': '4', 'name': 'Апрель'},
+        {'value': '5', 'name': 'Май'},
+        {'value': '6', 'name': 'Июнь'},
+        {'value': '7', 'name': 'Июль'},
+        {'value': '8', 'name': 'Август'},
+        {'value': '9', 'name': 'Сентябрь'},
+        {'value': '10', 'name': 'Октябрь'},
+        {'value': '11', 'name': 'Ноябрь'},
+        {'value': '12', 'name': 'Декабрь'},
+    ]
+
+    # Передаем данные в шаблон
+    context = {
+        'employee_absences': employee_absences,
+        'employee_names': employee_names,
+        'absence_counts': absence_counts,
+        'selected_year': selected_year,
+        'selected_month': selected_month,
+        'months': months,
+    }
+    return render(request, 'hrdepartment_app/absence_analysis.html', context)
+
+def export_absence_data(request):
+    # Типы записей, которые считаются пропусками
+    absence_types = ["4", "7", "9", "16", "17"]
+
+    # Получаем выбранный год и месяц из запроса
+    selected_year = request.GET.get('year', '')
+    selected_month = request.GET.get('month', '')
+
+    # Фильтруем записи по типам пропусков и выбранному периоду
+    absences = ReportCard.objects.filter(record_type__in=absence_types).exclude(employee__is_active=False)
+    if selected_year:
+        absences = absences.filter(report_card_day__year=selected_year)
+    if selected_month:
+        absences = absences.filter(report_card_day__month=selected_month)
+
+    # Создаем HTTP-ответ с типом содержимого CSV
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="absence_data_{selected_year}_{selected_month}.csv"'
+
+    # Создаем CSV-писатель
+    writer = csv.writer(response)
+    writer.writerow(['ФИО', 'Количество пропусков'])
+
+    # Группируем данные по сотрудникам и записываем в CSV
+    employee_absences = absences.values(
+        'employee__username', 'employee__first_name', 'employee__last_name'
+    ).annotate(
+        total_absences=Count('id')
+    ).order_by('-total_absences')
+
+    for emp in employee_absences:
+        writer.writerow([f"{emp['employee__first_name']} {emp['employee__last_name']}", emp['total_absences']])
+
+    return response
+
+def employee_absence_details(request, username):
+    # Типы записей, которые считаются пропусками
+    absence_types = ["4", "7", "9", "16", "17"]
+
+    # Получаем выбранный год и месяц из запроса
+    selected_year = request.GET.get('year', '')
+    selected_month = request.GET.get('month', '')
+
+    # Фильтруем записи по сотруднику и типам пропусков
+    absences = ReportCard.objects.filter(
+        employee__username=username,
+        record_type__in=absence_types
+    ).exclude(employee__is_active=False)
+    if selected_year:
+        absences = absences.filter(report_card_day__year=selected_year)
+    if selected_month:
+        absences = absences.filter(report_card_day__month=selected_month)
+
+    # Передаем данные в шаблон
+    context = {
+        'absences': absences,
+        'employee': absences.first().employee if absences.exists() else None,
+    }
+    return render(request, 'hrdepartment_app/employee_absence_details.html', context)
