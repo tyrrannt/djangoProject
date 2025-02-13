@@ -18,7 +18,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     TimeSheetDeleteView, TimeSheetListView, OutfitCardListView, OutfitCardCreateView, OutfitCardDetailView, \
     OutfitCardUpdateView, OutfitCardDeleteView, ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
     unacknowledge_document, seasonality_report, export_seasonality_data, absence_analysis, export_absence_data, \
-    employee_absence_details, weekday_analysis
+    employee_absence_details, weekday_analysis, time_distribution, export_time_distribution
 
 app_name = 'hrdepartment_app'
 
@@ -105,4 +105,7 @@ urlpatterns = [
     path('export-absence-data/', export_absence_data, name='export_absence_data'),
     path('employee-absence-details/<str:username>/', employee_absence_details, name='employee_absence_details'),
     path("weekday-analysis/", weekday_analysis, name="weekday-analysis"),
+    path('time-distribution/', time_distribution, name='time_distribution'),
+    path("export-time-distribution/", export_time_distribution, name="export-time-distribution"),
+
 ]

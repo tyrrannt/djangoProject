@@ -15,6 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Count
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
@@ -4087,7 +4088,7 @@ def unacknowledge_document(request):
     else:
         return JsonResponse({'success': False, 'error': 'Ознакомление с документом не найдено'})
 
-
+@login_required
 def seasonality_report(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
@@ -4130,6 +4131,7 @@ def seasonality_report(request):
 
     return render(request, "hrdepartment_app/seasonality_report.html", context)
 
+@login_required
 def export_seasonality_data(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
@@ -4188,6 +4190,7 @@ def export_seasonality_data(request):
 #     }
 #     return render(request, 'hrdepartment_app/absence_analysis.html', context)
 
+@login_required
 def absence_analysis(request):
     # Типы записей, которые считаются пропусками
     absence_types = ["4", "7", "9", "16", "17", "20"]
@@ -4241,6 +4244,7 @@ def absence_analysis(request):
     }
     return render(request, 'hrdepartment_app/absence_analysis.html', context)
 
+@login_required
 def export_absence_data(request):
     # Типы записей, которые считаются пропусками
     absence_types = ["4", "7", "9", "16", "17", "20"]
@@ -4276,6 +4280,7 @@ def export_absence_data(request):
 
     return response
 
+@login_required
 def employee_absence_details(request, username):
     # Типы записей, которые считаются пропусками
     absence_types = ["4", "7", "9", "16", "17", "20"]
@@ -4301,6 +4306,7 @@ def employee_absence_details(request, username):
     }
     return render(request, 'hrdepartment_app/employee_absence_details.html', context)
 
+@login_required
 def weekday_analysis(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
@@ -4347,3 +4353,77 @@ def weekday_analysis(request):
     }
 
     return render(request, "hrdepartment_app/weekday_analysis.html", context)
+@login_required
+def time_distribution(request):
+    # Получение выбранного года из GET-параметров
+    selected_year = request.GET.get("year")
+    current_year = datetime.datetime.now().year
+
+    # Определение списка доступных лет
+    years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
+
+    if selected_year and selected_year.isdigit():
+        selected_year = int(selected_year)
+    else:
+        selected_year = current_year
+
+    # Фильтрация данных по выбранному году
+    report_cards = ReportCard.objects.filter(report_card_day__year=selected_year)
+
+    # Подсчет количества событий по типам времени
+    time_counts = defaultdict(int)
+    employee_data = defaultdict(lambda: defaultdict(list))  # Изменено: значения как списки
+
+    for card in report_cards:
+        time_type = card.get_record_type_display()  # Человекочитаемое название типа времени
+        time_counts[time_type] += 1
+        employee_data[card.employee][time_type].append(1)  # Добавляем 1 в список
+
+    # Преобразование данных в списки для передачи в шаблон
+    time_types = list(time_counts.keys())
+    counts = [time_counts[time_type] for time_type in time_types]
+
+    # Преобразуем списки в суммы для отображения
+    formatted_employee_data = {}
+    for employee, data in employee_data.items():
+        formatted_employee_data[employee] = {k: sum(v) for k, v in data.items()}
+
+    context = {
+        "time_types": time_types,
+        "time_counts": counts,
+        "years": years,
+        "selected_year": selected_year,
+        "employee_data": formatted_employee_data,
+    }
+    print(context)
+    return render(request, 'hrdepartment_app/time_distribution.html', context)
+
+
+def export_time_distribution(request):
+    # Получение выбранного года из GET-параметров
+    selected_year = request.GET.get("year")
+    if not selected_year or not selected_year.isdigit():
+        selected_year = datetime.datetime.now().year
+    else:
+        selected_year = int(selected_year)
+
+    # Фильтрация данных по выбранному году
+    report_cards = ReportCard.objects.filter(report_card_day__year=selected_year)
+
+    # Создание CSV-файла
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Тип времени", "Количество событий"])
+
+    time_counts = defaultdict(int)
+    for card in report_cards:
+        time_type = card.get_record_type_display()
+        time_counts[time_type] += 1
+
+    for time_type, count in time_counts.items():
+        writer.writerow([time_type, count])
+
+    # Возвращение файла
+    response = HttpResponse(output.getvalue(), content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="time_distribution_{selected_year}.csv"'
+    return response

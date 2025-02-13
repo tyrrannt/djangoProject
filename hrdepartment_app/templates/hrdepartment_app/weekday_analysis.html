@@ -22,50 +22,50 @@
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
-            <h1>Анализ распределения отгулов по дням недели</h1>
+        <h1>Анализ распределения отгулов по дням недели</h1>
 
-    <!-- Форма выбора года -->
-    <form method="GET" action="{% url 'hrdepartment_app:weekday-analysis' %}">
-        <label for="year">Выберите год:</label>
-        <select name="year" id="year">
-            {% for year in years %}
-                <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
-            {% endfor %}
-        </select>
-        <button type="submit">Применить</button>
-    </form>
+        <!-- Форма выбора года -->
+        <form method="GET" action="{% url 'hrdepartment_app:weekday-analysis' %}">
+            <label for="year">Выберите год:</label>
+            <select name="year" id="year">
+                {% for year in years %}
+                    <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Применить</button>
+        </form>
 
-    <!-- График распределения отгулов -->
-    <canvas id="weekdayChart" width="400" height="200"></canvas>
+        <!-- График распределения отгулов -->
+        <canvas id="weekdayChart" width="400" height="200"></canvas>
 
-    <!-- Статистические данные -->
-    <h2>Статистика</h2>
-    <p>Среднее количество отгулов в день недели: {{ avg_leave_per_weekday }}</p>
-    <p>Наиболее популярный день для отгулов: {{ most_popular_day }}</p>
+        <!-- Статистические данные -->
+        <h2>Статистика</h2>
+        <p>Среднее количество отгулов в день недели: {{ avg_leave_per_weekday }}</p>
+        <p>Наиболее популярный день для отгулов: {{ most_popular_day }}</p>
 
-    <script>
-        // Отображение графика
-        const ctx = document.getElementById('weekdayChart').getContext('2d');
-        const weekdayChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ weekdays|safe }},
-                datasets: [{
-                    label: 'Количество отгулов',
-                    data: {{ leave_counts|safe }},
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+        <script>
+            // Отображение графика
+            const ctx = document.getElementById('weekdayChart').getContext('2d');
+            const weekdayChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ weekdays|safe }},
+                    datasets: [{
+                        label: 'Количество отгулов',
+                        data: {{ leave_counts|safe }},
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
-    </script>
+            });
+        </script>
     </section>
 {% endblock %}

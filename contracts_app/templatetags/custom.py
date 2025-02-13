@@ -214,6 +214,9 @@ def filename(value):
     except FileNotFoundError:
         return 'Файл отсутствует'
 
+@register.filter
+def get_key(dictionary, key):
+    return dictionary.get(key, 0)
 
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)

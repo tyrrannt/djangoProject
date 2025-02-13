@@ -1,0 +1,94 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0">
+            <h1>Распределение типов времени</h1>
+
+    <!-- Форма выбора года -->
+    <form method="GET" action="{% url 'hrdepartment_app:time_distribution' %}">
+        <label for="year">Выберите год:</label>
+        <select name="year" id="year">
+            {% for year in years %}
+                <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Применить</button>
+    </form>
+
+    <!-- График распределения типов времени -->
+    <canvas id="timeDistributionChart" width="600" height="400"></canvas>
+
+    <!-- Детализация по сотрудникам -->
+    <h2>Детализация по сотрудникам</h2>
+    <table border="1">
+    <thead>
+        <tr>
+            <th>Сотрудник</th>
+            {% for time_type in time_types %}
+                <th>{{ time_type }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for employee, data in employee_data.items %}
+            <tr>
+                <td>{{ employee }}</td>
+                {% for time_type in time_types %}
+                    <td>{{ data|get_key:time_type }}</td> <!-- Используем default для отсутствующих значений -->
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+    <!-- Экспорт данных -->
+    <a href="{% url 'hrdepartment_app:export-time-distribution' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт данных</a>
+
+    <script>
+        // Отображение графика
+        const ctx = document.getElementById('timeDistributionChart').getContext('2d');
+        const timeDistributionChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ time_types|safe }},
+                datasets: [{
+                    label: 'Количество событий',
+                    data: {{ time_counts|safe }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+    </section>
+{% endblock %}
