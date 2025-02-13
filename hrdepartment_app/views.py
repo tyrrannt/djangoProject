@@ -4300,3 +4300,50 @@ def employee_absence_details(request, username):
         'employee': absences.first().employee if absences.exists() else None,
     }
     return render(request, 'hrdepartment_app/employee_absence_details.html', context)
+
+def weekday_analysis(request):
+    # Получение выбранного года из GET-параметров
+    selected_year = request.GET.get("year")
+    current_year = datetime.datetime.now().year
+
+    # Определение списка доступных лет
+    years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
+
+    if selected_year and selected_year.isdigit():
+        selected_year = int(selected_year)
+    else:
+        selected_year = current_year
+
+    # Фильтрация данных по выбранному году и типу записи "Отгул"
+    report_cards = ReportCard.objects.filter(
+        report_card_day__year=selected_year,
+        record_type="20"  # Тип записи "Отгул"
+    ).exclude(employee__is_active=False)
+
+    # Подсчет количества отгулов по дням недели
+    leave_counts = [0] * 7  # Понедельник (0) - Воскресенье (6)
+    for card in report_cards:
+        day_of_week = card.report_card_day.weekday()
+        leave_counts[day_of_week] += 1
+
+    # Создание DataFrame для статистического анализа
+    df = pd.DataFrame({
+        "Weekday": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+        "Leave Counts": leave_counts
+    })
+
+    # Статистический анализ
+    avg_leave_per_weekday = df["Leave Counts"].mean()
+    most_popular_day = df.loc[df["Leave Counts"].idxmax()]["Weekday"]
+
+    # Передача данных в шаблон
+    context = {
+        "weekdays": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+        "leave_counts": leave_counts,
+        "years": years,
+        "selected_year": selected_year,
+        "avg_leave_per_weekday": round(avg_leave_per_weekday, 2),
+        "most_popular_day": most_popular_day,
+    }
+
+    return render(request, "hrdepartment_app/weekday_analysis.html", context)
