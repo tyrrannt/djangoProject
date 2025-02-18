@@ -1508,6 +1508,8 @@ def generate_config_file(request):
             'ref_key': db_user.ref_key,
             'email': db_user.email,
             'title': db_user.title,
+            'job': db_user.user_work_profile.job.name,
+            'sign': FIO_format(db_user.title),
         }
 
         # Загрузите шаблон XML

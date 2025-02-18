@@ -7,7 +7,7 @@
         <host>imap.barkol.ru</host>
         <port>993</port>
         <connection-security>SSL_TLS_REQUIRED</connection-security>
-        <authentication-type>PLAIN</authentication-type>
+        <authentication-type>CRAM_MD5</authentication-type>
         <username>{{ email }}</username>
         <extra>
           <value key="autoDetectNamespace">true</value>
@@ -18,7 +18,7 @@
         <host>sm.barkol.ru</host>
         <port>465</port>
         <connection-security>SSL_TLS_REQUIRED</connection-security>
-        <authentication-type>PLAIN</authentication-type>
+        <authentication-type>CRAM_MD5</authentication-type>
         <username>{{ email }}</username>
       </outgoing-server>
       <settings>
@@ -73,11 +73,11 @@
         <value key="vibrate">false</value>
         <value key="vibratePattern">0</value>
         <value key="vibrateTimes">5</value>
-        <value key="autoExpandFolderName">INBOX</value>
-        <value key="draftsFolderName">Drafts</value>
-        <value key="sentFolderName">Sent Items</value>
-        <value key="spamFolderName">Junk E-mail</value>
-        <value key="trashFolderName">Deleted Items</value>
+        <value key="autoExpandFolderName">ВХОДЯЩИЕ</value>
+        <value key="draftsFolderName">ЧЕРНОВИКИ</value>
+        <value key="sentFolderName">ОТПРАВЛЕННЫЕ</value>
+        <value key="spamFolderName">СПАМ</value>
+        <value key="trashFolderName">УДАЛЕННЫЕ</value>
       </settings>
       <identities>
         <identity>
@@ -85,7 +85,10 @@
           <email>{{ email }}</email>
           <description>Основная роль</description>
           <settings>
-            <value key="signatureUse">false</value>
+            <value key="signature">С уважением,
+{{ job }}
+{{ sign }} </value>
+            <value key="signatureUse">true</value>
           </settings>
         </identity>
       </identities>
