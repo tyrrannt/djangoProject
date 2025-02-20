@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
     <style>
+        /* Базовые стили */
         body {
             display: flex;
             justify-content: center;
@@ -20,6 +21,7 @@
             background-color: #333;
             color: white;
             font-family: Arial, sans-serif;
+            flex-direction: column;
         }
 
         #tetris {
@@ -27,14 +29,55 @@
             background-color: #222;
         }
 
-        #stats {
-            margin-left: 20px;
+        #stats, #leaderboard {
+            margin: 10px 0;
             font-size: 1.2em;
+            text-align: center;
         }
 
-        #leaderboard {
-            margin-left: 20px;
+        /* Медиазапросы для мобильных устройств */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                height: auto;
+            }
+
+            #tetris {
+                width: 90vw;
+                height: 90vw;
+                max-width: 300px;
+                max-height: 600px;
+            }
+
+            #stats, #leaderboard {
+                font-size: 1em;
+            }
+
+            #leaderboard {
+                margin-top: 20px;
+            }
+        }
+
+        /* Стили для кнопок */
+        #mobile-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        #mobile-controls button {
+            padding: 10px 20px;
             font-size: 1.2em;
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #mobile-controls button:active {
+            background-color: #666;
         }
     </style>
 {% endblock %}
@@ -53,22 +96,31 @@
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div id="leaderboard" class="row">
-            <div class="col-sm-12">
-                <h3>Таблица лидеров</h3>
-                <h4>Общий победитель: <span id="overall-winner">Loading...</span></h4>
-                <h4>Ваш лучший счет: <span id="user-best">Loading...</span></h4>
-            </div>
+        {#        {% include 'library_app/breadcrumb.html' %}#}
+        <canvas id="tetris"></canvas>
+        <div id="stats">
+            <p>Score: <span id="score">0</span></p>
+            <p>Level: <span id="level">1</span></p>
+            <p>Lines: <span id="lines">0</span></p>
         </div>
-        <div id="stats" class="row">
-            <div class="col-sm-2"><h2>Счет: <span id="score">0</span></h2></div>
-            <div class="col-sm-2"><h2>Уровень: <span id="level">1</span></h2></div>
-            <div class="col-sm-2"><h2>Линии: <span id="lines">0</span></h2></div>
+        <div id="leaderboard">
+            <h3>Leaderboard</h3>
+            <p>Overall Winner: <span id="overall-winner">Loading...</span></p>
+            <p>Your Best: <span id="user-best">Loading...</span></p>
         </div>
-        <!-- start: page -->
-        <canvas id="tetris" width="300" height="600"></canvas>
+        <div id="mobile-controls" style="display: none;">
+            <button id="move-left">←</button>
+            <button id="move-right">→</button>
+            <button id="rotate">↻</button>
+            <button id="drop">↓</button>
+        </div>
         <script>
+
+            document.getElementById('move-left').addEventListener('click', () => playerMove(-1));
+            document.getElementById('move-right').addEventListener('click', () => playerMove(1));
+            document.getElementById('rotate').addEventListener('click', () => playerRotate(1));
+            document.getElementById('drop').addEventListener('click', () => playerDrop());
+
             const canvas = document.getElementById('tetris');
             const context = canvas.getContext('2d');
             const scale = 40; // Увеличиваем масштаб
@@ -84,6 +136,43 @@
             let dropCounter = 0;
             let lastTime = 0;
             let gameOver = false;
+
+            const mobileControls = document.getElementById('mobile-controls');
+
+            if (isMobile) {
+                mobileControls.style.display = 'flex';
+            }
+
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            canvas.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+
+            canvas.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                const deltaX = touchEndX - touchStartX;
+                const deltaY = touchEndY - touchStartY;
+
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // Горизонтальный свайп
+                    if (deltaX > 0) {
+                        playerMove(1); // Вправо
+                    } else {
+                        playerMove(-1); // Влево
+                    }
+                } else {
+                    // Вертикальный свайп
+                    if (deltaY > 0) {
+                        playerDrop(); // Вниз
+                    } else {
+                        playerRotate(1); // Вверх (поворот)
+                    }
+                }
+            });
 
             // Игровое поле
             const createMatrix = (w, h) => Array.from({length: h}, () => Array(w).fill(0));
