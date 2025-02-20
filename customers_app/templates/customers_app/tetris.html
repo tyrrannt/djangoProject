@@ -97,17 +97,25 @@
 
     <section role="main" class="content-body content-body-modern mt-0">
         {#        {% include 'library_app/breadcrumb.html' %}#}
+
+
+        <div id="leaderboard" class="row" style="justify-content: left">
+            <div class="col-sm-4">
+                <h3>Таблица лидеров</h3>
+                <h4>Лучший игрок: <span id="overall-winner" style="color: #0b5ed7">Loading...</span></h4>
+                <h4>Твой лучший результат: <span id="user-best" style="color: #8b0000">Loading...</span></h4>
+            </div>
+
+        </div>
+        <div id="stats" class="row">
+            <div class="col-sm-4">
+                <h3>Текущая игра:</h3>
+                <h4>Кличество очков: <span id="score">0</span> Уровень: <span id="level">1</span> Линии: <span id="lines">0</span>
+                </h4>
+            </div>
+
+        </div>
         <canvas id="tetris"></canvas>
-        <div id="stats">
-            <p>Score: <span id="score">0</span></p>
-            <p>Level: <span id="level">1</span></p>
-            <p>Lines: <span id="lines">0</span></p>
-        </div>
-        <div id="leaderboard">
-            <h3>Leaderboard</h3>
-            <p>Overall Winner: <span id="overall-winner">Loading...</span></p>
-            <p>Your Best: <span id="user-best">Loading...</span></p>
-        </div>
         <div id="mobile-controls" style="display: none;">
             <button id="move-left">←</button>
             <button id="move-right">→</button>
