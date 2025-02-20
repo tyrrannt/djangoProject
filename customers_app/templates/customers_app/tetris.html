@@ -137,8 +137,13 @@
             let lastTime = 0;
             let gameOver = false;
 
+            // Define isMobile using a media query
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+            // Get the mobile controls element
             const mobileControls = document.getElementById('mobile-controls');
 
+            // Show mobile controls if the media query matches
             if (isMobile) {
                 mobileControls.style.display = 'flex';
             }
