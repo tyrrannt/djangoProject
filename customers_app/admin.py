@@ -20,7 +20,7 @@ from .models import (
     HappyBirthdayGreetings,
     Affiliation,
     VacationScheduleList,
-    VacationSchedule, CounteragentDocuments,
+    VacationSchedule, CounteragentDocuments, UserStats,
 )
 
 
@@ -116,3 +116,9 @@ class CounteragentAdmin(admin.ModelAdmin):
     list_display = ("pk", "code", "name", "active",)
     search_fields = ("name", "code",)
     ordering = ('code',)
+
+@admin.register(UserStats)
+class UserStatsAdmin(admin.ModelAdmin):
+    list_display = ("pk", "score", "level", "lines_cleared", "games_played")
+    # search_fields = ("name", "code",)
+    ordering = ('created_at',)

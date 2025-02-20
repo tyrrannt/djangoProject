@@ -665,6 +665,18 @@ def change_filename(sender, instance, **kwargs):
         print(_ex)
 
 
+class UserStats(models.Model):
+    user = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE, related_name='stats')
+    score = models.IntegerField(default=0)
+    level = models.IntegerField(default=1)
+    lines_cleared = models.IntegerField(default=0)
+    games_played = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - Score: {self.score}"
+
+
 class Counteragent(models.Model):
     """
     Контрагенты

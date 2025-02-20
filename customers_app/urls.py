@@ -80,6 +80,9 @@ urlpatterns = [
     path('auth_with_token/', views.auth_with_token, name='auth_with_token'),
     path('generate-config/', views.generate_config_file, name='generate_config_file'),
     path('generate-employee-file/<int:pk>/', views.generate_employee_file, name='generate_employee_file'),
+    path('game/', views.game, name='game'),
+    path('save_stats/', views.save_stats, name='save_stats'),
+    path('get_leaderboard/', views.get_leaderboard, name='get_leaderboard'),
     # path(
     #     "password/<int:pk>/update/",
     #     views.ChangeAvatarUpdate.as_view(),

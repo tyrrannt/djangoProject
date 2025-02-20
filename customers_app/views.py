@@ -1,5 +1,6 @@
 import datetime
 import hashlib
+import json
 import uuid
 from io import BytesIO
 from itertools import chain
@@ -20,6 +21,7 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
+from django.views.decorators.csrf import csrf_exempt
 from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
@@ -36,7 +38,8 @@ from contracts_app.templatetags.custom import FIO_format
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
     get_settlement_sheet, get_report_card_table, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
-    DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments
+    DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments, \
+    UserStats
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
@@ -1559,3 +1562,70 @@ def generate_employee_file(request, pk):
     response = HttpResponse(file_content, content_type='text/plain')
     response['Content-Disposition'] = f'attachment; filename="{db_user.username}_credentials.txt"'
     return response
+
+
+@login_required
+def game(request):
+    return render(request, 'customers_app/tetris.html')
+
+
+@csrf_exempt  # Уберите этот декоратор в production
+def save_stats(request):
+    if request.method == 'POST':
+        try:
+            # Чтение JSON-данных из тела запроса
+            data = json.loads(request.body)
+            score = data.get('score')
+            level = data.get('level')
+            lines_cleared = data.get('lines_cleared')
+
+            # Проверка, что все данные присутствуют
+            if score is None or level is None or lines_cleared is None:
+                return JsonResponse({'status': 'error', 'message': 'Missing data'}, status=400)
+
+            # Преобразование данных в числа
+            score = int(score)
+            level = int(level)
+            lines_cleared = int(lines_cleared)
+
+            # Сохранение статистики
+            stats = UserStats.objects.create(
+                user=request.user,
+                score=score,
+                level=level,
+                lines_cleared=lines_cleared
+            )
+            stats.save()
+
+            return JsonResponse({'status': 'success'})
+        except (ValueError, json.JSONDecodeError) as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+@csrf_exempt
+def get_leaderboard(request):
+    if request.method == 'GET':
+        try:
+            # Общий победитель (пользователь с максимальным счетом)
+            overall_winner = UserStats.objects.order_by('-score').first()
+            overall_winner_data = {
+                'username': overall_winner.user.title if overall_winner else None,
+                'score': overall_winner.score if overall_winner else 0,
+            }
+
+            # Лучший результат текущего пользователя
+            user_best = None
+            if request.user.is_authenticated:
+                user_best = UserStats.objects.filter(user=request.user).order_by('-score').first()
+
+            user_best_data = {
+                'score': user_best.score if user_best else 0,
+            }
+
+            return JsonResponse({
+                'overall_winner': overall_winner_data,
+                'user_best': user_best_data,
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

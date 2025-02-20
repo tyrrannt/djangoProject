@@ -1,0 +1,383 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #333;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        #tetris {
+            border: 2px solid white;
+            background-color: #222;
+        }
+
+        #stats {
+            margin-left: 20px;
+            font-size: 1.2em;
+        }
+
+        #leaderboard {
+            margin-left: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0">
+        {% include 'library_app/breadcrumb.html' %}
+        <div id="leaderboard" class="row">
+            <div class="col-sm-12">
+                <h3>Таблица лидеров</h3>
+                <h4>Общий победитель: <span id="overall-winner">Loading...</span></h4>
+                <h4>Ваш лучший счет: <span id="user-best">Loading...</span></h4>
+            </div>
+        </div>
+        <div id="stats" class="row">
+            <div class="col-sm-2"><h2>Счет: <span id="score">0</span></h2></div>
+            <div class="col-sm-2"><h2>Уровень: <span id="level">1</span></h2></div>
+            <div class="col-sm-2"><h2>Линии: <span id="lines">0</span></h2></div>
+        </div>
+        <!-- start: page -->
+        <canvas id="tetris" width="300" height="600"></canvas>
+        <script>
+            const canvas = document.getElementById('tetris');
+            const context = canvas.getContext('2d');
+            const scale = 40; // Увеличиваем масштаб
+            const rows = 20; // Количество строк
+            const columns = 10; // Количество столбцов
+
+            canvas.width = columns * scale; // Ширина поля
+            canvas.height = rows * scale; // Высота поля
+
+            let score = 0;
+            let level = 1;
+            let linesCleared = 0;
+            let dropCounter = 0;
+            let lastTime = 0;
+            let gameOver = false;
+
+            // Игровое поле
+            const createMatrix = (w, h) => Array.from({length: h}, () => Array(w).fill(0));
+            let arena = createMatrix(columns, rows);
+
+            // Фигуры
+            const tetrominoes = {
+                I: [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]],
+                O: [[1, 1], [1, 1]],
+                T: [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+                S: [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+                Z: [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
+                J: [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+                L: [[0, 0, 1], [1, 1, 1], [0, 0, 0]]
+            };
+
+            // Создание фигуры
+            function createPiece(type) {
+                return tetrominoes[type].map(row => row.map(value => value));
+            }
+
+            // Рандомный выбор фигуры
+            function randomPiece() {
+                const pieces = 'IOTSLJZ';
+                return pieces[Math.floor(Math.random() * pieces.length)];
+            }
+
+            // Позиция фигуры
+            let player = {
+                pos: {x: 5, y: 0},
+                matrix: createPiece(randomPiece()),
+            };
+
+            // Отрисовка фигуры
+            function drawMatrix(matrix, offset) {
+                matrix.forEach((row, y) => {
+                    row.forEach((value, x) => {
+                        if (value !== 0) {
+                            context.fillStyle = 'red';
+                            context.fillRect(
+                                (x + offset.x) * scale,
+                                (y + offset.y) * scale,
+                                scale - 1,
+                                scale - 1
+                            );
+                        }
+                    });
+                });
+            }
+
+            // Отрисовка игрового поля
+            function draw() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                drawMatrix(arena, {x: 0, y: 0});
+                drawMatrix(player.matrix, player.pos);
+            }
+
+            // Обновление игрового поля
+            function update(time = 0) {
+                const deltaTime = time - lastTime;
+                lastTime = time;
+
+                dropCounter += deltaTime;
+                if (dropCounter > 1000 / level) {
+                    playerDrop();
+                }
+
+                draw();
+                if (!gameOver) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            // Движение фигуры вниз
+            function playerDrop() {
+                player.pos.y++;
+                if (collide(arena, player)) {
+                    player.pos.y--;
+                    merge(arena, player);
+                    playerReset();
+                    arenaSweep();
+                    updateScore();
+                }
+                dropCounter = 0;
+            }
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        // Проверяем, начинается ли cookie с имени, которое мы ищем
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            function saveStats() {
+                fetch('{%  url 'customers_app:save_stats' %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'), // Добавляем CSRF-токен
+                    },
+                    body: JSON.stringify({
+                        score: score,
+                        level: level,
+                        lines_cleared: linesCleared,
+                    }),
+                })
+                    .then(response => response.json())
+                    .then(data => console.log(data))
+                    .catch(error => console.error('Error:', error));
+            }
+
+            // Сброс фигуры
+            function playerReset() {
+                player.matrix = createPiece(randomPiece());
+                player.pos.y = 0;
+                player.pos.x = Math.floor(columns / 2) - 1;
+
+                if (collide(arena, player)) {
+                    gameOver = true;
+                    saveStats();
+                    alert('Game Over!');
+                }
+            }
+
+            // Управление фигурой
+            document.addEventListener('keydown', event => {
+                if (gameOver) return;
+
+                if (event.key === 'ArrowLeft') {
+                    playerMove(-1);
+                } else if (event.key === 'ArrowRight') {
+                    playerMove(1);
+                } else if (event.key === 'ArrowDown') {
+                    playerDrop();
+                } else if (event.key === ' ') {
+                    playerHardDrop();
+                } else if (event.key === 'ArrowUp') {
+                    playerRotate(1);
+                }
+            });
+
+            // Движение влево/вправо
+            function playerMove(dir) {
+                player.pos.x += dir;
+                if (collide(arena, player)) {
+                    player.pos.x -= dir;
+                }
+            }
+
+            // Мгновенное падение
+            function playerHardDrop() {
+                while (!collide(arena, player)) {
+                    player.pos.y++;
+                }
+                player.pos.y--;
+                merge(arena, player);
+                playerReset();
+                arenaSweep();
+                updateScore();
+            }
+
+            // Поворот фигуры
+            function playerRotate(dir) {
+                const pos = player.pos.x;
+                let offset = 1;
+                rotate(player.matrix, dir);
+
+                while (collide(arena, player)) {
+                    player.pos.x += offset;
+                    offset = -(offset + (offset > 0 ? 1 : -1));
+                    if (offset > player.matrix[0].length) {
+                        rotate(player.matrix, -dir);
+                        player.pos.x = pos;
+                        return;
+                    }
+                }
+            }
+
+            // Поворот матрицы
+            function rotate(matrix, dir) {
+                for (let y = 0; y < matrix.length; y++) {
+                    for (let x = 0; x < y; x++) {
+                        [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+                    }
+                }
+
+                if (dir > 0) {
+                    matrix.forEach(row => row.reverse());
+                } else {
+                    matrix.reverse();
+                }
+            }
+
+            // Проверка столкновений
+            function collide(arena, player) {
+                const [m, o] = [player.matrix, player.pos];
+                for (let y = 0; y < m.length; y++) {
+                    for (let x = 0; x < m[y].length; x++) {
+                        if (m[y][x] !== 0 &&
+                            (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            // Объединение фигуры с игровым полем
+            function merge(arena, player) {
+                player.matrix.forEach((row, y) => {
+                    row.forEach((value, x) => {
+                        if (value !== 0) {
+                            arena[y + player.pos.y][x + player.pos.x] = value;
+                        }
+                    });
+                });
+            }
+
+            // Очистка заполненных линий
+            function arenaSweep() {
+                let rowCount = 1;
+                outer: for (let y = arena.length - 1; y > 0; y--) {
+                    for (let x = 0; x < arena[y].length; x++) {
+                        if (arena[y][x] === 0) {
+                            continue outer;
+                        }
+                    }
+
+                    const row = arena.splice(y, 1)[0].fill(0);
+                    arena.unshift(row);
+                    y++;
+
+                    linesCleared += rowCount;
+                    rowCount *= 2;
+                }
+            }
+
+            // Обновление счета
+            function updateScore() {
+                score += linesCleared * 10;
+                document.getElementById('score').innerText = score;
+                document.getElementById('level').innerText = level;
+                document.getElementById('lines').innerText = linesCleared;
+
+                if (linesCleared >= level * 10) {
+                    level++;
+                }
+            }
+
+            // Запуск игры
+            update();
+
+            // Загрузка данных о лидерборде
+            function loadLeaderboard() {
+                fetch('{%  url 'customers_app:get_leaderboard' %}', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Обновление данных на странице
+                        const overallWinner = data.overall_winner;
+                        const userBest = data.user_best;
+
+                        document.getElementById('overall-winner').innerText =
+                            overallWinner.username ? `${overallWinner.username} (${overallWinner.score})` : 'No data';
+
+                        document.getElementById('user-best').innerText =
+                            userBest.score ? userBest.score : 'No data';
+                    })
+                    .catch(error => console.error('Error loading leaderboard:', error));
+            }
+
+            // Вызов функции при загрузке страницы
+            window.addEventListener('load', () => {
+                loadLeaderboard();
+            });
+
+        </script>
+        {% csrf_token %}
+        <!-- end: page -->
+    </section>
+    <!-- end: page -->
+
+{% endblock %}
