@@ -12,72 +12,72 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
     <style>
         /* Базовые стили */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        html, body {
+            height: 100%;
             margin: 0;
-            background-color: #333;
-            color: white;
-            font-family: Arial, sans-serif;
+            display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #222; /* Фон игрового поля */
+            color: white;
+        }
+
+        #tetris-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
         }
 
         #tetris {
+            width: 100vw;
+            height: 80vh;
+            max-height: 600px; /* Подстрой этот параметр */
             border: 2px solid white;
             background-color: #222;
         }
 
-        #stats, #leaderboard {
-            margin: 10px 0;
-            font-size: 1.2em;
-            text-align: center;
+
+        /* Затемнение экрана при запуске игры */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            transition: opacity 0.5s ease-in-out;
         }
 
-        /* Медиазапросы для мобильных устройств */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-                height: auto;
-            }
-
-            #tetris {
-                width: 90vw;
-                height: 90vw;
-                max-width: 300px;
-                max-height: 600px;
-            }
-
-            #stats, #leaderboard {
-                font-size: 1em;
-            }
-
-            #leaderboard {
-                margin-top: 20px;
-            }
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
-        /* Стили для кнопок */
         #mobile-controls {
             display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            position: relative;
+            margin-top: 10px;
+            z-index: 2;
         }
 
         #mobile-controls button {
-            padding: 10px 20px;
-            font-size: 1.2em;
-            background-color: #444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        #mobile-controls button:active {
-            background-color: #666;
+            flex: 1;
+            font-size: 1.5em;
+            padding: 15px;
         }
     </style>
 {% endblock %}
@@ -97,8 +97,18 @@
 
     <section role="main" class="content-body content-body-modern mt-0">
         {#        {% include 'library_app/breadcrumb.html' %}#}
-
-
+{#        <div id="overlay" class="overlay">#}
+{#            <button onclick="startGame()">Начать игру</button>#}
+{#        </div>#}
+        <div id="tetris-container">
+            <canvas id="tetris"></canvas>
+        </div>
+        <div id="mobile-controls">
+            <button id="move-left">◀</button>
+            <button id="move-right">▶</button>
+            <button id="rotate">⏫</button>
+            <button id="drop">⏬</button>
+        </div>
         <div id="leaderboard" class="row" style="justify-content: left">
             <div class="col-sm-4">
                 <h3>Таблица лидеров</h3>
@@ -110,20 +120,13 @@
         <div id="stats" class="row">
             <div class="col-sm-4">
                 <h3>Текущая игра:</h3>
-                <h4>Кличество очков: <span id="score">0</span> Уровень: <span id="level">1</span> Линии: <span id="lines">0</span>
+                <h4>Кличество очков: <span id="score">0</span> Уровень: <span id="level">1</span> Линии: <span
+                        id="lines">0</span>
                 </h4>
             </div>
 
         </div>
-        <canvas id="tetris"></canvas>
-        <div id="mobile-controls" style="display: none;">
-            <button id="move-left">←</button>
-            <button id="move-right">→</button>
-            <button id="rotate">↻</button>
-            <button id="drop">↓</button>
-        </div>
         <script>
-
             document.getElementById('move-left').addEventListener('click', () => playerMove(-1));
             document.getElementById('move-right').addEventListener('click', () => playerMove(1));
             document.getElementById('rotate').addEventListener('click', () => playerRotate(1));
@@ -131,7 +134,7 @@
 
             const canvas = document.getElementById('tetris');
             const context = canvas.getContext('2d');
-            const scale = 40; // Увеличиваем масштаб
+            const scale = 37; // Увеличиваем масштаб
             const rows = 20; // Количество строк
             const columns = 10; // Количество столбцов
 
@@ -475,6 +478,35 @@
             window.addEventListener('load', () => {
                 loadLeaderboard();
             });
+
+            function resizeCanvas() {
+                const canvas = document.getElementById('tetris');
+                const container = document.getElementById('tetris-container');
+
+                const screenHeight = window.innerHeight;
+                const screenWidth = window.innerWidth;
+                const controlsHeight = document.getElementById('mobile-controls').offsetHeight || 50;
+
+                const maxCanvasHeight = screenHeight - controlsHeight - 20;
+                const canvasWidth = Math.min(screenWidth * 0.9, 400);
+
+                canvas.width = canvasWidth;
+                canvas.height = Math.min(maxCanvasHeight, canvasWidth * 2);
+
+                if (screenWidth < 768) {
+                    document.getElementById('mobile-controls').style.display = 'flex';
+                } else {
+                    document.getElementById('mobile-controls').style.display = 'none';
+                }
+            }
+
+            {#function startGame() {#}
+            {#    document.getElementById('overlay').classList.add('hidden'); // Убираем затемнение#}
+            {#}#}
+
+            window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('load', resizeCanvas);
+
 
         </script>
         {% csrf_token %}
