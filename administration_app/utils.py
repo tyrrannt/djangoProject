@@ -648,7 +648,7 @@ def get_users_info():
 
     :возврат: Нет
     """
-    users_list = DataBaseUser.objects.all()
+    users_list = DataBaseUser.objects.all().exclude(is_ppa=True)
     import csv
 
     with open("eggs.csv", "w", newline="") as csvfile:

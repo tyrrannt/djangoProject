@@ -375,3 +375,5 @@ class CompanyEventCreateView(PermissionRequiredMixin, LoginRequiredMixin, Create
     form_class = CompanyEventForm
     permission_required = "library_app.add_companyevent"
     success_url = reverse_lazy('library_app:event_list')
+
+

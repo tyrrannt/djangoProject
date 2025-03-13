@@ -105,7 +105,7 @@ class ContractsAddForm(forms.ModelForm):
 
 
 class ContractsUpdateForm(forms.ModelForm):
-    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'), required=False)
+    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name').exclude(is_ppa=True), required=False)
     divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
     parent_category = forms.ModelChoiceField(
         queryset=Contract.objects.all().select_related('contract_counteragent', 'type_of_contract', 'type_of_document',

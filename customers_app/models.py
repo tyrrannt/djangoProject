@@ -549,6 +549,7 @@ class DataBaseUser(AbstractUser):
     telegram_id = models.CharField(
         verbose_name="Telegram ID", max_length=20, blank=True
     )
+    is_ppa = models.BooleanField(default=False, verbose_name="МПД")
 
     def __str__(self):
         return self.title

@@ -162,35 +162,35 @@
 
                                 </ul>
                             </li>
-                        {% if user.is_staff %}
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>Персонал</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
-                                            Сезонность отпусков
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">
-                                            Анализ пропусков работы
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">
-                                            Влияние дня недели на отгулы
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">
-                                            Распределение типов времени
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        {% endif %}
+                            {% if user.is_staff %}
+                                <li class="nav-parent">
+                                    <a class="nav-link" href="#">
+                                        <span>Персонал</span>
+                                    </a>
+                                    <ul class="nav nav-children">
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
+                                                Сезонность отпусков
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">
+                                                Анализ пропусков работы
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">
+                                                Влияние дня недели на отгулы
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">
+                                                Распределение типов времени
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:event_list' %}">
                                     Мероприятия
@@ -496,7 +496,8 @@
                 <div class="widget-content">
                     <ul class="list-unstyled m-0">
                         <li><a href="https://barkol.ru/" target="_blank">Главный сайт</a></li>
-                        <li><a href="http://lk.barkol.ru/pls/apex/f?p=506" target="_blank">Кабинет авиаспециалиста</a></li>
+                        <li><a href="http://lk.barkol.ru/pls/apex/f?p=506" target="_blank">Кабинет авиаспециалиста</a>
+                        </li>
                         <li><a href="https://ms.barkol.ru/" target="_blank">Почтовый сервер БАРКОЛ</a></li>
                     </ul>
                 </div>

@@ -118,7 +118,7 @@ def export_users_to_csv(file_path):
         writer.writerow(headers)
 
         # Получаем данные из модели DataBaseUser
-        users = DataBaseUser.objects.select_related('user_work_profile').all().exclude(is_active=False)
+        users = DataBaseUser.objects.select_related('user_work_profile').all().exclude(is_active=False, is_ppa=True)
 
         # Записываем данные для каждого пользователя
         for user in users:
@@ -540,7 +540,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         jobs = Job.objects.filter(group=item)
                         users_list = []
                         for unit in jobs:
-                            users_list += [user.title for user in DataBaseUser.objects.filter(user_work_profile__job=unit).exclude(is_active=False)]
+                            users_list += [user.title for user in DataBaseUser.objects.filter(user_work_profile__job=unit).exclude(is_active=False, is_ppa=True)]
 
                         groups_dict[item.name] = users_list
                     logger.info(f"Права групп: {groups_dict} ")

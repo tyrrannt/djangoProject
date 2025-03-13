@@ -60,7 +60,7 @@ def get_database_user_work_profile():
     from django.db import transaction
 
     context = ""
-    users_list = DataBaseUser.objects.all().exclude(is_superuser=True).values("ref_key")
+    users_list = DataBaseUser.objects.all().exclude(is_superuser=True, is_ppa=True).values("ref_key")
     profile_list = DataBaseUserWorkProfile.objects.all().values("ref_key")
     profile_list_items = list()
     for item in profile_list:
@@ -187,7 +187,7 @@ def get_database_user():
         if item["Description"] != "":
             staff_set.add(item["Ref_Key"])
     users_set = set()
-    for item in DataBaseUser.objects.all():
+    for item in DataBaseUser.objects.all().exclude(is_ppa=True):
         users_set.add(item.ref_key)
     users_set &= staff_set  # Есть везде
     staff_set -= users_set
@@ -341,7 +341,7 @@ def get_identity_documents():
 
     users_list = (
         DataBaseUser.objects.all()
-        .exclude(is_superuser=True)
+        .exclude(is_superuser=True, is_ppa=True)
         .values("ref_key", "person_ref_key")
     )
     citizenship = Citizenships.objects.filter(city="Российская Федерация").first()

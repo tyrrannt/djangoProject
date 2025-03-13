@@ -4,21 +4,21 @@ import json
 import uuid
 from io import BytesIO
 from itertools import chain
-from pprint import pprint
-from pydoc import pager
+# from pprint import pprint
+# from pydoc import pager
 from urllib.parse import urlencode
 
 import pandas as pd
 import qrcode
 # from celery.worker.consumer import Tasks
-from dateutil.relativedelta import relativedelta
+# from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, DAILY
 from decouple import config
-from django.contrib.auth import authenticate
+# from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models.signals import post_save
+# from django.db.models.signals import post_save
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
@@ -49,7 +49,7 @@ from django.contrib import auth
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from hrdepartment_app.hrdepartment_util import get_working_hours
+# from hrdepartment_app.hrdepartment_util import get_working_hours
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
     get_norm_time_at_custom_day
 from hrdepartment_app.tasks import send_email_single_notification
@@ -349,7 +349,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     })
         context['repeat_tasks'] = repeat_tasks
 
-        print(repeat_tasks)
+        # print(repeat_tasks)
         # context.update(groups())
         return context
 
@@ -406,7 +406,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     # Создаем конечную дату (последний день месяца)
                     # Мы вычисляем его, переходя на следующий месяц и вычитая один день.
                     norm_time = norm_time_date.get_norm_time()
-                    print(report_month)
+                    # print(report_month)
                     if int(report_month) == 12:
                         end_date = datetime.datetime(int(report_year), 12, 31)
                     else:
@@ -557,7 +557,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df['Тип'] = df['Тип'].fillna(' ')
                 # Выводим строковое представление интервала
                 # df = df.sort_values(by=['Дата'])
-                print(df.head(31), '\n')
+                # print(df.head(31), '\n')
                 df.style.background_gradient(cmap='viridis')
                 html = df[["Дата", "Интервал", "+/-", "Тип"]].to_html(
                     classes='table table-light table-striped-columns table-hover table-bordered mb-0',
@@ -906,13 +906,13 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False)
+        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False, is_ppa=True)
         return qs
 
     def get(self, request, *args, **kwargs):
 
         if self.request.GET.get('update') == '3':
-            users_set = DataBaseUser.objects.all()
+            users_set = DataBaseUser.objects.all().exclude(is_ppa=True)
             for user in users_set:
                 if not get_active_user(user.ref_key):
                     user.is_active = False
@@ -932,11 +932,10 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(
+            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox', is_ppa=True).exclude(
                 is_active=False)
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
-            print('lll', data)
             return JsonResponse(response)
 
         return super(StaffListView, self).get(request, *args, **kwargs)
