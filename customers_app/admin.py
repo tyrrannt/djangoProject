@@ -61,13 +61,14 @@ class CustomUserAdmin(UserAdmin):
                     "person_ref_key",
                     "passphrase",
                     "telegram_id",
+                    'is_ppa'
                 ),
             },
         ),
     )
-    list_display = (
-    "pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active")
+    list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active")
     search_fields = ('pk', 'title', 'ref_key', 'person_ref_key')
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', 'is_ppa')
     ordering = ('last_name', 'first_name')
 
 
