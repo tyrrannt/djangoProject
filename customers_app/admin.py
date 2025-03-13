@@ -31,45 +31,74 @@ class CustomUserAdmin(UserAdmin):
     *UserAdmin.fieldsets: добавляем расширенный набор полей формы,
         тип: кортеж содержащий ('заголовок группы по вашему выбору', {словарь c новыми полями})
     """
-
     fieldsets = (
-        *UserAdmin.fieldsets,
-        (
-            "Личные данные",
-            {
-                "fields": (
-                    "surname",
-                    "title",
-                    "birthday",
-                ),
-            },
-        ),
-        (
-            "Профиль",
-            {
-                "fields": (
-                    "avatar",
-                    "address",
-                    "type_users",
-                    "service_number",
-                    "user_access",
-                    "personal_phone",
-                    "gender",
-                    "user_work_profile",
-                    "user_profile",
-                    "ref_key",
-                    "person_ref_key",
-                    "passphrase",
-                    "telegram_id",
-                    'is_ppa'
-                ),
-            },
-        ),
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': (
+            'title', 'first_name', 'last_name', 'surname', 'email', 'birthday')}),
+        ('Profile info', {'fields': (
+            'avatar', 'address', 'type_users', 'service_number', 'user_access', 'personal_phone', 'gender',
+            'user_work_profile', 'user_profile', 'ref_key', 'person_ref_key', 'passphrase', 'telegram_id', 'is_ppa')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2', 'email', 'birthday'),
+        }),
+    )
+
+    # fieldsets = (
+    #     *UserAdmin.fieldsets,
+    #     (
+    #         "Личные данные",
+    #         {
+    #             "fields": (
+    #                 "surname",
+    #                 "title",
+    #                 "birthday",
+    #             ),
+    #         },
+    #     ),
+    #     (
+    #         "Профиль",
+    #         {
+    #             "fields": (
+    #                 "avatar",
+    #                 "address",
+    #                 "type_users",
+    #                 "service_number",
+    #                 "user_access",
+    #                 "personal_phone",
+    #                 "gender",
+    #                 "user_work_profile",
+    #                 "user_profile",
+    #                 "ref_key",
+    #                 "person_ref_key",
+    #                 "passphrase",
+    #                 "telegram_id",
+    #                 'is_ppa'
+    #             ),
+    #         },
+    #     ),
+    # )
     list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active")
     search_fields = ('pk', 'title', 'ref_key', 'person_ref_key')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', 'is_ppa')
+    list_editable = ('is_active', 'is_ppa')
+    list_per_page = 50
     ordering = ('last_name', 'first_name')
+    empty_value_display = '-empty-'
+    actions = ['activate_users', 'deactivate_users']
+
+    def activate_users(self, request, queryset):
+        queryset.update(is_active=True)
+    activate_users.short_description = "Активируйте выбранных пользователей"
+
+    def deactivate_users(self, request, queryset):
+        queryset.update(is_active=False)
+    deactivate_users.short_description = "Деактивировать выбранных пользователей"
 
 
 admin.site.register(DataBaseUser, CustomUserAdmin)
