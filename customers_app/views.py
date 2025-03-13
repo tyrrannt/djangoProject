@@ -906,7 +906,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False, is_ppa=True)
+        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False).exclude(is_ppa=True)
         return qs
 
     def get(self, request, *args, **kwargs):
@@ -932,8 +932,8 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox', is_ppa=True).exclude(
-                is_active=False)
+            baseusers = DataBaseUser.objects.all().order_by('last_name').exclude(username='proxmox').exclude(
+                is_active=False).exclude(is_ppa=True)
             data = [baseuser.get_data() for baseuser in baseusers]
             response = {'data': data}
             return JsonResponse(response)
