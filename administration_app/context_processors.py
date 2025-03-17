@@ -63,10 +63,6 @@ from loguru import logger
 
 def get_all_contracts(request):
     cache_key = f"get_all_contracts_{request.user.id}"
-    cached_data = cache.get(cache_key)
-
-    if cached_data is not None:
-        return cached_data
 
     contracts_count = Contract.objects.filter(
         Q(parent_category=None),
