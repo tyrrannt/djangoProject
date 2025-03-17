@@ -49,40 +49,6 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
 
-    # fieldsets = (
-    #     *UserAdmin.fieldsets,
-    #     (
-    #         "Личные данные",
-    #         {
-    #             "fields": (
-    #                 "surname",
-    #                 "title",
-    #                 "birthday",
-    #             ),
-    #         },
-    #     ),
-    #     (
-    #         "Профиль",
-    #         {
-    #             "fields": (
-    #                 "avatar",
-    #                 "address",
-    #                 "type_users",
-    #                 "service_number",
-    #                 "user_access",
-    #                 "personal_phone",
-    #                 "gender",
-    #                 "user_work_profile",
-    #                 "user_profile",
-    #                 "ref_key",
-    #                 "person_ref_key",
-    #                 "passphrase",
-    #                 "telegram_id",
-    #                 'is_ppa'
-    #             ),
-    #         },
-    #     ),
-    # )
     list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active")
     search_fields = ('pk', 'title', 'ref_key', 'person_ref_key')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', 'is_ppa')
@@ -102,7 +68,6 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(DataBaseUser, CustomUserAdmin)
-# admin.site.register(Posts)
 admin.site.register(Job)
 admin.site.register(AccessLevel)
 admin.site.register(DataBaseUserProfile)
