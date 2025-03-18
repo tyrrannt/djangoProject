@@ -1907,7 +1907,7 @@ class DocumentsJobDescription(Documents):
     class Meta:
         verbose_name = "Должностная инструкция"
         verbose_name_plural = "Должностные инструкции"
-        # default_related_name = 'job'
+        ordering = ("-document_date",)
 
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=jds_directory_path, blank=True,
