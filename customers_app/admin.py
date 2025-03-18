@@ -49,7 +49,7 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
 
-    list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active")
+    list_display = ("pk", "username", "last_login", "last_name", "first_name", "surname", "birthday", "email", "is_active", 'is_ppa')
     search_fields = ('pk', 'title', 'ref_key', 'person_ref_key')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', 'is_ppa')
     list_editable = ('is_active', 'is_ppa')

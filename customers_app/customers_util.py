@@ -174,6 +174,7 @@ def get_filter_list(filter_list, variable, meaning):
 
 
 def get_database_user():
+    # ДУБЛИКАТ имеется в tasks.py
     count = DataBaseUser.objects.all().count() + 1
     staff = get_jsons_data_filter(
         "Catalog", "Сотрудники", "ВАрхиве", "false", 0, 0, False, False

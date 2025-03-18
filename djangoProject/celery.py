@@ -14,6 +14,10 @@ app.conf.beat_schedule = {
         'task': 'hrdepartment_app.tasks.report_card_separator',
         'schedule': crontab(minute='*/5'),
     },
+    'load_database_user': {
+        'task': 'hrdepartment_app.tasks.get_database_user',
+        'schedule': crontab(minute='*/30'),
+    },
     'birthday_gift': {
         'task': 'hrdepartment_app.tasks.happy_birthday',
         'schedule': crontab(minute='*/1'),
