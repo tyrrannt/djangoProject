@@ -1,6 +1,7 @@
 import json
 from pprint import pprint
 
+from django.contrib.auth.decorators import login_required
 from django.db.models import F, ExpressionWrapper, CharField
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -9,7 +10,7 @@ from django.core import serializers
 from administration_app.utils import get_client_ip
 from customers_app.models import DataBaseUser
 
-
+@login_required
 def json_view(request):
     dict_obj = DataBaseUser.objects.filter(is_active=False)[:3]
     queryset = serializers.serialize('json', dict_obj,
@@ -38,7 +39,7 @@ def get_type_second(job) -> str:
     else:
         return ''
 
-
+@login_required
 def xml_view(request):
     # dict_obj = DataBaseUser.objects.filter(user_work_profile__job__type_of_job='2').values_list('service_number', 'last_name', 'first_name', 'surname', 'address', 'birthday',
     #                                      'gender', 'user_work_profile__job__name')
