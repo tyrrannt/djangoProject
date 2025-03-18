@@ -1932,13 +1932,10 @@ class DocumentsJobDescription(Documents):
     )
 
     def get_data(self):
-        if DocumentsJobDescription.objects.filter(parent_document=self.pk).count() == 0:
+        if (DocumentsJobDescription.objects.filter(parent_document=self.pk).count() == 0) and (self.actuality):
             get_actual = 0
         else:
-            if self.actuality:
-                get_actual = 0
-            else:
-                get_actual = 1
+            get_actual = 1
 
         return {
             "pk": self.pk,
