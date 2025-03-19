@@ -174,6 +174,13 @@ def get_approval_oficial_memo_process(request):
                     .exclude(cancellation=True)
                     .exclude(document__official_memo_type="3")
                 )
+                hr_color = []
+                for item in hr:
+                    if item.document.person.user_work_profile.job.division_affiliation.pk == 2:
+                        hr_color.append((item, 'green'))
+                    else:
+                        hr_color.append((item, 'red'))
+                print(hr_color)
                 hr_accepted = (
                     ApprovalOficialMemoProcess.objects.filter(
                         Q(hr_accepted=False)
@@ -241,7 +248,7 @@ def get_approval_oficial_memo_process(request):
                 "location_selected": distributor,
                 "location_selected_count": distributor.count if distributor else 0,
                 "person_department_staff": person_hr,
-                "process_accepted": hr,
+                "process_accepted": hr_color,
                 "process_accepted_count": hr.count if hr else 0,
                 "person_hr": person_hr,
                 "hr_accepted": hr_accepted,

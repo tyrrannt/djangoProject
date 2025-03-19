@@ -214,13 +214,13 @@
                 </div>
                 <div class="content" id="wrapper">
                     <ul>
-                        {% for item in process_accepted %}
+                        {% for item, color in process_accepted %}
                             <li>
                                 <a href="{% url 'hrdepartment_app:bpmemo_update' item.pk %}" class="clearfix">
                                     <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
                                          title=""
                                          data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">
-                                        <code style="font-size: small">
+                                        <code style="font-size: small; color: {{ color }}">
                                             {{ item }}
                                         </code>
                                     </div>
