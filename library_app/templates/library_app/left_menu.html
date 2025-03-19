@@ -581,7 +581,22 @@
                                             const socket_online_users = new WebSocket(online_users);
                                             socket_online_users.onmessage = function (event) {
                                                 const data = JSON.parse(event.data);
-                                                if (data.type === 'online_users') {
+                                                if (data.is_admin) {
+                                                   if (data.type === 'online_users') {
+                                                    const usersList = document.getElementById('online-users');
+                                                    usersList.innerHTML = '';
+                                                    data.users.forEach(user => {
+                                                        const li = document.createElement('li');
+                                                        const link = document.createElement('a');
+                                                        link.href = `/users/staff/${user.pk}/`;  // Ссылка на профиль пользователя
+                                                        link.textContent = user.username;
+                                                        li.appendChild(link);
+                                                        usersList.appendChild(li);
+                                                    });
+                                                }
+                                                }
+                                                else {
+                                                   if (data.type === 'online_users') {
                                                     const usersList = document.getElementById('online-users');
                                                     usersList.innerHTML = '';
                                                     data.users.forEach(user => {
@@ -590,6 +605,8 @@
                                                         usersList.appendChild(li);
                                                     });
                                                 }
+                                                }
+
                                             };
                                             socket_online_users.onclose = function (event) {
                                                 console.error('WebSocket closed unexpectedly');

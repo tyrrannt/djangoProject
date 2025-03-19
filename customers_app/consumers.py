@@ -43,11 +43,13 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
 
     async def send_online_users(self):
         """Метод для отправки списка онлайн пользователей."""
+        user = self.scope['user']
         await self.channel_layer.group_send(
             'online_users',
             {
                 'type': 'online_users_message',  # Тип сообщения
-                'users': list(self.online_users)  # Список онлайн пользователей
+                'users': list(self.online_users),  # Список онлайн пользователей
+                'is_admin': user.is_superuser,
             }
         )
 
