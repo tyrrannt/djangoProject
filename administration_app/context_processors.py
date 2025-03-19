@@ -180,7 +180,6 @@ def get_approval_oficial_memo_process(request):
                         hr_color.append((item, 'green'))
                     else:
                         hr_color.append((item, 'red'))
-                print(hr_color)
                 hr_accepted = (
                     ApprovalOficialMemoProcess.objects.filter(
                         Q(hr_accepted=False)

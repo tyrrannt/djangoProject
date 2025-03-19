@@ -588,8 +588,8 @@
                                                     data.users.forEach(user => {
                                                         const li = document.createElement('li');
                                                         const link = document.createElement('a');
-                                                        link.href = `/users/staff/${user.pk}/`;  // Ссылка на профиль пользователя
-                                                        link.textContent = user;
+                                                        link.href = `/users/staff/${user[1]}/`;  // Ссылка на профиль пользователя
+                                                        link.textContent = user[0];
                                                         li.appendChild(link);
                                                         usersList.appendChild(li);
                                                     });
@@ -601,7 +601,7 @@
                                                     usersList.innerHTML = '';
                                                     data.users.forEach(user => {
                                                         const li = document.createElement('li');
-                                                        li.textContent = user;
+                                                        li.textContent = user[0];
                                                         usersList.appendChild(li);
                                                     });
                                                 }

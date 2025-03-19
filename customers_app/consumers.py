@@ -29,7 +29,7 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
             await self.accept()  # Принимаем соединение
             user = self.scope['user']  # Получаем объект пользователя из scope
             if user.is_authenticated:  # Проверяем, авторизован ли пользователь
-                self.online_users.add(FIO_format(user.title))  # Добавляем имя пользователя в множество online_users
+                self.online_users.add((FIO_format(user.title), user.pk))  # Добавляем имя пользователя в множество online_users
                 await self.channel_layer.group_add('online_users', self.channel_name)  # Добавляем соединение в группу online_users
                 await self.send_online_users()  # Отправляем список онлайн пользователей
 
@@ -37,7 +37,7 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
         """Метод для обработки разрыва соединения и удаления пользователя из списка онлайн пользователей."""
         user = self.scope['user']  # Получаем объект пользователя из scope
         if user.is_authenticated:  # Проверяем, авторизован ли пользователь
-            self.online_users.discard(FIO_format(user.title))  # Удаляем имя пользователя из множества online_users
+            self.online_users.discard((FIO_format(user.title), user.pk))  # Удаляем имя пользователя из множества online_users
             await self.channel_layer.group_discard('online_users', self.channel_name)  # Удаляем соединение из группы online_users
             await self.send_online_users()  # Отправляем список онлайн пользователей
 
