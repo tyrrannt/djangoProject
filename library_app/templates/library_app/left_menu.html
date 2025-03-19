@@ -589,7 +589,7 @@
                                                         const li = document.createElement('li');
                                                         const link = document.createElement('a');
                                                         link.href = `/users/staff/${user.pk}/`;  // Ссылка на профиль пользователя
-                                                        link.textContent = user.username;
+                                                        link.textContent = user;
                                                         li.appendChild(link);
                                                         usersList.appendChild(li);
                                                     });
