@@ -6,6 +6,7 @@ from gc import get_objects
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from dateutil.rrule import DAILY
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMultiAlternatives
@@ -2434,6 +2435,46 @@ class ProductionCalendar(models.Model):
                     friday += 1
         return friday
 
+    def get_norm_time_on_day(self):
+        last_day = datetime.datetime.today() - datetime.timedelta(days=1)
+        first_day = self.calendar_month.replace(day=1)
+        # Инициализация переменных
+        total_hours = 0
+        friday_count = 0
+        preholiday_time = 0
+        # Получаем все дни в диапазоне
+        days_in_month = list(rrule.rrule(DAILY, dtstart=first_day, until=last_day))
+        # Получаем предпраздничные и выходные дни из базы данных за один запрос
+        preholiday_days = {
+            item.preholiday_day: item.work_time
+            for item in PreHolidayDay.objects.filter(preholiday_day__in=days_in_month)
+        }
+        weekend_days = {
+            item.weekend_day
+            for item in WeekendDay.objects.filter(weekend_day__in=days_in_month)
+        }
+        # Итерация по дням месяца
+        for day in days_in_month:
+            day_date = day.date()
+
+            if day_date in weekend_days:
+                continue  # Пропускаем выходные и праздничные дни
+
+            if day_date in preholiday_days:
+                # Обработка предпраздничных дней
+                work_time = preholiday_days[day_date]
+                preholiday_time += work_time.hour + work_time.minute / 60
+            else:
+                # Обработка обычных рабочих дней
+                if day.weekday() < 5:  # Понедельник-пятница
+                    total_hours += 8.5
+                    if day.weekday() == 4:  # Пятница
+                        friday_count += 1
+
+        # Корректировка нормы времени
+        norm_time = total_hours - friday_count + preholiday_time
+        return norm_time
+
     def get_norm_time_at_day(self):
         """
         Подсчет количества рабочих часов в день
@@ -2443,7 +2484,6 @@ class ProductionCalendar(models.Model):
         last_day = self.calendar_month + relativedelta(day=datetime.datetime.today().day)
         last_day = last_day - datetime.timedelta(days=1)
         preholiday_time, day_count, preholiday_day_count, friday_count = 0, 0, 0, 0
-
         preholiday_day_list = [item.preholiday_day for item in PreHolidayDay.objects.filter(
             preholiday_day__in=list(rrule.rrule(rrule.DAILY, dtstart=first_day, until=last_day)))]
         weekday_day_list = [item.weekend_day for item in WeekendDay.objects.filter(

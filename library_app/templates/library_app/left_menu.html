@@ -362,7 +362,6 @@
                                 </ul>
                             </li>
                         </ul>
-
                         <ul class="nav nav-children">
                             <li class="nav-parent">
                                 <a class="nav-link" href="#">
@@ -430,13 +429,7 @@
                                             Приказы
                                         </a>
                                     </li>
-
-                                    {#                                    <li>#}
-                                    {#                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">#}
-                                    {#                                            Табель рабочего времени (список)#}
-                                    {#                                        </a>#}
-                                    {#                                    </li>#}
-                                </ul>
+                               </ul>
                             </li>
                             <li>
                                 <a class="nav-link" href="#">
@@ -456,35 +449,31 @@
                             <span>Справка</span>
                         </a>
                     </li>
-
+                    {% if user.is_superuser %}
                     <li class="nav-parent">
                         <a class="nav-link" href="#">
                             <i class='bx bxs-help-circle' aria-hidden="true"></i>
                             <span>Конкурс</span>
                         </a>
                         <ul class="nav nav-children">
-                            {% if user.is_superuser %}
                                 <li>
                                     <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
                                         Прием стихов
                                     </a>
                                 </li>
-
                                 <li>
                                     <a class="nav-link" href="{% url 'library_app:vote' %}">
                                         Голосование
                                     </a>
                                 </li>
-                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:results' %}">
                                     Результаты
                                 </a>
                             </li>
-
                         </ul>
                     </li>
-
+                    {% endif %}
                 </ul>
             </nav>
             <hr class="separator"/>
