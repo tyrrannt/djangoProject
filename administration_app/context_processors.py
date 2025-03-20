@@ -188,7 +188,14 @@ def get_approval_oficial_memo_process(request):
                     Q(person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk) &
                     Q(originals_received=False) & Q(process_accepted=True)
                 ).exclude(cancellation=True).exclude(document__official_memo_type="2")
-                clerk_color = [(item, 'red') for item in clerk]
+                clerk_color = [
+                    (
+                        item,
+                        'red' if item.document.person.user_work_profile.job.type_of_job == "1"
+                        else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
+                        else 'black'
+                    )
+                    for item in clerk]
                 notifications.append({
                     'count': clerk.count(),
                     'icon_class': 'bx bx-notepad',
@@ -225,10 +232,14 @@ def get_approval_oficial_memo_process(request):
                 hr_accepted = ApprovalOficialMemoProcess.objects.filter(
                     Q(hr_accepted=False) & Q(originals_received=True) & Q(date_transfer_hr__isnull=False)
                 ).exclude(cancellation=True).exclude(document__official_memo_type="2")
-                hr_accepted_color = [(item,
+                hr_accepted_color = [
+                    (
+                        item,
                         'red' if item.document.person.user_work_profile.job.type_of_job == "1"
                         else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
-                        else 'black') for item in hr_accepted]
+                        else 'black'
+                    )
+                    for item in hr_accepted]
                 notifications.append({
                     'count': hr_accepted.count(),
                     'icon_class': 'bx bx-pencil',
