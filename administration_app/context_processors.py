@@ -204,7 +204,15 @@ def get_approval_oficial_memo_process(request):
                 hr = ApprovalOficialMemoProcess.objects.filter(
                     Q(process_accepted=False) & Q(location_selected=True)
                 ).exclude(cancellation=True).exclude(document__official_memo_type="3")
-                hr_color = [(item, 'green' if item.document.person.user_work_profile.job.division_affiliation.pk == 2 else 'red') for item in hr]
+                hr_color = [
+                    (
+                        item,
+                        'red' if item.document.person.user_work_profile.job.division_affiliation.pk == 1
+                        else 'green' if item.document.person.user_work_profile.job.division_affiliation.pk == 2
+                        else 'black'
+                    )
+                    for item in hr
+                ]
                 notifications.append({
                     'count': hr.count(),
                     'icon_class': 'bx bx-user-pin',
