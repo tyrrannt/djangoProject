@@ -305,7 +305,6 @@ def get_approval_oficial_memo_process(request):
                     'view_all_url': 'hrdepartment_app:team_list',
                     'large': False
                 })
-            pprint(notifications)
             return {"notifications": notifications}
 
         except Exception as _ex:
