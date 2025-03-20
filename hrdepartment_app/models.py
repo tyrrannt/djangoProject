@@ -832,9 +832,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             "pk": self.pk,
             "document_type": "К" if self.document.type_trip == "2" else "СП",
             "document": str(self.document.title),
-            "submit_for_approval": format_name_initials(self.person_executor, self)
-            if self.submit_for_approval
-            else "",
+            "submit_for_approval": format_name_initials(self.person_executor, self) if self.submit_for_approval else "",
             "document_not_agreed": format_name_initials(self.person_agreement, self)
             if self.document_not_agreed
             else "",
@@ -847,9 +845,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
             "order": str(self.order) if self.order else "",
             "comments": str(self.document.comments),
             "cancellation": self.cancellation,
-            "originals_received": True
-            if self.originals_received and self.date_transfer_hr
-            else False,
+            "originals_received": True if self.originals_received and self.date_transfer_hr else False,
             "expenses_summ": self.document.expenses_summ if self.process_accepted and self.document.expenses_summ > 0 else "",
             "expenses_summ_check": self.document.expenses if self.process_accepted and self.document.expenses_summ > 0 else "-",
         }
