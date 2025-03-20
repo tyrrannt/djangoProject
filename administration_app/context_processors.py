@@ -183,10 +183,10 @@ def get_approval_oficial_memo_process(request):
                     'view_all_url': 'hrdepartment_app:bpmemo_list',
                     'large': False
                 })
-
+            print(person_clerk)
             if request.user.user_work_profile.job.pk in person_clerk:
                 clerk = ApprovalOficialMemoProcess.objects.filter(
-                    Q(person_executor__user_work_profile__divisions__type_of_role=request.user.user_work_profile.divisions.type_of_role) &
+                    Q(person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk) &
                     Q(originals_received=False) & Q(process_accepted=True)
                 ).exclude(cancellation=True).exclude(document__official_memo_type="2")
                 clerk_color = [(item, 'red') for item in clerk]
