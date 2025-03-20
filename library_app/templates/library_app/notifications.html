@@ -1,3 +1,4 @@
+{% load custom %}
 {% load static %}
 
 <style>
@@ -27,8 +28,7 @@
                         {% for item, color in notification.items %}
 {#                            {% for unit, color in item.items %}#}
                                 <li>
-    {#                                <a href="{% url notification.url_name item.pk %}" class="clearfix">#}
-                                    <a href="#" class="clearfix">
+                                    <a href="{{ item|get_url:notification.url_name  }}" class="clearfix">
                                         <div class="m-xs" data-bs-toggle="tooltip" data-bs-placement="top"
                                              title=""
                                              data-bs-original-title="Создано: {{ item.date_of_creation| date:'d-m-Y' }}">

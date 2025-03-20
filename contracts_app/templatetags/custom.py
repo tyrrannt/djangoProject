@@ -5,6 +5,7 @@ from urllib.parse import quote
 from django import template
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 
 register = template.Library()
 
@@ -217,6 +218,18 @@ def filename(value):
 @register.filter
 def get_key(dictionary, key):
     return dictionary.get(key, 0)
+
+@register.filter
+def get_url(obj, url_name):
+    """
+    Универсальный фильтр для получения URL по имени маршрута.
+    """
+    if hasattr(obj, 'pk') and obj.pk:
+        try:
+            return reverse(url_name, args=[obj.pk])
+        except:
+            pass
+    return '#'
 
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)
