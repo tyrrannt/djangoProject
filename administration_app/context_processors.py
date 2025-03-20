@@ -212,8 +212,6 @@ def get_approval_oficial_memo_process(request):
                     )
                     for item in hr
                 ]
-                for item in hr:
-                    print(item.document.person.user_work_profile.job.type_of_job)
                 notifications.append({
                     'count': hr.count(),
                     'icon_class': 'bx bx-user-pin',
