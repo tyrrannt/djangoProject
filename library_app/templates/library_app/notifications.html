@@ -471,6 +471,7 @@
     {% endif %}
     {% if user.pk in accounting or user.is_superuser%}
     <li>
+        {{ accounting }}
         {% if accounting_expenses_count != 0 %}
             <a href="{% url 'hrdepartment_app:expenses_list' %}" class="dropdown-toggle notification-icon" >
                 <i class="bx bxs-bank text-danger" data-bs-toggle="tooltip" data-bs-placement="bottom"

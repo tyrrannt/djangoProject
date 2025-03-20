@@ -132,7 +132,6 @@ def get_approval_oficial_memo_process(request):
             for item in DataBaseUser.objects.filter(Q(user_work_profile__divisions__type_of_role=3)
                                                     & Q(user_work_profile__job__right_to_approval=True)).values('pk'):
                 person_accounting.append(item['pk'])  # Получаем список сотрудников бухгалтерии
-
             if request.user.user_work_profile.job.pk in person_executor:
                 pass  # Если пользователь является исполнителем
 
