@@ -183,7 +183,6 @@ def get_approval_oficial_memo_process(request):
                     'view_all_url': 'hrdepartment_app:bpmemo_list',
                     'large': False
                 })
-            print(person_clerk)
             if request.user.user_work_profile.job.pk in person_clerk:
                 clerk = ApprovalOficialMemoProcess.objects.filter(
                     Q(person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk) &
@@ -207,12 +206,14 @@ def get_approval_oficial_memo_process(request):
                 hr_color = [
                     (
                         item,
-                        'red' if item.document.person.user_work_profile.job.division_affiliation.pk == 2
-                        else 'green' if item.document.person.user_work_profile.job.division_affiliation.pk == 3
+                        'red' if item.document.person.user_work_profile.job.type_of_job == "1"
+                        else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
                         else 'black'
                     )
                     for item in hr
                 ]
+                for item in hr:
+                    print(item.document.person.user_work_profile.job.type_of_job)
                 notifications.append({
                     'count': hr.count(),
                     'icon_class': 'bx bx-user-pin',
