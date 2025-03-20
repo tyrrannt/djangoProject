@@ -207,8 +207,8 @@ def get_approval_oficial_memo_process(request):
                 hr_color = [
                     (
                         item,
-                        'red' if item.document.person.user_work_profile.job.division_affiliation.pk == 1
-                        else 'green' if item.document.person.user_work_profile.job.division_affiliation.pk == 2
+                        'red' if item.document.person.user_work_profile.job.division_affiliation.pk == 2
+                        else 'green' if item.document.person.user_work_profile.job.division_affiliation.pk == 3
                         else 'black'
                     )
                     for item in hr
