@@ -231,6 +231,22 @@ def get_url(obj, url_name):
             pass
     return '#'
 
+@register.filter
+def index(list_, index):
+    """Возвращает элемент списка по индексу."""
+    try:
+        return list_[index]
+    except (IndexError, TypeError):
+        return ""
+
+@register.filter
+def div(value, arg):
+    """Делит value на arg с обработкой нуля"""
+    try:
+        return float(value) / float(arg)
+    except (ValueError, ZeroDivisionError):
+        return 0
+
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)
 register.filter("FIO_format", FIO_format)

@@ -4090,46 +4090,159 @@ def unacknowledge_document(request):
 
 @login_required
 def seasonality_report(request):
-    # Получение выбранного года из GET-параметров
+    # Получение выбранного года
     selected_year = request.GET.get("year")
     current_year = datetime.datetime.now().year
+    years = list(range(current_year - 5, current_year + 1))
 
-    # Определение списка доступных лет
-    years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
+    selected_year = int(selected_year) if selected_year and selected_year.isdigit() else current_year
 
-    if selected_year and selected_year.isdigit():
-        selected_year = int(selected_year)
-    else:
-        selected_year = current_year
-
-    # Фильтрация данных по выбранному году и типу записи "Отпуск"
-    report_cards = ReportCard.objects.filter(
+    # Фильтрация данных:
+    # 1. Основные фактические отпуска (коды 2, 3)
+    main_vacations = ReportCard.objects.filter(
         report_card_day__year=selected_year,
-        record_type__in=["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "19"]
+        record_type__in=["2", "3"]
+    )
+    # 2. Прочие фактические отпуска (коды 4-12, 19)
+    other_vacations = ReportCard.objects.filter(
+        report_card_day__year=selected_year,
+        record_type__in=["4", "5", "6", "7", "8", "9", "10", "11", "12", "19"]
+    )
+    # 3. Запланированные отпуска (код 18)
+    planned_vacations = ReportCard.objects.filter(
+        report_card_day__year=selected_year,
+        record_type="18"
     )
 
     # Подсчет количества отпусков по месяцам
-    vacation_counts = [0] * 12
-    for card in report_cards:
+    main_counts = [0] * 12
+    other_counts = [0] * 12
+    planned_counts = [0] * 12
+
+    for card in main_vacations:
         month = card.report_card_day.month
-        vacation_counts[month - 1] += 1
+        main_counts[month - 1] += 1
 
-    # Статистический анализ
-    df = pd.DataFrame({"Months": range(1, 13), "Vacations": vacation_counts})
-    avg_vacations = df["Vacations"].mean()
-    std_deviation = df["Vacations"].std()
+    for card in other_vacations:
+        month = card.report_card_day.month
+        other_counts[month - 1] += 1
 
-    # Передача данных в шаблон
+    for card in planned_vacations:
+        month = card.report_card_day.month
+        planned_counts[month - 1] += 1
+
+    # Расчет отклонений основных отпусков от запланированных
+    deviation_main = []
+    for main, planned in zip(main_counts, planned_counts):
+        if planned != 0:
+            deviation_main.append(round((main - planned) / planned * 100, 2))
+        else:
+            deviation_main.append(0 if main == 0 else 100)
+
+    # Общие фактические отпуска (основные + прочие)
+    total_actual_counts = [main + other for main, other in zip(main_counts, other_counts)]
+
+    # Анализ перегрузок
+    overload_analysis = []
+    for month_name, planned, main, other in zip(
+            [f"{i}-й месяц" for i in range(1, 13)],
+            planned_counts,
+            main_counts,
+            other_counts
+    ):
+        # Определение статуса
+        if planned == 0:
+            status = "⚠️ Нет плана"
+            reason = "Не запланировано ни одного отпуска"
+        elif main > planned * 1.3:  # Перегруз >30%
+            status = "⚠️ Частичный перегруз"
+            reason = f"Основных отпусков на {round((main / planned - 1) * 100)}% больше плана"
+        elif main + other > planned * 1.5:
+            status = "❌ Перегруз"
+            reason = "Общее количество отпусков значительно превышает план"
+        else:
+            status = "✅ Норма"
+            reason = "В пределах плановых значений"
+
+        overload_analysis.append({
+            "month": month_name,
+            "status": status,
+            "reason": reason,
+            "planned": planned,
+            "main": main,
+            "other": other
+        })
+
+    # Статистика
+    df_main = pd.DataFrame({"Months": range(1, 13), "Main": main_counts})
+    df_other = pd.DataFrame({"Months": range(1, 13), "Other": other_counts})
+    df_planned = pd.DataFrame({"Months": range(1, 13), "Planned": planned_counts})
+
+    avg_main = df_main["Main"].mean()
+    avg_other = df_other["Other"].mean()
+    avg_planned = df_planned["Planned"].mean()
+
+    # Данные для шаблона
     context = {
         "months": [f"{i}-й месяц" for i in range(1, 13)],
-        "vacation_counts": vacation_counts,
+        "main_counts": main_counts,
+        "other_counts": other_counts,
+        "planned_counts": planned_counts,
+        "total_actual_counts": total_actual_counts,
+        "deviation_main": deviation_main,
         "years": years,
         "selected_year": selected_year,
-        "avg_vacations": round(avg_vacations, 2),
-        "std_deviation": round(std_deviation, 2),
+        "avg_main": round(avg_main, 2),
+        "avg_other": round(avg_other, 2),
+        "avg_planned": round(avg_planned, 2),
     }
-
+    context.update({
+        "overload_analysis": overload_analysis,
+        "total_overloads": sum(1 for x in overload_analysis if "перегруз" in x["status"].lower())
+    })
     return render(request, "hrdepartment_app/seasonality_report.html", context)
+
+# def seasonality_report(request):
+#     # Получение выбранного года из GET-параметров
+#     selected_year = request.GET.get("year")
+#     current_year = datetime.datetime.now().year
+#
+#     # Определение списка доступных лет
+#     years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
+#
+#     if selected_year and selected_year.isdigit():
+#         selected_year = int(selected_year)
+#     else:
+#         selected_year = current_year
+#
+#     # Фильтрация данных по выбранному году и типу записи "Отпуск"
+#     report_cards = ReportCard.objects.filter(
+#         report_card_day__year=selected_year,
+#         record_type__in=["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "19"]
+#     )
+#
+#     # Подсчет количества отпусков по месяцам
+#     vacation_counts = [0] * 12
+#     for card in report_cards:
+#         month = card.report_card_day.month
+#         vacation_counts[month - 1] += 1
+#
+#     # Статистический анализ
+#     df = pd.DataFrame({"Months": range(1, 13), "Vacations": vacation_counts})
+#     avg_vacations = df["Vacations"].mean()
+#     std_deviation = df["Vacations"].std()
+#
+#     # Передача данных в шаблон
+#     context = {
+#         "months": [f"{i}-й месяц" for i in range(1, 13)],
+#         "vacation_counts": vacation_counts,
+#         "years": years,
+#         "selected_year": selected_year,
+#         "avg_vacations": round(avg_vacations, 2),
+#         "std_deviation": round(std_deviation, 2),
+#     }
+#
+#     return render(request, "hrdepartment_app/seasonality_report.html", context)
 
 @login_required
 def export_seasonality_data(request):

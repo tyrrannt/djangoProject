@@ -1054,25 +1054,36 @@ def vacation_schedule(year=None):
 
         for item in vacation_list:
             end_date = datetime.datetime.strptime(item["ДатаОкончания"][:10], "%Y-%m-%d")
-            if end_date < today or item["Сотрудник_Key"] not in user_dict:
+            # if end_date < today or item["Сотрудник_Key"] not in user_dict:
+            #     continue
+            if item["Сотрудник_Key"] not in user_dict:
                 continue
-
             start_date = datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d")
             usr_obj = user_dict[item["Сотрудник_Key"]]
             reason = item["Примечание"] if item["Примечание"] else "График отпусков"
 
             for day in range(item["КоличествоДней"]):
                 current_day = start_date + datetime.timedelta(days=day)
-                if current_day > today:
-                    report_card_list.append(ReportCard(
-                        report_card_day=current_day,
-                        employee=usr_obj,
-                        start_time=datetime.time(9, 30),
-                        end_time=datetime.time(18, 0),
-                        record_type="18",
-                        reason_adjustment=reason,
-                        doc_ref_key=docs,
-                    ))
+                report_card_list.append(ReportCard(
+                    report_card_day=current_day,
+                    employee=usr_obj,
+                    start_time=datetime.time(9, 30),
+                    end_time=datetime.time(18, 0),
+                    record_type="18",
+                    reason_adjustment=reason,
+                    doc_ref_key=docs,
+                ))
+
+                # if current_day > today:
+                #     report_card_list.append(ReportCard(
+                #         report_card_day=current_day,
+                #         employee=usr_obj,
+                #         start_time=datetime.time(9, 30),
+                #         end_time=datetime.time(18, 0),
+                #         record_type="18",
+                #         reason_adjustment=reason,
+                #         doc_ref_key=docs,
+                #     ))
 
         # Пакетное сохранение
         batch_size = 1000
