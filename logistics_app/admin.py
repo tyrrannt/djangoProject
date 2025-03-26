@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 from administration_app.utils import format_name_initials
-from logistics_app.models import WayBill, Package, PackageImage
+from logistics_app.models import WayBill, Package, PackageImage, Grade, Nomenclature, NomenclatureUnit, \
+    NomenclatureGroup
 
 
 # Register your models here.
@@ -25,3 +26,25 @@ class PackageAdmin(admin.ModelAdmin):
         return format_name_initials(obj.executor.title) if obj.executor else ''
 
     search_fields = ["number_of_dispatch", ]
+
+@admin.register(Grade)
+class GradeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')
+    search_fields = ('name',)
+
+@admin.register(NomenclatureUnit)
+class UnitAdmin(admin.ModelAdmin):
+    list_display = ('name', 'short_name')
+    search_fields = ('name', 'short_name')
+
+@admin.register(NomenclatureGroup)
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ('name', 'parent')
+    search_fields = ('name',)
+    list_filter = ('parent',)
+
+@admin.register(Nomenclature)
+class NomenclatureAdmin(admin.ModelAdmin):
+    list_display = ('name', 'group', 'price', 'quantity', 'unit', 'serial_number', 'year_of_manufacture', 'weight', 'dimensions', 'grade', 'location', 'estate')
+    search_fields = ('name', 'description', 'serial_number')
+    list_filter = ('group', 'unit', 'grade', 'location', 'estate')

@@ -14,6 +14,7 @@ from dateutil import rrule
 from decouple import config
 from django.core import mail
 from django.core.mail import EmailMultiAlternatives
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -887,109 +888,201 @@ def vacation_schedule_send():
                 logger.debug(f"Failed to send email. {_ex}")
 
 
+# @app.task()
+# def vacation_schedule():
+#     def search_vacation(name, people):
+#         """
+#         Поиск отпуска по названию в списке людей.
+#
+#         Аргументы:
+#             name (str): Имя для поиска.
+#             people (list): список словарей, представляющих людей, каждый из которых содержит ключ «Сотрудник_Key».
+#
+#         Возврат:
+#             list: список словарей, представляющих людей, у которых «Сотрудник_Key» равен данному имени.
+#         """
+#         return [element for element in people if element["Сотрудник_Key"] == name]
+#
+#     vacation_list = list()
+#     graph_vacacion = get_jsons_data_filter(
+#         "Document", "ГрафикОтпусков", "Number", "710-лс", 0, 0, False, True
+#     )
+#     postponement_of_vacation = get_jsons_data_filter(
+#         "Document",
+#         "ПереносОтпуска",
+#         "year(ИсходнаяДатаНачала)",
+#         2023,
+#         0,
+#         0,
+#         False,
+#         False,
+#     )
+#     for item in graph_vacacion["value"][0]["Сотрудники"]:
+#         postponement_list = search_vacation(
+#             item["Сотрудник_Key"], postponement_of_vacation["value"]
+#         )
+#         finded = 0
+#         if len(postponement_list) == 0:
+#             vacation_list.append(item)
+#         else:
+#             for unit in postponement_list:
+#                 if unit["ИсходнаяДатаНачала"] == item["ДатаНачала"]:
+#                     for slice_element in unit["Переносы"]:
+#                         item["ДатаНачала"] = slice_element["ДатаНачала"]
+#                         item["ДатаОкончания"] = slice_element["ДатаОкончания"]
+#                         item["КоличествоДней"] = slice_element["КоличествоДней"]
+#                         item["Примечание"] = "Перенос отпуска №: " + unit["Number"]
+#                         vacation_list.append(item)
+#                         finded = 1
+#                 if finded == 0:
+#                     vacation_list.append(item)
+#     year = datetime.datetime.today().year
+#     for report_record in ReportCard.objects.filter(
+#             Q(report_card_day__year=year) & Q(record_type="18")
+#     ):
+#         report_record.delete()
+#     docs = graph_vacacion["value"][0]["Ref_Key"]
+#     counter = 1
+#     report_card_list = list()
+#     for item in vacation_list:
+#         if (
+#                 datetime.datetime.strptime(item["ДатаОкончания"][:10], "%Y-%m-%d")
+#                 >= datetime.datetime.today()
+#         ):
+#             if DataBaseUser.objects.filter(ref_key=item["Сотрудник_Key"]).exists():
+#                 del item["Ref_Key"]
+#                 del item["LineNumber"]
+#                 del item["ФизическоеЛицо_Key"]
+#                 usr_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"])
+#                 item["Сотрудник_Key"] = DataBaseUser.objects.get(
+#                     ref_key=item["Сотрудник_Key"]
+#                 ).title
+#                 item["ДатаНачала"] = datetime.datetime.strptime(
+#                     item["ДатаНачала"][:10], "%Y-%m-%d"
+#                 )
+#                 # item['ДатаОкончания'] = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
+#                 period = list(
+#                     rrule.rrule(
+#                         rrule.DAILY,
+#                         count=item["КоличествоДней"],
+#                         dtstart=item["ДатаНачала"],
+#                     )
+#                 )
+#                 for unit in period:
+#                     if unit > datetime.datetime.today():
+#                         kwargs_obj = {
+#                             "report_card_day": unit,
+#                             "employee": usr_obj,
+#                             "start_time": datetime.datetime(1, 1, 1, 9, 30),
+#                             "end_time": datetime.datetime(1, 1, 1, 18, 00),
+#                             "record_type": "18",
+#                             "reason_adjustment": "График отпусков"
+#                             if item["Примечание"] == ""
+#                             else item["Примечание"],
+#                             "doc_ref_key": docs,
+#                         }
+#                         report_card_list.append(kwargs_obj)
+#                         counter += 1
+#
+#     try:
+#         objs = ReportCard.objects.bulk_create(
+#             [ReportCard(**q) for q in report_card_list]
+#         )
+#     except Exception as _ex:
+#         logger.error(f"Ошибка синхронизации графика отпусков {_ex}")
+#     return logger.info(f"Создано {len(objs)} записей")
+
+
 @app.task()
-def vacation_schedule():
-    def search_vacation(name, people):
-        """
-        Поиск отпуска по названию в списке людей.
+def vacation_schedule(year=None):
+    # Предзагрузка сотрудников
+    users = DataBaseUser.objects.all()
+    user_dict = {user.ref_key: user for user in users}
 
-        Аргументы:
-            name (str): Имя для поиска.
-            people (list): список словарей, представляющих людей, каждый из которых содержит ключ «Сотрудник_Key».
-
-        Возврат:
-            list: список словарей, представляющих людей, у которых «Сотрудник_Key» равен данному имени.
-        """
-        return [element for element in people if element["Сотрудник_Key"] == name]
-
-    vacation_list = list()
-    graph_vacacion = get_jsons_data_filter(
-        "Document", "ГрафикОтпусков", "Number", "710-лс", 0, 0, False, True
-    )
-    postponement_of_vacation = get_jsons_data_filter(
-        "Document",
-        "ПереносОтпуска",
-        "year(ИсходнаяДатаНачала)",
-        2023,
-        0,
-        0,
-        False,
-        False,
-    )
-    for item in graph_vacacion["value"][0]["Сотрудники"]:
-        postponement_list = search_vacation(
-            item["Сотрудник_Key"], postponement_of_vacation["value"]
-        )
-        finded = 0
-        if len(postponement_list) == 0:
-            vacation_list.append(item)
-        else:
-            for unit in postponement_list:
-                if unit["ИсходнаяДатаНачала"] == item["ДатаНачала"]:
-                    for slice_element in unit["Переносы"]:
-                        item["ДатаНачала"] = slice_element["ДатаНачала"]
-                        item["ДатаОкончания"] = slice_element["ДатаОкончания"]
-                        item["КоличествоДней"] = slice_element["КоличествоДней"]
-                        item["Примечание"] = "Перенос отпуска №: " + unit["Number"]
-                        vacation_list.append(item)
-                        finded = 1
-                if finded == 0:
-                    vacation_list.append(item)
-    year = datetime.datetime.today().year
-    for report_record in ReportCard.objects.filter(
-            Q(report_card_day__year=year) & Q(record_type="18")
-    ):
-        report_record.delete()
-    docs = graph_vacacion["value"][0]["Ref_Key"]
-    counter = 1
-    report_card_list = list()
-    for item in vacation_list:
-        if (
-                datetime.datetime.strptime(item["ДатаОкончания"][:10], "%Y-%m-%d")
-                >= datetime.datetime.today()
-        ):
-            if DataBaseUser.objects.filter(ref_key=item["Сотрудник_Key"]).exists():
-                del item["Ref_Key"]
-                del item["LineNumber"]
-                del item["ФизическоеЛицо_Key"]
-                usr_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"])
-                item["Сотрудник_Key"] = DataBaseUser.objects.get(
-                    ref_key=item["Сотрудник_Key"]
-                ).title
-                item["ДатаНачала"] = datetime.datetime.strptime(
-                    item["ДатаНачала"][:10], "%Y-%m-%d"
-                )
-                # item['ДатаОкончания'] = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
-                period = list(
-                    rrule.rrule(
-                        rrule.DAILY,
-                        count=item["КоличествоДней"],
-                        dtstart=item["ДатаНачала"],
-                    )
-                )
-                for unit in period:
-                    if unit > datetime.datetime.today():
-                        kwargs_obj = {
-                            "report_card_day": unit,
-                            "employee": usr_obj,
-                            "start_time": datetime.datetime(1, 1, 1, 9, 30),
-                            "end_time": datetime.datetime(1, 1, 1, 18, 00),
-                            "record_type": "18",
-                            "reason_adjustment": "График отпусков"
-                            if item["Примечание"] == ""
-                            else item["Примечание"],
-                            "doc_ref_key": docs,
-                        }
-                        report_card_list.append(kwargs_obj)
-                        counter += 1
+    if year:
+        year = int(year)
+    else:
+        year = datetime.datetime.now().year
 
     try:
-        objs = ReportCard.objects.bulk_create(
-            [ReportCard(**q) for q in report_card_list]
-        )
-    except Exception as _ex:
-        logger.error(f"Ошибка синхронизации графика отпусков {_ex}")
-    return logger.info(f"Создано {len(objs)} записей")
+        vacation_schedule_item = VacationScheduleList.objects.get(document_year=year)
+        vacation_schedule_number = vacation_schedule_item.document_number
+    except VacationScheduleList.DoesNotExist:
+        vacation_schedule_number = ""
+
+    # Получение данных
+    graph_vacacion = get_jsons_data_filter("Document", "ГрафикОтпусков", "Number", vacation_schedule_number, 0, 0, False, True)
+    postponement_of_vacation = get_jsons_data_filter("Document", "ПереносОтпуска", "year(ИсходнаяДатаНачала)", str(year), 0, 0, False, False)
+
+    # Группировка переносов
+    postponement_dict = {}
+    for unit in postponement_of_vacation["value"]:
+        key = unit["Сотрудник_Key"]
+        postponement_dict.setdefault(key, []).append(unit)
+
+    # Обработка отпусков
+    vacation_list = []
+    for item in graph_vacacion["value"][0]["Сотрудники"]:
+        postponement_list = postponement_dict.get(item["Сотрудник_Key"], [])
+        if not postponement_list:
+            vacation_list.append(item)
+            continue
+
+        processed = False
+        for unit in postponement_list:
+            if unit["ИсходнаяДатаНачала"] == item["ДатаНачала"]:
+                for slice_element in unit["Переносы"]:
+                    new_item = item.copy()
+                    new_item.update({
+                        "ДатаНачала": slice_element["ДатаНачала"],
+                        "ДатаОкончания": slice_element["ДатаОкончания"],
+                        "КоличествоДней": slice_element["КоличествоДней"],
+                        "Примечание": f"Перенос отпуска №: {unit['Number']}",
+                    })
+                    vacation_list.append(new_item)
+                    processed = True
+        if not processed:
+            vacation_list.append(item)
+
+    # Удаление старых записей и создание новых
+    with transaction.atomic():
+        ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type="18")).delete()
+
+        docs = graph_vacacion["value"][0]["Ref_Key"]
+        report_card_list = []
+        today = datetime.datetime.today()
+
+        for item in vacation_list:
+            end_date = datetime.datetime.strptime(item["ДатаОкончания"][:10], "%Y-%m-%d")
+            if end_date < today or item["Сотрудник_Key"] not in user_dict:
+                continue
+
+            start_date = datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d")
+            usr_obj = user_dict[item["Сотрудник_Key"]]
+            reason = item["Примечание"] if item["Примечание"] else "График отпусков"
+
+            for day in range(item["КоличествоДней"]):
+                current_day = start_date + datetime.timedelta(days=day)
+                if current_day > today:
+                    report_card_list.append(ReportCard(
+                        report_card_day=current_day,
+                        employee=usr_obj,
+                        start_time=datetime.time(9, 30),
+                        end_time=datetime.time(18, 0),
+                        record_type="18",
+                        reason_adjustment=reason,
+                        doc_ref_key=docs,
+                    ))
+
+        # Пакетное сохранение
+        batch_size = 1000
+        objs_created = 0
+        for i in range(0, len(report_card_list), batch_size):
+            batch = report_card_list[i:i + batch_size]
+            objs = ReportCard.objects.bulk_create(batch)
+            objs_created += len(objs)
+
+        logger.info(f"Создано {objs_created} записей")
 
 
 @app.task()

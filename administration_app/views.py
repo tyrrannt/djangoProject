@@ -20,7 +20,7 @@ from contracts_app.models import Contract
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
 from hrdepartment_app.models import ReportCard
 from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report, \
-    save_report, send_email_notification, vacation_schedule_send, vacation_check
+    save_report, send_email_notification, vacation_schedule_send, vacation_check, vacation_schedule
 
 logger.add("debug_administration.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
@@ -552,11 +552,16 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 save_report.delay()
             if request.GET.get('update') == '14':
                 vacation_schedule_send.delay()
-                # vacation_schedule_send()
             if request.GET.get('update') == '15':
                 vacation_check.delay()
             if request.GET.get('update') == '16':
                 new_export_users_to_csv('users_export.csv')
+            if request.GET.get('update') == '17':
+                try:
+                    year = int(request.GET.get('year'))
+                    vacation_schedule.delay(year)
+                except Exception as _ex:
+                    logger.error(f"Ошибка при получении отпусков {_ex}")
 
         return super().get(request, *args, **kwargs)
 
