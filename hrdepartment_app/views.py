@@ -957,6 +957,22 @@ class ApprovalOficialMemoProcessDetail(
     form_class = ApprovalOficialMemoProcessUpdateForm
     permission_required = "hrdepartment_app.view_approvaloficialmemoprocess"
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super(ApprovalOficialMemoProcessDetail, self).get_context_data(
+            object_list=None, **kwargs
+        )
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процесс по служебным поездкам"
+        document = self.get_object()
+        context["without_departure"] = (
+            False if document.document.official_memo_type == "3" else True
+        )
+        context["extension"] = (
+            False if document.document.official_memo_type == "2" else True
+        )
+        return context
+
 
 class ApprovalOficialMemoProcessUpdate(
     PermissionRequiredMixin, LoginRequiredMixin, UpdateView
