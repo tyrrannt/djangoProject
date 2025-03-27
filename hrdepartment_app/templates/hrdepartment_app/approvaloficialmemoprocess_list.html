@@ -109,6 +109,7 @@
 {% block custome_script %}
     <script>
         $(document).ready(function () {
+            var hasChangePermission = {% if perms.hrdepartment_app.change_approvaloficialmemoprocess %}true{% else %}false{% endif %};
             // Setup - add a text input to each footer cell
             $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
@@ -166,7 +167,12 @@
                         $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
                     }
 
-                    $(nRow).attr("href", id + '/update/');
+                    // Изменяем ссылку в зависимости от прав
+                    if (hasChangePermission) {
+                        $(nRow).attr("href", id + '/update/');
+                    } else {
+                        $(nRow).attr("href", id);
+                    }
                     $(nRow).css('cursor', 'pointer');
                     $(nRow).click(function () {
                         window.location = $(this).attr('href');

@@ -950,6 +950,14 @@ class ApprovalOficialMemoProcessAdd(
         return super().form_valid(form)
 
 
+class ApprovalOficialMemoProcessDetail(
+    PermissionRequiredMixin, LoginRequiredMixin, DetailView
+):
+    model = ApprovalOficialMemoProcess
+    form_class = ApprovalOficialMemoProcessUpdateForm
+    permission_required = "hrdepartment_app.view_approvaloficialmemoprocess"
+
+
 class ApprovalOficialMemoProcessUpdate(
     PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 ):

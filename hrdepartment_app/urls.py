@@ -18,7 +18,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     TimeSheetDeleteView, TimeSheetListView, OutfitCardListView, OutfitCardCreateView, OutfitCardDetailView, \
     OutfitCardUpdateView, OutfitCardDeleteView, ReportCardDetailIAS, filter_outfit_cards, acknowledge_document, \
     unacknowledge_document, seasonality_report, export_seasonality_data, absence_analysis, export_absence_data, \
-    employee_absence_details, weekday_analysis, time_distribution, export_time_distribution
+    employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
+    ApprovalOficialMemoProcessDetail
 
 app_name = 'hrdepartment_app'
 
@@ -38,6 +39,7 @@ urlpatterns = [
     path('bpmemo/', ApprovalOficialMemoProcessList.as_view(), name='bpmemo_list'),
     path('bpmemo/add/', ApprovalOficialMemoProcessAdd.as_view(), name='bpmemo_add'),
     path('bpmemo/<int:pk>/update/', ApprovalOficialMemoProcessUpdate.as_view(), name='bpmemo_update'),
+    path('bpmemo/<int:pk>/', ApprovalOficialMemoProcessDetail.as_view(), name='bpmemo'),
     path('bpmemo/report/', ReportApprovalOficialMemoProcessList.as_view(), name='bpmemo_report'),
     path('bpmemo/month-report/', ApprovalOficialMemoProcessReportList.as_view(), name='bpmemo_month_report'),
     path('bpmemo/<int:pk>/cancel/', ApprovalOficialMemoProcessCancel.as_view(), name='bpmemo_cancel'),
