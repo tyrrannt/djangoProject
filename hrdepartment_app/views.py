@@ -4669,21 +4669,10 @@ def management_dashboard(request):
                 'expenses': trend['expenses'] or 0
             })
 
-    # Список доступных годов (универсальный способ)
-    available_years = list(
-        OfficialMemo.objects
-        .dates('date_of_creation', 'year')
-        .values_list('date_of_creation__year', flat=True)
-        .distinct()
-    )
-
-    # Фильтруем годы начиная с 2023
-    available_years = [year for year in available_years if year and year >= 2023]
-
-    # Добавляем текущий год, если его нет
-    if current_year not in available_years:
-        available_years.append(current_year)
-        available_years.sort(reverse=True)
+    # Создаем список годов от 2023 до текущего
+    current_year = timezone.now().year
+    available_years = list(range(2023, current_year + 1))
+    available_years.reverse()  # Сортируем по убыванию (новые годы сначала)
 
     # Список месяцев с названиями
     months = [
