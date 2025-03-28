@@ -4541,7 +4541,7 @@ def time_distribution(request):
     print(context)
     return render(request, 'hrdepartment_app/time_distribution.html', context)
 
-
+@login_required
 def export_time_distribution(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
@@ -4571,20 +4571,45 @@ def export_time_distribution(request):
     response["Content-Disposition"] = f'attachment; filename="time_distribution_{selected_year}.csv"'
     return response
 
-
+@login_required
 def management_dashboard(request):
-    # Фильтр по дате (последние 12 месяцев)
-    date_filter = timezone.now() - datetime.timedelta(days=365)
+    # Получаем текущую дату
+    now = timezone.now()
+
+    # Получаем параметры фильтрации
+    selected_year = request.GET.get('year', now.year)
+    selected_month = request.GET.get('month')
+
+    try:
+        selected_year = int(selected_year)
+    except (ValueError, TypeError):
+        selected_year = now.year
+
+    # Базовый запрос с фильтрацией по году
+    queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
+
+    # Если выбран месяц - фильтруем дополнительно
+    if selected_month:
+        try:
+            selected_month = int(selected_month)
+            queryset = queryset.filter(date_of_creation__month=selected_month)
+        except (ValueError, TypeError):
+            pass
+
+    # Получаем список доступных годов
+    available_years = OfficialMemo.objects.dates(
+        'date_of_creation', 'year', order='DESC'
+    ).values_list('date_of_creation__year', flat=True).distinct()
 
     # Основные метрики
-    total_trips = OfficialMemo.objects.count()
-    active_trips = OfficialMemo.objects.filter(
-        Q(period_from__lte=timezone.now()) & Q(period_for__gte=timezone.now())
+    total_trips = queryset.count()
+    active_trips = queryset.filter(
+        Q(period_from__lte=now) & Q(period_for__gte=now)
     ).count()
-    total_expenses = OfficialMemo.objects.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
+    total_expenses = queryset.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
 
     # Аналитика по типам
-    trip_types = OfficialMemo.objects.values('type_trip').annotate(
+    trip_types = queryset.values('type_trip').annotate(
         count=Count('id'),
         total_expenses=Sum('expenses_summ')
     )
@@ -4592,27 +4617,42 @@ def management_dashboard(request):
     # Статусы документов
     status_stats = {
         'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
+            document__in=queryset,
             submit_for_approval=True,
             document_not_agreed=False
         ).count(),
         'approved': ApprovalOficialMemoProcess.objects.filter(
+            document__in=queryset,
             document_not_agreed=True
         ).count(),
         'rejected': ApprovalOficialMemoProcess.objects.filter(
+            document__in=queryset,
             cancellation=True
         ).count()
     }
 
-    # Тренды по месяцам (совместимый с SQLite вариант)
+    # Тренды по месяцам для выбранного года
     monthly_trends = OfficialMemo.objects.filter(
-        date_of_creation__gte=date_filter
+        date_of_creation__year=selected_year
     ).annotate(
-        month=ExtractMonth('date_of_creation'),
-        year=ExtractYear('date_of_creation')
-    ).values('month', 'year').annotate(
+        month=ExtractMonth('date_of_creation')
+    ).values('month').annotate(
         count=Count('id'),
         expenses=Sum('expenses_summ')
-    ).order_by('year', 'month')
+    ).order_by('month')
+
+    # Список месяцев с названиями
+    months = [
+        (1, 'Январь'), (2, 'Февраль'), (3, 'Март'),
+        (4, 'Апрель'), (5, 'Май'), (6, 'Июнь'),
+        (7, 'Июль'), (8, 'Август'), (9, 'Сентябрь'),
+        (10, 'Октябрь'), (11, 'Ноябрь'), (12, 'Декабрь')
+    ]
+
+    # Название выбранного месяца
+    selected_month_name = ''
+    if selected_month:
+        selected_month_name = dict(months).get(int(selected_month), '')
 
     context = {
         'total_trips': total_trips,
@@ -4621,24 +4661,43 @@ def management_dashboard(request):
         'trip_types': trip_types,
         'status_stats': status_stats,
         'monthly_trends': list(monthly_trends),
+        'available_years': available_years,
+        'selected_year': selected_year,
+        'selected_month': selected_month,
+        'selected_month_name': selected_month_name,
+        'months': months,
     }
-
     return render(request, 'hrdepartment_app/management_dashboard.html', context)
 
-
+@login_required
 def export_trips_csv(request):
+    selected_year = request.GET.get('year', timezone.now().year)
+    selected_month = request.GET.get('month')
+
+    queryset = OfficialMemo.objects.filter(
+        date_of_creation__year=selected_year
+    )
+
+    if selected_month:
+        queryset = queryset.filter(
+            date_of_creation__month=selected_month
+        )
+
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="business_trips.csv"'
+    filename = f"business_trips_{selected_year}"
+    if selected_month:
+        filename += f"_{selected_month}"
+    response['Content-Disposition'] = f'attachment; filename="{filename}.csv"'
 
     writer = csv.writer(response)
     writer.writerow(['ID', 'Сотрудник', 'Дата начала', 'Дата окончания', 'Тип', 'Расходы'])
 
-    for trip in OfficialMemo.objects.all():
+    for trip in queryset:
         writer.writerow([
             trip.id,
             trip.person.get_full_name(),
-            trip.period_from,
-            trip.period_for,
+            trip.period_from.strftime('%d.%m.%Y') if trip.period_from else '',
+            trip.period_for.strftime('%d.%m.%Y') if trip.period_for else '',
             trip.get_type_trip_display(),
             trip.expenses_summ
         ])
