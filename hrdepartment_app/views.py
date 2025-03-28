@@ -4665,7 +4665,6 @@ def management_dashboard(request):
         selected_month_name = dict(months).get(int(selected_month), '')
 
     context = {
-        'text': text,
         'total_trips': total_trips,
         'active_trips': active_trips,
         'total_expenses': total_expenses,
