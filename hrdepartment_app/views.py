@@ -4607,21 +4607,24 @@ def management_dashboard(request):
             pass
 
     # Получаем список доступных годов (начиная с 2023)
-    available_years = OfficialMemo.objects.dates(
+    available_years = list(OfficialMemo.objects.dates(
         'date_of_creation', 'year', order='DESC'
-    ).values_list('date_of_creation__year', flat=True).distinct()
+    ).values_list('date_of_creation__year', flat=True).distinct())
 
-    # Фильтруем годы, оставляем только начиная с 2023
-    available_years = [year for year in available_years if year >= 2023]
-    #
-    # # Если нет данных после 2023, добавляем текущий год
+    # Фильтруем None значения и годы до 2023
+    available_years = [year for year in available_years if year is not None and year >= 2023]
+
+    # Добавляем текущий год, если его нет в списке
+    current_year = timezone.now().year
+    if current_year not in available_years:
+        available_years.append(current_year)
+
+    # Сортируем в обратном порядке
+    available_years = sorted(available_years, reverse=True)
+
+    # Если список все равно пустой (маловероятно), устанавливаем текущий год
     if not available_years:
-        available_years = [now.year]
-    else:
-        # Добавляем текущий год, если его еще нет в списке
-        if now.year not in available_years:
-            available_years.append(now.year)
-            available_years.sort(reverse=True)
+        available_years = [current_year]
 
     # Основные метрики
     total_trips = queryset.count()
