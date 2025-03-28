@@ -4607,9 +4607,9 @@ def management_dashboard(request):
             pass
 
     # Получаем список доступных годов (начиная с 2023)
-    available_years = list(OfficialMemo.objects.dates(
-        'date_of_creation', 'year', order='DESC'
-    ).values_list('date_of_creation__year', flat=True).distinct())
+    available_years = OfficialMemo.objects.annotate(
+        year=ExtractYear('date_of_creation')
+    ).values_list('year', flat=True).distinct().order_by('-year')
 
     # Фильтруем None значения и годы до 2023
     available_years = [year for year in available_years if year is not None and year >= 2023]
