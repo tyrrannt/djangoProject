@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Count, Sum
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, ExtractMonth, ExtractYear
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
@@ -4603,15 +4603,16 @@ def management_dashboard(request):
         ).count()
     }
 
-    # Тренды по месяцам
+    # Тренды по месяцам (совместимый с SQLite вариант)
     monthly_trends = OfficialMemo.objects.filter(
         date_of_creation__gte=date_filter
-    ).extra(
-        {'month': "date_trunc('month', date_of_creation)"}
-    ).values('month').annotate(
+    ).annotate(
+        month=ExtractMonth('date_of_creation'),
+        year=ExtractYear('date_of_creation')
+    ).values('month', 'year').annotate(
         count=Count('id'),
         expenses=Sum('expenses_summ')
-    ).order_by('month')
+    ).order_by('year', 'month')
 
     context = {
         'total_trips': total_trips,

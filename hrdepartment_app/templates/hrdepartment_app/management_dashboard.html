@@ -24,10 +24,9 @@
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
-            <h1>Распределение типов времени</h1>
 
     <!-- Форма выбора года -->
-    <form method="GET" action="{% url 'hrdepartment_app:time_distribution' %}">
+    <form method="GET" action="{% url 'hrdepartment_app:management_dashboard' %}">
         <label for="year">Выберите год:</label>
         <select name="year" id="year">
             {% for year in years %}
@@ -37,7 +36,10 @@
         <button type="submit">Применить</button>
     </form>
 
-    <div class="dashboard-container">
+
+    <!-- Экспорт данных -->
+    <a href="{% url 'hrdepartment_app:export_trips' %}" class="btn btn-primary">Экспорт данных</a>
+<div class="dashboard-container">
     <h1>Аналитика служебных поездок</h1>
 
     <!-- Основные метрики -->
@@ -58,32 +60,59 @@
 
     <!-- Графики -->
     <div class="charts-row">
-        <div class="chart-container">
+        <div class="chart-card">
             <h3>Распределение по типам поездок</h3>
-            <canvas id="tripTypesChart"></canvas>
+            <div class="chart-wrapper">
+                <canvas id="tripTypesChart"></canvas>
+            </div>
         </div>
-        <div class="chart-container">
+        <div class="chart-card">
             <h3>Статусы документов</h3>
-            <canvas id="statusChart"></canvas>
+            <div class="chart-wrapper">
+                <canvas id="statusChart"></canvas>
+            </div>
         </div>
     </div>
 
-    <div class="full-width-chart">
+    <div class="chart-card full-width">
         <h3>Динамика поездок по месяцам</h3>
-        <canvas id="monthlyTrendsChart"></canvas>
+        <div class="chart-wrapper">
+            <canvas id="monthlyTrendsChart"></canvas>
+        </div>
     </div>
 </div>
-    <!-- Экспорт данных -->
-    <a href="{% url 'hrdepartment_app:export_trips' %}" class="btn btn-primary">Экспорт данных</a>
-{#    <a href="{% url 'hrdepartment_app:export_trips' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт данных</a>#}
-{#    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>#}
+
+<!-- Подключаем Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Общая конфигурация для всех графиков
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.aspectRatio = 1.5;
+
+    // Функция для создания адаптивных графиков
+    function createChart(elementId, config) {
+        const ctx = document.getElementById(elementId).getContext('2d');
+        return new Chart(ctx, {
+            ...config,
+            options: {
+                ...config.options,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    }
+
     // График типов поездок
-    const tripTypesCtx = document.getElementById('tripTypesChart').getContext('2d');
-    new Chart(tripTypesCtx, {
+    createChart('tripTypesChart', {
         type: 'pie',
         data: {
-            labels: [{% for type in trip_types %}'{{ type.type_trip }}',{% endfor %}],
+            labels: [{% for type in trip_types %}'{{ type.get_type_trip_display }}',{% endfor %}],
             datasets: [{
                 data: [{% for type in trip_types %}{{ type.count }},{% endfor %}],
                 backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
@@ -92,8 +121,7 @@
     });
 
     // График статусов
-    const statusCtx = document.getElementById('statusChart').getContext('2d');
-    new Chart(statusCtx, {
+    createChart('statusChart', {
         type: 'doughnut',
         data: {
             labels: ['На согласовании', 'Утверждено', 'Отклонено'],
@@ -109,8 +137,7 @@
     });
 
     // График трендов
-    const trendsCtx = document.getElementById('monthlyTrendsChart').getContext('2d');
-    new Chart(trendsCtx, {
+    createChart('monthlyTrendsChart', {
         type: 'line',
         data: {
             labels: [{% for month in monthly_trends %}'{{ month.month|date:"M Y" }}',{% endfor %}],
@@ -119,13 +146,19 @@
                     label: 'Количество поездок',
                     data: [{% for month in monthly_trends %}{{ month.count }},{% endfor %}],
                     borderColor: '#36A2EB',
-                    yAxisID: 'y'
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.3,
+                    fill: true
                 },
                 {
                     label: 'Расходы (руб)',
                     data: [{% for month in monthly_trends %}{{ month.expenses|default:0 }},{% endfor %}],
                     borderColor: '#FFCE56',
-                    yAxisID: 'y1'
+                    backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                    yAxisID: 'y1',
+                    tension: 0.3,
+                    fill: true
                 }
             ]
         },
@@ -134,61 +167,125 @@
                 y: {
                     type: 'linear',
                     display: true,
-                    position: 'left'
+                    position: 'left',
+                    grid: {
+                        drawOnChartArea: false
+                    }
                 },
                 y1: {
                     type: 'linear',
                     display: true,
-                    position: 'right'
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
                 }
             }
         }
     });
 </script>
-    <style>
+
+<style>
+    :root {
+        --card-bg: #ffffff;
+        --border-radius: 8px;
+        --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        --primary-color: #4a6fa5;
+        --secondary-color: #666;
+        --padding: 16px;
+        --gap: 20px;
+    }
+
     .dashboard-container {
-        padding: 20px;
+        padding: var(--padding);
         max-width: 1200px;
         margin: 0 auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+
+    .dashboard-container h1 {
+        color: var(--primary-color);
+        margin-bottom: 24px;
+        font-size: 24px;
+    }
+
     .metrics-row {
         display: flex;
-        gap: 20px;
+        gap: var(--gap);
         margin-bottom: 30px;
+        flex-wrap: wrap;
     }
+
     .metric-card {
         flex: 1;
-        padding: 20px;
-        background: #f5f5f5;
-        border-radius: 8px;
+        min-width: 150px;
+        padding: var(--padding);
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
         text-align: center;
     }
+
     .metric-card h3 {
         margin-top: 0;
-        color: #555;
+        color: var(--secondary-color);
+        font-size: 14px;
+        font-weight: 600;
     }
+
     .metric-card p {
         font-size: 24px;
         font-weight: bold;
         margin: 10px 0 0;
+        color: var(--primary-color);
     }
+
     .charts-row {
         display: flex;
-        gap: 20px;
+        gap: var(--gap);
         margin-bottom: 30px;
+        flex-wrap: wrap;
     }
-    .chart-container {
+
+    .chart-card {
         flex: 1;
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        min-width: 300px;
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: var(--padding);
     }
-    .full-width-chart {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    .chart-card.full-width {
+        flex: 100%;
+    }
+
+    .chart-card h3 {
+        margin-top: 0;
+        margin-bottom: 16px;
+        color: var(--primary-color);
+        font-size: 16px;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        min-height: 300px;
+    }
+
+    @media (max-width: 768px) {
+        .metrics-row, .charts-row {
+            flex-direction: column;
+        }
+
+        .metric-card, .chart-card {
+            min-width: 100%;
+        }
     }
 </style>
     </section>
