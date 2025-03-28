@@ -4611,8 +4611,8 @@ def management_dashboard(request):
         'date_of_creation', 'year', order='DESC'
     ).values_list('date_of_creation__year', flat=True).distinct()
 
-    # # Фильтруем годы, оставляем только начиная с 2023
-    # available_years = [year for year in available_years if year >= 2023]
+    # Фильтруем годы, оставляем только начиная с 2023
+    available_years = [year for year in available_years if year >= 2023]
     #
     # # Если нет данных после 2023, добавляем текущий год
     # if not available_years:
