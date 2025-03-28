@@ -4585,52 +4585,33 @@ def export_time_distribution(request):
 def management_dashboard(request):
     # Получаем текущую дату
     now = timezone.now()
-    current_year = now.year
 
     # Получаем параметры фильтрации
-    selected_year = request.GET.get('year', current_year)
+    selected_year = request.GET.get('year', now.year)
     selected_month = request.GET.get('month')
 
     try:
         selected_year = int(selected_year)
     except (ValueError, TypeError):
-        selected_year = current_year
+        selected_year = now.year
 
-    # Базовый запрос с фильтрацией
-    queryset = OfficialMemo.objects.all()
+    # Базовый запрос с фильтрацией по году
+    queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
 
-    # Универсальная фильтрация по году
-    if selected_year:
-        queryset = queryset.filter(
-            date_of_creation__year=selected_year
-        )
-
-    # Универсальная фильтрация по месяцу
-    if selected_month:
-        try:
-            selected_month = int(selected_month)
-            queryset = queryset.filter(
-                date_of_creation__month=selected_month
-            )
-        except (ValueError, TypeError):
-            pass
-
-    # Основные метрики
+    # Основные метрики (без фильтрации по месяцу)
     total_trips = queryset.count()
     active_trips = queryset.filter(
         Q(period_from__lte=now) & Q(period_for__gte=now)
     ).count()
-    total_expenses = queryset.aggregate(
-        total=Sum('expenses_summ')
-    )['total'] or 0
+    total_expenses = queryset.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
 
-    # Аналитика по типам
+    # Аналитика по типам (без фильтрации по месяцу)
     trip_types = queryset.values('type_trip').annotate(
         count=Count('id'),
         total_expenses=Sum('expenses_summ')
     )
 
-    # Статусы документов
+    # Статусы документов (без фильтрации по месяцу)
     status_stats = {
         'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
             document__in=queryset,
@@ -4647,28 +4628,22 @@ def management_dashboard(request):
         ).count()
     }
 
-    # Универсальный запрос для трендов по месяцам
-    monthly_trends = (
-        queryset
-        .values('date_of_creation__month')
-        .annotate(
-            month=Count('date_of_creation__month'),
-            count=Count('id'),
-            expenses=Sum('expenses_summ')
-        )
-        .order_by('date_of_creation__month')
-    )
+    # Для трендов по месяцам используем фильтрацию по году и месяцу
+    monthly_queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
+    if selected_month:
+        try:
+            selected_month = int(selected_month)
+            monthly_queryset = monthly_queryset.filter(date_of_creation__month=selected_month)
+        except (ValueError, TypeError):
+            pass
 
-    # Форматируем месячные тренды для шаблона
-    formatted_monthly_trends = []
-    for trend in monthly_trends:
-        if trend['date_of_creation__month']:
-            formatted_monthly_trends.append({
-                'month': trend['date_of_creation__month'],
-                'count': trend['count'],
-                'expenses': trend['expenses'] or 0
-            })
-
+    monthly_trends = monthly_queryset.annotate(
+        month=ExtractMonth('date_of_creation')
+    ).values('month').annotate(
+        count=Count('id'),
+        expenses=Sum('expenses_summ')
+    ).order_by('month')
+    logger.error(f"monthly_trends: {monthly_trends}")
     # Создаем список годов от 2023 до текущего
     current_year = timezone.now().year
     available_years = list(range(2023, current_year + 1))
@@ -4693,7 +4668,7 @@ def management_dashboard(request):
         'total_expenses': total_expenses,
         'trip_types': trip_types,
         'status_stats': status_stats,
-        'monthly_trends': formatted_monthly_trends,
+        'monthly_trends': list(monthly_trends),
         'available_years': available_years,
         'selected_year': selected_year,
         'selected_month': selected_month,
