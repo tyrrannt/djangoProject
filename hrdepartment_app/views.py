@@ -4633,7 +4633,7 @@ def management_dashboard(request):
     if selected_month:
         try:
             selected_month = int(selected_month)
-            monthly_queryset = monthly_queryset.filter(date_of_creation__month=selected_month)
+            monthly_queryset = OfficialMemo.objects.filter(Q(date_of_creation__year=selected_year) & Q(date_of_creation__month=selected_month))
         except (ValueError, TypeError):
             pass
 
