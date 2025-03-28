@@ -4606,37 +4606,10 @@ def management_dashboard(request):
         except (ValueError, TypeError):
             pass
 
-    # Получаем только записи, где date_of_creation не NULL
-    available_years = (
-        OfficialMemo.objects
-        .exclude(date_of_creation__isnull=True)  # Исключаем NULL значения
-        .annotate(year=ExtractYear('date_of_creation'))
-        .values_list('year', flat=True)
-        .distinct()
-        .order_by('-year')
-    )
-    null_dates = OfficialMemo.objects.filter(date_of_creation__isnull=True).count()
-    min_year = OfficialMemo.objects.exclude(date_of_creation__isnull=True) \
-        .annotate(year=ExtractYear('date_of_creation')) \
-        .aggregate(min_year=Min('year'))
-    text = [min_year, null_dates]
-    # Преобразуем в список и фильтруем
-    available_years = [
-        year for year in available_years
-        if year is not None and year >= 2023
-    ]
-
-    # Добавляем текущий год, если его нет
+    # Создаем список годов от 2023 до текущего
     current_year = timezone.now().year
-    if current_year not in available_years:
-        available_years.append(current_year)
-
-    # Сортируем по убыванию
-    available_years = sorted(available_years, reverse=True)
-
-    # Если список пустой (например, нет подходящих записей)
-    if not available_years:
-        available_years = [current_year]
+    available_years = list(range(2023, current_year + 1))
+    available_years.reverse()  # Сортируем по убыванию (новые годы сначала)
 
     # Основные метрики
     total_trips = queryset.count()
