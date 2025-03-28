@@ -96,7 +96,6 @@ from hrdepartment_app.models import (
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
-
 logger.add("debug_hrdepartment.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
            serialize=config('LOG_SERIALIZE'))
@@ -2095,7 +2094,8 @@ class DocumentsJobDescriptionDetail(
         user = self.request.user
         list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
-        agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id, user=user).exists()
+        agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
+                                                      user=user).exists()
         previous = DocumentsJobDescription.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
         context[
@@ -3262,7 +3262,6 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         return form
 
 
-
 # Руководящие документы
 class GuidanceDocumentsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
@@ -4090,6 +4089,7 @@ def acknowledge_document(request):
     else:
         return JsonResponse({'success': False, 'error': 'Acknowledgment already exists'})
 
+
 @require_POST
 @login_required
 def unacknowledge_document(request):
@@ -4117,6 +4117,7 @@ def unacknowledge_document(request):
             return JsonResponse({'success': False, 'error': 'Нельзя отменить ознакомление с документом'})
     else:
         return JsonResponse({'success': False, 'error': 'Ознакомление с документом не найдено'})
+
 
 @login_required
 def seasonality_report(request):
@@ -4232,6 +4233,7 @@ def seasonality_report(request):
     })
     return render(request, "hrdepartment_app/seasonality_report.html", context)
 
+
 # def seasonality_report(request):
 #     # Получение выбранного года из GET-параметров
 #     selected_year = request.GET.get("year")
@@ -4306,6 +4308,7 @@ def export_seasonality_data(request):
     response = HttpResponse(output.getvalue(), content_type="text/csv")
     response["Content-Disposition"] = f'attachment; filename="vacation_seasonality_{selected_year}.csv"'
     return response
+
 
 # def absence_analysis(request):
 #     # Типы записей, которые считаются пропусками
@@ -4387,6 +4390,7 @@ def absence_analysis(request):
     }
     return render(request, 'hrdepartment_app/absence_analysis.html', context)
 
+
 @login_required
 def export_absence_data(request):
     # Типы записей, которые считаются пропусками
@@ -4423,6 +4427,7 @@ def export_absence_data(request):
 
     return response
 
+
 @login_required
 def employee_absence_details(request, username):
     # Типы записей, которые считаются пропусками
@@ -4448,6 +4453,7 @@ def employee_absence_details(request, username):
         'employee': absences.first().employee if absences.exists() else None,
     }
     return render(request, 'hrdepartment_app/employee_absence_details.html', context)
+
 
 @login_required
 def weekday_analysis(request):
@@ -4496,6 +4502,8 @@ def weekday_analysis(request):
     }
 
     return render(request, "hrdepartment_app/weekday_analysis.html", context)
+
+
 @login_required
 def time_distribution(request):
     # Получение выбранного года из GET-параметров
@@ -4541,6 +4549,7 @@ def time_distribution(request):
     print(context)
     return render(request, 'hrdepartment_app/time_distribution.html', context)
 
+
 @login_required
 def export_time_distribution(request):
     # Получение выбранного года из GET-параметров
@@ -4571,6 +4580,7 @@ def export_time_distribution(request):
     response["Content-Disposition"] = f'attachment; filename="time_distribution_{selected_year}.csv"'
     return response
 
+
 @login_required
 def management_dashboard(request):
     # Получаем текущую дату
@@ -4596,10 +4606,22 @@ def management_dashboard(request):
         except (ValueError, TypeError):
             pass
 
-    # Получаем список доступных годов
+    # Получаем список доступных годов (начиная с 2023)
     available_years = OfficialMemo.objects.dates(
         'date_of_creation', 'year', order='DESC'
     ).values_list('date_of_creation__year', flat=True).distinct()
+
+    # Фильтруем годы, оставляем только начиная с 2023
+    available_years = [year for year in available_years if year >= 2023]
+
+    # Если нет данных после 2023, добавляем текущий год
+    if not available_years:
+        available_years = [now.year]
+    else:
+        # Добавляем текущий год, если его еще нет в списке
+        if now.year not in available_years:
+            available_years.append(now.year)
+            available_years.sort(reverse=True)
 
     # Основные метрики
     total_trips = queryset.count()
@@ -4668,6 +4690,7 @@ def management_dashboard(request):
         'months': months,
     }
     return render(request, 'hrdepartment_app/management_dashboard.html', context)
+
 
 @login_required
 def export_trips_csv(request):

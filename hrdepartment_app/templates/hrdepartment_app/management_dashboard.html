@@ -35,7 +35,7 @@
                                     {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
                         {% endfor %}
                     </select>
-                <label for="month" class="mr-2">Месяц:</label>
+                    <label for="month" class="mr-2">Месяц:</label>
                     <select name="month" id="month" class="form-control">
                         <option value="">Все месяцы</option>
                         {% for month_num, month_name in months %}
@@ -134,42 +134,42 @@
             }
 
             <!-- График типов поездок -->
-createChart('tripTypesChart', {
-    type: 'pie',
-    data: {
-        labels: [
-            {% for type in trip_types %}
-                '{{ type.type_trip|default:"1"|get_trip_type_display }}',
-            {% endfor %}
-        ],
-        datasets: [{
-            data: [{% for type in trip_types %}{{ type.count }},{% endfor %}],
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
-        }]
-    },
-    options: {
-        plugins: {
-            title: {
-                display: true,
-                text: 'Распределение по типам поездок',
-                font: {
-                    size: 16
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        const label = context.label || '';
-                        const value = context.raw || 0;
-                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = Math.round((value / total) * 100);
-                        return `${label}: ${value} (${percentage}%)`;
+            createChart('tripTypesChart', {
+                type: 'pie',
+                data: {
+                    labels: [
+                        {% for type in trip_types %}
+                            '{{ type.type_trip|default:"1"|get_trip_type_display }}',
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        data: [{% for type in trip_types %}{{ type.count }}, {% endfor %}],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    }]
+                },
+                options: {
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Распределение по типам поездок',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
-    }
-});
+            });
 
             // График статусов
             createChart('statusChart', {
