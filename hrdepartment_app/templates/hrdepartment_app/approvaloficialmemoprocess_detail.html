@@ -368,9 +368,9 @@
                                                                         value="{{ object.person_hr.pk }}">{{ object.person_hr }}</option>
                                                             </select>
                                                         {% elif user.pk not in list_hr %}
-                                                            <span>{{ object.person_hr }}</span>
+                                                            <span>{{ form.person_hr }}</span>
                                                         {% else %}
-                                                            <span>{{ object.person_hr }}</span>
+                                                            <span>{{ form.person_hr }}</span>
                                                         {% endif %}
                                                     </div>
                                                 </div>
@@ -383,7 +383,7 @@
                                                                onclick="javascript: return false;"/>
                                                     {% elif object.originals_received %}
                                                         <div class="col">
-                                                            <span>{{ object.hr_accepted }}</span>
+                                                            <span>{{ form.hr_accepted }}</span>
                                                         </div>
                                                     {% else %}
                                                         <input type="checkbox" id="id_hr_accepted" name="hr_accepted"
@@ -449,9 +449,9 @@
                                                                     value="{{ object.person_accounting.pk }}">{{ object.person_accounting }}</option>
                                                         </select>
                                                     {% elif user.pk not in list_accounting %}
-                                                        <span>{{ object.person_accounting }}</span>
+                                                        <span>{{ form.person_accounting }}</span>
                                                     {% else %}
-                                                        <span>{{ object.person_accounting }}</span>
+                                                        <span>{{ form.person_accounting }}</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -465,7 +465,7 @@
                                                            onclick="javascript: return false;"/>
                                                 {% elif object.originals_received %}
                                                     <div class="col">
-                                                        <span>{{ object.accepted_accounting }}</span>
+                                                        <span>{{ form.accepted_accounting }}</span>
                                                     </div>
                                                 {% else %}
                                                     <input type="checkbox" id="id_accepted_accounting"
@@ -479,9 +479,9 @@
                                                        for="id_prepaid_expense_summ">Сумма по авансовому отчету:</label>
                                                 <div class="col">
                                                     {% if user in list_accounting %}
-                                                        {{ object.prepaid_expense_summ | add_class:"form-control form-control-modern" }}
+                                                        {{ form.prepaid_expense_summ | add_class:"form-control form-control-modern" }}
                                                     {% else %}
-                                                        <span>{{ object.prepaid_expense_summ | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                        <span>{{ form.prepaid_expense_summ | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -490,9 +490,9 @@
                                                        for="id_prepaid_expense">Примечание:</label>
                                                 <div class="col">
                                                     {% if user in list_accounting %}
-                                                        {{ object.prepaid_expense | add_class:"form-control form-control-modern" }}
+                                                        {{ form.prepaid_expense | add_class:"form-control form-control-modern" }}
                                                     {% else %}
-                                                        <span>{{ object.prepaid_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                        <span>{{ form.prepaid_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
