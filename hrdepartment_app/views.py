@@ -4610,7 +4610,7 @@ def management_dashboard(request):
     available_years = OfficialMemo.objects.annotate(
         year=ExtractYear('date_of_creation')
     ).values_list('year', flat=True).distinct().order_by('-year')
-
+    text = available_years
     # Фильтруем None значения и годы до 2023
     available_years = [year for year in available_years if year is not None and year >= 2023]
 
@@ -4680,6 +4680,7 @@ def management_dashboard(request):
         selected_month_name = dict(months).get(int(selected_month), '')
 
     context = {
+        'text': text,
         'total_trips': total_trips,
         'active_trips': active_trips,
         'total_expenses': total_expenses,
