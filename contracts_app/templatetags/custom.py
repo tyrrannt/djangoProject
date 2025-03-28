@@ -247,6 +247,14 @@ def div(value, arg):
     except (ValueError, ZeroDivisionError):
         return 0
 
+@register.filter(name='get_trip_type_display')
+def get_trip_type_display(value):
+    trip_types = {
+        '1': 'Служебная поездка',
+        '2': 'Командировка'
+    }
+    return trip_types.get(value, 'Неизвестный тип')
+
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)
 register.filter("FIO_format", FIO_format)
