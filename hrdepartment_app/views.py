@@ -4585,41 +4585,52 @@ def export_time_distribution(request):
 def management_dashboard(request):
     # Получаем текущую дату
     now = timezone.now()
+    current_year = now.year
 
     # Получаем параметры фильтрации
-    selected_year = request.GET.get('year', now.year)
+    selected_year = request.GET.get('year', current_year)
     selected_month = request.GET.get('month')
 
     try:
         selected_year = int(selected_year)
     except (ValueError, TypeError):
-        selected_year = now.year
+        selected_year = current_year
 
-    # Базовый запрос с фильтрацией по году
-    queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
+    # Базовый запрос с фильтрацией
+    queryset = OfficialMemo.objects.all()
 
-    # Если выбран месяц - фильтруем дополнительно
+    # Универсальная фильтрация по году
+    if selected_year:
+        queryset = queryset.filter(
+            date_of_creation__year=selected_year
+        )
+
+    # Универсальная фильтрация по месяцу
     if selected_month:
         try:
             selected_month = int(selected_month)
-            queryset = queryset.filter(date_of_creation__month=selected_month)
+            queryset = queryset.filter(
+                date_of_creation__month=selected_month
+            )
         except (ValueError, TypeError):
             pass
 
-    # Основные метрики (уже с учетом фильтрации по месяцу)
+    # Основные метрики
     total_trips = queryset.count()
     active_trips = queryset.filter(
         Q(period_from__lte=now) & Q(period_for__gte=now)
     ).count()
-    total_expenses = queryset.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
+    total_expenses = queryset.aggregate(
+        total=Sum('expenses_summ')
+    )['total'] or 0
 
-    # Аналитика по типам (с учетом фильтрации по месяцу)
+    # Аналитика по типам
     trip_types = queryset.values('type_trip').annotate(
         count=Count('id'),
         total_expenses=Sum('expenses_summ')
     )
 
-    # Статусы документов (с учетом фильтрации по месяцу)
+    # Статусы документов
     status_stats = {
         'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
             document__in=queryset,
@@ -4636,24 +4647,43 @@ def management_dashboard(request):
         ).count()
     }
 
-    # Тренды по месяцам (для выбранного года)
-    monthly_trends = OfficialMemo.objects.filter(
-        date_of_creation__year=selected_year
-    ).annotate(
-        month=ExtractMonth('date_of_creation')
-    ).values('month').annotate(
-        count=Count('id'),
-        expenses=Sum('expenses_summ')
-    ).order_by('month')
+    # Универсальный запрос для трендов по месяцам
+    monthly_trends = (
+        queryset
+        .values('date_of_creation__month')
+        .annotate(
+            month=Count('date_of_creation__month'),
+            count=Count('id'),
+            expenses=Sum('expenses_summ')
+        )
+        .order_by('date_of_creation__month')
+    )
 
-    # Если выбран конкретный месяц - показываем данные только для него
-    if selected_month:
-        monthly_trends = monthly_trends.filter(month=selected_month)
+    # Форматируем месячные тренды для шаблона
+    formatted_monthly_trends = []
+    for trend in monthly_trends:
+        if trend['date_of_creation__month']:
+            formatted_monthly_trends.append({
+                'month': trend['date_of_creation__month'],
+                'count': trend['count'],
+                'expenses': trend['expenses'] or 0
+            })
 
-    # Создаем список годов от 2023 до текущего
-    current_year = timezone.now().year
-    available_years = list(range(2023, current_year + 1))
-    available_years.reverse()  # Сортируем по убыванию (новые годы сначала)
+    # Список доступных годов (универсальный способ)
+    available_years = list(
+        OfficialMemo.objects
+        .dates('date_of_creation', 'year')
+        .values_list('date_of_creation__year', flat=True)
+        .distinct()
+    )
+
+    # Фильтруем годы начиная с 2023
+    available_years = [year for year in available_years if year and year >= 2023]
+
+    # Добавляем текущий год, если его нет
+    if current_year not in available_years:
+        available_years.append(current_year)
+        available_years.sort(reverse=True)
 
     # Список месяцев с названиями
     months = [
@@ -4674,7 +4704,7 @@ def management_dashboard(request):
         'total_expenses': total_expenses,
         'trip_types': trip_types,
         'status_stats': status_stats,
-        'monthly_trends': list(monthly_trends),
+        'monthly_trends': formatted_monthly_trends,
         'available_years': available_years,
         'selected_year': selected_year,
         'selected_month': selected_month,
