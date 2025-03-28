@@ -191,6 +191,35 @@
                                     </ul>
                                 </li>
                             {% endif %}
+                            {% if user.is_staff %}
+                                <li class="nav-parent">
+                                    <a class="nav-link" href="#">
+                                        <span>Служебные поездки</span>
+                                    </a>
+                                    <ul class="nav nav-children">
+                                        <li>
+                                            <a class="nav-link" href="{% url 'hrdepartment_app:management_dashboard' %}">
+                                                Отчеты для руководства
+                                            </a>
+                                        </li>
+{#                                        <li>#}
+{#                                            <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">#}
+{#                                                Анализ пропусков работы#}
+{#                                            </a>#}
+{#                                        </li>#}
+{#                                        <li>#}
+{#                                            <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">#}
+{#                                                Влияние дня недели на отгулы#}
+{#                                            </a>#}
+{#                                        </li>#}
+{#                                        <li>#}
+{#                                            <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">#}
+{#                                                Распределение типов времени#}
+{#                                            </a>#}
+{#                                        </li>#}
+                                    </ul>
+                                </li>
+                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:event_list' %}">
                                     Мероприятия
@@ -429,7 +458,7 @@
                                             Приказы
                                         </a>
                                     </li>
-                               </ul>
+                                </ul>
                             </li>
                             <li>
                                 <a class="nav-link" href="#">
@@ -450,12 +479,12 @@
                         </a>
                     </li>
                     {% if user.is_superuser %}
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                            <span>Конкурс</span>
-                        </a>
-                        <ul class="nav nav-children">
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                                <span>Конкурс</span>
+                            </a>
+                            <ul class="nav nav-children">
                                 <li>
                                     <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
                                         Прием стихов
@@ -466,13 +495,13 @@
                                         Голосование
                                     </a>
                                 </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:results' %}">
-                                    Результаты
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'library_app:results' %}">
+                                        Результаты
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     {% endif %}
                 </ul>
             </nav>
@@ -571,29 +600,28 @@
                                             socket_online_users.onmessage = function (event) {
                                                 const data = JSON.parse(event.data);
                                                 if (data.is_admin) {
-                                                   if (data.type === 'online_users') {
-                                                    const usersList = document.getElementById('online-users');
-                                                    usersList.innerHTML = '';
-                                                    data.users.forEach(user => {
-                                                        const li = document.createElement('li');
-                                                        const link = document.createElement('a');
-                                                        link.href = `/users/staff/${user[1]}/`;  // Ссылка на профиль пользователя
-                                                        link.textContent = user[0];
-                                                        li.appendChild(link);
-                                                        usersList.appendChild(li);
-                                                    });
-                                                }
-                                                }
-                                                else {
-                                                   if (data.type === 'online_users') {
-                                                    const usersList = document.getElementById('online-users');
-                                                    usersList.innerHTML = '';
-                                                    data.users.forEach(user => {
-                                                        const li = document.createElement('li');
-                                                        li.textContent = user[0];
-                                                        usersList.appendChild(li);
-                                                    });
-                                                }
+                                                    if (data.type === 'online_users') {
+                                                        const usersList = document.getElementById('online-users');
+                                                        usersList.innerHTML = '';
+                                                        data.users.forEach(user => {
+                                                            const li = document.createElement('li');
+                                                            const link = document.createElement('a');
+                                                            link.href = `/users/staff/${user[1]}/`;  // Ссылка на профиль пользователя
+                                                            link.textContent = user[0];
+                                                            li.appendChild(link);
+                                                            usersList.appendChild(li);
+                                                        });
+                                                    }
+                                                } else {
+                                                    if (data.type === 'online_users') {
+                                                        const usersList = document.getElementById('online-users');
+                                                        usersList.innerHTML = '';
+                                                        data.users.forEach(user => {
+                                                            const li = document.createElement('li');
+                                                            li.textContent = user[0];
+                                                            usersList.appendChild(li);
+                                                        });
+                                                    }
                                                 }
 
                                             };

@@ -14,12 +14,13 @@ from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy, reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -4568,4 +4569,77 @@ def export_time_distribution(request):
     # Возвращение файла
     response = HttpResponse(output.getvalue(), content_type="text/csv")
     response["Content-Disposition"] = f'attachment; filename="time_distribution_{selected_year}.csv"'
+    return response
+
+
+def management_dashboard(request):
+    # Фильтр по дате (последние 12 месяцев)
+    date_filter = timezone.now() - datetime.timedelta(days=365)
+
+    # Основные метрики
+    total_trips = OfficialMemo.objects.count()
+    active_trips = OfficialMemo.objects.filter(
+        Q(period_from__lte=timezone.now()) & Q(period_for__gte=timezone.now())
+    ).count()
+    total_expenses = OfficialMemo.objects.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
+
+    # Аналитика по типам
+    trip_types = OfficialMemo.objects.values('type_trip').annotate(
+        count=Count('id'),
+        total_expenses=Sum('expenses_summ')
+    )
+
+    # Статусы документов
+    status_stats = {
+        'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
+            submit_for_approval=True,
+            document_not_agreed=False
+        ).count(),
+        'approved': ApprovalOficialMemoProcess.objects.filter(
+            document_not_agreed=True
+        ).count(),
+        'rejected': ApprovalOficialMemoProcess.objects.filter(
+            cancellation=True
+        ).count()
+    }
+
+    # Тренды по месяцам
+    monthly_trends = OfficialMemo.objects.filter(
+        date_of_creation__gte=date_filter
+    ).extra(
+        {'month': "date_trunc('month', date_of_creation)"}
+    ).values('month').annotate(
+        count=Count('id'),
+        expenses=Sum('expenses_summ')
+    ).order_by('month')
+
+    context = {
+        'total_trips': total_trips,
+        'active_trips': active_trips,
+        'total_expenses': total_expenses,
+        'trip_types': trip_types,
+        'status_stats': status_stats,
+        'monthly_trends': list(monthly_trends),
+    }
+
+    return render(request, 'hrdepartment_app/management_dashboard.html', context)
+
+
+def export_trips_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="business_trips.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Сотрудник', 'Дата начала', 'Дата окончания', 'Тип', 'Расходы'])
+
+    for trip in OfficialMemo.objects.all():
+        writer.writerow([
+            trip.id,
+            trip.person.get_full_name(),
+            trip.period_from,
+            trip.period_for,
+            trip.get_type_trip_display(),
+            trip.expenses_summ
+        ])
+
     return response
