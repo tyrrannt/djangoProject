@@ -4598,20 +4598,28 @@ def management_dashboard(request):
     # Базовый запрос с фильтрацией по году
     queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
 
-    # Основные метрики (без фильтрации по месяцу)
+    # Если выбран месяц - фильтруем дополнительно
+    if selected_month:
+        try:
+            selected_month = int(selected_month)
+            queryset = queryset.filter(date_of_creation__month=selected_month)
+        except (ValueError, TypeError):
+            pass
+
+    # Основные метрики (уже с учетом фильтрации по месяцу)
     total_trips = queryset.count()
     active_trips = queryset.filter(
         Q(period_from__lte=now) & Q(period_for__gte=now)
     ).count()
     total_expenses = queryset.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
 
-    # Аналитика по типам (без фильтрации по месяцу)
+    # Аналитика по типам (с учетом фильтрации по месяцу)
     trip_types = queryset.values('type_trip').annotate(
         count=Count('id'),
         total_expenses=Sum('expenses_summ')
     )
 
-    # Статусы документов (без фильтрации по месяцу)
+    # Статусы документов (с учетом фильтрации по месяцу)
     status_stats = {
         'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
             document__in=queryset,
@@ -4628,21 +4636,19 @@ def management_dashboard(request):
         ).count()
     }
 
-    # Для трендов по месяцам используем фильтрацию по году и месяцу
-    monthly_queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
-    if selected_month:
-        try:
-            selected_month = int(selected_month)
-            monthly_queryset = monthly_queryset.filter(date_of_creation__month=selected_month)
-        except (ValueError, TypeError):
-            pass
-
-    monthly_trends = monthly_queryset.annotate(
+    # Тренды по месяцам (для выбранного года)
+    monthly_trends = OfficialMemo.objects.filter(
+        date_of_creation__year=selected_year
+    ).annotate(
         month=ExtractMonth('date_of_creation')
     ).values('month').annotate(
         count=Count('id'),
         expenses=Sum('expenses_summ')
     ).order_by('month')
+
+    # Если выбран конкретный месяц - показываем данные только для него
+    if selected_month:
+        monthly_trends = monthly_trends.filter(month=selected_month)
 
     # Создаем список годов от 2023 до текущего
     current_year = timezone.now().year
