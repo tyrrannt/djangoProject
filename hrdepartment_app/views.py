@@ -4615,13 +4615,13 @@ def management_dashboard(request):
     available_years = [year for year in available_years if year >= 2023]
     #
     # # Если нет данных после 2023, добавляем текущий год
-    # if not available_years:
-    #     available_years = [now.year]
-    # else:
-    #     # Добавляем текущий год, если его еще нет в списке
-    #     if now.year not in available_years:
-    #         available_years.append(now.year)
-    #         available_years.sort(reverse=True)
+    if not available_years:
+        available_years = [now.year]
+    else:
+        # Добавляем текущий год, если его еще нет в списке
+        if now.year not in available_years:
+            available_years.append(now.year)
+            available_years.sort(reverse=True)
 
     # Основные метрики
     total_trips = queryset.count()

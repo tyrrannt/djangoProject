@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
-if not config("DEBUG", default=False, cast=bool):
+if not config("DEVELOPMENT", default=False, cast=bool):
     # Устанавливаем SESSION_ENGINE на использование подписанных кук
     SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
@@ -112,7 +112,7 @@ ASGI_APPLICATION = "djangoProject.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-if not DEBUG:
+if not config("DEVELOPMENT", default=False, cast=bool):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -307,7 +307,7 @@ CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 
-if not config("DEBUG", default=False, cast=bool):
+if not config("DEVELOPMENT", default=False, cast=bool):
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
@@ -368,7 +368,7 @@ CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", default=False, cast=bool)
 # Перенаправляем все запросы на HTTPS
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)
 
-if not config("DEBUG", default=False, cast=bool):
+if not config("DEVELOPMENT", default=False, cast=bool):
     # Включаем HTTP Strict Transport Security (HSTS)
     SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS")
     SESSION_COOKIE_DOMAIN = config("SESSION_COOKIE_DOMAIN")
