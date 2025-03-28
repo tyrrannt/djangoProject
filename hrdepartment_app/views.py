@@ -4606,23 +4606,31 @@ def management_dashboard(request):
         except (ValueError, TypeError):
             pass
 
-    # Получаем список доступных годов (начиная с 2023)
-    available_years = OfficialMemo.objects.annotate(
-        year=ExtractYear('date_of_creation')
-    ).values_list('year', flat=True).distinct().order_by('-year')
-    text = available_years
-    # Фильтруем None значения и годы до 2023
-    available_years = [year for year in available_years if year is not None and year >= 2023]
+    # Получаем только записи, где date_of_creation не NULL
+    available_years = (
+        OfficialMemo.objects
+        .exclude(date_of_creation__isnull=True)  # Исключаем NULL значения
+        .annotate(year=ExtractYear('date_of_creation'))
+        .values_list('year', flat=True)
+        .distinct()
+        .order_by('-year')
+    )
 
-    # Добавляем текущий год, если его нет в списке
+    # Преобразуем в список и фильтруем
+    available_years = [
+        year for year in available_years
+        if year is not None and year >= 2023
+    ]
+
+    # Добавляем текущий год, если его нет
     current_year = timezone.now().year
     if current_year not in available_years:
         available_years.append(current_year)
 
-    # Сортируем в обратном порядке
+    # Сортируем по убыванию
     available_years = sorted(available_years, reverse=True)
 
-    # Если список все равно пустой (маловероятно), устанавливаем текущий год
+    # Если список пустой (например, нет подходящих записей)
     if not available_years:
         available_years = [current_year]
 
@@ -4680,7 +4688,6 @@ def management_dashboard(request):
         selected_month_name = dict(months).get(int(selected_month), '')
 
     context = {
-        'text': text,
         'total_trips': total_trips,
         'active_trips': active_trips,
         'total_expenses': total_expenses,
