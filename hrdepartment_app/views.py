@@ -965,6 +965,11 @@ class ApprovalOficialMemoProcessDetail(
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процесс по служебным поездкам"
         document = self.get_object()
+        context["document"] = document.document
+        delta = document.document.period_for - document.document.period_from
+        context["ending_day"] = ending_day(int(delta.days) + 1)
+        context["change_history"] = get_history(self, ApprovalOficialMemoProcess)
+
         context["without_departure"] = (
             False if document.document.official_memo_type == "3" else True
         )
