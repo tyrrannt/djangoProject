@@ -14,7 +14,7 @@ from decouple import config
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, Min
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, ExtractMonth, ExtractYear
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
@@ -4615,7 +4615,11 @@ def management_dashboard(request):
         .distinct()
         .order_by('-year')
     )
-    text = available_years
+    null_dates = OfficialMemo.objects.filter(date_of_creation__isnull=True).count()
+    min_year = OfficialMemo.objects.exclude(date_of_creation__isnull=True) \
+        .annotate(year=ExtractYear('date_of_creation')) \
+        .aggregate(min_year=Min('year'))
+    text = [min_year, null_dates]
     # Преобразуем в список и фильтруем
     available_years = [
         year for year in available_years
