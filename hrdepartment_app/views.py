@@ -4581,103 +4581,103 @@ def export_time_distribution(request):
     return response
 
 
+# @login_required
+# def management_dashboard(request):
+#     # Получаем текущую дату
+#     now = timezone.now()
+#
+#     # Получаем параметры фильтрации
+#     selected_year = request.GET.get('year', now.year)
+#     selected_month = request.GET.get('month')
+#
+#     try:
+#         selected_year = int(selected_year)
+#     except (ValueError, TypeError):
+#         selected_year = now.year
+#
+#     # Базовый запрос с фильтрацией по году
+#     queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
+#
+#     # Основные метрики (без фильтрации по месяцу)
+#     total_trips = queryset.count()
+#     active_trips = queryset.filter(
+#         Q(period_from__lte=now) & Q(period_for__gte=now)
+#     ).count()
+#     total_expenses = queryset.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
+#
+#     # Аналитика по типам (без фильтрации по месяцу)
+#     trip_types = queryset.values('type_trip').annotate(
+#         count=Count('id'),
+#         total_expenses=Sum('expenses_summ')
+#     )
+#
+#     # Статусы документов (без фильтрации по месяцу)
+#     status_stats = {
+#         'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
+#             document__in=queryset,
+#             submit_for_approval=True,
+#             document_not_agreed=False
+#         ).count(),
+#         'approved': ApprovalOficialMemoProcess.objects.filter(
+#             document__in=queryset,
+#             document_not_agreed=True
+#         ).count(),
+#         'rejected': ApprovalOficialMemoProcess.objects.filter(
+#             document__in=queryset,
+#             cancellation=True
+#         ).count()
+#     }
+#
+#     # Для трендов по месяцам используем фильтрацию по году и месяцу
+#     monthly_queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
+#     if selected_month:
+#         try:
+#             selected_month = int(selected_month)
+#             monthly_queryset = OfficialMemo.objects.filter(Q(date_of_creation__year=selected_year) & Q(date_of_creation__month=selected_month))
+#         except (ValueError, TypeError):
+#             pass
+#
+#     monthly_trends = monthly_queryset.annotate(
+#         month=ExtractMonth('date_of_creation')
+#     ).values('month').annotate(
+#         count=Count('id'),
+#         expenses=Sum('expenses_summ')
+#     ).order_by('month')
+#     logger.error(f"monthly_trends: {monthly_trends}")
+#     # Создаем список годов от 2023 до текущего
+#     current_year = timezone.now().year
+#     available_years = list(range(2023, current_year + 1))
+#     available_years.reverse()  # Сортируем по убыванию (новые годы сначала)
+#
+#     # Список месяцев с названиями
+#     months = [
+#         (1, 'Январь'), (2, 'Февраль'), (3, 'Март'),
+#         (4, 'Апрель'), (5, 'Май'), (6, 'Июнь'),
+#         (7, 'Июль'), (8, 'Август'), (9, 'Сентябрь'),
+#         (10, 'Октябрь'), (11, 'Ноябрь'), (12, 'Декабрь')
+#     ]
+#
+#     # Название выбранного месяца
+#     selected_month_name = ''
+#     if selected_month:
+#         selected_month_name = dict(months).get(int(selected_month), '')
+#
+#     context = {
+#         'total_trips': total_trips,
+#         'active_trips': active_trips,
+#         'total_expenses': total_expenses,
+#         'trip_types': trip_types,
+#         'status_stats': status_stats,
+#         'monthly_trends': list(monthly_trends),
+#         'available_years': available_years,
+#         'selected_year': selected_year,
+#         'selected_month': selected_month,
+#         'selected_month_name': selected_month_name,
+#         'months': months,
+#     }
+#     return render(request, 'hrdepartment_app/management_dashboard.html', context)
+
 @login_required
-def management_dashboard(request):
-    # Получаем текущую дату
-    now = timezone.now()
-
-    # Получаем параметры фильтрации
-    selected_year = request.GET.get('year', now.year)
-    selected_month = request.GET.get('month')
-
-    try:
-        selected_year = int(selected_year)
-    except (ValueError, TypeError):
-        selected_year = now.year
-
-    # Базовый запрос с фильтрацией по году
-    queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
-
-    # Основные метрики (без фильтрации по месяцу)
-    total_trips = queryset.count()
-    active_trips = queryset.filter(
-        Q(period_from__lte=now) & Q(period_for__gte=now)
-    ).count()
-    total_expenses = queryset.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
-
-    # Аналитика по типам (без фильтрации по месяцу)
-    trip_types = queryset.values('type_trip').annotate(
-        count=Count('id'),
-        total_expenses=Sum('expenses_summ')
-    )
-
-    # Статусы документов (без фильтрации по месяцу)
-    status_stats = {
-        'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
-            document__in=queryset,
-            submit_for_approval=True,
-            document_not_agreed=False
-        ).count(),
-        'approved': ApprovalOficialMemoProcess.objects.filter(
-            document__in=queryset,
-            document_not_agreed=True
-        ).count(),
-        'rejected': ApprovalOficialMemoProcess.objects.filter(
-            document__in=queryset,
-            cancellation=True
-        ).count()
-    }
-
-    # Для трендов по месяцам используем фильтрацию по году и месяцу
-    monthly_queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
-    if selected_month:
-        try:
-            selected_month = int(selected_month)
-            monthly_queryset = OfficialMemo.objects.filter(Q(date_of_creation__year=selected_year) & Q(date_of_creation__month=selected_month))
-        except (ValueError, TypeError):
-            pass
-
-    monthly_trends = monthly_queryset.annotate(
-        month=ExtractMonth('date_of_creation')
-    ).values('month').annotate(
-        count=Count('id'),
-        expenses=Sum('expenses_summ')
-    ).order_by('month')
-    logger.error(f"monthly_trends: {monthly_trends}")
-    # Создаем список годов от 2023 до текущего
-    current_year = timezone.now().year
-    available_years = list(range(2023, current_year + 1))
-    available_years.reverse()  # Сортируем по убыванию (новые годы сначала)
-
-    # Список месяцев с названиями
-    months = [
-        (1, 'Январь'), (2, 'Февраль'), (3, 'Март'),
-        (4, 'Апрель'), (5, 'Май'), (6, 'Июнь'),
-        (7, 'Июль'), (8, 'Август'), (9, 'Сентябрь'),
-        (10, 'Октябрь'), (11, 'Ноябрь'), (12, 'Декабрь')
-    ]
-
-    # Название выбранного месяца
-    selected_month_name = ''
-    if selected_month:
-        selected_month_name = dict(months).get(int(selected_month), '')
-
-    context = {
-        'total_trips': total_trips,
-        'active_trips': active_trips,
-        'total_expenses': total_expenses,
-        'trip_types': trip_types,
-        'status_stats': status_stats,
-        'monthly_trends': list(monthly_trends),
-        'available_years': available_years,
-        'selected_year': selected_year,
-        'selected_month': selected_month,
-        'selected_month_name': selected_month_name,
-        'months': months,
-    }
-    return render(request, 'hrdepartment_app/management_dashboard.html', context)
-
-
 def management_dashboard(request):
     # Получаем текущую дату
     now = timezone.now()
@@ -4698,7 +4698,7 @@ def management_dashboard(request):
     if selected_month:
         try:
             selected_month = int(selected_month)
-            queryset = queryset.filter(date_of_creation__month=selected_month)
+            queryset = OfficialMemo.objects.filter(Q(date_of_creation__year=selected_year) & Q(date_of_creation__month=selected_month))
         except (ValueError, TypeError):
             pass
 
