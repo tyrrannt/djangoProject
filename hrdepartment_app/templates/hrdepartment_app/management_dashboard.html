@@ -8,158 +8,116 @@
 
 {% block custome_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/pnotify/pnotify.custom.css' %}"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 {% endblock %}
 
 {% block custome_script %}
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
-
 {% endblock %}
 
 {% block content %}
+<section role="main" class="content-body content-body-modern mt-0">
+    <!-- Форма фильтрации -->
+    <div class="filter-section mb-4">
+        <form method="get" class="form-inline">
+            <div class="form-group mr-3">
+                <label for="year" class="mr-2">Год:</label>
+                <select name="year" id="year" class="form-control">
+                    {% for year in available_years %}
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+                <label for="month" class="mr-2">Месяц:</label>
+                <select name="month" id="month" class="form-control">
+                    <option value="">Все месяцы</option>
+                    {% for month_num, month_name in months %}
+                        <option value="{{ month_num }}"
+                                {% if selected_month and month_num == selected_month|add:0 %}selected{% endif %}>
+                            {{ month_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary mr-2">Применить</button>
+            <a href="{% url 'hrdepartment_app:management_dashboard' %}" class="btn btn-secondary">Сбросить</a>
+        </form>
+    </div>
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        <!-- Форма фильтрации -->
-        <div class="filter-section mb-4">
-            <form method="get" class="form-inline">
-                <div class="form-group mr-3">
-                    <label for="year" class="mr-2">Год:</label>
-                    <select name="year" id="year" class="form-control">
-                        {% for year in available_years %}
-                            <option value="{{ year }}"
-                                    {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
-                        {% endfor %}
-                    </select>
-                    <label for="month" class="mr-2">Месяц:</label>
-                    <select name="month" id="month" class="form-control">
-                        <option value="">Все месяцы</option>
-                        {% for month_num, month_name in months %}
-                            <option value="{{ month_num }}"
-                                    {% if selected_month and month_num == selected_month|add:0 %}selected{% endif %}>
-                                {{ month_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+    <!-- Экспорт данных -->
+    <a href="{% url 'hrdepartment_app:export_trips' %}?year={{ selected_year }}{% if selected_month %}&month={{ selected_month }}{% endif %}"
+       class="btn btn-primary mb-4">
+       Экспорт данных
+    </a>
 
-                <div class="form-group mr-3">
+    <div class="dashboard-container">
+        <h1>Аналитика служебных поездок {% if selected_month %}{{ selected_month_name }} {% endif %}{{ selected_year }} года</h1>
+        <p class="description">Данные отображаются за {% if selected_month %}{{ selected_month_name }} {{ selected_year }}{% else %}{{ selected_year }} год{% endif %}</p>
 
-                </div>
-
-                <button type="submit" class="btn btn-primary mr-2">Применить</button>
-                <a href="{% url 'hrdepartment_app:management_dashboard' %}" class="btn btn-secondary">Сбросить</a>
-            </form>
+        <!-- Основные метрики -->
+        <div class="metrics-row">
+            <div class="metric-card">
+                <h3>Всего поездок</h3>
+                <p>{{ total_trips }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Активные поездки</h3>
+                <p>{{ active_trips }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>Общие расходы</h3>
+                <p>{{ total_expenses|floatformat:2 }} ₽</p>
+            </div>
         </div>
 
-        <!-- Экспорт данных -->
-        <a href="{% url 'hrdepartment_app:export_trips' %}?year=
-                {{ selected_year }}{% if selected_month %}&month={{ selected_month }}{% endif %}"
-           class="btn btn-primary mb-4">
-            Экспорт данных
-        </a>
-
-        <div class="dashboard-container">
-            <h1>Аналитика служебных поездок
-                {% if selected_month %}{{ selected_month_name }} {% endif %}{{ selected_year }} года
-            </h1>
-        <p class="description">{{ text }}</p>
-            <!-- Основные метрики -->
-            <div class="metrics-row">
-                <div class="metric-card">
-                    <h3>Всего поездок</h3>
-                    <p>{{ total_trips }}</p>
-                </div>
-                <div class="metric-card">
-                    <h3>Активные поездки</h3>
-                    <p>{{ active_trips }}</p>
-                </div>
-                <div class="metric-card">
-                    <h3>Общие расходы</h3>
-                    <p>{{ total_expenses|floatformat:2 }} ₽</p>
-                </div>
-            </div>
-
-            <!-- Графики -->
-            <div class="charts-row">
-                <div class="chart-card">
-                    <h3>Распределение по типам поездок</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="tripTypesChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>Статусы документов</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="statusChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="chart-card full-width">
-                <h3>Динамика поездок по месяцам</h3>
+        <!-- Графики -->
+        <div class="charts-row">
+            <div class="chart-card">
+                <h3>Распределение по типам поездок</h3>
                 <div class="chart-wrapper">
-                    <canvas id="monthlyTrendsChart"></canvas>
+                    <canvas id="tripTypesChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h3>Статусы документов</h3>
+                <div class="chart-wrapper">
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Подключаем Chart.js -->
-        {#        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>#}
-        <script>
-            // Общая конфигурация для всех графиков
-            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-            Chart.defaults.font.size = 12;
-            Chart.defaults.aspectRatio = 1.5;
+        <div class="chart-card full-width">
+            <h3>Динамика поездок {% if selected_month %}за месяц{% else %}по месяцам{% endif %}</h3>
+            <div class="chart-wrapper">
+                <canvas id="monthlyTrendsChart"></canvas>
+            </div>
+        </div>
+    </div>
 
-            // Функция для создания адаптивных графиков
-            function createChart(elementId, config) {
-                const ctx = document.getElementById(elementId).getContext('2d');
-                return new Chart(ctx, {
-                    ...config,
-                    options: {
-                        ...config.options,
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            }
-                        }
-                    }
-                });
-            }
+    <script>
+        // Общая конфигурация для всех графиков
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.aspectRatio = 1.5;
 
-            <!-- График типов поездок -->
-            createChart('tripTypesChart', {
-                type: 'pie',
-                data: {
-                    labels: [
-                        {% for type in trip_types %}
-                            '{{ type.type_trip|default:"1"|get_trip_type_display }}',
-                        {% endfor %}
-                    ],
-                    datasets: [{
-                        data: [{% for type in trip_types %}{{ type.count }}, {% endfor %}],
-                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
-                    }]
-                },
+        // Функция для создания адаптивных графиков
+        function createChart(elementId, config) {
+            const ctx = document.getElementById(elementId).getContext('2d');
+            return new Chart(ctx, {
+                ...config,
                 options: {
+                    ...config.options,
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        title: {
-                            display: true,
-                            text: 'Распределение по типам поездок',
-                            font: {
-                                size: 16
-                            }
+                        legend: {
+                            position: 'bottom',
                         },
                         tooltip: {
                             callbacks: {
-                                label: function (context) {
+                                label: function(context) {
                                     const label = context.label || '';
                                     const value = context.raw || 0;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
@@ -171,214 +129,240 @@
                     }
                 }
             });
+        }
 
-            // График статусов
-            createChart('statusChart', {
-                type: 'doughnut',
-                data: {
-                    labels: ['На согласовании', 'Утверждено', 'Отклонено'],
-                    datasets: [{
+        // График типов поездок
+        createChart('tripTypesChart', {
+            type: 'pie',
+            data: {
+                labels: [
+                    {% for type in trip_types %}
+                        '{{ type.type_trip|default:"1"|get_trip_type_display }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [{% for type in trip_types %}{{ type.count }},{% endfor %}],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                }]
+            }
+        });
+
+        // График статусов
+        createChart('statusChart', {
+            type: 'doughnut',
+            data: {
+                labels: ['На согласовании', 'Утверждено', 'Отклонено'],
+                datasets: [{
+                    data: [
+                        {{ status_stats.awaiting_approval }},
+                        {{ status_stats.approved }},
+                        {{ status_stats.rejected }}
+                    ],
+                    backgroundColor: ['#FF9F40', '#4BC0C0', '#FF6384']
+                }]
+            }
+        });
+
+        // График трендов
+        createChart('monthlyTrendsChart', {
+            type: '{% if selected_month %}bar{% else %}line{% endif %}',
+            data: {
+                labels: [
+                    {% if selected_month %}
+                        '{{ selected_month_name }}'
+                    {% else %}
+                        {% for month in monthly_trends %}
+                            '{{ month.month|date:"M" }}',
+                        {% endfor %}
+                    {% endif %}
+                ],
+                datasets: [
+                    {
+                        label: 'Количество поездок',
                         data: [
-                            {{ status_stats.awaiting_approval }},
-                            {{ status_stats.approved }},
-                            {{ status_stats.rejected }}
+                            {% if selected_month %}
+                                {% for month in monthly_trends %}{{ month.count }}{% endfor %}
+                            {% else %}
+                                {% for month in monthly_trends %}{{ month.count }},{% endfor %}
+                            {% endif %}
                         ],
-                        backgroundColor: ['#FF9F40', '#4BC0C0', '#FF6384']
-                    }]
-                }
-            });
-
-            // График трендов
-            createChart('monthlyTrendsChart', {
-                type: 'line',
-                data: {
-                    labels: [{% for month in monthly_trends %}'{{ month.month|date:"M Y" }}',{% endfor %}],
-                    datasets: [
-                        {
-                            label: 'Количество поездок',
-                            data: [{% for month in monthly_trends %}{{ month.count }}, {% endfor %}],
-                            borderColor: '#36A2EB',
-                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                            yAxisID: 'y',
-                            tension: 0.3,
-                            fill: true
-                        },
-                        {
-                            label: 'Расходы (руб)',
-                            data: [{% for month in monthly_trends %}{{ month.expenses|default:0 }}, {% endfor %}],
-                            borderColor: '#FFCE56',
-                            backgroundColor: 'rgba(255, 206, 86, 0.1)',
-                            yAxisID: 'y1',
-                            tension: 0.3,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            grid: {
-                                drawOnChartArea: false
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            grid: {
-                                drawOnChartArea: false
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        yAxisID: 'y',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Расходы (руб)',
+                        data: [
+                            {% if selected_month %}
+                                {% for month in monthly_trends %}{{ month.expenses|default:0 }}{% endfor %}
+                            {% else %}
+                                {% for month in monthly_trends %}{{ month.expenses|default:0 }},{% endfor %}
+                            {% endif %}
+                        ],
+                        borderColor: '#FFCE56',
+                        backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                        yAxisID: 'y1',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        grid: { drawOnChartArea: false }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false }
+                    },
+                    x: {
+                        grid: { display: false }
                     }
                 }
-            });
-        </script>
-
-        <style>
-            :root {
-                --card-bg: #ffffff;
-                --border-radius: 8px;
-                --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-                --primary-color: #4a6fa5;
-                --secondary-color: #666;
-                --padding: 16px;
-                --gap: 20px;
             }
+        });
 
-            .dashboard-container {
-                padding: var(--padding);
-                max-width: 1200px;
-                margin: 0 auto;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        // Автоматическая отправка формы при изменении выбора
+        document.getElementById('year').addEventListener('change', function() {
+            this.form.submit();
+        });
+        document.getElementById('month').addEventListener('change', function() {
+            this.form.submit();
+        });
+    </script>
+
+    <style>
+        :root {
+            --card-bg: #ffffff;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --primary-color: #4a6fa5;
+            --secondary-color: #666;
+            --padding: 16px;
+            --gap: 20px;
+        }
+
+        .dashboard-container {
+            padding: var(--padding);
+            max-width: 1200px;
+            margin: 0 auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dashboard-container h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .description {
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .metrics-row {
+            display: flex;
+            gap: var(--gap);
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .metric-card {
+            flex: 1;
+            min-width: 150px;
+            padding: var(--padding);
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+
+        .metric-card h3 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .metric-card p {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0 0;
+            color: var(--primary-color);
+        }
+
+        .charts-row {
+            display: flex;
+            gap: var(--gap);
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .chart-card {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: var(--padding);
+        }
+
+        .chart-card.full-width {
+            flex: 100%;
+        }
+
+        .chart-card h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            min-height: 300px;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .form-inline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+
+        .mr-2 { margin-right: 8px; }
+        .mr-3 { margin-right: 16px; }
+        .mb-4 { margin-bottom: 20px; }
+
+        @media (max-width: 768px) {
+            .metrics-row, .charts-row {
+                flex-direction: column;
             }
-
-            .dashboard-container h1 {
-                color: var(--primary-color);
-                margin-bottom: 24px;
-                font-size: 24px;
+            .metric-card, .chart-card {
+                min-width: 100%;
             }
-
-            .metrics-row {
-                display: flex;
-                gap: var(--gap);
-                margin-bottom: 30px;
-                flex-wrap: wrap;
-            }
-
-            .metric-card {
-                flex: 1;
-                min-width: 150px;
-                padding: var(--padding);
-                background: var(--card-bg);
-                border-radius: var(--border-radius);
-                box-shadow: var(--box-shadow);
-                text-align: center;
-            }
-
-            .metric-card h3 {
-                margin-top: 0;
-                color: var(--secondary-color);
-                font-size: 14px;
-                font-weight: 600;
-            }
-
-            .metric-card p {
-                font-size: 24px;
-                font-weight: bold;
-                margin: 10px 0 0;
-                color: var(--primary-color);
-            }
-
-            .charts-row {
-                display: flex;
-                gap: var(--gap);
-                margin-bottom: 30px;
-                flex-wrap: wrap;
-            }
-
-            .chart-card {
-                flex: 1;
-                min-width: 300px;
-                background: var(--card-bg);
-                border-radius: var(--border-radius);
-                box-shadow: var(--box-shadow);
-                padding: var(--padding);
-            }
-
-            .chart-card.full-width {
-                flex: 100%;
-            }
-
-            .chart-card h3 {
-                margin-top: 0;
-                margin-bottom: 16px;
-                color: var(--primary-color);
-                font-size: 16px;
-            }
-
-            .chart-wrapper {
-                position: relative;
-                width: 100%;
-                min-height: 300px;
-            }
-
-            .filter-section {
-                background: #f8f9fa;
-                padding: 15px;
-                border-radius: 5px;
-                margin-bottom: 20px;
-            }
-
-            .form-inline {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: center;
-            }
-
-            .form-group {
-                margin-right: 15px;
-                margin-bottom: 10px;
-            }
-
-            .mr-2 {
-                margin-right: 8px;
-            }
-
-            .mr-3 {
-                margin-right: 16px;
-            }
-
-            .mb-4 {
-                margin-bottom: 20px;
-            }
-
-            @media (max-width: 768px) {
-                .metrics-row, .charts-row {
-                    flex-direction: column;
-                }
-
-                .metric-card, .chart-card {
-                    min-width: 100%;
-                }
-            }
-        </style>
-        <script>
-            // Автоматическая отправка формы при изменении выбора
-            document.getElementById('year').addEventListener('change', function () {
-                this.form.submit();
-            });
-
-            document.getElementById('month').addEventListener('change', function () {
-                this.form.submit();
-            });
-        </script>
-    </section>
+        }
+    </style>
+</section>
 {% endblock %}
