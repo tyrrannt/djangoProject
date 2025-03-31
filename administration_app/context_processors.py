@@ -155,7 +155,7 @@ def get_approval_oficial_memo_process(request):
             # Формирование уведомлений
             if request.user.user_work_profile.job.pk in person_agreement:
                 agreement = ApprovalOficialMemoProcess.objects.filter(
-                    Q(person_executor__user_work_profile__job__type_of_job=request.user.user_work_profile.job.type_of_job) &
+                    Q(person_executor__user_work_profile__job__division_affilation__pk=request.user.user_work_profile.job.division_affilation.pk) &
                     Q(document_not_agreed=False)
                 ).exclude(cancellation=True)
                 agreement_color = [(item, 'red') for item in agreement]
