@@ -4784,6 +4784,15 @@ def management_dashboard(request):
 
 @login_required
 def export_trips_csv(request):
+    """
+    Экспортирует данные о командировках в CSV-файл.
+
+    Параметры:
+    request (HttpRequest): Объект запроса.
+
+    Возвращает:
+    HttpResponse: Ответ с CSV-файлом.
+    """
     selected_year = request.GET.get('year', timezone.now().year)
     selected_month = request.GET.get('month')
     now = timezone.now()
@@ -4823,3 +4832,4 @@ def export_trips_csv(request):
         ])
 
     return response
+
