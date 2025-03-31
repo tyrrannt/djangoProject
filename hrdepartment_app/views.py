@@ -4786,15 +4786,22 @@ def management_dashboard(request):
 def export_trips_csv(request):
     selected_year = request.GET.get('year', timezone.now().year)
     selected_month = request.GET.get('month')
-
+    now = timezone.now()
+    try:
+        selected_year = int(selected_year)
+    except (ValueError, TypeError):
+        selected_year = now.year
+    try:
+        selected_month = int(selected_month)
+    except (ValueError, TypeError):
+        selected_month = now.month
     queryset = OfficialMemo.objects.filter(
         date_of_creation__year=selected_year
     )
 
     if selected_month:
-        queryset = queryset.filter(
-            date_of_creation__month=selected_month
-        )
+        first_day, last_day = get_first_and_last_day(selected_year, selected_month)
+        queryset = OfficialMemo.objects.filter(Q(date_of_creation__gte=first_day) & Q(date_of_creation__lte=last_day))
 
     response = HttpResponse(content_type='text/csv')
     filename = f"business_trips_{selected_year}"
