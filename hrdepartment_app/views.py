@@ -4693,14 +4693,14 @@ def management_dashboard(request):
         selected_year = now.year
 
     # Базовый запрос с фильтрацией по году
-    queryset = OfficialMemo.objects.filter(date_of_creation__year=selected_year)
+    queryset = OfficialMemo.objects.filter(period_from__year=selected_year)
 
     # Если выбран месяц - фильтруем дополнительно
     if selected_month:
         try:
             selected_month = int(selected_month)
             first_day, last_day = get_first_and_last_day(selected_year, selected_month)
-            queryset = OfficialMemo.objects.filter(Q(date_of_creation__gte=first_day) & Q(date_of_creation__lte=last_day))
+            queryset = OfficialMemo.objects.filter(Q(period_from__gte=first_day) & Q(period_for__lte=last_day))
         except (ValueError, TypeError):
             pass
 
@@ -4804,13 +4804,14 @@ def export_trips_csv(request):
         selected_month = int(selected_month)
     except (ValueError, TypeError):
         selected_month = now.month
+
     queryset = OfficialMemo.objects.filter(
-        date_of_creation__year=selected_year
+        period_from___year=selected_year
     )
 
     if selected_month:
         first_day, last_day = get_first_and_last_day(selected_year, selected_month)
-        queryset = OfficialMemo.objects.filter(Q(date_of_creation__gte=first_day) & Q(date_of_creation__lte=last_day))
+        queryset = OfficialMemo.objects.filter(Q(period_from__gte=first_day) & Q(period_for__lte=last_day))
 
     response = HttpResponse(content_type='text/csv')
     filename = f"business_trips_{selected_year}"
