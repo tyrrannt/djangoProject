@@ -4736,17 +4736,38 @@ def management_dashboard(request):
 
     # Тренды по месяцам (для выбранного года)
     monthly_trends = OfficialMemo.objects.filter(
-        date_of_creation__year=selected_year
+        period_from__year=selected_year
     ).annotate(
-        month=ExtractMonth('date_of_creation')
+        month=ExtractMonth('period_from')
     ).values('month').annotate(
         count=Count('id'),
         expenses=Sum('expenses_summ')
     ).order_by('month')
 
-    # Если выбран конкретный месяц - показываем данные только для него
-    if selected_month:
-        monthly_trends = monthly_trends.filter(month=selected_month)
+    # # Если выбран конкретный месяц - показываем данные только для него
+    # if selected_month:
+    #     monthly_trends = monthly_trends.filter(month=selected_month)
+
+    # Создаем список всех месяцев (1-12)
+    all_months = list(range(1, 13))
+
+    # Преобразуем в словарь для удобства
+    monthly_data = {item['month']: item for item in monthly_trends}
+
+    # Создаем полный список всех месяцев с нулевыми значениями для отсутствующих
+    complete_monthly_trends = []
+    for month in all_months:
+        if month in monthly_data:
+            complete_monthly_trends.append(monthly_data[month])
+        else:
+            complete_monthly_trends.append({
+                'month': month,
+                'count': 0,
+                'expenses': 0
+            })
+
+    # Сортируем по месяцам
+    complete_monthly_trends.sort(key=lambda x: x['month'])
 
     # Создаем список годов от 2023 до текущего
     current_year = timezone.now().year
@@ -4773,6 +4794,7 @@ def management_dashboard(request):
         'trip_types': trip_types,
         'status_stats': status_stats,
         'monthly_trends': list(monthly_trends),
+        'complete_monthly_trends': complete_monthly_trends,
         'available_years': available_years,
         'selected_year': selected_year,
         'selected_month': selected_month,

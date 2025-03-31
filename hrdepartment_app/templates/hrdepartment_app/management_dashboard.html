@@ -95,7 +95,7 @@
             </div>
 
             <div class="chart-card full-width">
-                <h3>Динамика поездок {% if selected_month %}за месяц{% else %}по месяцам{% endif %}</h3>
+                <h3>Динамика поездок по месяцам {{ selected_year }} года</h3>
                 <div class="chart-wrapper">
                     <canvas id="monthlyTrendsChart"></canvas>
                 </div>
@@ -171,47 +171,34 @@
 
             // График трендов
             createChart('monthlyTrendsChart', {
-                type: '{% if selected_month %}bar{% else %}line{% endif %}',
+                type: 'bar',
                 data: {
                     labels: [
-                        {% if selected_month %}
-                            '{{ selected_month_name }}'
-                        {% else %}
-                            {% for month in monthly_trends %}
-                                '{{ month.month|date:"M" }}',
-                            {% endfor %}
-                        {% endif %}
+                        'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
                     ],
                     datasets: [
                         {
                             label: 'Количество поездок',
                             data: [
-                                {% if selected_month %}
-                                    {% for month in monthly_trends %}{{ month.count }}{% endfor %}
-                                {% else %}
-                                    {% for month in monthly_trends %}{{ month.count }},{% endfor %}
-                                {% endif %}
+                                {% for month in complete_monthly_trends %}
+                                    {{ month.count }},
+                                {% endfor %}
                             ],
                             borderColor: '#36A2EB',
                             backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                            yAxisID: 'y',
-                            tension: 0.3,
-                            fill: true
+                            yAxisID: 'y'
                         },
                         {
                             label: 'Расходы (руб)',
                             data: [
-                                {% if selected_month %}
-                                    {% for month in monthly_trends %}{{ month.expenses|default:0 }}{% endfor %}
-                                {% else %}
-                                    {% for month in monthly_trends %}{{ month.expenses|default:0 }},{% endfor %}
-                                {% endif %}
+                                {% for month in complete_monthly_trends %}
+                                    {{ month.expenses|default:0 }},
+                                {% endfor %}
                             ],
                             borderColor: '#FFCE56',
                             backgroundColor: 'rgba(255, 206, 86, 0.5)',
-                            yAxisID: 'y1',
-                            tension: 0.3,
-                            fill: true
+                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -221,12 +208,14 @@
                             type: 'linear',
                             display: true,
                             position: 'left',
+                            beginAtZero: true,
                             grid: {drawOnChartArea: false}
                         },
                         y1: {
                             type: 'linear',
                             display: true,
                             position: 'right',
+                            beginAtZero: true,
                             grid: {drawOnChartArea: false}
                         },
                         x: {
@@ -235,7 +224,6 @@
                     }
                 }
             });
-
 
             // Автоматическая отправка формы при изменении выбора
             document.getElementById('year').addEventListener('change', function () {
