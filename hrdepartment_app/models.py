@@ -12,7 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import FileExtensionValidator
 from django.db import models
-from django.db.models import Q, Choices
+from django.db.models import Q, Choices, Max
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
@@ -66,6 +66,28 @@ def ins_directory_path(instance, filename):
 def prv_directory_path(instance, filename):
     return f"docs/PRV/{instance.date_entry.year}/{filename}"
 
+
+def brf_directory_path_doc(instance, filename):
+    try:
+        max_pk = Briefings.objects.aggregate(Max('pk'))['pk__max']
+        max_pk += 1
+    except TypeError:
+        max_pk = 1
+    uid = f'{max_pk:07}'
+    ext = filename.split('.')[-1]
+    filename = f"BRF-{instance.date_entry}-DOCS-{uid}.{ext}"
+    return f"docs/BRF/{instance.date_entry.year}/{filename}"
+
+def brf_directory_path_scan(instance, filename):
+    try:
+        max_pk = Briefings.objects.aggregate(Max('pk'))['pk__max']
+        max_pk += 1
+    except TypeError:
+        max_pk = 1
+    uid = f'{max_pk:07}'
+    ext = filename.split('.')[-1]
+    filename = f"BRF-{instance.date_entry}-SCAN-{uid}.{ext}"
+    return f"docs/BRF/{instance.date_entry.year}/{filename}"
 
 def ord_directory_path(instance, filename):
     year = instance.document_date
@@ -2810,6 +2832,68 @@ class Provisions(Documents):
 
     def get_absolute_url(self):
         return reverse("hrdepartment_app:provisions_list")
+
+    def __str__(self):
+        return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"
+
+
+
+class Briefings(Documents):
+    class Meta:
+        verbose_name = "Инструктаж"
+        verbose_name_plural = "Инструктажи"
+        ordering = ['-document_date']
+
+    doc_file = models.FileField(
+        verbose_name="Файл документа", upload_to=brf_directory_path_doc, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['doc', 'docx']),
+        ]
+    )
+    scan_file = models.FileField(
+        verbose_name="Скан документа", upload_to=brf_directory_path_scan, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+        ]
+    )
+    storage_location_division = models.ForeignKey(
+        Division,
+        verbose_name="Подразделение где хранится оригинал",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="briefings_location_division",
+    )
+    document_division = models.ManyToManyField(
+        Division,
+        verbose_name="Подразделения",
+        related_name="briefings_document_division",
+    )
+    document_order = models.ForeignKey(
+        DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True
+    )
+    document_form = models.ManyToManyField(
+        DocumentForm, verbose_name="Бланки документов"
+    )
+
+    def get_data(self):
+        try:
+            get_date = False if self.validity_period_end < datetime.date.today() else True
+        except TypeError:
+            get_date = True
+        get_actual = False if Briefings.objects.filter(parent_document=self.pk).count() > 0 else True
+        return {
+            "pk": self.pk,
+            "document_name": self.document_name,
+            "document_number": self.document_number,
+            "document_date": f"{self.document_date:%d.%m.%Y} г.",
+            "document_division": str(self.storage_location_division),
+            "document_order": str(self.document_order),
+            "actuality": "Да" if (get_actual and get_date) else "Нет",
+            "executor": format_name_initials(self.executor),
+        }
+
+    def get_absolute_url(self):
+        return reverse("hrdepartment_app:briefings_list")
 
     def __str__(self):
         return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"

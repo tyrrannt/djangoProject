@@ -73,7 +73,7 @@ from hrdepartment_app.forms import (
     ProvisionsAddForm,
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
     CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm,
-    ReportCardForm, OutfitCardForm,
+    ReportCardForm, OutfitCardForm, BriefingsAddForm, BriefingsUpdateForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -93,7 +93,7 @@ from hrdepartment_app.models import (
     PlaceProductionActivity,
     ReportCard,
     ProductionCalendar,
-    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment,
+    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
@@ -3261,6 +3261,159 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
         # Возвращаем модифицированную форму
         return form
+
+
+# Инструктажи
+class BriefingsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Инструктажи - список
+    """
+
+    model = Briefings
+    permission_required = "hrdepartment_app.view_briefings"
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            briefings_list = Briefings.objects.all()
+            data = [briefings_item.get_data() for briefings_item in briefings_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструктажи"
+        return context
+
+
+class BriefingsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """
+    Инструктажи - создание
+    """
+
+    model = Briefings
+    form_class = BriefingsAddForm
+    permission_required = "hrdepartment_app.add_briefings"
+
+    def get_context_data(self, **kwargs):
+        content = super(BriefingsAdd, self).get_context_data(**kwargs)
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить инструктаж"
+        return content
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+
+@method_decorator(never_cache, name='dispatch')
+class BriefingsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """
+    Инструктажи - просмотр
+    """
+
+    model = Briefings
+    permission_required = "hrdepartment_app.view_briefings"
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_access.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy("hrdepartment_app:briefings_list")
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy("hrdepartment_app:briefings_list")
+            return redirect(url_match)
+        return super(BriefingsDetail, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        content_type_id = ContentType.objects.get_for_model(self.object).id
+        document_id = self.object.id
+        user = self.request.user
+        agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
+                                                      user=user).exists()
+        context['agree'] = agree
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
+        context['list_agree'] = list_agree
+        previous = Briefings.objects.filter(parent_document=document_id).values_list('pk').last()
+        context['previous'] = previous[0] if previous else False
+        try:
+            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+        except TypeError:
+            context['outdated'] = False
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        return context
+
+
+class BriefingsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """
+    Инструктажи - редактирование
+    """
+
+    template_name = "hrdepartment_app/briefings_form_update.html"
+    model = Briefings
+    form_class = BriefingsUpdateForm
+    permission_required = "hrdepartment_app.change_briefings"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+    def get_form(self, form_class=None):
+        """
+        В данном случае, queryset содержит все объекты Provisions, кроме объекта, который соответствует текущему
+        экземпляру класса (self.object). Это может быть полезно, если вы хотите ограничить выбор определенных объектов
+        в поле формы.
+
+        :param form_class: Установлен в текущем экземпляре класса. Это позволяет получить экземпляр формы, который
+                            в дальнейшем будет использоваться в представлении.
+        :return: Возвращаем модифицированную форму.
+        """
+        # Получаем экземпляр формы, используя родительский метод `get_form`
+        form = super().get_form(form_class=self.form_class)
+
+        # Добавляем дополнительное поле 'parent_document' в форму
+        form.fields['parent_document'].queryset = Briefings.objects.all().exclude(pk=self.object.pk)
+
+        # Возвращаем модифицированную форму
+        return form
+
+
 
 
 # Руководящие документы
