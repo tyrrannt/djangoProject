@@ -8,6 +8,7 @@ from io import StringIO
 import plotly
 import plotly.figure_factory as ff
 import pandas as pd
+from celery.utils.functional import first
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from decouple import config
@@ -78,7 +79,7 @@ from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
     get_month,
-    get_working_hours, get_notify,
+    get_working_hours, get_notify, get_first_and_last_day,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -4698,7 +4699,8 @@ def management_dashboard(request):
     if selected_month:
         try:
             selected_month = int(selected_month)
-            queryset = OfficialMemo.objects.filter(Q(date_of_creation__year=selected_year) & Q(date_of_creation__month=selected_month))
+            first_day, last_day = get_first_and_last_day(selected_year, selected_month)
+            queryset = OfficialMemo.objects.filter(Q(date_of_creation__gte=first_day) & Q(date_of_creation__lte=last_day))
         except (ValueError, TypeError):
             pass
 

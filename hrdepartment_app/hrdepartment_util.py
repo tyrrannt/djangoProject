@@ -204,6 +204,29 @@ def get_month(period):
     return get_month_obj
 
 
+def get_first_and_last_day(year, month):
+    """
+    Возвращает первый и последний день месяца для заданного года и месяца.
+
+    Параметры:
+    year (int): Год.
+    month (int): Месяц.
+
+    Возвращает:
+    tuple: Кортеж, содержащий первый и последний день месяца в формате datetime.date.
+    """
+    # Создаем дату для первого дня месяца
+    first_day = datetime.datetime(year, month, 1)
+
+    # Находим первый день следующего месяца
+    next_month = first_day + relativedelta(months=1)
+
+    # Последний день текущего месяца — это день перед первым днем следующего месяца
+    last_day = next_month - relativedelta(days=1)
+
+    return first_day.date(), last_day.date()
+
+
 def get_preholiday_day(item, hour, minute, user_start_time, user_end_time):
     """
     Проверка даты на предпраздничный день.
