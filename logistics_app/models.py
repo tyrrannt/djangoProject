@@ -101,7 +101,7 @@ class WayBill(models.Model):
     sender = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Отправитель",
                                on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_sender")
     state = models.CharField(max_length=100, verbose_name="Состояние", choices=STATES, default="0")
-    responsible = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Получение",
+    responsible = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Получатель",
                                     on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name="way_bill_responsible")
     date_of_creation = models.DateField(verbose_name="Дата и время создания",

@@ -1,0 +1,306 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load widget_tweaks %}
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet"
+          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/pdf/css/viewer.css' %}"/>
+    <!-- This snippet is used in production (included from viewer.html) -->
+    <link rel="resource" type="application/l10n"
+          href="{% static 'admin_templates/pdf/pdfjs/web/locale/locale.properties' %}">
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'admin_templates/pdf/js/pdf.js' %}"></script>
+    <script src="{% static 'admin_templates/pdf/js/viewer.js' %}"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('#acknowledgment-checkbox').change(function () {
+                var contentTypeId = $('#content-type-id').val();
+                var objectId = $(this).data('object-id');
+                var csrfToken = $('#acknowledgment-form input[name="csrfmiddlewaretoken"]').val();
+
+                var data = {
+                    'content_type_id': contentTypeId,
+                    'object_id': objectId,
+                    'csrfmiddlewaretoken': csrfToken
+                };
+
+                var url = $(this).is(':checked') ? '{% url "hrdepartment_app:acknowledge_document" %}' : '{% url "hrdepartment_app:unacknowledge_document" %}';
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: data,
+                    success: function (response) {
+                        if (response.success) {
+                            showNotification(url);
+                        } else {
+                            alert('Error: ' + response.error);
+                        }
+                    },
+                    error: function () {
+                        alert('An error occurred while processing your request.');
+                    }
+                });
+            });
+
+            function showNotification(url) {
+                var stack_bar_top = {
+                    "dir1": "down",
+                    "dir2": "right",
+                    "push": "top",
+                    "spacing1": 0,
+                    "spacing2": 0
+                };
+
+                var notificationOptions = {
+                    addclass: 'stack-bar-top',
+                    stack: stack_bar_top,
+                    width: "100%"
+                };
+
+                if (url.includes('acknowledge')) {
+                    notificationOptions.title = 'Поздравляем!';
+                    notificationOptions.text = 'Вы успешно подтвердили документ.';
+                    notificationOptions.type = 'success';
+                }
+                if (url.includes('unacknowledge')) {
+                    notificationOptions.title = 'Внимание!';
+                    notificationOptions.text = 'Вы отменили подтверждение документа.';
+                    notificationOptions.type = 'alert';
+                }
+
+                new PNotify(notificationOptions);
+            }
+        });
+    </script>
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+
+    <section role="main" class="content-body content-body-modern mt-0" xmlns="http://www.w3.org/1999/html">
+        {#        {% include 'library_app/breadcrumb.html' %}#}
+        <style>
+            {#.showmobile { display: none; }#}
+            {#@media only screen#}
+            {#and (min-device-width : 320px)#}
+            {#and (max-device-width : 920px){ .showmobile { display: inline; }}#}
+            {#.hidemobile { display: inline; }#}
+            {#@media only screen#}
+            {#and (min-device-width : 320px)#}
+            {#and (max-device-width : 920px){ .hidemobile { display: none; }}#}
+            @media only screen
+            and (min-device-width: 320px)
+            and (max-device-width: 920px) {
+                .outerContainer {
+                    height: 600px;
+                }
+            }
+
+            @media only screen
+            and (min-device-width: 921px) {
+                .outerContainer {
+                    height: 1080px;
+                }
+            }
+        </style>
+        <!-- start: page -->
+        {% if object.scan_file %}
+            <input id="id_contract_number" value="{{ object.scan_file.url }}" hidden="hidden">
+        {% endif %}
+        <div class="order-details action-buttons-fixed" method="post">
+            <div class="col-lg-12">
+                <h4 class="font-weight-bold text-dark">{{ object.document_name }} № {{ object.document_number }}
+                    от {{ object.document_date }}</h4>
+                {% if outdated %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Внимание!</strong> Документ потерял свою актуальность, так как дата его действия меньше текущей.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
+                                aria-label="Close"></button>
+                    </div>
+                {% endif %}
+                {% if previous %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Внимание!</strong> Данный документ потерял свою актуальность. Имеется новая версия
+                        документа: <a href="{% url 'hrdepartment_app:operational' previous %}"
+                                      class="alert-link">&quot;ССЛЫЛКА НА ДОКУМЕНТ&quot;</a>, перейдите по ссылке для
+                        ознакомления с новой версией.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
+                                aria-label="Close"></button>
+                    </div>
+                {% endif %}
+
+                <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                    <section class="toggle active">
+                        <label>Файл</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row text">
+                                        {% if object.scan_file %}
+                                            <div class="form-row outerContainer" id="outerContainer"
+                                                 style="height: 1080px">
+                                                {% include 'contracts_app/pdf-js.html' %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="toggle">
+                        <label>Основные реквизиты</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <div class="form-group col mb-3">
+                                    <div class="row text">
+                                        <h4>{{ object.document_name }}, №: {{ object.document_number }}
+                                            от: {{ object.document_date | date:"c" }} г.</h4>
+                                        <h4>Действителен с: {% if object.validity_period_start %}{{ object.validity_period_start }} г.{% endif %}
+                                            {% if object.validity_period_end %}по:
+                                                {{ object.validity_period_end }}{% endif %}</h4>
+                                        <h4>Место хранения оригинала: {{ object.storage_location_division }}.
+                                            Исполнитель: {{ object.executor | FIO_format }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="toggle">
+                        <label>Лист ознакомления</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                <section class="card">
+                                    <header class="card-header">
+                                        <div class="card-actions">
+                                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                                            {#                                            <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
+                                        </div>
+                                        <h2 class="card-title">Список сотрудников</h2>
+                                    </header>
+                                    <div class="card-body">
+                                        <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
+                                            <thead>
+                                            <tr>
+                                                <th>№</th>
+                                                <th>ФИО</th>
+                                                <th>Должность</th>
+                                                <th class="text-end">Дата и время ознакомления</th>
+                                                <th class="text-end">Ознакомлен</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for item in list_agree %}
+                                                <tr>
+                                                    <td>{{ forloop.counter }}</td>
+                                                    <td>{{ item.user.title }}</td>
+                                                    <td>{{ item.user.user_work_profile.job.get_title }}</td>
+                                                    <td class="text-end">{{ item.acknowledgment_date }}</td>
+                                                    <td class="text-end">Ознакомлен</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+            <div class="row action-buttons">
+                {% if perms.hrdepartment_app.change_operational or user.is_superuser %}
+                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                        <a href="{% url 'hrdepartment_app:operational_update' object.pk %}"
+                           class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
+                    </div>
+                {% endif %}
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                    <a href="#" onclick="printPDF()"
+                       class="btn btn-outline-secondary btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-printer text-4 me-2'></i> Распечатать</a>
+                    {#                    <button class="btn btn-warning mt-2">Распечатать#}
+                    {#                    </button>#}
+                    {% if object.scan_file %}
+                        <iframe id="pdfFrame" src="{{ object.scan_file.url }}"
+                                hidden="hidden"></iframe>
+                        <script>
+                            function printPDF() {
+                                var iframe = document.getElementById('pdfFrame');
+                                if (iframe.contentWindow) {
+                                    iframe.contentWindow.print();
+                                } else {
+                                    console.error("PDF is not loaded yet.");
+                                }
+                            }
+
+                            // Проверка загрузки PDF
+                            var iframe = document.getElementById('pdfFrame');
+                            iframe.onload = function () {
+                                console.log("PDF loaded successfully.");
+                            };
+                        </script>
+                    {% endif %}
+                </div>
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                    <a href="{% url 'hrdepartment_app:operational_list' %}"
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                       align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
+                </div>
+                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+                    <div class="switch switch-lg switch-success">
+                        <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
+                               data-plugin-ios-switch {% if agree %}checked{% endif %}>
+                    </div>
+                    <label for="acknowledgment-checkbox">Я ознакомился</label>
+                    <form id="acknowledgment-form" method="post" style="display: none;">
+                        {% csrf_token %}
+                        <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
+                    </form>
+                </div>
+                {% if user.is_superuser %}
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="#"
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+    <!-- end: page -->
+    {% if object.scan_file %}
+        <script>
+            get_filename = function () {
+                return {{object.scan_file.url}};
+            }
+        </script>
+    {% endif %}
+{% endblock %}

@@ -89,6 +89,17 @@ def brf_directory_path_scan(instance, filename):
     filename = f"BRF-{instance.date_entry}-SCAN-{uid}.{ext}"
     return f"docs/BRF/{instance.date_entry.year}/{filename}"
 
+def opr_directory_path_scan(instance, filename):
+    try:
+        max_pk = Briefings.objects.aggregate(Max('pk'))['pk__max']
+        max_pk += 1
+    except TypeError:
+        max_pk = 1
+    uid = f'{max_pk:07}'
+    ext = filename.split('.')[-1]
+    filename = f"OPR-{instance.date_entry}-SCAN-{uid}.{ext}"
+    return f"docs/OPR/{instance.date_entry.year}/{filename}"
+
 def ord_directory_path(instance, filename):
     year = instance.document_date
     return f"docs/ORD/{year.year}/{filename}"
@@ -2894,6 +2905,59 @@ class Briefings(Documents):
 
     def get_absolute_url(self):
         return reverse("hrdepartment_app:briefings_list")
+
+    def __str__(self):
+        return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"
+
+
+class Operational(Documents):
+    class Meta:
+        verbose_name = "Нормативный акт"
+        verbose_name_plural = "Нормативные акты"
+        ordering = ['-document_date']
+
+    access = None
+    employee = None
+    previous_document = None
+    document_date = models.DateField(verbose_name="Дата документа", default=datetime.datetime.now, null=True, blank=True)
+    document_number = models.CharField(verbose_name="Номер документа", max_length=18, default="", null=True, blank=True)
+
+    scan_file = models.FileField(
+        verbose_name="Скан документа", upload_to=opr_directory_path_scan, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+        ]
+    )
+    storage_location_division = models.ForeignKey(
+        Division,
+        verbose_name="Подразделение где хранится оригинал",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="operational_location_division",
+    )
+    document_division = models.ManyToManyField(
+        Division,
+        verbose_name="Подразделения",
+        related_name="operational_document_division",
+    )
+
+    def get_data(self):
+        try:
+            get_date = False if self.validity_period_end < datetime.date.today() else True
+        except TypeError:
+            get_date = True
+        get_actual = False if Operational.objects.filter(parent_document=self.pk).count() > 0 else True
+        return {
+            "pk": self.pk,
+            "document_name": self.document_name,
+            "document_number": self.document_number,
+            "document_date": f"{self.document_date:%d.%m.%Y} г.",
+            "document_division": str(self.storage_location_division),
+            "actuality": "Да" if (get_actual and get_date) else "Нет",
+        }
+
+    def get_absolute_url(self):
+        return reverse("hrdepartment_app:operational_list")
 
     def __str__(self):
         return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"

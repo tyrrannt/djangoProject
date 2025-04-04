@@ -30,6 +30,7 @@ from hrdepartment_app.models import (
     OrderDescription,
     ReportCard,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, Briefings,
+    Operational,
 )
 
 
@@ -1030,7 +1031,6 @@ class ProvisionsUpdateForm(forms.ModelForm):
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
 
-
     class Meta:
         model = Provisions
         fields = (
@@ -1185,7 +1185,6 @@ class BriefingsUpdateForm(forms.ModelForm):
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
 
-
     class Meta:
         model = Briefings
         fields = (
@@ -1244,6 +1243,93 @@ class BriefingsUpdateForm(forms.ModelForm):
         for field in self.fields:
             make_custom_field(self.fields[field])
 
+
+class OperationalAddForm(forms.ModelForm):
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    class Meta:
+        model = Operational
+        fields = (
+            "executor",
+            "document_date",
+            "document_number",
+            "scan_file",
+            "storage_location_division",
+            "allowed_placed",
+            "validity_period_start",
+            "validity_period_end",
+            "actuality",
+            "parent_document",
+            "document_name",
+            "applying_for_job",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(OperationalAddForm, self).__init__(*args, **kwargs)
+        self.fields["executor"].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["executor"].widget.attrs.update(
+            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        )
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["applying_for_job"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class OperationalUpdateForm(forms.ModelForm):
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = Operational
+        fields = (
+            "document_date",
+            "document_number",
+            "scan_file",
+            "storage_location_division",
+            "validity_period_start",
+            "validity_period_end",
+            "parent_document",
+            "allowed_placed",
+            "actuality",
+            "document_name",
+            "applying_for_job",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(OperationalUpdateForm, self).__init__(*args, **kwargs)
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["applying_for_job"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class OrderDescriptionForm(forms.ModelForm):
@@ -1537,6 +1623,7 @@ class TimeSheetForm(forms.ModelForm):
                                    "data-plugin-selectTwo": True, }),
         queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
         label="Сотрудник")
+
     class Meta:
         model = TimeSheet
         fields = ['date', 'employee', 'time_sheets_place', 'notes']
@@ -1555,6 +1642,7 @@ class TimeSheetForm(forms.ModelForm):
                                                      "data-plugin-selectTwo": True, }),
         }
 
+
 class ReportCardForm(forms.ModelForm):
     outfit_card = forms.ModelMultipleChoiceField(
         queryset=OutfitCard.objects.none(),
@@ -1566,6 +1654,7 @@ class ReportCardForm(forms.ModelForm):
         widget=forms.Select(attrs={"class": "form-control form-control-modern"}),
         queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
         label="Сотрудник")
+
     # outfit_card = forms.ModelMultipleChoiceField(
     #     queryset=OutfitCard.objects.all(),
     #     widget=Select2MultipleWidget(attrs={"class": "form-control form-control-modern", "multiple": True, }),
@@ -1591,10 +1680,12 @@ class OutfitCardForm(forms.ModelForm):
     employee = forms.ModelChoiceField(
         queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
         label="Сотрудник")
+
     class Meta:
         model = OutfitCard
         fields = ['outfit_card_date', 'outfit_card_number', 'employee', 'outfit_card_place',
-                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes', 'scan_document', 'outfit_card_date_end']
+                  'air_board', 'operational_work', 'periodic_work', 'other_work', 'notes', 'scan_document',
+                  'outfit_card_date_end']
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 4}),
         }
@@ -1606,7 +1697,8 @@ class OutfitCardForm(forms.ModelForm):
         """
         self.user = kwargs.pop("user")
         super(OutfitCardForm, self).__init__(*args, **kwargs)
-        place = CreatingTeam.objects.filter(senior_brigade=self.user).exclude(cancellation=True).values_list('date_start', 'date_end', 'place', )
+        place = CreatingTeam.objects.filter(senior_brigade=self.user).exclude(cancellation=True).values_list(
+            'date_start', 'date_end', 'place', )
         self.fields["employee"].queryset = DataBaseUser.objects.none()
         self.fields["outfit_card_place"].queryset = PlaceProductionActivity.objects.none()
         for item in place:

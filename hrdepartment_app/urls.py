@@ -20,7 +20,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     unacknowledge_document, seasonality_report, export_seasonality_data, absence_analysis, export_absence_data, \
     employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
     ApprovalOficialMemoProcessDetail, management_dashboard, export_trips_csv, BriefingsList, BriefingsAdd, \
-    BriefingsDetail, BriefingsUpdate
+    BriefingsDetail, BriefingsUpdate, OperationalList, OperationalAdd, OperationalDetail, OperationalUpdate
 
 app_name = 'hrdepartment_app'
 
@@ -82,6 +82,11 @@ urlpatterns = [
     path('briefings/add/', BriefingsAdd.as_view(), name='briefings_add'),
     path('briefings/<int:pk>/', BriefingsDetail.as_view(), name='briefings'),
     path('briefings/<int:pk>/update/', BriefingsUpdate.as_view(), name='briefings_update'),
+
+    path('operational/', OperationalList.as_view(), name='operational_list'),
+    path('operational/add/', OperationalAdd.as_view(), name='operational_add'),
+    path('operational/<int:pk>/', OperationalDetail.as_view(), name='operational'),
+    path('operational/<int:pk>/update/', OperationalUpdate.as_view(), name='operational_update'),
 
     path('guidance_documents/', GuidanceDocumentsList.as_view(), name='guidance_documents_list'),
     path('guidance_documents/add/', GuidanceDocumentsAdd.as_view(), name='guidance_documents_add'),

@@ -22,7 +22,7 @@ from hrdepartment_app.models import (
     TypesUserworktime,
     Instructions,
     Provisions,
-    CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment,
+    CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
 )
 
 # Register your models here.
@@ -138,6 +138,30 @@ class ProvisionsAdmin(admin.ModelAdmin):
     def get_employee(self, obj: Provisions):
         s = [format_name_initials(item.title) for item in obj.employee.iterator()]
         return '; '.join(s)
+
+
+@admin.register(Briefings)
+class BriefingsAdmin(admin.ModelAdmin):
+    list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
+                    "validity_period_start", "validity_period_end")  #
+    list_filter = (
+        "actuality", "applying_for_job",
+    )
+    search_fields = ["document_name", ]
+
+    def get_employee(self, obj: Briefings):
+        s = [format_name_initials(item.title) for item in obj.employee.iterator()]
+        return '; '.join(s)
+
+
+@admin.register(Operational)
+class OperationalAdmin(admin.ModelAdmin):
+    list_display = ("document_name", "document_date", "document_number",
+                    "validity_period_start", "validity_period_end")  #
+    list_filter = (
+        "actuality", "applying_for_job",
+    )
+    search_fields = ["document_name", ]
 
 
 @admin.register(CreatingTeam)
