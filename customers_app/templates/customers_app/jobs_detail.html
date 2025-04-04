@@ -41,7 +41,7 @@
                                     <p class="card-big-info-desc"><strong>{{ object.name }}</strong></p>
                                     <p class="text-muted mb-0">{{ object.get_type_of_job_display }}</p>
                                 </div>
-                                <div class="col-lg-9-5 col-xl-10-5">
+                                <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
                                         <label class="col-lg-3 col-xl-2 control-label text-lg-end mb-0"
                                                for="id_ref_key">Уникальный номер</label>
@@ -74,8 +74,7 @@
                                                for="id_division">Подразделение</label>
                                         <div class="col-lg-9 col-xl-4">
                                             <input type="text" id="id_division" class="form-control form-control-modern"
-                                                   value="
-                                                           {% if object.division_affiliation %}{{ object.division_affiliation.name }}{% endif %}"
+                                                   value="{% if object.division_affiliation %}{{ object.division_affiliation.name }}{% endif %}"
                                                    disabled/>
                                         </div>
                                     </div>
@@ -124,8 +123,7 @@
                                                for="id_harmful">Вредные условия</label>
                                         <div class="col-lg-9 col-xl-4">
                                             <input type="text" id="id_harmful" class="form-control form-control-modern"
-                                                   value="
-                                                           {% for h in object.harmful.all %}{{ h.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
+                                                   value="{% for h in object.harmful.all %}{{ h.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
                                                    disabled/>
                                         </div>
                                     </div>
@@ -145,8 +143,7 @@
                                                for="id_groups">Группы должности</label>
                                         <div class="col-lg-9 col-xl-4">
                                             <input type="text" id="id_groups" class="form-control form-control-modern"
-                                                   value="
-                                                           {% for g in object.group.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
+                                                   value="{% for g in object.group.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% endfor %}"
                                                    disabled/>
                                         </div>
                                     </div>
@@ -157,7 +154,7 @@
                 </div>
             </div>
             <div class="row action-buttons">
-                {% if user.access_level.guide_access_edit %}
+                {% if perms.customers_app.change_jobs or user.is_superuser %}
                     <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
                         <a href="{% url 'customers_app:jobs_update' object.pk %}"
                            class="submit-button btn btn-primary btn-px-4 py-3 d-flex

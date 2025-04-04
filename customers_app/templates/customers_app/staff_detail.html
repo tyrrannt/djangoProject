@@ -55,7 +55,7 @@
                                                      alt="{{ object.username }}">
                                             {% endif %}
                                             <div class="thumb-info-title">
-                                                <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}:  {{ birthday_difference }}</span>
+                                                <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}: {{ birthday_difference }}</span>
                                                 <span class="thumb-info-type">{{ object.user_work_profile.job }}<br>Стаж: {{ employment_difference }}</span>
                                             </div>
                                         </div>
@@ -268,11 +268,17 @@
                                             </div>
                                             <div class="form-group row align-items-center  pb-3">
                                                 <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Должность</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
+                                                <div class="col-lg-7 col-xl-6 d-flex align-items-center">
+                                                    <input type="text" class="form-control form-control-modern mr-2"
+                                                           disabled
                                                            name="job" id="id_job"
                                                            value="{{ object.user_work_profile.job|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
+                                                    {% if perms.customers_app.change_jobs or user.is_superuser %}
+                                                    <a href="{% url 'customers_app:jobs_update' object.user_work_profile.job.pk %}">
+                                                        <i class='bx bxs-edit h4 mb-0'></i>
+                                                    </a>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                             <div class="form-group row align-items-center pb-3">
@@ -341,13 +347,15 @@
                         </a>
                     </div>
                     <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:generate_employee_file' object.pk %}" class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"><i class="bx bx-edit text-4 me-2"></i>Данные для печати</a>
-                </div>
+                        <a href="{% url 'customers_app:generate_employee_file' object.pk %}" class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"><i class="bx bx-edit text-4 me-2"></i>Данные
+                            для печати</a>
+                    </div>
                 {% endif %}
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
                     <a href="{% url 'customers_app:generate_config_file' %}" class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"><i class="bx bx-edit text-4 me-2"></i>Скачать конфигурацию</a>
+                           align-items-center font-weight-semibold line-height-1"><i class="bx bx-edit text-4 me-2"></i>Скачать
+                        конфигурацию</a>
                 </div>
 
                 <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
