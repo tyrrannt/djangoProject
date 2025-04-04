@@ -3436,13 +3436,13 @@ class OperationalList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         context = super().get_context_data(object_list=None, **kwargs)
         context[
             "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструктажи"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Нормативные акты"
         return context
 
 
 class OperationalAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
-    Инструктажи - создание
+    Нормативные акты - создание
     """
 
     model = Operational
@@ -3453,7 +3453,7 @@ class OperationalAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         content = super(OperationalAdd, self).get_context_data(**kwargs)
         content[
             "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить инструктаж"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить нормативный акт"
         return content
 
     def get_form_kwargs(self):
@@ -3469,7 +3469,7 @@ class OperationalAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 @method_decorator(never_cache, name='dispatch')
 class OperationalDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
-    Инструктажи - просмотр
+    Нормативные акты - просмотр
     """
 
     model = Operational
@@ -3509,7 +3509,7 @@ class OperationalDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView)
 
 class OperationalUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
-    Инструктажи - редактирование
+    Нормативные акты - редактирование
     """
 
     template_name = "hrdepartment_app/operational_form_update.html"
