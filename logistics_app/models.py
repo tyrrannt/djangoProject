@@ -98,7 +98,7 @@ class WayBill(models.Model):
     comment = models.CharField(verbose_name="Комментарий", default='', max_length=300)
     place_division = models.ForeignKey(Division, verbose_name="Подразделение", on_delete=models.SET_NULL,
                                        null=True, blank=True)
-    sender = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Отправитель",
+    sender = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Инициатор",
                                on_delete=models.SET_NULL, null=True, blank=True, related_name="way_bill_sender")
     state = models.CharField(max_length=100, verbose_name="Состояние", choices=STATES, default="0")
     responsible = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Получатель",
@@ -158,7 +158,7 @@ class Package(models.Model):
     # При миграции указать 1 и вставить timezone.now()
     date_of_creation = models.DateField(verbose_name='Дата и время создания', auto_now_add=True)
     date_of_dispatch = models.DateField(verbose_name='Дата отправки', null=True, blank=True)
-    place_of_dispatch = models.ForeignKey(PlaceProductionActivity, verbose_name='Куда отправляется',
+    place_of_dispatch = models.ForeignKey(PlaceProductionActivity, verbose_name='Точка назначения',
                                           on_delete=models.SET_NULL, null=True, blank=True)
     number_of_dispatch = models.CharField(verbose_name='Номер посылки', max_length=37, default='')
     executor = models.ForeignKey(DataBaseUser, max_length=100, verbose_name="Исполнитель",
