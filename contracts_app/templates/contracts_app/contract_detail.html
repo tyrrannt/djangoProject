@@ -109,10 +109,11 @@
                                         <thead>
                                         <tr>
                                             <th width="15%">Тип документа</th>
-                                            <th width="37%" class="text-center">Комментарий</th>
+                                            <th width="27%" class="text-center">Комментарий</th>
                                             <th width="22%" class="text-center">Документ</th>
                                             <th width="10%" class="text-center">Дата документа</th>
                                             <th width="16%" class="text-center">Исполнитель</th>
+                                            <th width="10%" class="text-center">Дата ввода в базу</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -130,6 +131,7 @@
                                                 </td>
                                                 <td class="text-center">{{ item.date_conclusion }}</td>
                                                 <td class="text-center">{{ item.executor | FIO_format }}</td>
+                                                <td class="text-center">{{ item.date_entry }}</td>
                                             </tr>
                                         {% endfor %}
                                         </tbody>
