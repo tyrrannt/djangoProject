@@ -1,0 +1,284 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h2>Генератор OData-запросов к 1С</h2>
+
+        <form id="odataForm" class="mt-4">
+            <div class="row mb-3">
+                <input type="hidden" id="host" value="192.168.10.11">
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="base" class="form-label">Имя базы данных</label>
+                    <select class="form-select" id="base" required>
+                        <option value="">Выберите базу...</option>
+                        <option value="72095052-970f-11e3-84fb-00e05301b4e4">Зарплата и управление персоналом (ЗУП)
+                        </option>
+                        <option value="59e20093-970f-11e3-84fb-00e05301b4e4">Бухгалтерия</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="objectType" class="form-label">Тип объекта</label>
+                    <select class="form-select" id="objectType" required>
+                        <option value="">Выберите тип...</option>
+                        <option value="Catalog">Справочник</option>
+                        <option value="Document">Документ</option>
+                        <option value="DocumentJournal">Журнал документов</option>
+                        <option value="Constant">Константа</option>
+                        <option value="ExchangePlan">План обмена</option>
+                        <option value="ChartOfAccounts">План счетов</option>
+                        <option value="ChartOfCalculationTypes">План видов расчета</option>
+                        <option value="ChartOfCharacteristicTypes">План видов характеристик</option>
+                        <option value="InformationRegister">Регистр сведений</option>
+                        <option value="AccumulationRegister">Регистр накопления</option>
+                        <option value="CalculationRegister">Регистр расчета</option>
+                        <option value="AccountingRegister">Регистр бухгалтерии</option>
+                        <option value="BusinessProcess">Бизнес-процесс</option>
+                        <option value="Task">Задача</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label for="objectName" class="form-label">Имя объекта</label>
+                    <input type="text" class="form-control" id="objectName"
+                           placeholder="Номенклатура, АвансовыйОтчет и т.д." required>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="format" class="form-label">Формат вывода</label>
+                    <select class="form-select" id="format">
+                        <option value="json" selected>JSON</option>
+                        <option value="atom">ATOM</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="top" class="form-label">Лимит записей</label>
+                    <input type="number" class="form-control" id="top" placeholder="Необязательно">
+                </div>
+                <div class="col-md-4">
+                    <label for="skip" class="form-label">Пропустить записей</label>
+                    <input type="number" class="form-control" id="skip" placeholder="Необязательно">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="selectFields" class="form-label">Выбираемые поля (через запятую)</label>
+                <input type="text" class="form-control" id="selectFields" placeholder="Ref_Key,Code,Description">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Фильтры</label>
+                <div id="filtersContainer">
+                    <div class="filter-row row mb-2">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control field-name" placeholder="Поле">
+                        </div>
+                        <div class="col-md-2">
+                            <select class="form-select operator">
+                                <option value="eq">=</option>
+                                <option value="ne">≠</option>
+                                <option value="gt">></option>
+                                <option value="ge">≥</option>
+                                <option value="lt"><</option>
+                                <option value="le">≤</option>
+                                <option value="startswith">начинается с</option>
+                                <option value="contains">содержит</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control value" placeholder="Значение">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger remove-filter">×</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="addFilter" class="btn btn-secondary mt-2">Добавить фильтр</button>
+            </div>
+
+            <div class="mb-3">
+                <label for="orderBy" class="form-label">Сортировка</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="orderBy" placeholder="Поле для сортировки">
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select" id="orderDirection">
+                            <option value="asc">По возрастанию</option>
+                            <option value="desc">По убыванию</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Сгенерировать запрос</button>
+        </form>
+
+        <div id="resultContainer" class="mt-4" style="display: none;">
+            <h4>Результат:</h4>
+            <div class="card">
+                <div class="card-header">
+                    <button id="copyBtn" class="btn btn-sm btn-outline-secondary float-end">Копировать</button>
+                    <span>Сгенерированный URL запроса:</span>
+                </div>
+                <div class="card-body">
+                    <pre id="resultUrl" class="mb-0"></pre>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <h5>Параметры запроса:</h5>
+                <pre id="resultParams"></pre>
+            </div>
+
+            <div class="mt-3">
+                <button id="testRequestBtn" class="btn btn-success">Протестировать запрос</button>
+                <div id="testResult" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Добавление нового фильтра
+            document.getElementById('addFilter').addEventListener('click', function () {
+                const newFilter = document.querySelector('.filter-row').cloneNode(true);
+                newFilter.querySelector('.field-name').value = '';
+                newFilter.querySelector('.value').value = '';
+                document.getElementById('filtersContainer').appendChild(newFilter);
+            });
+
+            // Удаление фильтра
+            document.addEventListener('click', function (e) {
+                if (e.target.classList.contains('remove-filter')) {
+                    if (document.querySelectorAll('.filter-row').length > 1) {
+                        e.target.closest('.filter-row').remove();
+                    } else {
+                        const row = e.target.closest('.filter-row');
+                        row.querySelector('.field-name').value = '';
+                        row.querySelector('.value').value = '';
+                        row.querySelector('.operator').value = 'eq';
+                    }
+                }
+            });
+
+            // Отправка формы
+            document.getElementById('odataForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const params = new URLSearchParams();
+
+                params.append('host', '192.168.10.11');  // фиксированный хост
+                params.append('base', document.getElementById('base').value);
+                params.append('object_type', document.getElementById('objectType').value);
+                params.append('object_name', document.getElementById('objectName').value);
+                params.append('format', document.getElementById('format').value);
+
+                const top = document.getElementById('top').value;
+                const skip = document.getElementById('skip').value;
+                const select = document.getElementById('selectFields').value;
+                const orderby = document.getElementById('orderBy').value;
+                const direction = document.getElementById('orderDirection').value;
+
+                if (top) params.append('$top', top);
+                if (skip) params.append('$skip', skip);
+                if (select) params.append('$select', select);
+                if (orderby) params.append('$orderby', `${orderby} ${direction}`);
+
+                // Формируем фильтр $filter
+                const filterParts = [];
+
+                document.querySelectorAll('.filter-row').forEach(row => {
+                    const field = row.querySelector('.field-name').value.trim();
+                    const operator = row.querySelector('.operator').value;
+                    const value = row.querySelector('.value').value.trim();
+
+                    if (field && value) {
+                        if (['startswith', 'contains'].includes(operator)) {
+                            filterParts.push(`${operator}(${field},'${value}')`);
+                        } else {
+                            filterParts.push(`${field} ${operator} '${value}'`);
+                        }
+                    }
+                });
+
+                // Добавляем фильтры только если они есть
+                if (filterParts.length > 0) {
+                    params.append('filter', filterParts.join(' and '));  // Без кодировки %24
+                }
+
+                // Отправляем запрос на сервер
+                fetch('/portal/generate-odata/?' + params.toString())
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('resultUrl').textContent = data.request_url;
+                        document.getElementById('resultParams').textContent = JSON.stringify(data.parameters, null, 2);
+                        document.getElementById('resultContainer').style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Произошла ошибка при генерации запроса');
+                    });
+            });
+
+
+            // Копирование URL
+            document.getElementById('copyBtn').addEventListener('click', function () {
+                const url = document.getElementById('resultUrl').textContent;
+                navigator.clipboard.writeText(url).then(() => {
+                    const btn = this;
+                    btn.textContent = 'Скопировано!';
+                    setTimeout(() => {
+                        btn.textContent = 'Копировать';
+                    }, 2000);
+                });
+            });
+
+            // Тестирование запроса
+            document.getElementById('testRequestBtn').addEventListener('click', function () {
+                const url = document.getElementById('resultUrl').textContent;
+                if (!url) return;
+
+                const testResult = document.getElementById('testResult');
+                testResult.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        testResult.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    })
+                    .catch(error => {
+                        testResult.innerHTML = '<div class="alert alert-danger">Ошибка: ' + error.message + '</div>';
+                    });
+            });
+        });
+    </script>
+
+    <style>
+        .filter-row {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .remove-filter {
+            width: 100%;
+        }
+
+        #resultUrl {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+{% endblock %}

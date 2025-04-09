@@ -347,7 +347,7 @@ def get_working_hours(pk, start_date, state=0):
         report_record = (
             ReportCard.objects.filter(employee=user_id, report_card_day=date)
             .order_by("record_type")
-            .reverse()
+            .reverse().exclude(record_type="18")
         )
         total_day_time, time_worked = 0, 0
         start_time, end_time, record_type, sign, merge_interval, type_of_day = (

@@ -568,3 +568,141 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 @login_required
 def system_monitor(request):
     return render(request, 'administration_app/system_monitor.html')
+
+
+@login_required
+def odata_request(request):
+    return render(request, 'administration_app/odata.html', )
+@login_required
+def generate_1c_odata_request(request):
+    """
+    Генерирует OData-запрос к 1С на основе параметров пользователя
+
+    Параметры:
+    - host: адрес сервера 1С (обязательный)
+    - base: имя информационной базы (обязательный)
+    - object_type: тип объекта (Catalog, Document, InformationRegister и т.д.) (обязательный)
+    - object_name: имя объекта (Номенклатура, АвансовыйОтчет и т.д.) (обязательный)
+    - format: формат вывода (json или atom, по умолчанию json)
+    - filters: словарь фильтров (необязательный)
+    - select: список полей для выборки (необязательный)
+    - top: ограничение количества записей (необязательный)
+    - skip: пропуск записей (необязательный)
+    - orderby: поле для сортировки (необязательный)
+    """
+
+    # Получаем параметры из запроса
+    host = request.GET.get('host')
+    base = request.GET.get('base')
+    object_type = request.GET.get('object_type')
+    object_name = request.GET.get('object_name')
+    output_format = request.GET.get('format', 'json')
+
+    # Проверяем обязательные параметры
+    if not all([host, base, object_type, object_name]):
+        return JsonResponse({'error': 'Missing required parameters'}, status=400)
+
+    # Формируем базовый URL
+    base_url = f"http://{host}/{base}/odata/standard.odata/{object_type}_{object_name}"
+
+    # Собираем параметры запроса
+    params = []
+
+    # Добавляем фильтры
+
+    filters = request.GET.get('filter')
+
+
+    if filters:
+        try:
+            filter_parts = []
+            # Разделяем фильтры по ' and '
+            filters = filters.split(' and ')
+
+            for filter_part in filters:
+                # Разделяем каждую часть фильтра на field, operator и value
+                parts = filter_part.split(' ')
+                if len(parts) < 3:
+                    raise ValueError("Неверный формат фильтра")
+
+                field = parts[0]
+                operator = parts[1]
+                value = ' '.join(parts[2:]).strip("'")
+
+                # Проверяем тип значения для правильного форматирования
+                if operator == 'eq':
+                    if value.lower() == 'true' or value.lower() == 'false':
+                        filter_parts.append(f"{field} eq {value.lower()}")
+                    elif value.startswith('guid'):
+                        filter_parts.append(f"{field} eq {value}")
+                    else:
+                        filter_parts.append(f"{field} eq '{value}'")
+                elif operator in ['gt', 'lt', 'ge', 'le', 'ne']:
+                    # Для числовых значений
+                    try:
+                        numeric_value = float(value)
+                        filter_parts.append(f"{field} {operator} {numeric_value}")
+                    except ValueError:
+                        raise ValueError(f"Значение {value} для оператора {operator} не является числом")
+                elif operator in ['startswith', 'contains']:
+                    filter_parts.append(f"{operator}({field}, '{value}')")
+                else:
+                    raise ValueError(f"Неизвестный оператор: {operator}")
+
+            if filter_parts:
+                # Собираем финальную строку фильтра
+                filter_string = ' and '.join(filter_parts)
+                # Добавляем параметр фильтра в запрос
+                params.append(f"$filter={filter_string}")
+
+        except Exception as e:
+            return JsonResponse({'error': f'Invalid filters format: {str(e)}'}, status=400)
+    print(filters)
+    # Добавляем выбор полей
+    select_fields = request.GET.get('select')
+    if select_fields and select_fields != 'undefined':
+        params.append(f"$select={select_fields}")
+
+    # Добавляем пагинацию
+    top = request.GET.get('top')
+    if top and top != 'undefined':
+        params.append(f"$top={top}")
+
+    skip = request.GET.get('skip')
+    if skip and skip != 'undefined':
+        params.append(f"$skip={skip}")
+
+    # Добавляем сортировку
+    orderby = request.GET.get('orderby')
+    if orderby and orderby != 'undefined':
+        direction = request.GET.get('direction', 'asc')
+        params.append(f"$orderby={orderby} {direction}")
+
+    # Добавляем формат
+    if output_format.lower() == 'json':
+        params.append("$format=json")
+    elif output_format.lower() == 'atom':
+        params.append("$format=atom")
+    else:
+        return JsonResponse({'error': 'Invalid format. Use json or atom'}, status=400)
+
+    # Собираем итоговый URL
+    query_string = '&'.join(params)
+    full_url = f"{base_url}?{query_string}" if params else base_url
+
+    # Возвращаем результат
+    return JsonResponse({
+        'request_url': full_url,
+        'parameters': {
+            'host': host,
+            'base': base,
+            'object_type': object_type,
+            'object_name': object_name,
+            'format': output_format,
+            'filters': filters,
+            'select': select_fields,
+            'top': top,
+            'skip': skip,
+            'orderby': orderby
+        }
+    })
