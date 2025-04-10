@@ -1,6 +1,7 @@
 import datetime
 import os
 import pathlib
+import time
 import uuid
 from gc import get_objects
 
@@ -2846,6 +2847,11 @@ class Provisions(Documents):
 
     def __str__(self):
         return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"
+
+    def get_scan_file_url(self):
+        if not self.scan_file:
+            return ""
+        return f"{self.scan_file.url}?v={int(time.time())}"
 
 
 
