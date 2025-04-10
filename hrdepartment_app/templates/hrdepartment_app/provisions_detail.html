@@ -316,7 +316,7 @@
                     {#                    <button class="btn btn-warning mt-2">Распечатать#}
                     {#                    </button>#}
                     {% if object.scan_file %}
-                        <iframe id="pdfFrame" src="{{ object.scan_file.url }}"
+                        <iframe id="pdfFrame" src="{{ object.get_scan_file_url }}"
                                 hidden="hidden"></iframe>
                         <script>
                             function printPDF() {
@@ -370,7 +370,7 @@
     {% if object.scan_file %}
         <script>
             get_filename = function () {
-                return {{object.scan_file.url}};
+                return {{object.get_scan_file_url}};
             }
         </script>
     {% endif %}
