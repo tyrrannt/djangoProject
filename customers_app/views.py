@@ -392,7 +392,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     safe=False)
                 """
                 # Определяем текущую дату
-                current_date = datetime.datetime.today()  #- datetime.timedelta(days=1)
+                current_date = datetime.datetime.today()  # - datetime.timedelta(days=1)
 
                 # Определяем начальную дату как первый день текущего месяца
                 start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -488,7 +488,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
                 df['Интервал'] = df['Интервал'].fillna('0:00-0:00')
                 df['Time'] = df['Time'].fillna(0)
-                df['Type'] = df['Type'].fillna(100)
+                df['Type'] = df['Type'].fillna(100).astype(int)
 
                 # Фильтрация DataFrame по условию Тип = NaN
                 filtered_df = df[df['Тип'].isna()]
@@ -501,12 +501,13 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df.update(filtered_df)
 
                 # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
-                df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20,
-                                                                                     100] else get_norm_time_at_custom_day(
-                    row['Дата'], type_of_day=row['Type']), axis=1)
-
+                df['Time'] = df.apply(
+                    lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(
+                        row['Дата'], type_of_day=row['Type']), axis=1)
+                print(df)
                 # Вычисление разности между временем введенным и временем по производственному календарю
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
+                print(df)
                 # Получение общей суммы времени за все дни
                 total_time = df['Time'].sum()
                 # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
@@ -909,7 +910,8 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False).exclude(is_ppa=True)
+        qs = DataBaseUser.objects.all().order_by('pk').exclude(username='proxmox').exclude(is_active=False).exclude(
+            is_ppa=True)
         return qs
 
     def get(self, request, *args, **kwargs):
@@ -1603,6 +1605,7 @@ def save_stats(request):
         except (ValueError, json.JSONDecodeError) as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
 
 @csrf_exempt
 def get_leaderboard(request):

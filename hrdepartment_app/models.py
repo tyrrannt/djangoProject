@@ -14,6 +14,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q, Choices, Max
+from django.db.models.expressions import result
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
@@ -2379,7 +2380,7 @@ class WeekendDay(models.Model):
 #         if type_of_day == None:
 #             return 30600
 #         # return 0
-def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
+def get_norm_time_at_custom_day(day, trigger=False, type_of_day=0):
     """
     Подсчет количества рабочих часов в указанном дне
     Если переменная trigger=False, то возвращается количество рабочих часов в указанном дне, иначе - возвращается тип
@@ -2389,7 +2390,7 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
     # Константы для времени в секундах
     WORK_DAY_TIME = 30600  # 8 часов 30 минут
     SHORT_DAY_TIME = 27000  # 7 часов 30 минут
-
+    print(type_of_day)
     # Проверка на праздничный день
     if WeekendDay.objects.filter(weekend_day=day).exists():
         if trigger:
@@ -2399,15 +2400,17 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
     # Проверка на предпраздничный день
     preholiday_day = PreHolidayDay.objects.filter(preholiday_day=day).first()
     if preholiday_day:
+        preholiday_result = preholiday_day.work_time.hour * 3600 + preholiday_day.work_time.minute * 60
         if trigger:
             return 'Не было на работе'
-        return preholiday_day.work_time.hour * 3600 + preholiday_day.work_time.minute * 60
+        return -preholiday_result if type_of_day == 100 else preholiday_result
 
     # Проверка на обычный рабочий день
     if day.weekday() < 5:  # Понедельник - Пятница
+        weekday_result = SHORT_DAY_TIME if day.weekday() == 4 else WORK_DAY_TIME
         if trigger:
             return 'Не было на работе'
-        return SHORT_DAY_TIME if day.weekday() == 4 else WORK_DAY_TIME
+        return -weekday_result if type_of_day == 100 else weekday_result
 
     # Выходной день
     if trigger:
