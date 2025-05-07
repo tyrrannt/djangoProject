@@ -2390,7 +2390,6 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=0):
     # Константы для времени в секундах
     WORK_DAY_TIME = 30600  # 8 часов 30 минут
     SHORT_DAY_TIME = 27000  # 7 часов 30 минут
-    print(type_of_day)
     # Проверка на праздничный день
     if WeekendDay.objects.filter(weekend_day=day).exists():
         if trigger:

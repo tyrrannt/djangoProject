@@ -504,10 +504,8 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 df['Time'] = df.apply(
                     lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(
                         row['Дата'], type_of_day=row['Type']), axis=1)
-                print(df)
                 # Вычисление разности между временем введенным и временем по производственному календарю
                 df['+/-'] = df.apply(lambda row: row['Time'] - get_norm_time_at_custom_day(row['Дата']), axis=1)
-                print(df)
                 # Получение общей суммы времени за все дни
                 total_time = df['Time'].sum()
                 # Применяем функцию seconds_to_hhmm к колонке '+/-' для приведения к нужному формату: hh:mm
