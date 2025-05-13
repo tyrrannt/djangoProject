@@ -858,7 +858,7 @@ def update_contract_dates_from_comment():
                         # Если год больше 30 — считаем, что это 1900-е, иначе 2000-е
                         year += 1900 if year > 30 else 2000
 
-                    date_obj = datetime(int(year), int(month), int(day)).date()
+                    date_obj = datetime.datetime(int(year), int(month), int(day)).date()
                 except ValueError:
                     continue  # если дата некорректна — пропускаем
 
