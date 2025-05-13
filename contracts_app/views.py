@@ -850,22 +850,19 @@ def update_contract_dates_from_comment():
 
             # Обработка сокращённых дат типа 24 -> 2024
             try:
-                try:
-                    day, month, year = date_str.split('.')
+                day, month, year = date_str.split('.')
 
-                    if len(year) == 2:
-                        year = int(year)
-                        # Если год больше 30 — считаем, что это 1900-е, иначе 2000-е
-                        year += 1900 if year > 30 else 2000
+                if len(year) == 2:
+                    year = int(year)
+                    # Если год больше 30 — считаем, что это 1900-е, иначе 2000-е
+                    year += 1900 if year > 30 else 2000
 
-                    date_obj = datetime.datetime(int(year), int(month), int(day)).date()
-                except ValueError:
-                    continue  # если дата некорректна — пропускаем
-
+                date_obj = datetime.datetime(int(year), int(month), int(day)).date()
             except ValueError:
+                logger.warning(f'ValueError.')
                 continue  # если дата некорректна — пропускаем
 
             contract.date_conclusion = date_obj
             contract.save(update_fields=["date_conclusion"])
             updated_count += 1
-    logger.info(f'Обновлено {updated_count} записей.')
+    logger.warning(f'Обновлено {updated_count} записей.')
