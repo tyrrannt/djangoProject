@@ -1,3 +1,6 @@
+import datetime
+import re
+
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -826,3 +829,43 @@ def counteragent_check(request):
             return render(request, 'contracts_app/counteragent_check.html', context=data)
     else:
         return render(request, 'contracts_app/counteragent_check.html')
+
+
+def update_contract_dates_from_comment():
+    """
+    Обновляет поле date_conclusion из поля comment для всех контрактов,
+    кроме тех, у кого тип документа — не 'Договор'.
+    """
+    pattern = r'от\s+(\d{2}\.\d{2}\.(?:\d{2}|\d{4}))'
+
+    contracts = Contract.objects.exclude(type_of_document__type_document__iexact='Договор')
+
+    updated_count = 0
+    for contract in contracts:
+        comment = contract.comment or ''
+        match = re.search(pattern, comment)
+
+        if match:
+            date_str = match.group(1)
+
+            # Обработка сокращённых дат типа 24 -> 2024
+            try:
+                try:
+                    day, month, year = date_str.split('.')
+
+                    if len(year) == 2:
+                        year = int(year)
+                        # Если год больше 30 — считаем, что это 1900-е, иначе 2000-е
+                        year += 1900 if year > 30 else 2000
+
+                    date_obj = datetime(int(year), int(month), int(day)).date()
+                except ValueError:
+                    continue  # если дата некорректна — пропускаем
+
+            except ValueError:
+                continue  # если дата некорректна — пропускаем
+
+            contract.date_conclusion = date_obj
+            contract.save(update_fields=["date_conclusion"])
+            updated_count += 1
+    logger.info(f'Обновлено {updated_count} записей.')

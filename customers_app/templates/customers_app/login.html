@@ -5,21 +5,8 @@
     <title>{{ title }}</title>
 {% endblock %}
 
-{% block custome %}
-
-{% endblock %}
-
 {% block content %}
-
     <div class="panel card-sign">
-        <div>
-            {% if errors %}
-                <div id="errors" class="alert alert-danger">
-                    <strong>{{ errors }}</strong>
-                </div>
-            {% endif %}
-
-        </div>
         <div class="card-title-sign mt-3 text-end">
             <h2 class="title text-uppercase font-weight-bold m-0"><i
                     class="bx bx-user-circle me-1 text-6 position-relative top-5"></i> Вход в систему</h2>
@@ -30,7 +17,8 @@
                 <div class="form-group mb-3">
                     <label tabindex="-1">Логин:</label>
                     <div class="input-group">
-                        <input name="username" type="text" class="form-control form-control-lg"/>
+                        <input name="username" type="text" class="form-control form-control-lg" placeholder="Ваш логин"
+                               autocomplete="username"/>
                         <span class="input-group-text"><i class="bx bx-user text-4"></i></span>
                     </div>
                 </div>
@@ -39,7 +27,8 @@
                         <label class="float-left">Пароль:</label>
                     </div>
                     <div class="input-group">
-                        <input name="password" type="password" class="form-control form-control-lg"/>
+                        <input name="password" type="password" class="form-control form-control-lg"
+                               placeholder="Ваш пароль" autocomplete="current-password"/>
                         <span class="input-group-text"><i class="bx bx-lock text-4"></i></span>
                     </div>
                 </div>
@@ -50,9 +39,26 @@
                     </div>
                 </div>
                 <span class="mt-3 mb-3 line-thru text-center text-uppercase"><span>{% now "Y" %}</span></span><br>
+                <div class="row">
+                    {% if login_form.errors %}
+                        <div id="errors" class="alert alert-danger">
+                            {% if login_form.non_field_errors %}
+                                <strong>
+                                    {% for error in login_form.non_field_errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </strong>
+                            {% else %}
+                                <strong>{{ errors }}</strong>
+                            {% endif %}
+                        </div>
+                    {% elif errors %}
+                        <div id="errors" class="alert alert-danger">
+                            <strong>{{ errors }}</strong>
+                        </div>
+                    {% endif %}
+                </div>
             </form>
         </div>
     </div>
-
-
 {% endblock %}

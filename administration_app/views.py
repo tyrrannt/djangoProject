@@ -16,6 +16,7 @@ from loguru import logger
 
 from administration_app.models import PortalProperty
 from contracts_app.models import Contract
+from contracts_app.views import update_contract_dates_from_comment
 
 from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
 from hrdepartment_app.models import ReportCard
@@ -562,6 +563,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     vacation_schedule.delay(year)
                 except Exception as _ex:
                     logger.error(f"Ошибка при получении отпусков {_ex}")
+            if request.GET.get('update') == '18':
+                update_contract_dates_from_comment()
 
         return super().get(request, *args, **kwargs)
 

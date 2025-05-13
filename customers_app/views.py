@@ -651,44 +651,86 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
 #         return super(DataBaseUserUpdate, self).get(request, *args, **kwargs)
 
 
-def login(request):
-    content = {'title': 'вход'}
-    login_form = DataBaseUserLoginForm(data=request.POST)
-    content['login_form'] = login_form
-    logger.info(get_client_ip(request))
-    if request.method == 'POST' and login_form.is_valid():
-        username = request.POST['username']
-        password = request.POST['password']
-        user = auth.authenticate(username=username, password=password)
-        portal = PortalProperty.objects.all()
-        if user and user.is_active:
-            auth.login(request, user)
-            logger.info(f'Успешный вход. {user}')
-            try:
-                portal_session = portal.first().portal_session
-            except Exception as _ex:
-                portal_session = 3600
-                logger.info(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
-            try:
-                portal_paginator = portal.first().portal_paginator
-            except Exception as _ex:
-                portal_paginator = 10
-                logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
-            request.session.set_expiry(portal_session)
-            request.session['portal_paginator'] = portal_paginator
-            request.session['current_month'] = int(datetime.datetime.today().month)
-            request.session['current_year'] = int(datetime.datetime.today().year)
-            # return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
-            return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
-    else:
-        try:
-            logger.error(f'Ошибка авторизации!!! {request.POST["username"]}, IP: {get_client_ip(request)}')
-        except Exception as _ex:
-            logger.error(f'Ошибка!!! {_ex}')
-    # else:
-    #     content['errors'] = login_form.get_invalid_login_error()
-    return render(request, 'customers_app/login.html', content)
+# def login(request):
+#     content = {'title': 'вход'}
+#     login_form = DataBaseUserLoginForm(data=request.POST)
+#     content['login_form'] = login_form
+#     logger.info(get_client_ip(request))
+#     if request.method == 'POST' and login_form.is_valid():
+#         username = request.POST['username']
+#         password = request.POST['password']
+#         user = auth.authenticate(username=username, password=password)
+#         portal = PortalProperty.objects.all()
+#         if user and user.is_active:
+#             auth.login(request, user)
+#             logger.info(f'Успешный вход. {user}')
+#             try:
+#                 portal_session = portal.first().portal_session
+#             except Exception as _ex:
+#                 portal_session = 3600
+#                 logger.info(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
+#             try:
+#                 portal_paginator = portal.first().portal_paginator
+#             except Exception as _ex:
+#                 portal_paginator = 10
+#                 logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
+#             request.session.set_expiry(portal_session)
+#             request.session['portal_paginator'] = portal_paginator
+#             request.session['current_month'] = int(datetime.datetime.today().month)
+#             request.session['current_year'] = int(datetime.datetime.today().year)
+#             # return HttpResponseRedirect(reverse('customers_app:index'))  # , args=(user,))
+#             return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))  # , args=(user,))
+#     else:
+#         try:
+#             logger.error(f'Ошибка авторизации!!! {request.POST["username"]}, IP: {get_client_ip(request)}')
+#         except Exception as _ex:
+#             logger.error(f'Ошибка!!! {_ex}')
+#     # else:
+#     #     content['errors'] = login_form.get_invalid_login_error()
+#     return render(request, 'customers_app/login.html', content)
 
+
+def login(request):
+    content = {'title': 'Вход в систему'}
+    if request.method == 'POST':
+        login_form = DataBaseUserLoginForm(data=request.POST)
+        content['login_form'] = login_form
+        logger.info(get_client_ip(request))
+        if login_form.is_valid():
+            username = login_form.cleaned_data['username']
+            password = login_form.cleaned_data['password']
+            user = auth.authenticate(username=username, password=password)
+            portal = PortalProperty.objects.all()
+            if user and user.is_active:
+                auth.login(request, user)
+                logger.info(f'Успешный вход. {user}')
+                try:
+                    portal_session = portal.first().portal_session
+                except Exception as _ex:
+                    portal_session = 3600
+                    logger.info(f'{_ex}: Не заданы базовые параметры длительности сессии пользователя')
+                try:
+                    portal_paginator = portal.first().portal_paginator
+                except Exception as _ex:
+                    portal_paginator = 10
+                    logger.info(f'{_ex}: Не заданы базовые параметры пагинации страниц')
+                request.session.set_expiry(portal_session)
+                request.session['portal_paginator'] = portal_paginator
+                request.session['current_month'] = int(datetime.datetime.today().month)
+                request.session['current_year'] = int(datetime.datetime.today().year)
+                return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))
+            else:
+                content['errors'] = 'Неверный логин или пароль.'
+                logger.error(f'Ошибка авторизации: Неверные учетные данные для пользователя {username}, IP: {get_client_ip(request)}')
+        else:
+            content['errors'] = login_form.errors # Или login_form.non_field_errors()
+            try:
+                logger.error(f'Ошибка валидации формы при входе. Данные: {request.POST}, IP: {get_client_ip(request)}')
+            except Exception as _ex:
+                logger.error(f'Ошибка при логировании ошибки валидации: {_ex}')
+    else:
+        content['login_form'] = DataBaseUserLoginForm()
+    return render(request, 'customers_app/login.html', content)
 
 def logout(request):
     auth.logout(request)
