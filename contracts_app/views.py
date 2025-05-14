@@ -5,7 +5,7 @@ from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import QueryDict, JsonResponse
+from django.http import QueryDict, JsonResponse, HttpResponse
 from django.shortcuts import HttpResponseRedirect, render, redirect
 from django.views.decorators.cache import cache_page
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
@@ -18,7 +18,8 @@ from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, Contract
     TypeDocumentsAddForm, TypeContractsAddForm, TypeContractsUpdateForm, TypePropertysUpdateForm, TypePropertysAddForm, \
     EstateAddForm, EstateUpdateForm
 from django.urls import reverse, reverse_lazy
-
+import openpyxl
+from openpyxl.styles import Font
 from customers_app.models import DataBaseUser, Counteragent, CounteragentDocuments
 
 
@@ -866,3 +867,96 @@ def update_contract_dates_from_comment():
             contract.save(update_fields=["date_conclusion"])
             updated_count += 1
     logger.warning(f'Обновлено {updated_count} записей.')
+
+
+# contracts_app/views.py
+
+from django.shortcuts import render
+from django.db.models import Q
+from .models import Contract
+from datetime import datetime
+
+
+def contract_report_view(request):
+    """
+    Отчёт по контрактам за период.
+    Группирует по родительскому договору.
+    """
+    start_date = request.GET.get('start')
+    end_date = request.GET.get('end')
+
+    if not start_date or not end_date:
+        return render(request, "contracts_app/contract_report.html", {"error": "Укажите даты!"})
+
+    try:
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+    except ValueError:
+        return render(request, "contracts_app/contract_report.html", {"error": "Неверный формат даты"})
+
+    # Выбираем контракты по дате заключения
+    contracts = Contract.objects.filter(
+        date_conclusion__range=(start_date, end_date)
+    ).select_related("parent_category")
+    print(contracts)
+    # Группировка по parent_category
+    grouped_contracts = {}
+    for contract in contracts:
+        parent = contract.parent_category or contract
+        grouped_contracts.setdefault(parent, []).append(contract)
+
+    context = {
+        "grouped_contracts": grouped_contracts,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+    return render(request, "contracts_app/contract_report.html", context)
+
+def export_contracts_excel(request):
+    start_date = request.GET.get('start')
+    end_date = request.GET.get('end')
+
+    if not start_date or not end_date:
+        return HttpResponse("Укажите даты.", status=400)
+
+    try:
+        start_date = datetime.strptime(start_date, "%d.%m.%Y").date()
+        end_date = datetime.strptime(end_date, "%d.%m.%Y").date()
+    except ValueError:
+        return HttpResponse("Неверный формат даты. Используйте дд.мм.гггг", status=400)
+
+    contracts = Contract.objects.filter(
+        date_conclusion__range=(start_date, end_date)
+    ).select_related("parent_category", "contract_counteragent", "type_of_document")
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Контракты"
+
+    headers = [
+        "Родительский договор",
+        "Номер договора",
+        "Дата заключения",
+        "Тип документа",
+        "Контрагент",
+        "Комментарий"
+    ]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    for contract in contracts:
+        parent = contract.parent_category or contract
+        ws.append([
+            f"{parent.contract_number or 'Без номера'}",
+            contract.contract_number or "Без номера",
+            contract.date_conclusion.strftime("%d.%m.%Y") if contract.date_conclusion else "",
+            str(contract.type_of_document),
+            str(contract.contract_counteragent),
+            contract.comment or "",
+        ])
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = "attachment; filename=contracts_report.xlsx"
+    wb.save(response)
+    return response

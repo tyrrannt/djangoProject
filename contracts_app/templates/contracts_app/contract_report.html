@@ -1,0 +1,52 @@
+<!-- templates/contracts_app/contract_report.html -->
+
+{% extends 'customers_app/main.html' %}
+{% block content %}
+    <section role="main" class="content-body">
+        <form method="get" class="mb-4">
+            <label>Период:</label>
+            <input type="date" name="start" value="{{ start_date }}">
+            <input type="date" name="end" value="{{ end_date }}">
+            <button type="submit" class="btn btn-primary">Показать</button>
+        </form>
+        {% if start_date and end_date %}
+            <a href="{% url 'contracts_app:export_contracts_excel' %}?start={{ start_date | date:'d.m.Y' }}&end={{ end_date | date:'d.m.Y' }}"
+               class="btn btn-success mb-4">
+                📥 Экспорт в Excel
+            </a>
+        {% endif %}
+
+        <h2>Отчёт по договорам с {{ start_date }} по {{ end_date }}</h2>
+
+        {% if error %}
+            <p style="color: red">{{ error }}</p>
+        {% endif %}
+
+        {% if grouped_contracts %}
+            <ul class="list-group">
+                {% for parent, contracts in grouped_contracts.items %}
+                    <li class="list-group-item">
+                        <details>
+                            <summary>
+                                <strong>{{ parent.contract_number|default:"(Без номера)" }}</strong>
+                                — {{ parent.contract_counteragent }}
+                            </summary>
+                            <ul class="list-group mt-2">
+                                {% for contract in contracts %}
+                                    <li class="list-group-item">
+                                        <div><strong>Номер:</strong> {{ contract.contract_number|default:"-" }}</div>
+                                        <div><strong>Дата:</strong> {{ contract.date_conclusion }}</div>
+                                        <div><strong>Тип:</strong> {{ contract.type_of_document }}</div>
+                                        <div><strong>Комментарий:</strong> {{ contract.comment|default:"-" }}</div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </details>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Контракты не найдены.</p>
+        {% endif %}
+    </section>
+{% endblock %}

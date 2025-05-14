@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import contract_report_view, export_contracts_excel
 
 app_name = 'contracts_app'
 
@@ -31,4 +32,7 @@ urlpatterns = [
     path('estate/<int:pk>/', views.EstateDetail.as_view(), name='estate'),
     path('estate/<int:pk>/update/', views.EstateUpdate.as_view(), name='estate_update'),
     path('check/', views.counteragent_check, name='counteragent_check'),
+    path("report/", contract_report_view, name="contract_report"),
+    path("report/export/", export_contracts_excel, name="export_contracts_excel"),
+
 ]
