@@ -5,24 +5,31 @@
 
 {% block title %}
     <title>{{ title }}</title>
-
 {% endblock %}
 
 {% block content %}
+<section role="main" class="content-body content-body-modern mt-0">
+    <div class="container py-4">
 
-    <section role="main" class="content-body content-body-modern mt-0">
-<button id="muteButton">Mute</button>
-    <button id="unmuteButton">Unmute</button>
+        <h2 class="mb-4">{{ title }}</h2>
 
-    <script>
-        const ROOM_ID = "{{ room_name }}";
-        const USER_ID = Math.random().toString(36).substring(2, 15);
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/mediasoup-client@3.6.31/lib/index.js"></script>
-        
-    <script src="{% static 'admin_templates/vendor/simplewebrtc/audio_conference.js' %}"></script>
-        <!-- end: page -->
-    </section>
-    <!-- end: page -->
+        <div class="btn-group mb-3" role="group" aria-label="Audio controls">
+            <button type="button" id="muteButton" class="btn btn-warning">🔇 Mute</button>
+            <button type="button" id="unmuteButton" class="btn btn-success">🔊 Unmute</button>
+        </div>
 
+        <div id="status" class="alert alert-info d-none"></div>
+
+        <!-- Передаём room и user_id в JS -->
+        <script>
+            const ROOM_ID = "{{ room_name|escapejs }}";
+            const USER_ID = "{{ user_uuid|default_if_none:'null'|escapejs }}";
+        </script>
+
+        <!-- Подключаем Mediasoup и кастомный скрипт -->
+        <script src="https://cdn.jsdelivr.net/npm/mediasoup-client@3.6.31/lib/index.min.js"></script>
+        <script src="{% static 'your_app_name/js/audio_conference.js' %}"></script>
+
+    </div>
+</section>
 {% endblock %}
