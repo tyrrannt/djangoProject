@@ -8,18 +8,24 @@
 
 {% block custome_css %}
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
-{#    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@latest/index.js"></script>#}
-{#    <script src="https://cdn.jsdelivr.net/npm/color-hash@2.0.0/dist/color-hash.min.js"></script>#}
+    {#    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@latest/index.js"></script>#}
+    {#    <script src="https://cdn.jsdelivr.net/npm/color-hash@2.0.0/dist/color-hash.min.js"></script>#}
     <style>
         .message {
-            padding: 5px;
-            margin: 5px;
-            border-radius: 5px;
-            font-size: 18px; /* Увеличенный шрифт */
+            padding: 6px 12px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+            display: inline-block;
+            max-width: 80%;
+            word-break: break-word;
         }
+
         .notification {
             color: gray;
             font-style: italic;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
     </style>
 {% endblock %}
@@ -27,62 +33,69 @@
 {% block content %}
 
     <section role="main" class="content-body content-body-modern mt-0">
-     <h1>Chat Room: {{ room_name }}</h1>
-    <div id="chat-log" style="width: 600px; height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;"></div>
-    <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="Send">
-    <emoji-picker id="emoji-picker"></emoji-picker>
+        <h1>Chat Room: {{ room_name }}</h1>
+        <div id="chat-log" class="border rounded p-2 mb-3 bg-light"
+             style="max-width: 100%; height: 400px; overflow-y: auto;"></div>
 
-    <script type="module">
-        import ColorHash from '{% static 'admin_templates/vendor/color-hash/dist/esm.js' %}';
-        const roomName = "{{ room_name }}";
-        const chatSocket = new WebSocket(
-            'wss://' + window.location.host + '/ws/chat/' + roomName + '/'
-        );
+        <div class="input-group mb-3" style="max-width: 600px;">
+            <input id="chat-message-input" type="text" class="form-control" placeholder="Введите сообщение...">
+            <button id="chat-message-submit" class="btn btn-primary" type="button">Отправить</button>
+        </div>
 
-        const colorHash = new ColorHash();
+        <emoji-picker id="emoji-picker" class="mt-2"></emoji-picker>
 
-        chatSocket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            const message = data.username + ': ' + data.message;
-            const messageDiv = document.createElement('div');
-            if (data.username === 'Система') {
-                messageDiv.className = 'notification';
-            } else {
-                messageDiv.className = 'message';
-                messageDiv.style.color = colorHash.hex(data.username);
-            }
-            messageDiv.textContent = message;
-            document.querySelector('#chat-log').appendChild(messageDiv);
-            document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
-        };
 
-        chatSocket.onclose = function(event) {
-            console.error('Chat socket closed unexpectedly');
-        };
+        <script type="module">
+            import ColorHash from '{% static 'admin_templates/vendor/color-hash/dist/esm.js' %}';
 
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // Enter key
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
+            const roomName = "{{ room_name }}";
+            const chatSocket = new WebSocket(
+                'wss://' + window.location.host + '/ws/chat/' + roomName + '/'
+            );
 
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-            chatSocket.send(JSON.stringify({
-                'message': message
-            }));
-            messageInputDom.value = '';
-        };
+            const colorHash = new ColorHash();
 
-        const emojiPicker = document.querySelector('#emoji-picker');
-        emojiPicker.addEventListener('emoji-click', event => {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            messageInputDom.value += event.detail.unicode;
-        });
-    </script>
+            chatSocket.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+                const message = data.username + ': ' + data.message;
+                const messageDiv = document.createElement('div');
+                if (data.username === 'Система') {
+                    messageDiv.className = 'notification';
+                } else {
+                    messageDiv.className = 'message';
+                    messageDiv.style.color = colorHash.hex(data.username);
+                }
+                messageDiv.textContent = message;
+                document.querySelector('#chat-log').appendChild(messageDiv);
+                document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
+            };
+
+            chatSocket.onclose = function (event) {
+                console.error('Chat socket closed unexpectedly');
+            };
+
+            document.querySelector('#chat-message-input').focus();
+            document.querySelector('#chat-message-input').onkeyup = function (e) {
+                if (e.keyCode === 13) {  // Enter key
+                    document.querySelector('#chat-message-submit').click();
+                }
+            };
+
+            document.querySelector('#chat-message-submit').onclick = function (e) {
+                const messageInputDom = document.querySelector('#chat-message-input');
+                const message = messageInputDom.value.trim();
+                if (message !== "") {
+                    chatSocket.send(JSON.stringify({'message': message}));
+                    messageInputDom.value = '';
+                }
+            };
+
+            const emojiPicker = document.querySelector('#emoji-picker');
+            emojiPicker.addEventListener('emoji-click', event => {
+                const messageInputDom = document.querySelector('#chat-message-input');
+                messageInputDom.value += event.detail.unicode;
+            });
+        </script>
 
     </section>
 {% endblock %}
