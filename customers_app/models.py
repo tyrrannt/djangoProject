@@ -460,6 +460,12 @@ class DataBaseUserWorkProfile(models.Model):
         verbose_name="Окончание рабочего времени", default=get_time("18:00:00")
     )
 
+class RoleType(models.TextChoices):
+    COMMON = "0", "Общий"
+    NO = "1", "НО"
+    HR = "2", "Кадры"
+    ACCOUNTING = "3", "Бухгалтерия"
+
 
 class DataBaseUser(AbstractUser):
     """
@@ -476,7 +482,17 @@ class DataBaseUser(AbstractUser):
         ("staff_member", "штатный сотрудник"),
         ("freelancer", "внештатный сотрудник"),
     ]
+
     type_of_gender = [("male", "мужской"), ("female", "женский")]
+
+    type_of_role = models.CharField(
+        verbose_name="Роль подразделения",
+        max_length=1,  # максимум 1 символ
+        choices=RoleType.choices,
+        null=True,
+        blank=True,
+    )
+
     ref_key = models.CharField(
         verbose_name="Уникальный номер", max_length=37, default=""
     )

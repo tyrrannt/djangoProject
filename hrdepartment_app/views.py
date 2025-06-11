@@ -45,7 +45,7 @@ from administration_app.utils import (
     get_history,
     get_year_interval, ajax_search, send_notification,
 )
-from customers_app.models import DataBaseUser, Counteragent
+from customers_app.models import DataBaseUser, Counteragent, RoleType
 from djangoProject.settings import EMAIL_HOST_USER
 from hrdepartment_app.forms import (
     MedicalExaminationAddForm,
@@ -1077,16 +1077,16 @@ class ApprovalOficialMemoProcessUpdate(
         content["list_agreement"] = list_agreement
 
         list_distributor = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role="1")
+            Q(type_of_role=RoleType.NO)
             & Q(user_work_profile__job__right_to_approval=True)
             # & Q(is_superuser=False)
         )
-
+        print(list_distributor)
         content["form"].fields["person_distributor"].queryset = list_distributor
         content["list_distributor"] = list_distributor
 
         list_department_staff = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role="2")
+            Q(type_of_role=RoleType.HR)
             & Q(user_work_profile__job__right_to_approval=True)
             & Q(is_superuser=False)
         )
@@ -1096,7 +1096,7 @@ class ApprovalOficialMemoProcessUpdate(
         content["list_department_staff"] = list_department_staff
 
         list_accounting = users_list.filter(
-            Q(user_work_profile__divisions__type_of_role="3")
+            Q(type_of_role=RoleType.ACCOUNTING)
             & Q(user_work_profile__job__right_to_approval=True)
             & Q(is_superuser=False)
         )

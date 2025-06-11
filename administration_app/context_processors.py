@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.views.decorators.cache import cache_page
 
 from contracts_app.models import Contract
-from customers_app.models import DataBaseUser, Posts
+from customers_app.models import DataBaseUser, Posts, RoleType
 from djangoProject.settings import MEDIA_ROOT
 from hrdepartment_app.models import (
     ApprovalOficialMemoProcess,
@@ -133,15 +133,15 @@ def get_approval_oficial_memo_process(request):
             # Получение списка сотрудников НО
             person_distributor.extend(
                 DataBaseUser.objects.filter(
-                    Q(user_work_profile__divisions__type_of_role=1) & Q(user_work_profile__job__right_to_approval=True)
-                ).values_list('pk', flat=True)
+                    Q(type_of_role=RoleType.NO) & Q(user_work_profile__job__right_to_approval=True)
+                ).values_list('pk', flat=True).exclude(is_active=False)
             )
 
             # Получение списка сотрудников бухгалтерии
             person_accounting.extend(
                 DataBaseUser.objects.filter(
-                    Q(user_work_profile__divisions__type_of_role=3) & Q(user_work_profile__job__right_to_approval=True)
-                ).values_list('pk', flat=True)
+                    Q(type_of_role=RoleType.ACCOUNTING) & Q(user_work_profile__job__right_to_approval=True)
+                ).values_list('pk', flat=True).exclude(is_active=False)
             )
 
             # Получение данных для бизнес-процессов CTO
