@@ -74,6 +74,7 @@ class DataBaseUserUpdateForm(UserChangeForm):
             "address",
             "user_profile",
             "user_work_profile",
+            "type_of_role"
         )
 
     def __init__(self, *args, **kwargs):
@@ -395,6 +396,7 @@ class StaffUpdateForm(forms.ModelForm):
             "avatar",
             "is_staff",
             "is_superuser",
+            "type_of_role"
         )
 
     def __init__(self, *args, **kwargs):

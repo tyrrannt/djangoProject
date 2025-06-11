@@ -462,8 +462,8 @@ class DataBaseUserWorkProfile(models.Model):
 
 class RoleType(models.TextChoices):
     COMMON = "0", "Общий"
-    NO = "1", "НО"
-    HR = "2", "Кадры"
+    NO = "1", "Наземное обеспечение"
+    HR = "2", "Отдел кадров"
     ACCOUNTING = "3", "Бухгалтерия"
 
 
