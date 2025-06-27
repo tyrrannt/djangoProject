@@ -12,7 +12,7 @@ admin.site.register(CompanyProperty)
 
 @admin.register(Contract)
 class DocumentsOrderAdmin(admin.ModelAdmin):
-    list_display = ("pk", "contract_number", "date_conclusion", "type_of_document",
+    list_display = ("pk", "parent_category", "contract_number", "date_conclusion", "type_of_document",
                     "type_of_contract", "actuality", "contract_counteragent")  #
     autocomplete_fields = ['parent_category', 'contract_counteragent']  # Добавляем автопоиск
     list_filter = (
