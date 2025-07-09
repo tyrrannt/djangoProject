@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import json
 import uuid
+from collections import defaultdict
 from io import BytesIO
 from itertools import chain
 # from pprint import pprint
@@ -24,7 +25,7 @@ from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.db.models import Q
+from django.db.models import Q, F
 from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
@@ -1674,3 +1675,33 @@ def get_leaderboard(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+@login_required
+def inactive_users_report(request):
+    JOB_TYPE_DISPLAY = dict(Job.job_type)
+    queryset = (
+        DataBaseUser.objects
+        .filter(last_login__isnull=True)
+        .select_related('user_work_profile__job')
+        .annotate(
+            full_name=F('last_name'),
+            job_name=F('user_work_profile__job__name'),
+            job_type=F('user_work_profile__job__type_of_job'),
+            registration_date=F('date_joined')
+        )
+        .exclude(is_active=False)
+    )
+
+    report_data = defaultdict(list)
+
+    for user in queryset:
+        job_type_key = user.job_type
+        job_type_display = JOB_TYPE_DISPLAY.get(job_type_key, 'Не указано')
+
+        report_data[job_type_display].append({
+            'full_name': f"{user.last_name} {user.first_name} {user.surname}".strip(),
+            'registration_date': user.registration_date,
+            'job_name': user.job_name or '—',
+        })
+
+    return render(request, 'customers_app/inactive_users.html', {'report': dict(report_data)})

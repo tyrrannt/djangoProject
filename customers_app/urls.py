@@ -83,6 +83,7 @@ urlpatterns = [
     path('game/', views.game, name='game'),
     path('save_stats/', views.save_stats, name='save_stats'),
     path('get_leaderboard/', views.get_leaderboard, name='get_leaderboard'),
+    path('inactive_users/', views.inactive_users_report, name='inactive_users_report'),
     # path(
     #     "password/<int:pk>/update/",
     #     views.ChangeAvatarUpdate.as_view(),
