@@ -1678,20 +1678,34 @@ def get_leaderboard(request):
 
 @login_required
 def inactive_users_report(request):
+    """
+    Генерирует отчет о пользователях, которые никогда не входили в систему.
+
+    Фильтрует пользователей с `last_login = NULL`, выбирает связанную информацию о работе,
+    группирует пользователей по типу работы и передает данные в шаблон.
+
+    Returns:
+        HttpResponse: Отрендеренный HTML-шаблон с данными.
+    """
+
+    # Словарь для отображения ключевых значений типов работ в человекочитаемые названия
     JOB_TYPE_DISPLAY = dict(Job.job_type)
+
+    # Запрос: активные пользователи, которые никогда не логинились
     queryset = (
         DataBaseUser.objects
         .filter(last_login__isnull=True)
-        .select_related('user_work_profile__job')
+        .select_related('user_work_profile__job')  # Оптимизация: загрузка связанных объектов
         .annotate(
             full_name=F('last_name'),
             job_name=F('user_work_profile__job__name'),
             job_type=F('user_work_profile__job__type_of_job'),
             registration_date=F('date_joined')
         )
-        .exclude(is_active=False)
+        .exclude(is_active=False)  # Исключаем неактивных пользователей
     )
 
+    # Итоговые данные для отчета — словарь: {тип работы: [пользователь1, пользователь2, ...]}
     report_data = defaultdict(list)
 
     for user in queryset:
