@@ -40,6 +40,9 @@
                             $(this).prop('selected', data.place_production_activity.includes(parseInt($(this).val())));
                         });
 
+                        // Установка места отправления
+                        $('#id_place_departure').val(data.place_departure).trigger('change');
+
                         $('#id_place_production_activity').trigger('change');
 
                         // Установка цели
@@ -301,8 +304,6 @@
                     period_for.removeAttribute("max")
                     period_for.setAttribute("max", data[1])
                     $("#period_for_id").trigger("create")
-                    console.log(data[1]);
-                    console.log(period_from)
                     if (data === 'ok') {
                         console.log("success");
                     }
@@ -328,15 +329,6 @@
                 },
                 dataType: "json",
                 success: function (data) {
-                    // any process in data
-                    // var period_from = document.getElementById("id_period_from");
-                    // var period_for = document.getElementById("id_period_for");
-                    // period_from.removeAttribute("min")
-                    // period_from.setAttribute("min", data)
-                    // $("#id_period_from").trigger("create")
-                    // period_for.removeAttribute("min")
-                    // period_for.setAttribute("min", data)
-                    // $("#id_period_for").trigger("create")
                     var check_date = document.getElementById("id_check_date");
                     var employee_divisions = document.getElementById("employee_divisions");
                     $("label[for='employee_divisions']").text(data);

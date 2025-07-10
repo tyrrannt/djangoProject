@@ -5156,7 +5156,7 @@ def get_extension_data(request):
             response_data = {
                 "period_from": new_start_date.strftime("%Y-%m-%d"),
                 "place_production_activity": list(memo.place_production_activity.values_list("pk", flat=True)),
-                #"place_departure": memo.place_departure,
+                "place_departure": memo.place_departure_id,
                 "purpose_trip": memo.purpose_trip_id
             }
             return JsonResponse(response_data)
