@@ -10,6 +10,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 import requests
 import telebot
+import xlrd
 from dateutil import rrule
 from decouple import config
 from django.core import mail
@@ -50,15 +51,29 @@ logger.add("debug_task.json", format=config('LOG_FORMAT'), level=config('LOG_LEV
 
 
 def xldate_to_datetime(xldate):
-    import xlrd
+    """
+        Преобразует Excel-дату (в виде числа) в строку формата 'YYYY-MM-DD HH:MM:SS'.
 
-    # Calling the xldate_as_datetime() function to
-    # convert the specified excel serial date into
-    # datetime.datetime object
-    datetime_date = xlrd.xldate_as_datetime(xldate, 0)
-    # Getting the converted date date as output
-    print(datetime_date)
-    return datetime_date.strftime("%Y-%m-%d %H:%M:%S")
+        Использует библиотеку `xlrd`, чтобы конвертировать Excel-дату (float)
+        в объект `datetime`, а затем в удобную для отображения строку.
+
+        Args:
+            xldate (float): Дата в формате Excel (серийное число).
+
+        Returns:
+            str: Строка даты и времени в формате 'YYYY-MM-DD HH:MM:SS'.
+    """
+    try:
+        # Конвертируем Excel-дату в объект datetime
+        datetime_date = xlrd.xldate_as_datetime(xldate, 0)
+
+        # Возвращаем строку в нужном формате
+        return datetime_date.strftime("%Y-%m-%d %H:%M:%S")
+
+    except Exception as e:
+        # Лучше логировать ошибки, чем просто печатать
+        logger.error(f"Ошибка при преобразовании Excel-даты: {e}")
+        return None
 
 
 @app.task()
@@ -104,11 +119,11 @@ def send_email_notification():
                 )
                 logger.info(f"Сообщение для {mail_to} отправлено!")
             except Exception as _ex:
-                logger.debug(f"Failed to send email to {mail_to} because {_ex}")
+                logger.error(f"Failed to send email to {mail_to} because {_ex}")
             count += 1
         else:
             errors += 1
-        logger.debug(f"Failed to change {errors} passwords!")
+        logger.error(f"Failed to change {errors} passwords!")
     return count, errors
 
 @app.task()
@@ -149,13 +164,38 @@ def send_email_single_notification(pk):
 
 
 def change_sign():
+    """
+    Обновляет поле 'sign' всех объектов модели HappyBirthdayGreetings.
+
+    Эта функция извлекает все записи из модели `HappyBirthdayGreetings` и устанавливает
+    для каждого объекта одно и то же значение в поле `sign`. После установки нового значения
+    каждый объект сохраняется в базе данных.
+
+    Атрибуты:
+        list_obj (QuerySet): Все объекты модели HappyBirthdayGreetings.
+        item (HappyBirthdayGreetings): Отдельный объект модели, чьё поле sign обновляется.
+    """
     list_obj = HappyBirthdayGreetings.objects.all()
     for item in list_obj:
         item.sign = 'Генеральный директор<br>ООО Авиакомпания "БАРКОЛ"<br>Бархотов В.С.<br>и весь коллектив!!!'
         item.save()
 
 
+
 def send_mail(person: DataBaseUser, age: int, record: Posts):
+    """
+    Отправляет поздравительное email-сообщение пользователю с днем рождения.
+
+    Функция проверяет, было ли уже отправлено сообщение (через флаг `record.email_send`),
+    и если нет — формирует персонализированное поздравление, в зависимости от пола и возраста
+    пользователя. Сообщение отправляется по электронной почте в HTML и текстовом формате.
+
+    Args:
+        person (DataBaseUser): Пользователь, которому отправляется поздравление.
+        age (int): Возраст пользователя.
+        record (Posts): Объект модели, связанный с записью о рождении, используемый для
+                        отслеживания статуса отправки (`email_send`).
+    """
     if not record.email_send:
         mail_to = person.email
         gender = person.gender
@@ -203,7 +243,7 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
             record.email_send = True
             record.save()
         except Exception as _ex:
-            logger.debug(f"Failed to send email. {_ex}")
+            logger.error(f"Failed to send email. {_ex}")
 
 
 @app.task()

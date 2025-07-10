@@ -17,7 +17,43 @@
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#id_document_extension').on('change', function () {
+                let extensionId = $(this).val();
+                if (!extensionId) return;
 
+                $.ajax({
+                    type: "GET",
+                    url: "{% url 'hrdepartment_app:get_extension_data' %}",
+                    data: {
+                        "extension_id": extensionId
+                    },
+                    dataType: "json",
+                    success: function (data) {
+                        // Установка новой даты начала
+                        $('#id_period_from').val(data.period_from);
+                        minimumPeriodFor();  // Пересчитать ограничения
+
+                        // Установка места назначения
+                        $('#id_place_production_activity option').each(function () {
+                            $(this).prop('selected', data.place_production_activity.includes(parseInt($(this).val())));
+                        });
+                        $('#id_place_production_activity').trigger('change');
+
+                        // Установка цели
+                        $('#id_purpose_trip').val(data.purpose_trip).trigger('change');
+
+                        // Можно сразу пересчитать аванс
+                        expenses();
+                    },
+                    error: function () {
+                        console.error("Ошибка загрузки данных продления.");
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block title %}
@@ -349,5 +385,6 @@
             });
         };
     </script>
+
     <!-- end: page -->
 {% endblock %}

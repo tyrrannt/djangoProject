@@ -37,6 +37,7 @@ urlpatterns = [
     path('memo/<int:pk>/', OfficialMemoDetail.as_view(), name='memo'),
     path('memo/<int:pk>/update/', OfficialMemoUpdate.as_view(), name='memo_update'),
     path('memo/<int:pk>/cancel/', OfficialMemoCancel.as_view(), name='memo_cancel'),
+    path("memo/get_extension_data/", views.get_extension_data, name="get_extension_data"),
     path('bpmemo/', ApprovalOficialMemoProcessList.as_view(), name='bpmemo_list'),
     path('bpmemo/add/', ApprovalOficialMemoProcessAdd.as_view(), name='bpmemo_add'),
     path('bpmemo/<int:pk>/update/', ApprovalOficialMemoProcessUpdate.as_view(), name='bpmemo_update'),

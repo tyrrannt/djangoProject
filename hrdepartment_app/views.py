@@ -5146,3 +5146,19 @@ def export_trips_csv(request):
 
     return response
 
+
+def get_extension_data(request):
+    extension_id = request.GET.get("extension_id")
+    if extension_id:
+        try:
+            memo = OfficialMemo.objects.get(pk=extension_id)
+            new_start_date = memo.period_for + datetime.timedelta(days=1)
+            response_data = {
+                "period_from": new_start_date.strftime("%Y-%m-%d"),
+                "place_production_activity": list(memo.place_production_activity.values_list("pk", flat=True)),
+                "purpose_trip": memo.purpose_trip_id
+            }
+            return JsonResponse(response_data)
+        except OfficialMemo.DoesNotExist:
+            return JsonResponse({}, status=404)
+    return JsonResponse({}, status=400)
