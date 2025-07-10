@@ -39,6 +39,7 @@
                         $('#id_place_production_activity option').each(function () {
                             $(this).prop('selected', data.place_production_activity.includes(parseInt($(this).val())));
                         });
+
                         $('#id_place_production_activity').trigger('change');
 
                         // Установка цели
@@ -378,6 +379,7 @@
                     if (data === 'ok') {
                         console.log("success");
                     }
+                    $('#id_document_extension').trigger('change');
                 },
                 failure: function (data) {
                     console.log("failure");
