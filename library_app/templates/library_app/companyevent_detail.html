@@ -144,7 +144,7 @@
                     <label>Отчёт. Видео. Аудио.</label>
                     <div class="toggle-content">
                         {% if event.event_report %}
-                            <p>Отчёт по встрече: <a href="{{ event.event_report.url }}">Скачать</a></p>
+                            <p>Отчёт по встрече: <a href="{{ event.event_report.url }}?v={{ object.updated_at.timestamp }}">Скачать</a></p>
                         {% endif %}
                         {% if event.event_video %}
                             <p>Видео-файл: <a href="{{ event.event_video }}" target="_blank">Посмотреть</a></p>
@@ -153,7 +153,7 @@
                             <p>Аудио-файл:</p>
                             <audio controls="controls" crossorigin="anonymous" style="width:100%;"
                                    controlsList="nodownload">
-                                <source src="{{ event.event_media.url }}" type="audio/mpeg">
+                                <source src="{{ event.event_media.url }}?v={{ object.updated_at.timestamp }}" type="audio/mpeg">
                             </audio>
                         {% endif %}
                     </div>

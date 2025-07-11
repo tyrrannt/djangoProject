@@ -122,6 +122,7 @@ class DocumentForm(models.Model):
                                  null=True, related_name='%(app_label)s_%(class)s_executor')
     employee = models.ManyToManyField(DataBaseUser, verbose_name='Ответственное лицо', blank=True,
                                       related_name='%(app_label)s_%(class)s_employee')
+    updated_at = models.DateTimeField(auto_now=True)
 
     def get_data(self):
         return {
@@ -195,6 +196,7 @@ class CompanyEvent(models.Model):
     event_video = models.URLField(verbose_name="Видео", blank=True)
     participants = models.ManyToManyField(DataBaseUser, verbose_name='Участники', blank=True,
                                       related_name='%(app_label)s_%(class)s_employee')
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title

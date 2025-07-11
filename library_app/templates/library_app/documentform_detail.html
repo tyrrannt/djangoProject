@@ -66,7 +66,7 @@
                                                     <div class="col-sm-12 text-black-50 mt-2 pb-4">
                                                         <label for="id_draft">Файл бланка: </label>
                                                         {% if object.draft %}
-                                                            <span id="id_draft"><a href="{{ object.draft.url }}"
+                                                            <span id="id_draft"><a href="{{ object.draft.url }}?v={{ object.updated_at.timestamp }}"
                                                                                    target="_blank"><img
                                                                     src="{% static 'Extension/docx.png' %}"></a></span>
                                                         {% endif %}
@@ -77,7 +77,7 @@
                                                     <div class="col-sm-12 text-black-50 mt-2 pb-4">
                                                         <label for="id_scan">Скан бланка: </label>
                                                         <span id="id_scan"><a
-                                                                href="{{ object.scan.url }}" target="_blank"><img
+                                                                href="{{ object.scan.url }}?v={{ object.updated_at.timestamp }}" target="_blank"><img
                                                                 src="{% static 'Extension/pdf.png' %}"></a></span>
                                                     </div>
                                                 {% endif %}
@@ -86,7 +86,7 @@
                                                     <div class="col-sm-12 text-black-50 mt-2 pb-4">
                                                         <label for="id_scan">Образец заполнения: </label>
                                                         <span id="id_scan"><a
-                                                                href="{{ object.sample.url }}" target="_blank"><img
+                                                                href="{{ object.sample.url }}?v={{ object.updated_at.timestamp }}" target="_blank"><img
                                                                 src="{% static 'Extension/pdf.png' %}"></a></span>
                                                     </div>
                                                 {% endif %}
