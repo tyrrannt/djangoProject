@@ -84,11 +84,11 @@
                     </div>
                     {% if object.scan_document %}
                         <div class="card text-left">
-                            <input id="id_contract_number" value="{{ object.scan_document.url }}" hidden="true">
+                            <input id="id_contract_number" value="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
                             <div class="form-row outerContainer" id="outerContainer" style="height: 1080px">
                                 {% include 'contracts_app/pdf-js.html' %}
                             </div>
-                            <a href="{{ object.scan_document.url }}" target="_blank">Открыть документ</a>
+                            <a href="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" target="_blank">Открыть документ</a>
                         </div>
                     {% endif %}
                 </div>

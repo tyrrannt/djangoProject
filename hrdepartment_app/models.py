@@ -395,6 +395,7 @@ class Medical(models.Model):
     harmful = models.ManyToManyField(
         HarmfulWorkingConditions, verbose_name="Вредные условия труда"
     )
+    updated_at = models.DateTimeField(auto_now=True)
 
     def get_data(self):
         return {
@@ -1754,6 +1755,7 @@ class CreatingTeam(models.Model):
     email_send = models.BooleanField(verbose_name="Письмо отправлено", default=False)
     email_cancellation_send = models.BooleanField(verbose_name="Письмо от отмене отправлено", default=False)
     history_change = GenericRelation(HistoryChange)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def change_status(self, item: int, status: bool):
         match item:
@@ -2139,6 +2141,7 @@ class OutfitCard(models.Model):
     scan_document = models.FileField(verbose_name="Скан документа", upload_to=outfit_directory_path, null=True,
                                      blank=True)
     notes = models.TextField(verbose_name="Примечания", blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.outfit_card_number
