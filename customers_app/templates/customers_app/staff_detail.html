@@ -47,7 +47,7 @@
                                     <div class="nav flex-column" id="tab" role="tablist" aria-orientation="vertical">
                                         <div class="thumb-info mb-3">
                                             {% if object.avatar %}
-                                                <img src="{{ object.avatar.url }}" class="rounded img-fluid"
+                                                <img src="{{ object.avatar.url }}?v={{ object.updated_at.timestamp }}" class="rounded img-fluid"
                                                      alt="{{ object.username }}">
                                             {% else %}
                                                 <img src="{% static 'admin_templates/img/!logged-user.jpg' %}"

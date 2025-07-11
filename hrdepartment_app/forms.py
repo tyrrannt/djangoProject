@@ -1630,7 +1630,7 @@ class TimeSheetForm(forms.ModelForm):
         widgets = {
             'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
                                            "data-plugin-datepicker": True,
-                                           "type": "data",
+                                           "type": "text",
                                            "data-date-language": "ru",
                                            "todayBtn": True,
                                            "clearBtn": True,

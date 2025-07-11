@@ -177,6 +177,7 @@ class Documents(models.Model):
     applying_for_job = models.BooleanField(
         verbose_name="Обязательно к ознакомлению при приеме на работу", default=False
     )
+    document_updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'№ {self.document_number} от {self.document_date.strftime("%d.%m.%Y")}'
@@ -3153,3 +3154,23 @@ class DocumentAcknowledgment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} ознакомился с документом '{self.document}'"
+
+class DataBaseUserEvent(models.Model):
+    class Meta:
+        verbose_name = 'Отметка'
+        verbose_name_plural = 'Отметки'
+        indexes = [
+            models.Index(fields=['person', 'date_marks']),
+            models.Index(fields=['checked']),
+        ]
+
+    person = models.ForeignKey(DataBaseUser, on_delete=models.CASCADE, verbose_name='Сотрудник')
+    date_marks = models.DateField(verbose_name='Дата отметки', null=True, blank=True)
+    place = models.ForeignKey(PlaceProductionActivity, on_delete=models.SET_NULL, null=True, verbose_name='Место')
+    checked = models.BooleanField(default=False, verbose_name='Проверено')
+    road = models.BooleanField(default=False, verbose_name='В дороге')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+
+    def __str__(self):
+        return f"{self.person} - {self.date_marks} - {self.place}"

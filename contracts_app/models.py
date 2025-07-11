@@ -1,7 +1,10 @@
 import datetime
+import os
 
 from django.db import models
 from django.db.models import Max
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from django.urls import reverse
 
 from customers_app.models import DataBaseUser, Counteragent, AccessLevel, Division
@@ -9,6 +12,22 @@ from djangoProject import settings
 
 
 def contract_directory_path(instance, filename):
+    """
+    Формирует путь для сохранения файла контракта в зависимости от свойств экземпляра.
+
+    Путь состоит из идентификатора контрагента (ИНН или ID), КПП контрагента,
+    даты заключения контракта и уникального идентификатора файла. Возвращает
+    относительный путь, который используется Django при сохранении файла.
+
+    Args:
+        instance (Contract): Экземпляр модели контракта.
+        filename (str): Имя исходного загружаемого файла.
+
+    Returns:
+        str: Относительный путь к файлу вида:
+             'contracts/<inn>/<kpp>/<префикс_типа_документа>-<inn>-<kpp>-<дата>-<uid>.<расширение>'
+    """
+
     # file will be uploaded to MEDIA_ROOT / user_<id>/<filename>
     if instance.contract_counteragent.inn == '':
         inn = f'{instance.contract_counteragent.pk:010}'
@@ -17,13 +36,17 @@ def contract_directory_path(instance, filename):
 
     ext = filename.split('.')[-1]
     # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-    max_pk = Contract.objects.aggregate(Max('pk'))['pk__max']
-    max_pk += 1
+    try:
+        max_pk = instance.pk
+    except AttributeError:
+        max_pk = Contract.objects.aggregate(Max('pk'))['pk__max']
+        max_pk += 1
     uid = f'{max_pk:07}'
     filename = f'{instance.type_of_document.file_name_prefix}-{inn}-' \
                f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
 
     return f'contracts/{inn}/{instance.contract_counteragent.kpp}/{filename}'
+
 
 
 class TypeDocuments(models.Model):
@@ -223,6 +246,8 @@ class Contract(ContractModel):
         verbose_name_plural = 'Договора'
         ordering = ['-date_conclusion']
 
+    updated_at = models.DateTimeField(auto_now=True)
+
     def get_data(self):
         variable = str(self.doc_file.name).split('.')
         try:
@@ -253,6 +278,37 @@ class Contract(ContractModel):
 
     def __init__(self, *args, **kwargs):
         super(Contract, self).__init__(*args, **kwargs)
+
+@receiver(pre_save, sender=Contract)
+def delete_old_file_on_change(sender, instance, **kwargs):
+    """
+    Сигнальный обработчик, удаляющий старый файл контракта при его замене.
+
+    Этот обработчик срабатывает перед сохранением объекта модели `Contract`.
+    Если файл поля `doc_file` изменился, старый файл удаляется с диска.
+
+    Args:
+        sender (Model): Модель, отправившая сигнал (`Contract`).
+        instance (Contract): Экземпляр модели, который готовится к сохранению.
+        **kwargs: Дополнительные аргументы, переданные через сигнал.
+
+    Behavior:
+        - Если объект новый (не имеет первичного ключа), функция завершает работу.
+        - Получает текущий файл из существующей записи в БД.
+        - Если файл изменился и старый файл существует на диске, он удаляется.
+    """
+    if not instance.pk:
+        return  # новый объект
+
+    try:
+        old_file = Contract.objects.get(pk=instance.pk).doc_file
+    except Contract.DoesNotExist:
+        return
+
+    new_file = instance.doc_file
+    if old_file and old_file != new_file:
+        if os.path.isfile(old_file.path):
+            os.remove(old_file.path)
 
 
 class Posts(models.Model):

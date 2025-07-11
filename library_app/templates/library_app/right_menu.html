@@ -23,7 +23,7 @@
                     <ul>
                         <li class="status-online">
                             <figure class="profile-picture">
-                                <img src="{% if user.avatar %}{{ user.avatar.url }}{% else %}{% static 'admin_templates/img/account.png' %}{% endif %}"
+                                <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ object.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/account.png' %}{% endif %}"
                                      alt="{{ user.last_name }} {{ user.first_name }}"
                                      class="rounded">
                             </figure>

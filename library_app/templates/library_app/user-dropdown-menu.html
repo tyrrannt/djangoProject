@@ -4,7 +4,7 @@
         <figure class="profile-picture">
             <img src="
                 {% if user.avatar %}
-                    {{ user.avatar.url }}
+                    {{ user.avatar.url }}?v={{ object.updated_at.timestamp }}
                 {% else %}
                     {% static 'admin_templates/img/!logged-user.jpg' %}
                  {% endif %}"

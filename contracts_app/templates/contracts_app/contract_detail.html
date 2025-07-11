@@ -54,7 +54,7 @@
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
-                    <input id="id_contract_number" value="{{ object.doc_file.url }}" hidden="true">
+                    <input id="id_contract_number" value="{{ object.doc_file.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
                     {#                    <section class="toggle active showmobile" >#}
                     {#                        <label>Мобильная версия</label>#}
                     {#                        <div class="toggle-content">#}

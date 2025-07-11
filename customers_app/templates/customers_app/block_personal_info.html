@@ -2,7 +2,7 @@
 <div class="card-body">
     <div class="thumb-info mb-3">
         {% if databaseuser.avatar %}
-            <img src="{{ databaseuser.avatar.url }}" class="rounded img-fluid"
+            <img src="{{ databaseuser.avatar.url }}?v={{ object.updated_at.timestamp }}" class="rounded img-fluid"
                  alt="{{ databaseuser.username }}">
         {% else %}
             <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"

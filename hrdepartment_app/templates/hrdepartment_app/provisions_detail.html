@@ -124,7 +124,7 @@
         </style>
         <!-- start: page -->
         {% if object.scan_file %}
-            <input id="id_contract_number" value="{{ object.get_scan_file_url }}" hidden="hidden">
+            <input id="id_contract_number" value="{{ object.get_scan_file_url }}?v={{ object.document_updated_at.timestamp }}" hidden="hidden">
         {% endif %}
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-lg-12">

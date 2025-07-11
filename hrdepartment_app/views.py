@@ -94,6 +94,7 @@ from hrdepartment_app.models import (
     ReportCard,
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
+    DataBaseUserEvent,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
@@ -4113,10 +4114,12 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
     def get_context_data(self, **kwargs):
         data = super().get_context_data(**kwargs)
         if self.request.POST:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=15)(
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)(
                 self.request.POST)
         else:
-            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=15)()
+            data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)()
+        data['all_employee'] = DataBaseUser.objects.filter(
+            user_work_profile__job__division_affiliation__name="Инженерный состав")
         return data
 
     def form_valid(self, form):
@@ -4128,6 +4131,7 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
             self.save_formset(reportcard_formset)
             return super().form_valid(form)
         else:
+            print(reportcard_formset.errors)
             return self.form_invalid(form)
 
     def save_formset(self, formset):
@@ -4150,6 +4154,7 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
         instances = formset.save(commit=False)
         for instance in instances:
             # Внесите изменения в поле, которое не присутствует в форме
+            print(instance)
             instance.report_card_day = self.object.date
             instance.sign_report_card = True
             instance.record_type = "13"
@@ -4192,6 +4197,23 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
     #         return self.form_invalid(form)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class GetUserEventsView(View):
+    def post(self, request, *args, **kwargs):
+        date = request.POST.get("date")
+        place_id = request.POST.get("place_id")
+
+        events = DataBaseUserEvent.objects.filter(date_marks=date, place_id=place_id, checked=True)
+        data = []
+        for e in events:
+            data.append({
+                'person_id': e.person_id,
+                'person_name': str(e.person),
+                # можно добавить другие поля по необходимости
+            })
+        return JsonResponse(data, safe=False)
+
+
 class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = TimeSheet
     form_class = TimeSheetForm  # Используем созданную форму
@@ -4205,6 +4227,7 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
         else:
             data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(
                 instance=self.object)
+        data['all_employee'] = DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав")
         return data
 
     def form_valid(self, form):

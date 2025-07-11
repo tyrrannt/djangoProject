@@ -20,7 +20,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     unacknowledge_document, seasonality_report, export_seasonality_data, absence_analysis, export_absence_data, \
     employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
     ApprovalOficialMemoProcessDetail, management_dashboard, export_trips_csv, BriefingsList, BriefingsAdd, \
-    BriefingsDetail, BriefingsUpdate, OperationalList, OperationalAdd, OperationalDetail, OperationalUpdate
+    BriefingsDetail, BriefingsUpdate, OperationalList, OperationalAdd, OperationalDetail, OperationalUpdate, \
+    GetUserEventsView
 
 app_name = 'hrdepartment_app'
 
@@ -102,6 +103,7 @@ urlpatterns = [
     path('expenses/', ExpensesList.as_view(), name='expenses_list'),
     path('expenses/<int:pk>/update/', expenses_update, name='expenses_update'),
     path('timesheet/add/', TimeSheetCreateView.as_view(), name='timesheet_add'),
+    path('timesheet/get-user-events/', GetUserEventsView.as_view(), name='get_user_events'),
     path('timesheet/<int:pk>/', TimeSheetDetailView.as_view(), name='timesheet'),
     path('timesheet/<int:pk>/update/', TimeSheetUpdateView.as_view(), name='timesheet_update'),
     path('timesheet/<int:pk>/delete/', TimeSheetDeleteView.as_view(), name='timesheet_delete'),

@@ -23,6 +23,7 @@ from hrdepartment_app.models import (
     Instructions,
     Provisions,
     CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
+    DataBaseUserEvent,
 )
 
 # Register your models here.
@@ -35,7 +36,7 @@ admin.site.register(ReasonForCancellation)
 admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
 admin.site.register(DocumentAcknowledgment)
-
+admin.site.register(DataBaseUserEvent)
 
 @admin.register(TimeSheet)
 class TimeSheetAdmin(admin.ModelAdmin):

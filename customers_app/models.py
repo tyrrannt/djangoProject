@@ -566,6 +566,7 @@ class DataBaseUser(AbstractUser):
         verbose_name="Telegram ID", max_length=20, blank=True
     )
     is_ppa = models.BooleanField(default=False, verbose_name="МПД")
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title

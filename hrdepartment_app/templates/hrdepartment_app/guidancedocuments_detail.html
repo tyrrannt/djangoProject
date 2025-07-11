@@ -126,15 +126,15 @@
                                 <div class="form-group col mb-3">
                                     <div class="row text">
                                         {% if object.scan_file %}
-                                            <a href="{{ object.scan_file.url }}" target="_blank">Открыть документ</a>
-                                            <object data="{{ object.scan_file.url }}" type="application/pdf"
+                                            <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" target="_blank">Открыть документ</a>
+                                            <object data="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" type="application/pdf"
                                                     width="750px"
                                                     height="750px">
-                                                <embed src="{{ object.scan_file.url }}" type="application/pdf">
+                                                <embed src="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" type="application/pdf">
                                                 <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
                                                     PDF-файл, чтобы
                                                     просмотреть его: <a
-                                                            href="{{ object.scan_file.url }}">Скачать PDF.</a>.</p>
+                                                            href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}">Скачать PDF.</a>.</p>
                                                 </embed>
                                             </object>
                                         {% endif %}

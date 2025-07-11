@@ -83,6 +83,65 @@
         });
     </script>
 
+    <script>
+        $(document).ready(function () {
+            $('#fill-from-events').click(function () {
+
+                function convertDateFormat(dateStr) {
+                    // Ожидаем DD.MM.YYYY
+                    let parts = dateStr.split('.');
+                    if (parts.length === 3) {
+                        return `${parts[2]}-${parts[1]}-${parts[0]}`;  // YYYY-MM-DD
+                    }
+                    return dateStr;  // если уже в нужном формате
+                };
+
+                let date = $('#id_date').val();
+                let place_id = $('#id_time_sheets_place').val();
+
+                if (!date || !place_id) {
+                    alert("Сначала выберите дату и МПД.");
+                    return;
+                }
+
+                let formattedDate = convertDateFormat(date);
+
+                $.ajax({
+                    url: "{% url 'hrdepartment_app:get_user_events' %}",  // этот url нужно создать
+                    type: "POST",
+                    data: {
+                        'date': formattedDate,
+                        'place_id': place_id,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function (data) {
+                        // Очистим текущие строки
+                        $('#id_reportcard_set tbody').empty();
+                        let employeeSelect = $('#all-employees').html();  // получаем все варианты
+                        // Заполним таблицу
+                        data.forEach(function (event, index) {
+                            let newRow = `
+                            <tr>
+                                <td><select name="report_cards-${index}-employee" id="id_report_cards-${index}-employee" data-select2-id="id_reportcard_set-${index}-employee" class="form-control">${employeeSelect}</select></td>
+                                <td><input type="time" name="report_cards-${index}-start_time" id="id_report_cards-${index}-start_time" class="form-control" /></td>
+                                <td><input type="time" name="report_cards-${index}-end_time" id="id_report_cards-${index}-end_time" class="form-control" /></td>
+                                <td><input type="number" name="report_cards-${index}-lunch_time" id="id_report_cards-${index}-lunch_time" class="form-control" /></td>
+                                <td><input type="number" name="report_cards-${index}-flight_hours" id="id_report_cards-${index}-flight_hours" class="form-control" /></td>
+                                <td><select name="report_cards-${index}-outfit_card" id="id_report_cards-${index}-outfit_card" data-select2-id="id_reportcard_set-${index}-outfit_card" class="form-control"></select></td>
+                                <td><input type="text" name="report_cards-${index}-additional_work" id="id_report_cards-${index}-additional_work" class="form-control" /></td>
+                                <td><input type="hidden" name="report_cards-${index}-id" id="id_report_cards-${index}-id" /></td>
+                            </tr>`;
+                            $('#id_reportcard_set tbody').append(newRow);
+                        });
+
+                        $('#id_reportcard_set-TOTAL_FORMS').val(data.length);
+                    }
+                });
+            });
+        });
+    </script>
+
+
 {% endblock %}
 
 {% block title %}
@@ -211,6 +270,8 @@
                     {{ form.notes }}
                 </div>
             </div>
+            <button type="button" class="btn btn-info mt-3" id="fill-from-events">Заполнить из отметок</button>
+
             <h3>Табель учета рабочего времени</h3>
             {{ reportcard_formset.management_form }}
             <div class="row action-buttons">
@@ -237,6 +298,11 @@
                         </a>
                     </div>
                 {% endif %}
+                <select id="all-employees" style="display: none" >
+                    {% for item in all_employee.iterator %}
+                        <option value="{{ item.pk }}">{{ item }}</option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="table-responsive">
                 <table class="table table-responsive-sm" id="id_reportcard_set">
@@ -254,6 +320,7 @@
                     <tbody>
                     {% for form in reportcard_formset %}
                         <tr>
+
                             <td><label for="id_employee" class="mobile-only">ФИО:</label>{{ form.employee }}</td>
                             <td><label for="id_start_time" class="mobile-only">Время
                                 прихода:</label>{{ form.start_time }}</td>

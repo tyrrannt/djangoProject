@@ -140,7 +140,7 @@
                             {% csrf_token %}
                             <div class="current-user text-center">
                                 {% if user.avatar %}
-                                    <img id="LockUserPicture" src="/media/{{ request.user.avatar }}"
+                                    <img id="LockUserPicture" src="/media/{{ request.user.avatar }}?v={{ object.updated_at.timestamp }}"
                                          class="rounded-circle user-image"/>
                                 {% else %}
                                     <img id="LockUserPicture" src="{% static 'admin_templates/img/!logged-user.jpg' %}"
