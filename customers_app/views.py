@@ -1091,6 +1091,7 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
                 'date_of_employment': content['date_of_employment'] if content['date_of_employment'] != '' else None,
                 'internal_phone': content['internal_phone'],
                 'work_email_password': content['work_email_password'],
+                'work_application_password': content['work_application_password'],
                 'personal_work_schedule_start': content['personal_work_schedule_start'],
                 'personal_work_schedule_end': content['personal_work_schedule_end'],
             }

@@ -52,7 +52,7 @@
             return result.sort(() => Math.random() - 0.5).join('');
         }
 
-        document.getElementById('generate_email_btn').addEventListener('click', function () {
+        document.getElementById('generate_email_btn_int').addEventListener('click', function () {
             const firstName = document.getElementById('id_first_name').value.trim();
             const lastName = document.getElementById('id_last_name').value.trim();
 
@@ -65,12 +65,18 @@
             const lastNameTrans = transliterate(lastName);
             const email = `${firstInitial}.${lastNameTrans}@barkol.ru`;
 
-            const password = generatePassword(16);
-
+            const internal_password = generatePassword(8);
             document.getElementById('id_email').value = email;
-            const pwdField = document.getElementById('id_work_email_password');
-            if (pwdField) {
-                pwdField.value = password;
+            const pwdFieldInt = document.getElementById('id_work_email_password');
+            if (pwdFieldInt) {
+                pwdFieldInt.value = internal_password;
+            }
+        });
+        document.getElementById('generate_email_btn_ext').addEventListener('click', function () {
+            const external_password = generatePassword(16);
+            const pwdFieldExt = document.getElementById('id_work_application_password');
+            if (pwdFieldExt) {
+                pwdFieldExt.value = external_password;
             }
         });
     </script>
@@ -249,8 +255,7 @@
                                             </div>
                                             {% if user|has_group:"password" %}
                                                 <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email
-                                                        pass</label>
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Внутренний пароль</label>
                                                     <div class="col-lg-7 col-xl-6">
                                                         <div class="input-group">
                                                             <input type="text" class="form-control form-control-modern"
@@ -258,8 +263,24 @@
                                                                    id="id_work_email_password"
                                                                    value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
                                                             <button class="btn btn-outline-secondary" type="button"
-                                                                    id="generate_email_btn"
-                                                                    title="Сгенерировать Email и пароль">
+                                                                    id="generate_email_btn_int"
+                                                                    title="Сгенерировать Email и пароли">
+                                                                <i class="bx bx-cog"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row align-items-center pb-3">
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Внешний пароль</label>
+                                                    <div class="col-lg-7 col-xl-6">
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control form-control-modern"
+                                                                   name="work_application_password"
+                                                                   id="id_work_application_password"
+                                                                   value="{{ object.user_work_profile.work_application_password|empty_item }}"/>
+                                                            <button class="btn btn-outline-secondary" type="button"
+                                                                    id="generate_email_btn_ext"
+                                                                    title="Сгенерировать Email и пароли">
                                                                 <i class="bx bx-cog"></i>
                                                             </button>
                                                         </div>
