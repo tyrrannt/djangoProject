@@ -28,7 +28,6 @@ def create_task_ajax(request):
         priority = request.POST.get('priority', 'primary')  # Получаем приоритет из запроса
         shared_with = request.POST.getlist('shared_with[]')  # Получаем список пользователей
         freq = request.POST.get('freq')
-        print(request.POST)
         # Преобразуем строку в объект datetime
         start_date = parse_datetime(start_date_str)
         end_date = parse_datetime(end_date_str)
@@ -126,7 +125,6 @@ class TaskListView(LoginRequiredMixin, ListView):
                 'color': task.priority,
             })
         context['repeat_tasks'] = repeat_tasks
-        print(repeat_tasks)
         context['users'] = DataBaseUser.objects.filter(is_active=True).order_by('last_name').exclude(is_superuser=True)
         return context
 

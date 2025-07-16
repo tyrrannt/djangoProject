@@ -1,0 +1,138 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load hrdepartment_tags %}
+{% load widget_tweaks %}
+
+{% block custome_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+{% endblock %}
+
+{% block custome_script %}
+    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
+    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+{% endblock %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+            {% csrf_token %}
+            <div class="col-lg-12">
+                <h4 class="font-weight-bold text-dark">Отметка сотрудника {{ object.person.get_full_name }}</h4>
+                <label>Основные данные</label>
+                <div class="toggle-content">
+                    <div class="form-row">
+                        <div class="form-group col mb-3">
+                            <div class="row text">
+                                <div class="col-md-4 text-black-50">
+                                    <label for="id_person">Сотрудник</label>
+                                    <input type="text" class="form-control form-control-modern" disabled
+                                           value="{{ object.person.get_full_name }}" id="id_person"/>
+                                </div>
+                                <div class="col-md-4 text-black-50">
+                                    <label for="id_date_marks">Дата отметки</label>
+                                    <input type="text" class="form-control form-control-modern" disabled
+                                           value="{{ object.date_marks|date:'d.m.Y' }}" id="id_date_marks"/>
+                                </div>
+                                <div class="col-md-4 text-black-50">
+                                    <label for="id_place">Место</label>
+                                    <input type="text" class="form-control form-control-modern" disabled
+                                           value="{{ object.place }}" id="id_place"/>
+                                </div>
+                            </div>
+                            <div class="row text">
+                                <div class="col-md-4 text-black-50">
+                                    <label for="id_road">В дороге</label>
+                                    <input type="text" class="form-control form-control-modern" disabled
+                                           value="{% if object.road %}Да{% else %}Нет{% endif %}" id="id_road"/>
+                                </div>
+                                <div class="col-md-4 text-black-50">
+                                    <label for="id_checked">Подтверждено</label>
+                                    <input type="text" class="form-control form-control-modern" disabled
+                                           value="{% if object.checked %}Да{% else %}Нет{% endif %}" id="id_checked"/>
+                                </div>
+                                <div class="col-md-4 text-black-50">
+                                    <label for="id_created_at">Дата создания</label>
+                                    <input type="text" class="form-control form-control-modern" disabled
+                                           value="{{ object.created_at|date:'d.m.Y H:i' }}" id="id_created_at"/>
+                                </div>
+                            </div>
+                            <div class="row text">
+                                <div class="col-md-4 text-black-50">
+                                    <label for="id_updated_at">Дата обновления</label>
+                                    <input type="text" class="form-control form-control-modern" disabled
+                                           value="{{ object.updated_at|date:'d.m.Y H:i' }}" id="id_updated_at"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
+                    <section class="toggle">
+                        <label>История изменений</label>
+                        <div class="toggle-content">
+                            <div class="form-row">
+                                {% for date_add, key, value in change_history %}
+                                    <div class="ecommerce-timeline mb-3">
+                                        <div class="ecommerce-timeline-items-wrapper">
+                                            <div class="ecommerce-timeline-item">
+                                                <small>Изменено: {{ date_add }}.
+                                                    Автор: {{ key }}
+                                                </small>
+                                                <p>{% autoescape off %}
+                                                    {{ value }}
+                                                {% endautoescape %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="row action-buttons">
+                {% if is_executor or user.is_superuser %}
+                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                        <a href="{% url 'hrdepartment_app:users_events_update' object.pk %}"
+                           class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
+                    </div>
+                {% endif %}
+
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                    <a href="{% url 'hrdepartment_app:users_events_list' %}"
+                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                       align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть</a>
+                </div>
+
+                {% if user.is_superuser %}
+                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                        <a href="{% url 'hrdepartment_app:users_events_delete' object.pk %}"
+                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                    </div>
+                {% endif %}
+            </div>
+        </form>
+        <!-- end: page -->
+    </section>
+{% endblock %}

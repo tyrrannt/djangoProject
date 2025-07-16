@@ -74,6 +74,7 @@ from hrdepartment_app.forms import (
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
     CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm,
     ReportCardForm, OutfitCardForm, BriefingsAddForm, BriefingsUpdateForm, OperationalAddForm, OperationalUpdateForm,
+    DataBaseUserEventAddForm, DataBaseUserEventUpdateForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -5216,3 +5217,130 @@ def get_extension_data(request):
         except OfficialMemo.DoesNotExist:
             return JsonResponse({}, status=404)
     return JsonResponse({}, status=400)
+
+# Местоположение сотрудников
+
+class DataBaseUserEventList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Инструктажи - список
+    """
+
+    model = DataBaseUserEvent
+    permission_required = "hrdepartment_app.view_databaseuserevent"
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            databaseuserevent_list = DataBaseUserEvent.objects.all()
+            data = [databaseuserevent_item.get_data() for databaseuserevent_item in databaseuserevent_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструктажи"
+        return context
+
+
+class DataBaseUserEventAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """
+    Местоположение - создание
+    """
+
+    model = DataBaseUserEvent
+    form_class = DataBaseUserEventAddForm
+    permission_required = "hrdepartment_app.add_databaseuserevent"
+
+    def get_context_data(self, **kwargs):
+        content = super(DataBaseUserEventAdd, self).get_context_data(**kwargs)
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить мое местоположение"
+        return content
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+
+class DataBaseUserEventDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """
+    Местоположение - просмотр
+    """
+
+    model = DataBaseUserEvent
+    permission_required = "hrdepartment_app.view_databaseuserevent"
+
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context["title"] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        return context
+
+
+class DataBaseUserEventUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """
+    Инструктажи - редактирование
+    """
+
+    template_name = "hrdepartment_app/users_events_form_update.html"
+    model = DataBaseUserEvent
+    form_class = DataBaseUserEventUpdateForm
+    permission_required = "hrdepartment_app.change_databaseuserevent"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+    def get_form(self, form_class=None):
+        """
+        В данном случае, queryset содержит все объекты Provisions, кроме объекта, который соответствует текущему
+        экземпляру класса (self.object). Это может быть полезно, если вы хотите ограничить выбор определенных объектов
+        в поле формы.
+
+        :param form_class: Установлен в текущем экземпляре класса. Это позволяет получить экземпляр формы, который
+                            в дальнейшем будет использоваться в представлении.
+        :return: Возвращаем модифицированную форму.
+        """
+        # Получаем экземпляр формы, используя родительский метод `get_form`
+        form = super().get_form(form_class=self.form_class)
+
+        # Добавляем дополнительное поле 'parent_document' в форму
+        form.fields['parent_document'].queryset = DataBaseUserEvent.objects.all().exclude(pk=self.object.pk)
+
+        # Возвращаем модифицированную форму
+        return form
+
+class DataBaseUserEventDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = DataBaseUserEvent
+    template_name = "hrdepartment_app/users_events_confirm_delete.html"
+    success_url = reverse_lazy("hrdepartment_app:users_events_list")
+    permission_required = "hrdepartment_app.delete_databaseuserevent"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        return context
+

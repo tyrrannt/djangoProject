@@ -43,8 +43,12 @@
             Дата регистрации: <strong>{{ user.date_joined }}</strong>
         </p>
         <div class="clearfix">
-            <a class="text-uppercase text-muted float-end"
-               href="{% url 'customers_app:staff' user.pk %}">(Подробнее...)</a>
+            <a href="{% url 'customers_app:staff' user.pk %}" class="btn btn-outline-primary">
+                Подробнее...
+            </a>
+            <a href="{% url 'hrdepartment_app:users_events_add' %}" class="btn btn-outline-success">
+                Добавить мое местоположение
+            </a>
         </div>
         <hr class="dotted short">
     </div>

@@ -1285,13 +1285,13 @@ def get_sick_leave(year, trigger):
         record_type = "20"
 
     source_url = url
-    print(source_url)
     try:
         response = requests.get(
             source_url, auth=(config("HRM_LOGIN"), config("HRM_PASS"))
         )
         dt = json.loads(response.text)
         rec_number_count = 0
+        result = {}
         for item in dt["value"]:
             if item["Recorder_Type"] == trigger_type and item["Active"]:
                 interval = get_date_interval(
@@ -1307,7 +1307,6 @@ def get_sick_leave(year, trigger):
 
                 try:
                     user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"])
-                    print(user_obj)
                 except Exception as _ex:
                     logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
                 if user_obj != "":
@@ -1333,7 +1332,8 @@ def get_sick_leave(year, trigger):
                             doc_ref_key=item["ДокументОснование"],
                             defaults=kwargs_obj,
                         )
-
+                        result[user_obj]='success'
+        return result
     except Exception as _ex:
         logger.debug(f"654654654 {_ex}")
         return {"value": ""}

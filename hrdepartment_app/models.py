@@ -3271,3 +3271,18 @@ class DataBaseUserEvent(models.Model):
 
     def __str__(self):
         return f"{self.person} - {self.date_marks} - {self.place}"
+
+    def get_absolute_url(self):
+        return reverse("hrdepartment_app:users_events_list")
+
+    def get_data(self):
+        return {
+            "pk": self.pk,
+            "date_marks": f"{self.date_marks:%d.%m.%Y} г.",
+            "place": str(self.place),
+            "checked": "Да" if self.checked else "Нет",
+            "road": "Да" if self.road else "Нет",
+            "created_at": f"{self.created_at:%d.%m.%Y} г.",
+            "updated_at": f"{self.updated_at:%d.%m.%Y} г.",
+            "executor": format_name_initials(self.person),
+        }

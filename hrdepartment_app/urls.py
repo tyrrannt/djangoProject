@@ -21,7 +21,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
     ApprovalOficialMemoProcessDetail, management_dashboard, export_trips_csv, BriefingsList, BriefingsAdd, \
     BriefingsDetail, BriefingsUpdate, OperationalList, OperationalAdd, OperationalDetail, OperationalUpdate, \
-    GetUserEventsView, BriefingsDelete
+    GetUserEventsView, BriefingsDelete, DataBaseUserEventList, DataBaseUserEventAdd, DataBaseUserEventDetail, \
+    DataBaseUserEventUpdate, DataBaseUserEventDelete
 
 app_name = 'hrdepartment_app'
 
@@ -127,4 +128,10 @@ urlpatterns = [
     path("export-time-distribution/", export_time_distribution, name="export-time-distribution"),
     path('dashboard/', management_dashboard, name='management_dashboard'),
     path('dashboard/export/', export_trips_csv, name='export_trips'),
+
+    path('users_events/', DataBaseUserEventList.as_view(), name='users_events_list'),
+    path('users_events/add/', DataBaseUserEventAdd.as_view(), name='users_events_add'),
+    path('users_events/<int:pk>/', DataBaseUserEventDetail.as_view(), name='users_events'),
+    path('users_events/<int:pk>/update/', DataBaseUserEventUpdate.as_view(), name='users_events_update'),
+    path('users_events/<int:pk>/delete/', DataBaseUserEventDelete.as_view(), name='users_events_delete'),
 ]

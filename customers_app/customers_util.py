@@ -341,7 +341,7 @@ def get_identity_documents():
         )
 
     users_list = (
-        DataBaseUser.objects.all()
+        DataBaseUser.objects.all().exclude(is_active=False)
         .exclude(is_superuser=True, is_ppa=True)
         .values("ref_key", "person_ref_key")
     )

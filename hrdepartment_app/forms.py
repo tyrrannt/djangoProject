@@ -30,7 +30,7 @@ from hrdepartment_app.models import (
     OrderDescription,
     ReportCard,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, Briefings,
-    Operational,
+    Operational, DataBaseUserEvent,
 )
 
 
@@ -1714,3 +1714,102 @@ class OutfitCardForm(forms.ModelForm):
         if cleaned_data['outfit_card_date_end']:
             if cleaned_data['outfit_card_date'] > cleaned_data['outfit_card_date_end']:
                 raise ValidationError("Дата окончания должна быть больше чем дата начала")
+
+
+class DataBaseUserEventAddForm(forms.ModelForm):
+    place = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.filter(use_team_orders=True))
+    place.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = DataBaseUserEvent
+        fields = (
+            "person",
+            "date_marks",
+            "place",
+            "checked",
+            "road",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(DataBaseUserEventAddForm, self).__init__(*args, **kwargs)
+        self.fields["person"].queryset = DataBaseUser.objects.filter(pk=self.user)
+
+        self.fields["checked"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["road"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class DataBaseUserEventUpdateForm(forms.ModelForm):
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = DataBaseUserEvent
+        fields = (
+            "person",
+            "date_marks",
+            "place",
+            "checked",
+            "road",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(DataBaseUserEventUpdateForm, self).__init__(*args, **kwargs)
+        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["employee"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["document_form"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["document_form"].required = False
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["applying_for_job"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
