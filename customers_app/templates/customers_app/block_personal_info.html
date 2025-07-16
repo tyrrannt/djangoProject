@@ -9,12 +9,12 @@
                  alt="{{ databaseuser.username }}">
         {% endif %}
         <div class="thumb-info-title">
-            <span class="thumb-info-inner">{{ user.last_name }} {{ user.first_name }}</span>
-            <span class="thumb-info-type">{{ user.job }}</span>
+            <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}: {{ birthday_difference }}</span>
+            <span class="thumb-info-type">{{ object.user_work_profile.job }}</span>
         </div>
     </div>
 
-    <div class="widget-toggle-expand mb-3">
+    <div class="widget-toggle-expand mb-3 d-none d-md-block">
         <div class="widget-header">
             <h5 class="mb-2 font-weight-semibold text-dark">Заполнение профиля: {{ profile_info }}%</h5>
             <div class="widget-toggle">+</div>
@@ -36,16 +36,16 @@
             </ul>
         </div>
     </div>
-
-    <hr class="dotted short">
-
-    <h5 class="mb-2 mt-3">Моя статистика:</h5>
-    <p class="text-2">Последний вход: <strong>{{ user.last_login }}</strong> <br>
-        Дата регистрации: <strong>{{ user.date_joined }}</strong>
-    </p>
-    <div class="clearfix">
-        <a class="text-uppercase text-muted float-end" href="{% url 'customers_app:staff' user.pk %}">(Подробнее...)</a>
+    <div class="d-none d-md-block">
+        <hr class="dotted short">
+        <h5 class="mb-2 mt-3">Моя статистика:</h5>
+        <p class="text-2">Последний вход: <strong>{{ user.last_login }}</strong> <br>
+            Дата регистрации: <strong>{{ user.date_joined }}</strong>
+        </p>
+        <div class="clearfix">
+            <a class="text-uppercase text-muted float-end"
+               href="{% url 'customers_app:staff' user.pk %}">(Подробнее...)</a>
+        </div>
+        <hr class="dotted short">
     </div>
-
-    <hr class="dotted short">
 </div>

@@ -306,9 +306,13 @@ def delete_old_file_on_change(sender, instance, **kwargs):
         return
 
     new_file = instance.doc_file
-    if old_file and old_file != new_file:
-        if os.path.isfile(old_file.path):
-            os.remove(old_file.path)
+    if old_file and old_file.name != getattr(new_file, 'name', None):
+        try:
+            if os.path.isfile(old_file.path):
+                os.remove(old_file.path)
+        except Exception as e:
+            # Логировать или молча проглотить — по ситуации
+            print(f"Ошибка удаления старого файла: {e}")
 
 
 class Posts(models.Model):

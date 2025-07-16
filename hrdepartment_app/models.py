@@ -52,55 +52,234 @@ from telegram_app.models import TelegramNotification, ChatID
 #            serialize=config('LOG_SERIALIZE'))
 
 
+def filename_creator(instance, filename, prefix: str, datefield, filetype: str):
+    """
+    Генерирует уникальное имя файла на основе переданных параметров.
+
+    Используется для формирования имен файлов при загрузке, основываясь на префиксе,
+    дате, типе файла и уникальном идентификаторе. Уникальный идентификатор вычисляется
+    на основе максимального значения поля `pk` в модели.
+
+    Args:
+        instance (Model): Экземпляр модели, к которой относится файл.
+        filename (str): Исходное имя файла, используется для извлечения расширения.
+        prefix (str): Префикс, добавляемый к имени файла.
+        datefield (Union[datetime.date, Any]): Дата или значение, используемое для
+                                               формирования части имени файла.
+        filetype (str): Тип файла, добавляемый к имени.
+
+    Returns:
+        str: Сформированное имя файла в формате:
+             '{prefix}-{date_str}-{filetype}-{uid}.{ext}'
+    """
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+
+    if isinstance(datefield, datetime.date):
+        date_str = datefield.strftime("%Y%m%d")
+    else:
+        date_str = str(datefield)
+
+    return f"{prefix}-{date_str}-{filetype}-{uid}.{ext}"
+
+
+
 # Create your models here.
 def contract_directory_path(instance, filename):
     return f"hr/medical/{filename}"
 
+# def mdc_directory_path_pmo(instance, filename):
+#     prefix = "MED"
+#     datefield = instance.date_entry
+#     max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+#     uid = f'{max_pk:07}'
+#     user_uid = f"{instance.executor.pk:07}"
+#
+#     custom_name = (
+#         f"{prefix}-{uid}-{str(instance.working_status)}-{str(datefield)}-{user_uid}.docx"
+#     )
+#     return os.path.join("hr", "medical", str(user_uid), custom_name)
+#
+# def mdc_directory_path_po(instance, filename):
+#     prefix = "MED"
+#     datefield = instance.date_entry
+#     max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+#     uid = f'{max_pk:07}'
+#     user_uid = f"{instance.executor.pk:07}"
+#
+#     custom_name = (
+#         f"{prefix}-{uid}-{str(instance.working_status)}-{str(datefield)}-{user_uid}PO.docx"
+#     )
+#     return os.path.join("hr", "medical", str(user_uid), custom_name)
+
+# @receiver(post_save, sender=Medical)
+# def rename_file_name(sender, instance, **kwargs):
+#     try:
+#         change = 0
+#         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+#         uid = f"{instance.pk:07}"
+#         user_uid = f"{instance.person.pk:07}"
+#         filename_pmo = (
+#             f"MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}.docx"
+#         )
+#         filename_po = (
+#             f"MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}PO.docx"
+#         )
+#         Med(
+#             instance,
+#             f"media/hr/medical/{user_uid}",
+#             filename_pmo,
+#             filename_po,
+#             user_uid,
+#         )
+#         if f"hr/medical/{user_uid}/{filename_pmo}" != instance.medical_direction:
+#             change = 1
+#             instance.medical_direction = f"hr/medical/{user_uid}/{filename_pmo}"
+#         if f"hr/medical/{user_uid}/{filename_po}" != instance.medical_direction2:
+#             change = 1
+#             instance.medical_direction2 = f"hr/medical/{user_uid}/{filename_po}"
+#         if change == 1:
+#             instance.save()
+#     except Exception as _ex:
+#         logger.error(f"Ошибка при переименовании файла {_ex}")
+
+
 
 def jds_directory_path(instance, filename):
-    return f"docs/JDS/{instance.document_division.code}/{filename}"
+    prefix = "JDS"
+    datefield = instance.document_date
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
 
+    custom_name = (
+        f"{prefix}-{instance.document_division.code}-"
+        f"{instance.document_job.code}-{uid}-{str(datefield)}.{ext}"
+    )
+
+    return os.path.join("docs", "JDS", str(instance.document_division.code), custom_name)
 
 def ins_directory_path(instance, filename):
-    return f"docs/INS/{instance.date_entry.year}/{filename}"
+    prefix = "INS"
+    datefield = instance.date_entry
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+    user_uid = f"{instance.executor.pk:07}"
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+
+    custom_name = (
+        f"{prefix}-{uid}-{str(datefield)}-DRAFT-{user_uid}.{ext}"
+    )
+    return os.path.join("docs", "INS", str(year), custom_name)
+
+def ins_directory_path_scan(instance, filename):
+    prefix = "INS"
+    datefield = instance.date_entry
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+    user_uid = f"{instance.executor.pk:07}"
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+
+    custom_name = (
+        f"{prefix}-{uid}-{str(datefield)}-SCAN-{user_uid}.{ext}"
+    )
+    return os.path.join("docs", "INS", str(year), custom_name)
+
 
 
 def prv_directory_path(instance, filename):
-    return f"docs/PRV/{instance.date_entry.year}/{filename}"
+    prefix = "PRV"
+    datefield = instance.date_entry
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+    user_uid = f"{instance.executor.pk:07}"
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
 
+    custom_name = (
+        f"{prefix}-{uid}-{str(datefield)}-DRAFT-{user_uid}.{ext}"
+    )
+    return os.path.join("docs", "PRV", str(year), custom_name)
+
+
+def prv_directory_path_scan(instance, filename):
+    prefix = "PRV"
+    datefield = instance.date_entry
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+    user_uid = f"{instance.executor.pk:07}"
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+
+    custom_name = (
+        f"{prefix}-{uid}-{str(datefield)}-SCAN-{user_uid}.{ext}"
+    )
+    return os.path.join("docs", "PRV", str(year), custom_name)
+
+def gdc_directory_path(instance, filename):
+    prefix = "GDC"
+    datefield = instance.date_entry
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+    user_uid = f"{instance.executor.pk:07}"
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+
+    custom_name = (
+        f"{prefix}-{uid}-{str(datefield)}-DRAFT-{user_uid}.{ext}"
+    )
+    return os.path.join("docs", "GDC", str(year), custom_name)
+
+
+def gdc_directory_path_scan(instance, filename):
+    prefix = "GDC"
+    datefield = instance.date_entry
+    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
+    uid = f'{max_pk:07}'
+    user_uid = f"{instance.executor.pk:07}"
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+
+    custom_name = (
+        f"{prefix}-{uid}-{str(datefield)}-SCAN-{user_uid}.{ext}"
+    )
+    return os.path.join("docs", "GDC", str(year), custom_name)
 
 def brf_directory_path_doc(instance, filename):
-    try:
-        max_pk = Briefings.objects.aggregate(Max('pk'))['pk__max']
-        max_pk += 1
-    except TypeError:
-        max_pk = 1
-    uid = f'{max_pk:07}'
-    ext = filename.split('.')[-1]
-    filename = f"BRF-{instance.date_entry}-DOCS-{uid}.{ext}"
-    return f"docs/BRF/{instance.date_entry.year}/{filename}"
+    prefix = "BRF"
+    filetype = "DOCS"  # или подставь по логике, можно и вытянуть из instance, если надо
+    datefield = instance.date_entry
+
+    custom_name = filename_creator(instance, filename, prefix, datefield, filetype)
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+
+    return os.path.join("docs", "BRF", str(year), custom_name)
+
 
 def brf_directory_path_scan(instance, filename):
-    try:
-        max_pk = Briefings.objects.aggregate(Max('pk'))['pk__max']
-        max_pk += 1
-    except TypeError:
-        max_pk = 1
-    uid = f'{max_pk:07}'
-    ext = filename.split('.')[-1]
-    filename = f"BRF-{instance.date_entry}-SCAN-{uid}.{ext}"
-    return f"docs/BRF/{instance.date_entry.year}/{filename}"
+    prefix = "BRF"
+    filetype = "SCAN"  # или подставь по логике, можно и вытянуть из instance, если надо
+    datefield = instance.date_entry
+
+    custom_name = filename_creator(instance, filename, prefix, datefield, filetype)
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+
+    return os.path.join("docs", "BRF", str(year), custom_name)
+
 
 def opr_directory_path_scan(instance, filename):
-    try:
-        max_pk = Briefings.objects.aggregate(Max('pk'))['pk__max']
-        max_pk += 1
-    except TypeError:
-        max_pk = 1
-    uid = f'{max_pk:07}'
-    ext = filename.split('.')[-1]
-    filename = f"OPR-{instance.date_entry}-SCAN-{uid}.{ext}"
-    return f"docs/OPR/{instance.date_entry.year}/{filename}"
+    prefix = "OPR"
+    filetype = "SCAN"  # или подставь по логике, можно и вытянуть из instance, если надо
+    datefield = instance.date_entry
+
+    custom_name = filename_creator(instance, filename, prefix, datefield, filetype)
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+
+    return os.path.join("docs", "BRF", str(year), custom_name)
 
 def ord_directory_path(instance, filename):
     year = instance.document_date
@@ -113,7 +292,14 @@ def team_directory_path(instance, filename):
 
 
 def outfit_directory_path(instance, filename):
-    return f"docs/CARD/{instance.outfit_card_date.year}/{filename}"
+    prefix = "CARD"
+    filetype = "SCAN"  # или подставь по логике, можно и вытянуть из instance, если надо
+    datefield = instance.outfit_card_date
+
+    custom_name = filename_creator(instance, filename, prefix, datefield, filetype)
+    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
+
+    return os.path.join("docs", "CARD", str(year), custom_name)
 
 
 class Documents(models.Model):
@@ -330,10 +516,6 @@ class Medical(models.Model):
         verbose_name_plural = "Медицинские направления"
         ordering = ["-date_entry"]
 
-    # class TypeOf(models.TextChoices):
-    #     APPLY = "1", "Поступающий на работу"
-    #     WORK = "2", "Работающий"
-
     type_of = [("1", "Поступающий на работу"), ("2", "Работающий")]
 
     inspection_view = [
@@ -386,12 +568,8 @@ class Medical(models.Model):
         blank=True,
         default="",
     )
-    medical_direction = models.FileField(
-        verbose_name="Файл ПМО", upload_to=contract_directory_path, blank=True
-    )
-    medical_direction2 = models.FileField(
-        verbose_name="Файл ПО", upload_to=contract_directory_path, blank=True
-    )
+    medical_direction = models.FileField(verbose_name="Файл ПМО", blank=True) #upload_to=contract_directory_path,
+    medical_direction2 = models.FileField(verbose_name="Файл ПО", blank=True) #upload_to=contract_directory_path,
     harmful = models.ManyToManyField(
         HarmfulWorkingConditions, verbose_name="Вредные условия труда"
     )
@@ -401,7 +579,7 @@ class Medical(models.Model):
         return {
             "pk": self.pk,
             "number": self.number,
-            "date_entry": f"{self.date_entry:%d.%m.%Y} г.",  # .strftime(""),
+            "date_entry": f"{self.date_entry:%d.%m.%Y} г.",
             "person": self.person.get_title(),
             "organisation": self.organisation.get_title(),
             "working_status": self.get_working_status_display(),
@@ -412,37 +590,56 @@ class Medical(models.Model):
     def __str__(self):
         return f"{self.number} {self.person}"
 
+    def generate_med_files(self):
+        uid = f"{self.pk:07}"
+        user_uid = f"{self.person.pk:07}"
+        filename_pmo = f"MED-{uid}-{self.working_status}-{self.date_entry}-{uid}.docx"
+        filename_po = f"MED-{uid}-{self.working_status}-{self.date_entry}-{uid}PO.docx"
 
-@receiver(post_save, sender=Medical)
-def rename_file_name(sender, instance, **kwargs):
-    try:
-        change = 0
-        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-        uid = f"{instance.pk:07}"
-        user_uid = f"{instance.person.pk:07}"
-        filename_pmo = (
-            f"MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}.docx"
-        )
-        filename_po = (
-            f"MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}PO.docx"
-        )
-        Med(
-            instance,
-            f"media/hr/medical/{user_uid}",
-            filename_pmo,
-            filename_po,
-            user_uid,
-        )
-        if f"hr/medical/{user_uid}/{filename_pmo}" != instance.medical_direction:
-            change = 1
-            instance.medical_direction = f"hr/medical/{user_uid}/{filename_pmo}"
-        if f"hr/medical/{user_uid}/{filename_po}" != instance.medical_direction2:
-            change = 1
-            instance.medical_direction2 = f"hr/medical/{user_uid}/{filename_po}"
-        if change == 1:
-            instance.save()
-    except Exception as _ex:
-        logger.error(f"Ошибка при переименовании файла {_ex}")
+        # Генерация файлов
+        Med(self, f"media/hr/medical/{user_uid}", filename_pmo, filename_po, user_uid)
+
+        # Обновляем поля путей
+        self.medical_direction = f"hr/medical/{user_uid}/{filename_pmo}"
+        self.medical_direction2 = f"hr/medical/{user_uid}/{filename_po}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)  # сначала сохраняем, чтобы был pk
+        self.generate_med_files()
+        super().save(update_fields=["medical_direction", "medical_direction2"])  # обновляем только пути
+#
+#
+# @receiver(post_save, sender=Medical)
+# def rename_file_name(sender, instance, **kwargs):
+#     try:
+#         change = 0
+#         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
+#         uid = f"{instance.pk:07}"
+#         user_uid = f"{instance.person.pk:07}"
+#         filename_pmo = (
+#             f"MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}.docx"
+#         )
+#         filename_po = (
+#             f"MED-{uid}-{instance.working_status}-{instance.date_entry}-{uid}PO.docx"
+#         )
+#         Med(
+#             instance,
+#             f"media/hr/medical/{user_uid}",
+#             filename_pmo,
+#             filename_po,
+#             user_uid,
+#         )
+#         if f"hr/medical/{user_uid}/{filename_pmo}" != instance.medical_direction:
+#             change = 1
+#             instance.medical_direction = f"hr/medical/{user_uid}/{filename_pmo}"
+#         if f"hr/medical/{user_uid}/{filename_po}" != instance.medical_direction2:
+#             change = 1
+#             instance.medical_direction2 = f"hr/medical/{user_uid}/{filename_po}"
+#         if change == 1:
+#             instance.save()
+#     except Exception as _ex:
+#         logger.error(f"Ошибка при переименовании файла {_ex}")
 
 
 class PlaceProductionActivity(models.Model):
@@ -1989,33 +2186,29 @@ class DocumentsJobDescription(Documents):
     def __str__(self):
         return f'ДИ {self.document_name} №{self.document_number} от {self.document_date.strftime("%d.%m.%Y")}'
 
+@receiver(pre_save, sender=DocumentsJobDescription)
+def delete_old_file_on_change_jds(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # новый объект
 
-@receiver(post_save, sender=DocumentsJobDescription)
-def rename_jds_file_name(sender, instance: DocumentsJobDescription, **kwargs):
     try:
-        # Получаем имя сохраненного файла
-        file_name = pathlib.Path(instance.doc_file.name).name
-        # Получаем путь к файлу
-        path_name = pathlib.Path(instance.doc_file.name).parent
-        # Получаем расширение файла
-        ext = file_name.split(".")[-1]
-        # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-        uid = f"{instance.pk:07}"
-        filename = (
-            f"JDS-{instance.document_division.code}-"
-            f"{instance.document_job.code}-{uid}-{instance.document_date}.{ext}"
-        )
-        if file_name:
-            pathlib.Path.rename(
-                pathlib.Path.joinpath(BASE_DIR, "media", path_name, file_name),
-                pathlib.Path.joinpath(BASE_DIR, "media", path_name, filename),
-            )
+        old_instance = DocumentsJobDescription.objects.get(pk=instance.pk)
+    except DocumentsJobDescription.DoesNotExist:
+        return
 
-        instance.doc_file = f"docs/JDS/{instance.document_division.code}/{filename}"
-        if file_name != filename:
-            instance.save()
-    except Exception as _ex:
-        print(_ex)
+    # Список полей, которые нужно сравнивать и очищать
+    file_fields = ['doc_file', 'scan_file']
+
+    for field in file_fields:
+        old_file = getattr(old_instance, field)
+        new_file = getattr(instance, field)
+
+        if old_file and old_file.name != getattr(new_file, 'name', None):
+            try:
+                if os.path.isfile(old_file.path):
+                    os.remove(old_file.path)
+            except Exception as e:
+                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 
 class TimeSheet(models.Model):
@@ -2678,7 +2871,7 @@ class Instructions(Documents):
         verbose_name="Файл документа", upload_to=ins_directory_path, blank=True
     )
     scan_file = models.FileField(
-        verbose_name="Скан документа", upload_to=ins_directory_path, blank=True
+        verbose_name="Скан документа", upload_to=ins_directory_path_scan, blank=True
     )
     storage_location_division = models.ForeignKey(
         Division,
@@ -2737,61 +2930,29 @@ class Instructions(Documents):
         """
         return self.document_name
 
+@receiver(pre_save, sender=Instructions)
+def delete_old_file_on_change_ins(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # новый объект
 
-@receiver(post_save, sender=Instructions)
-def rename_file_name_instructions(sender, instance, **kwargs):
     try:
-        change = 0
-        uid = f"{instance.pk:07}"
-        user_uid = f"{instance.executor.pk:07}"
-        if instance.doc_file:
-            # Получаем имя сохраненного файла
-            draft_file_name = pathlib.Path(instance.doc_file.name).name
-            # Получаем путь к файлу
-            draft_path_name = pathlib.Path(instance.doc_file.name).parent
-            # Получаем расширение файла
-            draft_ext = draft_file_name.split(".")[-1]
-            filename_draft = (
-                f"INS-{uid}-{instance.date_entry}-DRAFT-{user_uid}.{draft_ext}"
-            )
-            if draft_file_name != filename_draft:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", draft_path_name, draft_file_name
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", draft_path_name, filename_draft
-                    ),
-                )
-                instance.doc_file = f"{draft_path_name}/{filename_draft}"
-                change = 1
+        old_instance = Instructions.objects.get(pk=instance.pk)
+    except Instructions.DoesNotExist:
+        return
 
-        if instance.scan_file:
-            # Получаем имя сохраненного файла
-            scan_file_name = pathlib.Path(instance.scan_file.name).name
-            # Получаем путь к файлу
-            scan_path_name = pathlib.Path(instance.scan_file.name).parent
-            # Получаем расширение файла
-            scan_ext = scan_file_name.split(".")[-1]
-            filename_scan = (
-                f"INS-{uid}-{instance.date_entry}-SCAN-{user_uid}.{scan_ext}"
-            )
-            if scan_file_name != filename_scan:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", scan_path_name, scan_file_name
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", scan_path_name, filename_scan
-                    ),
-                )
-                instance.scan_file = f"{scan_path_name}/{filename_scan}"
-                change = 1
+    # Список полей, которые нужно сравнивать и очищать
+    file_fields = ['doc_file', 'scan_file']
 
-        if change == 1:
-            instance.save()
-    except Exception as _ex:
-        logger.error(f"Ошибка при переименовании файла {_ex}")
+    for field in file_fields:
+        old_file = getattr(old_instance, field)
+        new_file = getattr(instance, field)
+
+        if old_file and old_file.name != getattr(new_file, 'name', None):
+            try:
+                if os.path.isfile(old_file.path):
+                    os.remove(old_file.path)
+            except Exception as e:
+                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 
 class Provisions(Documents):
@@ -2807,7 +2968,7 @@ class Provisions(Documents):
         ]
     )
     scan_file = models.FileField(
-        verbose_name="Скан документа", upload_to=prv_directory_path, blank=True,
+        verbose_name="Скан документа", upload_to=prv_directory_path_scan, blank=True,
         validators=[
             FileExtensionValidator(allowed_extensions=['pdf']),
         ]
@@ -2859,7 +3020,29 @@ class Provisions(Documents):
             return ""
         return f"{self.scan_file.url}?v={int(time.time())}"
 
+@receiver(pre_save, sender=Provisions)
+def delete_old_file_on_change_prv(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # новый объект
 
+    try:
+        old_instance = Provisions.objects.get(pk=instance.pk)
+    except Provisions.DoesNotExist:
+        return
+
+    # Список полей, которые нужно сравнивать и очищать
+    file_fields = ['doc_file', 'scan_file']
+
+    for field in file_fields:
+        old_file = getattr(old_instance, field)
+        new_file = getattr(instance, field)
+
+        if old_file and old_file.name != getattr(new_file, 'name', None):
+            try:
+                if os.path.isfile(old_file.path):
+                    os.remove(old_file.path)
+            except Exception as e:
+                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 class Briefings(Documents):
     class Meta:
@@ -2975,75 +3158,19 @@ class Operational(Documents):
         return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"
 
 
-@receiver(post_save, sender=Provisions)
-def rename_file_name_provisions(sender, instance, **kwargs):
-    try:
-        change = 0
-        uid = f"{instance.pk:07}"
-        user_uid = f"{instance.executor.pk:07}"
-        if instance.doc_file:
-            # Получаем имя сохраненного файла
-            draft_file_name = pathlib.Path(instance.doc_file.name).name
-            # Получаем путь к файлу
-            draft_path_name = pathlib.Path(instance.doc_file.name).parent
-            # Получаем расширение файла
-            draft_ext = draft_file_name.split(".")[-1]
-            filename_draft = (
-                f"PRV-{uid}-{instance.date_entry}-DRAFT-{user_uid}.{draft_ext}"
-            )
-            if draft_file_name != filename_draft:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", draft_path_name, draft_file_name
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", draft_path_name, filename_draft
-                    ),
-                )
-                instance.doc_file = f"{draft_path_name}/{filename_draft}"
-                change = 1
-
-        if instance.scan_file:
-            # Получаем имя сохраненного файла
-            scan_file_name = pathlib.Path(instance.scan_file.name).name
-            # Получаем путь к файлу
-            scan_path_name = pathlib.Path(instance.scan_file.name).parent
-            # Получаем расширение файла
-            scan_ext = scan_file_name.split(".")[-1]
-            filename_scan = (
-                f"PRV-{uid}-{instance.date_entry}-SCAN-{user_uid}.{scan_ext}"
-            )
-            if scan_file_name != filename_scan:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", scan_path_name, scan_file_name
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", scan_path_name, filename_scan
-                    ),
-                )
-                instance.scan_file = f"{scan_path_name}/{filename_scan}"
-                change = 1
-
-        if change == 1:
-            instance.save()
-    except Exception as _ex:
-        logger.error(f"Ошибка при переименовании файла {_ex}")
-
-
 class GuidanceDocuments(Documents):
     class Meta:
         verbose_name = "Руководящий документ"
         verbose_name_plural = "Руководящие документы"
 
     doc_file = models.FileField(
-        verbose_name="Файл документа", upload_to=prv_directory_path, blank=True,
+        verbose_name="Файл документа", upload_to=gdc_directory_path, blank=True,
         validators=[
             FileExtensionValidator(allowed_extensions=['doc', 'docx']),
         ]
     )
     scan_file = models.FileField(
-        verbose_name="Скан документа", upload_to=prv_directory_path, blank=True,
+        verbose_name="Скан документа", upload_to=gdc_directory_path_scan, blank=True,
         validators=[
             FileExtensionValidator(allowed_extensions=['pdf']),
         ]
@@ -3082,62 +3209,29 @@ class GuidanceDocuments(Documents):
     def __str__(self):
         return self.document_name
 
+@receiver(pre_save, sender=GuidanceDocuments)
+def delete_old_file_on_change_gdc(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # новый объект
 
-@receiver(post_save, sender=Provisions)
-def rename_file_name_guidance_documents(sender, instance, **kwargs):
     try:
-        change = 0
-        uid = f"{instance.pk:07}"
-        user_uid = f"{instance.executor.pk:07}"
-        if instance.doc_file:
-            # Получаем имя сохраненного файла
-            draft_file_name = pathlib.Path(instance.doc_file.name).name
-            # Получаем путь к файлу
-            draft_path_name = pathlib.Path(instance.doc_file.name).parent
-            # Получаем расширение файла
-            draft_ext = draft_file_name.split(".")[-1]
-            filename_draft = (
-                f"GDC-{uid}-{instance.date_entry}-DRAFT-{user_uid}.{draft_ext}"
-            )
-            if draft_file_name != filename_draft:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", draft_path_name, draft_file_name
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", draft_path_name, filename_draft
-                    ),
-                )
-                instance.doc_file = f"{draft_path_name}/{filename_draft}"
-                change = 1
+        old_instance = GuidanceDocuments.objects.get(pk=instance.pk)
+    except GuidanceDocuments.DoesNotExist:
+        return
 
-        if instance.scan_file:
-            # Получаем имя сохраненного файла
-            scan_file_name = pathlib.Path(instance.scan_file.name).name
-            # Получаем путь к файлу
-            scan_path_name = pathlib.Path(instance.scan_file.name).parent
-            # Получаем расширение файла
-            scan_ext = scan_file_name.split(".")[-1]
-            filename_scan = (
-                f"GDC-{uid}-{instance.date_entry}-SCAN-{user_uid}.{scan_ext}"
-            )
-            if scan_file_name != filename_scan:
-                pathlib.Path.rename(
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", scan_path_name, scan_file_name
-                    ),
-                    pathlib.Path.joinpath(
-                        BASE_DIR, "media", scan_path_name, filename_scan
-                    ),
-                )
-                instance.scan_file = f"{scan_path_name}/{filename_scan}"
-                change = 1
+    # Список полей, которые нужно сравнивать и очищать
+    file_fields = ['doc_file', 'scan_file']
 
-        if change == 1:
-            instance.save()
-    except Exception as _ex:
-        logger.error(f"Ошибка при переименовании файла {_ex}")
+    for field in file_fields:
+        old_file = getattr(old_instance, field)
+        new_file = getattr(instance, field)
 
+        if old_file and old_file.name != getattr(new_file, 'name', None):
+            try:
+                if os.path.isfile(old_file.path):
+                    os.remove(old_file.path)
+            except Exception as e:
+                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 class DocumentAcknowledgment(models.Model):
     class Meta:

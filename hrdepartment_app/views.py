@@ -1082,7 +1082,6 @@ class ApprovalOficialMemoProcessUpdate(
             & Q(user_work_profile__job__right_to_approval=True)
             # & Q(is_superuser=False)
         )
-        print(list_distributor)
         content["form"].fields["person_distributor"].queryset = list_distributor
         content["list_distributor"] = list_distributor
 
@@ -3414,6 +3413,37 @@ class BriefingsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         # Возвращаем модифицированную форму
         return form
 
+class BriefingsDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = Briefings
+    template_name = "hrdepartment_app/briefings_confirm_delete.html"
+    success_url = reverse_lazy("hrdepartment_app:briefings_list")
+    permission_required = "hrdepartment_app.delete_briefings"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        return context
+
+    # def get(self, request, *args, **kwargs):
+    #     self.object = self.get_object()
+    #     self.object.delete()
+    #     return redirect(reverse('hrdepartment_app:briefings_list'))
+
+
+# class CreatingTeamDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):  # DeleteView
+#     model = CreatingTeam  # Приказы о старших бригад - удаление
+#     template_name = "hrdepartment_app/creatingteam_confirm_delete.html"
+#     success_url = reverse_lazy("hrdepartment_app:creatingteam_list")
+#     permission_required = "hrdepartment_app.delete_creatingteam"
+#
+#     def get_context_data(self, *, object_list=None, **kwargs):
+#         context = super().get_context_data(object_list=None, **kwargs)
+#         context[
+#             "title"
+#         ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+#         return context
 
 # Нормативные акты
 class OperationalList(PermissionRequiredMixin, LoginRequiredMixin, ListView):

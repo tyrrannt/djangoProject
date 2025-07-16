@@ -1034,6 +1034,7 @@ class ProvisionsUpdateForm(forms.ModelForm):
     class Meta:
         model = Provisions
         fields = (
+            "executor",
             "document_date",
             "document_number",
             "doc_file",
@@ -1059,7 +1060,7 @@ class ProvisionsUpdateForm(forms.ModelForm):
         """
         self.user = kwargs.pop("user")
         super(ProvisionsUpdateForm, self).__init__(*args, **kwargs)
-        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
         self.fields["employee"].widget.attrs.update(
             {
                 "class": "form-control form-control-modern",

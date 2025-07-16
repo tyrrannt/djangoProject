@@ -21,7 +21,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     employee_absence_details, weekday_analysis, time_distribution, export_time_distribution, \
     ApprovalOficialMemoProcessDetail, management_dashboard, export_trips_csv, BriefingsList, BriefingsAdd, \
     BriefingsDetail, BriefingsUpdate, OperationalList, OperationalAdd, OperationalDetail, OperationalUpdate, \
-    GetUserEventsView
+    GetUserEventsView, BriefingsDelete
 
 app_name = 'hrdepartment_app'
 
@@ -84,6 +84,7 @@ urlpatterns = [
     path('briefings/add/', BriefingsAdd.as_view(), name='briefings_add'),
     path('briefings/<int:pk>/', BriefingsDetail.as_view(), name='briefings'),
     path('briefings/<int:pk>/update/', BriefingsUpdate.as_view(), name='briefings_update'),
+    path('briefings/<int:pk>/delete/', BriefingsDelete.as_view(), name='briefings_delete'),
 
     path('operational/', OperationalList.as_view(), name='operational_list'),
     path('operational/add/', OperationalAdd.as_view(), name='operational_add'),

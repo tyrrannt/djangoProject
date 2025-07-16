@@ -264,9 +264,10 @@ def int_validate(check_string):
         return 0
 
 
-def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
+def get_jsons_data(object_type: str, object_name: str, base_index: int, year=0) -> dict:
     """
     Получение JSON объекта из таблицы 1С
+    :param year:
     :param object_type: Тип объекта: Справочник — Catalog; Документ — Document; Журнал документов — DocumentJournal;
     Константа — Constant; План обмена — ExchangePlan; План счетов — ChartOfAccounts;
     План видов расчета — ChartOfCalculationTypes; План видов характеристик — ChartOfCharacteristicTypes;
@@ -278,14 +279,21 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int) -> dict:
     :return: Возвращает JSON объект, в виде словаря.
     """
     "http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Catalog_Сотрудники?$format=application/json;odata=nometadata"
+    "http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Document_НаправлениеНаМедицинскийОсмотр?$filter=year(ДатаОсмотра) gt 2024&$format=json"
     base = [
         "72095052-970f-11e3-84fb-00e05301b4e4",
         "59e20093-970f-11e3-84fb-00e05301b4e4",
     ]
-    url = (
-        f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/"
-        f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
-    )
+    if year==0:
+        url = (
+            f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/"
+            f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
+        )
+    else:
+        url = (
+            f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/"
+            f"{object_type}_{object_name}?$filter=year(Date) gt 2024&$format=application/json;odata=nometadata"
+        )
     source_url = url
     try:
         if base_index == 0:

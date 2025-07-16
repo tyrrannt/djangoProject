@@ -36,7 +36,8 @@ def get_medical_documents():
         ("2", "Периодический"),
         ("3", "Внеплановый"),
     ]
-    todos = get_jsons_data("Document", "НаправлениеНаМедицинскийОсмотр", 0)
+    year = datetime.datetime.now().year
+    todos = get_jsons_data("Document", "НаправлениеНаМедицинскийОсмотр", 0, year=year)
     db_users = DataBaseUser.objects.all().exclude(is_active=False)
     harmfuls = HarmfulWorkingConditions.objects.all()
     # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
@@ -87,7 +88,7 @@ def get_medical_documents():
                     db_instance.harmful.set(qs)
                 except Exception as _ex:
                     logger.error(
-                        f"Не найдена медицинская организация. Физическое лицо: {db_user}"
+                        f"Не найдена медицинская организация. Физическое лицо: {db_user}: {divisions_kwargs}"
                     )
                     return f"{_ex}: Необходимо обновить список медицинских организаций."
     return ""

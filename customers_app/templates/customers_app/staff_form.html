@@ -17,6 +17,65 @@
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+
+    <script>
+        // Простейшая транслитерация
+        function transliterate(text) {
+            const map = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+                'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i',
+                'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+                'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+                'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch',
+                'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
+                'э': 'e', 'ю': 'yu', 'я': 'ya',
+            };
+            return text.toLowerCase().split('').map(char =>
+                map[char] !== undefined ? map[char] : char
+            ).join('');
+        }
+
+        // Генерация безопасного пароля
+        function generatePassword(length = 12) {
+            const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const lower = 'abcdefghijklmnopqrstuvwxyz';
+            const digits = '0123456789';
+            const all = upper + lower + digits;
+            let result = [
+                upper[Math.floor(Math.random() * upper.length)],
+                lower[Math.floor(Math.random() * lower.length)],
+                digits[Math.floor(Math.random() * digits.length)],
+            ];
+            for (let i = result.length; i < length; i++) {
+                result.push(all[Math.floor(Math.random() * all.length)]);
+            }
+            return result.sort(() => Math.random() - 0.5).join('');
+        }
+
+        document.getElementById('generate_email_btn').addEventListener('click', function () {
+            const firstName = document.getElementById('id_first_name').value.trim();
+            const lastName = document.getElementById('id_last_name').value.trim();
+
+            if (!firstName || !lastName) {
+                alert("Сначала заполните Имя и Фамилию");
+                return;
+            }
+
+            const firstInitial = transliterate(firstName)[0];
+            const lastNameTrans = transliterate(lastName);
+            const email = `${firstInitial}.${lastNameTrans}@barkol.ru`;
+
+            const password = generatePassword(14);
+
+            document.getElementById('id_email').value = email;
+            const pwdField = document.getElementById('id_work_email_password');
+            if (pwdField) {
+                pwdField.value = password;
+            }
+        });
+    </script>
+
+
 {% endblock %}
 
 {% block title %}
@@ -193,9 +252,17 @@
                                                     <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email
                                                         pass</label>
                                                     <div class="col-lg-7 col-xl-6">
-                                                        <input type="text" class="form-control form-control-modern"
-                                                               name="work_email_password" id="id_work_email_password"
-                                                               value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control form-control-modern"
+                                                                   name="work_email_password"
+                                                                   id="id_work_email_password"
+                                                                   value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                            <button class="btn btn-outline-secondary" type="button"
+                                                                    id="generate_email_btn"
+                                                                    title="Сгенерировать Email и пароль">
+                                                                <i class="bx bx-cog"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="form-group row align-items-center pb-3">
@@ -229,7 +296,8 @@
                                                     </div>
                                                 </div>
                                                 <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Роль подразделения</label>
+                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Роль
+                                                        подразделения</label>
                                                     <div class="col-lg-7 col-xl-6">
                                                         {{ form.type_of_role }}
                                                     </div>
