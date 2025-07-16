@@ -128,7 +128,7 @@ def send_email_notification():
 
 @app.task()
 def send_email_single_notification(pk):
-    item = DataBaseUser.objects.get(pk=pk)
+    item = DataBaseUser.objects.get(pk=pk, is_active=True)
     mail_to = item.email
     subject_mail = (
         f"Уведомление о доступе к Вашей учетной записи на портале"
@@ -335,7 +335,7 @@ def happy_birthday_loc():
         posts_dict = {
             "post_description": description,
             "allowed_placed": True,
-            "responsible": DataBaseUser.objects.get(pk=1),
+            "responsible": DataBaseUser.objects.get(pk=1, is_active=True),
             "post_date_start": datetime.datetime.today(),
             "post_date_end": datetime.datetime.today(),
         }
@@ -395,9 +395,9 @@ def happy_birthday():
         else:
             description = f"Сегодня {item} празднует свой 18-й день рождения!"
         try:
-            responsible = DataBaseUser.objects.get(pk=1)
+            responsible = DataBaseUser.objects.get(pk=1, is_active=True)
         except Exception as _ex:
-            responsible = DataBaseUser.objects.get(username='proxmox')
+            responsible = DataBaseUser.objects.get(username='proxmox', is_active=True)
         posts_dict = {
             "post_title": f"День рождения: {format_name_initials(item.title)}",
             "post_description": description,
@@ -529,6 +529,7 @@ def report_card_separator():
                 last_name=search_user[0],
                 first_name=search_user[1],
                 surname=search_user[2],
+                is_active=True
             )
             kwargs = {
                 "report_card_day": current_data,
@@ -760,7 +761,7 @@ def get_vacation(year=None):
         )
         for key in dt:
             for item in dt[key]:
-                usr_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"])
+                usr_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
                 start_date = datetime.datetime.strptime(
                     item["ДатаНачала"][:10], "%Y-%m-%d"
                 )
@@ -864,7 +865,7 @@ def vacation_check():
         for item in graph_vacacion["value"][0]["Сотрудники"]:
             if DataBaseUser.objects.filter(ref_key=item["Сотрудник_Key"]).exists():
                 kwargs_obj = {
-                    "employee": DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"]),
+                    "employee": DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True),
                     "start_date": datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d"),
                     "end_date": datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d"),
                     "type_vacation": [v[0] for i, v in enumerate(VACATION_TYPE) if v[0] == item["ВидОтпуска_Key"]][0],
@@ -886,7 +887,7 @@ def vacation_check():
 def vacation_schedule_send():
     employee = DataBaseUser.objects.all().exclude(is_active=False)
     # employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
-    sender = DataBaseUser.objects.get(last_name="Кирюшкина")
+    sender = DataBaseUser.objects.get(last_name="Кирюшкина", is_active=True)
     for item in employee:
         get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2025)
         if len(get_vacation_shedule) > 0:
@@ -1177,6 +1178,7 @@ def report_card_separator_daily(year=0, month=0, day=0):
                 last_name=search_user[0],
                 first_name=search_user[1],
                 surname=search_user[2],
+                is_active=True
             )
             kwargs = {
                 "report_card_day": current_data,
@@ -1243,6 +1245,7 @@ def report_card_separator_loc():
                 last_name=search_user[0],
                 first_name=search_user[1],
                 surname=search_user[2],
+                is_active=True
             )
             kwargs = {
                 "report_card_day": current_data,
@@ -1291,7 +1294,6 @@ def get_sick_leave(year, trigger):
         )
         dt = json.loads(response.text)
         rec_number_count = 0
-        result = {}
         for item in dt["value"]:
             if item["Recorder_Type"] == trigger_type and item["Active"]:
                 interval = get_date_interval(
@@ -1306,7 +1308,7 @@ def get_sick_leave(year, trigger):
                 user_obj = ""
 
                 try:
-                    user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"])
+                    user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
                 except Exception as _ex:
                     logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
                 if user_obj != "":
@@ -1332,11 +1334,9 @@ def get_sick_leave(year, trigger):
                             doc_ref_key=item["ДокументОснование"],
                             defaults=kwargs_obj,
                         )
-                        result[user_obj]='success'
-        return result
     except Exception as _ex:
         logger.debug(f"654654654 {_ex}")
-        return {"value": ""}
+        return {"value": _ex}
 
 
 @app.task(bind=True)
