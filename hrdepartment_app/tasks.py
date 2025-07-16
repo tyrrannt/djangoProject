@@ -1263,7 +1263,7 @@ def report_card_separator_loc():
     return dicts
 
 
-# @app.task()
+@app.task()
 def get_sick_leave(year, trigger):
     """
     Получение неявок на рабочее место.

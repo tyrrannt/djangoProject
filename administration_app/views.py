@@ -432,8 +432,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
                 # Получение неявок на рабочее место.
-                # get_sick_leave.delay(2025, 1)
-                get_sick_leave(2025, 1)
+                get_sick_leave.delay(2025, 1)
                 # report_card_separator_daily(year=2023, month=10, day=30)
                 # vacation_schedule()
                 pass
