@@ -1622,26 +1622,36 @@ class TimeSheetForm(forms.ModelForm):
     employee = forms.ModelChoiceField(
         widget=forms.Select(attrs={"class": "form-control form-control-modern",
                                    "data-plugin-selectTwo": True, }),
-        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
+        queryset=DataBaseUser.objects.filter(is_active=True),
         label="Сотрудник")
 
     class Meta:
         model = TimeSheet
         fields = ['date', 'employee', 'time_sheets_place', 'notes']
-        widgets = {
-            'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
-                                           "data-plugin-datepicker": True,
-                                           "type": "text",
-                                           "data-date-language": "ru",
-                                           "todayBtn": True,
-                                           "clearBtn": True,
-                                           "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}', }),
-            'employee': forms.Select(attrs={"class": "form-control form-control-modern",
-                                            "data-plugin-selectTwo": True, }),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
-            'time_sheets_place': forms.Select(attrs={"class": "form-control form-control-modern",
-                                                     "data-plugin-selectTwo": True, }),
-        }
+        # widgets = {
+        #     'date': forms.DateInput(attrs={"class": "form-control form-control-modern",
+        #                                    "data-plugin-datepicker": True,
+        #                                    "type": "date",
+        #                                    "data-date-language": "ru",
+        #                                    "todayBtn": True,
+        #                                    "clearBtn": True,
+        #                                    "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy"}', }),
+        #     'employee': forms.Select(attrs={"class": "form-control form-control-modern",
+        #                                     "data-plugin-selectTwo": True, }),
+        #     'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
+        #     'time_sheets_place': forms.Select(attrs={"class": "form-control form-control-modern",
+        #                                              "data-plugin-selectTwo": True, }),
+        # }
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        super(TimeSheetForm, self).__init__(*args, **kwargs)
+
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class ReportCardForm(forms.ModelForm):
@@ -1653,14 +1663,20 @@ class ReportCardForm(forms.ModelForm):
     )
     employee = forms.ModelChoiceField(
         widget=forms.Select(attrs={"class": "form-control form-control-modern"}),
-        queryset=DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав"),
+        queryset=DataBaseUser.objects.filter(is_active=True),
         label="Сотрудник")
 
-    # outfit_card = forms.ModelMultipleChoiceField(
-    #     queryset=OutfitCard.objects.all(),
-    #     widget=Select2MultipleWidget(attrs={"class": "form-control form-control-modern", "multiple": True, }),
-    #     required=False
-    # )
+    start_time = forms.TimeField(
+        required=True,
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
+        label="Время начала"
+    )
+
+    end_time = forms.TimeField(
+        required=True,
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control form-control-modern'}),
+        label="Время окончания"
+    )
 
     class Meta:
         model = ReportCard
@@ -1752,18 +1768,8 @@ class DataBaseUserEventAddForm(forms.ModelForm):
 
 
 class DataBaseUserEventUpdateForm(forms.ModelForm):
-    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
-    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
-    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
-    access.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
-    document_order.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
-    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
-    storage_location_division.widget.attrs.update(
+    place = forms.ModelChoiceField(queryset=PlaceProductionActivity.objects.filter(use_team_orders=True))
+    place.widget.attrs.update(
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
 
@@ -1784,31 +1790,12 @@ class DataBaseUserEventUpdateForm(forms.ModelForm):
         """
         self.user = kwargs.pop("user")
         super(DataBaseUserEventUpdateForm, self).__init__(*args, **kwargs)
-        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
-        self.fields["employee"].widget.attrs.update(
-            {
-                "class": "form-control form-control-modern",
-                "data-plugin-multiselect": True,
-                "multiple": "multiple",
-                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
-            }
-        )
-        self.fields["document_form"].widget.attrs.update(
-            {
-                "class": "form-control form-control-modern",
-                "data-plugin-multiselect": True,
-                "multiple": "multiple",
-                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
-            }
-        )
-        self.fields["document_form"].required = False
-        self.fields["allowed_placed"].widget.attrs.update(
+        self.fields["person"].queryset = DataBaseUser.objects.filter(pk=self.user)
+
+        self.fields["checked"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
-        self.fields["actuality"].widget.attrs.update(
-            {"class": "todo-check", "data-plugin-ios-switch": True}
-        )
-        self.fields["applying_for_job"].widget.attrs.update(
+        self.fields["road"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
         for field in self.fields:

@@ -725,26 +725,7 @@ def get_vacation(year=None):
     exclude_list = ["proxmox", "shakirov"]
     if not year:
         year = datetime.datetime.today().year
-    for report_record in ReportCard.objects.filter(
-            Q(report_card_day__year=year)
-            & Q(
-                record_type__in=[
-                    "2",
-                    "3",
-                    "4",
-                    "5",
-                    "6",
-                    "7",
-                    "8",
-                    "9",
-                    "10",
-                    "11",
-                    "12",
-                    "19",
-                ]
-            )
-    ):
-        report_record.delete()
+
     report_card_list = list()
     for rec_item in (
             DataBaseUser.objects.all().exclude(username__in=exclude_list).values("ref_key")
@@ -832,6 +813,29 @@ def get_vacation(year=None):
                     }
                     report_card_list.append(kwargs_obj)
     try:
+
+        if len(report_card_list) > 0:
+            for report_record in ReportCard.objects.filter(
+                    Q(report_card_day__year=year)
+                    & Q(
+                        record_type__in=[
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                            "7",
+                            "8",
+                            "9",
+                            "10",
+                            "11",
+                            "12",
+                            "19",
+                        ]
+                    )
+            ):
+                report_record.delete()
+
         objs = ReportCard.objects.bulk_create(
             [ReportCard(**q) for q in report_card_list]
         )

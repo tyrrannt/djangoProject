@@ -4149,8 +4149,7 @@ class TimeSheetCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateVie
                 self.request.POST)
         else:
             data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=1)()
-        data['all_employee'] = DataBaseUser.objects.filter(
-            user_work_profile__job__division_affiliation__name="Инженерный состав")
+        data['all_employee'] = DataBaseUser.objects.all().exclude(is_active=False)
         return data
 
     def form_valid(self, form):
@@ -4242,6 +4241,7 @@ class GetUserEventsView(View):
                 'person_name': str(e.person),
                 # можно добавить другие поля по необходимости
             })
+        print(data)
         return JsonResponse(data, safe=False)
 
 
@@ -4292,6 +4292,7 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
         instances = formset.save(commit=False)
         for instance in instances:
             # Внесите изменения в поле, которое не присутствует в форме
+            print(instance)
             instance.report_card_day = self.object.date
             instance.sign_report_card = True
             instance.place_report_card.set([self.object.time_sheets_place.pk, ])
@@ -5288,10 +5289,9 @@ class DataBaseUserEventDetail(PermissionRequiredMixin, LoginRequiredMixin, Detai
 
 class DataBaseUserEventUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
-    Инструктажи - редактирование
+    Местоположение - редактирование
     """
 
-    template_name = "hrdepartment_app/users_events_form_update.html"
     model = DataBaseUserEvent
     form_class = DataBaseUserEventUpdateForm
     permission_required = "hrdepartment_app.change_databaseuserevent"
@@ -5312,28 +5312,8 @@ class DataBaseUserEventUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
         kwargs.update({"user": self.request.user.pk})
         return kwargs
 
-    def get_form(self, form_class=None):
-        """
-        В данном случае, queryset содержит все объекты Provisions, кроме объекта, который соответствует текущему
-        экземпляру класса (self.object). Это может быть полезно, если вы хотите ограничить выбор определенных объектов
-        в поле формы.
-
-        :param form_class: Установлен в текущем экземпляре класса. Это позволяет получить экземпляр формы, который
-                            в дальнейшем будет использоваться в представлении.
-        :return: Возвращаем модифицированную форму.
-        """
-        # Получаем экземпляр формы, используя родительский метод `get_form`
-        form = super().get_form(form_class=self.form_class)
-
-        # Добавляем дополнительное поле 'parent_document' в форму
-        form.fields['parent_document'].queryset = DataBaseUserEvent.objects.all().exclude(pk=self.object.pk)
-
-        # Возвращаем модифицированную форму
-        return form
-
 class DataBaseUserEventDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = DataBaseUserEvent
-    template_name = "hrdepartment_app/users_events_confirm_delete.html"
     success_url = reverse_lazy("hrdepartment_app:users_events_list")
     permission_required = "hrdepartment_app.delete_databaseuserevent"
 

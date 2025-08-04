@@ -115,22 +115,31 @@
                         'csrfmiddlewaretoken': '{{ csrf_token }}'
                     },
                     success: function (data) {
-                        // Очистим текущие строки
                         $('#id_reportcard_set tbody').empty();
-                        let employeeSelect = $('#all-employees').html();  // получаем все варианты
-                        // Заполним таблицу
+                        let employeeSelectHTML = $('#all-employees').html();  // все <option>
+
                         data.forEach(function (event, index) {
+                            // Создаем временный <select>, чтобы удобно работать с DOM
+                            let $tempSelect = $('<select>' + employeeSelectHTML + '</select>');
+
+                            // Выбираем нужного сотрудника
+                            $tempSelect.find(`option[value="${event.person_id}"]`).attr('selected', 'selected');
+
+                            // Получаем html с установленным selected
+                            let updatedEmployeeSelect = $tempSelect.html();
+
                             let newRow = `
-                            <tr>
-                                <td><select name="report_cards-${index}-employee" id="id_report_cards-${index}-employee" data-select2-id="id_reportcard_set-${index}-employee" class="form-control">${employeeSelect}</select></td>
-                                <td><input type="time" name="report_cards-${index}-start_time" id="id_report_cards-${index}-start_time" class="form-control" /></td>
-                                <td><input type="time" name="report_cards-${index}-end_time" id="id_report_cards-${index}-end_time" class="form-control" /></td>
-                                <td><input type="number" name="report_cards-${index}-lunch_time" id="id_report_cards-${index}-lunch_time" class="form-control" /></td>
-                                <td><input type="number" name="report_cards-${index}-flight_hours" id="id_report_cards-${index}-flight_hours" class="form-control" /></td>
-                                <td><select name="report_cards-${index}-outfit_card" id="id_report_cards-${index}-outfit_card" data-select2-id="id_reportcard_set-${index}-outfit_card" class="form-control"></select></td>
-                                <td><input type="text" name="report_cards-${index}-additional_work" id="id_report_cards-${index}-additional_work" class="form-control" /></td>
-                                <td><input type="hidden" name="report_cards-${index}-id" id="id_report_cards-${index}-id" /></td>
-                            </tr>`;
+        <tr>
+            <td><select name="report_cards-${index}-employee" id="id_report_cards-${index}-employee" class="form-control">${updatedEmployeeSelect}</select></td>
+            <td><input type="time" name="report_cards-${index}-start_time" id="id_report_cards-${index}-start_time" class="form-control" /></td>
+            <td><input type="time" name="report_cards-${index}-end_time" id="id_report_cards-${index}-end_time" class="form-control" /></td>
+            <td><input type="number" name="report_cards-${index}-lunch_time" id="id_report_cards-${index}-lunch_time" class="form-control" /></td>
+            <td><input type="number" name="report_cards-${index}-flight_hours" id="id_report_cards-${index}-flight_hours" class="form-control" /></td>
+            <td><select name="report_cards-${index}-outfit_card" id="id_report_cards-${index}-outfit_card" class="form-control"></select></td>
+            <td><input type="text" name="report_cards-${index}-additional_work" id="id_report_cards-${index}-additional_work" class="form-control" /></td>
+            <td><input type="hidden" name="report_cards-${index}-id" id="id_report_cards-${index}-id" /></td>
+        </tr>`;
+
                             $('#id_reportcard_set tbody').append(newRow);
                         });
 
@@ -167,7 +176,23 @@
                 {% endfor %}
             {% endif %}
         </div>
-
+    {{ reportcard_formset }}
+        <div>
+            {% if reportcard_formset %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
         <style>
             /* Скрыть элемент по умолчанию */
             .mobile-only {
@@ -298,7 +323,7 @@
                         </a>
                     </div>
                 {% endif %}
-                <select id="all-employees" style="display: none" >
+                <select id="all-employees" style="display: none">
                     {% for item in all_employee.iterator %}
                         <option value="{{ item.pk }}">{{ item }}</option>
                     {% endfor %}
