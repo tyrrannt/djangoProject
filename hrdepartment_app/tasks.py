@@ -362,14 +362,7 @@ def happy_birthday_loc():
 def send_telegram_notify():
     print(send_message_tg())
     dt = datetime.datetime.now()
-    # if dt.hour == 23 and dt.minute == 10:
-    #     try:
-    #         qs = ApprovalOficialMemoProcess.objects.all().exclude(cancellation=True)
-    #         for item in qs:
-    #             item.save()
-    #             logger.error(f"Saved")
-    #     except Exception as _ex:
-    #         logger.error(f"{_ex}")
+
     if dt.hour == 23 and dt.minute == 30:
         get_sick_leave(dt.year, 1)
     if dt.hour == 23 and dt.minute == 35:
@@ -500,8 +493,6 @@ def happy_birthday():
 @app.task()
 def report_card_separator():
     current_data = datetime.datetime.date(datetime.datetime.today())
-    # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
-    # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
     url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
     source_url = url
     try:
@@ -511,7 +502,6 @@ def report_card_separator():
     dicts = json.loads(response.text)
     for item in dicts["data"]:
         usr = item["FULLNAME"]
-        # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
         current_intervals = True if item["ISGO"] == "0" else False
         start_time = datetime.datetime.strptime(
             item["STARTTIME"], "%d.%m.%Y %H:%M:%S"
@@ -1274,77 +1264,174 @@ def report_card_separator_loc():
     return dicts
 
 
+# @app.task()
+# def get_sick_leave(year, trigger):
+#     """
+#     Получение неявок на рабочее место.
+#     :param year: Год, за который запрашиваем информацию.
+#     :param trigger: 1 - больничные, 2 - мед осмотры.
+#     :return:
+#     """
+#     if trigger == 1:
+#         url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27"
+#         trigger_type = "StandardODATA.Document_БольничныйЛист"
+#         record_type = "16"
+#     if trigger == 2:
+#         url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27"
+#         trigger_type = "StandardODATA.Document_ОплатаПоСреднемуЗаработку"
+#         record_type = "17"
+#     if trigger == 3:
+#         url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27ДополнительныеВыходныеДниНеОплачиваемые%27"
+#         trigger_type = "StandardODATA.Document_Отгул"
+#         record_type = "20"
+#
+#     source_url = url
+#     try:
+#         response = requests.get(
+#             source_url, auth=(config("HRM_LOGIN"), config("HRM_PASS"))
+#         )
+#         dt = json.loads(response.text)
+#         rec_number_count = 0
+#         for item in dt["value"]:
+#             if item["Recorder_Type"] == trigger_type and item["Active"]:
+#                 interval = get_date_interval(
+#                     datetime.datetime.strptime(item["Начало"][:10], "%Y-%m-%d"),
+#                     datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d"),
+#                 )
+#                 rec_list = ReportCard.objects.filter(
+#                     doc_ref_key=item["ДокументОснование"]
+#                 )
+#                 for record in rec_list:
+#                     record.delete()
+#                 user_obj = ""
+#
+#                 try:
+#                     user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
+#                 except Exception as _ex:
+#                     logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
+#                 if user_obj != "":
+#                     for date in interval:
+#                         rec_number_count += 1
+#                         start_time, end_time, type_of_day = check_day(
+#                             date,
+#                             datetime.datetime(1, 1, 1, 9, 30).time(),
+#                             datetime.datetime(1, 1, 1, 18, 0).time(),
+#                         )
+#                         kwargs_obj = {
+#                             "report_card_day": date,
+#                             "employee": user_obj,
+#                             "rec_no": rec_number_count,
+#                             "doc_ref_key": item["ДокументОснование"],
+#                             "record_type": record_type,
+#                             "reason_adjustment": "Запись введена автоматически из 1С ЗУП",
+#                             "start_time": start_time,
+#                             "end_time": end_time,
+#                         }
+#                         ReportCard.objects.update_or_create(
+#                             report_card_day=date,
+#                             doc_ref_key=item["ДокументОснование"],
+#                             defaults=kwargs_obj,
+#                         )
+#     except Exception as _ex:
+#         logger.debug(f"654654654 {_ex}")
+#         return {"value": _ex}
+
 @app.task()
 def get_sick_leave(year, trigger):
     """
     Получение неявок на рабочее место.
     :param year: Год, за который запрашиваем информацию.
-    :param trigger: 1 - больничные, 2 - мед осмотры.
-    :return:
+    :param trigger: 1 - больничные, 2 - мед осмотры, 3 - неоплачиваемые выходные.
+    :return: dict с результатом выполнения задачи.
     """
-    if trigger == 1:
-        url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27"
-        trigger_type = "StandardODATA.Document_БольничныйЛист"
-        record_type = "16"
-    if trigger == 2:
-        url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27"
-        trigger_type = "StandardODATA.Document_ОплатаПоСреднемуЗаработку"
-        record_type = "17"
-    if trigger == 3:
-        url = f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27ДополнительныеВыходныеДниНеОплачиваемые%27"
-        trigger_type = "StandardODATA.Document_Отгул"
-        record_type = "20"
+    # Словарь для определения URL, типа документа и record_type по trigger
+    config_map = {
+        1: {
+            "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27",
+            "trigger_type": "StandardODATA.Document_БольничныйЛист",
+            "record_type": "16"
+        },
+        2: {
+            "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27",
+            "trigger_type": "StandardODATA.Document_ОплатаПоСреднемуЗаработку",
+            "record_type": "17"
+        },
+        3: {
+            "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27ДополнительныеВыходныеДниНеОплачиваемые%27",
+            "trigger_type": "StandardODATA.Document_Отгул",
+            "record_type": "20"
+        }
+    }
 
-    source_url = url
+    if trigger not in config_map:
+        logger.error(f"Неизвестный триггер: {trigger}")
+        return {"error": f"Неизвестный триггер: {trigger}"}
+
+    source_url = config_map[trigger]["url"]
+    trigger_type = config_map[trigger]["trigger_type"]
+    record_type = config_map[trigger]["record_type"]
+
     try:
         response = requests.get(
-            source_url, auth=(config("HRM_LOGIN"), config("HRM_PASS"))
+            source_url,
+            auth=(config("HRM_LOGIN"), config("HRM_PASS")),
+            timeout=10  # Добавлен таймаут для безопасности
         )
+        response.raise_for_status()  # Проверка HTTP статуса
         dt = json.loads(response.text)
         rec_number_count = 0
+
         for item in dt["value"]:
-            if item["Recorder_Type"] == trigger_type and item["Active"]:
-                interval = get_date_interval(
-                    datetime.datetime.strptime(item["Начало"][:10], "%Y-%m-%d"),
-                    datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d"),
-                )
-                rec_list = ReportCard.objects.filter(
-                    doc_ref_key=item["ДокументОснование"]
-                )
-                for record in rec_list:
-                    record.delete()
-                user_obj = ""
+            if item["Recorder_Type"] == trigger_type and item.get("Active", False):
+                start_date = datetime.datetime.strptime(item["Начало"][:10], "%Y-%m-%d").date()
+                end_date = datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d").date()
+                interval = get_date_interval(start_date, end_date)
+
+                # Удаляем старые записи по одному документу
+                ReportCard.objects.filter(doc_ref_key=item["ДокументОснование"]).delete()
 
                 try:
                     user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
-                except Exception as _ex:
+                except DataBaseUser.DoesNotExist:
                     logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
-                if user_obj != "":
-                    for date in interval:
-                        rec_number_count += 1
-                        start_time, end_time, type_of_day = check_day(
-                            date,
-                            datetime.datetime(1, 1, 1, 9, 30).time(),
-                            datetime.datetime(1, 1, 1, 18, 0).time(),
-                        )
-                        kwargs_obj = {
-                            "report_card_day": date,
-                            "employee": user_obj,
-                            "rec_no": rec_number_count,
-                            "doc_ref_key": item["ДокументОснование"],
-                            "record_type": record_type,
-                            "reason_adjustment": "Запись введена автоматически из 1С ЗУП",
-                            "start_time": start_time,
-                            "end_time": end_time,
-                        }
-                        ReportCard.objects.update_or_create(
-                            report_card_day=date,
-                            doc_ref_key=item["ДокументОснование"],
-                            defaults=kwargs_obj,
-                        )
-    except Exception as _ex:
-        logger.debug(f"654654654 {_ex}")
-        return {"value": _ex}
+                    continue  # Пропускаем запись, если сотрудник не найден
+
+                for date in interval:
+                    rec_number_count += 1
+                    start_time, end_time, type_of_day = check_day(
+                        date,
+                        datetime.time(9, 30),
+                        datetime.time(18, 0)
+                    )
+
+                    kwargs_obj = {
+                        "report_card_day": date,
+                        "employee": user_obj,
+                        "rec_no": rec_number_count,
+                        "doc_ref_key": item["ДокументОснование"],
+                        "record_type": record_type,
+                        "reason_adjustment": "Запись введена автоматически из 1С ЗУП",
+                        "start_time": start_time,
+                        "end_time": end_time,
+                    }
+
+                    ReportCard.objects.update_or_create(
+                        report_card_day=date,
+                        doc_ref_key=item["ДокументОснование"],
+                        defaults=kwargs_obj
+                    )
+
+        return {"status": "success", "count": rec_number_count}
+
+    except requests.RequestException as req_ex:
+        logger.error(f"Ошибка запроса к API: {req_ex}")
+        return {"error": "Ошибка при получении данных", "details": str(req_ex)}
+    except json.JSONDecodeError as json_ex:
+        logger.error(f"Ошибка декодирования JSON: {json_ex}")
+        return {"error": "Ошибка JSON", "details": str(json_ex)}
+    except Exception as ex:
+        logger.exception("Произошла неожиданная ошибка")
+        return {"error": "Неизвестная ошибка", "details": str(ex)}
 
 
 @app.task(bind=True)
