@@ -389,9 +389,9 @@ def happy_birthday():
         else:
             description = f"Сегодня {item} празднует свой 18-й день рождения!"
         try:
-            responsible = DataBaseUser.objects.get(pk=1, is_active=True)
+            responsible = DataBaseUser.objects.get(pk=1)
         except Exception as _ex:
-            responsible = DataBaseUser.objects.get(username='proxmox', is_active=True)
+            responsible = DataBaseUser.objects.get(username='proxmox')
         posts_dict = {
             "post_title": f"День рождения: {format_name_initials(item.title)}",
             "post_description": description,
