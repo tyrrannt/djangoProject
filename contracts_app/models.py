@@ -36,11 +36,16 @@ def contract_directory_path(instance, filename):
 
     ext = filename.split('.')[-1]
     # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-    try:
-        max_pk = instance.pk
-    except AttributeError:
-        max_pk = Contract.objects.aggregate(Max('pk'))['pk__max']
-        max_pk += 1
+    # try:
+    #     max_pk = instance.pk
+    #     print('max_pk', max_pk)
+    # except AttributeError:
+    #     max_pk = Contract.objects.aggregate(Max('pk'))['pk__max']
+    #     max_pk += 1
+    #     print('max_pk_exception', max_pk)
+    max_pk = Contract.objects.aggregate(max_pk=Max('pk'))['max_pk']
+    max_pk = instance.pk if instance.pk is not None else max_pk
+
     uid = f'{max_pk:07}'
     filename = f'{instance.type_of_document.file_name_prefix}-{inn}-' \
                f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
