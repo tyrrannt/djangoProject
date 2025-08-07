@@ -1390,7 +1390,7 @@ def get_sick_leave(year, trigger):
                 try:
                     user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
                 except DataBaseUser.DoesNotExist:
-                    logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
+                    # logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
                     continue  # Пропускаем запись, если сотрудник не найден
 
                 existing_records = ReportCard.objects.filter(doc_ref_key=item["ДокументОснование"])
