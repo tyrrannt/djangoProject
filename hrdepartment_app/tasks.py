@@ -1387,16 +1387,27 @@ def get_sick_leave(year, trigger):
                 end_date = datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d").date()
                 interval = get_date_interval(start_date, end_date)
 
-                # Удаляем старые записи по одному документу
-                ReportCard.objects.filter(doc_ref_key=item["ДокументОснование"]).delete()
-
                 try:
                     user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
                 except DataBaseUser.DoesNotExist:
                     logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
                     continue  # Пропускаем запись, если сотрудник не найден
 
-                for date in interval:
+                existing_records = ReportCard.objects.filter(doc_ref_key=item["ДокументОснование"])
+                existing_dates = {rec.report_card_day for rec in existing_records}
+                target_dates = set(interval)
+
+                to_add = target_dates - existing_dates
+                to_delete = existing_dates - target_dates
+
+                # Удаляем только лишние дни
+                if to_delete:
+                    ReportCard.objects.filter(
+                        doc_ref_key=item["ДокументОснование"],
+                        report_card_day__in=to_delete
+                    ).delete()
+
+                for date in to_add:
                     rec_number_count += 1
                     start_time, end_time, type_of_day = check_day(
                         date,
