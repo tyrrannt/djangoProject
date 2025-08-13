@@ -4,6 +4,7 @@ import json
 import random
 import time
 import urllib.request
+from collections import defaultdict
 from random import randrange
 import csv
 import pandas as pd
@@ -1336,6 +1337,179 @@ def report_card_separator_loc():
 #         logger.debug(f"654654654 {_ex}")
 #         return {"value": _ex}
 
+# @app.task()
+# def get_sick_leave(year, trigger):
+#     """
+#     Получение неявок на рабочее место.
+#     :param year: Год, за который запрашиваем информацию.
+#     :param trigger: 1 - больничные, 2 - мед осмотры, 3 - неоплачиваемые выходные.
+#     :return: dict с результатом выполнения задачи.
+#     """
+#     # Словарь для определения URL, типа документа и record_type по trigger
+#     config_map = {
+#         1: {
+#             "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27",
+#             "trigger_type": "StandardODATA.Document_БольничныйЛист",
+#             "record_type": "16"
+#         },
+#         2: {
+#             "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20ВидВремени_Key%20eq%20guid%27e58f3899-3c5b-11ea-a186-0cc47a7917f4%27",
+#             "trigger_type": "StandardODATA.Document_ОплатаПоСреднемуЗаработку",
+#             "record_type": "17"
+#         },
+#         3: {
+#             "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27ДополнительныеВыходныеДниНеоплачиваемые%27",
+#             "trigger_type": "StandardODATA.Document_Отгул",
+#             "record_type": "20"
+#         }
+#     }
+#
+#     if trigger not in config_map:
+#         logger.error(f"Неизвестный триггер: {trigger}")
+#         return {"error": f"Неизвестный триггер: {trigger}"}
+#
+#     source_url = config_map[trigger]["url"]
+#     trigger_type = config_map[trigger]["trigger_type"]
+#     record_type = config_map[trigger]["record_type"]
+#
+#     try:
+#         response = requests.get(
+#             source_url,
+#             auth=(config("HRM_LOGIN"), config("HRM_PASS")),
+#             timeout=10  # Добавлен таймаут для безопасности
+#         )
+#         response.raise_for_status()  # Проверка HTTP статуса
+#         dt = json.loads(response.text)
+#         rec_number_count = 0
+#
+#         for item in dt["value"]:
+#             if item["Recorder_Type"] == trigger_type and item.get("Active", False):
+#                 start_date = datetime.datetime.strptime(item["Начало"][:10], "%Y-%m-%d").date()
+#                 end_date = datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d").date()
+#                 interval = get_date_interval(start_date, end_date)
+#
+#                 try:
+#                     user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
+#                 except DataBaseUser.DoesNotExist:
+#                     # logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
+#                     continue  # Пропускаем запись, если сотрудник не найден
+#
+#                 existing_records = ReportCard.objects.filter(doc_ref_key=item["ДокументОснование"])
+#                 existing_dates = {rec.report_card_day for rec in existing_records}
+#                 target_dates = set(interval)
+#
+#                 to_add = target_dates - existing_dates
+#                 to_delete = existing_dates - target_dates
+#
+#                 # Удаляем только лишние дни
+#                 if to_delete:
+#                     ReportCard.objects.filter(
+#                         doc_ref_key=item["ДокументОснование"],
+#                         report_card_day__in=to_delete
+#                     ).delete()
+#
+#                 for date in to_add:
+#                     rec_number_count += 1
+#                     start_time, end_time, type_of_day = check_day(
+#                         date,
+#                         datetime.time(9, 30),
+#                         datetime.time(18, 0)
+#                     )
+#
+#                     kwargs_obj = {
+#                         "report_card_day": date,
+#                         "employee": user_obj,
+#                         "rec_no": rec_number_count,
+#                         "doc_ref_key": item["ДокументОснование"],
+#                         "record_type": record_type,
+#                         "reason_adjustment": "Запись введена автоматически из 1С ЗУП",
+#                         "start_time": start_time,
+#                         "end_time": end_time,
+#                     }
+#
+#                     ReportCard.objects.update_or_create(
+#                         report_card_day=date,
+#                         doc_ref_key=item["ДокументОснование"],
+#                         defaults=kwargs_obj
+#                     )
+#
+#         return {"status": "success", "count": rec_number_count}
+#
+#     except requests.RequestException as req_ex:
+#         logger.error(f"Ошибка запроса к API: {req_ex}")
+#         return {"error": "Ошибка при получении данных", "details": str(req_ex)}
+#     except json.JSONDecodeError as json_ex:
+#         logger.error(f"Ошибка декодирования JSON: {json_ex}")
+#         return {"error": "Ошибка JSON", "details": str(json_ex)}
+#     except Exception as ex:
+#         logger.exception("Произошла неожиданная ошибка")
+#         return {"error": "Неизвестная ошибка", "details": str(ex)}
+
+def bulk_upsert_report_cards(to_create):
+    """
+    Массовое добавление/обновление ReportCard,
+    без использования update_conflicts/conflict_target (работает в старом Django).
+    """
+    if not to_create:
+        return
+
+    # Определяем ключи, по которым искать дубликаты
+    lookup_keys = ["report_card_day", "doc_ref_key", "employee"]
+
+    # Преобразуем объекты в набор уникальных ключей
+    key_tuples = {
+        (getattr(obj, lookup_keys[0]),
+         getattr(obj, lookup_keys[1]),
+         getattr(obj, lookup_keys[2]))
+        for obj in to_create
+    }
+
+    # Находим уже существующие в базе
+    existing = ReportCard.objects.filter(
+        **{
+            f"{lookup_keys[0]}__in": [key[0] for key in key_tuples],
+            f"{lookup_keys[1]}__in": [key[1] for key in key_tuples],
+            f"{lookup_keys[2]}__in": [key[2] for key in key_tuples],
+        }
+    )
+
+    existing_keys = {
+        (e.report_card_day, e.doc_ref_key, e.employee): e
+        for e in existing
+    }
+
+    to_insert = []
+    to_update = []
+
+    for obj in to_create:
+        key = (obj.report_card_day, obj.doc_ref_key, obj.employee)
+        if key in existing_keys:
+            # Обновляем поля у существующего объекта
+            db_obj = existing_keys[key]
+            db_obj.employee = obj.employee
+            db_obj.rec_no = obj.rec_no
+            db_obj.record_type = obj.record_type
+            db_obj.reason_adjustment = obj.reason_adjustment
+            db_obj.start_time = obj.start_time
+            db_obj.end_time = obj.end_time
+            to_update.append(db_obj)
+        else:
+            to_insert.append(obj)
+
+    with transaction.atomic():
+        if to_insert:
+            ReportCard.objects.bulk_create(to_insert, batch_size=500)
+        if to_update:
+            ReportCard.objects.bulk_update(
+                to_update,
+                fields=[
+                    "employee", "rec_no", "record_type",
+                    "reason_adjustment", "start_time", "end_time"
+                ],
+                batch_size=500
+            )
+
+
 @app.task()
 def get_sick_leave(year, trigger):
     """
@@ -1344,7 +1518,6 @@ def get_sick_leave(year, trigger):
     :param trigger: 1 - больничные, 2 - мед осмотры, 3 - неоплачиваемые выходные.
     :return: dict с результатом выполнения задачи.
     """
-    # Словарь для определения URL, типа документа и record_type по trigger
     config_map = {
         1: {
             "url": f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/InformationRegister_ДанныеСостоянийСотрудников_RecordType?$format=application/json;odata=nometadata&$filter=year(Окончание)%20eq%20{year}%20and%20Состояние%20eq%20%27Болезнь%27",
@@ -1375,62 +1548,91 @@ def get_sick_leave(year, trigger):
         response = requests.get(
             source_url,
             auth=(config("HRM_LOGIN"), config("HRM_PASS")),
-            timeout=10  # Добавлен таймаут для безопасности
+            timeout=10
         )
-        response.raise_for_status()  # Проверка HTTP статуса
+        response.raise_for_status()
         dt = json.loads(response.text)
         rec_number_count = 0
 
+        # Загружаем всех активных сотрудников вручную в словарь
+        users = {}
+        for user in DataBaseUser.objects.filter(is_active=True).only("ref_key", "id"):
+            users[user.ref_key] = user  # если дубль — перезапишется
+
+        # Собираем doc_ref_keys из всех подходящих записей
+        doc_ref_keys = set(
+            item["ДокументОснование"]
+            for item in dt["value"]
+            if item["Recorder_Type"] == trigger_type and item.get("Active", False)
+        )
+
+        # Загружаем все существующие записи ReportCard
+        existing_reportcards = ReportCard.objects.filter(doc_ref_key__in=doc_ref_keys)
+        existing_by_doc = defaultdict(set)
+        for rc in existing_reportcards:
+            existing_by_doc[rc.doc_ref_key].add(rc.report_card_day)
+
+        to_create = []
+        to_delete = []
+
         for item in dt["value"]:
-            if item["Recorder_Type"] == trigger_type and item.get("Active", False):
-                start_date = datetime.datetime.strptime(item["Начало"][:10], "%Y-%m-%d").date()
-                end_date = datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d").date()
-                interval = get_date_interval(start_date, end_date)
+            if item["Recorder_Type"] != trigger_type or not item.get("Active", False):
+                continue
 
-                try:
-                    user_obj = DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True)
-                except DataBaseUser.DoesNotExist:
-                    # logger.error(f"{item['Сотрудник_Key']} не найден в базе данных")
-                    continue  # Пропускаем запись, если сотрудник не найден
+            doc_key = item["ДокументОснование"]
+            employee_key = item["Сотрудник_Key"]
+            user_obj = users.get(employee_key)
 
-                existing_records = ReportCard.objects.filter(doc_ref_key=item["ДокументОснование"])
-                existing_dates = {rec.report_card_day for rec in existing_records}
-                target_dates = set(interval)
+            if not user_obj:
+                logger.error(f"{employee_key} не найден в базе данных")
+                continue
 
-                to_add = target_dates - existing_dates
-                to_delete = existing_dates - target_dates
+            start_date = datetime.datetime.strptime(item["Начало"][:10], "%Y-%m-%d").date()
+            end_date = datetime.datetime.strptime(item["Окончание"][:10], "%Y-%m-%d").date()
+            interval = set(get_date_interval(start_date, end_date))
 
-                # Удаляем только лишние дни
-                if to_delete:
-                    ReportCard.objects.filter(
-                        doc_ref_key=item["ДокументОснование"],
-                        report_card_day__in=to_delete
-                    ).delete()
+            existing_dates = existing_by_doc.get(doc_key, set())
 
-                for date in to_add:
-                    rec_number_count += 1
-                    start_time, end_time, type_of_day = check_day(
-                        date,
-                        datetime.time(9, 30),
-                        datetime.time(18, 0)
-                    )
+            to_add = interval - existing_dates
+            to_remove = existing_dates - interval
 
-                    kwargs_obj = {
-                        "report_card_day": date,
-                        "employee": user_obj,
-                        "rec_no": rec_number_count,
-                        "doc_ref_key": item["ДокументОснование"],
-                        "record_type": record_type,
-                        "reason_adjustment": "Запись введена автоматически из 1С ЗУП",
-                        "start_time": start_time,
-                        "end_time": end_time,
-                    }
+            # Планируем удаление
+            if to_remove:
+                to_delete.append({
+                    "doc_ref_key": doc_key,
+                    "days": to_remove
+                })
 
-                    ReportCard.objects.update_or_create(
-                        report_card_day=date,
-                        doc_ref_key=item["ДокументОснование"],
-                        defaults=kwargs_obj
-                    )
+            # Планируем добавление
+            for date in sorted(to_add):
+                rec_number_count += 1
+                start_time, end_time, type_of_day = check_day(
+                    date,
+                    datetime.time(9, 30),
+                    datetime.time(18, 0)
+                )
+
+                to_create.append(ReportCard(
+                    report_card_day=date,
+                    employee=user_obj,
+                    rec_no=rec_number_count,
+                    doc_ref_key=doc_key,
+                    record_type=record_type,
+                    reason_adjustment="Запись введена автоматически из 1С ЗУП",
+                    start_time=start_time,
+                    end_time=end_time
+                ))
+
+        # Пакетное удаление
+        for entry in to_delete:
+            ReportCard.objects.filter(
+                doc_ref_key=entry["doc_ref_key"],
+                report_card_day__in=entry["days"]
+            ).delete()
+
+        # Пакетное создание с обновлением конфликтов
+        if to_create:
+            bulk_upsert_report_cards(to_create)
 
         return {"status": "success", "count": rec_number_count}
 
@@ -1443,6 +1645,7 @@ def get_sick_leave(year, trigger):
     except Exception as ex:
         logger.exception("Произошла неожиданная ошибка")
         return {"error": "Неизвестная ошибка", "details": str(ex)}
+
 
 
 @app.task(bind=True)

@@ -432,87 +432,27 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 #     TypesUserworktime.objects.update_or_create(ref_key=item['Ref_Key'], defaults=kwargs_obj)
             if request.GET.get('update') == '5':
                 # Получение неявок на рабочее место.
-                get_sick_leave.delay(2025, 1)
-                # report_card_separator_daily(year=2023, month=10, day=30)
-                # vacation_schedule()
-                pass
-                # type_of_report = {
-                #     '2': 'Ежегодный',
-                #     '3': 'Дополнительный ежегодный отпуск',
-                #     '4': 'Отпуск за свой счет',
-                #     '5': 'Дополнительный учебный отпуск (оплачиваемый)',
-                #     '6': 'Отпуск по уходу за ребенком',
-                #     '7': 'Дополнительный неоплачиваемый отпуск пострадавшим в аварии на ЧАЭС',
-                #     '8': 'Отпуск по беременности и родам',
-                #     '9': 'Отпуск без оплаты согласно ТК РФ',
-                #     '10': 'Дополнительный отпуск',
-                #     '11': 'Дополнительный оплачиваемый отпуск пострадавшим в ',
-                #     '12': 'Основной',
-                # }
-                # all_records = 0
-                # exclude_list = ['proxmox', 'shakirov']
-                # for rec_item in DataBaseUser.objects.all().exclude(username__in=exclude_list).values('ref_key'):
-                #     print(rec_item['ref_key'])
-                #     dt = get_jsons_data_filter2('InformationRegister', 'ДанныеОтпусковКарточкиСотрудника',
-                #                                 'Сотрудник_Key',
-                #                                 rec_item['ref_key'], 'year(ДатаОкончания)', 2023, 0, 0)
-                #     for key in dt:
-                #         for item in dt[key]:
-                #             for report_record in ReportCard.objects.filter(doc_ref_key=item['ДокументОснование']):
-                #                 report_record.delete()
-                #             usr_obj = DataBaseUser.objects.get(ref_key=item['Сотрудник_Key'])
-                #             start_date = datetime.datetime.strptime(item['ДатаНачала'][:10], "%Y-%m-%d")
-                #             end_date = datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d")
-                #             weekend_count = WeekendDay.objects.filter(
-                #                 Q(weekend_day__gte=start_date) & Q(weekend_day__lte=end_date) & Q(
-                #                     weekend_type='1')).count()
-                #             count_date = int(item['КоличествоДней']) + weekend_count
-                #             period = list(rrule.rrule(rrule.DAILY, count=count_date, dtstart=start_date))
-                #             weekend = [item.weekend_day for item in WeekendDay.objects.filter(
-                #                 Q(weekend_day__gte=start_date.date()) & Q(weekend_day__lte=end_date.date()))]
-                #             for unit in period:
-                #                 if unit.weekday() in [0, 1, 2, 3] and unit.date() not in weekend:
-                #                     delta_time = datetime.timedelta(
-                #                         hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
-                #                         minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute)
-                #                     start_time = usr_obj.user_work_profile.personal_work_schedule_start
-                #                     end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
-                #                 elif unit.weekday() == 4 and unit not in weekend:
-                #                     delta_time = datetime.timedelta(
-                #                         hours=usr_obj.user_work_profile.personal_work_schedule_end.hour,
-                #                         minutes=usr_obj.user_work_profile.personal_work_schedule_end.minute) - \
-                #                                  datetime.timedelta(hours=1)
-                #                     start_time = usr_obj.user_work_profile.personal_work_schedule_start
-                #                     end_time = datetime.datetime.strptime(str(delta_time), '%H:%M:%S').time()
-                #                 else:
-                #                     start_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
-                #                     end_time = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
-                #
-                #                 value = [i for i in type_of_report if
-                #                          type_of_report[i] == item['ВидОтпускаПредставление']]
-                #                 kwargs_obj = {
-                #                     'report_card_day': unit,
-                #                     'employee': usr_obj,
-                #                     'start_time': start_time,
-                #                     'end_time': end_time,
-                #                     'reason_adjustment': item['Основание'],
-                #                     'doc_ref_key': item['ДокументОснование'],
-                #                 }
-                #                 rec_obj, counter = ReportCard.objects.update_or_create(report_card_day=unit,
-                #                                                                        employee=usr_obj,
-                #                                                                        record_type=value[0],
-                #                                                                        defaults=kwargs_obj)
-                #                 if counter:
-                #                     all_records += 1
+                try:
+                    year = int(request.GET.get('year'))
+                    get_sick_leave.delay(year, 1)
+                except Exception as _ex:
+                    year = datetime.datetime.today().year
+                    get_sick_leave.delay(year, 1)
             if request.GET.get('update') == '7':
                 # Получение неявок на рабочее место.
-                get_sick_leave.delay(2025, 2)
+                try:
+                    year = int(request.GET.get('year'))
+                    get_sick_leave.delay(year, 2)
+                except Exception as _ex:
+                    year = datetime.datetime.today().year
+                    get_sick_leave.delay(year, 2)
             if request.GET.get('update') == '8':
                 try:
                     year = int(request.GET.get('year'))
                     get_sick_leave.delay(year, 3)
                 except Exception as _ex:
-                    logger.error(f"Ошибка при получении отгулов {_ex}")
+                    year = datetime.datetime.today().year
+                    get_sick_leave.delay(year, 3)
                 # Получение неявок на рабочее место - Отгул
             if request.GET.get('update') == '6':
                 birthday_telegram.delay()
