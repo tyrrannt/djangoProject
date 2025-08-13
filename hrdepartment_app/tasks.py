@@ -863,16 +863,20 @@ def vacation_check():
         )
         for item in graph_vacacion["value"][0]["Сотрудники"]:
             if DataBaseUser.objects.filter(ref_key=item["Сотрудник_Key"]).exists():
-                kwargs_obj = {
-                    "employee": DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True),
-                    "start_date": datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d"),
-                    "end_date": datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d"),
-                    "type_vacation": [v[0] for i, v in enumerate(VACATION_TYPE) if v[0] == item["ВидОтпуска_Key"]][0],
-                    "days": item["КоличествоДней"],
-                    "years": vacation.document_year,
-                    "comment": item["Примечание"],
-                }
-                all_vacation_list.append(kwargs_obj)
+                try:
+                    kwargs_obj = {
+                        "employee": DataBaseUser.objects.get(ref_key=item["Сотрудник_Key"], is_active=True),
+                        "start_date": datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d"),
+                        "end_date": datetime.datetime.strptime(item['ДатаОкончания'][:10], "%Y-%m-%d"),
+                        "type_vacation": [v[0] for i, v in enumerate(VACATION_TYPE) if v[0] == item["ВидОтпуска_Key"]][
+                            0],
+                        "days": item["КоличествоДней"],
+                        "years": vacation.document_year,
+                        "comment": item["Примечание"],
+                    }
+                    all_vacation_list.append(kwargs_obj)
+                except DataBaseUser.DoesNotExist:
+                    pass
     objs = ""
     try:
         objs = VacationSchedule.objects.bulk_create(
@@ -1107,8 +1111,8 @@ def vacation_schedule(year=None):
                 report_card_list.append(ReportCard(
                     report_card_day=current_day,
                     employee=usr_obj,
-                    start_time=datetime.time(9, 30),
-                    end_time=datetime.time(18, 0),
+                    start_time=datetime.time(0, 0),
+                    end_time=datetime.time(0, 0),
                     record_type="18",
                     reason_adjustment=reason,
                     doc_ref_key=docs,
