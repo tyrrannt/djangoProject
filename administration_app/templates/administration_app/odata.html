@@ -48,8 +48,11 @@
                 </div>
                 <div class="col-md-8">
                     <label for="objectName" class="form-label">Имя объекта</label>
+                    {#                    <input type="text" class="form-control" id="objectName"#}
+                    {#                           placeholder="Номенклатура, АвансовыйОтчет и т.д." required>#}
                     <input type="text" class="form-control" id="objectName"
-                           placeholder="Номенклатура, АвансовыйОтчет и т.д." required>
+                           placeholder="Номенклатура, АвансовыйОтчет и т.д." required
+                           style="cursor: pointer;">
                 </div>
             </div>
 
@@ -202,19 +205,22 @@
                     const field = row.querySelector('.field-name').value.trim();
                     const operator = row.querySelector('.operator').value;
                     const value = row.querySelector('.value').value.trim();
+                    const safeValue = value.replace(/'/g, "''");
 
                     if (field && value) {
-                        if (['startswith', 'contains'].includes(operator)) {
-                            filterParts.push(`${operator}(${field},'${value}')`);
+                        if (operator === 'startswith') {
+                            filterParts.push(`startswith(${field}, '${safeValue}')`);
+                        } else if (operator === 'contains') {
+                            filterParts.push(`contains(${field}, '${safeValue}')`);
                         } else {
-                            filterParts.push(`${field} ${operator} '${value}'`);
+                            filterParts.push(`${field} ${operator} '${safeValue}'`);
                         }
                     }
                 });
 
                 // Добавляем фильтры только если они есть
                 if (filterParts.length > 0) {
-                    params.append('filter', filterParts.join(' and '));  // Без кодировки %24
+                    params.append('$filter', filterParts.join(' and '));  // Без кодировки %24
                 }
 
                 // Отправляем запрос на сервер
@@ -252,15 +258,122 @@
                 const testResult = document.getElementById('testResult');
                 testResult.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
 
-                fetch(url)
+                fetch('/portal/test-odata/?url=' + encodeURIComponent(url))
                     .then(response => response.json())
                     .then(data => {
-                        testResult.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                        const pre = document.createElement('pre');
+                        pre.textContent = JSON.stringify(data, null, 2);
+                        testResult.innerHTML = '';
+                        testResult.appendChild(pre);
                     })
                     .catch(error => {
                         testResult.innerHTML = '<div class="alert alert-danger">Ошибка: ' + error.message + '</div>';
                     });
             });
+        });
+        // Кэш метаданных по базе
+        const metadataCache = {};
+
+        // Функция для получения списка имён объектов по типу
+        function getObjectsByType(metadata, objectType) {
+            return metadata.value
+                .filter(item => item.name.startsWith(objectType + '_'))
+                .map(item => {
+                    const full = item.name;
+                    return {
+                        display: full, // полное имя (для отображения)
+                        short: full.substring(objectType.length + 1) // без префикса
+                    };
+                });
+        }
+
+        // Обновление списка имён объектов
+        function updateObjectNameList(objectType, base) {
+            if (!objectType || !base) return;
+
+            const objectNameInput = document.getElementById('objectName');
+            objectNameInput.classList.add('form-control', 'dropdown-toggle');
+            objectNameInput.setAttribute('data-bs-toggle', 'dropdown');
+            objectNameInput.setAttribute('aria-expanded', 'false');
+
+            const dropdown = document.getElementById('objectNameDropdown');
+            if (dropdown) dropdown.remove(); // удаляем старый
+
+            const menu = document.createElement('ul');
+            menu.className = 'dropdown-menu';
+            menu.id = 'objectNameDropdown';
+
+            // Показываем спиннер
+            const loading = document.createElement('li');
+            loading.className = 'dropdown-item text-muted';
+            loading.textContent = 'Загрузка...';
+            menu.appendChild(loading);
+
+            // Вставляем меню
+            objectNameInput.parentNode.appendChild(menu);
+
+            // Проверяем кэш
+            const cacheKey = `${base}`;
+            if (metadataCache[cacheKey]) {
+                fillDropdown(menu, metadataCache[cacheKey], objectType);
+            } else {
+                // Загружаем метаданные
+                fetch(`/portal/get-metadata/?base=${encodeURIComponent(base)}`)
+                    .then(response => response.json())
+                    .then(metadata => {
+                        metadataCache[cacheKey] = metadata;
+                        fillDropdown(menu, metadata, objectType);
+                    })
+                    .catch(() => {
+                        loading.textContent = 'Ошибка загрузки';
+                    });
+            }
+        }
+
+        function fillDropdown(menu, metadata, objectType) {
+            const items = getObjectsByType(metadata, objectType);
+            menu.innerHTML = '';
+
+            if (items.length === 0) {
+                const item = document.createElement('li');
+                item.className = 'dropdown-item text-muted';
+                item.textContent = 'Не найдено';
+                menu.appendChild(item);
+                return;
+            }
+
+            items.forEach(obj => {
+                const item = document.createElement('li');
+                const link = document.createElement('a');
+                link.className = 'dropdown-item';
+                link.href = '#';
+                link.textContent = obj.short;
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById('objectName').value = obj.short;
+                    menu.innerHTML = ''; // убираем список
+                });
+                item.appendChild(link);
+                menu.appendChild(item);
+            });
+        }
+
+        // Слушаем изменение типа объекта
+        document.getElementById('objectType').addEventListener('change', function () {
+            const objectType = this.value;
+            const base = document.getElementById('base').value;
+
+            if (objectType && base) {
+                updateObjectNameList(objectType, base);
+            }
+        });
+
+        // При смене базы — сбрасываем список
+        document.getElementById('base').addEventListener('change', function () {
+            const dropdown = document.getElementById('objectNameDropdown');
+            if (dropdown) dropdown.remove();
+            const objectNameInput = document.getElementById('objectName');
+            objectNameInput.removeAttribute('data-bs-toggle');
         });
     </script>
 

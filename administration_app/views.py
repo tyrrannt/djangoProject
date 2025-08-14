@@ -553,7 +553,7 @@ def generate_1c_odata_request(request):
 
     # Добавляем фильтры
 
-    filters = request.GET.get('filter')
+    filters = request.GET.get('$filter')
 
 
     if filters:
@@ -600,23 +600,22 @@ def generate_1c_odata_request(request):
 
         except Exception as e:
             return JsonResponse({'error': f'Invalid filters format: {str(e)}'}, status=400)
-    print(filters)
     # Добавляем выбор полей
-    select_fields = request.GET.get('select')
+    select_fields = request.GET.get('$select')
     if select_fields and select_fields != 'undefined':
         params.append(f"$select={select_fields}")
 
     # Добавляем пагинацию
-    top = request.GET.get('top')
+    top = request.GET.get('$top')
     if top and top != 'undefined':
         params.append(f"$top={top}")
 
-    skip = request.GET.get('skip')
+    skip = request.GET.get('$skip')
     if skip and skip != 'undefined':
         params.append(f"$skip={skip}")
 
     # Добавляем сортировку
-    orderby = request.GET.get('orderby')
+    orderby = request.GET.get('$orderby')
     if orderby and orderby != 'undefined':
         direction = request.GET.get('direction', 'asc')
         params.append(f"$orderby={orderby} {direction}")
@@ -649,3 +648,64 @@ def generate_1c_odata_request(request):
             'orderby': orderby
         }
     })
+
+@login_required
+def test_1c_odata_request(request):
+    url = request.GET.get('url')
+    if url.find('72095052-970f-11e3-84fb-00e05301b4e4') > 0:
+        username = config("HRM_LOGIN")
+        password = config("HRM_PASS")
+    else:
+        username = config("ACC_LOGIN")
+        password = config("ACC_PASS")
+
+    if not url:
+        return JsonResponse({'error': 'URL is required'}, status=400)
+
+    try:
+        response = requests.get(
+            url,
+            auth=(username, password),
+            timeout=15,
+            headers={'Accept': 'application/json'}
+        )
+        # Возвращаем JSON от 1С
+        return JsonResponse(
+            response.json() if response.content else {},
+            safe=False,
+            status=response.status_code
+        )
+    except requests.exceptions.ConnectionError:
+        return JsonResponse({'error': 'Не удалось подключиться к 1С. Проверьте адрес и состояние сервера.'}, status=503)
+    except requests.exceptions.Timeout:
+        return JsonResponse({'error': 'Таймаут подключения к 1С.'}, status=504)
+    except Exception as e:
+        return JsonResponse({'error': f'Ошибка: {str(e)}'}, status=500)
+
+@login_required
+def get_1c_metadata(request):
+    base = request.GET.get('base')
+    host = '192.168.10.11'  # или из settings
+    base_index = 0
+
+    if base == '72095052-970f-11e3-84fb-00e05301b4e4':
+        username = config("HRM_LOGIN")
+        password = config("HRM_PASS")
+    else:
+        username = config("ACC_LOGIN")
+        password = config("ACC_PASS")
+
+    if not base:
+        return JsonResponse({'error': 'Base is required'}, status=400)
+
+    url = f"http://{host}/{base}/odata/standard.odata/?$format=json"
+
+    try:
+        response = requests.get(url, auth=(username, password), timeout=10)
+        if response.status_code != 200:
+            return JsonResponse({'error': 'Cannot fetch metadata'}, status=response.status_code)
+
+        data = response.json()
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
