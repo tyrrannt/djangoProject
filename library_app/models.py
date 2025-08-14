@@ -1,10 +1,11 @@
+import os
 import pathlib
 import uuid
 
 from decouple import config
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
@@ -136,6 +137,30 @@ class DocumentForm(models.Model):
 
     def __str__(self):
         return self.title
+
+@receiver(pre_save, sender=DocumentForm)
+def delete_old_file_on_change_df(sender, instance, **kwargs):
+    if not instance.pk:
+        return  # новый объект
+
+    try:
+        old_instance = DocumentForm.objects.get(pk=instance.pk)
+    except DocumentForm.DoesNotExist:
+        return
+
+    # Список полей, которые нужно сравнивать и очищать
+    file_fields = ['draft', 'scan', 'sample']
+
+    for field in file_fields:
+        old_file = getattr(old_instance, field)
+        new_file = getattr(instance, field)
+
+        if old_file and old_file.name != getattr(new_file, 'name', None):
+            try:
+                if os.path.isfile(old_file.path):
+                    os.remove(old_file.path)
+            except Exception as e:
+                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 
 class Contest(models.Model):
