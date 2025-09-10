@@ -1,4 +1,5 @@
 import datetime
+import re
 
 from dateutil import rrule
 from decouple import config
@@ -32,6 +33,10 @@ logger.add(
     serialize=config("LOG_SERIALIZE"),
 )
 
+def camel_case_to_text(text):
+    # Вставляем пробелы перед заглавными буквами (кроме первой)
+    result = re.sub(r'(?<!^)(?=[А-Я])', ' ', text)
+    return result
 
 def get_database_user_profile(ref_key):
     """
@@ -551,7 +556,13 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ВзаиморасчетыССотрудниками_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20ГруппаНачисленияУдержанияВыплаты%20eq%20%27Выплачено%27",
         0,
     )
-    print(acc_reg_acc, acc_reg_set)
+
+    ref_keys = []
+    if len(acc_reg_set['value']) > 0:
+        for item in acc_reg_set['value']:
+            ref_keys.append(item['Recorder'])
+        filter_param = " or ".join(f"Ref_Key eq guid'{key}'" for key in ref_keys)
+        acc_reg_date = get_jsons(f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Document_ВедомостьНаВыплатуЗарплатыВБанк?$filter={filter_param}&$format=json", 0)
     # Поля Active = True, ФизическоеЛицо_Key = uuid, СтатьяРасходов_Key = uuid, СуммаВзаиморасчетов, ГруппаНачисленияУдержанияВыплаты = Выплачено, Recorder = uuid, Recorder_Type = Document_ВедомостьНаВыплатуЗарплатыВКассу или Document_ВедомостьНаВыплатуЗарплатыВБанк
     # f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/{Recorder_Type}?$format=application/json;odata=nometadata&$filter=Состав/any(d:%20d/Ref_Key%20eq%20guid%27{Recorder}%27)&$select=Number,%20Date"
     period = datetime.datetime.strptime(
@@ -603,9 +614,15 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
                     pass
     for items in acc_reg_set["value"]:
         result_paid = {
-            "document": items["ВидВзаиморасчетов"],
+            "document": camel_case_to_text(items["ВидВзаиморасчетов"]),
             "summ": "{:.2f}".format(items["СуммаВзаиморасчетов"]),
         }
+        for item in acc_reg_date["value"]:
+            if items["Recorder"] == item["Ref_Key"]:
+                result_paid['date'] = item['Date']
+                result_paid['number'] = item['Number']
+                result_paid['reason'] = item['Основания']
+
         paid += float(items["СуммаВзаиморасчетов"])
         data_paid.append(result_paid)
     accrued_table_set = ""
@@ -622,7 +639,6 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
             else:
                 accrued_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
         accrued_table_set_list += "</tr>"
-
     withheld_table_set_list = ""
     for count in data_negative:
         withheld_table_set_list += "<tr>"
@@ -635,11 +651,10 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     paid_table_set_list = ""
     for count in data_paid:
         paid_table_set_list += "<tr>"
-        for key in count:
-            if key == "summ":
-                paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right">{count[key]}</td>'
-            else:
-                paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count[key]}</td>'
+        date_obj = datetime.datetime.fromisoformat(count["date"])
+
+        paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d">{count["document"]} (№{count["number"]} от {date_obj.strftime("%d.%m.%Y")} г.)</td>'
+        paid_table_set_list += f'<td style="border: 1px; border-style: solid; border-color: #01114d; text-align:right">{count["summ"]}</td>'
         paid_table_set_list += "</tr>"
     html_obj = list()
     accrued_table_set = f"""<table style="width: 100%; border: 1px; border-style: solid; border-color: #0a0a0a"><thead>
