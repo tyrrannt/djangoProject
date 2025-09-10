@@ -360,7 +360,7 @@ class IdentityDocuments(models.Model):
     )
 
     def __str__(self):
-        return f"{self.series} {self.number}, {self.issued_by_whom}, {self.date_of_issue.strftime("%d.%m.%Y")}, {self.division_code}"
+        return f"{self.series} {self.number}, {self.issued_by_whom}, {self.date_of_issue.strftime('%d.%m.%Y')}, {self.division_code}"
 
 
 class DataBaseUserProfile(models.Model):
