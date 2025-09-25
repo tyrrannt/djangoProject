@@ -421,11 +421,14 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                                                                  hour=0, minute=0, second=0), until=end_date))
                 report_card_list = []
 
-                for report_record in ReportCard.objects.filter(
-                        Q(employee=self.request.user) & Q(report_card_day__in=dates)):
-                    report_card_list.append(
-                        [report_record.report_card_day, report_record.start_time,
-                         report_record.end_time, report_record.record_type])
+                # for report_record in ReportCard.objects.filter(
+                #         Q(employee=self.request.user) & Q(report_card_day__in=dates)):
+                #     report_card_list.append(
+                #         [report_record.report_card_day, report_record.start_time,
+                #          report_record.end_time, report_record.record_type])
+                report_card_list = list(ReportCard.objects.filter(Q(employee=self.request.user) & Q(report_card_day__in=dates)).values_list(
+                    'report_card_day', 'start_time', 'end_time', 'record_type'
+                ))
                 # field names
                 fields = ["Дата", "Start", "End", "Type"]
 
@@ -579,7 +582,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Получение остатка отпусков
                 html = f"<label class='form-control form-control-modern'>Остаток отпуска: {get_vacation_days(self, get_date)} дн.</label>"
 
-                return JsonResponse(html, safe=False)
+                return JsonResponse({'html': html}, safe=False)
         return super().get(request, *args, **kwargs)
 
 
