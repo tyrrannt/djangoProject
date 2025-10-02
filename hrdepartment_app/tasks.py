@@ -210,7 +210,7 @@ def send_mail(person: DataBaseUser, age: int, record: Posts):
         greet = HappyBirthdayGreetings.objects.filter(
             Q(gender=gender) & Q(age_from__lte=age) & Q(age_to__gte=age)
         )
-        print('Печать: ', greet)
+        # print('Печать: ', greet)
         rec_no = randrange(len(greet))
         text = greet[rec_no].greetings
         current_context = {
@@ -361,7 +361,7 @@ def happy_birthday_loc():
 
 @app.task()
 def send_telegram_notify():
-    print(send_message_tg())
+    # print(send_message_tg())
     dt = datetime.datetime.now()
 
     if dt.hour == 23 and dt.minute == 30:
@@ -604,10 +604,32 @@ def get_year_report(html_mode=True):
     report_card_list = list()
 
     try:
-        for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(report_card_day__lt=first_day_of_current_month ) & Q(employee__in=user_set)).exclude(record_type="18"):
-            report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
+        report_card_list = list(
+            ReportCard.objects
+            .filter(
+                report_card_day__year=year,
+                report_card_day__lt=first_day_of_current_month,
+                employee__in=user_set
+            )
+            .exclude(record_type="18")
+            .select_related('employee')
+            .values_list(
+                'employee__title',
+                'report_card_day',
+                'start_time',
+                'end_time',
+                'record_type'
+            )
+        )
     except Exception as e:
-        errors.append(e)
+        print(str(e))  # лучше str(e), чем объект исключения
+    # try:
+    #     for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(report_card_day__lt=first_day_of_current_month ) & Q(employee__in=user_set)).exclude(record_type="18"):
+    #         report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
+    # except Exception as e:
+    #     errors.append(e)
+    #
+    # print(report_card_list2[0:5], report_card_list[0:5])
     # field names
     fields = ["FIO", "Дата", "Start", "End","Type"]
 
@@ -904,30 +926,12 @@ def vacation_schedule_send():
                 "person": str(item),
                 "message": message,
             }
-            # print(current_context)
             logger.debug(f"Email string: {current_context}")
-            # text_content = render_to_string(
-            #     "administration_app/vacation_send.html", current_context
-            # )
-            # html_content = render_to_string(
-            #     "administration_app/vacation_send.html", current_context
-            # )
             subject_mail = "График отпусков"
             mail_to = item.email
-            # msg = EmailMultiAlternatives(
-            #     subject_mail,
-            #     text_content,
-            #     EMAIL_HOST_USER,
-            #     [
-            #         mail_to,
-            #     ],
-            # )
-            # msg.attach_alternative(html_content, "text/html")
             try:
                 send_notification(sender, mail_to, subject_mail, "administration_app/vacation_send.html",
                                   current_context, attachment='', division=3, document=3)
-                # res = msg.send()
-                # time.sleep(random.randint(5, 10))
             except Exception as _ex:
                 logger.debug(f"Failed to send email. {_ex}")
 
@@ -1090,7 +1094,12 @@ def vacation_schedule(year=None):
 
     # Удаление старых записей и создание новых
     with transaction.atomic():
-        ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type="18")).delete()
+        count, details = ReportCard.objects.filter(
+            Q(report_card_day__year=year) & Q(record_type="18")
+        ).delete()
+
+        # print(count)  # общее число удалённых объектов
+        # print(details)  # {<class 'myapp.ReportCard'>: 10, ...}
 
         docs = graph_vacacion["value"][0]["Ref_Key"]
         report_card_list = []
@@ -1118,17 +1127,6 @@ def vacation_schedule(year=None):
                     doc_ref_key=docs,
                 ))
 
-                # if current_day > today:
-                #     report_card_list.append(ReportCard(
-                #         report_card_day=current_day,
-                #         employee=usr_obj,
-                #         start_time=datetime.time(9, 30),
-                #         end_time=datetime.time(18, 0),
-                #         record_type="18",
-                #         reason_adjustment=reason,
-                #         doc_ref_key=docs,
-                #     ))
-
         # Пакетное сохранение
         batch_size = 1000
         objs_created = 0
@@ -1151,8 +1149,7 @@ def report_card_separator_daily(year=0, month=0, day=0):
     )
     for item in rec_obj:
         item.delete()
-    # current_data1 = datetime.datetime.date(datetime.datetime(2023, 1, 1))
-    # current_data2 = datetime.datetime.date(datetime.datetime(2023, 5, 25))
+
     url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data}&enddate={current_data}"
     source_url = url
     try:
@@ -1162,7 +1159,6 @@ def report_card_separator_daily(year=0, month=0, day=0):
     dicts = json.loads(response.text)
     for item in dicts["data"]:
         usr = item["FULLNAME"]
-        # current_data = datetime.datetime.strptime(item['STARTDATE'], "%d.%m.%Y").date()
         current_intervals = True if item["ISGO"] == "0" else False
         start_time = datetime.datetime.strptime(
             item["STARTTIME"], "%d.%m.%Y %H:%M:%S"
@@ -1204,11 +1200,6 @@ def report_card_separator_daily(year=0, month=0, day=0):
 
 
 def report_card_separator_loc():
-    # user_obj = DataBaseUser.objects.get(username='0231_elistratova_av')
-    # rec_obj = ReportCard.objects.filter(employee=user_obj)
-    # for item in rec_obj:
-    #     item.delete()
-    # current_data = datetime.datetime.date(datetime.datetime.today())
     current_data1 = datetime.datetime.date(datetime.datetime(2023, 6, 1))
     current_data2 = datetime.datetime.date(datetime.datetime(2023, 6, 7))
     rec_obj = ReportCard.objects.filter(
@@ -1217,7 +1208,7 @@ def report_card_separator_loc():
         & Q(record_type="1")
     )
     for item in rec_obj:
-        print(item)
+        # print(item)
         item.delete()
     url = f"http://192.168.10.233:5053/api/time/intervals?startdate={current_data1}&enddate={current_data2}"
     # url = 'http://192.168.10.233:5053/api/time/intervals?startdate=2020-01-01&enddate=2023-06-04&FULLNAME=Елистратова'
@@ -1679,7 +1670,7 @@ def send_mail_notification(self, mail_attributes: dict, obj, item):
         if "attachment_path" in mail_attributes:
             # file_name = pathlib.Path.joinpath(BASE_DIR, mail_attributes["attachment_path"])
             file_name_string = str(BASE_DIR) + mail_attributes["attachment_path"]
-            print(file_name_string)
+            # print(file_name_string)
             with open(file_name_string, 'rb') as file:
                 file_content = file.read()
             # mime_type = magic.from_buffer(file_content, mime=True)

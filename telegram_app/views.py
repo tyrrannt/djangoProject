@@ -35,7 +35,7 @@ def get_type_second(job) -> str:
     if 'систем' in find_job:
         return 'АиРЭО'
     elif get_type_first(job) != '':
-        return 'ПиД'
+        return 'ЛАиД'
     else:
         return ''
 
