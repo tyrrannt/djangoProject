@@ -47,7 +47,6 @@ def get_type_second(job) -> str:
     else:
         return ''
 
-@login_required
 def xml_view(request):
     # dict_obj = DataBaseUser.objects.filter(user_work_profile__job__type_of_job='2').values_list('service_number', 'last_name', 'first_name', 'surname', 'address', 'birthday',
     #                                      'gender', 'user_work_profile__job__name')
