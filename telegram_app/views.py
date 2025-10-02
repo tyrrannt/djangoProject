@@ -26,6 +26,8 @@ def get_type_first(job) -> str:
         return 'Техник'
     elif 'качеству' in find_job:
         return 'ГКК'
+    elif 'по учету' in find_job:
+        return ''
     else:
         return ''
 
