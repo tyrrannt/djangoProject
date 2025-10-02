@@ -28,7 +28,10 @@ def get_type_first(job) -> str:
         return 'Техник'
     elif 'качеству' in find_job:
         return 'ГКК'
-
+    elif 'Начальник производственного отдела' in find_job:
+        return 'Инженер'
+    elif 'Начальник участка технического обслуживания' in find_job:
+        return 'Инженер'
     else:
         return ''
 
@@ -38,6 +41,8 @@ def get_type_second(job) -> str:
     if 'систем' in find_job:
         return 'АиРЭО'
     elif get_type_first(job) != '':
+        if get_type_first(job) != 'ГКК':
+            return 'АиРЭО'
         return 'ЛАиД'
     else:
         return ''
