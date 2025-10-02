@@ -20,14 +20,15 @@ def json_view(request):
 
 def get_type_first(job) -> str:
     find_job = job.lower()
-    if 'инженер' in find_job:
+    if 'по учету' in find_job:
+        return ''
+    elif 'инженер' in find_job:
         return 'Инженер'
     elif 'техник' in find_job:
         return 'Техник'
     elif 'качеству' in find_job:
         return 'ГКК'
-    elif 'по учету' in find_job:
-        return ''
+
     else:
         return ''
 
