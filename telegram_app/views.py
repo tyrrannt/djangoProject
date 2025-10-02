@@ -22,12 +22,12 @@ def get_type_first(job) -> str:
     find_job = job.lower()
     if 'по учету' in find_job:
         return ''
-    elif 'качеству' in find_job:
-        return 'Инженер ГКК'
     elif 'инженер' in find_job:
         return 'Инженер'
     elif 'техник' in find_job:
         return 'Техник'
+    elif 'качеству' in find_job:
+        return 'ГКК'
     elif 'начальник производственного отдела' in find_job:
         return 'Инженер'
     elif 'начальник участка технического обслуживания' in find_job:
