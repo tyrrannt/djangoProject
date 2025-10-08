@@ -275,7 +275,7 @@ class Contract(ContractModel):
                 'type_of_document': '',
                 'type_of_contract': '',
                 'subject_contract': '',
-                'contract_counteragent': '',
+                'contract_counteragent': str(self.contract_counteragent),
                 'is_file': False,
                 'actuality': False,
             }
