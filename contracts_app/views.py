@@ -434,7 +434,7 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 class ContractDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = Contract
     permission_required = "contracts_app.delete_contract"
-    success_url = reverse_lazy('library_app:event_list')
+    success_url = reverse_lazy('contracts_app:index')
 
 
 class ContractPostAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):

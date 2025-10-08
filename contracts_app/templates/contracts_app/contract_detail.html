@@ -457,7 +457,7 @@
                             <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть документ - admin</a>
                     </div>
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
+                        <a href="{% url 'contracts_app:delete' object.pk %}"
                            class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-trash text-4 me-2"></i> Удалить договор
