@@ -54,7 +54,11 @@
         <div class="order-details action-buttons-fixed" method="post">
             <div class="col-md-12">
                 <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>
-                    <input id="id_contract_number" value="{{ object.doc_file.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
+                    {% if object.doc_file %}
+                        <input id="id_contract_number" value="{{ object.doc_file.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
+                    {% else %}
+                        <input id="id_contract_number" value="" hidden="true">
+                    {% endif %}
                     {#                    <section class="toggle active showmobile" >#}
                     {#                        <label>Мобильная версия</label>#}
                     {#                        <div class="toggle-content">#}
@@ -466,7 +470,11 @@
     </section>
     <script>
         get_filename = function () {
-            return {{object.doc_file.url}};
+            {% if object.doc_file %}
+                return "{{ object.doc_file.url }}";
+            {% else %}
+                return "";
+            {% endif %}
         }
     </script>
 {% endblock %}
