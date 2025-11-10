@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 import datetime
 import json
-import random
-import time
 import urllib.request
 from collections import defaultdict
 from random import randrange
-import csv
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import requests
-import telebot
 import xlrd
 from dateutil import rrule
 from decouple import config
@@ -18,15 +14,13 @@ from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from loguru import logger
-
+from core import logger
 from administration_app.utils import (
     get_jsons_data_filter2,
     get_date_interval,
-    get_jsons_data_filter, process_group, adjust_time, process_group_year, export_persons_to_csv, format_name_initials,
+    get_jsons_data_filter, adjust_time, process_group_year, format_name_initials,
     send_notification, get_jsons_data, transliterate,
 )
 from contracts_app.models import Contract
@@ -34,21 +28,14 @@ from contracts_app.models import Contract
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings, VacationScheduleList, \
     VacationSchedule, Counteragent, DataBaseUserProfile
 from djangoProject.celery import app
-from djangoProject.settings import EMAIL_HOST_USER, API_TOKEN, BASE_DIR, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, MEDIA_URL, \
-    MEDIA_ROOT
+from djangoProject.settings import EMAIL_HOST_USER, BASE_DIR, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 from hrdepartment_app.models import (
     ReportCard,
     WeekendDay,
     check_day,
-    ApprovalOficialMemoProcess, ProductionCalendar, get_norm_time_at_custom_day,
+    ProductionCalendar, get_norm_time_at_custom_day,
 )
 from telegram_app.management.commands.bot import send_message_tg
-from telegram_app.models import TelegramNotification, ChatID
-
-
-logger.add("debug_archive/debug_task.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'), backtrace=True, diagnose=True)
 
 
 def xldate_to_datetime(xldate):
@@ -127,6 +114,7 @@ def send_email_notification():
         logger.error(f"Failed to change {errors} passwords!")
     return count, errors
 
+
 @app.task()
 def send_email_single_notification(pk):
     item = DataBaseUser.objects.get(pk=pk, is_active=True)
@@ -180,7 +168,6 @@ def change_sign():
     for item in list_obj:
         item.sign = 'Генеральный директор<br>ООО Авиакомпания "БАРКОЛ"<br>Бархотов В.С.<br>и весь коллектив!!!'
         item.save()
-
 
 
 def send_mail(person: DataBaseUser, age: int, record: Posts):
@@ -361,7 +348,7 @@ def happy_birthday_loc():
 
 @app.task()
 def send_telegram_notify():
-    # print(send_message_tg())
+    print(send_message_tg())
     dt = datetime.datetime.now()
 
     if dt.hour == 23 and dt.minute == 30:
@@ -541,6 +528,7 @@ def report_card_separator():
             logger.error(f"{item['FULLNAME']} not found in the database: {_ex}")
     return dicts
 
+
 def calc_diff(start, end):
     today = datetime.date.today()
     d_start = datetime.datetime.combine(today, start)
@@ -550,6 +538,7 @@ def calc_diff(start, end):
     else:
         diff = end
     return diff
+
 
 @app.task()
 def save_report():
@@ -579,7 +568,9 @@ def save_report():
     dates = ReportCard.objects.all().exclude(employee=None)
     report_card_list = list()
     for report_record in dates:
-        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type, report_record.manual_input, report_record.reason_adjustment, ])
+        report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time,
+                                 report_record.end_time, report_record.record_type, report_record.manual_input,
+                                 report_record.reason_adjustment, ])
     # Преобразуем QuerySet в DataFrame
     df = pd.DataFrame.from_records(report_card_list, columns=fields)
     df["date"] = pd.to_datetime(df["date"], format="%d.%m.%Y")
@@ -590,6 +581,7 @@ def save_report():
     # Сохраняем DataFrame в CSV-файл
     df.to_csv('dates.csv', sep=';', index=False, encoding='utf-8', na_rep='')
 
+
 @app.task()
 def get_year_report(html_mode=True):
     errors = []
@@ -597,7 +589,9 @@ def get_year_report(html_mode=True):
     current_date = datetime.datetime.today()
     first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
     try:
-        user_list = ReportCard.objects.filter(Q(report_card_day__year=year) & Q(record_type__in=["1", "13",])&Q(employee__is_active=True)).values_list('employee', flat=True)
+        user_list = ReportCard.objects.filter(
+            Q(report_card_day__year=year) & Q(record_type__in=["1", "13", ]) & Q(employee__is_active=True)).values_list(
+            'employee', flat=True)
         user_set = set(list(user_list))
     except Exception as e:
         errors.append(e)
@@ -631,7 +625,7 @@ def get_year_report(html_mode=True):
     #
     # print(report_card_list2[0:5], report_card_list[0:5])
     # field names
-    fields = ["FIO", "Дата", "Start", "End","Type"]
+    fields = ["FIO", "Дата", "Start", "End", "Type"]
 
     # Создание DataFrame
     df = pd.DataFrame(report_card_list, columns=fields)
@@ -644,7 +638,6 @@ def get_year_report(html_mode=True):
     except Exception as e:
         errors.append(e)
 
-
     # Группируем по FIO и Date и применяем функцию
     df = df.groupby(['FIO', 'Дата']).apply(adjust_time).reset_index(drop=True)
 
@@ -652,8 +645,12 @@ def get_year_report(html_mode=True):
     df["Time"] = (df["End"] - df["Start"]).dt.total_seconds()  # В часах
     # Проверяем корректность заполнения столбца 'Time', если 14, 15, 16, 17, 20, то устанавливаем время согласно производственному календарю.
     # df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата']), axis=1)
-    df['Time'] = df.apply(lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'], type_of_day=row['Type']), axis=1)
-
+    df['Time'] = df.apply(
+        lambda row: row['Time'] if row['Type'] not in [14, 15, 16, 17, 20] else get_norm_time_at_custom_day(row['Дата'],
+                                                                                                            type_of_day=
+                                                                                                            row[
+                                                                                                                'Type']),
+        axis=1)
 
     # Группировка по месяцам и ФИО
     df["Month"] = df["Дата"].dt.to_period("M")
@@ -662,13 +659,13 @@ def get_year_report(html_mode=True):
     grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
     # Вывод результата
     # grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100) # В часах
-    grouped["Time"] = grouped["Time"] // 60 # В минутах
+    grouped["Time"] = grouped["Time"] // 60  # В минутах
 
     # Текущая дата
     current_date = datetime.datetime.now()
 
     # Начало текущего года
-    start_of_year = datetime.datetime(current_date.year, 1, 1,0,0,0)
+    start_of_year = datetime.datetime(current_date.year, 1, 1, 0, 0, 0)
 
     # Список для хранения первых дней каждого месяца
     first_days_of_months = []
@@ -684,9 +681,10 @@ def get_year_report(html_mode=True):
     for date in first_days_of_months[:-1]:
         key = date.strftime('%Y-%m')
         norm_time = ProductionCalendar.objects.get(calendar_month=date)
-        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1)*60
+        subtraction_dict[key] = ((norm_time.get_norm_time() // 1) * 60) + (norm_time.get_norm_time() % 1) * 60
 
     grouped = grouped.fillna('')
+
     # Функция для вычитания значения из словаря
     def subtract_value(row):
         month = str(row["Month"])
@@ -710,7 +708,8 @@ def get_year_report(html_mode=True):
             return f'{hours:.0f} ч. {minutes_left:.0f} мин.'
 
     pivot_df = pivot_df.applymap(convert_time)
-    html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped dataTable mb-0', table_id='datatable-editable', border=1, justify='center')
+    html_table = pivot_df.to_html(classes='table table-ecommerce-simple table-striped dataTable mb-0',
+                                  table_id='datatable-editable', border=1, justify='center')
 
     if errors:
         return errors
@@ -718,6 +717,7 @@ def get_year_report(html_mode=True):
         return pivot_df
     else:
         return html_table
+
 
 @app.task()
 def get_vacation(year=None):
@@ -861,6 +861,7 @@ def get_vacation(year=None):
 
     return logger.info(f"Создано {len(objs)} записей")
 
+
 @app.task()
 def vacation_check():
     obj = VacationSchedule.objects.all()
@@ -907,6 +908,7 @@ def vacation_check():
     except Exception as _ex:
         logger.error(f"Ошибка синхронизации графика отпусков {_ex}")
     return logger.info(f"Создано {len(objs)} записей")
+
 
 @app.task()
 def vacation_schedule_send():
@@ -1059,8 +1061,10 @@ def vacation_schedule(year=None):
         vacation_schedule_number = ""
 
     # Получение данных
-    graph_vacacion = get_jsons_data_filter("Document", "ГрафикОтпусков", "Number", vacation_schedule_number, 0, 0, False, True)
-    postponement_of_vacation = get_jsons_data_filter("Document", "ПереносОтпуска", "year(ИсходнаяДатаНачала)", str(year), 0, 0, False, False)
+    graph_vacacion = get_jsons_data_filter("Document", "ГрафикОтпусков", "Number", vacation_schedule_number, 0, 0,
+                                           False, True)
+    postponement_of_vacation = get_jsons_data_filter("Document", "ПереносОтпуска", "year(ИсходнаяДатаНачала)",
+                                                     str(year), 0, 0, False, False)
 
     # Группировка переносов
     postponement_dict = {}
@@ -1642,7 +1646,6 @@ def get_sick_leave(year, trigger):
         return {"error": "Неизвестная ошибка", "details": str(ex)}
 
 
-
 @app.task(bind=True)
 def send_mail_notification(self, mail_attributes: dict, obj, item):
     """
@@ -1767,6 +1770,7 @@ def upload_json(data, trigger):
                 except Exception as _exc:
                     logger.error(f"Не удалось создать объект  {_exc}")
 
+
 def get_type_of_employment(Ref_Key):
     data = get_jsons_data_filter(
         "Document", "ПриемНаРаботу", "Сотрудник_Key", Ref_Key, 0, 0, True, True
@@ -1780,12 +1784,13 @@ def get_type_of_employment(Ref_Key):
         case _:
             for item in data["value"]:
                 if (
-                    item["ВидЗанятости"]  in ["ОсновноеМестоРаботы", "Совместительство"]
-                    and item["ИсправленныйДокумент_Key"]
-                    != "00000000-0000-0000-0000-000000000000"
+                        item["ВидЗанятости"] in ["ОсновноеМестоРаботы", "Совместительство"]
+                        and item["ИсправленныйДокумент_Key"]
+                        != "00000000-0000-0000-0000-000000000000"
                 ):
                     return True
     return False
+
 
 def get_filter_list(filter_list, variable, meaning):
     """
@@ -1799,6 +1804,7 @@ def get_filter_list(filter_list, variable, meaning):
         filter(lambda item_filter: item_filter[variable] == meaning, filter_list)
     )
     return result[0] if len(result) == 1 else False
+
 
 @app.task()
 def get_database_user():
@@ -1852,13 +1858,13 @@ def get_database_user():
                 continue
             Ref_Key = find_item["Ref_Key"]
             username = (
-                "0" * (4 - len(str(count)))
-                + str(count)
-                + "_"
-                + transliterate(find_item["Фамилия"]).lower()
-                + "_"
-                + transliterate(find_item["Имя"]).lower()[:1]
-                + transliterate(find_item["Отчество"]).lower()[:1]
+                    "0" * (4 - len(str(count)))
+                    + str(count)
+                    + "_"
+                    + transliterate(find_item["Фамилия"]).lower()
+                    + "_"
+                    + transliterate(find_item["Имя"]).lower()[:1]
+                    + transliterate(find_item["Отчество"]).lower()[:1]
             )
             first_name = find_item["Имя"]
             last_name = find_item["Фамилия"]
