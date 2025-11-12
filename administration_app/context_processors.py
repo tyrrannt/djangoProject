@@ -162,7 +162,7 @@ def get_approval_oficial_memo_process(request):
         bpmemo_qs = ApprovalOficialMemoProcess.objects.exclude(cancellation=True)
 
         # ===== Обычные БП =====
-        if job_pk in person_agreement:
+        if job_pk in person_agreement or user.is_superuser:
             add_notification(
                 bpmemo_qs.filter(
                     person_executor__user_work_profile__job__division_affiliation__name=division_name,
@@ -172,7 +172,7 @@ def get_approval_oficial_memo_process(request):
                 "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list"
             )
 
-        if user.pk in person_distributor:
+        if user.pk in person_distributor or user.is_superuser:
             add_notification(
                 bpmemo_qs.filter(location_selected=False, document_not_agreed=True)
                 .exclude(document__official_memo_type="3"),
@@ -180,7 +180,7 @@ def get_approval_oficial_memo_process(request):
                 "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list"
             )
 
-        if job_pk in person_clerk:
+        if user.pk in person_clerk or user.is_superuser:
             add_notification(
                 bpmemo_qs.filter(
                     person_executor__user_work_profile__job__division_affiliation__pk=division_pk,
@@ -193,7 +193,7 @@ def get_approval_oficial_memo_process(request):
                 else "black"
             )
 
-        if job_pk in person_hr:
+        if user.pk in person_hr or user.is_superuser:
             add_notification(
                 bpmemo_qs.filter(process_accepted=False, location_selected=True)
                 .exclude(document__official_memo_type="3"),
@@ -230,14 +230,14 @@ def get_approval_oficial_memo_process(request):
             )
 
         # ===== CTO =====
-        if job_pk in person_agreement_cto or user.is_superuser:
+        if user.pk in person_agreement_cto or user.is_superuser:
             add_notification(
                 CreatingTeam.objects.filter(agreed=False).exclude(cancellation=True),
                 "fa fa-check text-primary", "Согласование приказа СБ",
                 "hrdepartment_app:team_agreed", "hrdepartment_app:team_list"
             )
 
-        if job_pk in person_hr_cto or user.is_superuser:
+        if user.pk in person_hr_cto or user.is_superuser:
             add_notification(
                 CreatingTeam.objects.filter(agreed=True)
                 .filter(Q(number="") | Q(scan_file=""))
@@ -246,7 +246,7 @@ def get_approval_oficial_memo_process(request):
                 "hrdepartment_app:team_number", "hrdepartment_app:team_list"
             )
 
-        if job_pk in person_clerk_cto or user.is_superuser:
+        if user.pk in person_clerk_cto or user.is_superuser:
             add_notification(
                 CreatingTeam.objects.filter(agreed=True)
                 .exclude(number="").exclude(scan_file="")
