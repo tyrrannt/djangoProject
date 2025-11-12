@@ -588,14 +588,34 @@ class BusinessProcessRoutesAddForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_clerk"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_sd"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_accounting"].widget.attrs.update({"multiple": "multiple", })
+
+        # Список полей для фильтрации
+        person_fields = [
+            "person_agreement", "person_executor", "person_clerk",
+            "person_hr", "person_sd", "person_accounting"
+        ]
+
+        # Применяем фильтрацию для каждого поля
+        for field_name in person_fields:
+            if field_name in self.fields:
+                # Фильтруем queryset, оставляя только активных пользователей
+                self.fields[field_name].queryset = self.fields[field_name].queryset.filter(
+                    is_active=True
+                )
+                # Добавляем multiple атрибут
+                self.fields[field_name].widget.attrs.update({"multiple": "multiple"})
+
+        # Применяем кастомные стили для всех полей
         for field in self.fields:
             make_custom_field(self.fields[field])
+        # self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_clerk"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_sd"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_accounting"].widget.attrs.update({"multiple": "multiple", })
+        # for field in self.fields:
+        #     make_custom_field(self.fields[field])
 
 
 class BusinessProcessRoutesUpdateForm(forms.ModelForm):
@@ -605,14 +625,34 @@ class BusinessProcessRoutesUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_clerk"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_sd"].widget.attrs.update({"multiple": "multiple", })
-        self.fields["person_accounting"].widget.attrs.update({"multiple": "multiple", })
+
+        # Список полей для фильтрации
+        person_fields = [
+            "person_agreement", "person_executor", "person_clerk",
+            "person_hr", "person_sd", "person_accounting"
+        ]
+
+        # Применяем фильтрацию для каждого поля
+        for field_name in person_fields:
+            if field_name in self.fields:
+                # Фильтруем queryset, оставляя только активных пользователей
+                self.fields[field_name].queryset = self.fields[field_name].queryset.filter(
+                    is_active=True
+                )
+                # Добавляем multiple атрибут
+                self.fields[field_name].widget.attrs.update({"multiple": "multiple"})
+
+        # Применяем кастомные стили для всех полей
         for field in self.fields:
             make_custom_field(self.fields[field])
+        # self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_clerk"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_sd"].widget.attrs.update({"multiple": "multiple", })
+        # self.fields["person_accounting"].widget.attrs.update({"multiple": "multiple", })
+        # for field in self.fields:
+        #     make_custom_field(self.fields[field])
 
 
 class PurposeAddForm(forms.ModelForm):
