@@ -6,7 +6,7 @@
 import uuid
 from aiogram import Router, types
 from email.utils import parseaddr
-from loguru import logger
+from core import logger
 from asgiref.sync import sync_to_async
 from customers_app.models import DataBaseUser
 from telegram_app.models import ChatID

@@ -1,14 +1,10 @@
 import datetime
 
-from decouple import config
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.forms import inlineformset_factory
-from loguru import logger
-
+from core import logger
 from administration_app.utils import make_custom_field
-from contracts_app.models import Estate
 from customers_app.models import (
     Division,
     DataBaseUser,
@@ -26,17 +22,11 @@ from hrdepartment_app.models import (
     DocumentsJobDescription,
     DocumentsOrder,
     PlaceProductionActivity,
-    ReasonForCancellation,
     OrderDescription,
     ReportCard,
-    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, Briefings,
-    Operational, DataBaseUserEvent,
+    Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, Briefings,
+    Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection,
 )
-
-
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
 
 
 def present_or_future_date(value):
@@ -562,27 +552,6 @@ class ApprovalOficialMemoProcessChangeForm(forms.ModelForm):
 
 
 class BusinessProcessDirectionAddForm(forms.ModelForm):
-    # type_of = [("1", "SP")]
-    # business_process_type = forms.ChoiceField(choices=type_of)
-    # person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # person_agreement.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # person_executor.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # clerk.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # person_hr.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # date_start = forms.DateField(required=False)
-    # date_end = forms.DateField(required=False)
-
     class Meta:
         model = BusinessProcessDirection
         fields = "__all__"
@@ -598,27 +567,6 @@ class BusinessProcessDirectionAddForm(forms.ModelForm):
 
 
 class BusinessProcessDirectionUpdateForm(forms.ModelForm):
-    # type_of = [("1", "SP")]
-    # business_process_type = forms.ChoiceField(choices=type_of)
-    # person_agreement = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # person_agreement.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # person_executor = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # person_executor.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # clerk = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # clerk.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # person_hr = forms.ModelMultipleChoiceField(queryset=Job.objects.all())
-    # person_hr.widget.attrs.update(
-    #     {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    # )
-    # date_start = forms.DateField(required=False)
-    # date_end = forms.DateField(required=False)
-
     class Meta:
         model = BusinessProcessDirection
         fields = "__all__"
@@ -629,6 +577,40 @@ class BusinessProcessDirectionUpdateForm(forms.ModelForm):
         self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
         self.fields["clerk"].widget.attrs.update({"multiple": "multiple", })
         self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class BusinessProcessRoutesAddForm(forms.ModelForm):
+    class Meta:
+        model = BusinessProcessRoutes
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_clerk"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_sd"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_accounting"].widget.attrs.update({"multiple": "multiple", })
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class BusinessProcessRoutesUpdateForm(forms.ModelForm):
+    class Meta:
+        model = BusinessProcessRoutes
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["person_agreement"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_executor"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_clerk"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_hr"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_sd"].widget.attrs.update({"multiple": "multiple", })
+        self.fields["person_accounting"].widget.attrs.update({"multiple": "multiple", })
         for field in self.fields:
             make_custom_field(self.fields[field])
 
@@ -1250,6 +1232,7 @@ class OperationalAddForm(forms.ModelForm):
     storage_location_division.widget.attrs.update(
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
+
     class Meta:
         model = Operational
         fields = (
@@ -1501,16 +1484,16 @@ class CreatingTeamAddForm(forms.ModelForm):
         self.user = kwargs.pop("user")
         # Выбрать из списка бизнес-процессов имеющих право согласования
         approving_person_list = [item['person_agreement'] for item in
-                                 BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                 BusinessProcessRoutes.objects.filter(business_process_type=2).values(
                                      'person_agreement')]
         person_executor_list = [item['person_executor'] for item in
-                                BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                BusinessProcessRoutes.objects.filter(business_process_type=2).values(
                                     'person_executor')]
         super(CreatingTeamAddForm, self).__init__(*args, **kwargs)
         self.fields['approving_person'].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__in=approving_person_list).exclude(is_active=False)
+            pk__in=approving_person_list).exclude(is_active=False)
         self.fields["executor_person"].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__in=person_executor_list).exclude(is_active=False)
+            pk__in=person_executor_list).exclude(is_active=False)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
@@ -1546,16 +1529,16 @@ class CreatingTeamUpdateForm(forms.ModelForm):
         self.user = kwargs.pop("user")
         # Выбрать из списка бизнес-процессов имеющих право согласования
         approving_person_list = [item['person_agreement'] for item in
-                                 BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                 BusinessProcessRoutes.objects.filter(business_process_type=2).values(
                                      'person_agreement')]
         person_executor_list = [item['person_executor'] for item in
-                                BusinessProcessDirection.objects.filter(business_process_type=2).values(
+                                BusinessProcessRoutes.objects.filter(business_process_type=2).values(
                                     'person_executor')]
         super(CreatingTeamUpdateForm, self).__init__(*args, **kwargs)
         self.fields["executor_person"].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__in=person_executor_list).exclude(is_active=False)
+            pk__in=person_executor_list).exclude(is_active=False)
         self.fields['approving_person'].queryset = DataBaseUser.objects.filter(
-            user_work_profile__job__in=approving_person_list).exclude(is_active=False)
+            pk__in=approving_person_list).exclude(is_active=False)
         self.fields['place'].queryset = PlaceProductionActivity.objects.filter(use_team_orders=True)
         self.fields["senior_brigade"].queryset = DataBaseUser.objects.filter(
             user_work_profile__job__division_affiliation__name='Инженерный состав').exclude(is_active=False)
@@ -1796,6 +1779,160 @@ class DataBaseUserEventUpdateForm(forms.ModelForm):
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
         self.fields["road"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class LaborProtectionAddForm(forms.ModelForm):
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = LaborProtection
+        fields = (
+            "executor",
+            "document_date",
+            "document_number",
+            "doc_file",
+            "scan_file",
+            "access",
+            "storage_location_division",
+            "employee",
+            "allowed_placed",
+            "validity_period_start",
+            "document_order",
+            "validity_period_end",
+            "actuality",
+            "parent_document",
+            "document_name",
+            "document_form",
+            "applying_for_job",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(LaborProtectionAddForm, self).__init__(*args, **kwargs)
+        self.fields["executor"].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["employee"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["document_form"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["document_form"].required = False
+        self.fields["executor"].widget.attrs.update(
+            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        )
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["applying_for_job"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class LaborProtectionUpdateForm(forms.ModelForm):
+    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all())
+    # employee.widget.attrs.update({'class': 'form-control form-control-modern', 'data-plugin-selectTwo': True})
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    document_order = forms.ModelChoiceField(queryset=DocumentsOrder.objects.all())
+    document_order.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = LaborProtection
+        fields = (
+            "document_date",
+            "document_number",
+            "doc_file",
+            "scan_file",
+            "access",
+            "storage_location_division",
+            "employee",
+            "validity_period_start",
+            "validity_period_end",
+            "parent_document",
+            "allowed_placed",
+            "actuality",
+            "document_name",
+            "document_order",
+            "document_form",
+            "applying_for_job",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(LaborProtectionUpdateForm, self).__init__(*args, **kwargs)
+        # self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["employee"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["document_form"].widget.attrs.update(
+            {
+                "class": "form-control form-control-modern",
+                "data-plugin-multiselect": True,
+                "multiple": "multiple",
+                "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            }
+        )
+        self.fields["document_form"].required = False
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["applying_for_job"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
         for field in self.fields:

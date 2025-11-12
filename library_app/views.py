@@ -1,10 +1,8 @@
-from collections import defaultdict
 from datetime import datetime
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db import IntegrityError
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, render, get_object_or_404
@@ -22,15 +20,11 @@ from library_app.forms import (
     HelpItemAddForm,
     HelpItemUpdateForm,
     DocumentFormAddForm,
-    DocumentFormUpdateForm, PoemForm, VoteConfirmationForm, CompanyEventForm,
+    DocumentFormUpdateForm, PoemForm, CompanyEventForm,
 )
 from library_app.models import HelpTopic, HelpCategory, DocumentForm, Contest, Poem, Vote, CompanyEvent
 
-
-# Create your views here.
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
+from core import logger
 
 
 def index(request):
@@ -46,14 +40,17 @@ def check_session_cookie_secure(request):
 
 
 def show_403(request, exception=None):
+    logger.warning(f"403 Forbidden: {request.path} | User: {request.user} | Exception: {exception}")
     return render(request, "library_app/403.html")
 
 
 def show_404(request, exception=None):
+    logger.warning(f"404 Not Found: {request.path} | User: {request.user} | Exception: {exception}")
     return render(request, "library_app/404.html")
 
 
 def show_500(request, exception=None):
+    logger.error(f"500 Internal Server Error: {request.path} | User: {request.user} | Exception: {exception}")
     return render(request, "library_app/500.html")
 
 
@@ -258,10 +255,14 @@ def vote(request):
             if Vote.objects.filter(user=request.user).exists():
                 raise Exception('Вы уже голосовали')
             Vote.objects.create(user=request.user, poem=poem)
-            return render(request, 'library_app/vote_success.html', {'poem': poem, 'admin_user': admin_user, 'poem_count': len(poems), 'vote_count': vote_count, 'vote_days': vote_days})
+            return render(request, 'library_app/vote_success.html',
+                          {'poem': poem, 'admin_user': admin_user, 'poem_count': len(poems), 'vote_count': vote_count,
+                           'vote_days': vote_days})
         except Exception as _ex:
             my_vote = Vote.objects.get(user=request.user)
-            return render(request, 'library_app/vote_success.html', {'poem': poem, 'admin_user': admin_user, 'poem_count': len(poems), 'vote_count': vote_count, 'my_vote': my_vote, 'vote_days': vote_days})
+            return render(request, 'library_app/vote_success.html',
+                          {'poem': poem, 'admin_user': admin_user, 'poem_count': len(poems), 'vote_count': vote_count,
+                           'my_vote': my_vote, 'vote_days': vote_days})
 
     return render(request, 'library_app/vote.html', {'poems': poems})
 
@@ -350,7 +351,8 @@ class CompanyEventDetailView(LoginRequiredMixin, DetailView):
         user = self.request.user
         agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
                                                       user=user).exists()
-        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id).order_by('user')
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id,
+                                                           document_id=document_id).order_by('user')
         context['list_agree'] = list_agree
         context['agree'] = agree
         context['title'] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
@@ -375,5 +377,3 @@ class CompanyEventCreateView(PermissionRequiredMixin, LoginRequiredMixin, Create
     form_class = CompanyEventForm
     permission_required = "library_app.add_companyevent"
     success_url = reverse_lazy('library_app:event_list')
-
-

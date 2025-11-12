@@ -8,7 +8,6 @@ from django.contrib.auth.forms import (
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django_ckeditor_5.widgets import CKEditor5Widget
-from openpyxl.styles.builtins import title
 
 from administration_app.utils import make_custom_field
 from .models import (
@@ -493,4 +492,3 @@ class CounteragentDocumentsUpdateForm(forms.ModelForm):
         super(CounteragentDocumentsUpdateForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
-

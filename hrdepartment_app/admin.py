@@ -23,7 +23,7 @@ from hrdepartment_app.models import (
     Instructions,
     Provisions,
     CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
-    DataBaseUserEvent,
+    DataBaseUserEvent, LaborProtection, BusinessProcessRoutes,
 )
 
 # Register your models here.
@@ -38,6 +38,7 @@ admin.site.register(Instructions)
 admin.site.register(DocumentAcknowledgment)
 admin.site.register(DataBaseUserEvent)
 
+
 @admin.register(TimeSheet)
 class TimeSheetAdmin(admin.ModelAdmin):
     list_display = ("date", "get_person", "time_sheets_place", "notes")
@@ -50,10 +51,11 @@ class TimeSheetAdmin(admin.ModelAdmin):
         except AttributeError:
             return ""
 
+
 @admin.register(OutfitCard)
 class OutfitCardAdmin(admin.ModelAdmin):
     list_display = ("outfit_card_date", "outfit_card_number", "get_person", "outfit_card_place", "air_board")
-    list_filter = ("air_board", "outfit_card_place", "employee", )
+    list_filter = ("air_board", "outfit_card_place", "employee",)
     search_fields = ["outfit_card_number"]
 
     @admin.display(description="Ответственный")
@@ -62,6 +64,7 @@ class OutfitCardAdmin(admin.ModelAdmin):
             return format_name_initials(obj.employee.title)
         except AttributeError:
             return ""
+
 
 @admin.register(Medical)
 class MedicalAdmin(admin.ModelAdmin):
@@ -72,6 +75,7 @@ class MedicalAdmin(admin.ModelAdmin):
 
     def get_person(self, obj: Medical):
         return format_name_initials(obj.person.title)
+
 
 @admin.register(MedicalOrganisation)
 class MedicalOrganisationAdmin(admin.ModelAdmin):
@@ -155,6 +159,20 @@ class BriefingsAdmin(admin.ModelAdmin):
         return '; '.join(s)
 
 
+@admin.register(LaborProtection)
+class LaborProtectionAdmin(admin.ModelAdmin):
+    list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
+                    "validity_period_start", "validity_period_end")  #
+    list_filter = (
+        "actuality", "applying_for_job",
+    )
+    search_fields = ["document_name", ]
+
+    def get_employee(self, obj: LaborProtection):
+        s = [format_name_initials(item.title) for item in obj.employee.iterator()]
+        return '; '.join(s)
+
+
 @admin.register(Operational)
 class OperationalAdmin(admin.ModelAdmin):
     list_display = ("document_name", "document_date", "document_number",
@@ -203,6 +221,56 @@ class BusinessProcessDirectionAdmin(admin.ModelAdmin):
     def get_person_hr(self, obj: BusinessProcessDirection):
         s = [item.name for item in obj.person_hr.iterator()]
         return '; '.join(s)
+
+    # какие поля будут использоваться для поиска
+    # search_fields = ["employee__title", ]
+    # какие поля будут использоваться для фильтрации
+    list_filter = (
+        "business_process_type",
+    )
+    # какие поля будут в виде ссылок
+    # list_display_links = ("business_process_type", )
+    # какие поля будут использоваться для сортировки
+    ordering = ['business_process_type', ]
+    # какие поля будут отображаться в списке
+    # list_editable = ("type_trip", "cancellation")
+    # сколько строк будут использоваться для постраничного отображения
+    list_per_page = 100
+    # показывать ли пустые значения
+    empty_value_display = '-empty-'
+    # какие поля будут использоваться из других моделей, для уменьшения запросов
+    # list_select_related = ("person_executor", "person_agreement", "clerk", "person_hr" )
+
+
+@admin.register(BusinessProcessRoutes)
+class BusinessProcessRoutesAdmin(admin.ModelAdmin):
+    # какие поля будут отображаться
+    list_display = (
+        "business_process_type", "get_person_executor", "get_person_agreement", "get_person_hr", "get_clerk",)  #
+
+    def get_clerk(self, obj: BusinessProcessRoutes):
+        s = [format_name_initials(item.title) for item in obj.person_clerk.iterator()]
+        return '; '.join(s)
+
+    get_clerk.short_description = "Делопроизводители"
+
+    def get_person_executor(self, obj: BusinessProcessRoutes):
+        s = [format_name_initials(item.title) for item in obj.person_executor.iterator()]
+        return '; '.join(s)
+
+    get_person_executor.short_description = "Исполнители"
+
+    def get_person_agreement(self, obj: BusinessProcessRoutes):
+        s = [format_name_initials(item.title) for item in obj.person_agreement.iterator()]
+        return '; '.join(s)
+
+    get_person_agreement.short_description = "Согласующие"
+
+    def get_person_hr(self, obj: BusinessProcessRoutes):
+        s = [format_name_initials(item.title) for item in obj.person_hr.iterator()]
+        return '; '.join(s)
+
+    get_person_hr.short_description = "Специалисты ОК"
 
     # какие поля будут использоваться для поиска
     # search_fields = ["employee__title", ]
@@ -372,16 +440,19 @@ class OrderDescriptionAdmin(admin.ModelAdmin):
             return self.fieldsets
         return self.add_fieldsets
 
+
 def copy_operational_work(modeladmin, request, queryset):
     for operational_work in queryset:
         operational_work.pk = None  # Устанавливаем pk в None, чтобы создать новую запись
         operational_work.save()
 
+
 copy_operational_work.short_description = "Копировать выбранные оперативные работы"
+
 
 @admin.register(OperationalWork)
 class OperationalWorkAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "description", "air_bord_type", )  #
+    list_display = ("code", "name", "description", "air_bord_type",)  #
     list_filter = (
         "air_bord_type",
     )
@@ -394,7 +465,9 @@ def copy_periodic_work(modeladmin, request, queryset):
         periodic_work.pk = None  # Устанавливаем pk в None, чтобы создать новую запись
         periodic_work.save()
 
+
 copy_periodic_work.short_description = "Копировать выбранные периодические работы"
+
 
 @admin.register(PeriodicWork)
 class PeriodicWorkAdmin(admin.ModelAdmin):

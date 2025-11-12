@@ -5,7 +5,7 @@
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 from aiogram import Router, types
 from aiogram.filters import Command
-from loguru import logger
+from core import logger
 from ..keyboards import main_menu
 
 router = Router()

@@ -12,7 +12,6 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 from django.views.generic import ListView
-from loguru import logger
 
 from administration_app.models import PortalProperty
 from contracts_app.models import Contract
@@ -23,10 +22,7 @@ from hrdepartment_app.models import ReportCard
 from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report, \
     save_report, send_email_notification, vacation_schedule_send, vacation_check, vacation_schedule
 
-logger.add("debug_administration.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
-
+from core import logger
 
 
 # Create your views here.
@@ -137,6 +133,7 @@ def export_users_to_csv(file_path):
             ]
             writer.writerow(row)
 
+
 def new_export_users_to_csv(file_path):
     # Открываем файл для записи
     with open(file_path, mode='w', newline='', encoding='utf-8') as file:
@@ -194,7 +191,6 @@ def new_export_users_to_csv(file_path):
 
             # Увеличиваем счетчик
             counter += 1
-
 
     # error = {'error': ''}
     # updated = 0
@@ -399,7 +395,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 # birthday_telegram()
 
                 pass
-                #vacation_check()
+                # vacation_check()
                 # for report_record in ReportCard.objects.filter(Q(report_card_day__gte=datetime.datetime(2023, 1, 1, 0, 0)) & Q(record_type__in=['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', ])):
                 #     report_record.delete()
                 # date_admission, vacation = get_json_vacation(self.request.user.ref_key)
@@ -481,7 +477,9 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                         jobs = Job.objects.filter(group=item)
                         users_list = []
                         for unit in jobs:
-                            users_list += [user.title for user in DataBaseUser.objects.filter(user_work_profile__job=unit).exclude(is_active=False, is_ppa=True)]
+                            users_list += [user.title for user in
+                                           DataBaseUser.objects.filter(user_work_profile__job=unit).exclude(
+                                               is_active=False, is_ppa=True)]
 
                         groups_dict[item.name] = users_list
                     logger.info(f"Права групп: {groups_dict} ")
@@ -508,6 +506,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
 
         return super().get(request, *args, **kwargs)
 
+
 @login_required
 def system_monitor(request):
     return render(request, 'administration_app/system_monitor.html')
@@ -516,6 +515,8 @@ def system_monitor(request):
 @login_required
 def odata_request(request):
     return render(request, 'administration_app/odata.html', )
+
+
 @login_required
 def generate_1c_odata_request(request):
     """
@@ -554,7 +555,6 @@ def generate_1c_odata_request(request):
     # Добавляем фильтры
 
     filters = request.GET.get('$filter')
-
 
     if filters:
         try:
@@ -649,6 +649,7 @@ def generate_1c_odata_request(request):
         }
     })
 
+
 @login_required
 def test_1c_odata_request(request):
     url = request.GET.get('url')
@@ -681,6 +682,7 @@ def test_1c_odata_request(request):
         return JsonResponse({'error': 'Таймаут подключения к 1С.'}, status=504)
     except Exception as e:
         return JsonResponse({'error': f'Ошибка: {str(e)}'}, status=500)
+
 
 @login_required
 def get_1c_metadata(request):

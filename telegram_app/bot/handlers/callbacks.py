@@ -4,7 +4,7 @@
 #  Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
 #  Vestibulum commodo. Ut rhoncus gravida arcu.
 from aiogram import Router, types
-from loguru import logger
+from core import logger
 from customers_app.models import DataBaseUser
 from asgiref.sync import sync_to_async
 

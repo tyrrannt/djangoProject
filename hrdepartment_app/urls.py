@@ -22,7 +22,9 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     ApprovalOficialMemoProcessDetail, management_dashboard, export_trips_csv, BriefingsList, BriefingsAdd, \
     BriefingsDetail, BriefingsUpdate, OperationalList, OperationalAdd, OperationalDetail, OperationalUpdate, \
     GetUserEventsView, BriefingsDelete, DataBaseUserEventList, DataBaseUserEventAdd, DataBaseUserEventDetail, \
-    DataBaseUserEventUpdate, DataBaseUserEventDelete
+    DataBaseUserEventUpdate, DataBaseUserEventDelete, BusinessProcessRoutesList, BusinessProcessRoutesAdd, \
+    BusinessProcessRoutesUpdate, LaborProtectionList, LaborProtectionAdd, LaborProtectionDetail, LaborProtectionDelete, \
+    LaborProtectionUpdate
 
 app_name = 'hrdepartment_app'
 
@@ -50,6 +52,9 @@ urlpatterns = [
     path('bptrip/', BusinessProcessDirectionList.as_view(), name='bptrip_list'),
     path('bptrip/add/', BusinessProcessDirectionAdd.as_view(), name='bptrip_add'),
     path('bptrip/<int:pk>/update/', BusinessProcessDirectionUpdate.as_view(), name='bptrip_update'),
+    path('business_process_routes/', BusinessProcessRoutesList.as_view(), name='business_process_routes_list'),
+    path('business_process_routes/add/', BusinessProcessRoutesAdd.as_view(), name='business_process_routes_add'),
+    path('business_process_routes/<int:pk>/update/', BusinessProcessRoutesUpdate.as_view(), name='business_process_routes_update'),
     path('purpose/', PurposeList.as_view(), name='purpose_list'),
     path('purpose/add/', PurposeAdd.as_view(), name='purpose_add'),
     path('purpose/<int:pk>/update/', PurposeUpdate.as_view(), name='purpose_update'),
@@ -86,6 +91,12 @@ urlpatterns = [
     path('briefings/<int:pk>/', BriefingsDetail.as_view(), name='briefings'),
     path('briefings/<int:pk>/update/', BriefingsUpdate.as_view(), name='briefings_update'),
     path('briefings/<int:pk>/delete/', BriefingsDelete.as_view(), name='briefings_delete'),
+
+    path('labor_protection/', LaborProtectionList.as_view(), name='labor_protection_list'),
+    path('labor_protection/add/', LaborProtectionAdd.as_view(), name='labor_protection_add'),
+    path('labor_protection/<int:pk>/', LaborProtectionDetail.as_view(), name='labor_protection'),
+    path('labor_protection/<int:pk>/update/', LaborProtectionUpdate.as_view(), name='labor_protection_update'),
+    path('labor_protection/<int:pk>/delete/', LaborProtectionDelete.as_view(), name='labor_protection_delete'),
 
     path('operational/', OperationalList.as_view(), name='operational_list'),
     path('operational/add/', OperationalAdd.as_view(), name='operational_add'),

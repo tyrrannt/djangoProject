@@ -12,7 +12,7 @@ from django.db.models import Q
 from telegram_app.models import TelegramNotification
 from django.conf import settings
 from aiogram import Bot
-from loguru import logger
+from core import logger
 
 
 class Command(BaseCommand):

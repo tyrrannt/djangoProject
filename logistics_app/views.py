@@ -1,18 +1,14 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, DetailView, UpdateView, DeleteView
 
 from administration_app.utils import ajax_search
-from customers_app.models import DataBaseUser
-from hrdepartment_app.models import ApprovalOficialMemoProcess
-from logistics_app.forms import WayBillCreateForm, WayBillUpdateForm, PackageCreateForm, WayBillInlineFormSet
+from logistics_app.forms import WayBillCreateForm, WayBillUpdateForm, PackageCreateForm
 from logistics_app.models import WayBill, Package
+from core import logger
 
-
-# Create your views here.
 
 class WayBillListView(LoginRequiredMixin, ListView):
     model = WayBill

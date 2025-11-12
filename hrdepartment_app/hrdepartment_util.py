@@ -2,12 +2,10 @@ import datetime
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
-from decouple import config
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.template.loader import render_to_string
-from loguru import logger
-
+from core import logger
 from administration_app.utils import get_jsons_data, time_difference
 from customers_app.models import DataBaseUser, HarmfulWorkingConditions
 from djangoProject.settings import EMAIL_HOST_USER
@@ -19,11 +17,6 @@ from hrdepartment_app.models import (
     WeekendDay,
     check_day,
 )
-
-
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
 
 
 def get_medical_documents():
@@ -454,7 +447,7 @@ def get_working_hours(pk, start_date, state=0):
                     ] and record.record_type != "18":
                         record_type = "О"
                     else:
-                        if record_type in ["Б",] and record.record_type in ["1", "13"]:
+                        if record_type in ["Б", ] and record.record_type in ["1", "13"]:
                             record_type = "Б"
                         else:
                             record_type = "ГО"
@@ -640,7 +633,8 @@ def get_working_hours(pk, start_date, state=0):
         )
 
 
-def get_notify(data_table, data_query: Q, notify_table, notify_dict: dict, rules_table, rules_query: Q, rules_list: str):
+def get_notify(data_table, data_query: Q, notify_table, notify_dict: dict, rules_table, rules_query: Q,
+               rules_list: str):
     """
     Обновляем уведомление о согласовании или создаем новое при необходимости
     :param data_table: Модель данных документов (служебные поездки, приказы старших бригад и т.д.)

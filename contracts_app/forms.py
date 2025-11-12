@@ -1,57 +1,20 @@
-from decouple import config
-from django.forms import CheckboxSelectMultiple, SelectMultiple, ClearableFileInput
-from loguru import logger
-
+from core import logger
 from administration_app.utils import make_custom_field
-from customers_app.models import Division, DataBaseUser, Counteragent
+from customers_app.models import Division, DataBaseUser
 from .models import Contract, Posts, TypeProperty, TypeDocuments, TypeContract, Estate
 from django import forms
 
 
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
-
 class ContractsAddForm(forms.ModelForm):
-    # employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name'), required=False)
-
-    # employee.widget.attrs.update(
-    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    # type_of_contract = forms.ModelChoiceField(queryset=TypeContract.objects.all())
-    # type_of_contract.widget.attrs.update(
-    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    # type_of_document = forms.ModelChoiceField(queryset=TypeDocuments.objects.all())
-    # type_of_document.widget.attrs.update(
-    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
-    # divisions.widget.attrs.update(
-    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    # contract_counteragent = forms.ModelChoiceField(queryset=Counteragent.objects.all().order_by('short_name'))
-    # contract_counteragent.widget.attrs.update(
-    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    # parent_category = forms.ModelChoiceField(
-    #     queryset=Contract.objects.filter(parent_category__isnull=True).select_related('contract_counteragent',
-    #                                                                                   'type_of_contract',
-    #                                                                                   'type_of_document', 'executor'),
-    #     required=False)
-    # parent_category = forms.ModelChoiceField(queryset=Contract.objects.none())
-    # parent_category.widget.attrs.update(
-    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
-    # type_property = forms.ModelMultipleChoiceField(queryset=TypeProperty.objects.all(), required=False)
-    # type_property.widget.attrs.update(
-    #     {'class': 'form-control form-control-modern data-plugin-selectTwo', 'data-plugin-selectTwo': True})
     official_information = forms.CharField(required=False)
-
 
     class Meta:
         model = Contract
-        fields = [ 'parent_category', 'contract_counteragent', 'contract_number', 'official_information',
+        fields = ['parent_category', 'contract_counteragent', 'contract_number', 'official_information',
                   'date_conclusion', 'subject_contract', 'cost', 'type_of_contract',
                   'divisions', 'type_property', 'employee', 'closing_date', 'prolongation',
                   'comment', 'doc_file', 'access', 'executor', 'type_of_document', 'allowed_placed']
-        # widgets = {
-        #     'doc_file': ClearableFileInput(attrs={'multiple': True})
-        # }
 
     def __init__(self, *args, **kwargs):
         self.parent = kwargs.pop('parent')
@@ -74,7 +37,6 @@ class ContractsAddForm(forms.ModelForm):
                 initial['access'] = get_obj.access
                 initial['subject_contract'] = get_obj.subject_contract
                 initial['parent_category'] = get_obj.pk
-                # print(initial['parent_category'])
                 initial['executor'] = get_obj.executor
                 initial['allowed_placed'] = get_obj.allowed_placed
                 kwargs['initial'] = initial
@@ -85,27 +47,21 @@ class ContractsAddForm(forms.ModelForm):
             initial = kwargs.get('initial', {})
             initial['parent_category'] = None
         super(ContractsAddForm, self).__init__(*args, **kwargs)
-        self.fields['executor'].queryset  = DataBaseUser.objects.filter(pk=self.executor_user)
+        self.fields['executor'].queryset = DataBaseUser.objects.filter(pk=self.executor_user)
         self.fields["executor"].required = False
-        # self.fields['parent_category'].queryset = Contract.objects.filter(pk=self.parent)
-        # print(self.parent)
-        # if self.parent:
-        #     self.fields['parent_category'].queryset = Contract.objects.filter(id=self.parent)
-        # else:
-        #     self.fields['parent_category'].queryset = Contract.objects.none()
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+
+        for field in self.fields.values():
+            make_custom_field(field)
 
     def clean(self):
-        print(self.cleaned_data)
         if self.cleaned_data['executor'] == None:
             self.cleaned_data['executor'] = DataBaseUser.objects.get(pk=self.executor_user)
         return self.cleaned_data
 
 
-
 class ContractsUpdateForm(forms.ModelForm):
-    employee = forms.ModelMultipleChoiceField(queryset=DataBaseUser.objects.all().order_by('last_name').exclude(is_ppa=True), required=False)
+    employee = forms.ModelMultipleChoiceField(
+        queryset=DataBaseUser.objects.all().order_by('last_name').exclude(is_ppa=True), required=False)
     divisions = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).order_by('code'))
     parent_category = forms.ModelChoiceField(
         queryset=Contract.objects.all().select_related('contract_counteragent', 'type_of_contract', 'type_of_document',
@@ -120,8 +76,8 @@ class ContractsUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class ContractsPostAddForm(forms.ModelForm):
@@ -142,8 +98,8 @@ class TypeDocumentsAddForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class TypeDocumentsUpdateForm(forms.ModelForm):
@@ -153,8 +109,8 @@ class TypeDocumentsUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class TypeContractsAddForm(forms.ModelForm):
@@ -164,8 +120,8 @@ class TypeContractsAddForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class TypeContractsUpdateForm(forms.ModelForm):
@@ -175,8 +131,8 @@ class TypeContractsUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class TypePropertysAddForm(forms.ModelForm):
@@ -186,8 +142,8 @@ class TypePropertysAddForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class TypePropertysUpdateForm(forms.ModelForm):
@@ -197,8 +153,8 @@ class TypePropertysUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class EstateAddForm(forms.ModelForm):
@@ -208,8 +164,8 @@ class EstateAddForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)
 
 
 class EstateUpdateForm(forms.ModelForm):
@@ -219,5 +175,5 @@ class EstateUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
+        for field in self.fields.values():
+            make_custom_field(field)

@@ -1,9 +1,5 @@
-import json
-from datetime import timedelta
-
 from django.contrib import messages
 from django.http import JsonResponse
-
 
 # Create your views here.
 
@@ -46,8 +42,6 @@ def create_task_ajax(request):
         if shared_with:
             task.shared_with.set(shared_with)
 
-
-
         # Возвращаем данные о созданной задаче
         return JsonResponse({
             'id': task.id,
@@ -58,6 +52,7 @@ def create_task_ajax(request):
             'color': task.priority  # Возвращаем цвет на основе приоритета
         })
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
 
 @csrf_exempt
 def upload_files_ajax(request):
@@ -117,10 +112,10 @@ class TaskListView(LoginRequiredMixin, ListView):
             repeat_tasks.append({
                 'title': self.get_task_title_with_icon(task),  # Получаем название задачи с иконкой task.title,
                 'rrule': {
-                            'freq': task.repeat,  # Используем поле repeat для freq
-                            'dtstart': task.start_date.isoformat(),   # Начальная дата с временной зоной
-                            'until': task.end_date.isoformat()  # Конечная дата с временной зоной
-                        },
+                    'freq': task.repeat,  # Используем поле repeat для freq
+                    'dtstart': task.start_date.isoformat(),  # Начальная дата с временной зоной
+                    'until': task.end_date.isoformat()  # Конечная дата с временной зоной
+                },
                 'url': reverse('tasks_app:task-update', args=[task.pk]),
                 'color': task.priority,
             })
@@ -145,8 +140,8 @@ class TaskListView(LoginRequiredMixin, ListView):
         elif task.priority == 'dark':
             return f'<i class="fas fa-moon"></i> {task.title}'  # Луна для темного приоритета
 
-
         return task.title
+
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
     model = Task
@@ -175,6 +170,7 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
 
         return response
 
+
 class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
@@ -187,7 +183,6 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         # Добавляем задачи, к которым текущий пользователь имеет доступ
         queryset = queryset | Task.objects.filter(shared_with=self.request.user)
         return queryset.distinct()
-
 
     def form_valid(self, form):
         task = form.save(commit=False)
@@ -202,6 +197,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             TaskFile.objects.create(task_id=task_id, file=file)
 
         return super().form_valid(form)
+
 
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
     model = Task

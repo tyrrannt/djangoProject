@@ -63,8 +63,13 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:business_process_routes_list' %}">
                                         Настройки бизнес процессов
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
+                                        (Устаревшее) Настройки бизнес процессов
                                     </a>
                                 </li>
                                 <li>
@@ -490,6 +495,11 @@
                                     <li>
                                         <a class="nav-link" href="{% url 'hrdepartment_app:order_list' %}">
                                             Приказы
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:labor_protection_list' %}">
+                                            Процедуры по охране труда
                                         </a>
                                     </li>
                                 </ul>

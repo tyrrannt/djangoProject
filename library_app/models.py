@@ -1,23 +1,15 @@
 import os
-import pathlib
 import uuid
 
-from decouple import config
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django_ckeditor_5.fields import CKEditor5Field
-from loguru import logger
 
 from customers_app.models import DataBaseUser, Division
-from djangoProject.settings import BASE_DIR
-
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
 
 
 def draft_directory_path(instance, filename):
@@ -33,6 +25,7 @@ def scan_directory_path(instance, filename):
     filename_scan = f'BLK-{instance.ref_key}-SCAN.{scan_ext}'
     return f'blank/scan/{filename_scan}'
 
+
 def get_file_name(instance, label):
     ref_key = f'{uuid.uuid4()}'
     year = instance.event_date.year
@@ -40,17 +33,20 @@ def get_file_name(instance, label):
     day = instance.event_date.day
     return f'EVT-{ref_key}-{label}-{day}-{month}-{year}'
 
+
 def event_report_directory_path(instance, filename):
     report_ext = filename.split('.')[-1]
     year = instance.event_date.year
     filename_report = f'{get_file_name(instance, "REPORT")}.{report_ext}'
     return f'event/{year}/{filename_report}'
 
+
 def event_media_directory_path(instance, filename):
     report_ext = filename.split('.')[-1]
     year = instance.event_date.year
     filename_report = f'{get_file_name(instance, "MEDIA")}.{report_ext}'
     return f'event/{year}/{filename_report}'
+
 
 def sample_directory_path(instance, filename):
     sample_ext = filename.split('.')[-1]
@@ -138,6 +134,7 @@ class DocumentForm(models.Model):
     def __str__(self):
         return self.title
 
+
 @receiver(pre_save, sender=DocumentForm)
 def delete_old_file_on_change_df(sender, instance, **kwargs):
     if not instance.pk:
@@ -178,6 +175,7 @@ class Contest(models.Model):
     def is_voting_open(self):
         return self.end_date <= timezone.now() < self.voting_end_date
 
+
 class Poem(models.Model):
     class Meta:
         verbose_name = 'Стих'
@@ -191,6 +189,7 @@ class Poem(models.Model):
     def __str__(self):
         return self.title
 
+
 class Vote(models.Model):
     class Meta:
         verbose_name = 'Голос'
@@ -202,8 +201,6 @@ class Vote(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.poem.title}'
-
-
 
 
 class CompanyEvent(models.Model):
@@ -220,7 +217,7 @@ class CompanyEvent(models.Model):
     event_media = models.FileField(verbose_name='Медиафайл', upload_to=event_media_directory_path, blank=True)
     event_video = models.URLField(verbose_name="Видео", blank=True)
     participants = models.ManyToManyField(DataBaseUser, verbose_name='Участники', blank=True,
-                                      related_name='%(app_label)s_%(class)s_employee')
+                                          related_name='%(app_label)s_%(class)s_employee')
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -232,7 +229,6 @@ class CompanyEvent(models.Model):
             'event_date': self.event_date.strftime('%d.%m.%Y'),
             'title': self.title,
         }
-
 
 # @receiver(post_save, sender=DocumentForm)
 # def rename_file_name(sender, instance: DocumentForm, **kwargs):

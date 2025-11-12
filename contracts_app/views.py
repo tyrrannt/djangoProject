@@ -4,12 +4,9 @@ import re
 from decouple import config
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
 from django.http import QueryDict, JsonResponse, HttpResponse
-from django.shortcuts import HttpResponseRedirect, render, redirect
-from django.views.decorators.cache import cache_page
+from django.shortcuts import HttpResponseRedirect, redirect
 from django.views.generic import DetailView, UpdateView, ListView, CreateView, DeleteView
-from loguru import logger
 from dadata import Dadata
 from administration_app.models import PortalProperty
 from administration_app.utils import int_validate, ajax_search
@@ -20,12 +17,9 @@ from contracts_app.forms import ContractsAddForm, ContractsPostAddForm, Contract
 from django.urls import reverse, reverse_lazy
 import openpyxl
 from openpyxl.styles import Font
-from customers_app.models import DataBaseUser, Counteragent, CounteragentDocuments
+from customers_app.models import DataBaseUser, CounteragentDocuments
 
-
-logger.add("debug_contracts.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+from core import logger
 
 
 class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
@@ -55,7 +49,7 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         # return super().get(request, *args, **kwargs)
 
         access = self.request.user.user_access
-        query = (Q(parent_category__isnull=True))& Q(access_id__gte=access)
+        query = (Q(parent_category__isnull=True)) & Q(access_id__gte=access)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['actuality', 'contract_number', 'date_conclusion', 'type_of_document__type_document',
                            'type_of_contract__type_contract', 'subject_contract',
@@ -196,8 +190,8 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         # content = QueryDict.copy(self.request.POST)
         # Проверяем на корректность ввода головного документа, если головной документ не указан, то вырезаем его
         # if content['parent_category']:
-            # print(content['parent_category'])
-            # content.setlist('parent_category', '')
+        # print(content['parent_category'])
+        # content.setlist('parent_category', '')
         # Проверяем подразделения, если пришел список с 0 значением, то удаляем его
         refreshed_form = form.save(commit=False)
         # if refreshed_form.parent_category:
@@ -911,6 +905,7 @@ def contract_report_view(request):
         "end_date": end_date,
     }
     return render(request, "contracts_app/contract_report.html", context)
+
 
 def export_contracts_excel(request):
     start_date = request.GET.get('start')

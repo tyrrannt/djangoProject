@@ -2,17 +2,14 @@ import datetime
 import re
 
 from dateutil import rrule
-from decouple import config
-from loguru import logger
 
 from administration_app.utils import (
     get_jsons_data_filter,
     get_jsons,
     get_jsons_data,
     transliterate,
-    timedelta_to_time,
     get_json_vacation,
-    timedelta_to_string, get_active_user,
+    timedelta_to_string
 )
 from customers_app.models import (
     DataBaseUser,
@@ -24,19 +21,14 @@ from customers_app.models import (
     Citizenships,
 )
 
-logger.add(
-    "debug.json",
-    format=config("LOG_FORMAT"),
-    level=config("LOG_LEVEL"),
-    rotation=config("LOG_ROTATION"),
-    compression=config("LOG_COMPRESSION"),
-    serialize=config("LOG_SERIALIZE"),
-)
+from core import logger
+
 
 def camel_case_to_text(text):
     # Вставляем пробелы перед заглавными буквами (кроме первой)
     result = re.sub(r'(?<!^)(?=[А-Я])', ' ', text)
     return result
+
 
 def get_database_user_profile(ref_key):
     """
@@ -92,12 +84,14 @@ def get_database_user_work_profile():
         if units["ref_key"] != "":
             moving = 0
             for items2 in todo_str:
-                if (datetime.datetime.strptime(items2["ДействуетДо"][:10], "%Y-%m-%d") != datetime.datetime.strptime("0001-01-01", "%Y-%m-%d")) and (datetime.datetime.strptime(items2["ДействуетДо"][:10], "%Y-%m-%d") < datetime.datetime.today()):
+                if (datetime.datetime.strptime(items2["ДействуетДо"][:10], "%Y-%m-%d") != datetime.datetime.strptime(
+                        "0001-01-01", "%Y-%m-%d")) and (
+                        datetime.datetime.strptime(items2["ДействуетДо"][:10], "%Y-%m-%d") < datetime.datetime.today()):
                     continue
                     # Проверяем, если это дата временного перемещения, то если срок прощел, делаем пропуск цикла
                 if items2["Active"] and items2["ВидСобытия"] == "Перемещение":
                     if period < datetime.datetime.strptime(
-                        items2["Period"][:10], "%Y-%m-%d"
+                            items2["Period"][:10], "%Y-%m-%d"
                     ):
                         period = datetime.datetime.strptime(
                             items2["Period"][:10], "%Y-%m-%d"
@@ -156,9 +150,9 @@ def get_type_of_employment(Ref_Key):
         case _:
             for item in data["value"]:
                 if (
-                    item["ВидЗанятости"]  in ["ОсновноеМестоРаботы", "Совместительство"]
-                    and item["ИсправленныйДокумент_Key"]
-                    != "00000000-0000-0000-0000-000000000000"
+                        item["ВидЗанятости"] in ["ОсновноеМестоРаботы", "Совместительство"]
+                        and item["ИсправленныйДокумент_Key"]
+                        != "00000000-0000-0000-0000-000000000000"
                 ):
                     return True
     return False
@@ -229,13 +223,13 @@ def get_database_user():
                 continue
             Ref_Key = find_item["Ref_Key"]
             username = (
-                "0" * (4 - len(str(count)))
-                + str(count)
-                + "_"
-                + transliterate(find_item["Фамилия"]).lower()
-                + "_"
-                + transliterate(find_item["Имя"]).lower()[:1]
-                + transliterate(find_item["Отчество"]).lower()[:1]
+                    "0" * (4 - len(str(count)))
+                    + str(count)
+                    + "_"
+                    + transliterate(find_item["Фамилия"]).lower()
+                    + "_"
+                    + transliterate(find_item["Имя"]).lower()[:1]
+                    + transliterate(find_item["Отчество"]).lower()[:1]
             )
             first_name = find_item["Имя"]
             last_name = find_item["Фамилия"]
@@ -371,7 +365,7 @@ def get_identity_documents():
             for items in register:
                 if items["ВидДокумента_Key"] == "ebbd9c1f-cfaf-11e6-bad8-902b345cadc2":
                     if period < datetime.datetime.strptime(
-                        items["ДатаВыдачи"][:10], "%Y-%m-%d"
+                            items["ДатаВыдачи"][:10], "%Y-%m-%d"
                     ):
                         period = datetime.datetime.strptime(
                             items["ДатаВыдачи"][:10], "%Y-%m-%d"
@@ -427,7 +421,7 @@ def get_chart_of_calculation_types(select_uuid):
 
 
 def get_worked_out_by_the_workers(
-    selected_month, selected_year, users_uuid, calculation_uud
+        selected_month, selected_year, users_uuid, calculation_uud
 ) -> list:
     acc_reg_time = get_jsons(
         f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/AccumulationRegister_ОтработанноеВремяПоСотрудникам_RecordType?$format=application/json;odata=nometadata&$filter=ФизическоеЛицо_Key%20eq%20guid%27{users_uuid}%27%20and%20Period%20eq%20datetime%27{selected_year}-{selected_month}-01T00:00:00%27%20and%20Начисление_Key%20eq%20guid%27{calculation_uud}%27",
@@ -446,7 +440,7 @@ def get_worked_out_by_the_workers(
 
 
 def get_report_card_table(
-    data_dict, total_score, first_day, last_day, user_start, user_end
+        data_dict, total_score, first_day, last_day, user_start, user_end
 ):  # , user_start_time, user_end_time
     """
 
@@ -562,7 +556,9 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
         for item in acc_reg_set['value']:
             ref_keys.append(item['Recorder'])
         filter_param = " or ".join(f"Ref_Key eq guid'{key}'" for key in ref_keys)
-        acc_reg_date = get_jsons(f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Document_ВедомостьНаВыплатуЗарплатыВБанк?$filter={filter_param}&$format=json", 0)
+        acc_reg_date = get_jsons(
+            f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/Document_ВедомостьНаВыплатуЗарплатыВБанк?$filter={filter_param}&$format=json",
+            0)
     # Поля Active = True, ФизическоеЛицо_Key = uuid, СтатьяРасходов_Key = uuid, СуммаВзаиморасчетов, ГруппаНачисленияУдержанияВыплаты = Выплачено, Recorder = uuid, Recorder_Type = Document_ВедомостьНаВыплатуЗарплатыВКассу или Document_ВедомостьНаВыплатуЗарплатыВБанк
     # f"http://192.168.10.11/72095052-970f-11e3-84fb-00e05301b4e4/odata/standard.odata/{Recorder_Type}?$format=application/json;odata=nometadata&$filter=Состав/any(d:%20d/Ref_Key%20eq%20guid%27{Recorder}%27)&$select=Number,%20Date"
     period = datetime.datetime.strptime(
@@ -579,8 +575,8 @@ def get_settlement_sheet(selected_month, selected_year, users_uuid):
     result_paid = dict()
     for items in acc_reg_acc["value"]:
         if (
-            period == datetime.datetime.strptime(items["Period"][:10], "%Y-%m-%d")
-            and items["Active"]
+                period == datetime.datetime.strptime(items["Period"][:10], "%Y-%m-%d")
+                and items["Active"]
         ):
             work_time = get_worked_out_by_the_workers(
                 selected_month, selected_year, users_uuid, items["НачислениеУдержание"]
@@ -734,8 +730,8 @@ def get_vacation_days(self, dates):
             ]
             if item["ВидЕжегодногоОтпуска_Key"] not in exclude_vacation:
                 if (
-                    datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d")
-                    > date_admission
+                        datetime.datetime.strptime(item["ДатаНачала"][:10], "%Y-%m-%d")
+                        > date_admission
                 ):
                     days += int(item["Количество"])
 
@@ -747,6 +743,5 @@ def get_vacation_days(self, dates):
             until=datetime.datetime.strptime(dates, "%Y-%m-%d"),
         )
     ]
-    print(((len(dates) - 1) * (28 / 12)), days)
+    # print(((len(dates) - 1) * (28 / 12)), days)
     return round(((len(dates) - 1) * (28 / 12)) - days)
-

@@ -1,18 +1,13 @@
 # consumers.py
 import os
-import random
 from asyncio import sleep
 import psutil
 
-import emoji
-from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.layers import get_channel_layer
 import json
 
 from django.contrib.auth.models import AnonymousUser
 
-from chat_app.models import Message
 from contracts_app.templatetags.custom import FIO_format
 
 
@@ -29,16 +24,20 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
             await self.accept()  # Принимаем соединение
             user = self.scope['user']  # Получаем объект пользователя из scope
             if user.is_authenticated:  # Проверяем, авторизован ли пользователь
-                self.online_users.add((FIO_format(user.title), user.pk))  # Добавляем имя пользователя в множество online_users
-                await self.channel_layer.group_add('online_users', self.channel_name)  # Добавляем соединение в группу online_users
+                self.online_users.add(
+                    (FIO_format(user.title), user.pk))  # Добавляем имя пользователя в множество online_users
+                await self.channel_layer.group_add('online_users',
+                                                   self.channel_name)  # Добавляем соединение в группу online_users
                 await self.send_online_users()  # Отправляем список онлайн пользователей
 
     async def disconnect(self, close_code):
         """Метод для обработки разрыва соединения и удаления пользователя из списка онлайн пользователей."""
         user = self.scope['user']  # Получаем объект пользователя из scope
         if user.is_authenticated:  # Проверяем, авторизован ли пользователь
-            self.online_users.discard((FIO_format(user.title), user.pk))  # Удаляем имя пользователя из множества online_users
-            await self.channel_layer.group_discard('online_users', self.channel_name)  # Удаляем соединение из группы online_users
+            self.online_users.discard(
+                (FIO_format(user.title), user.pk))  # Удаляем имя пользователя из множества online_users
+            await self.channel_layer.group_discard('online_users',
+                                                   self.channel_name)  # Удаляем соединение из группы online_users
             await self.send_online_users()  # Отправляем список онлайн пользователей
 
     async def send_online_users(self):
@@ -60,8 +59,6 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
             'users': users,  # Список онлайн пользователей
             'is_admin': user.is_superuser,
         }))
-
-
 
 
 # class ChatConsumer(AsyncWebsocketConsumer):
@@ -211,9 +208,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     #             'username': message.username,
     #         }))
 
+
 def converter(x):
     result = (x / 1024) / 1024
     return round(result, 2)
+
 
 class MonitorConsumer(AsyncWebsocketConsumer):
     """Класс для обработки соединений с веб-сокетами и отправки данных о загрузке процессора, памяти, диска, сетевого трафика, количества процессов и сетевых соединений."""
@@ -298,6 +297,7 @@ class VideoConferenceConsumer(AsyncWebsocketConsumer):
             'signal': signal,
             'user_id': user_id
         }))
+
 
 class AudioConferenceConsumer(AsyncWebsocketConsumer):
     async def connect(self):

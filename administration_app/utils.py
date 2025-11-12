@@ -13,40 +13,26 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 from urllib.parse import urljoin
 
-import magic
 import pandas as pd
 import requests
 from dateutil import rrule, relativedelta
 from decouple import config
 from django import forms
 from django.contrib.contenttypes.models import ContentType
-from django.core import mail
 from django.core.files.storage import FileSystemStorage
-from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db import transaction
-from django.db.models import Q, Model
-from django.http import JsonResponse
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
-from django.utils.html import strip_tags
-from loguru import logger
-# from twisted.conch.ssh.agent import value
 
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
 from djangoProject import settings
-from djangoProject.settings import BASE_DIR, MEDIA_ROOT, EMAIL_HOST, EMAIL_IMAP_HOST, EMAIL_IAS_USER, \
+from djangoProject.settings import BASE_DIR, EMAIL_HOST, EMAIL_IMAP_HOST, EMAIL_IAS_USER, \
     EMAIL_IAS_PASSWORD, EMAIL_FLY_USER, EMAIL_FLY_PASSWORD, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
 
-logger.add(
-    "debug_administration.json",
-    format=config("LOG_FORMAT"),
-    level=config("LOG_LEVEL"),
-    rotation=config("LOG_ROTATION"),
-    compression=config("LOG_COMPRESSION"),
-    serialize=config("LOG_SERIALIZE"),
-)
+from core import logger
 
 
 def time_it(func):
@@ -284,7 +270,7 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int, year=0) 
         "72095052-970f-11e3-84fb-00e05301b4e4",
         "59e20093-970f-11e3-84fb-00e05301b4e4",
     ]
-    if year==0:
+    if year == 0:
         url = (
             f"http://192.168.10.11/{base[base_index]}/odata/standard.odata/"
             f"{object_type}_{object_name}?$format=application/json;odata=nometadata"
@@ -848,7 +834,8 @@ def change_password():
 
     # Используем транзакцию для обеспечения атомарности операции
     with transaction.atomic():
-        for item in DataBaseUser.objects.filter(is_superuser=False).exclude(user_work_profile__work_email_password__isnull=True):
+        for item in DataBaseUser.objects.filter(is_superuser=False).exclude(
+                user_work_profile__work_email_password__isnull=True):
             try:
                 item.set_password(item.user_work_profile.work_email_password)
                 item.save()
@@ -970,9 +957,11 @@ def make_custom_field(f: forms.Field):
 
     for field_type, attrs in field_attrs.items():
         if isinstance(f, field_type):
-            return f.widget.attrs.update(attrs)
+            f.widget.attrs.update(attrs)
+            break
 
     return f
+
 
 def ajax_search(request, self, field_list, model_name, query, triger=None):
     """
@@ -991,9 +980,9 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
     def build_query(field, search_value):
         if triger == 1 and field == 'contract_counteragent__short_name':
             return (
-                Q(contract_counteragent__short_name__iregex=search_value) |
-                Q(contract_counteragent__full_name__iregex=search_value) |
-                Q(contract_counteragent__inn__iregex=search_value)
+                    Q(contract_counteragent__short_name__iregex=search_value) |
+                    Q(contract_counteragent__full_name__iregex=search_value) |
+                    Q(contract_counteragent__inn__iregex=search_value)
             )
         elif triger == 2 and field == 'document__type_trip':
             if search_value.lower() in 'сп':
@@ -1034,6 +1023,8 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
     })
 
     return context
+
+
 # def ajax_search(request, self, field_list, model_name, query, triger=None):
 #     """
 #     Метод для поиска по модели.
@@ -1513,6 +1504,7 @@ def seconds_to_hhmm(seconds):
     # Возвращаем отформатированную строку
     return f"{sign}{hours_str}:{minutes:02}"
 
+
 def export_persons_to_csv(file_path: str, model):
     """
         Эта функция экспортирует все записи из указанной модели в CSV-файл.
@@ -1621,5 +1613,3 @@ def get_today_data_delta(dtstart, trigger):
             return f"{delta.years} {get_year_suffix(delta.years)}"
         case _:
             raise ValueError("Недопустимое значение триггера. Ожидается 0 или 1.")
-
-

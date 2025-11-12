@@ -1,22 +1,17 @@
 import csv
 import datetime
-import json
 from calendar import monthrange
 from collections import defaultdict
 from io import StringIO
 
-import plotly
-import plotly.figure_factory as ff
 import pandas as pd
-from celery.utils.functional import first
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
-from decouple import config
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Count, Sum, Min
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, ExtractMonth, ExtractYear
+from django.db.models import Q, Count, Sum
+from django.db.models.functions import ExtractMonth
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import redirect, render
@@ -33,7 +28,6 @@ from django.views.generic import (
     DetailView,
     DeleteView, View,
 )
-from loguru import logger
 
 from administration_app.models import PortalProperty, Notification
 from administration_app.utils import (
@@ -45,7 +39,7 @@ from administration_app.utils import (
     get_history,
     get_year_interval, ajax_search, send_notification,
 )
-from customers_app.models import DataBaseUser, Counteragent, RoleType
+from customers_app.models import DataBaseUser, Counteragent
 from djangoProject.settings import EMAIL_HOST_USER
 from hrdepartment_app.forms import (
     MedicalExaminationAddForm,
@@ -74,7 +68,8 @@ from hrdepartment_app.forms import (
     OficialMemoCancelForm, GuidanceDocumentsUpdateForm, GuidanceDocumentsAddForm, CreatingTeamAddForm,
     CreatingTeamUpdateForm, CreatingTeamAgreedForm, CreatingTeamSetNumberForm, TimeSheetForm,
     ReportCardForm, OutfitCardForm, BriefingsAddForm, BriefingsUpdateForm, OperationalAddForm, OperationalUpdateForm,
-    DataBaseUserEventAddForm, DataBaseUserEventUpdateForm,
+    DataBaseUserEventAddForm, DataBaseUserEventUpdateForm, BusinessProcessRoutesAddForm,
+    BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -95,13 +90,11 @@ from hrdepartment_app.models import (
     ReportCard,
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
-    DataBaseUserEvent,
+    DataBaseUserEvent, BusinessProcessRoutes, LaborProtection,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
-logger.add("debug_hrdepartment.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+from core import logger
 
 
 # Create your views here.
@@ -897,48 +890,83 @@ class ApprovalOficialMemoProcessAdd(
     form_class = ApprovalOficialMemoProcessAddForm
     permission_required = "hrdepartment_app.add_approvaloficialmemoprocess"
 
+    # def get_context_data(self, **kwargs):
+    #     global person_agreement_list
+    #     content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
+    #     content["form"].fields["document"].queryset = OfficialMemo.objects.filter(
+    #         Q(docs__isnull=True) & Q(responsible=self.request.user)
+    #     ).exclude(cancellation=True)
+    #     business_process = BusinessProcessDirection.objects.filter(
+    #         person_executor=self.request.user.user_work_profile.job
+    #     )
+    #     users_list = (
+    #         DataBaseUser.objects.all()
+    #         .exclude(username="proxmox")
+    #         .exclude(is_active=False)
+    #     )
+    #     # Для поля Исполнитель, делаем выборку пользователя из БД на основе request
+    #     content["form"].fields["person_executor"].queryset = users_list.filter(
+    #         pk=self.request.user.pk
+    #     )
+    #
+    #     person_agreement_list = list()
+    #     content["form"].fields["person_agreement"].queryset = users_list.filter(
+    #         user_work_profile__job__pk__in=person_agreement_list
+    #     )
+    #     for item in business_process:
+    #         if item.person_executor.filter(
+    #                 name__contains=self.request.user.user_work_profile.job.name
+    #         ):
+    #             person_agreement_list = [
+    #                 items[0] for items in item.person_agreement.values_list()
+    #             ]
+    #             content["form"].fields["person_agreement"].queryset = users_list.filter(
+    #                 user_work_profile__job__pk__in=person_agreement_list
+    #             )
+    #     # content['form'].fields['person_distributor'].queryset = users_list.filter(
+    #     #     Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
+    #     #     Q(is_superuser=False))
+    #     # content['form'].fields['person_department_staff'].queryset = users_list.filter(
+    #     #     Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
+    #     #     Q(is_superuser=False))
+    #     content[
+    #         "title"
+    #     ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить бизнес процесс"
+    #     return content
     def get_context_data(self, **kwargs):
-        global person_agreement_list
-        content = super(ApprovalOficialMemoProcessAdd, self).get_context_data(**kwargs)
+        content = super().get_context_data(**kwargs)
+
+        # Доступные документы для текущего пользователя
         content["form"].fields["document"].queryset = OfficialMemo.objects.filter(
-            Q(docs__isnull=True) & Q(responsible=self.request.user)
+            Q(docs__isnull=True),
+            Q(responsible=self.request.user)
         ).exclude(cancellation=True)
-        business_process = BusinessProcessDirection.objects.filter(
-            person_executor=self.request.user.user_work_profile.job
-        )
-        users_list = (
-            DataBaseUser.objects.all()
-            .exclude(username="proxmox")
-            .exclude(is_active=False)
-        )
-        # Для поля Исполнитель, делаем выборку пользователя из БД на основе request
+
+        # Все активные пользователи (кроме тех.учётки)
+        users_list = DataBaseUser.objects.exclude(
+            username="proxmox"
+        ).exclude(is_active=False)
+
+        # Исполнитель — только текущий пользователь
         content["form"].fields["person_executor"].queryset = users_list.filter(
             pk=self.request.user.pk
         )
 
-        person_agreement_list = list()
+        # Получаем pk согласующих пользователей напрямую из M2M,
+        # для всех процессов, где текущий пользователь — исполнитель
+        person_agreement_ids = BusinessProcessRoutes.objects.filter(
+            person_executor=self.request.user
+        ).values_list(
+            "person_agreement__pk", flat=True
+        ).distinct()
+
         content["form"].fields["person_agreement"].queryset = users_list.filter(
-            user_work_profile__job__pk__in=person_agreement_list
+            pk__in=person_agreement_ids
         )
-        for item in business_process:
-            if item.person_executor.filter(
-                    name__contains=self.request.user.user_work_profile.job.name
-            ):
-                person_agreement_list = [
-                    items[0] for items in item.person_agreement.values_list()
-                ]
-                content["form"].fields["person_agreement"].queryset = users_list.filter(
-                    user_work_profile__job__pk__in=person_agreement_list
-                )
-        # content['form'].fields['person_distributor'].queryset = users_list.filter(
-        #     Q(user_work_profile__divisions__type_of_role='1') & Q(user_work_profile__job__right_to_approval=True) &
-        #     Q(is_superuser=False))
-        # content['form'].fields['person_department_staff'].queryset = users_list.filter(
-        #     Q(user_work_profile__divisions__type_of_role='2') & Q(user_work_profile__job__right_to_approval=True) &
-        #     Q(is_superuser=False))
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить бизнес процесс"
+
+        content["title"] = (
+            f"{PortalProperty.objects.last().portal_name} // Добавить бизнес процесс"
+        )
         return content
 
     def get_success_url(self):
@@ -1004,186 +1032,333 @@ class ApprovalOficialMemoProcessUpdate(
         )
         return qs
 
-    def get_context_data(self, **kwargs):
-        global person_agreement_list
+    # def get_context_data(self, **kwargs):
+    #     global person_agreement_list
+    #
+    #     users_list = (
+    #         DataBaseUser.objects.all()
+    #         .exclude(username="proxmox")
+    #         .exclude(is_active=False)
+    #     )
+    #     content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(
+    #         **kwargs
+    #     )
+    #     document = self.get_object()
+    #     business_process = BusinessProcessDirection.objects.filter(
+    #         Q(person_executor=document.person_executor.user_work_profile.job) & Q(business_process_type=1)
+    #     )
+    #     content["document"] = document.document
+    #     person_agreement_list = list()
+    #     person_clerk_list = list()
+    #     person_hr_list = list()
+    #     for item in business_process:
+    #         person_agreement_list = [
+    #             items[0] for items in item.person_agreement.values_list()
+    #         ]
+    #         person_clerk_list = [items[0] for items in item.clerk.values_list()]
+    #         person_hr_list = [items[0] for items in item.person_hr.values_list()]
+    #     # Получаем подразделение исполнителя
+    #     # division = document.person_executor.user_work_profile.divisions
+    #     # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
+    #     content["form"].fields["person_executor"].queryset = users_list.filter(
+    #         pk=document.person_executor.pk
+    #     )
+    #     # Если установлен признак согласования документа, то фильтруем поле согласующего лица
+    #     if document.document_not_agreed:
+    #         try:
+    #             content["form"].fields["person_agreement"].queryset = users_list.filter(
+    #                 pk=document.person_agreement.pk
+    #             )
+    #         except AttributeError:
+    #             content["form"].fields["person_agreement"].queryset = users_list.filter(
+    #                 user_work_profile__job__pk__in=person_agreement_list
+    #             )
+    #     else:
+    #         # Иначе по подразделению исполнителя фильтруем руководителей для согласования
+    #         content["form"].fields["person_agreement"].queryset = users_list.filter(
+    #             user_work_profile__job__pk__in=person_agreement_list
+    #         )
+    #         try:
+    #             # Если пользователь = Согласующее лицо
+    #             if self.request.user.user_work_profile.job.pk in person_agreement_list:
+    #                 content["form"].fields[
+    #                     "person_agreement"
+    #                 ].queryset = users_list.filter(
+    #                     Q(user_work_profile__job__pk__in=person_agreement_list)
+    #                     & Q(pk=self.request.user.pk)
+    #                 )
+    #             # Иначе весь список согласующих лиц
+    #             else:
+    #                 content["form"].fields[
+    #                     "person_agreement"
+    #                 ].queryset = users_list.filter(
+    #                     user_work_profile__job__pk__in=person_agreement_list
+    #                 )
+    #         except AttributeError as _ex:
+    #             logger.error(f"У пользователя отсутствует должность")
+    #             # ToDo: Нужно вставить выдачу ошибки
+    #             return {}
+    #
+    #     list_agreement = list()
+    #     for unit in users_list.filter(
+    #             user_work_profile__job__pk__in=person_agreement_list
+    #     ):
+    #         list_agreement.append(unit.pk)
+    #     content["list_agreement"] = list_agreement
+    #
+    #     list_distributor = users_list.filter(
+    #         Q(type_of_role=RoleType.NO)
+    #         & Q(user_work_profile__job__right_to_approval=True)
+    #         # & Q(is_superuser=False)
+    #     )
+    #     content["form"].fields["person_distributor"].queryset = list_distributor
+    #     content["list_distributor"] = list_distributor
+    #
+    #     list_department_staff = users_list.filter(
+    #         Q(type_of_role=RoleType.HR)
+    #         & Q(user_work_profile__job__right_to_approval=True)
+    #         & Q(is_superuser=False)
+    #     )
+    #     content["form"].fields[
+    #         "person_department_staff"
+    #     ].queryset = list_department_staff
+    #     content["list_department_staff"] = list_department_staff
+    #
+    #     list_accounting = users_list.filter(
+    #         Q(type_of_role=RoleType.ACCOUNTING)
+    #         & Q(user_work_profile__job__right_to_approval=True)
+    #         & Q(is_superuser=False)
+    #     )
+    #     content["form"].fields["person_accounting"].queryset = list_accounting
+    #     content["list_accounting"] = list_accounting
+    #
+    #     list_clerk = users_list.filter(user_work_profile__job__pk__in=person_clerk_list)
+    #     if document.originals_received:
+    #         try:
+    #             content["form"].fields["person_clerk"].queryset = users_list.filter(
+    #                 pk=document.person_clerk.pk
+    #             )
+    #         except AttributeError:
+    #             content["form"].fields["person_clerk"].queryset = list_clerk
+    #     else:
+    #         # Иначе по подразделению исполнителя фильтруем делопроизводителя для согласования
+    #         content["form"].fields["person_clerk"].queryset = list_clerk
+    #         try:
+    #             # Если пользователь = Делопроизводитель
+    #             if self.request.user.user_work_profile.job.pk in person_clerk_list:
+    #                 content["form"].fields["person_clerk"].queryset = users_list.filter(
+    #                     Q(user_work_profile__job__pk__in=person_clerk_list)
+    #                     & Q(pk=self.request.user.pk)
+    #                 )
+    #             # Иначе весь список делопроизводителей
+    #             else:
+    #                 content["form"].fields["person_clerk"].queryset = list_clerk
+    #         except AttributeError as _ex:
+    #             logger.error(f"У пользователя отсутствует должность")
+    #             # ToDo: Нужно вставить выдачу ошибки
+    #             return {}
+    #     content["list_clerk"] = list_clerk
+    #
+    #     list_hr = users_list.filter(user_work_profile__job__pk__in=person_hr_list)
+    #     if document.originals_received:
+    #         try:
+    #             content["form"].fields["person_hr"].queryset = users_list.filter(
+    #                 pk=document.person_hr.pk
+    #             )
+    #         except AttributeError:
+    #             content["form"].fields["person_hr"].queryset = list_hr
+    #     else:
+    #         # Иначе по подразделению исполнителя фильтруем сотрудника ОК для согласования
+    #         content["form"].fields["person_hr"].queryset = list_hr
+    #         try:
+    #             # Если пользователь = Сотрудник ОК
+    #             if self.request.user.user_work_profile.job.pk in person_hr_list:
+    #                 content["form"].fields["person_hr"].queryset = users_list.filter(
+    #                     Q(user_work_profile__job__pk__in=person_hr_list)
+    #                     & Q(pk=self.request.user.pk)
+    #                 )
+    #             # Иначе весь список сотрудников ОК
+    #             else:
+    #                 content["form"].fields["person_hr"].queryset = list_hr
+    #         except AttributeError as _ex:
+    #             logger.error(f"У пользователя отсутствует должность")
+    #             # ToDo: Нужно вставить выдачу ошибки
+    #             return {}
+    #     content["list_hr"] = list_hr
+    #
+    #     content[
+    #         "title"
+    #     ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}"
+    #     # Выбираем приказ
+    #     if document.document.official_memo_type == "1":
+    #         content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
+    #             document_foundation__pk=document.document.pk
+    #         ).exclude(cancellation=True)
+    #     elif document.document.official_memo_type == "2":
+    #         content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
+    #             document_foundation__pk=document.document.pk
+    #         ).exclude(cancellation=True)
+    #     else:
+    #         content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
+    #             pk=0
+    #         )
+    #     delta = document.document.period_for - document.document.period_from
+    #     content["ending_day"] = ending_day(int(delta.days) + 1)
+    #     content["change_history"] = get_history(self, ApprovalOficialMemoProcess)
+    #     content["without_departure"] = (
+    #         False if document.document.official_memo_type == "3" else True
+    #     )
+    #     content["extension"] = (
+    #         False if document.document.official_memo_type == "2" else True
+    #     )
+    #     # print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
+    #     return content
 
-        users_list = (
-            DataBaseUser.objects.all()
-            .exclude(username="proxmox")
-            .exclude(is_active=False)
-        )
-        content = super(ApprovalOficialMemoProcessUpdate, self).get_context_data(
-            **kwargs
-        )
+    def get_context_data(self, **kwargs):
+        content = super().get_context_data(**kwargs)
+
         document = self.get_object()
-        business_process = BusinessProcessDirection.objects.filter(
-            Q(person_executor=document.person_executor.user_work_profile.job) & Q(business_process_type=1)
+
+        # Все активные пользователи (кроме тех. учётки)
+        users_list = DataBaseUser.objects.exclude(
+            username="proxmox"
+        ).exclude(is_active=False)
+
+        # Получаем бизнес-процесс(ы), где исполнитель = текущий исполнитель документа
+        business_process_qs = BusinessProcessRoutes.objects.filter(
+            person_executor=document.person_executor,
+            business_process_type="1",  # раньше было =1
         )
+
+        # Списки согласующих, делопроизводителей, HR
+        person_agreement_ids = business_process_qs.values_list(
+            "person_agreement__pk", flat=True
+        ).distinct()
+        person_clerk_ids = business_process_qs.values_list(
+            "person_clerk__pk", flat=True
+        ).distinct()
+        person_accounting_ids = business_process_qs.values_list(
+            "person_accounting__pk", flat=True
+        )
+        person_hr_ids = business_process_qs.values_list(
+            "person_hr__pk", flat=True
+        ).distinct()
+        person_sd_ids = business_process_qs.values_list(
+            "person_sd__pk", flat=True
+        ).distinct()
+
+        # Документ в контекст
         content["document"] = document.document
-        person_agreement_list = list()
-        person_clerk_list = list()
-        person_hr_list = list()
-        for item in business_process:
-            person_agreement_list = [
-                items[0] for items in item.person_agreement.values_list()
-            ]
-            person_clerk_list = [items[0] for items in item.clerk.values_list()]
-            person_hr_list = [items[0] for items in item.person_hr.values_list()]
-        # Получаем подразделение исполнителя
-        # division = document.person_executor.user_work_profile.divisions
-        # При редактировании БП фильтруем поле исполнителя, чтоб нельзя было изменить его в процессе работы
+
+        # --- Исполнитель ---
         content["form"].fields["person_executor"].queryset = users_list.filter(
             pk=document.person_executor.pk
         )
-        # Если установлен признак согласования документа, то фильтруем поле согласующего лица
+
+        # --- Согласующее лицо ---
         if document.document_not_agreed:
-            try:
+            # Если документ не согласован — фиксируем текущее лицо
+            if document.person_agreement:
                 content["form"].fields["person_agreement"].queryset = users_list.filter(
                     pk=document.person_agreement.pk
                 )
-            except AttributeError:
+            else:
                 content["form"].fields["person_agreement"].queryset = users_list.filter(
-                    user_work_profile__job__pk__in=person_agreement_list
+                    pk__in=person_agreement_ids
                 )
         else:
-            # Иначе по подразделению исполнителя фильтруем руководителей для согласования
-            content["form"].fields["person_agreement"].queryset = users_list.filter(
-                user_work_profile__job__pk__in=person_agreement_list
-            )
-            try:
-                # Если пользователь = Согласующее лицо
-                if self.request.user.user_work_profile.job.pk in person_agreement_list:
-                    content["form"].fields[
-                        "person_agreement"
-                    ].queryset = users_list.filter(
-                        Q(user_work_profile__job__pk__in=person_agreement_list)
-                        & Q(pk=self.request.user.pk)
-                    )
-                # Иначе весь список согласующих лиц
-                else:
-                    content["form"].fields[
-                        "person_agreement"
-                    ].queryset = users_list.filter(
-                        user_work_profile__job__pk__in=person_agreement_list
-                    )
-            except AttributeError as _ex:
-                logger.error(f"У пользователя отсутствует должность")
-                # ToDo: Нужно вставить выдачу ошибки
-                return {}
+            # Если текущий пользователь в списке согласующих — даём выбрать только себя
+            if self.request.user.pk in person_agreement_ids:
+                content["form"].fields["person_agreement"].queryset = users_list.filter(
+                    pk=self.request.user.pk
+                )
+            else:
+                content["form"].fields["person_agreement"].queryset = users_list.filter(
+                    pk__in=person_agreement_ids
+                )
 
-        list_agreement = list()
-        for unit in users_list.filter(
-                user_work_profile__job__pk__in=person_agreement_list
-        ):
-            list_agreement.append(unit.pk)
-        content["list_agreement"] = list_agreement
+        content["list_agreement"] = list(person_agreement_ids)
 
+        # --- Распределитель ---
         list_distributor = users_list.filter(
-            Q(type_of_role=RoleType.NO)
-            & Q(user_work_profile__job__right_to_approval=True)
-            # & Q(is_superuser=False)
+            Q(pk__in=person_sd_ids) &
+            Q(user_work_profile__job__right_to_approval=True)
         )
         content["form"].fields["person_distributor"].queryset = list_distributor
         content["list_distributor"] = list_distributor
 
+        # --- Сотрудник отдела (HR) ---
         list_department_staff = users_list.filter(
-            Q(type_of_role=RoleType.HR)
-            & Q(user_work_profile__job__right_to_approval=True)
-            & Q(is_superuser=False)
+            Q(pk__in=person_hr_ids) &
+            Q(user_work_profile__job__right_to_approval=True)
         )
-        content["form"].fields[
-            "person_department_staff"
-        ].queryset = list_department_staff
+        content["form"].fields["person_department_staff"].queryset = list_department_staff
         content["list_department_staff"] = list_department_staff
 
+        # --- Бухгалтерия ---
         list_accounting = users_list.filter(
-            Q(type_of_role=RoleType.ACCOUNTING)
-            & Q(user_work_profile__job__right_to_approval=True)
-            & Q(is_superuser=False)
+            Q(pk__in=person_accounting_ids) &
+            Q(user_work_profile__job__right_to_approval=True)
         )
         content["form"].fields["person_accounting"].queryset = list_accounting
         content["list_accounting"] = list_accounting
 
-        list_clerk = users_list.filter(user_work_profile__job__pk__in=person_clerk_list)
+        # --- Делопроизводитель ---
+        list_clerk = users_list.filter(pk__in=person_clerk_ids)
         if document.originals_received:
-            try:
+            if document.person_clerk:
                 content["form"].fields["person_clerk"].queryset = users_list.filter(
                     pk=document.person_clerk.pk
                 )
-            except AttributeError:
+            else:
                 content["form"].fields["person_clerk"].queryset = list_clerk
         else:
-            # Иначе по подразделению исполнителя фильтруем делопроизводителя для согласования
-            content["form"].fields["person_clerk"].queryset = list_clerk
-            try:
-                # Если пользователь = Делопроизводитель
-                if self.request.user.user_work_profile.job.pk in person_clerk_list:
-                    content["form"].fields["person_clerk"].queryset = users_list.filter(
-                        Q(user_work_profile__job__pk__in=person_clerk_list)
-                        & Q(pk=self.request.user.pk)
-                    )
-                # Иначе весь список делопроизводителей
-                else:
-                    content["form"].fields["person_clerk"].queryset = list_clerk
-            except AttributeError as _ex:
-                logger.error(f"У пользователя отсутствует должность")
-                # ToDo: Нужно вставить выдачу ошибки
-                return {}
+            if self.request.user.pk in person_clerk_ids:
+                content["form"].fields["person_clerk"].queryset = users_list.filter(
+                    pk=self.request.user.pk
+                )
+            else:
+                content["form"].fields["person_clerk"].queryset = list_clerk
         content["list_clerk"] = list_clerk
 
-        list_hr = users_list.filter(user_work_profile__job__pk__in=person_hr_list)
+        # --- Сотрудник ОК ---
+        list_hr = users_list.filter(pk__in=person_hr_ids)
         if document.originals_received:
-            try:
+            if document.person_hr:
                 content["form"].fields["person_hr"].queryset = users_list.filter(
                     pk=document.person_hr.pk
                 )
-            except AttributeError:
+            else:
                 content["form"].fields["person_hr"].queryset = list_hr
         else:
-            # Иначе по подразделению исполнителя фильтруем сотрудника ОК для согласования
-            content["form"].fields["person_hr"].queryset = list_hr
-            try:
-                # Если пользователь = Сотрудник ОК
-                if self.request.user.user_work_profile.job.pk in person_hr_list:
-                    content["form"].fields["person_hr"].queryset = users_list.filter(
-                        Q(user_work_profile__job__pk__in=person_hr_list)
-                        & Q(pk=self.request.user.pk)
-                    )
-                # Иначе весь список сотрудников ОК
-                else:
-                    content["form"].fields["person_hr"].queryset = list_hr
-            except AttributeError as _ex:
-                logger.error(f"У пользователя отсутствует должность")
-                # ToDo: Нужно вставить выдачу ошибки
-                return {}
+            if self.request.user.pk in person_hr_ids:
+                content["form"].fields["person_hr"].queryset = users_list.filter(
+                    pk=self.request.user.pk
+                )
+            else:
+                content["form"].fields["person_hr"].queryset = list_hr
         content["list_hr"] = list_hr
 
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}"
-        # Выбираем приказ
-        if document.document.official_memo_type == "1":
-            content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
-                document_foundation__pk=document.document.pk
-            ).exclude(cancellation=True)
-        elif document.document.official_memo_type == "2":
+        # Заголовок
+        content["title"] = (
+            f"{PortalProperty.objects.last().portal_name} // Редактирование - {document.document.title}"
+        )
+
+        # --- Приказ ---
+        if document.document.official_memo_type in ("1", "2"):
             content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
                 document_foundation__pk=document.document.pk
             ).exclude(cancellation=True)
         else:
-            content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
-                pk=0
-            )
+            content["form"].fields["order"].queryset = DocumentsOrder.objects.none()
+
+        # --- Остальное ---
         delta = document.document.period_for - document.document.period_from
-        content["ending_day"] = ending_day(int(delta.days) + 1)
+        content["ending_day"] = ending_day(delta.days + 1)
         content["change_history"] = get_history(self, ApprovalOficialMemoProcess)
-        content["without_departure"] = (
-            False if document.document.official_memo_type == "3" else True
-        )
-        content["extension"] = (
-            False if document.document.official_memo_type == "2" else True
-        )
-        # print(document.prepaid_expense_summ - (document.number_business_trip_days*500 + document.number_flight_days*900))
+        content["without_departure"] = document.document.official_memo_type != "3"
+        content["extension"] = document.document.official_memo_type != "2"
+
         return content
 
     def form_valid(self, form):
@@ -1607,6 +1782,51 @@ class BusinessProcessDirectionUpdate(
     model = BusinessProcessDirection
     form_class = BusinessProcessDirectionUpdateForm
     permission_required = "hrdepartment_app.change_businessprocessdirection"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+
+# Направления бизнес-процессов
+class BusinessProcessRoutesList(
+    PermissionRequiredMixin, LoginRequiredMixin, ListView
+):
+    model = BusinessProcessRoutes
+    permission_required = "hrdepartment_app.view_businessprocessroutes"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Направление бизнес-процессов"
+        return context
+
+
+class BusinessProcessRoutesAdd(
+    PermissionRequiredMixin, LoginRequiredMixin, CreateView
+):
+    model = BusinessProcessRoutes
+    form_class = BusinessProcessRoutesAddForm
+    permission_required = "hrdepartment_app.add_businessprocessroutes"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить направление бизнес процесса"
+        return context
+
+
+class BusinessProcessRoutesUpdate(
+    PermissionRequiredMixin, LoginRequiredMixin, UpdateView
+):
+    model = BusinessProcessRoutes
+    form_class = BusinessProcessRoutesUpdateForm
+    permission_required = "hrdepartment_app.change_businessprocessroutes"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
@@ -3414,6 +3634,7 @@ class BriefingsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
         # Возвращаем модифицированную форму
         return form
 
+
 class BriefingsDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = Briefings
     template_name = "hrdepartment_app/briefings_confirm_delete.html"
@@ -3833,16 +4054,17 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
-        user_job = self.request.user.user_work_profile.job.pk
-        persons_list = BusinessProcessDirection.objects.filter(business_process_type="2")
+        user_job = self.request.user.pk
+        persons_list = BusinessProcessRoutes.objects.filter(business_process_type="2")
         for person in persons_list:
+            print(person.person_executor.iterator())
             if user_job in [item.pk for item in person.person_executor.iterator()]:
                 context["is_executor"] = True
             if user_job in [item.pk for item in person.person_agreement.iterator()]:
                 context["is_agreement"] = True
             if user_job in [item.pk for item in person.person_hr.iterator()]:
                 context["is_hr"] = True
-            if user_job in [item.pk for item in person.clerk.iterator()]:
+            if user_job in [item.pk for item in person.person_clerk.iterator()]:
                 context["is_clerk"] = True
         if not self.object.email_send and self.object.scan_file:
             context["email_send"] = True
@@ -3994,11 +4216,10 @@ class CreatingTeamAgreed(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         """
         kwargs = super().get_form_kwargs()
         kwargs.update({"user": self.request.user.pk})
-        approving_job_list = [item['person_agreement'] for item in
-                              BusinessProcessDirection.objects.filter(business_process_type=2).values(
-                                  'person_agreement')]
-        approving_person_list = [item.pk for item in DataBaseUser.objects.filter(
-            user_work_profile__job__in=approving_job_list).exclude(is_active=False)]
+        approving_person_list = [item['person_agreement'] for item in
+                                 BusinessProcessRoutes.objects.filter(business_process_type=2).values(
+                                     'person_agreement')]
+
         kwargs.update({"approving_person": approving_person_list})
         return kwargs
 
@@ -4044,11 +4265,9 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
         """
         kwargs = super().get_form_kwargs()
         kwargs.update({"user": self.request.user.pk})
-        hr_job_list = [item['person_hr'] for item in
-                       BusinessProcessDirection.objects.filter(business_process_type=2).values(
-                           'person_hr')]
-        hr_person_list = [item.pk for item in DataBaseUser.objects.filter(
-            user_work_profile__job__in=hr_job_list).exclude(is_active=False)]
+        hr_person_list = [item['person_hr'] for item in
+                          BusinessProcessRoutes.objects.filter(business_process_type=2).values(
+                              'person_hr')]
         kwargs.update({"hr_person": hr_person_list})
         return kwargs
 
@@ -4258,7 +4477,8 @@ class TimeSheetUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
         else:
             data['reportcard_formset'] = inlineformset_factory(TimeSheet, ReportCard, form=ReportCardForm, extra=3)(
                 instance=self.object)
-        data['all_employee'] = DataBaseUser.objects.filter(user_work_profile__job__division_affiliation__name="Инженерный состав")
+        data['all_employee'] = DataBaseUser.objects.filter(
+            user_work_profile__job__division_affiliation__name="Инженерный состав")
         return data
 
     def form_valid(self, form):
@@ -5219,6 +5439,7 @@ def get_extension_data(request):
             return JsonResponse({}, status=404)
     return JsonResponse({}, status=400)
 
+
 # Местоположение сотрудников
 
 class DataBaseUserEventList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
@@ -5280,7 +5501,6 @@ class DataBaseUserEventDetail(PermissionRequiredMixin, LoginRequiredMixin, Detai
     model = DataBaseUserEvent
     permission_required = "hrdepartment_app.view_databaseuserevent"
 
-
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         context["title"] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
@@ -5312,6 +5532,7 @@ class DataBaseUserEventUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
         kwargs.update({"user": self.request.user.pk})
         return kwargs
 
+
 class DataBaseUserEventDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = DataBaseUserEvent
     success_url = reverse_lazy("hrdepartment_app:users_events_list")
@@ -5324,3 +5545,165 @@ class DataBaseUserEventDelete(PermissionRequiredMixin, LoginRequiredMixin, Delet
         ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
         return context
 
+
+# Процедуры по охране труда
+class LaborProtectionList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Процедуры по охране труда - список
+    """
+
+    model = LaborProtection
+    permission_required = "hrdepartment_app.view_laborprotection"
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            briefings_list = LaborProtection.objects.all()
+            data = [briefings_item.get_data() for briefings_item in briefings_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Процедуры по охране труда"
+        return context
+
+
+class LaborProtectionAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """
+    Процедуры по охране труда - создание
+    """
+
+    model = LaborProtection
+    form_class = LaborProtectionAddForm
+    permission_required = "hrdepartment_app.add_laborprotection"
+
+    def get_context_data(self, **kwargs):
+        content = super(LaborProtectionAdd, self).get_context_data(**kwargs)
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить процедуру по охране труда"
+        return content
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+
+@method_decorator(never_cache, name='dispatch')
+class LaborProtectionDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """
+    Процедуры по охране труда - просмотр
+    """
+
+    model = LaborProtection
+    permission_required = "hrdepartment_app.view_laborprotection"
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_access.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy("hrdepartment_app:labor_protection_list")
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy("hrdepartment_app:labor_protection_list")
+            return redirect(url_match)
+        return super(LaborProtectionDetail, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        content_type_id = ContentType.objects.get_for_model(self.object).id
+        document_id = self.object.id
+        user = self.request.user
+        agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
+                                                      user=user).exists()
+        context['agree'] = agree
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
+        context['list_agree'] = list_agree
+        previous = LaborProtection.objects.filter(parent_document=document_id).values_list('pk').last()
+        context['previous'] = previous[0] if previous else False
+        try:
+            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+        except TypeError:
+            context['outdated'] = False
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        return context
+
+
+class LaborProtectionUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """
+    Процедуры по охране труда - редактирование
+    """
+
+    model = LaborProtection
+    form_class = LaborProtectionUpdateForm
+    permission_required = "hrdepartment_app.change_laborprotection"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+    def get_form(self, form_class=None):
+        """
+        В данном случае, queryset содержит все объекты Provisions, кроме объекта, который соответствует текущему
+        экземпляру класса (self.object). Это может быть полезно, если вы хотите ограничить выбор определенных объектов
+        в поле формы.
+
+        :param form_class: Установлен в текущем экземпляре класса. Это позволяет получить экземпляр формы, который
+                            в дальнейшем будет использоваться в представлении.
+        :return: Возвращаем модифицированную форму.
+        """
+        # Получаем экземпляр формы, используя родительский метод `get_form`
+        form = super().get_form(form_class=self.form_class)
+
+        # Добавляем дополнительное поле 'parent_document' в форму
+        form.fields['parent_document'].queryset = LaborProtection.objects.all().exclude(pk=self.object.pk)
+
+        # Возвращаем модифицированную форму
+        return form
+
+
+class LaborProtectionDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = LaborProtection
+    success_url = reverse_lazy("hrdepartment_app:labor_protection_list")
+    permission_required = "hrdepartment_app.delete_laborprotection"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        return context

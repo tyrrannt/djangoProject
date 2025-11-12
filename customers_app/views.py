@@ -5,30 +5,23 @@ import uuid
 from collections import defaultdict
 from io import BytesIO
 from itertools import chain
-# from pprint import pprint
-# from pydoc import pager
 from urllib.parse import urlencode
 
 import pandas as pd
 import qrcode
-# from celery.worker.consumer import Tasks
-# from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, DAILY
-from decouple import config
-# from django.contrib.auth import authenticate
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-# from django.db.models.signals import post_save
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
-from loguru import logger
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q, F
 from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
+from rest_framework import viewsets
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
@@ -37,7 +30,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
 from contracts_app.models import TypeDocuments, Contract
 from contracts_app.templatetags.custom import FIO_format
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
-    get_settlement_sheet, get_report_card_table, get_vacation_days
+    get_settlement_sheet, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments, \
     UserStats
@@ -48,17 +41,15 @@ from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm,
     ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 
-# from hrdepartment_app.hrdepartment_util import get_working_hours
+from customers_app.serializers import DataBaseUserSerializer
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
     get_norm_time_at_custom_day
 from hrdepartment_app.tasks import send_email_single_notification
 from tasks_app.models import Task
 
-logger.add("debug_users.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-           rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-           serialize=config('LOG_SERIALIZE'))
+from core import logger
 
 
 @login_required
@@ -392,15 +383,60 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                     get_report_card_table(data_dict, total_score, first_day, last_day, user_start, user_end),
                     safe=False)
                 """
-                # Определяем текущую дату
-                current_date = datetime.datetime.today()  # - datetime.timedelta(days=1)
+                try:
+                    # Валидация входных параметров
+                    year = int(report_year)
+                    month = int(report_month)
 
-                # Определяем начальную дату как первый день текущего месяца
-                start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    if not (1 <= month <= 12):
+                        raise ValueError("Месяц должен быть от 1 до 12")
+                    if not (2020 <= year <= 2100):  # Реалистичный диапазон
+                        raise ValueError("Некорректный год")
 
-                # Генерируем диапазон дат с начала месяца до текущего дня
-                norm_time_date = ProductionCalendar.objects.get(
-                    calendar_month=datetime.datetime(int(report_year), int(report_month), 1))
+                    # Определяем текущую дату
+                    current_date = datetime.datetime.today()  # - datetime.timedelta(days=1)
+
+                    # Определяем начальную дату как первый день текущего месяца
+                    start_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+                    # Создание даты для запроса
+                    target_month = datetime.date(year, month, 1)
+
+                    # Получение данных календаря
+                    norm_time_date = ProductionCalendar.objects.get(calendar_month=target_month)
+                except ValueError as e:
+                    logger.error(f"Некорректные параметры даты: {e}")
+                    html = """
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Ошибка валидации!</strong> Некорректные параметры даты: {error}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        """.format(error=str(e))
+                    return JsonResponse(html, safe=False)
+
+                except ProductionCalendar.DoesNotExist:
+                    logger.warning(f"Данные календаря не найдены для {year}-{month}")
+                    html = """
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <i class="bi bi-calendar-x me-2"></i>
+                            <strong>Данные не найдены!</strong> Производственный календарь для {year}-{month} не найден.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        """.format(year=year, month=month)
+                    return JsonResponse(html, safe=False)
+
+                except Exception as e:
+                    logger.error(f"Ошибка при обработке дат: {e}")
+                    html = """
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-bug-fill me-2"></i>
+                            <strong>Внутренняя ошибка!</strong> Произошла непредвиденная ошибка при обработке дат.
+                            <div class="mt-2 small">Детали: {error}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        """.format(error=str(e))
+                    return JsonResponse(html, safe=False)
 
                 if int(report_month) == current_date.month and int(report_year) == current_date.year:
                     # Если текущий месяц и текущая дата совпадают, то диапазон дат с начала месяца до текущего дня.
@@ -426,9 +462,10 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 #     report_card_list.append(
                 #         [report_record.report_card_day, report_record.start_time,
                 #          report_record.end_time, report_record.record_type])
-                report_card_list = list(ReportCard.objects.filter(Q(employee=self.request.user) & Q(report_card_day__in=dates)).values_list(
-                    'report_card_day', 'start_time', 'end_time', 'record_type'
-                ))
+                report_card_list = list(
+                    ReportCard.objects.filter(Q(employee=self.request.user) & Q(report_card_day__in=dates)).values_list(
+                        'report_card_day', 'start_time', 'end_time', 'record_type'
+                    ).exclude(record_type=18))
                 # field names
                 fields = ["Дата", "Start", "End", "Type"]
 
@@ -582,7 +619,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 # Получение остатка отпусков
                 html = f"<label class='form-control form-control-modern'>Остаток отпуска: {get_vacation_days(self, get_date)} дн.</label>"
 
-                return JsonResponse({'html': html}, safe=False)
+                return JsonResponse(html, safe=False)
         return super().get(request, *args, **kwargs)
 
 
@@ -725,9 +762,10 @@ def login(request):
                 return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))
             else:
                 content['errors'] = 'Неверный логин или пароль.'
-                logger.error(f'Ошибка авторизации: Неверные учетные данные для пользователя {username}, IP: {get_client_ip(request)}')
+                logger.error(
+                    f'Ошибка авторизации: Неверные учетные данные для пользователя {username}, IP: {get_client_ip(request)}')
         else:
-            content['errors'] = login_form.errors # Или login_form.non_field_errors()
+            content['errors'] = login_form.errors  # Или login_form.non_field_errors()
             try:
                 logger.error(f'Ошибка валидации формы при входе. Данные: {request.POST}, IP: {get_client_ip(request)}')
             except Exception as _ex:
@@ -735,6 +773,7 @@ def login(request):
     else:
         content['login_form'] = DataBaseUserLoginForm()
     return render(request, 'customers_app/login.html', content)
+
 
 def logout(request):
     auth.logout(request)
@@ -1680,6 +1719,7 @@ def get_leaderboard(request):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
+
 @login_required
 def inactive_users_report(request):
     """
@@ -1723,3 +1763,9 @@ def inactive_users_report(request):
         })
 
     return render(request, 'customers_app/inactive_users.html', {'report': dict(report_data)})
+
+
+# ----------------------------------------- DRF -----------------------------------------
+class DataBaseUserViewSet(viewsets.ModelViewSet):
+    queryset = DataBaseUser.objects.all()
+    serializer_class = DataBaseUserSerializer

@@ -1,6 +1,13 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from . import views
-from .views import lock_screen
+from .views import lock_screen, DataBaseUserViewSet
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register(r'databaseuser', DataBaseUserViewSet)
 
 # from .views import (
 #     AffiliationListView,
@@ -13,6 +20,9 @@ from .views import lock_screen
 app_name = "customers_app"
 
 urlpatterns = [
+    path('api/', include(router.urls)),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("", views.index, name="index"),
     path("login/", views.login, name="login"),
     path("logout/", views.logout, name="logout"),

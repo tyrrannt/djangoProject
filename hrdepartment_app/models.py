@@ -3,7 +3,6 @@ import os
 import pathlib
 import time
 import uuid
-from gc import get_objects
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
@@ -13,17 +12,15 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import FileExtensionValidator
 from django.db import models
-from django.db.models import Q, Choices, Max
-from django.db.models.expressions import result
+from django.db.models import Q, Max
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django_ckeditor_5.fields import CKEditor5Field
 from docx import Document
-from docxtpl import DocxTemplate, RichText, Listing
+from docxtpl import DocxTemplate, Listing
 from htmldocx import HtmlToDocx
-from loguru import logger
 
 from administration_app.utils import (
     ending_day,
@@ -46,10 +43,62 @@ from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 from library_app.models import DocumentForm
 from telegram_app.models import TelegramNotification, ChatID
 
+from core import logger
 
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
+WORK_DAY_HOURS = 8.5  # нормальный рабочий день
+SHORT_DAY_HOURS = 7.5  # укороченный день (обычно пятница)
+WORK_DAY_TIME = int(WORK_DAY_HOURS * 3600)
+SHORT_DAY_TIME = int(SHORT_DAY_HOURS * 3600)
+
+
+def custom_upload_to(instance, filename):
+    """
+    Универсальная upload_to — верхнего уровня, безопасная для миграций.
+    Параметры берутся из атрибутов модели:
+    - prefix_attr_<field>
+    - prefix_ext_<field>  (опционально)
+    - prefix_file_<field> (опционально)
+    """
+
+    # 1. Определяем, из какого поля вызвана функция
+    field_name = None
+    for f in instance._meta.fields:
+        value = getattr(instance, f.name)
+        if hasattr(value, 'name') and value and filename == os.path.basename(value.name):
+            field_name = f.name
+            break
+
+    # 2. Если файл уже существует — вернуть старое имя
+    if instance.pk and field_name:
+        old_instance = instance.__class__.objects.filter(pk=instance.pk).first()
+        if old_instance:
+            old_file = getattr(old_instance, field_name)
+            if old_file:
+                return old_file.name
+
+    # 3. Префикс и параметры
+    prefix = getattr(instance, f'prefix_attr_{field_name}', None) \
+             or getattr(instance, 'prefix_attr', None) \
+             or instance.__class__.__name__.upper()
+
+    prefix_file = getattr(instance, f'prefix_file_{field_name}', None)
+    ext = getattr(instance, f'prefix_ext_{field_name}', None) \
+          or os.path.splitext(filename)[1].lstrip('.') or 'pdf'
+
+    # 4. UID
+    max_pk = (instance.__class__.objects.aggregate(pk_max=models.Max('pk'))['pk_max'] or 0) + 1
+    uid = f"{max_pk:07}"
+    executor_pk = getattr(getattr(instance, 'executor', None), 'pk', 0)
+    user_uid = f"{executor_pk:07}"
+
+    # 5. Дата
+    datefield = getattr(instance, 'date_entry', datetime.date.today())
+    year = datefield.year if isinstance(datefield, datetime.date) else datetime.date.today().year
+
+    # 6. Имя файла
+    custom_name = f"{prefix}-{uid}-{datefield}-{prefix_file}-{user_uid}.{ext}"
+
+    return os.path.join("docs", prefix, str(year), custom_name)
 
 
 def filename_creator(instance, filename, prefix: str, datefield, filetype: str):
@@ -85,10 +134,10 @@ def filename_creator(instance, filename, prefix: str, datefield, filetype: str):
     return f"{prefix}-{date_str}-{filetype}-{uid}.{ext}"
 
 
-
 # Create your models here.
 def contract_directory_path(instance, filename):
     return f"hr/medical/{filename}"
+
 
 # def mdc_directory_path_pmo(instance, filename):
 #     prefix = "MED"
@@ -146,140 +195,53 @@ def contract_directory_path(instance, filename):
 #         logger.error(f"Ошибка при переименовании файла {_ex}")
 
 
-
 def jds_directory_path(instance, filename):
-    prefix = "JDS"
-    datefield = instance.document_date
-    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
-    uid = f'{max_pk:07}'
-    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+    return custom_upload_to(instance, filename)
 
-    custom_name = (
-        f"{prefix}-{instance.document_division.code}-"
-        f"{instance.document_job.code}-{uid}-{str(datefield)}.{ext}"
-    )
-
-    return os.path.join("docs", "JDS", str(instance.document_division.code), custom_name)
 
 def ins_directory_path(instance, filename):
-    prefix = "INS"
-    datefield = instance.date_entry
-    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
-    uid = f'{max_pk:07}'
-    user_uid = f"{instance.executor.pk:07}"
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+    return custom_upload_to(instance, filename)
 
-    custom_name = (
-        f"{prefix}-{uid}-{str(datefield)}-DRAFT-{user_uid}.{ext}"
-    )
-    return os.path.join("docs", "INS", str(year), custom_name)
 
 def ins_directory_path_scan(instance, filename):
-    prefix = "INS"
-    datefield = instance.date_entry
-    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
-    uid = f'{max_pk:07}'
-    user_uid = f"{instance.executor.pk:07}"
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
-
-    custom_name = (
-        f"{prefix}-{uid}-{str(datefield)}-SCAN-{user_uid}.{ext}"
-    )
-    return os.path.join("docs", "INS", str(year), custom_name)
-
+    return custom_upload_to(instance, filename)
 
 
 def prv_directory_path(instance, filename):
-    prefix = "PRV"
-    datefield = instance.date_entry
-    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
-    uid = f'{max_pk:07}'
-    user_uid = f"{instance.executor.pk:07}"
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
-
-    custom_name = (
-        f"{prefix}-{uid}-{str(datefield)}-DRAFT-{user_uid}.{ext}"
-    )
-    return os.path.join("docs", "PRV", str(year), custom_name)
+    return custom_upload_to(instance, filename)
 
 
 def prv_directory_path_scan(instance, filename):
-    prefix = "PRV"
-    datefield = instance.date_entry
-    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
-    uid = f'{max_pk:07}'
-    user_uid = f"{instance.executor.pk:07}"
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+    return custom_upload_to(instance, filename)
 
-    custom_name = (
-        f"{prefix}-{uid}-{str(datefield)}-SCAN-{user_uid}.{ext}"
-    )
-    return os.path.join("docs", "PRV", str(year), custom_name)
 
 def gdc_directory_path(instance, filename):
-    prefix = "GDC"
-    datefield = instance.date_entry
-    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
-    uid = f'{max_pk:07}'
-    user_uid = f"{instance.executor.pk:07}"
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
-
-    custom_name = (
-        f"{prefix}-{uid}-{str(datefield)}-DRAFT-{user_uid}.{ext}"
-    )
-    return os.path.join("docs", "GDC", str(year), custom_name)
+    return custom_upload_to(instance, filename)
 
 
 def gdc_directory_path_scan(instance, filename):
-    prefix = "GDC"
-    datefield = instance.date_entry
-    max_pk = (instance.__class__.objects.aggregate(Max('pk'))['pk__max'] or 0) + 1
-    uid = f'{max_pk:07}'
-    user_uid = f"{instance.executor.pk:07}"
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-    ext = os.path.splitext(filename)[1].lstrip('.') or 'pdf'  # fallback если расширения нет
+    return custom_upload_to(instance, filename)
 
-    custom_name = (
-        f"{prefix}-{uid}-{str(datefield)}-SCAN-{user_uid}.{ext}"
-    )
-    return os.path.join("docs", "GDC", str(year), custom_name)
 
 def brf_directory_path_doc(instance, filename):
-    prefix = "BRF"
-    filetype = "DOCS"  # или подставь по логике, можно и вытянуть из instance, если надо
-    datefield = instance.date_entry
-
-    custom_name = filename_creator(instance, filename, prefix, datefield, filetype)
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-
-    return os.path.join("docs", "BRF", str(year), custom_name)
+    return custom_upload_to(instance, filename)
 
 
 def brf_directory_path_scan(instance, filename):
-    prefix = "BRF"
-    filetype = "SCAN"  # или подставь по логике, можно и вытянуть из instance, если надо
-    datefield = instance.date_entry
+    return custom_upload_to(instance, filename)
 
-    custom_name = filename_creator(instance, filename, prefix, datefield, filetype)
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
 
-    return os.path.join("docs", "BRF", str(year), custom_name)
+def lbp_directory_path_doc(instance, filename):
+    return custom_upload_to(instance, filename)
+
+
+def lbp_directory_path_scan(instance, filename):
+    return custom_upload_to(instance, filename)
 
 
 def opr_directory_path_scan(instance, filename):
-    prefix = "OPR"
-    filetype = "SCAN"  # или подставь по логике, можно и вытянуть из instance, если надо
-    datefield = instance.date_entry
+    return custom_upload_to(instance, filename)
 
-    custom_name = filename_creator(instance, filename, prefix, datefield, filetype)
-    year = datefield.year if isinstance(datefield, datetime.date) else str(datefield)[:4]
-
-    return os.path.join("docs", "BRF", str(year), custom_name)
 
 def ord_directory_path(instance, filename):
     year = instance.document_date
@@ -568,8 +530,8 @@ class Medical(models.Model):
         blank=True,
         default="",
     )
-    medical_direction = models.FileField(verbose_name="Файл ПМО", blank=True) #upload_to=contract_directory_path,
-    medical_direction2 = models.FileField(verbose_name="Файл ПО", blank=True) #upload_to=contract_directory_path,
+    medical_direction = models.FileField(verbose_name="Файл ПМО", blank=True)  # upload_to=contract_directory_path,
+    medical_direction2 = models.FileField(verbose_name="Файл ПО", blank=True)  # upload_to=contract_directory_path,
     harmful = models.ManyToManyField(
         HarmfulWorkingConditions, verbose_name="Вредные условия труда"
     )
@@ -608,6 +570,8 @@ class Medical(models.Model):
         super().save(*args, **kwargs)  # сначала сохраняем, чтобы был pk
         self.generate_med_files()
         super().save(update_fields=["medical_direction", "medical_direction2"])  # обновляем только пути
+
+
 #
 #
 # @receiver(post_save, sender=Medical)
@@ -1634,8 +1598,8 @@ class BusinessProcessDirection(models.Model):
     type_of = [("1", "Служебная поездка"), ("2", "Приказы о старших бригадах")]
 
     class Meta:
-        verbose_name = "Направление бизнес процесса"
-        verbose_name_plural = "Направления бизнес процессов"
+        verbose_name = "(Удалено) Направление бизнес процесса"
+        verbose_name_plural = "(Удалено) Направления бизнес процессов"
 
     business_process_type = models.CharField(
         verbose_name="Тип бизнес процесса",
@@ -1662,6 +1626,167 @@ class BusinessProcessDirection(models.Model):
     @staticmethod
     def get_absolute_url():
         return reverse("hrdepartment_app:bptrip_list")
+
+
+class BusinessProcessRoutes(models.Model):
+    """
+     Модель для определения маршрутов бизнес-процессов.
+
+     Описывает тип бизнес-процесса и назначает ответственных сотрудников
+     на различные роли (исполнитель, согласующий, делопроизводитель и т.д.),
+     а также задаёт временной интервал действия процесса.
+
+     Используется для автоматизации и контроля выполнения бизнес-процессов,
+     таких как служебные поездки или оформление приказов.
+
+     Атрибуты:
+     ---------
+     BUSINESS_PROCESS_TYPES : list of tuple
+         Список допустимых типов бизнес-процессов. Используется в поле `business_process_type`.
+         Допустимые значения:
+         - ("1", "Служебная поездка")
+         - ("2", "Приказы о старших бригадах")
+
+     business_process_type : CharField
+         Тип бизнес-процесса. Определяет категорию маршрута.
+         - max_length=5
+         - choices=BUSINESS_PROCESS_TYPES
+         - blank=True
+         - default=""
+         Примеры: "1" — служебная поездка, "2" — приказ о бригаде.
+
+     person_executor : ManyToManyField
+         Исполнители бизнес-процесса — сотрудники, отвечающие за выполнение основных действий.
+         - related_name="bp_person_executor"
+         - blank=True
+         - Связь с моделью `DataBaseUser`
+
+     person_agreement : ManyToManyField
+         Согласующие лица — сотрудники, которым необходимо согласовать процесс.
+         - related_name="bp_person_agreement"
+         - blank=True
+         - Связь с моделью `DataBaseUser`
+
+     person_clerk : ManyToManyField
+         Делопроизводители — ответственные за ведение документации и учёт.
+         - related_name="bp_person_clerk"
+         - blank=True
+         - Связь с моделью `DataBaseUser`
+
+     person_hr : ManyToManyField
+         Сотрудники отдела кадров (ОК), отвечающие за кадровое сопровождение.
+         - related_name="bp_person_hr"
+         - blank=True
+         - Связь с моделью `DataBaseUser`
+
+     person_sd : ManyToManyField
+         Сотрудники отдела научной организации (ОНО), участвующие в процессах,
+         требующих научно-организационного сопровождения.
+         - related_name="bp_person_sd"
+         - blank=True
+         - Связь с моделью `DataBaseUser`
+
+     person_accounting : ManyToManyField
+         Сотрудники бухгалтерии, участвующие в финансовых операциях.
+         - related_name="bp_person_accounting"
+         - blank=True
+         - Связь с моделью `DataBaseUser`
+
+     date_start : DateField
+         Дата начала действия бизнес-процесса.
+         - null=True
+         - blank=True
+
+     date_end : DateField
+         Дата окончания действия бизнес-процесса.
+         - null=True
+         - blank=True
+
+        """
+
+    BUSINESS_PROCESS_TYPES = [
+        ("1", "Служебная поездка"),
+        ("2", "Приказы о старших бригадах"),
+    ]
+    """
+    Список допустимых типов бизнес-процессов.
+
+    Используется как значение для поля `business_process_type`.
+    Каждый элемент — кортеж из идентификатора и описательного названия.
+    """
+
+    business_process_type = models.CharField(
+        verbose_name="Тип бизнес процесса",
+        max_length=5,
+        choices=BUSINESS_PROCESS_TYPES,
+        default="",
+        blank=True,
+    )
+
+    person_executor = models.ManyToManyField(
+        DataBaseUser,
+        verbose_name="Исполнитель",
+        related_name="bp_person_executor",
+        blank=True,
+    )
+
+    person_agreement = models.ManyToManyField(
+        DataBaseUser,
+        verbose_name="Согласующее лицо",
+        related_name="bp_person_agreement",
+        blank=True,
+    )
+
+    person_clerk = models.ManyToManyField(
+        DataBaseUser,
+        verbose_name="Делопроизводитель",
+        related_name="bp_person_clerk",
+        blank=True,
+    )
+
+    person_hr = models.ManyToManyField(
+        DataBaseUser,
+        verbose_name="Сотрудник ОК",
+        related_name="bp_person_hr",
+        blank=True,
+    )
+
+    person_sd = models.ManyToManyField(
+        DataBaseUser,
+        verbose_name="Сотрудник ОНО",
+        related_name="bp_person_sd",
+        blank=True,
+    )
+
+    person_accounting = models.ManyToManyField(
+        DataBaseUser,
+        verbose_name="Сотрудник бухгалтерии",
+        related_name="bp_person_accounting",
+        blank=True,
+    )
+
+    date_start = models.DateField(
+        verbose_name="Дата начала",
+        null=True,
+        blank=True,
+    )
+
+    date_end = models.DateField(
+        verbose_name="Дата окончания",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Направление бизнес процесса"
+        verbose_name_plural = "Направления бизнес процессов"
+        ordering = ["-date_start"]
+
+    def __str__(self):
+        return f"{self.get_business_process_type_display()} ({self.date_start} - {self.date_end})"
+
+    def get_absolute_url(self):
+        return reverse("hrdepartment_app:business_process_routes_list")
 
 
 class OrderDescription(models.Model):
@@ -2106,17 +2231,16 @@ def rename_ias_order_file_name(sender, instance: CreatingTeam, **kwargs):
         # if not instance.email_send:
 
     else:
-        business_process = BusinessProcessDirection.objects.filter(
-            person_executor=instance.executor_person.user_work_profile.job
-        )
-        person_agreement_job_list = []
+        # business_process = BusinessProcessDirection.objects.filter(
+        #     person_executor=instance.executor_person.user_work_profile.job
+        # )
+        person_agreement_job_list = [item for item in BusinessProcessRoutes.objects.filter(
+            person_executor=instance.executor_person).values_list('pk', flat=True)]
         person_agreement_list = []
-        for item in business_process:
-            for job in item.person_agreement.all():
-                person_agreement_job_list.append(job)
-        for item in DataBaseUser.objects.filter(
-                user_work_profile__job__name__in=set(person_agreement_job_list)
-        ):
+        # for item in business_process:
+        #     for job in item.person_agreement.all():
+        #         person_agreement_job_list.append(job)
+        for item in DataBaseUser.objects.filter(pk__in=set(person_agreement_job_list)):
             if item.telegram_id:
                 person_agreement_list.append(
                     ChatID.objects.filter(chat_id=item.telegram_id).first()
@@ -2141,6 +2265,13 @@ class DocumentsJobDescription(Documents):
         verbose_name_plural = "Должностные инструкции"
         ordering = ("-document_date",)
 
+    prefix_attr_doc_file = "JDS"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "JDS"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
+
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=jds_directory_path, blank=True,
         validators=[
@@ -2164,15 +2295,13 @@ class DocumentsJobDescription(Documents):
     )
 
     def get_data(self):
-        if (DocumentsJobDescription.objects.filter(parent_document=self.pk).count() == 0) and (self.actuality):
-            get_actual = 0
-        else:
-            get_actual = 1
+        get_actual = 0 if not DocumentsJobDescription.objects.filter(
+            parent_document=self.pk).exists() and self.actuality else 1
 
         return {
             "pk": self.pk,
             "document_number": self.document_number,
-            "document_date": f"{self.document_date:%d.%m.%Y} г.",  # .strftime(""),
+            "document_date": f"{self.document_date:%d.%m.%Y} г." if self.document_date else "",
             "document_job": str(self.document_job),
             "document_division": str(self.document_division),
             "document_order": str(self.document_order),
@@ -2185,30 +2314,6 @@ class DocumentsJobDescription(Documents):
 
     def __str__(self):
         return f'ДИ {self.document_name} №{self.document_number} от {self.document_date.strftime("%d.%m.%Y")}'
-
-@receiver(pre_save, sender=DocumentsJobDescription)
-def delete_old_file_on_change_jds(sender, instance, **kwargs):
-    if not instance.pk:
-        return  # новый объект
-
-    try:
-        old_instance = DocumentsJobDescription.objects.get(pk=instance.pk)
-    except DocumentsJobDescription.DoesNotExist:
-        return
-
-    # Список полей, которые нужно сравнивать и очищать
-    file_fields = ['doc_file', 'scan_file']
-
-    for field in file_fields:
-        old_file = getattr(old_instance, field)
-        new_file = getattr(instance, field)
-
-        if old_file and old_file.name != getattr(new_file, 'name', None):
-            try:
-                if os.path.isfile(old_file.path):
-                    os.remove(old_file.path)
-            except Exception as e:
-                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 
 class TimeSheet(models.Model):
@@ -2537,46 +2642,6 @@ class WeekendDay(models.Model):
         return str(self.weekend_day)
 
 
-# def get_norm_time_at_custom_day(day, trigger=False, type_of_day=None):
-#     """
-#     Подсчет количества рабочих часов в указанном дне
-#     Если переменная trigger=False, то возвращается количество рабочих часов в указанном дне, иначе - возвращается тип
-#     дня (П - Праздник, В - Выходной, НБ - Не было на работе)
-#     Если передается переменная type_of_day, то если она равна 14 и 15, то возвращается обычный рабочий день
-#     """
-#     preholiday_day_count = PreHolidayDay.objects.filter(preholiday_day=day)
-#     weekend_day_count = WeekendDay.objects.filter(weekend_day=day).count()
-#     if weekend_day_count == 0:
-#         if preholiday_day_count.count() > 0:
-#             if trigger:
-#                 return 'Не было на работе'
-#             return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
-#         else:
-#             if day.weekday() == 4:
-#                 if trigger:
-#                     return 'Не было на работе'
-#                 return 27000
-#             elif day.weekday() < 4:
-#                 if trigger:
-#                     return 'Не было на работе'
-#                 return 30600
-#             else:
-#                 if trigger:
-#                     return 'Выходной'
-#                 if type_of_day in [14, 15]:
-#                     return 30600
-#                 return 0
-#     else:
-#         if trigger:
-#             return 'Праздничный день'
-#         if type_of_day in [14, 15]:
-#             if preholiday_day_count.count() > 0:
-#                 return preholiday_day_count[0].work_time.hour * 3600 + preholiday_day_count[0].work_time.minute * 60
-#             else:
-#                 return 30600
-#         if type_of_day == None:
-#             return 30600
-#         # return 0
 def get_norm_time_at_custom_day(day, trigger=False, type_of_day=0):
     """
     Подсчет количества рабочих часов в указанном дне
@@ -2584,9 +2649,7 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=0):
     дня (П - Праздник, В - Выходной, НБ - Не было на работе)
     Если передается переменная type_of_day, то если она равна 14 и 15, то возвращается обычный рабочий день
     """
-    # Константы для времени в секундах
-    WORK_DAY_TIME = 30600  # 8 часов 30 минут
-    SHORT_DAY_TIME = 27000  # 7 часов 30 минут
+
     # Проверка на праздничный день
     if WeekendDay.objects.filter(weekend_day=day).exists():
         if trigger:
@@ -2612,6 +2675,7 @@ def get_norm_time_at_custom_day(day, trigger=False, type_of_day=0):
     if trigger:
         return 'Выходной'
     return WORK_DAY_TIME if type_of_day in [14, 15] else 0
+
 
 class ProductionCalendar(models.Model):
     """
@@ -2867,6 +2931,13 @@ class Instructions(Documents):
         verbose_name = "Инструкция"
         verbose_name_plural = "Инструкции"
 
+    prefix_attr_doc_file = "INS"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "INS"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
+
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=ins_directory_path, blank=True
     )
@@ -2930,36 +3001,19 @@ class Instructions(Documents):
         """
         return self.document_name
 
-@receiver(pre_save, sender=Instructions)
-def delete_old_file_on_change_ins(sender, instance, **kwargs):
-    if not instance.pk:
-        return  # новый объект
-
-    try:
-        old_instance = Instructions.objects.get(pk=instance.pk)
-    except Instructions.DoesNotExist:
-        return
-
-    # Список полей, которые нужно сравнивать и очищать
-    file_fields = ['doc_file', 'scan_file']
-
-    for field in file_fields:
-        old_file = getattr(old_instance, field)
-        new_file = getattr(instance, field)
-
-        if old_file and old_file.name != getattr(new_file, 'name', None):
-            try:
-                if os.path.isfile(old_file.path):
-                    os.remove(old_file.path)
-            except Exception as e:
-                print(f"Ошибка удаления старого файла в поле {field}: {e}")
-
 
 class Provisions(Documents):
     class Meta:
         verbose_name = "Положение"
         verbose_name_plural = "Положения"
         ordering = ['-document_date']
+
+    prefix_attr_doc_file = "PRV"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "PRV"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
 
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=prv_directory_path, blank=True,
@@ -2993,19 +3047,19 @@ class Provisions(Documents):
     )
 
     def get_data(self):
-        try:
-            get_date = False if self.validity_period_end < datetime.date.today() else True
-        except TypeError:
-            get_date = True
-        get_actual = False if Provisions.objects.filter(parent_document=self.pk).count() > 0 else True
+        today = datetime.date.today()
+        get_date = self.validity_period_end is None or self.validity_period_end >= today
+        get_actual = not Provisions.objects.filter(parent_document=self.pk).exists()
+        is_actual = get_date and get_actual
+
         return {
             "pk": self.pk,
             "document_name": self.document_name,
             "document_number": self.document_number,
-            "document_date": f"{self.document_date:%d.%m.%Y} г.",
+            "document_date": f"{self.document_date:%d.%m.%Y} г." if self.document_date else "",
             "document_division": str(self.storage_location_division),
             "document_order": str(self.document_order),
-            "actuality": "Да" if (get_actual and get_date) else "Нет",
+            "actuality": "Да" if is_actual else "Нет",
             "executor": format_name_initials(self.executor),
         }
 
@@ -3020,35 +3074,19 @@ class Provisions(Documents):
             return ""
         return f"{self.scan_file.url}?v={int(time.time())}"
 
-@receiver(pre_save, sender=Provisions)
-def delete_old_file_on_change_prv(sender, instance, **kwargs):
-    if not instance.pk:
-        return  # новый объект
-
-    try:
-        old_instance = Provisions.objects.get(pk=instance.pk)
-    except Provisions.DoesNotExist:
-        return
-
-    # Список полей, которые нужно сравнивать и очищать
-    file_fields = ['doc_file', 'scan_file']
-
-    for field in file_fields:
-        old_file = getattr(old_instance, field)
-        new_file = getattr(instance, field)
-
-        if old_file and old_file.name != getattr(new_file, 'name', None):
-            try:
-                if os.path.isfile(old_file.path):
-                    os.remove(old_file.path)
-            except Exception as e:
-                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 class Briefings(Documents):
     class Meta:
         verbose_name = "Инструктаж"
         verbose_name_plural = "Инструктажи"
         ordering = ['-document_date']
+
+    prefix_attr_doc_file = "BRF"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "BRF"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
 
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=brf_directory_path_doc, blank=True,
@@ -3082,19 +3120,19 @@ class Briefings(Documents):
     )
 
     def get_data(self):
-        try:
-            get_date = False if self.validity_period_end < datetime.date.today() else True
-        except TypeError:
-            get_date = True
-        get_actual = False if Briefings.objects.filter(parent_document=self.pk).count() > 0 else True
+        today = datetime.date.today()
+        get_date = self.validity_period_end is None or self.validity_period_end >= today
+        get_actual = not Briefings.objects.filter(parent_document=self.pk).exists()
+        is_actual = get_date and get_actual
+
         return {
             "pk": self.pk,
             "document_name": self.document_name,
             "document_number": self.document_number,
-            "document_date": f"{self.document_date:%d.%m.%Y} г.",
+            "document_date": f"{self.document_date:%d.%m.%Y} г." if self.document_date else "",
             "document_division": str(self.storage_location_division),
             "document_order": str(self.document_order),
-            "actuality": "Да" if (get_actual and get_date) else "Нет",
+            "actuality": "Да" if is_actual else "Нет",
             "executor": format_name_initials(self.executor),
         }
 
@@ -3114,7 +3152,16 @@ class Operational(Documents):
     access = None
     employee = None
     previous_document = None
-    document_date = models.DateField(verbose_name="Дата документа", default=datetime.datetime.now, null=True, blank=True)
+
+    prefix_attr_doc_file = "OPR"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "OPR"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
+
+    document_date = models.DateField(verbose_name="Дата документа", default=datetime.datetime.now, null=True,
+                                     blank=True)
     document_number = models.CharField(verbose_name="Номер документа", max_length=18, default="", null=True, blank=True)
 
     scan_file = models.FileField(
@@ -3137,18 +3184,18 @@ class Operational(Documents):
     )
 
     def get_data(self):
-        try:
-            get_date = False if self.validity_period_end < datetime.date.today() else True
-        except TypeError:
-            get_date = True
-        get_actual = False if Operational.objects.filter(parent_document=self.pk).count() > 0 else True
+        today = datetime.date.today()
+        get_date = self.validity_period_end is None or self.validity_period_end >= today
+        get_actual = not Operational.objects.filter(parent_document=self.pk).exists()
+        is_actual = get_date and get_actual
+
         return {
             "pk": self.pk,
             "document_name": self.document_name,
             "document_number": self.document_number,
-            "document_date": f"{self.document_date:%d.%m.%Y} г.",
+            "document_date": f"{self.document_date:%d.%m.%Y} г." if self.document_date else "",
             "document_division": str(self.storage_location_division),
-            "actuality": "Да" if (get_actual and get_date) else "Нет",
+            "actuality": "Да" if is_actual else "Нет",
         }
 
     def get_absolute_url(self):
@@ -3162,6 +3209,13 @@ class GuidanceDocuments(Documents):
     class Meta:
         verbose_name = "Руководящий документ"
         verbose_name_plural = "Руководящие документы"
+
+    prefix_attr_doc_file = "GDC"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "GDC"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
 
     doc_file = models.FileField(
         verbose_name="Файл документа", upload_to=gdc_directory_path, blank=True,
@@ -3209,29 +3263,6 @@ class GuidanceDocuments(Documents):
     def __str__(self):
         return self.document_name
 
-@receiver(pre_save, sender=GuidanceDocuments)
-def delete_old_file_on_change_gdc(sender, instance, **kwargs):
-    if not instance.pk:
-        return  # новый объект
-
-    try:
-        old_instance = GuidanceDocuments.objects.get(pk=instance.pk)
-    except GuidanceDocuments.DoesNotExist:
-        return
-
-    # Список полей, которые нужно сравнивать и очищать
-    file_fields = ['doc_file', 'scan_file']
-
-    for field in file_fields:
-        old_file = getattr(old_instance, field)
-        new_file = getattr(instance, field)
-
-        if old_file and old_file.name != getattr(new_file, 'name', None):
-            try:
-                if os.path.isfile(old_file.path):
-                    os.remove(old_file.path)
-            except Exception as e:
-                print(f"Ошибка удаления старого файла в поле {field}: {e}")
 
 class DocumentAcknowledgment(models.Model):
     class Meta:
@@ -3242,7 +3273,8 @@ class DocumentAcknowledgment(models.Model):
         ContentType,
         on_delete=models.CASCADE,
         limit_choices_to={'model__in': (
-        'documentsorder', 'creatingteam', 'documentsjobdescription', 'provisions', 'guidancedocuments', 'companyevent')}
+            'documentsorder', 'creatingteam', 'documentsjobdescription', 'provisions', 'guidancedocuments',
+            'companyevent')}
     )
     document_id = models.PositiveIntegerField()
     document = GenericForeignKey('document_type', 'document_id')
@@ -3251,6 +3283,7 @@ class DocumentAcknowledgment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} ознакомился с документом '{self.document}'"
+
 
 class DataBaseUserEvent(models.Model):
     class Meta:
@@ -3286,3 +3319,135 @@ class DataBaseUserEvent(models.Model):
             "updated_at": f"{self.updated_at:%d.%m.%Y} г.",
             "executor": format_name_initials(self.person),
         }
+
+
+class LaborProtection(Documents):
+    class Meta:
+        verbose_name = "Процедура по охране труда"
+        verbose_name_plural = "Процедуры по охране труда"
+        ordering = ['-document_date']
+
+    prefix_attr_doc_file = "LBP"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "LBP"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
+
+    doc_file = models.FileField(
+        verbose_name="Файл документа", upload_to=lbp_directory_path_doc, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['doc', 'docx']),
+        ]
+    )
+    scan_file = models.FileField(
+        verbose_name="Скан документа", upload_to=lbp_directory_path_scan, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+        ]
+    )
+    storage_location_division = models.ForeignKey(
+        Division,
+        verbose_name="Подразделение где хранится оригинал",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="labor_protection_location_division",
+    )
+    document_division = models.ManyToManyField(
+        Division,
+        verbose_name="Подразделения",
+        related_name="labor_protection_document_division",
+    )
+    document_order = models.ForeignKey(
+        DocumentsOrder, verbose_name="Приказ", on_delete=models.SET_NULL, null=True
+    )
+    document_form = models.ManyToManyField(
+        DocumentForm, verbose_name="Бланки документов"
+    )
+
+    def get_data(self):
+        today = datetime.date.today()
+        get_date = self.validity_period_end is None or self.validity_period_end >= today
+        get_actual = not LaborProtection.objects.filter(parent_document=self.pk).exists()
+        is_actual = get_date and get_actual
+
+        return {
+            "pk": self.pk,
+            "document_name": self.document_name,
+            "document_number": self.document_number,
+            "document_date": f"{self.document_date:%d.%m.%Y} г." if self.document_date else "",
+            "document_division": str(self.storage_location_division),
+            "document_order": str(self.document_order),
+            "actuality": "Да" if is_actual else "Нет",
+            "executor": format_name_initials(self.executor),
+        }
+
+    def get_absolute_url(self):
+        return reverse("hrdepartment_app:labor_protection_list")
+
+    def __str__(self):
+        return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"
+
+
+# Регистрируем модели и их file-поля
+FILE_FIELDS_REGISTRY = {
+    Operational: ['doc_file', 'scan_file'],
+    LaborProtection: ['doc_file', 'scan_file'],
+    GuidanceDocuments: ['doc_file', 'scan_file'],
+    Provisions: ['doc_file', 'scan_file'],
+    Briefings: ['doc_file', 'scan_file'],
+    Instructions: ['doc_file', 'scan_file'],
+    DocumentsJobDescription: ['doc_file', 'scan_file'],
+}
+
+
+@receiver(pre_save)
+def delete_old_file_on_change(sender, instance, **kwargs):
+    # Проверяем, зарегистрирована ли модель в реестре
+    if sender not in FILE_FIELDS_REGISTRY:
+        return
+
+    if not instance.pk:
+        return  # Новый объект — нечего удалять
+
+    try:
+        old_instance = sender.objects.get(pk=instance.pk)
+    except sender.DoesNotExist:
+        return
+
+    for field in FILE_FIELDS_REGISTRY[sender]:
+        old_file = getattr(old_instance, field)
+        new_file = getattr(instance, field)
+
+        if old_file and old_file.name != getattr(new_file, 'name', None):
+            try:
+                if os.path.isfile(old_file.path):
+                    os.remove(old_file.path)
+            except Exception as e:
+                logger.warning(f"Ошибка удаления старого файла в поле '{field}' для {sender.__name__}: {e}")
+
+# ToDo: Блок кода для автоматического удаления старых файлов
+# @receiver(pre_save)
+# def auto_delete_old_files(sender, instance, **kwargs):
+#     if not instance.pk:
+#         return
+#
+#     try:
+#         old_instance = sender.objects.get(pk=instance.pk)
+#     except sender.DoesNotExist:
+#         return
+#
+#     for field in sender._meta.get_fields():
+#         if field.get_internal_type() == 'FileField':
+#             field_name = field.name
+#             old_file = getattr(old_instance, field_name)
+#             new_file = getattr(instance, field_name)
+#
+#             if old_file and old_file.name != getattr(new_file, 'name', None):
+#                 try:
+#                     if os.path.isfile(old_file.path):
+#                         os.remove(old_file.path)
+#                 except Exception as e:
+#                     logger.warning(
+#                         f"Ошибка удаления файла {old_file.path} ({field_name}) для {sender.__name__}: {e}"
+#                     )

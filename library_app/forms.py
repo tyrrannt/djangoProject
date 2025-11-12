@@ -1,6 +1,3 @@
-from copy import deepcopy
-from dataclasses import fields
-
 from django import forms
 from django_ckeditor_5.widgets import CKEditor5Widget
 
@@ -64,7 +61,8 @@ class HelpItemUpdateForm(forms.ModelForm):
 
 
 class DocumentFormAddForm(forms.ModelForm):
-    division = forms.ModelMultipleChoiceField(queryset=Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение'))
+    division = forms.ModelMultipleChoiceField(
+        queryset=Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение'))
 
     class Meta:
         model = DocumentForm
@@ -127,7 +125,8 @@ class DocumentFormUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super(DocumentFormUpdateForm, self).__init__(*args, **kwargs)
-        self.fields["division"].queryset = Division.objects.filter(active=True).exclude(name__icontains='Основное подразделение')
+        self.fields["division"].queryset = Division.objects.filter(active=True).exclude(
+            name__icontains='Основное подразделение')
         self.fields["draft"].widget.attrs.update(
             {"accept": ".doc, .docx, .xls, .xlsx"}
         )
@@ -140,6 +139,7 @@ class DocumentFormUpdateForm(forms.ModelForm):
         for field in self.fields:
             make_custom_field(self.fields[field])
 
+
 class PoemForm(forms.ModelForm):
     class Meta:
         model = Poem
@@ -150,6 +150,7 @@ class PoemForm(forms.ModelForm):
         for field in self.fields:
             make_custom_field(self.fields[field])
 
+
 class VoteConfirmationForm(forms.Form):
     confirm_vote = forms.BooleanField(label='Подтвердите переголосование')
 
@@ -157,7 +158,8 @@ class VoteConfirmationForm(forms.Form):
 class CompanyEventForm(forms.ModelForm):
     class Meta:
         model = CompanyEvent
-        fields = ['title', 'event_date', 'decoding', 'results', 'event_report', 'event_media', 'event_video', 'participants']
+        fields = ['title', 'event_date', 'decoding', 'results', 'event_report', 'event_media', 'event_video',
+                  'participants']
         widgets = {
             "decoding": CKEditor5Widget(
                 attrs={"class": "django_ckeditor_5"}, config_name="extends"

@@ -5,7 +5,6 @@ from django.urls import reverse
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser
 from library_app.models import HelpTopic
-from library_app.views import HelpItem
 
 
 class HelpItemViewTest(TestCase):

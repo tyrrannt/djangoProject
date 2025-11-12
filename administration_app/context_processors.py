@@ -1,24 +1,13 @@
-import pathlib
-from pprint import pprint
-
 from django.core.cache import cache
 from django.db.models import Q
-from django.views.decorators.cache import cache_page
 
 from contracts_app.models import Contract
-from customers_app.models import DataBaseUser, Posts, RoleType
-from djangoProject.settings import MEDIA_ROOT
+from customers_app.models import Posts
 from hrdepartment_app.models import (
     ApprovalOficialMemoProcess,
-    BusinessProcessDirection,
-    DocumentsJobDescription, CreatingTeam, OfficialMemo,
+    DocumentsJobDescription, CreatingTeam, BusinessProcessRoutes,
 )
-from loguru import logger
-
-
-# logger.add("debug.json", format=config('LOG_FORMAT'), level=config('LOG_LEVEL'),
-#            rotation=config('LOG_ROTATION'), compression=config('LOG_COMPRESSION'),
-#            serialize=config('LOG_SERIALIZE'))
+from core import logger
 
 
 # ToDo: Создать модель в которую будет записываться вся статистика,
@@ -114,217 +103,374 @@ def make_list(n):
 
 def get_approval_oficial_memo_process(request):
     notifications = []
-    if not request.user.is_anonymous:
-        try:
-            # Инициализация списков для ролей
-            person_executor, person_agreement, person_clerk, person_hr, person_distributor, person_accounting = make_list(6)
-            person_executor_cto, person_agreement_cto, person_clerk_cto, person_hr_cto = make_list(4)
-
-            # Получение данных для бизнес-процессов
-            business_process = BusinessProcessDirection.objects.filter(business_process_type=1).values_list(
-                'person_executor', 'person_agreement', 'clerk', 'person_hr'
-            )
-            for item in business_process:
-                person_executor.append(item[0])  # Исполнители
-                person_agreement.append(item[1])  # Согласователи
-                person_clerk.append(item[2])  # Делопроизводители
-                person_hr.append(item[3])  # Сотрудники ОК
-
-            # Получение списка сотрудников НО
-            person_distributor.extend(
-                DataBaseUser.objects.filter(
-                    Q(type_of_role=RoleType.NO) & Q(user_work_profile__job__right_to_approval=True)
-                ).values_list('pk', flat=True).exclude(is_active=False)
-            )
-
-            # Получение списка сотрудников бухгалтерии
-            person_accounting.extend(
-                DataBaseUser.objects.filter(
-                    Q(type_of_role=RoleType.ACCOUNTING) & Q(user_work_profile__job__right_to_approval=True)
-                ).values_list('pk', flat=True).exclude(is_active=False)
-            )
-
-            # Получение данных для бизнес-процессов CTO
-            business_process_cto = BusinessProcessDirection.objects.filter(business_process_type=2)
-            for item in business_process_cto:
-                person_executor_cto.extend(item.person_executor.values_list('pk', flat=True))
-                person_agreement_cto.extend(item.person_agreement.values_list('pk', flat=True))
-                person_clerk_cto.extend(item.clerk.values_list('pk', flat=True))
-                person_hr_cto.extend(item.person_hr.values_list('pk', flat=True))
-
-            # Формирование уведомлений
-            if request.user.user_work_profile.job.pk in person_agreement:
-                agreement = ApprovalOficialMemoProcess.objects.filter(
-                    Q(person_executor__user_work_profile__job__division_affiliation__name=request.user.user_work_profile.job.division_affiliation.name) &
-                    Q(document_not_agreed=False)
-                ).exclude(cancellation=True)
-                agreement_color = [(item, 'red') for item in agreement]
-                notifications.append({
-                    'count': agreement.count(),
-                    'icon_class': 'bx bx-select-multiple',
-                    'title': 'Согласование',
-                    'items': agreement_color,
-                    'url_name': 'hrdepartment_app:bpmemo_update',
-                    'view_all_url': 'hrdepartment_app:bpmemo_list',
-                    'large': False
-                })
-
-            if request.user.pk in person_distributor:
-                distributor = ApprovalOficialMemoProcess.objects.filter(
-                    Q(location_selected=False) & Q(document_not_agreed=True)
-                ).exclude(cancellation=True).exclude(document__official_memo_type="3")
-                distributor_color = [(item, 'red') for item in distributor]
-                notifications.append({
-                    'count': distributor.count(),
-                    'icon_class': 'bx bx-hotel',
-                    'title': 'Место проживания',
-                    'items': distributor_color,
-                    'url_name': 'hrdepartment_app:bpmemo_update',
-                    'view_all_url': 'hrdepartment_app:bpmemo_list',
-                    'large': False
-                })
-            if request.user.user_work_profile.job.pk in person_clerk:
-                clerk = ApprovalOficialMemoProcess.objects.filter(
-                    Q(person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk) &
-                    Q(originals_received=False) & Q(process_accepted=True)
-                ).exclude(cancellation=True).exclude(document__official_memo_type="2")
-                clerk_color = [
-                    (
-                        item,
-                        'red' if item.document.person.user_work_profile.job.type_of_job == "1"
-                        else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
-                        else 'black'
-                    )
-                    for item in clerk]
-                notifications.append({
-                    'count': clerk.count(),
-                    'icon_class': 'bx bx-notepad',
-                    'title': 'Оригиналы',
-                    'items': clerk_color,
-                    'url_name': 'hrdepartment_app:bpmemo_update',
-                    'view_all_url': 'hrdepartment_app:bpmemo_list',
-                    'large': False
-                })
-
-            if request.user.user_work_profile.job.pk in person_hr:
-                hr = ApprovalOficialMemoProcess.objects.filter(
-                    Q(process_accepted=False) & Q(location_selected=True)
-                ).exclude(cancellation=True).exclude(document__official_memo_type="3")
-                hr_color = [
-                    (
-                        item,
-                        'red' if item.document.person.user_work_profile.job.type_of_job == "1"
-                        else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
-                        else 'black'
-                    )
-                    for item in hr
-                ]
-                notifications.append({
-                    'count': hr.count(),
-                    'icon_class': 'bx bx-user-pin',
-                    'title': 'Приказ',
-                    'items': hr_color,
-                    'url_name': 'hrdepartment_app:bpmemo_update',
-                    'view_all_url': 'hrdepartment_app:bpmemo_list',
-                    'large': False
-                })
-
-                hr_accepted = ApprovalOficialMemoProcess.objects.filter(
-                    Q(hr_accepted=False) & Q(originals_received=True) & Q(date_transfer_hr__isnull=False)
-                ).exclude(cancellation=True).exclude(document__official_memo_type="2")
-                hr_accepted_color = [
-                    (
-                        item,
-                        'red' if item.document.person.user_work_profile.job.type_of_job == "1"
-                        else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
-                        else 'black'
-                    )
-                    for item in hr_accepted]
-                notifications.append({
-                    'count': hr_accepted.count(),
-                    'icon_class': 'bx bx-pencil',
-                    'title': 'Проверка',
-                    'items': hr_accepted_color,
-                    'url_name': 'hrdepartment_app:bpmemo_update',
-                    'view_all_url': 'hrdepartment_app:bpmemo_list',
-                    'large': False
-                })
-
-            if request.user.pk in person_accounting or request.user.is_superuser:
-                accounting = ApprovalOficialMemoProcess.objects.filter(
-                    Q(accepted_accounting=False) & Q(hr_accepted=True)
-                ).exclude(cancellation=True).exclude(document__official_memo_type="2")
-                accounting_color = [(item, 'red') for item in accounting]
-                notifications.append({
-                    'count': accounting.count(),
-                    'icon_class': 'bx bx-check-shield',
-                    'title': 'Авансовый отчет',
-                    'items': accounting_color,
-                    'url_name': 'hrdepartment_app:bpmemo_update',
-                    'view_all_url': 'hrdepartment_app:bpmemo_list',
-                    'large': False
-                })
-
-                expenses_dicts = ApprovalOficialMemoProcess.objects.filter(
-                    Q(document__expenses=False) & Q(document__expenses_summ__gt=0) & Q(process_accepted=True)
-                )
-                expenses_dicts_color = [(item, 'red') for item in expenses_dicts]
-                notifications.append({
-                    'count': expenses_dicts.count(),
-                    'icon_class': 'bx bxs-bank text-danger',
-                    'title': 'Запрос аванса',
-                    'items': expenses_dicts_color,
-                    'url_name': 'hrdepartment_app:expenses_list',
-                    'view_all_url': 'hrdepartment_app:expenses_list',
-                    'large': False
-                })
-
-            # Уведомления для CTO
-            if request.user.user_work_profile.job.pk in person_agreement_cto or request.user.is_superuser:
-                agreement_cto = CreatingTeam.objects.filter(Q(agreed=False)).exclude(cancellation=True)
-                agreement_cto_color = [(item, 'red') for item in agreement_cto]
-                notifications.append({
-                    'count': agreement_cto.count(),
-                    'icon_class': 'fa fa-check text-primary',
-                    'title': 'Согласование приказа СБ',
-                    'items': agreement_cto_color,
-                    'url_name': 'hrdepartment_app:team_agreed',
-                    'view_all_url': 'hrdepartment_app:team_list',
-                    'large': False
-                })
-
-            if request.user.user_work_profile.job.pk in person_hr_cto or request.user.is_superuser:
-                hr_cto = CreatingTeam.objects.filter(Q(agreed=True) & (Q(number='') | Q(scan_file=''))).exclude(cancellation=True)
-                hr_cto_color = [(item, 'red') for item in hr_cto]
-                notifications.append({
-                    'count': hr_cto.count(),
-                    'icon_class': 'fa fa-book text-primary',
-                    'title': 'Регистрация приказа СБ',
-                    'items': hr_cto_color,
-                    'url_name': 'hrdepartment_app:team_number',
-                    'view_all_url': 'hrdepartment_app:team_list',
-                    'large': False
-                })
-
-            if request.user.user_work_profile.job.pk in person_clerk_cto or request.user.is_superuser:
-                clerk_cto = CreatingTeam.objects.filter(Q(agreed=True) & ~Q(number='') & ~Q(scan_file='') & Q(email_send=False)).exclude(cancellation=True)
-                clerk_cto_color = [(item, 'red') for item in clerk_cto]
-                notifications.append({
-                    'count': clerk_cto.count(),
-                    'icon_class': 'fa fa-envelope text-primary',
-                    'title': 'Отправка письма приказа СБ',
-                    'items': clerk_cto_color,
-                    'url_name': 'hrdepartment_app:team',
-                    'view_all_url': 'hrdepartment_app:team_list',
-                    'large': False
-                })
-            return {"notifications": notifications}
-
-        except Exception as _ex:
-            logger.exception(_ex)
-            return {"notifications": []}
-    else:
+    if request.user.is_anonymous:
         return {"notifications": []}
+
+    def add_notification(qs, icon, title, url_name, view_all_url, color="red", large=False):
+        """Упрощает добавление уведомлений."""
+        if not qs.exists():
+            return
+        if callable(color):
+            items = [(item, color(item)) for item in qs]
+        else:
+            items = [(item, color) for item in qs]
+        notifications.append({
+            "count": qs.count(),
+            "icon_class": icon,
+            "title": title,
+            "items": items,
+            "url_name": url_name,
+            "view_all_url": view_all_url,
+            "large": large
+        })
+
+    try:
+        user = request.user
+        job_pk = user.user_work_profile.job.pk
+        division_pk = user.user_work_profile.job.division_affiliation.pk
+        division_name = user.user_work_profile.job.division_affiliation.name
+
+        # ===== Сбор ролей =====
+        bp1 = BusinessProcessRoutes.objects.filter(business_process_type=1)
+        bp2 = BusinessProcessRoutes.objects.filter(business_process_type=2)
+
+        person_agreement = set(bp1.values_list("person_agreement__pk", flat=True))
+        person_clerk = set(bp1.values_list("person_clerk__pk", flat=True))
+        person_hr = set(bp1.values_list("person_hr__pk", flat=True))
+        person_agreement_cto = set(bp2.values_list("person_agreement__pk", flat=True))
+        person_clerk_cto = set(bp2.values_list("person_clerk__pk", flat=True))
+        person_hr_cto = set(bp2.values_list("person_hr__pk", flat=True))
+        person_distributor = set(bp2.values_list("person_sd__pk", flat=True))
+        person_accounting = set(bp2.values_list("person_accounting__pk", flat=True))
+
+        # person_distributor = set(DataBaseUser.objects.filter(
+        #     type_of_role=RoleType.NO,
+        #     user_work_profile__job__right_to_approval=True,
+        #     is_active=True
+        # ).values_list("pk", flat=True))
+        #
+        # person_accounting = set(DataBaseUser.objects.filter(
+        #     type_of_role=RoleType.ACCOUNTING,
+        #     user_work_profile__job__right_to_approval=True,
+        #     is_active=True
+        # ).values_list("pk", flat=True))
+
+        bpmemo_qs = ApprovalOficialMemoProcess.objects.exclude(cancellation=True)
+
+        # ===== Обычные БП =====
+        if job_pk in person_agreement:
+            add_notification(
+                bpmemo_qs.filter(
+                    person_executor__user_work_profile__job__division_affiliation__name=division_name,
+                    document_not_agreed=False
+                ),
+                "bx bx-select-multiple", "Согласование",
+                "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list"
+            )
+
+        if user.pk in person_distributor:
+            add_notification(
+                bpmemo_qs.filter(location_selected=False, document_not_agreed=True)
+                .exclude(document__official_memo_type="3"),
+                "bx bx-hotel", "Место проживания",
+                "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list"
+            )
+
+        if job_pk in person_clerk:
+            add_notification(
+                bpmemo_qs.filter(
+                    person_executor__user_work_profile__job__division_affiliation__pk=division_pk,
+                    originals_received=False, process_accepted=True
+                ).exclude(document__official_memo_type="2"),
+                "bx bx-notepad", "Оригиналы",
+                "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list",
+                color=lambda i: "red" if i.document.person.user_work_profile.job.type_of_job == "1"
+                else "green" if i.document.person.user_work_profile.job.type_of_job == "2"
+                else "black"
+            )
+
+        if job_pk in person_hr:
+            add_notification(
+                bpmemo_qs.filter(process_accepted=False, location_selected=True)
+                .exclude(document__official_memo_type="3"),
+                "bx bx-user-pin", "Приказ",
+                "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list",
+                color=lambda i: "red" if i.document.person.user_work_profile.job.type_of_job == "1"
+                else "green" if i.document.person.user_work_profile.job.type_of_job == "2"
+                else "black"
+            )
+            add_notification(
+                bpmemo_qs.filter(
+                    hr_accepted=False, originals_received=True, date_transfer_hr__isnull=False
+                ).exclude(document__official_memo_type="2"),
+                "bx bx-pencil", "Проверка",
+                "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list",
+                color=lambda i: "red" if i.document.person.user_work_profile.job.type_of_job == "1"
+                else "green" if i.document.person.user_work_profile.job.type_of_job == "2"
+                else "black"
+            )
+
+        if user.pk in person_accounting or user.is_superuser:
+            add_notification(
+                bpmemo_qs.filter(accepted_accounting=False, hr_accepted=True)
+                .exclude(document__official_memo_type="2"),
+                "bx bx-check-shield", "Авансовый отчет",
+                "hrdepartment_app:bpmemo_update", "hrdepartment_app:bpmemo_list"
+            )
+            add_notification(
+                bpmemo_qs.filter(
+                    document__expenses=False, document__expenses_summ__gt=0, process_accepted=True
+                ),
+                "bx bxs-bank text-danger", "Запрос аванса",
+                "hrdepartment_app:expenses_list", "hrdepartment_app:expenses_list"
+            )
+
+        # ===== CTO =====
+        if job_pk in person_agreement_cto or user.is_superuser:
+            add_notification(
+                CreatingTeam.objects.filter(agreed=False).exclude(cancellation=True),
+                "fa fa-check text-primary", "Согласование приказа СБ",
+                "hrdepartment_app:team_agreed", "hrdepartment_app:team_list"
+            )
+
+        if job_pk in person_hr_cto or user.is_superuser:
+            add_notification(
+                CreatingTeam.objects.filter(agreed=True)
+                .filter(Q(number="") | Q(scan_file=""))
+                .exclude(cancellation=True),
+                "fa fa-book text-primary", "Регистрация приказа СБ",
+                "hrdepartment_app:team_number", "hrdepartment_app:team_list"
+            )
+
+        if job_pk in person_clerk_cto or user.is_superuser:
+            add_notification(
+                CreatingTeam.objects.filter(agreed=True)
+                .exclude(number="").exclude(scan_file="")
+                .filter(email_send=False)
+                .exclude(cancellation=True),
+                "fa fa-envelope text-primary", "Отправка письма приказа СБ",
+                "hrdepartment_app:team", "hrdepartment_app:team_list"
+            )
+
+        return {"notifications": notifications}
+
+    except Exception as ex:
+        logger.exception(ex)
+        return {"notifications": []}
+
+# def get_approval_oficial_memo_process(request):
+#     notifications = []
+#     if not request.user.is_anonymous:
+#         try:
+#             # Инициализация списков для ролей
+#             person_executor, person_agreement, person_clerk, person_hr, person_distributor, person_accounting = make_list(6)
+#             person_executor_cto, person_agreement_cto, person_clerk_cto, person_hr_cto = make_list(4)
+#
+#             # Получение данных для бизнес-процессов
+#             business_process = BusinessProcessDirection.objects.filter(business_process_type=1).values_list(
+#                 'person_executor', 'person_agreement', 'clerk', 'person_hr'
+#             )
+#             for item in business_process:
+#                 person_executor.append(item[0])  # Исполнители
+#                 person_agreement.append(item[1])  # Согласователи
+#                 person_clerk.append(item[2])  # Делопроизводители
+#                 person_hr.append(item[3])  # Сотрудники ОК
+#
+#             # Получение списка сотрудников НО
+#             person_distributor.extend(
+#                 DataBaseUser.objects.filter(
+#                     Q(type_of_role=RoleType.NO) & Q(user_work_profile__job__right_to_approval=True)
+#                 ).values_list('pk', flat=True).exclude(is_active=False)
+#             )
+#
+#             # Получение списка сотрудников бухгалтерии
+#             person_accounting.extend(
+#                 DataBaseUser.objects.filter(
+#                     Q(type_of_role=RoleType.ACCOUNTING) & Q(user_work_profile__job__right_to_approval=True)
+#                 ).values_list('pk', flat=True).exclude(is_active=False)
+#             )
+#
+#             # Получение данных для бизнес-процессов CTO
+#             business_process_cto = BusinessProcessDirection.objects.filter(business_process_type=2)
+#             for item in business_process_cto:
+#                 person_executor_cto.extend(item.person_executor.values_list('pk', flat=True))
+#                 person_agreement_cto.extend(item.person_agreement.values_list('pk', flat=True))
+#                 person_clerk_cto.extend(item.clerk.values_list('pk', flat=True))
+#                 person_hr_cto.extend(item.person_hr.values_list('pk', flat=True))
+#
+#             # Формирование уведомлений
+#             if request.user.user_work_profile.job.pk in person_agreement:
+#                 agreement = ApprovalOficialMemoProcess.objects.filter(
+#                     Q(person_executor__user_work_profile__job__division_affiliation__name=request.user.user_work_profile.job.division_affiliation.name) &
+#                     Q(document_not_agreed=False)
+#                 ).exclude(cancellation=True)
+#                 agreement_color = [(item, 'red') for item in agreement]
+#                 notifications.append({
+#                     'count': agreement.count(),
+#                     'icon_class': 'bx bx-select-multiple',
+#                     'title': 'Согласование',
+#                     'items': agreement_color,
+#                     'url_name': 'hrdepartment_app:bpmemo_update',
+#                     'view_all_url': 'hrdepartment_app:bpmemo_list',
+#                     'large': False
+#                 })
+#
+#             if request.user.pk in person_distributor:
+#                 distributor = ApprovalOficialMemoProcess.objects.filter(
+#                     Q(location_selected=False) & Q(document_not_agreed=True)
+#                 ).exclude(cancellation=True).exclude(document__official_memo_type="3")
+#                 distributor_color = [(item, 'red') for item in distributor]
+#                 notifications.append({
+#                     'count': distributor.count(),
+#                     'icon_class': 'bx bx-hotel',
+#                     'title': 'Место проживания',
+#                     'items': distributor_color,
+#                     'url_name': 'hrdepartment_app:bpmemo_update',
+#                     'view_all_url': 'hrdepartment_app:bpmemo_list',
+#                     'large': False
+#                 })
+#             if request.user.user_work_profile.job.pk in person_clerk:
+#                 clerk = ApprovalOficialMemoProcess.objects.filter(
+#                     Q(person_executor__user_work_profile__job__division_affiliation__pk=request.user.user_work_profile.job.division_affiliation.pk) &
+#                     Q(originals_received=False) & Q(process_accepted=True)
+#                 ).exclude(cancellation=True).exclude(document__official_memo_type="2")
+#                 clerk_color = [
+#                     (
+#                         item,
+#                         'red' if item.document.person.user_work_profile.job.type_of_job == "1"
+#                         else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
+#                         else 'black'
+#                     )
+#                     for item in clerk]
+#                 notifications.append({
+#                     'count': clerk.count(),
+#                     'icon_class': 'bx bx-notepad',
+#                     'title': 'Оригиналы',
+#                     'items': clerk_color,
+#                     'url_name': 'hrdepartment_app:bpmemo_update',
+#                     'view_all_url': 'hrdepartment_app:bpmemo_list',
+#                     'large': False
+#                 })
+#
+#             if request.user.user_work_profile.job.pk in person_hr:
+#                 hr = ApprovalOficialMemoProcess.objects.filter(
+#                     Q(process_accepted=False) & Q(location_selected=True)
+#                 ).exclude(cancellation=True).exclude(document__official_memo_type="3")
+#                 hr_color = [
+#                     (
+#                         item,
+#                         'red' if item.document.person.user_work_profile.job.type_of_job == "1"
+#                         else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
+#                         else 'black'
+#                     )
+#                     for item in hr
+#                 ]
+#                 notifications.append({
+#                     'count': hr.count(),
+#                     'icon_class': 'bx bx-user-pin',
+#                     'title': 'Приказ',
+#                     'items': hr_color,
+#                     'url_name': 'hrdepartment_app:bpmemo_update',
+#                     'view_all_url': 'hrdepartment_app:bpmemo_list',
+#                     'large': False
+#                 })
+#
+#                 hr_accepted = ApprovalOficialMemoProcess.objects.filter(
+#                     Q(hr_accepted=False) & Q(originals_received=True) & Q(date_transfer_hr__isnull=False)
+#                 ).exclude(cancellation=True).exclude(document__official_memo_type="2")
+#                 hr_accepted_color = [
+#                     (
+#                         item,
+#                         'red' if item.document.person.user_work_profile.job.type_of_job == "1"
+#                         else 'green' if item.document.person.user_work_profile.job.type_of_job == "2"
+#                         else 'black'
+#                     )
+#                     for item in hr_accepted]
+#                 notifications.append({
+#                     'count': hr_accepted.count(),
+#                     'icon_class': 'bx bx-pencil',
+#                     'title': 'Проверка',
+#                     'items': hr_accepted_color,
+#                     'url_name': 'hrdepartment_app:bpmemo_update',
+#                     'view_all_url': 'hrdepartment_app:bpmemo_list',
+#                     'large': False
+#                 })
+#
+#             if request.user.pk in person_accounting or request.user.is_superuser:
+#                 accounting = ApprovalOficialMemoProcess.objects.filter(
+#                     Q(accepted_accounting=False) & Q(hr_accepted=True)
+#                 ).exclude(cancellation=True).exclude(document__official_memo_type="2")
+#                 accounting_color = [(item, 'red') for item in accounting]
+#                 notifications.append({
+#                     'count': accounting.count(),
+#                     'icon_class': 'bx bx-check-shield',
+#                     'title': 'Авансовый отчет',
+#                     'items': accounting_color,
+#                     'url_name': 'hrdepartment_app:bpmemo_update',
+#                     'view_all_url': 'hrdepartment_app:bpmemo_list',
+#                     'large': False
+#                 })
+#
+#                 expenses_dicts = ApprovalOficialMemoProcess.objects.filter(
+#                     Q(document__expenses=False) & Q(document__expenses_summ__gt=0) & Q(process_accepted=True)
+#                 )
+#                 expenses_dicts_color = [(item, 'red') for item in expenses_dicts]
+#                 notifications.append({
+#                     'count': expenses_dicts.count(),
+#                     'icon_class': 'bx bxs-bank text-danger',
+#                     'title': 'Запрос аванса',
+#                     'items': expenses_dicts_color,
+#                     'url_name': 'hrdepartment_app:expenses_list',
+#                     'view_all_url': 'hrdepartment_app:expenses_list',
+#                     'large': False
+#                 })
+#
+#             # Уведомления для CTO
+#             if request.user.user_work_profile.job.pk in person_agreement_cto or request.user.is_superuser:
+#                 agreement_cto = CreatingTeam.objects.filter(Q(agreed=False)).exclude(cancellation=True)
+#                 agreement_cto_color = [(item, 'red') for item in agreement_cto]
+#                 notifications.append({
+#                     'count': agreement_cto.count(),
+#                     'icon_class': 'fa fa-check text-primary',
+#                     'title': 'Согласование приказа СБ',
+#                     'items': agreement_cto_color,
+#                     'url_name': 'hrdepartment_app:team_agreed',
+#                     'view_all_url': 'hrdepartment_app:team_list',
+#                     'large': False
+#                 })
+#
+#             if request.user.user_work_profile.job.pk in person_hr_cto or request.user.is_superuser:
+#                 hr_cto = CreatingTeam.objects.filter(Q(agreed=True) & (Q(number='') | Q(scan_file=''))).exclude(cancellation=True)
+#                 hr_cto_color = [(item, 'red') for item in hr_cto]
+#                 notifications.append({
+#                     'count': hr_cto.count(),
+#                     'icon_class': 'fa fa-book text-primary',
+#                     'title': 'Регистрация приказа СБ',
+#                     'items': hr_cto_color,
+#                     'url_name': 'hrdepartment_app:team_number',
+#                     'view_all_url': 'hrdepartment_app:team_list',
+#                     'large': False
+#                 })
+#
+#             if request.user.user_work_profile.job.pk in person_clerk_cto or request.user.is_superuser:
+#                 clerk_cto = CreatingTeam.objects.filter(Q(agreed=True) & ~Q(number='') & ~Q(scan_file='') & Q(email_send=False)).exclude(cancellation=True)
+#                 clerk_cto_color = [(item, 'red') for item in clerk_cto]
+#                 notifications.append({
+#                     'count': clerk_cto.count(),
+#                     'icon_class': 'fa fa-envelope text-primary',
+#                     'title': 'Отправка письма приказа СБ',
+#                     'items': clerk_cto_color,
+#                     'url_name': 'hrdepartment_app:team',
+#                     'view_all_url': 'hrdepartment_app:team_list',
+#                     'large': False
+#                 })
+#             return {"notifications": notifications}
+#
+#         except Exception as _ex:
+#             logger.exception(_ex)
+#             return {"notifications": []}
+#     else:
+#         return {"notifications": []}
 
 
 # def get_approval_oficial_memo_process(request):
