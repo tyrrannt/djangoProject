@@ -146,7 +146,7 @@ def get_approval_oficial_memo_process(request):
         logger.info(person_hr)
         logger.info(person_agreement)
         logger.info(person_accounting)
-        logger.info(user)
+        logger.info(user.pk)
         # person_distributor = set(DataBaseUser.objects.filter(
         #     type_of_role=RoleType.NO,
         #     user_work_profile__job__right_to_approval=True,
