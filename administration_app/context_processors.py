@@ -142,11 +142,7 @@ def get_approval_oficial_memo_process(request):
         person_hr_cto = set(bp2.values_list("person_hr__pk", flat=True))
         person_distributor = set(bp1.values_list("person_sd__pk", flat=True))
         person_accounting = set(bp1.values_list("person_accounting__pk", flat=True))
-        logger.info(person_clerk)
-        logger.info(person_hr)
-        logger.info(person_agreement)
-        logger.info(person_accounting)
-        logger.info(user.pk)
+
         # person_distributor = set(DataBaseUser.objects.filter(
         #     type_of_role=RoleType.NO,
         #     user_work_profile__job__right_to_approval=True,
@@ -255,7 +251,6 @@ def get_approval_oficial_memo_process(request):
                 "fa fa-envelope text-primary", "Отправка письма приказа СБ",
                 "hrdepartment_app:team", "hrdepartment_app:team_list"
             )
-        logger.info(notifications)
         return {"notifications": notifications}
 
     except Exception as ex:

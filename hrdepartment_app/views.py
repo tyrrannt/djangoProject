@@ -70,6 +70,7 @@ from hrdepartment_app.forms import (
     ReportCardForm, OutfitCardForm, BriefingsAddForm, BriefingsUpdateForm, OperationalAddForm, OperationalUpdateForm,
     DataBaseUserEventAddForm, DataBaseUserEventUpdateForm, BusinessProcessRoutesAddForm,
     BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
+    LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -90,7 +91,7 @@ from hrdepartment_app.models import (
     ReportCard,
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
-    DataBaseUserEvent, BusinessProcessRoutes, LaborProtection,
+    DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 
@@ -5700,6 +5701,172 @@ class LaborProtectionDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteV
     model = LaborProtection
     success_url = reverse_lazy("hrdepartment_app:labor_protection_list")
     permission_required = "hrdepartment_app.delete_laborprotection"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        return context
+
+
+# Инструкции по охране труда
+class LaborProtectionInstructionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    """
+    Инструкции по охране труда - список
+    """
+
+    model = LaborProtectionInstructions
+    permission_required = "hrdepartment_app.view_laborprotectioninstructions"
+
+    def get(self, request, *args, **kwargs):
+        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            laborprotectioninstructions_list = LaborProtectionInstructions.objects.all()
+            data = [laborprotectioninstructions_item.get_data() for laborprotectioninstructions_item in
+                    laborprotectioninstructions_list]
+            response = {"data": data}
+            return JsonResponse(response)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструкции по охране труда"
+        return context
+
+
+class LaborProtectionInstructionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    """
+    Инструкции по охране труда - создание
+    """
+
+    model = LaborProtectionInstructions
+    form_class = LaborProtectionInstructionsAddForm
+    permission_required = "hrdepartment_app.add_laborprotectioninstructions"
+
+    def get_context_data(self, **kwargs):
+        content = super(LaborProtectionInstructionsAdd, self).get_context_data(**kwargs)
+        content[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить инструкцию"
+        return content
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+
+@method_decorator(never_cache, name='dispatch')
+class LaborProtectionInstructionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    """
+    Инструкции по охране труда - просмотр
+    """
+
+    model = LaborProtectionInstructions
+    permission_required = "hrdepartment_app.view_laborprotectioninstructions"
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            if request.user.is_anonymous:
+                return redirect(reverse('customers_app:login'))
+            # Получаем уровень доступа для запрашиваемого объекта
+            detail_obj = int(self.get_object().access.level)
+            # Получаем уровень доступа к документам у пользователя
+            user_obj = DataBaseUser.objects.get(
+                pk=self.request.user.pk
+            ).user_access.level
+            # Сравниваем права доступа
+            if detail_obj < user_obj:
+                # Если права доступа у документа выше чем у пользователя, производим перенаправление к списку документов
+                # Иначе не меняем логику работы класса
+                url_match = reverse_lazy("hrdepartment_app:lpi_list")
+                return redirect(url_match)
+        except Exception as _ex:
+            # Если при запросах прав произошла ошибка, то перехватываем ее и перенаправляем к списку документов
+            url_match = reverse_lazy("hrdepartment_app:lpi_list")
+            return redirect(url_match)
+        return super(LaborProtectionInstructionsDetail, self).dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        content_type_id = ContentType.objects.get_for_model(self.object).id
+        document_id = self.object.id
+        user = self.request.user
+        agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id,
+                                                      user=user).exists()
+        context['agree'] = agree
+        list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
+        context['list_agree'] = list_agree
+        previous = LaborProtectionInstructions.objects.filter(parent_document=document_id).values_list('pk').last()
+        context['previous'] = previous[0] if previous else False
+        try:
+            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+        except TypeError:
+            context['outdated'] = False
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        return context
+
+
+class LaborProtectionInstructionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
+    """
+    Инструкции по охране труда - редактирование
+    """
+
+    # template_name = "hrdepartment_app/laborprotectioninstructions_form_update.html"
+    model = LaborProtectionInstructions
+    form_class = LaborProtectionInstructionsUpdateForm
+    permission_required = "hrdepartment_app.change_laborprotectioninstructions"
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context[
+            "title"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        return context
+
+    def get_form_kwargs(self):
+        """
+        Передаем в форму текущего пользователя. В форме переопределяем метод __init__
+        :return: PK текущего пользователя
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs.update({"user": self.request.user.pk})
+        return kwargs
+
+    def get_form(self, form_class=None):
+        """
+        В данном случае, queryset содержит все объекты Provisions, кроме объекта, который соответствует текущему
+        экземпляру класса (self.object). Это может быть полезно, если вы хотите ограничить выбор определенных объектов
+        в поле формы.
+
+        :param form_class: Установлен в текущем экземпляре класса. Это позволяет получить экземпляр формы, который
+                            в дальнейшем будет использоваться в представлении.
+        :return: Возвращаем модифицированную форму.
+        """
+        # Получаем экземпляр формы, используя родительский метод `get_form`
+        form = super().get_form(form_class=self.form_class)
+
+        # Добавляем дополнительное поле 'parent_document' в форму
+        form.fields['parent_document'].queryset = LaborProtectionInstructions.objects.all().exclude(pk=self.object.pk)
+
+        # Возвращаем модифицированную форму
+        return form
+
+
+class LaborProtectionInstructionsDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = LaborProtectionInstructions
+    template_name = "hrdepartment_app/laborprotectioninstructions_confirm_delete.html"
+    success_url = reverse_lazy("hrdepartment_app:lpi_list")
+    permission_required = "hrdepartment_app.delete_laborprotectioninstructions"
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)

@@ -23,18 +23,19 @@ from hrdepartment_app.models import (
     Instructions,
     Provisions,
     CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
-    DataBaseUserEvent, LaborProtection, BusinessProcessRoutes,
+    DataBaseUserEvent, LaborProtection, BusinessProcessRoutes, GuidanceDocuments, LaborProtectionInstructions
 )
 
 # Register your models here.
 
 admin.site.register(DocumentsJobDescription)
 admin.site.register(Purpose)
-
+admin.site.register(GuidanceDocuments)
 admin.site.register(Groups)
 admin.site.register(ReasonForCancellation)
 admin.site.register(TypesUserworktime)
 admin.site.register(Instructions)
+admin.site.register(LaborProtectionInstructions)
 admin.site.register(DocumentAcknowledgment)
 admin.site.register(DataBaseUserEvent)
 

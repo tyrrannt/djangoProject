@@ -1,0 +1,123 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+
+        {% include 'library_app/breadcrumb.html' %}
+
+        <!-- start: page -->
+        <div class="row">
+            <div class="col">
+
+                <div class="card card-modern">
+                    <div class="card-body">
+                        <div class="datatables-header-footer-wrapper">
+                            <div class="datatable-header">
+                                <div class="row align-items-center mb-3">
+                                    {% if perms.hrdepartment_app.add_laborprotectioninstructions or user.is_superuser %}
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'hrdepartment_app:lpi_add' %}"
+                                               class="btn btn-outline-primary btn-px-4 py-3 d-flex
+                                                align-items-center font-weight-semibold line-height-1">
+                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить инструкцию по ОТ </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <style>
+                                thead input {
+                                    width: 100%;
+                                    padding: 3px;
+                                    box-sizing: border-box;
+                                    border-radius: 10px;
+                                    border-color: #ff7300;
+                                    color: #003994;
+                                }
+                            </style>
+                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                                   style="min-width: 750px;">
+
+                                <thead>
+                                <tr>
+                                    <th width="30%">Наименование</th>
+                                    <th width="10%">Номер</th>
+                                    <th width="10%">Дата</th>
+                                    <th width="20%">Место хранения</th>
+                                    <th width="8%">Актуален</th>
+                                    <th width="12%">Исполнитель</th>
+                                </tr>
+                                </thead>
+                            </table>
+                            <hr class="solid mt-5 opacity-4">
+                            </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- end: page -->
+    </section>
+{% endblock %}
+
+{% block custome_script %}
+    <script>
+        $(document).ready(function () {
+            $('#datatable-ecommerce-list thead th').each(function () {
+                var title = $(this).text();
+                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+            });
+            var table = $('#datatable-ecommerce-list').DataTable({
+                "initComplete": function () {
+                    // Apply the search
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var that = this;
+                            $('input', this.header()).on('keyup change clear', function () {
+                                if (that.search() !== this.value) {
+                                    that.search(this.value).draw();
+                                }
+                            });
+                        });
+                },
+                "ordering": false,
+                "pageLength": 25,
+                "scrollX": true,
+                "sDom": 'T<"clear">lrtip',
+                "ajax": "{% url 'hrdepartment_app:lpi_list' %}",
+                "language": {
+                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+                },
+                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                    let id = aData['pk'];
+                    if (aData['actuality'] === 'Да') {
+                        $(nRow).addClass('text-success  fs-6')
+                    } else {
+                        $(nRow).addClass('text-danger  fs-6')
+                    }
+                    $(nRow).attr("href", id + '/');
+                    $(nRow).css('cursor', 'pointer');
+                    $(nRow).click(function () {
+                        window.location = $(this).attr('href');
+                        return false;
+                    });
+                },
+
+                "columns": [
+                    {"data": "document_name"},
+                    {"data": "document_number"},
+                    {"data": "document_date"},
+                    {"data": "document_division"},
+                    {"data": "actuality"},
+                    {"data": "executor"},
+                ],
+            });
+        });
+    </script>
+{% endblock %}

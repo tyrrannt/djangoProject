@@ -207,6 +207,14 @@ def ins_directory_path_scan(instance, filename):
     return custom_upload_to(instance, filename)
 
 
+def lpi_directory_path(instance, filename):
+    return custom_upload_to(instance, filename)
+
+
+def lpi_directory_path_scan(instance, filename):
+    return custom_upload_to(instance, filename)
+
+
 def prv_directory_path(instance, filename):
     return custom_upload_to(instance, filename)
 
@@ -1856,6 +1864,7 @@ class DocumentsOrder(Documents):
     description = CKEditor5Field("Содержание", config_name="extends", blank=True)
     approved = models.BooleanField(verbose_name="Утверждён", default=False)
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
+    custom_file = models.BooleanField(verbose_name="Ручная загрузка приказа", default=False)
     reason_cancellation = models.ForeignKey(
         ReasonForCancellation,
         verbose_name="Причина отмены",
@@ -1993,7 +2002,7 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
 
 @receiver(post_save, sender=DocumentsOrder)
 def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
-    if not instance.cancellation:
+    if not instance.cancellation and not instance.custom_file:
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
 
         # ext_scan = str(instance.scan_file).split('.')[-1]
@@ -3265,6 +3274,36 @@ class GuidanceDocuments(Documents):
 
 
 class DocumentAcknowledgment(models.Model):
+    """
+    Модель для отслеживания подтверждения ознакомления пользователей с документами.
+
+    Позволяет фиксировать факт ознакомления сотрудников с различными типами документов,
+    такими как приказы, положения, должностные инструкции и другие. Использует
+    GenericForeignKey для связи с разными моделями документов.
+
+    Атрибуты:
+        document_type (ForeignKey): Тип документа (ContentType), с которым связано подтверждение.
+            Ограничено моделями: 'documentsorder', 'creatingteam', 'documentsjobdescription',
+            'provisions', 'guidancedocuments', 'companyevent'.
+        document_id (PositiveIntegerField): Идентификатор экземпляра связанного документа.
+        document (GenericForeignKey): Обобщённая ссылка на сам документ, объединяющая
+            document_type и document_id.
+        user (ForeignKey): Пользователь (сотрудник), который подтвердил ознакомление.
+            Связь с моделью DataBaseUser. При удалении пользователя удаляются и все его
+            подтверждения.
+        acknowledgment_date (DateTimeField): Дата и время подтверждения ознакомления.
+            Устанавливается автоматически при создании записи.
+
+    Meta:
+        verbose_name (str): Человекочитаемое название модели в единственном числе.
+        verbose_name_plural (str): Человекочитаемое название модели во множественном числе.
+
+    Методы:
+        __str__(self) -> str:
+            Возвращает строковое представление объекта в формате:
+            "ИмяПользователя ознакомился с документом 'НазваниеДокумента'".
+    """
+
     class Meta:
         verbose_name = "Подтверждение документа"
         verbose_name_plural = "Подтверждения документов"
@@ -3387,6 +3426,77 @@ class LaborProtection(Documents):
 
     def __str__(self):
         return f"{self.document_name} № {self.document_number} от {self.document_date.strftime('%d.%m.%Y')}"
+
+
+class LaborProtectionInstructions(Documents):
+    class Meta:
+        verbose_name = "Инструкция по охране труда"
+        verbose_name_plural = "Инструкции по охране труда"
+
+    prefix_attr_doc_file = "LPI"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "LPI"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
+
+    doc_file = models.FileField(
+        verbose_name="Файл документа", upload_to=lpi_directory_path, blank=True
+    )
+    scan_file = models.FileField(
+        verbose_name="Скан документа", upload_to=lpi_directory_path_scan, blank=True
+    )
+    storage_location_division = models.ForeignKey(
+        Division,
+        verbose_name="Подразделение где хранится оригинал",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="lp_instruction_location_division",
+    )
+    document_division = models.ManyToManyField(
+        Division,
+        verbose_name="Подразделения",
+        related_name="lp_instruction_document_division",
+    )
+    employee = None
+    applying_for_job = None
+
+    def get_data(self):
+        """
+        Return a dictionary representing the data of the object.
+
+        :return: A dictionary with the following keys:
+                 - "pk": The primary key of the object.
+                 - "document_name": The name of the document.
+                 - "document_number": The number of the document.
+                 - "document_date": The formatted date of the document ("dd.mm.yyyy г.").
+                 - "document_division": The storage location division of the document (converted to string).
+                 - "document_order": The document order (converted to string).
+                 - "actuality": The actuality of the document ("Да" if true, "Нет" if false).
+                 - "executor": The formatted name initials of the executor.
+
+        """
+        return {
+            "pk": self.pk,
+            "document_name": self.document_name,
+            "document_number": self.document_number,
+            "document_date": f"{self.document_date:%d.%m.%Y} г.",
+            "document_division": str(self.storage_location_division),
+            "actuality": "Да" if self.actuality else "Нет",
+            "executor": format_name_initials(self.executor),
+        }
+
+    def get_absolute_url(self):
+        return reverse('hrdepartment_app:lpi_list')
+
+    def __str__(self):
+        """
+        Returns the string representation of the object.
+
+        :return: The string representation of the object.
+        :rtype: str
+        """
+        return self.document_name
 
 
 # Регистрируем модели и их file-поля

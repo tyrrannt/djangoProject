@@ -25,7 +25,7 @@ from hrdepartment_app.models import (
     OrderDescription,
     ReportCard,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, Briefings,
-    Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection,
+    Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
 )
 
 
@@ -1973,6 +1973,99 @@ class LaborProtectionUpdateForm(forms.ModelForm):
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
         self.fields["applying_for_job"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class LaborProtectionInstructionsAddForm(forms.ModelForm):
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = LaborProtectionInstructions
+        fields = (
+            "executor",
+            "document_date",
+            "document_number",
+            "doc_file",
+            "scan_file",
+            "access",
+            "storage_location_division",
+            "allowed_placed",
+            "validity_period_start",
+            "validity_period_end",
+            "actuality",
+            "parent_document",
+            "document_name",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(LaborProtectionInstructionsAddForm, self).__init__(*args, **kwargs)
+        self.fields["executor"].queryset = DataBaseUser.objects.filter(pk=self.user)
+        self.fields["executor"].widget.attrs.update(
+            {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+        )
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class LaborProtectionInstructionsUpdateForm(forms.ModelForm):
+    access = forms.ModelChoiceField(queryset=AccessLevel.objects.all())
+    access.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+    storage_location_division = forms.ModelChoiceField(queryset=Division.objects.all())
+    storage_location_division.widget.attrs.update(
+        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
+    )
+
+    class Meta:
+        model = LaborProtectionInstructions
+        fields = (
+            "document_date",
+            "document_number",
+            "doc_file",
+            "scan_file",
+            "access",
+            "storage_location_division",
+            "validity_period_start",
+            "validity_period_end",
+            "parent_document",
+            "allowed_placed",
+            "actuality",
+            "document_name",
+        )
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(LaborProtectionInstructionsUpdateForm, self).__init__(*args, **kwargs)
+        self.fields["allowed_placed"].widget.attrs.update(
+            {"class": "todo-check", "data-plugin-ios-switch": True}
+        )
+        self.fields["actuality"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
         for field in self.fields:
