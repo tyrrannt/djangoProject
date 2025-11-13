@@ -5710,7 +5710,7 @@ class LaborProtectionDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteV
         return context
 
 
-# Инструкции по охране труда
+# Инструкции по ТО ВС
 class LaborProtectionInstructionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     """
     Инструкции по охране труда - список
@@ -5733,13 +5733,13 @@ class LaborProtectionInstructionsList(PermissionRequiredMixin, LoginRequiredMixi
         context = super().get_context_data(object_list=None, **kwargs)
         context[
             "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструкции по охране труда"
+        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструкции по ТО ВС"
         return context
 
 
 class LaborProtectionInstructionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     """
-    Инструкции по охране труда - создание
+    Инструкции по ТО ВС - создание
     """
 
     model = LaborProtectionInstructions
@@ -5766,7 +5766,7 @@ class LaborProtectionInstructionsAdd(PermissionRequiredMixin, LoginRequiredMixin
 @method_decorator(never_cache, name='dispatch')
 class LaborProtectionInstructionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     """
-    Инструкции по охране труда - просмотр
+    Инструкции по ТО ВС - просмотр
     """
 
     model = LaborProtectionInstructions
@@ -5818,7 +5818,7 @@ class LaborProtectionInstructionsDetail(PermissionRequiredMixin, LoginRequiredMi
 
 class LaborProtectionInstructionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     """
-    Инструкции по охране труда - редактирование
+    Инструкции по ТО ВС - редактирование
     """
 
     # template_name = "hrdepartment_app/laborprotectioninstructions_form_update.html"

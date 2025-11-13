@@ -3430,8 +3430,8 @@ class LaborProtection(Documents):
 
 class LaborProtectionInstructions(Documents):
     class Meta:
-        verbose_name = "Инструкция по охране труда"
-        verbose_name_plural = "Инструкции по охране труда"
+        verbose_name = "Инструкция по ТО ВС"
+        verbose_name_plural = "Инструкции по ТО ВС"
 
     prefix_attr_doc_file = "LPI"
     prefix_file_doc_file = "DRAFT"
