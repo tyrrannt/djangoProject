@@ -698,6 +698,8 @@
                                                         text: data.message,
                                                         type: "info",
                                                         addclass: "click-2-close",
+                                                        hide: false,     // <--- отключает авто-закрытие
+                                                        delay: 0,        // <--- таймер = 0, уведомление живёт пока не кликнут
                                                         buttons: {
                                                             closer: true,
                                                             sticker: false
