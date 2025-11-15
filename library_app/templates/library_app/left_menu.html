@@ -63,7 +63,8 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="nav-link" href="{% url 'hrdepartment_app:business_process_routes_list' %}">
+                                    <a class="nav-link"
+                                       href="{% url 'hrdepartment_app:business_process_routes_list' %}">
                                         Настройки бизнес процессов
                                     </a>
                                 </li>
@@ -213,25 +214,26 @@
                                     </a>
                                     <ul class="nav nav-children">
                                         <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:management_dashboard' %}">
+                                            <a class="nav-link"
+                                               href="{% url 'hrdepartment_app:management_dashboard' %}">
                                                 Отчеты для руководства
                                             </a>
                                         </li>
-{#                                        <li>#}
-{#                                            <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">#}
-{#                                                Анализ пропусков работы#}
-{#                                            </a>#}
-{#                                        </li>#}
-{#                                        <li>#}
-{#                                            <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">#}
-{#                                                Влияние дня недели на отгулы#}
-{#                                            </a>#}
-{#                                        </li>#}
-{#                                        <li>#}
-{#                                            <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">#}
-{#                                                Распределение типов времени#}
-{#                                            </a>#}
-{#                                        </li>#}
+                                        {#                                        <li>#}
+                                        {#                                            <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">#}
+                                        {#                                                Анализ пропусков работы#}
+                                        {#                                            </a>#}
+                                        {#                                        </li>#}
+                                        {#                                        <li>#}
+                                        {#                                            <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">#}
+                                        {#                                                Влияние дня недели на отгулы#}
+                                        {#                                            </a>#}
+                                        {#                                        </li>#}
+                                        {#                                        <li>#}
+                                        {#                                            <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">#}
+                                        {#                                                Распределение типов времени#}
+                                        {#                                            </a>#}
+                                        {#                                        </li>#}
                                     </ul>
                                 </li>
                             {% endif %}
@@ -339,19 +341,19 @@
                                 </a>
                             </li>
                             <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class='bx bxs-book-content' aria-hidden="true"></i>
-                            <span>Отчеты</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:contract_report' %}">
-                                    Общий список договоров
+                                <a class="nav-link" href="#">
+                                    <i class='bx bxs-book-content' aria-hidden="true"></i>
+                                    <span>Отчеты</span>
                                 </a>
-                            </li>
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'contracts_app:contract_report' %}">
+                                            Общий список договоров
+                                        </a>
+                                    </li>
 
-                        </ul>
-                    </li>
+                                </ul>
+                            </li>
                         </ul>
                     </li>
                     <li class="nav-parent">
@@ -643,41 +645,119 @@
                                 <div class="widget-summary-col">
                                     <div class="summary">
                                         <ul id="online-users"></ul>
+                                        {#                                        <script>#}
+                                        {#                                            var online_users = "wss://corp.barkol.ru/ws/online_users/";#}
+                                        {#                                            const socket_online_users = new WebSocket(online_users);#}
+                                        {#                                            socket_online_users.onmessage = function (event) {#}
+                                        {#                                                const data = JSON.parse(event.data);#}
+                                        {#                                                if (data.is_admin) {#}
+                                        {#                                                    if (data.type === 'online_users') {#}
+                                        {#                                                        const usersList = document.getElementById('online-users');#}
+                                        {#                                                        usersList.innerHTML = '';#}
+                                        {#                                                        data.users.forEach(user => {#}
+                                        {#                                                            const li = document.createElement('li');#}
+                                        {#                                                            const link = document.createElement('a');#}
+                                        {#                                                            link.href = `/users/staff/${user[1]}/`;  // Ссылка на профиль пользователя#}
+                                        {#                                                            link.textContent = user[0];#}
+                                        {#                                                            li.appendChild(link);#}
+                                        {#                                                            usersList.appendChild(li);#}
+                                        {#                                                        });#}
+                                        {#                                                    }#}
+                                        {#                                                } else {#}
+                                        {#                                                    if (data.type === 'online_users') {#}
+                                        {#                                                        const usersList = document.getElementById('online-users');#}
+                                        {#                                                        usersList.innerHTML = '';#}
+                                        {#                                                        data.users.forEach(user => {#}
+                                        {#                                                            const li = document.createElement('li');#}
+                                        {#                                                            li.textContent = user[0];#}
+                                        {#                                                            usersList.appendChild(li);#}
+                                        {#                                                        });#}
+                                        {#                                                    }#}
+                                        {#                                                }#}
+                                        {##}
+                                        {#                                            };#}
+                                        {#                                            socket_online_users.onclose = function (event) {#}
+                                        {#                                                console.error('WebSocket closed unexpectedly');#}
+                                        {#                                            };#}
+                                        {#                                        </script>#}
                                         <script>
-                                            var online_users = "wss://corp.barkol.ru/ws/online_users/";
-                                            const socket_online_users = new WebSocket(online_users);
+                                            // --- Online users WebSocket ---
+                                            const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
+                                            const socket_online_users = new WebSocket(online_users_url);
+
+                                            // --- Private messages WebSocket ---
+                                            const private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
+
+                                            // --- Получение личных сообщений ---
+                                            private_socket.onmessage = function (event) {
+                                                const data = JSON.parse(event.data);
+
+                                                if (data.type === "private_message") {
+                                                    new PNotify({
+                                                        title: "Сообщение от " + data.from_name,
+                                                        text: data.message,
+                                                        type: "info",
+                                                        addclass: "click-2-close",
+                                                        buttons: {
+                                                            closer: true,
+                                                            sticker: false
+                                                        }
+                                                    });
+                                                }
+                                            };
+
+                                            private_socket.onclose = function () {
+                                                console.error("Private WebSocket закрыт");
+                                            };
+
+                                            // --- Получение списка онлайн пользователей ---
                                             socket_online_users.onmessage = function (event) {
                                                 const data = JSON.parse(event.data);
-                                                if (data.is_admin) {
-                                                    if (data.type === 'online_users') {
-                                                        const usersList = document.getElementById('online-users');
-                                                        usersList.innerHTML = '';
-                                                        data.users.forEach(user => {
-                                                            const li = document.createElement('li');
-                                                            const link = document.createElement('a');
-                                                            link.href = `/users/staff/${user[1]}/`;  // Ссылка на профиль пользователя
-                                                            link.textContent = user[0];
-                                                            li.appendChild(link);
-                                                            usersList.appendChild(li);
-                                                        });
-                                                    }
-                                                } else {
-                                                    if (data.type === 'online_users') {
-                                                        const usersList = document.getElementById('online-users');
-                                                        usersList.innerHTML = '';
-                                                        data.users.forEach(user => {
-                                                            const li = document.createElement('li');
-                                                            li.textContent = user[0];
-                                                            usersList.appendChild(li);
-                                                        });
-                                                    }
-                                                }
 
+                                                if (data.type === 'online_users') {
+                                                    const usersList = document.getElementById('online-users');
+                                                    usersList.innerHTML = '';
+
+                                                    data.users.forEach(user => {
+                                                        const username = user[0]; // отображаемое имя
+                                                        const userId = user[1];   // PK пользователя
+
+                                                        const li = document.createElement('li');
+                                                        const link = document.createElement('a');
+
+                                                        if (data.is_admin) {
+                                                            link.href = `/users/staff/${userId}/`;
+                                                        } else {
+                                                            link.href = "#";
+                                                        }
+
+                                                        link.textContent = username;
+
+                                                        // --- Двойной клик для отправки сообщения ---
+                                                        link.addEventListener("dblclick", function (e) {
+                                                            e.preventDefault();
+
+                                                            const message = prompt("Введите сообщение для " + username + ":");
+                                                            if (message) {
+                                                                private_socket.send(JSON.stringify({
+                                                                    type: "private_message",
+                                                                    to: userId,
+                                                                    message: message
+                                                                }));
+                                                            }
+                                                        });
+
+                                                        li.appendChild(link);
+                                                        usersList.appendChild(li);
+                                                    });
+                                                }
                                             };
-                                            socket_online_users.onclose = function (event) {
-                                                console.error('WebSocket closed unexpectedly');
+
+                                            socket_online_users.onclose = function () {
+                                                console.error('Online WebSocket закрыт');
                                             };
                                         </script>
+
                                     </div>
                                 </div>
                             </div>

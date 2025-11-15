@@ -61,6 +61,53 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
         }))
 
 
+class PrivateMessageConsumer(AsyncWebsocketConsumer):
+    active_users = {}
+
+    # user.pk → channel_name
+
+    async def connect(self):
+        user = self.scope['user']
+        if not user.is_authenticated:
+            await self.close()
+        else:
+            self.active_users[user.pk] = self.channel_name
+            await self.accept()
+
+    async def disconnect(self, close_code):
+        user = self.scope['user']
+        self.active_users.pop(user.pk, None)
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+
+        recipient_id = data.get('to')
+        message = data.get('message')
+        sender = self.scope['user']
+
+        # ищем канал получателя
+        target_channel = self.active_users.get(int(recipient_id))
+
+        if target_channel:
+            await self.channel_layer.send(
+                target_channel,
+                {
+                    "type": "private_message",
+                    "message": message,
+                    "from": sender.pk,
+                    "from_name": sender.title  # FIO если надо
+                }
+            )
+
+    async def private_message(self, event):
+        await self.send(text_data=json.dumps({
+            "type": "private_message",
+            "message": event["message"],
+            "from": event["from"],
+            "from_name": event["from_name"],
+        }))
+
+
 # class ChatConsumer(AsyncWebsocketConsumer):
 #     async def connect(self):
 #         self.room_name = self.scope['url_route']['kwargs']['room_name']
