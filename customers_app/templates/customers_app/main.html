@@ -135,6 +135,29 @@
 
 </section>
 
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="sendMessageLabel">Сообщение пользователю</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+
+      <div class="modal-body">
+        <textarea id="modal-text" class="form-control" rows="5" placeholder="Введите сообщение..." style="color:black;"></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="modal-send" class="btn btn-success">Отправить</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- Vendor -->
 <script src="{% static 'admin_templates/vendor/jquery/jquery.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/jquery-browser-mobile/jquery.browser.mobile.js' %}"></script>
@@ -226,28 +249,7 @@
     inactivityTime();
 </script>
 
-<!-- Bootstrap Modal -->
-<div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
 
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="sendMessageLabel">Сообщение пользователю</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-      </div>
-
-      <div class="modal-body">
-        <textarea id="modal-text" class="form-control" rows="5" placeholder="Введите сообщение..." style="color:black;"></textarea>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" id="modal-send" class="btn btn-success">Отправить</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-      </div>
-
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
