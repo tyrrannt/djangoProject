@@ -680,7 +680,39 @@
                                         {#                                                console.error('WebSocket closed unexpectedly');#}
                                         {#                                            };#}
                                         {#                                        </script>#}
+
                                         <script>
+
+                                            let selectedUserId = null;
+                                            let selectedUserName = null;
+
+                                            const bsModal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+
+                                            function openModal(username, userId) {
+                                                selectedUserId = userId;
+                                                selectedUserName = username;
+
+                                                document.getElementById("sendMessageLabel").textContent = "Сообщение для " + username;
+
+                                                document.getElementById("modal-text").value = "";
+
+                                                bsModal.show();
+                                            }
+
+                                            document.getElementById("modal-send").onclick = function () {
+                                                const msg = document.getElementById("modal-text").value.trim();
+
+                                                if (msg && selectedUserId) {
+                                                    private_socket.send(JSON.stringify({
+                                                        type: "private_message",
+                                                        to: selectedUserId,
+                                                        message: msg
+                                                    }));
+                                                }
+
+                                                bsModal.hide();
+                                            };
+
                                             // --- Online users WebSocket ---
                                             const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
                                             const socket_online_users = new WebSocket(online_users_url);
@@ -696,7 +728,7 @@
                                                     new PNotify({
                                                         title: "Сообщение от " + data.from_name,
                                                         text: data.message,
-                                                        type: "info",
+                                                        type: "warning",
                                                         addclass: "click-2-close",
                                                         hide: false,     // <--- отключает авто-закрытие
                                                         delay: 0,        // <--- таймер = 0, уведомление живёт пока не кликнут
@@ -732,16 +764,9 @@
                                                         // --- Двойной клик для отправки сообщения ---
                                                         link.addEventListener("dblclick", function (e) {
                                                             e.preventDefault();
-
-                                                            const message = prompt("Введите сообщение для " + username + ":");
-                                                            if (message) {
-                                                                private_socket.send(JSON.stringify({
-                                                                    type: "private_message",
-                                                                    to: userId,
-                                                                    message: message
-                                                                }));
-                                                            }
+                                                            openModal(username, userId);
                                                         });
+
 
                                                         li.appendChild(link);
                                                         usersList.appendChild(li);
@@ -800,3 +825,4 @@
         </script>
     </div>
 </aside>
+
