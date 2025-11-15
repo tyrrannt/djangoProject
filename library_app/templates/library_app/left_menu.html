@@ -725,12 +725,6 @@
                                                         const li = document.createElement('li');
                                                         const link = document.createElement('a');
 
-                                                        if (data.is_admin) {
-                                                            link.href = `/users/staff/${userId}/`;
-                                                        } else {
-                                                            link.href = "#";
-                                                        }
-
                                                         link.textContent = username;
 
                                                         // --- Двойной клик для отправки сообщения ---
