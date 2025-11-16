@@ -681,6 +681,32 @@
                                         {#                                            };#}
                                         {#                                        </script>#}
                                         <script>
+                                            function showMessageToast(from, text) {
+                                                const toastId = "toast-" + Date.now();
+
+                                                const toastHtml = `
+        <div id="${toastId}" class="toast border-warning" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-warning text-dark">
+                <strong class="me-auto">Сообщение от ${from}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+            </div>
+            <div class="toast-body">
+                ${text}
+            </div>
+        </div>
+    `;
+
+                                                document.getElementById("toastArea").insertAdjacentHTML('beforeend', toastHtml);
+
+                                                const toastElement = document.getElementById(toastId);
+                                                const bsToast = new bootstrap.Toast(toastElement, {
+                                                    autohide: false  // не закрываем автоматически
+                                                });
+
+                                                bsToast.show();
+                                            }
+                                        </script>
+                                        <script>
 
                                             document.addEventListener("DOMContentLoaded", function () {
 
@@ -728,19 +754,8 @@
                                                 const data = JSON.parse(event.data);
 
                                                 if (data.type === "private_message") {
-                                                    new PNotify({
-                                                        title: "Сообщение от " + data.from_name,
-                                                        text: data.message,
-                                                        type: "warning",
-                                                        addclass: "click-2-close",
-                                                        hide: false,     // <--- отключает авто-закрытие
-                                                        delay: 0,        // <--- таймер = 0, уведомление живёт пока не кликнут
-                                                        buttons: {
-                                                            closer: true,
-                                                            sticker: false
-                                                        }
-                                                    });
-                                                }
+    showMessageToast(data.from_name, data.message);
+}
                                             };
 
                                             private_socket.onclose = function () {
