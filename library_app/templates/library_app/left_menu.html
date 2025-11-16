@@ -682,35 +682,39 @@
                                         {#                                        </script>#}
                                         <script>
 
-                                            let selectedUserId = null;
-                                            let selectedUserName = null;
+                                            document.addEventListener("DOMContentLoaded", function () {
 
-                                            const bsModal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+                                                const modalElement = document.getElementById('sendMessageModal');
 
-                                            function openModal(username, userId) {
-                                                selectedUserId = userId;
-                                                selectedUserName = username;
-
-                                                document.getElementById("sendMessageLabel").textContent = "Сообщение для " + username;
-
-                                                document.getElementById("modal-text").value = "";
-
-                                                bsModal.show();
-                                            }
-
-                                            document.getElementById("modal-send").onclick = function () {
-                                                const msg = document.getElementById("modal-text").value.trim();
-
-                                                if (msg && selectedUserId) {
-                                                    private_socket.send(JSON.stringify({
-                                                        type: "private_message",
-                                                        to: selectedUserId,
-                                                        message: msg
-                                                    }));
+                                                if (!modalElement) {
+                                                    console.error('Modal element #sendMessageModal not found in DOM');
+                                                    return;
                                                 }
 
-                                                bsModal.hide();
-                                            };
+                                                const bsModal = new bootstrap.Modal(modalElement);
+
+                                                let selectedUserId = null;
+
+                                                window.openModal = function (username, userId) {
+                                                    selectedUserId = userId;
+                                                    document.getElementById("sendMessageLabel").textContent = "Сообщение для " + username;
+                                                    document.getElementById("modal-text").value = "";
+                                                    bsModal.show();
+                                                };
+
+                                                document.getElementById("modal-send").onclick = function () {
+                                                    const msg = document.getElementById("modal-text").value.trim();
+                                                    if (msg && selectedUserId) {
+                                                        private_socket.send(JSON.stringify({
+                                                            type: "private_message",
+                                                            to: selectedUserId,
+                                                            message: msg
+                                                        }));
+                                                    }
+                                                    bsModal.hide();
+                                                };
+
+                                            });
 
                                             // --- Online users WebSocket ---
                                             const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
