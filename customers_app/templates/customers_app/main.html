@@ -249,6 +249,28 @@
     </div>
   </div>
 </div>
-<div class="toast-container position-fixed top-0 end-0 p-3" id="toastArea"></div>
+<style>
+.toast-soft {
+    background: #f8f9fa !important; /* мягкий бело-серый фон */
+    border: 1px solid #e0e0e0 !important;
+    color: #333 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+    min-width: 300px;
+}
+.toast-soft .toast-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e8e8e8 !important;
+}
+.toast-soft .btn-close {
+    filter: brightness(0);
+}
+</style>
+
+<div id="toastAreaCenter"
+     class="position-fixed top-50 start-50 translate-middle"
+     style="z-index: 999999;">
+</div>
+
 </body>
 </html>

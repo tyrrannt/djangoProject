@@ -685,35 +685,31 @@
                                                 const toastId = "toast-" + Date.now();
 
                                                 const toastHtml = `
-        <div id="${toastId}"
-            class="toast shadow-sm border-0"
-            style="z-index: 999999; backdrop-filter: blur(4px);"
-            role="alert" aria-live="assertive" aria-atomic="true">
-
-            <div class="toast-header"
-                 style="background: #f5f5f7; color: #333; border-bottom: 1px solid #ddd;">
-                <strong class="me-auto">💬 ${from}</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+        <div id="${toastId}" class="toast toast-soft fade" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">${from}</strong>
+                <small>сообщение</small>
+                <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Закрыть"></button>
             </div>
-
-            <div class="toast-body" style="background: #ffffff; color:#333;">
+            <div class="toast-body">
                 ${text}
             </div>
         </div>
     `;
 
-                                                const area = document.getElementById("toastArea");
-                                                area.insertAdjacentHTML('beforeend', toastHtml);
+                                                document.getElementById("toastAreaCenter").insertAdjacentHTML('beforeend', toastHtml);
 
                                                 const toastElement = document.getElementById(toastId);
 
                                                 const bsToast = new bootstrap.Toast(toastElement, {
-                                                    autohide: false  // не закрывается сам
+                                                    autohide: false, // не закрывать автоматически
+                                                    animation: true
                                                 });
 
                                                 bsToast.show();
                                             }
                                         </script>
+
 
                                         <script>
 
