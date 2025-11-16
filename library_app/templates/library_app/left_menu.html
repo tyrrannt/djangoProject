@@ -680,79 +680,7 @@
                                         {#                                                console.error('WebSocket closed unexpectedly');#}
                                         {#                                            };#}
                                         {#                                        </script>#}
-                                        <script>
-                                            // --- Online users WebSocket ---
-                                            const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
-                                            const socket_online_users = new WebSocket(online_users_url);
 
-                                            // --- Private messages WebSocket ---
-                                            const private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
-
-                                            // --- Получение личных сообщений ---
-                                            private_socket.onmessage = function (event) {
-                                                const data = JSON.parse(event.data);
-
-                                                if (data.type === "private_message") {
-                                                    new PNotify({
-                                                        title: "Сообщение от " + data.from_name,
-                                                        text: data.message,
-                                                        type: "warning",
-                                                        addclass: "click-2-close",
-                                                        hide: false,     // <--- отключает авто-закрытие
-                                                        delay: 0,        // <--- таймер = 0, уведомление живёт пока не кликнут
-                                                        buttons: {
-                                                            closer: true,
-                                                            sticker: false
-                                                        }
-                                                    });
-                                                }
-                                            };
-
-                                            private_socket.onclose = function () {
-                                                console.error("Private WebSocket закрыт");
-                                            };
-
-                                            // --- Получение списка онлайн пользователей ---
-                                            socket_online_users.onmessage = function (event) {
-                                                const data = JSON.parse(event.data);
-
-                                                if (data.type === 'online_users') {
-                                                    const usersList = document.getElementById('online-users');
-                                                    usersList.innerHTML = '';
-
-                                                    data.users.forEach(user => {
-                                                        const username = user[0]; // отображаемое имя
-                                                        const userId = user[1];   // PK пользователя
-
-                                                        const li = document.createElement('li');
-                                                        const link = document.createElement('a');
-
-                                                        link.textContent = username;
-
-                                                        // --- Двойной клик для отправки сообщения ---
-                                                        link.addEventListener("dblclick", function (e) {
-                                                            e.preventDefault();
-
-                                                            const message = prompt("Введите сообщение для " + username + ":");
-                                                            if (message) {
-                                                                private_socket.send(JSON.stringify({
-                                                                    type: "private_message",
-                                                                    to: userId,
-                                                                    message: message
-                                                                }));
-                                                            }
-                                                        });
-
-                                                        li.appendChild(link);
-                                                        usersList.appendChild(li);
-                                                    });
-                                                }
-                                            };
-
-                                            socket_online_users.onclose = function () {
-                                                console.error('Online WebSocket закрыт');
-                                            };
-                                        </script>
 
                                     </div>
                                 </div>
@@ -801,3 +729,101 @@
     </div>
 </aside>
 
+{% block SpecificPageVendor %}
+    <script>
+
+        let selectedUserId = null;
+        let selectedUserName = null;
+
+        const bsModal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+
+        function openModal(username, userId) {
+            selectedUserId = userId;
+            selectedUserName = username;
+
+            document.getElementById("sendMessageLabel").textContent = "Сообщение для " + username;
+
+            document.getElementById("modal-text").value = "";
+
+            bsModal.show();
+        }
+
+        document.getElementById("modal-send").onclick = function () {
+            const msg = document.getElementById("modal-text").value.trim();
+
+            if (msg && selectedUserId) {
+                private_socket.send(JSON.stringify({
+                    type: "private_message",
+                    to: selectedUserId,
+                    message: msg
+                }));
+            }
+
+            bsModal.hide();
+        };
+
+        // --- Online users WebSocket ---
+        const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
+        const socket_online_users = new WebSocket(online_users_url);
+
+        // --- Private messages WebSocket ---
+        const private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
+
+        // --- Получение личных сообщений ---
+        private_socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === "private_message") {
+                new PNotify({
+                    title: "Сообщение от " + data.from_name,
+                    text: data.message,
+                    type: "warning",
+                    addclass: "click-2-close",
+                    hide: false,     // <--- отключает авто-закрытие
+                    delay: 0,        // <--- таймер = 0, уведомление живёт пока не кликнут
+                    buttons: {
+                        closer: true,
+                        sticker: false
+                    }
+                });
+            }
+        };
+
+        private_socket.onclose = function () {
+            console.error("Private WebSocket закрыт");
+        };
+
+        // --- Получение списка онлайн пользователей ---
+        socket_online_users.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'online_users') {
+                const usersList = document.getElementById('online-users');
+                usersList.innerHTML = '';
+
+                data.users.forEach(user => {
+                    const username = user[0]; // отображаемое имя
+                    const userId = user[1];   // PK пользователя
+
+                    const li = document.createElement('li');
+                    const link = document.createElement('a');
+
+                    link.textContent = username;
+
+                    // --- Двойной клик для отправки сообщения ---
+                    link.addEventListener("dblclick", function (e) {
+                        e.preventDefault();
+                        openModal(username, userId);
+                    });
+
+                    li.appendChild(link);
+                    usersList.appendChild(li);
+                });
+            }
+        };
+
+        socket_online_users.onclose = function () {
+            console.error('Online WebSocket закрыт');
+        };
+    </script>
+{% endblock %}
