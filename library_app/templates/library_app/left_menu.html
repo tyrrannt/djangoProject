@@ -685,27 +685,36 @@
                                                 const toastId = "toast-" + Date.now();
 
                                                 const toastHtml = `
-        <div id="${toastId}" class="toast border-warning" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header bg-warning text-dark">
-                <strong class="me-auto">Сообщение от ${from}</strong>
+        <div id="${toastId}"
+            class="toast shadow-sm border-0"
+            style="z-index: 999999; backdrop-filter: blur(4px);"
+            role="alert" aria-live="assertive" aria-atomic="true">
+
+            <div class="toast-header"
+                 style="background: #f5f5f7; color: #333; border-bottom: 1px solid #ddd;">
+                <strong class="me-auto">💬 ${from}</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
             </div>
-            <div class="toast-body">
+
+            <div class="toast-body" style="background: #ffffff; color:#333;">
                 ${text}
             </div>
         </div>
     `;
 
-                                                document.getElementById("toastArea").insertAdjacentHTML('beforeend', toastHtml);
+                                                const area = document.getElementById("toastArea");
+                                                area.insertAdjacentHTML('beforeend', toastHtml);
 
                                                 const toastElement = document.getElementById(toastId);
+
                                                 const bsToast = new bootstrap.Toast(toastElement, {
-                                                    autohide: false  // не закрываем автоматически
+                                                    autohide: false  // не закрывается сам
                                                 });
 
                                                 bsToast.show();
                                             }
                                         </script>
+
                                         <script>
 
                                             document.addEventListener("DOMContentLoaded", function () {
@@ -754,8 +763,8 @@
                                                 const data = JSON.parse(event.data);
 
                                                 if (data.type === "private_message") {
-    showMessageToast(data.from_name, data.message);
-}
+                                                    showMessageToast(data.from_name, data.message);
+                                                }
                                             };
 
                                             private_socket.onclose = function () {
