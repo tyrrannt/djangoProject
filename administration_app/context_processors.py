@@ -158,7 +158,7 @@ def get_approval_oficial_memo_process(request):
         bpmemo_qs = ApprovalOficialMemoProcess.objects.exclude(cancellation=True)
 
         # ===== Обычные БП =====
-        if job_pk in person_agreement or user.is_superuser:
+        if user.pk in person_agreement or user.is_superuser:
             add_notification(
                 bpmemo_qs.filter(
                     person_executor__user_work_profile__job__division_affiliation__name=division_name,
