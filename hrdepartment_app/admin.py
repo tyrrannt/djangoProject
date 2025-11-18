@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from administration_app.utils import format_name_initials
+from customers_app.mixin import ActiveUsersFilterMixin
 from customers_app.models import Groups
 from hrdepartment_app.forms import OrderDescriptionForm
 from hrdepartment_app.models import (
@@ -30,7 +31,6 @@ from hrdepartment_app.models import (
 
 admin.site.register(DocumentsJobDescription)
 admin.site.register(Purpose)
-admin.site.register(GuidanceDocuments)
 admin.site.register(Groups)
 admin.site.register(ReasonForCancellation)
 admin.site.register(TypesUserworktime)
@@ -40,8 +40,18 @@ admin.site.register(DocumentAcknowledgment)
 admin.site.register(DataBaseUserEvent)
 
 
+@admin.register(GuidanceDocuments)
+class GuidanceDocumentsAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
+    list_display = ("document_name", "document_date", "document_number", "access",
+                    "validity_period_start", "validity_period_end")  #
+    list_filter = (
+        "actuality", "applying_for_job",
+    )
+    search_fields = ["document_name", ]
+
+
 @admin.register(TimeSheet)
-class TimeSheetAdmin(admin.ModelAdmin):
+class TimeSheetAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("date", "get_person", "time_sheets_place", "notes")
     list_filter = ("employee", "time_sheets_place")
 
@@ -54,7 +64,7 @@ class TimeSheetAdmin(admin.ModelAdmin):
 
 
 @admin.register(OutfitCard)
-class OutfitCardAdmin(admin.ModelAdmin):
+class OutfitCardAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("outfit_card_date", "outfit_card_number", "get_person", "outfit_card_place", "air_board")
     list_filter = ("air_board", "outfit_card_place", "employee",)
     search_fields = ["outfit_card_number"]
@@ -116,7 +126,7 @@ class PreHolidayDayAdmin(admin.ModelAdmin):
 
 
 @admin.register(DocumentsOrder)
-class DocumentsOrderAdmin(admin.ModelAdmin):
+class DocumentsOrderAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
                     "validity_period_start", "get_document_order_type")  #
     list_filter = (
@@ -133,7 +143,7 @@ class DocumentsOrderAdmin(admin.ModelAdmin):
 
 
 @admin.register(Provisions)
-class ProvisionsAdmin(admin.ModelAdmin):
+class ProvisionsAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
                     "validity_period_start", "validity_period_end")  #
     list_filter = (
@@ -147,7 +157,7 @@ class ProvisionsAdmin(admin.ModelAdmin):
 
 
 @admin.register(Briefings)
-class BriefingsAdmin(admin.ModelAdmin):
+class BriefingsAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
                     "validity_period_start", "validity_period_end")  #
     list_filter = (
@@ -161,7 +171,7 @@ class BriefingsAdmin(admin.ModelAdmin):
 
 
 @admin.register(LaborProtection)
-class LaborProtectionAdmin(admin.ModelAdmin):
+class LaborProtectionAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("document_name", "document_date", "document_number", "access", "get_employee",
                     "validity_period_start", "validity_period_end")  #
     list_filter = (
@@ -175,7 +185,7 @@ class LaborProtectionAdmin(admin.ModelAdmin):
 
 
 @admin.register(Operational)
-class OperationalAdmin(admin.ModelAdmin):
+class OperationalAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("document_name", "document_date", "document_number",
                     "validity_period_start", "validity_period_end")  #
     list_filter = (
@@ -185,7 +195,7 @@ class OperationalAdmin(admin.ModelAdmin):
 
 
 @admin.register(CreatingTeam)
-class CreatingTeamAdmin(admin.ModelAdmin):
+class CreatingTeamAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("get_document_type", "date_create", "number", "senior_brigade", "get_team_brigade",
                     "place", "date_start", "date_end", "agreed", "email_send")  #
     list_filter = (
@@ -202,7 +212,7 @@ class CreatingTeamAdmin(admin.ModelAdmin):
 
 
 @admin.register(BusinessProcessDirection)
-class BusinessProcessDirectionAdmin(admin.ModelAdmin):
+class BusinessProcessDirectionAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     # какие поля будут отображаться
     list_display = (
         "business_process_type", "get_person_executor", "get_person_agreement", "get_person_hr", "get_clerk",)  #
@@ -244,7 +254,7 @@ class BusinessProcessDirectionAdmin(admin.ModelAdmin):
 
 
 @admin.register(BusinessProcessRoutes)
-class BusinessProcessRoutesAdmin(admin.ModelAdmin):
+class BusinessProcessRoutesAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     # какие поля будут отображаться
     list_display = (
         "business_process_type", "get_person_executor", "get_person_agreement", "get_person_hr", "get_clerk",)  #
@@ -294,7 +304,7 @@ class BusinessProcessRoutesAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReportCard)
-class ReportCardAdmin(admin.ModelAdmin):
+class ReportCardAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     # какие поля будут отображаться
     list_display = ("report_card_day", "employee", "record_type", "start_time", "end_time")
     # какие поля будут использоваться для поиска
@@ -320,7 +330,7 @@ class ReportCardAdmin(admin.ModelAdmin):
 
 
 @admin.register(OfficialMemo)
-class OfficialMemoAdmin(admin.ModelAdmin):
+class OfficialMemoAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     """
     Класс администратора для модели OfficialMemo.
 
@@ -358,7 +368,7 @@ class OfficialMemoAdmin(admin.ModelAdmin):
 
 
 @admin.register(ApprovalOficialMemoProcess)
-class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
+class ApprovalOficialMemoProcessAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     """
     Класс администратора для модели ApprovalOficialMemoProcess.
 
@@ -397,7 +407,7 @@ class ApprovalOficialMemoProcessAdmin(admin.ModelAdmin):
 
 
 @admin.register(OrderDescription)
-class OrderDescriptionAdmin(admin.ModelAdmin):
+class OrderDescriptionAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     """
     Класс OrderDescriptionAdmin — это класс Django ModelAdmin, используемый для управления интерфейсом администрирования модели OrderDescription.
 
@@ -452,7 +462,7 @@ copy_operational_work.short_description = "Копировать выбранны
 
 
 @admin.register(OperationalWork)
-class OperationalWorkAdmin(admin.ModelAdmin):
+class OperationalWorkAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("code", "name", "description", "air_bord_type",)  #
     list_filter = (
         "air_bord_type",
@@ -471,7 +481,7 @@ copy_periodic_work.short_description = "Копировать выбранные 
 
 
 @admin.register(PeriodicWork)
-class PeriodicWorkAdmin(admin.ModelAdmin):
+class PeriodicWorkAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_display = ("pk", "code", "name", "description", "air_bord_type", "ratio")  #
     list_filter = (
         "air_bord_type",
