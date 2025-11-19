@@ -22,6 +22,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById('id_doc_file');
     const typeSelect = document.getElementById('id_type_of_document');
+    const parentCategorySelect = document.getElementById('id_parent_category');
 
     // Все ключевые слова — в нижнем регистре!
     const mappings = [
@@ -129,27 +130,22 @@ document.addEventListener('DOMContentLoaded', function () {
         { keywords: ['договор', 'дог'], value: '1' },
     ];
 
-    const fallbackValue = '1'; // Скан-копия документа
-
-    fileInput.addEventListener('change', function () {
+        fileInput.addEventListener('change', function () {
         const file = this.files[0];
         if (!file) {
-            // Можно оставить пустым или поставить fallback — по ТЗ: если не определён → скан-копия
-            typeSelect.value = fallbackValue;
-            // Обновляем Select2
+            // Нет файла — ничего не делаем или сбрасываем
+            typeSelect.value = '';
             if (window.jQuery && jQuery.fn.select2) {
                 $(typeSelect).trigger('change');
             }
             return;
         }
 
-        // Извлекаем имя без расширения
+        // Имя без расширения
         let fileName = file.name;
         if (fileName.lastIndexOf('.') > 0) {
             fileName = fileName.substring(0, fileName.lastIndexOf('.'));
         }
-
-        // Приводим к нижнему регистру и убираем лишние пробелы
         const normalizedFileName = fileName.trim().toLowerCase();
 
         // Поиск совпадения
@@ -165,9 +161,16 @@ document.addEventListener('DOMContentLoaded', function () {
             if (found) break;
         }
 
-        // Если не найдено — fallback
+        // Если совпадение НЕ найдено — применяем логику fallback
         if (!found) {
-            typeSelect.value = fallbackValue;
+            const parentValue = parentCategorySelect.value;
+            if (parentValue === '') {
+                // Родительская категория НЕ выбрана → ставим "Договор" (1)
+                typeSelect.value = '1';
+            } else {
+                // Родительская категория ВЫБРАНА → оставляем пустым
+                typeSelect.value = '';
+            }
         }
 
         // Обновляем Select2, если используется
