@@ -17,6 +17,166 @@
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/jquery-validation/jquery.validate.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('id_doc_file');
+    const typeSelect = document.getElementById('id_type_of_document');
+
+    // Все ключевые слова — в нижнем регистре!
+    const mappings = [
+        // Акт
+        { keywords: ['акт'], value: '9' },
+        // Банковская гарантия
+        { keywords: ['бг', 'банкгар', 'банковская гарантия'], value: '30' },
+        // Ведомость
+        { keywords: ['ведомость', 'вед'], value: '8' },
+        // Визы
+        { keywords: ['визы', 'виза'], value: '42' },
+        // Выписка
+        { keywords: ['выписка', 'вып'], value: '38' },
+        // Гарантийный талон
+        { keywords: ['гартал', 'гарантийный талон'], value: '39' },
+        // График
+        { keywords: ['график'], value: '26' },
+        // Доверенность
+        { keywords: ['доверенность', 'довер'], value: '15' },
+        // Договор
+        { keywords: ['договор', 'дог'], value: '1' },
+        // Договор залога
+        { keywords: ['догзал', 'договор залога'], value: '6' },
+        // Договор ипотеки
+        { keywords: ['ипотека', 'догипот', 'договор ипотеки'], value: '52' },
+        // Договор купли-продажи
+        { keywords: ['дкп', 'купляпродажа', 'договор купли продажи', 'договор купли-продажи'], value: '11' },
+        // Договор поручительства
+        { keywords: ['поруч', 'догпор', 'договор поручительства'], value: '7' },
+        // Дополнение
+        { keywords: ['дополнение'], value: '46' },
+        // Дополнительное соглашение
+        { keywords: ['дс', 'допс', 'допсогл', 'дополнительное соглашение', 'доп соглашение'], value: '2' },
+        // Задание на полёт
+        { keywords: ['задание на полёт', 'зnp', 'заданиенаполёт'], value: '45' },
+        // Заявка
+        { keywords: ['заявка'], value: '24' },
+        // Заявление
+        { keywords: ['заявление'], value: '29' },
+        // Изменение
+        { keywords: ['изменение', 'изм'], value: '51' },
+        // Карта клиента
+        { keywords: ['карта клиента', 'картаклиента'], value: '43' },
+        // Коммерческое предложение
+        { keywords: ['кп', 'компредл', 'коммерческое предложение'], value: '31' },
+        // Комплект документов
+        { keywords: ['комплект', 'комплдок'], value: '13' },
+        // Лицензия
+        { keywords: ['лицензия', 'лиц'], value: '3' },
+        // Меморандум
+        { keywords: ['меморандум', 'мем'], value: '28' },
+        // Отчет
+        { keywords: ['отчет', 'отч'], value: '22' },
+        // Письмо
+        { keywords: ['письмо'], value: '25' },
+        // Платежное поручение
+        { keywords: ['пп', 'платпор', 'платежное поручение'], value: '4' },
+        // Полис
+        { keywords: ['полис'], value: '36' },
+        // Поручение принципиала
+        { keywords: ['поручение принципиала', 'поручпринц'], value: '23' },
+        // Постановление
+        { keywords: ['постановление', 'пост'], value: '33' },
+        // Прейскурант
+        { keywords: ['прей', 'цены', 'расценки', 'прейскурант'], value: '21' },
+        // Приложение
+        { keywords: ['прил', 'приложение'], value: '10' },
+        // Программа
+        { keywords: ['программа', 'прог'], value: '5' },
+        // Проект
+        { keywords: ['проект'], value: '34' },
+        // Протокол
+        { keywords: ['протокол', 'прот'], value: '20' },
+        // Расписка
+        { keywords: ['расписка'], value: '50' },
+        // Расчет
+        { keywords: ['расчет', 'расч'], value: '35' },
+        // Регламент
+        { keywords: ['регламент'], value: '47' },
+        // Реестр
+        { keywords: ['реестр'], value: '32' },
+        // Санитарно-эпидемиологическое заключение
+        { keywords: ['сэз', 'санэпид', 'санитарно-эпидемиологическое заключение'], value: '44' },
+        // Свидетельство
+        { keywords: ['свидетельство', 'свид'], value: '14' },
+        // Сертификат
+        { keywords: ['сертификат', 'серт'], value: '37' },
+        // Соглашение
+        { keywords: ['согл', 'сог', 'соглашение'], value: '12' },
+        // Соглашение о намерениях
+        { keywords: ['соглнамер', 'соглашение о намерениях'], value: '49' },
+        // Спецификация
+        { keywords: ['спецификация', 'спец', 'специф'], value: '17' },
+        // Справка
+        { keywords: ['справка', 'спр'], value: '27' },
+        // Счет
+        { keywords: ['счет'], value: '40' },
+        // Тариф
+        { keywords: ['тариф'], value: '48' },
+        // Уведомление
+        { keywords: ['уведомление', 'увед'], value: '19' },
+        // Форма
+        { keywords: ['форма'], value: '18' },
+        // Электронный документооборот
+        { keywords: ['эдо', 'электронный документооборот'], value: '16' },
+    ];
+
+    const fallbackValue = '1'; // Скан-копия документа
+
+    fileInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) {
+            // Можно оставить пустым или поставить fallback — по ТЗ: если не определён → скан-копия
+            typeSelect.value = fallbackValue;
+            // Обновляем Select2
+            if (window.jQuery && jQuery.fn.select2) {
+                $(typeSelect).trigger('change');
+            }
+            return;
+        }
+
+        // Извлекаем имя без расширения
+        let fileName = file.name;
+        if (fileName.lastIndexOf('.') > 0) {
+            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+        }
+
+        // Приводим к нижнему регистру и убираем лишние пробелы
+        const normalizedFileName = fileName.trim().toLowerCase();
+
+        // Поиск совпадения
+        let found = false;
+        for (const mapping of mappings) {
+            for (const keyword of mapping.keywords) {
+                if (normalizedFileName.includes(keyword)) {
+                    typeSelect.value = mapping.value;
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+
+        // Если не найдено — fallback
+        if (!found) {
+            typeSelect.value = fallbackValue;
+        }
+
+        // Обновляем Select2, если используется
+        if (window.jQuery && jQuery.fn.select2) {
+            $(typeSelect).trigger('change');
+        }
+    });
+});
+</script>
 {% endblock %}
 
 {% block title %}
@@ -201,4 +361,8 @@
         </form>
         <!-- end: page -->
     </section>
+
 {% endblock %}
+
+
+
