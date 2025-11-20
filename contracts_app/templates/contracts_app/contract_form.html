@@ -19,6 +19,195 @@
     <script src="{% static 'admin_templates/vendor/pnotify/pnotify.custom.js' %}"></script>
 
     <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const fileInput = document.getElementById("id_doc_file");
+    const typeSelect = document.getElementById("id_type_of_document");
+    const parentCategorySelect = document.getElementById("id_parent_category");
+
+    /* ------------------------------- *
+     *  1. УПРОЩЁННЫЙ РУССКИЙ СТЕММЕР  *
+     * ------------------------------- */
+    function stem(word) {
+        word = word.toLowerCase();
+
+        // Простые хвосты
+        const endings = [
+            "иями","ями","ами","ия","ья","иям","ием",
+            "ий","ей","ой","ый","ого","его",
+            "ому","ему","ым","им","ах","ях",
+            "ами","ями","ию","ью","иям",
+            "ов","ев","ёв","ей","ам","ям","ах","ях",
+            "ом","ем","ою","ею","ей"
+        ];
+
+        for (const e of endings) {
+            if (word.endsWith(e) && word.length > e.length + 2) {
+                return word.slice(0, -e.length);
+            }
+        }
+
+        // Простые суффиксы
+        const suffixes = ["ство", "ность", "тель", "изм", "ист", "чик", "щик"];
+        for (const s of suffixes) {
+            if (word.endsWith(s) && word.length > s.length + 2) {
+                return word.slice(0, -s.length);
+            }
+        }
+
+        return word;
+    }
+
+    /* ----------------------------------------- *
+     *  2. ЛЕВЕНШТЕЙН + СХОДСТВО (0..1)          *
+     * ----------------------------------------- */
+    function levenshtein(a, b) {
+        const m = [];
+        for (let i = 0; i <= b.length; i++) {
+            m[i] = [i];
+        }
+        for (let j = 0; j <= a.length; j++) {
+            m[0][j] = j;
+        }
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                m[i][j] = b.charAt(i - 1) === a.charAt(j - 1)
+                    ? m[i - 1][j - 1]
+                    : Math.min(
+                        m[i - 1][j - 1] + 1,
+                        m[i][j - 1] + 1,
+                        m[i - 1][j] + 1
+                    );
+            }
+        }
+        return m[b.length][a.length];
+    }
+
+    function similarity(a, b) {
+        if (!a.length && !b.length) return 1;
+        const dist = levenshtein(a, b);
+        return 1 - dist / Math.max(a.length, b.length);
+    }
+
+    /* --------------------------- *
+     *  3. ТВОЙ МЭППИНГ           *
+     * --------------------------- */
+    const mappings = [
+        { keywords: ['акт'], value: '9' },
+        { keywords: ['бг', 'банкгар', 'банковская гарантия'], value: '30' },
+        { keywords: ['уведомление', 'увед'], value: '19' },
+        { keywords: ['ведомость', 'вед'], value: '8' },
+        { keywords: ['визы', 'виза'], value: '42' },
+        { keywords: ['выписка', 'вып'], value: '38' },
+        { keywords: ['гартал', 'гарантийный талон'], value: '39' },
+        { keywords: ['график'], value: '26' },
+        { keywords: ['доверенность', 'довер'], value: '15' },
+        { keywords: ['догзал', 'договор залога'], value: '6' },
+        { keywords: ['ипотека', 'догипот', 'договор ипотеки'], value: '52' },
+        { keywords: ['дкп', 'купляпродажа', 'договор купли продажи', 'договор купли-продажи'], value: '11' },
+        { keywords: ['поруч', 'догпор', 'договор поручительства'], value: '7' },
+        { keywords: ['дополнение'], value: '46' },
+        { keywords: ['дс', 'допс', 'допсогл', 'дополнительное соглашение', 'доп соглашение'], value: '2' },
+        { keywords: ['задание на полёт', 'знп'], value: '45' },
+        { keywords: ['заявка'], value: '24' },
+        { keywords: ['заявление'], value: '29' },
+        { keywords: ['изменение', 'изм'], value: '51' },
+        { keywords: ['карта клиента'], value: '43' },
+        { keywords: ['кп', 'компредл', 'коммерческое предложение'], value: '31' },
+        { keywords: ['комплект', 'комплдок'], value: '13' },
+        { keywords: ['лицензия', 'лиц'], value: '3' },
+        { keywords: ['меморандум', 'мем'], value: '28' },
+        { keywords: ['отчет', 'отч'], value: '22' },
+        { keywords: ['письмо'], value: '25' },
+        { keywords: ['пп', 'платеж', 'платежное поручение'], value: '4' },
+        { keywords: ['полис'], value: '36' },
+        { keywords: ['поручение принципиала'], value: '23' },
+        { keywords: ['постановление', 'пост'], value: '33' },
+        { keywords: ['прейскурант', 'расценки', 'цены'], value: '21' },
+        { keywords: ['приложение', 'прил'], value: '10' },
+        { keywords: ['программа', 'прог'], value: '5' },
+        { keywords: ['проект'], value: '34' },
+        { keywords: ['протокол', 'прот'], value: '20' },
+        { keywords: ['расписка'], value: '50' },
+        { keywords: ['расчет', 'расч'], value: '35' },
+        { keywords: ['регламент'], value: '47' },
+        { keywords: ['реестр'], value: '32' },
+        { keywords: ['сэз', 'санэпид'], value: '44' },
+        { keywords: ['свидетельство', 'свид'], value: '14' },
+        { keywords: ['сертификат', 'серт'], value: '37' },
+        { keywords: ['соглашение', 'сог', 'согл'], value: '12' },
+        { keywords: ['соглашение о намерениях'], value: '49' },
+        { keywords: ['спецификация', 'спец'], value: '17' },
+        { keywords: ['справка', 'спр'], value: '27' },
+        { keywords: ['счет'], value: '40' },
+        { keywords: ['тариф'], value: '48' },
+        { keywords: ['форма'], value: '18' },
+        { keywords: ['эдо', 'электронный документооборот'], value: '16' },
+        { keywords: ['договор', 'дог'], value: '1' }
+    ];
+
+    /* ----------------------------------------------------- *
+     *  4. ПРЕДВАРИТЕЛЬНО: строим массив keyword-стемов      *
+     * ----------------------------------------------------- */
+    const stemMap = [];
+    for (const map of mappings) {
+        for (const kw of map.keywords) {
+            stemMap.push({
+                stem: stem(kw),
+                value: map.value
+            });
+        }
+    }
+
+    /* --------------------------- *
+     *  5. ОБРАБОТКА ФАЙЛА         *
+     * --------------------------- */
+    fileInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (!file) {
+            typeSelect.value = "";
+            return;
+        }
+
+        let fileName = file.name;
+        if (fileName.includes(".")) {
+            fileName = fileName.substring(0, fileName.lastIndexOf("."));
+        }
+
+        const cleaned = fileName.toLowerCase().replace(/[^a-zа-я0-9]+/gi, " ");
+        const tokens = cleaned.split(/\s+/).filter(Boolean);
+        const stemTokens = tokens.map(t => stem(t));
+
+        let bestScore = 0;
+        let bestValue = null;
+        const threshold = 0.45;
+
+        for (const tokenStem of stemTokens) {
+            for (const entry of stemMap) {
+                const score = similarity(tokenStem, entry.stem);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestValue = entry.value;
+                }
+            }
+        }
+
+        if (bestScore >= threshold && bestValue) {
+            typeSelect.value = bestValue;
+        } else {
+            const parentValue = parentCategorySelect.value;
+            typeSelect.value = parentValue === "" ? "1" : "";
+        }
+
+        if (window.jQuery && jQuery.fn.select2) {
+            $(typeSelect).trigger("change");
+        }
+    });
+});
+</script>
+
+{% endblock %}
+{% block old_script %}
+    <script>
 document.addEventListener('DOMContentLoaded', function () {
     const fileInput = document.getElementById('id_doc_file');
     const typeSelect = document.getElementById('id_type_of_document');
