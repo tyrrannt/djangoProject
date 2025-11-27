@@ -42,7 +42,8 @@ from customers_app.models import (
 from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
 from library_app.models import DocumentForm
 from telegram_app.models import TelegramNotification, ChatID
-
+from msoffice2pdf import convert
+from openpyxl import load_workbook
 from core import logger
 
 WORK_DAY_HOURS = 8.5  # нормальный рабочий день
@@ -1366,11 +1367,7 @@ def hr_accepted(sender, instance, **kwargs):
 def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
     change_approval_status(instance)
     type_of = ["Служебная квартира", "Гостиница"]
-    if (
-            instance.submit_for_approval
-            and not instance.document_not_agreed
-            and not instance.email_send
-    ):
+    if (instance.submit_for_approval and not instance.document_not_agreed and not instance.email_send):
         business_process = BusinessProcessDirection.objects.filter(
             person_executor=instance.person_executor.user_work_profile.job
         )
@@ -1399,11 +1396,8 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
         )
         tn.respondents.set(person_agreement_list)
     if (
-            instance.document_not_agreed
-            and not instance.location_selected
-            and not instance.email_send
-            and instance.document.official_memo_type in ["1", "2"]
-    ):
+            instance.document_not_agreed and not instance.location_selected and not instance.email_send and instance.document.official_memo_type in [
+        "1", "2"]):
         person_agreement_list = []
         for item in DataBaseUser.objects.filter(
                 Q(user_work_profile__divisions__type_of_role="1")
@@ -1425,11 +1419,7 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
             document_id=instance.pk, defaults=kwargs_obj
         )
         tn.respondents.set(person_agreement_list)
-    if (
-            instance.location_selected
-            and not instance.process_accepted
-            and not instance.email_send
-    ):
+    if (instance.location_selected and not instance.process_accepted and not instance.email_send):
         person_agreement_list = []
         for item in DataBaseUser.objects.filter(
                 Q(user_work_profile__divisions__type_of_role="2")
@@ -1455,7 +1445,6 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
         tn = TelegramNotification.objects.filter(document_id=instance.pk)
         for item in tn:
             item.delete()
-        from openpyxl import load_workbook
 
         delta = instance.document.period_for - instance.document.period_from
         try:
@@ -1515,7 +1504,6 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
         if official_memo_type == "1":
             # Конвертируем xlsx в pdf
             # Удалить
-            from msoffice2pdf import convert
 
             source = str(
                 pathlib.Path.joinpath(

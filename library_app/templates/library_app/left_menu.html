@@ -49,7 +49,22 @@
                             </ul>
                         </li>
                     {% endif %}
+                    {% if user.is_superuser %}
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class='bx bx-hard-hat' aria-hidden="true"></i>
+                                <span>СИЗ</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'ppequipment_app:index' %}">
+                                        Shakirov
+                                    </a>
+                                </li>
 
+                            </ul>
+                        </li>
+                    {% endif %}
                     {% if user.is_superuser %}
                         <li class="nav-parent">
                             <a class="nav-link" href="#">
