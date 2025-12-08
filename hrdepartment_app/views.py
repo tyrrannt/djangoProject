@@ -4691,7 +4691,7 @@ def seasonality_report(request):
     # Получение выбранного года
     selected_year = request.GET.get("year")
     current_year = datetime.datetime.now().year
-    years = list(range(current_year - 5, current_year + 1))
+    years = list(range(current_year - 5, current_year + 2))
 
     selected_year = int(selected_year) if selected_year and selected_year.isdigit() else current_year
 
