@@ -16,7 +16,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from loguru import logger
+from core import logger
 from administration_app.utils import (
     get_jsons_data_filter2,
     get_date_interval,
