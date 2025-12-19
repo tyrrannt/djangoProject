@@ -1038,7 +1038,16 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         if request.user.is_anonymous:
             return redirect(reverse('customers_app:login'))
         user_object = self.get_object()
-        if request.user.pk == user_object.pk or request.user.is_superuser or request.user.is_staff:
+
+        # Проверяем несколько условий доступа
+        has_access = (
+                request.user.pk == user_object.pk or  # Пользователь смотрит свой профиль
+                request.user.is_superuser or  # Суперпользователь
+                request.user.is_staff or  # Персонал
+                request.user.has_perm('customers_app.view_databaseuser')  # Право на просмотр
+        )
+
+        if has_access:
             return super().dispatch(request, *args, **kwargs)
         else:
             logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
