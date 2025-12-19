@@ -5,6 +5,7 @@
 *.json
 *.iml
 *.xml
+*.csv
 .env
 __pycache__
 db.sqlite3
@@ -17,3 +18,5 @@ rsync
 /static/admin_templates/vendor/simple-line-icons/node_modules/
 celerybeat-schedule
 /media_old/
+# JetBrains IDE (IntelliJ, PyCharm, WebStorm, etc.)
+.idea/
