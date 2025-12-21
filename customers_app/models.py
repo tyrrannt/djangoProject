@@ -460,6 +460,33 @@ class DataBaseUserWorkProfile(models.Model):
         verbose_name="Окончание рабочего времени", default=get_time("18:00:00")
     )
 
+
+class Apartments(models.Model):
+    class Meta:
+        verbose_name = "Квартира"
+        verbose_name_plural = "Квартиры"
+
+    title = models.CharField(
+        verbose_name="Наименование", max_length=200, default="", blank=True
+    )
+    place = models.ForeignKey(Division, on_delete=models.CASCADE)
+    address = models.CharField(
+        verbose_name="Адрес", max_length=250, default="", blank=True
+    )
+    contracts = models.ForeignKey(
+        'contracts_app.Contract', on_delete=models.CASCADE, null=True, blank=True, verbose_name='Договор'
+    )
+    validity_period = models.DateField(verbose_name="Срок действия", null=True, blank=True)
+    beds_number = models.IntegerField(verbose_name="Количество мест", default=0)
+    type_description = models.CharField(verbose_name="Описание", max_length=250, default="", blank=True)
+
+    def __str__(self):
+        if self.title:
+            return self.title
+        else:
+            return f"{self.place} {self.address}"
+
+
 class RoleType(models.TextChoices):
     COMMON = "0", "Общий"
     NO = "1", "Наземное обеспечение"
@@ -832,8 +859,6 @@ class CounteragentDocuments(models.Model):
 
     def get_absolute_url(self):
         return reverse("customers_app:documents_list")
-
-
 
 
 class Posts(models.Model):
