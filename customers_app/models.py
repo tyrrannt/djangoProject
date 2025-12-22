@@ -4,6 +4,7 @@ import uuid
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
@@ -469,7 +470,7 @@ class Apartments(models.Model):
     title = models.CharField(
         verbose_name="Наименование", max_length=200, default="", blank=True
     )
-    place = models.ForeignKey(Division, on_delete=models.CASCADE)
+    place = models.ForeignKey('hrdepartment_app.PlaceProductionActivity', on_delete=models.CASCADE)
     address = models.CharField(
         verbose_name="Адрес", max_length=250, default="", blank=True
     )
@@ -479,6 +480,42 @@ class Apartments(models.Model):
     validity_period = models.DateField(verbose_name="Срок действия", null=True, blank=True)
     beds_number = models.IntegerField(verbose_name="Количество мест", default=0)
     type_description = models.CharField(verbose_name="Описание", max_length=250, default="", blank=True)
+
+    # occupied_beds = models.IntegerField(
+    #     verbose_name="Занято мест",
+    #     default=0
+    # )
+    #
+    # def clean(self):
+    #     """Проверка корректности occupied_beds при сохранении через форму или админку"""
+    #     if self.occupied_beds < 0:
+    #         raise ValidationError("Занято мест не может быть меньше 0.")
+    #     if self.occupied_beds > self.beds_number:
+    #         raise ValidationError("Занято мест не может превышать общее количество мест.")
+    #
+    # def save(self, *args, **kwargs):
+    #     self.full_clean()  # вызывает clean()
+    #     super().save(*args, **kwargs)
+    #
+    # def increase_occupied(self, amount=1):
+    #     """Увеличивает занятое количество мест на `amount` (по умолчанию 1)"""
+    #     if amount <= 0:
+    #         raise ValueError("Amount must be positive.")
+    #     new_value = self.occupied_beds + amount
+    #     if new_value > self.beds_number:
+    #         raise ValueError(f"Нельзя занять больше {self.beds_number} мест. Текущее: {self.occupied_beds}.")
+    #     self.occupied_beds = new_value
+    #     self.save(update_fields=['occupied_beds'])
+    #
+    # def decrease_occupied(self, amount=1):
+    #     """Уменьшает занятое количество мест на `amount` (по умолчанию 1)"""
+    #     if amount <= 0:
+    #         raise ValueError("Amount must be positive.")
+    #     new_value = self.occupied_beds - amount
+    #     if new_value < 0:
+    #         raise ValueError("Занято мест не может быть меньше 0.")
+    #     self.occupied_beds = new_value
+    #     self.save(update_fields=['occupied_beds'])
 
     def __str__(self):
         if self.title:
