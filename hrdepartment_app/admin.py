@@ -126,7 +126,7 @@ class WeekendDayAdmin(admin.ModelAdmin):
         "weekend_type",
     )
     search_fields = ["weekend_day", ]
-    actions = ['copy_weekend_day']
+    actions = [copy_weekend_day]
 
 
 @admin.register(PreHolidayDay)
