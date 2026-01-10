@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import calendar
 import datetime
 import json
 import urllib.request
@@ -586,8 +587,13 @@ def save_report():
 def get_year_report(html_mode=True):
     errors = []
     year = datetime.datetime.today().year
+    month = datetime.datetime.today().month
     current_date = datetime.datetime.today()
-    first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
+    if datetime.datetime.today().month == 1:
+        last_day = calendar.monthrange(year, month)[1]
+        first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, last_day)
+    else:
+        first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
     try:
         user_list = ReportCard.objects.filter(
             Q(report_card_day__year=year) & Q(record_type__in=["1", "13", ]) & Q(employee__is_active=True)).values_list(
@@ -602,7 +608,7 @@ def get_year_report(html_mode=True):
             ReportCard.objects
             .filter(
                 report_card_day__year=year,
-                report_card_day__gt=first_day_of_current_month,
+                report_card_day__lt=first_day_of_current_month,
                 employee__in=user_set
             )
             .exclude(record_type="18")
