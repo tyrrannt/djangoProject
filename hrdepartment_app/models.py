@@ -3549,3 +3549,109 @@ def delete_old_file_on_change(sender, instance, **kwargs):
 #                     logger.warning(
 #                         f"Ошибка удаления файла {old_file.path} ({field_name}) для {sender.__name__}: {e}"
 #                     )
+
+class TrainingUnit(models.Model):
+    class Meta:
+        verbose_name = "Модуль"
+        verbose_name_plural = "Модули"
+
+    unit_name = models.CharField(
+        verbose_name="Наименование",
+        max_length=350
+    )
+
+    program_units = models.ForeignKey(
+        'hrdepartment_app.TrainingProgram',
+        verbose_name="Программа обучения",
+        on_delete=models.CASCADE,
+    )
+
+class TrainingProgram(models.Model):
+    class Meta:
+        verbose_name = "Программа обучения"
+        verbose_name_plural = "Программы обучения"
+
+    program_name = models.CharField(
+        verbose_name="Наименование",
+        max_length=300
+    )
+
+
+class StudentAgreement(models.Model):
+    class Meta:
+        verbose_name = "Ученический договор"
+        verbose_name_plural = "Ученические договоры"
+
+    # Реквизиты договоров
+    student_agreement_number = models.CharField(
+        verbose_name="№ ученического договора с работником",
+        max_length=100,
+    )
+    student_agreement_date = models.DateField(
+        verbose_name="Дата ученического договора"
+    )
+
+    contract_number = models.CharField(
+        verbose_name="№ договора",
+        max_length=100
+    )
+    contract_date = models.DateField(
+        verbose_name="Дата договора"
+    )
+
+    # Обучение
+    training_center_name = models.ForeignKey(
+        'customers_app.Counteragent',
+        verbose_name="Наименование АУЦ",
+        on_delete=models.CASCADE,
+    )
+    training_program = models.ForeignKey(
+        'hrdepartment_app.TrainingProgram',
+        verbose_name="Программа обучения",
+        on_delete=models.CASCADE
+    )
+
+    training_unit = models.ManyToManyField(
+        'hrdepartment_app.TrainingUnit',
+        verbose_name="Модули",
+    )
+
+    training_place = models.CharField(
+        verbose_name="Место оказания услуг",
+        max_length=255
+    )
+
+    # Обучающийся
+    full_name = models.ForeignKey(
+        'customers_app.DataBaseUser',
+        verbose_name="Ф.И.О.",
+        on_delete=models.CASCADE
+    )
+
+    # Период обучения
+    training_start_date = models.DateField(
+        verbose_name="Дата начала обучения"
+    )
+    training_end_date = models.DateField(
+        verbose_name="Дата окончания обучения"
+    )
+
+    # Финансы и обязательства
+    training_cost = models.DecimalField(
+        verbose_name="Сумма обучения, руб.",
+        max_digits=10,
+        decimal_places=2
+    )
+    work_period_years = models.PositiveSmallIntegerField(
+        verbose_name="Срок отработки (года)"
+    )
+
+    # Прочее
+    note = models.TextField(
+        "Примечание",
+        blank=True
+    )
+
+    def __str__(self):
+        return f"{self.student_agreement_number} — {self.full_name}"
+

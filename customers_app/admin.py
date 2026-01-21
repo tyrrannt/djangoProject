@@ -20,7 +20,10 @@ from .models import (
     HappyBirthdayGreetings,
     Affiliation,
     VacationScheduleList,
-    VacationSchedule, CounteragentDocuments, UserStats, Apartments,
+    VacationSchedule,
+    CounteragentDocuments,
+    UserStats,
+    Apartments,
 )
 
 

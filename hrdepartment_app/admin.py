@@ -5,26 +5,13 @@ from customers_app.mixin import ActiveUsersFilterMixin
 from customers_app.models import Groups
 from hrdepartment_app.forms import OrderDescriptionForm
 from hrdepartment_app.models import (
-    Medical,
-    Purpose,
-    OfficialMemo,
-    ApprovalOficialMemoProcess,
-    BusinessProcessDirection,
-    MedicalOrganisation,
-    DocumentsJobDescription,
-    DocumentsOrder,
-    PlaceProductionActivity,
-    ReportCard,
-    ReasonForCancellation,
-    OrderDescription,
-    PreHolidayDay,
-    WeekendDay,
-    ProductionCalendar,
-    TypesUserworktime,
-    Instructions,
-    Provisions,
+    Medical, Purpose, OfficialMemo, ApprovalOficialMemoProcess, BusinessProcessDirection,
+    MedicalOrganisation, DocumentsJobDescription, DocumentsOrder, PlaceProductionActivity,
+    ReportCard, ReasonForCancellation, OrderDescription, PreHolidayDay,
+    WeekendDay, ProductionCalendar, TypesUserworktime, Instructions, Provisions,
     CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
-    DataBaseUserEvent, LaborProtection, BusinessProcessRoutes, GuidanceDocuments, LaborProtectionInstructions
+    DataBaseUserEvent, LaborProtection, BusinessProcessRoutes, GuidanceDocuments, LaborProtectionInstructions,
+    TrainingUnit, TrainingProgram, StudentAgreement,
 )
 
 # Register your models here.
@@ -488,3 +475,18 @@ class PeriodicWorkAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     )
     search_fields = ["name", "code"]
     actions = [copy_periodic_work]
+
+
+@admin.register(TrainingProgram)
+class TrainingProgramAdmin(admin.ModelAdmin):
+    search_fields = ["program_name", ]
+
+
+@admin.register(TrainingUnit)
+class TrainingUnitAdmin(admin.ModelAdmin):
+    search_fields = ["unit_name", ]
+
+
+@admin.register(StudentAgreement)
+class StudentAgreementAdmin(admin.ModelAdmin):
+    search_fields = ["student_agreement_number", ]
