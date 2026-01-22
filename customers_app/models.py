@@ -2,14 +2,15 @@ import datetime
 import pathlib
 import uuid
 
+from django.apps import apps
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models import ForeignKey
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django_ckeditor_5.fields import CKEditor5Field
 
 from contracts_app.templatetags.custom import empty_item
@@ -862,7 +863,50 @@ class Counteragent(models.Model):
             "short_name": self.short_name,
             "inn": self.inn,
             "kpp": self.kpp,
+            "address": self.juridical_address,
         }
+
+    def get_related_documents(self):
+        """
+        Возвращает список всех документов, ссылающихся на этот контрагент
+        """
+        related_docs = []
+
+        # Получаем все модели приложения
+        all_models = apps.get_models()
+
+        for model in all_models:
+            # Проверяем все поля модели
+            for field in model._meta.get_fields():
+                if (isinstance(field, ForeignKey) and
+                        field.related_model == Counteragent):
+
+                    # Находим все объекты этой модели, ссылающиеся на этот контрагент
+                    related_objects = model.objects.filter(**{field.name: self})
+
+                    for obj in related_objects:
+                        # Пытаемся получить URL для детального просмотра
+                        try:
+                            # Имя URL обычно строится как 'modelname-detail'
+                            url_name = f'{model._meta.model_name}-detail'
+                            url = reverse_lazy(url_name, kwargs={'pk': obj.pk})
+                        except:
+                            # Если нет детального представления, используем список
+                            try:
+                                url_name = f'{model._meta.model_name}-list'
+                                url = reverse_lazy(url_name)
+                            except:
+                                url = None
+
+                        related_docs.append({
+                            'model_name': model._meta.verbose_name,
+                            'model_name_plural': model._meta.verbose_name_plural,
+                            'object': obj,
+                            'url': url,
+                            'count': related_objects.count()
+                        })
+
+        return related_docs
 
 
 def document_directory_path(instance, filename):

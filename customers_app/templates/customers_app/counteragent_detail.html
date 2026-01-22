@@ -47,6 +47,10 @@
                                         <a class="nav-link" id="usage-limits-tab" data-bs-toggle="pill"
                                            data-bs-target="#usage-limits" role="tab" aria-controls="usage-limits"
                                            aria-selected="false"><i class="bx bx-timer me-2"></i> Файлы</a>
+                                        <a class="nav-link" id="usage-links-tab" data-bs-toggle="pill"
+                                           data-bs-target="#usage-links" role="tab" aria-controls="usage-links"
+                                           aria-selected="false"><i class="bx bx-timer me-2"></i> Связанные
+                                            документы</a>
                                     </div>
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
@@ -180,8 +184,52 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="tab-pane fade" id="usage-links" role="tabpanel"
+                                             aria-labelledby="usage-limits-tab">
+                                            <!-- Связанные документы -->
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5 class="mb-0">Связанные документы</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    {% if related_documents %}
+                                                        <div class="list-group">
+                                                            {% for key, model_info in related_documents.items %}
+                                                                <div class="mb-3">
+                                                                    <h6>{{ model_info.verbose_name_plural }}
+                                                                        ({{ model_info.count }})</h6>
+                                                                    <ul class="list-group">
+                                                                        {% for obj in model_info.objects %}
+                                                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                                <div>
+                                                                                    <!-- Пытаемся получить строковое представление объекта -->
+                                                                                    {{ obj }}
+                                                                                </div>
+                                                                                <div>
+                                                                                    <!-- Ссылка на детальный просмотр документа -->
+                                                                                    {% url model_info.model_name|add:'-detail' obj.pk as detail_url %}
+                                                                                    {% if detail_url %}
+                                                                                        <a href="{{ detail_url }}"
+                                                                                           class="btn btn-sm btn-outline-primary">
+                                                                                            Просмотр
+                                                                                        </a>
+                                                                                    {% endif %}
+                                                                                </div>
+                                                                            </li>
+                                                                        {% endfor %}
+                                                                    </ul>
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% else %}
+                                                        <p class="text-muted">Нет связанных документов</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </section>

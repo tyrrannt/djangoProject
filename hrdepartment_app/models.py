@@ -3573,7 +3573,13 @@ class TrainingProgram(models.Model):
 
     program_name = models.CharField(
         verbose_name="Наименование",
-        max_length=300
+        max_length=300,
+    )
+
+    counteragent_name = models.ForeignKey(
+        'customers_app.Counteragent',
+        verbose_name="Наименование АУЦ",
+        on_delete=models.CASCADE,
     )
 
 

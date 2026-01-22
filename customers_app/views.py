@@ -10,14 +10,15 @@ from urllib.parse import urlencode
 import pandas as pd
 import qrcode
 from dateutil.rrule import rrule, DAILY
+from django.apps import apps
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import transaction, OperationalError
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.db.models import Q, F
+from django.db.models import Q, F, ForeignKey
 from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
@@ -941,6 +942,16 @@ class CounteragentDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView
     model = Counteragent
     permission_required = 'customers_app.view_counteragent'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        counteragent = self.get_object()
+
+        # Получаем все связанные документы
+        related_documents = counteragent.get_related_documents(counteragent)
+
+        context['related_documents'] = related_documents
+        return context
+
 
 class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     # template_name = 'customers_app/counteragent_form.html'  # Совпадает с именем по умолчании
@@ -956,7 +967,51 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
     def get_context_data(self, **kwargs):
         context = super(CounteragentUpdate, self).get_context_data(**kwargs)
         context['counteragent_docs'] = CounteragentDocuments.objects.filter(package=self.object)
+        counteragent = self.get_object()
+
+        # Получаем все связанные документы
+        related_documents = self.get_related_documents(counteragent)
+
+        context['related_documents'] = related_documents
         return context
+
+    def get_related_documents(self, counteragent):
+        """
+        Возвращает сгруппированный список связанных документов
+        """
+        related_docs = {}
+
+        all_models = apps.get_models()
+
+        for model in all_models:
+            # Пропускаем саму модель Counteragent
+            if model == Counteragent:
+                continue
+
+            for field in model._meta.get_fields():
+                if (isinstance(field, ForeignKey) and
+                        field.related_model == Counteragent):
+
+                    try:
+                        # Получаем все объекты этой модели
+                        related_objects = model.objects.filter(**{field.name: counteragent})
+                        if related_objects.exists():
+                            model_info = {
+                                'verbose_name': model._meta.verbose_name,
+                                'verbose_name_plural': model._meta.verbose_name_plural,
+                                'model_name': model._meta.model_name,
+                                'objects': related_objects,
+                                'count': related_objects.count(),
+                                'field_name': field.verbose_name if field.verbose_name else field.name
+                            }
+
+                            # Группируем по модели
+                            key = f"{model._meta.app_label}.{model._meta.model_name}"
+                            related_docs[key] = model_info
+                    except OperationalError:
+                        print('Ошибка')
+
+        return related_docs
 
     def post(self, request, *args, **kwargs):
         content = QueryDict.copy(self.request.POST)
