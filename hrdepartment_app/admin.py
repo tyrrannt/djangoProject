@@ -97,6 +97,15 @@ class ProductionCalendarAdmin(admin.ModelAdmin):
     search_fields = ["calendar_month", ]
 
 
+def copy_weekend_day(modeladmin, request, queryset):
+    for weekend_day in queryset:
+        weekend_day.pk = None  # Устанавливаем pk в None, чтобы создать новую запись
+        weekend_day.save()
+
+
+copy_weekend_day.short_description = "Копировать праздничный день"
+
+
 @admin.register(WeekendDay)
 class WeekendDayAdmin(admin.ModelAdmin):
     list_display = ("weekend_day", "weekend_type", "description")  #
@@ -104,6 +113,7 @@ class WeekendDayAdmin(admin.ModelAdmin):
         "weekend_type",
     )
     search_fields = ["weekend_day", ]
+    actions = [copy_weekend_day]
 
 
 @admin.register(PreHolidayDay)

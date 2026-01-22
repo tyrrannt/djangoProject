@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import calendar
 import datetime
 import json
 import urllib.request
@@ -586,8 +587,13 @@ def save_report():
 def get_year_report(html_mode=True):
     errors = []
     year = datetime.datetime.today().year
+    month = datetime.datetime.today().month
     current_date = datetime.datetime.today()
-    first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
+    if datetime.datetime.today().month == 1:
+        last_day = calendar.monthrange(year, month)[1]
+        first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, last_day)
+    else:
+        first_day_of_current_month = datetime.datetime(current_date.year, current_date.month, 1)
     try:
         user_list = ReportCard.objects.filter(
             Q(report_card_day__year=year) & Q(record_type__in=["1", "13", ]) & Q(employee__is_active=True)).values_list(
@@ -617,6 +623,7 @@ def get_year_report(html_mode=True):
         )
     except Exception as e:
         print(str(e))  # лучше str(e), чем объект исключения
+    print(user_set)
     # try:
     #     for report_record in ReportCard.objects.filter(Q(report_card_day__year=year) & Q(report_card_day__lt=first_day_of_current_month ) & Q(employee__in=user_set)).exclude(record_type="18"):
     #         report_card_list.append([report_record.employee.title, report_record.report_card_day, report_record.start_time, report_record.end_time, report_record.record_type])
@@ -657,6 +664,7 @@ def get_year_report(html_mode=True):
 
     grouped = df.groupby(["Month", "FIO", "Дата"]).apply(process_group_year).reset_index(name="Time")
     grouped = grouped.groupby(["Month", "FIO"])["Time"].sum().reset_index()
+
     # Вывод результата
     # grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100) # В часах
     grouped["Time"] = grouped["Time"] // 60  # В минутах
