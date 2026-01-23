@@ -926,7 +926,7 @@ def vacation_schedule_send(triger=0):
         employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
     sender = DataBaseUser.objects.get(last_name="Кирюшкина", is_active=True)
     for item in employee:
-        get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2025)
+        get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2026)
         if len(get_vacation_shedule) > 0:
             message = ""
             for unit in get_vacation_shedule:
