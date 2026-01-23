@@ -32,6 +32,12 @@
                                                 align-items-center font-weight-semibold line-height-1">
                                                 <i class='bx bx-sync text-4 me-2' ></i> Синхронизация с 1С </a>
                                         </div>
+                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                            <a href="{% url 'customers_app:duplicates_report' %}"
+                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
+                                                align-items-center font-weight-semibold line-height-1">
+                                                <i class='bx bx-sync text-4 me-2' ></i> Проверка дубликатов </a>
+                                        </div>
                                     {% endif %}
                                 </div>
                             </div>

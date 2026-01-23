@@ -769,6 +769,10 @@ class Counteragent(models.Model):
         verbose_name = "Контрагент"
         verbose_name_plural = "Контрагенты"
         ordering = ["short_name"]
+        indexes = [
+            models.Index(fields=['inn', 'kpp']),
+            models.Index(fields=['inn']),
+        ]
 
     type_of = [
         ("juridical_person", "юридическое лицо"),
@@ -846,6 +850,73 @@ class Counteragent(models.Model):
         blank=True,
         related_name="contact",
     )
+
+    @classmethod
+    def find_duplicates_by_inn_kpp(cls):
+        """
+        Находит все дубликаты по ИНН и КПП
+        Возвращает словарь: {'инн_кпп': [список_объектов]}
+        """
+        # Находим все записи с заполненными ИНН (не пустыми)
+        with_inn_kpp = cls.objects.exclude(inn='')
+
+        # Группируем по ИНН+КПП и находим дубликаты
+        duplicates = {}
+
+        # Сначала группируем по ИНН
+        for counteragent in with_inn_kpp:
+            key = (counteragent.inn, counteragent.kpp)
+            if key not in duplicates:
+                duplicates[key] = []
+            duplicates[key].append(counteragent)
+
+        # Убираем уникальные записи (где только 1 объект в группе)
+        duplicates = {k: v for k, v in duplicates.items() if len(v) > 1}
+
+        return duplicates
+
+    @classmethod
+    def find_duplicates_by_inn(cls):
+        """
+        Находит дубликаты только по ИНН (без учета КПП)
+        """
+        # Используем аннотацию для более эффективного запроса
+        from django.db.models import Count
+
+        duplicate_inns = cls.objects.values('inn') \
+            .exclude(inn='') \
+            .annotate(count=Count('id')) \
+            .filter(count__gt=1) \
+            .values_list('inn', flat=True)
+
+        duplicates = {}
+        for inn in duplicate_inns:
+            duplicates[inn] = cls.objects.filter(inn=inn)
+
+        return duplicates
+
+    @classmethod
+    def get_potential_duplicates(cls, counteragent):
+        """
+        Находит потенциальные дубликаты для конкретного контрагента
+        """
+        if not counteragent.inn:
+            return cls.objects.none()
+
+        # Ищем по ИНН
+        same_inn = cls.objects.filter(inn=counteragent.inn).exclude(id=counteragent.id)
+
+        # Если есть КПП, ищем точное совпадение ИНН+КПП
+        if counteragent.kpp:
+            exact_matches = same_inn.filter(kpp=counteragent.kpp)
+            if exact_matches.exists():
+                return exact_matches
+
+        return same_inn
+
+    def has_duplicates(self):
+        """Проверяет, есть ли у текущего контрагента дубликаты"""
+        return self.get_potential_duplicates(self).exists()
 
     def __str__(self):
         if self.short_name == "":

@@ -1,7 +1,9 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 # Register your models here.
 from django.contrib.auth.admin import UserAdmin
+from django.urls import reverse
+from django.utils.html import format_html
 
 from .models import (
     DataBaseUser,
@@ -96,11 +98,11 @@ class CounteragentDocumentsAdmin(admin.ModelAdmin):
     list_display = ("package", "date_of_creation", "description", "document",)  #
 
 
-@admin.register(Counteragent)
-class CounteragentAdmin(admin.ModelAdmin):
-    list_display = ("pk", "short_name", "inn", "kpp", "ogrn", "type_counteragent",)
-    search_fields = ("short_name", "inn", "kpp", "ogrn")
-    ordering = ('pk',)
+# @admin.register(Counteragent)
+# class CounteragentAdmin(admin.ModelAdmin):
+#     list_display = ("pk", "short_name", "inn", "kpp", "ogrn", "type_counteragent",)
+#     search_fields = ("short_name", "inn", "kpp", "ogrn")
+#     ordering = ('pk',)
 
 @admin.register(Posts)
 class PostsAdmin(admin.ModelAdmin):
@@ -126,3 +128,86 @@ class ApartmentsAdmin(admin.ModelAdmin):
     list_display = ("pk", "title", "place", "beds_number",)
     search_fields = ("title",)
     ordering = ('pk',)
+
+
+@admin.register(Counteragent)
+class CounteragentAdmin(admin.ModelAdmin):
+    list_display = ["pk", 'short_name', 'inn', 'kpp', 'type_counteragent', 'duplicates_info']
+    list_filter = ['type_counteragent']
+    search_fields = ['short_name', 'inn', 'kpp']
+    actions = ['find_and_mark_duplicates', 'merge_duplicates']
+    ordering = ('pk',)
+
+    def duplicates_info(self, obj):
+        """Отображает информацию о дубликатах в списке"""
+        duplicates = obj.get_potential_duplicates(obj)
+        if duplicates.exists():
+            count = duplicates.count()
+            url = reverse('admin:customers_app_counteragent_changelist')
+            return format_html(
+                '<span style="color: red;">⚠ Дубликатов: {}</span><br>'
+                '<a href="{}?inn={}" target="_blank">Показать</a>',
+                count, url, obj.inn
+            )
+        return "✓ Уникальный"
+
+    duplicates_info.short_description = "Дубликаты"
+
+    def find_and_mark_duplicates(self, request, queryset):
+        """Находит и помечает дубликаты"""
+        all_duplicates = Counteragent.find_duplicates_by_inn_kpp()
+
+        if not all_duplicates:
+            self.message_user(request, "Дубликатов не найдено", messages.INFO)
+            return
+
+        message_parts = ["Найдены дубликаты:"]
+        for (inn, kpp), objects in all_duplicates.items():
+            ids = [str(obj.id) for obj in objects]
+            message_parts.append(f"ИНН: {inn}, КПП: {kpp} - ID: {', '.join(ids)}")
+
+        self.message_user(request, "\n".join(message_parts), messages.WARNING)
+
+    find_and_mark_duplicates.short_description = "Найти дубликаты"
+
+    def merge_duplicates(self, request, queryset):
+        """
+        Объединяет выбранные дубликаты
+        ВАЖНО: Это упрощенный пример, расширьте логику под свои нужды
+        """
+        # Сначала группируем по ИНН
+        grouped = {}
+        for obj in queryset:
+            key = (obj.inn, obj.kpp)
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(obj)
+
+        merged_count = 0
+        for (inn, kpp), objects in grouped.items():
+            if len(objects) > 1:
+                # Выбираем "основной" объект (первый или самый старый)
+                main_obj = objects[0]
+                duplicates = objects[1:]
+
+                # Здесь должна быть логика объединения:
+                # 1. Перенос связанных записей на main_obj
+                # 2. Удаление дубликатов
+                # 3. Обновление полей при необходимости
+
+                for dup in duplicates:
+                    # TODO: Перенести все связанные объекты на main_obj
+                    # dup.invoice_set.update(counteragent=main_obj)
+                    # dup.contract_set.update(counteragent=main_obj)
+                    # и т.д.
+
+                    dup.delete()
+                    merged_count += 1
+
+        self.message_user(
+            request,
+            f"Объединено {merged_count} дубликатов",
+            messages.SUCCESS
+        )
+
+    merge_duplicates.short_description = "Объединить выбранные дубликаты"

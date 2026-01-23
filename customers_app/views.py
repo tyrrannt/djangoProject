@@ -18,7 +18,7 @@ from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.db.models import Q, F, ForeignKey
+from django.db.models import Q, F, ForeignKey, Count
 from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
 from django.views.generic import DetailView, UpdateView, CreateView, ListView
@@ -1034,6 +1034,57 @@ class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+
+@login_required
+def duplicates_report(request):
+    """
+    Отчет о дубликатах контрагентов
+    """
+    # Вариант 1: Дубликаты по ИНН и КПП
+    duplicates_inn_kpp = Counteragent.objects.values('inn', 'kpp') \
+        .exclude(inn='') \
+        .annotate(
+        total=Count('id'),
+        ids=Count('id', distinct=True)
+    ) \
+        .filter(total__gt=1) \
+        .order_by('-total')
+
+    # Вариант 2: Дубликаты только по ИНН
+    duplicates_inn = Counteragent.objects.values('inn') \
+        .exclude(inn='') \
+        .annotate(
+        total=Count('id'),
+        distinct_kpp=Count('kpp', distinct=True)
+    ) \
+        .filter(total__gt=1) \
+        .order_by('-total')
+
+    # Получаем детальную информацию для каждого дубликата
+    detailed_duplicates = []
+    for dup in duplicates_inn_kpp:
+        inn = dup['inn']
+        kpp = dup['kpp']
+        count = dup['total']
+
+        objects = Counteragent.objects.filter(inn=inn, kpp=kpp)
+
+        detailed_duplicates.append({
+            'inn': inn,
+            'kpp': kpp,
+            'count': count,
+            'objects': objects,
+            'object_ids': [obj.id for obj in objects]
+        })
+
+    context = {
+        'duplicates_inn_kpp': detailed_duplicates,
+        'duplicates_inn': duplicates_inn,
+        'total_duplicates': len(detailed_duplicates),
+    }
+
+    return render(request, 'customers_app/duplicates_report.html', context)
 
 
 class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
