@@ -241,11 +241,10 @@
                                                                                     {{ obj }}
                                                                                 </div>
                                                                                 <div>
-                                                                                    <!-- Ссылка на детальный просмотр документа -->
-                                                                                    {% url model_info.model_name|add:'-detail' obj.pk as detail_url %}
-                                                                                    {% if detail_url %}
-                                                                                        <a href="{{ detail_url }}"
-                                                                                           class="btn btn-sm btn-outline-primary">
+                                                                                    <!-- Просто проверяем наличие get_absolute_url -->
+                                                                                    {% if obj.get_absolute_url %}
+                                                                                        <a href="{{ obj.get_absolute_url }}"
+                                                                                           class="btn btn-sm btn-outline-primary float-end">
                                                                                             Просмотр
                                                                                         </a>
                                                                                     {% endif %}
