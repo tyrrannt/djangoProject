@@ -503,7 +503,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                     logger.error(f"Ошибка при получении отпусков {_ex}")
             if request.GET.get('update') == '18':
                 update_contract_dates_from_comment()
-
+            if request.GET.get('update') == '19':
+                vacation_schedule_send.delay(triger=1)
         return super().get(request, *args, **kwargs)
 
 

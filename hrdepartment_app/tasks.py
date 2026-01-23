@@ -919,9 +919,11 @@ def vacation_check():
 
 
 @app.task()
-def vacation_schedule_send():
-    employee = DataBaseUser.objects.all().exclude(is_active=False)
-    # employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
+def vacation_schedule_send(triger=0):
+    if triger==0:
+        employee = DataBaseUser.objects.all().exclude(is_active=False)
+    else:
+        employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
     sender = DataBaseUser.objects.get(last_name="Кирюшкина", is_active=True)
     for item in employee:
         get_vacation_shedule = VacationSchedule.objects.filter(employee=item, years=2025)
