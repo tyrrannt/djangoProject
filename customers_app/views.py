@@ -890,10 +890,15 @@ class CounteragentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
                         'base_counteragent': False,
                     }
                     Counteragent.objects.update_or_create(ref_key=item['Ref_Key'], defaults={**divisions_kwargs})
+                    # Counteragent.objects.update_or_create(
+                    #     inn=item['ИНН'],  # поле ИНН
+                    #     kpp=item['КПП'] or None,  # поле КПП
+                    #     defaults={**divisions_kwargs}
+                    # )
                     count += 1
             url_match = reverse_lazy('customers_app:counteragent_list')
             return redirect(url_match)
-        change_session_get(self.request, self)
+        # change_session_get(self.request, self)
         return super(CounteragentListView, self).get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):

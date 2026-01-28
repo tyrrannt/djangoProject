@@ -37,7 +37,7 @@
                                         <ul class="list-unstyled mb-0">
                                             {% for obj in dup.objects %}
                                                 <li>
-                                                    <a href="{% url 'admin:customers_app_counteragent_change' obj.id %}"
+                                                    <a href="{% url 'customers_app:counteragent_update' obj.id %}"
                                                        target="_blank">
                                                         {{ obj.short_name }} (ID: {{ obj.id }})
                                                     </a>

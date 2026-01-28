@@ -1,9 +1,17 @@
-from django.contrib import admin, messages
-
 # Register your models here.
 from django.contrib.auth.admin import UserAdmin
+from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
+from django.contrib import messages
+from django.db import transaction
+from django.apps import apps
+from django.db.models import ForeignKey, OneToOneField
+from django.core.exceptions import FieldError
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 from .models import (
     DataBaseUser,
@@ -161,53 +169,248 @@ class CounteragentAdmin(admin.ModelAdmin):
             self.message_user(request, "Дубликатов не найдено", messages.INFO)
             return
 
-        message_parts = ["Найдены дубликаты:"]
-        for (inn, kpp), objects in all_duplicates.items():
-            ids = [str(obj.id) for obj in objects]
-            message_parts.append(f"ИНН: {inn}, КПП: {kpp} - ID: {', '.join(ids)}")
+        message_parts = ["<strong>Найдены дубликаты:</strong>"]
 
-        self.message_user(request, "\n".join(message_parts), messages.WARNING)
+        for (inn, kpp), objects in all_duplicates.items():
+            if objects and len(objects) > 1:
+                ids = [str(obj.id) for obj in objects]
+                names = [obj.short_name or f"ID:{obj.id}" for obj in objects]
+                message_parts.append(
+                    f"ИНН: <strong>{inn or '—'}</strong>, КПП: <strong>{kpp or '—'}</strong> - "
+                    f"ID: {', '.join(ids)}, Названия: {', '.join(names)}"
+                )
+
+        total_count = sum(len(objects) for _, objects in all_duplicates.items() if len(objects) > 1)
+        message_parts.insert(1, f"<br>Всего групп дубликатов: <strong>{len(all_duplicates)}</strong>")
+        message_parts.insert(2, f"Всего дублирующих записей: <strong>{total_count}</strong>")
+
+        self.message_user(request, format_html("<br>".join(message_parts)), messages.WARNING)
 
     find_and_mark_duplicates.short_description = "Найти дубликаты"
 
     def merge_duplicates(self, request, queryset):
         """
         Объединяет выбранные дубликаты
-        ВАЖНО: Это упрощенный пример, расширьте логику под свои нужды
+        Основной объект - с минимальным PK, дубликаты удаляются после переноса связей
         """
-        # Сначала группируем по ИНН
+        # Группируем по ИНН и КПП
         grouped = {}
         for obj in queryset:
-            key = (obj.inn, obj.kpp)
-            if key not in grouped:
-                grouped[key] = []
-            grouped[key].append(obj)
+            if obj.inn:  # Объединяем только если есть ИНН
+                key = (obj.inn, obj.kpp)
+                if key not in grouped:
+                    grouped[key] = []
+                grouped[key].append(obj)
 
-        merged_count = 0
+        if not grouped:
+            self.message_user(request, "Нет объектов с ИНН для объединения", messages.WARNING)
+            return
+
+        merged_groups = 0
+        merged_records = 0
+        failed_groups = 0
+
+        # ОБРАБАТЫВАЕМ КАЖДУЮ ГРУППУ ОТДЕЛЬНО
         for (inn, kpp), objects in grouped.items():
             if len(objects) > 1:
-                # Выбираем "основной" объект (первый или самый старый)
-                main_obj = objects[0]
-                duplicates = objects[1:]
+                try:
+                    # ОТДЕЛЬНАЯ ТРАНЗАКЦИЯ ДЛЯ КАЖДОЙ ГРУППЫ
+                    with transaction.atomic():
+                        # Сортируем по PK, чтобы взять основной объект (с минимальным PK)
+                        objects.sort(key=lambda x: x.pk)
+                        main_obj = objects[0]  # Основной объект
+                        duplicates = objects[1:]  # Дубликаты для удаления
 
-                # Здесь должна быть логика объединения:
-                # 1. Перенос связанных записей на main_obj
-                # 2. Удаление дубликатов
-                # 3. Обновление полей при необходимости
+                        # Обновляем все связанные объекты
+                        update_info = self._update_related_objects_safe(main_obj, duplicates)
 
-                for dup in duplicates:
-                    # TODO: Перенести все связанные объекты на main_obj
-                    # dup.invoice_set.update(counteragent=main_obj)
-                    # dup.contract_set.update(counteragent=main_obj)
-                    # и т.д.
+                        # Удаляем дубликаты
+                        for dup in duplicates:
+                            dup.delete()
+                            merged_records += 1
 
-                    dup.delete()
-                    merged_count += 1
+                        merged_groups += 1
 
-        self.message_user(
-            request,
-            f"Объединено {merged_count} дубликатов",
-            messages.SUCCESS
-        )
+                        # Логируем успешное объединение
+                        success_msg = f"✓ Объединена группа ИНН:{inn}, КПП:{kpp or '—'}. "
+                        success_msg += f"Основной: ID:{main_obj.pk}, удалено: {len(duplicates)}"
+
+                        if update_info['total_updated'] > 0:
+                            success_msg += f", обновлено записей: {update_info['total_updated']}"
+                            if update_info['models_updated']:
+                                success_msg += f" ({', '.join(update_info['models_updated'])})"
+
+                        self.message_user(request, success_msg, messages.INFO)
+
+                except Exception as e:
+                    failed_groups += 1
+                    logger.error(f"Ошибка при объединении группы ИНН:{inn}, КПП:{kpp}: {str(e)}", exc_info=True)
+
+                    # Простое сообщение об ошибке
+                    try:
+                        self.message_user(
+                            request,
+                            f"✗ Ошибка при объединении группы ИНН:{inn}, КПП:{kpp or '—'}: {str(e)[:100]}...",
+                            messages.ERROR
+                        )
+                    except:
+                        pass
+
+        # Итоговое сообщение
+        try:
+            if merged_groups > 0:
+                success_msg = (
+                    f"<strong>Успешно объединено:</strong><br>"
+                    f"• Групп: {merged_groups}<br>"
+                    f"• Записей удалено: {merged_records}<br>"
+                )
+                if failed_groups > 0:
+                    success_msg += f"<br><strong>Не удалось объединить:</strong> {failed_groups} групп"
+
+                self.message_user(request, format_html(success_msg), messages.SUCCESS)
+            else:
+                self.message_user(request, "Не удалось объединить ни одну группу", messages.WARNING)
+
+        except Exception as e:
+            logger.error(f"Ошибка при отправке итогового сообщения: {e}")
 
     merge_duplicates.short_description = "Объединить выбранные дубликаты"
+
+    def _get_all_related_fields(self):
+        """
+        Возвращает ВСЕ поля, которые ссылаются на Counteragent
+        Включая ForeignKey и OneToOneField
+        """
+        related_fields = []
+        all_models = apps.get_models()
+
+        for model in all_models:
+            # Пропускаем саму модель Counteragent
+            if model == Counteragent:
+                continue
+
+            for field in model._meta.get_fields():
+                # Проверяем ForeignKey и OneToOneField
+                if isinstance(field, (ForeignKey, OneToOneField)):
+                    # Получаем связанную модель
+                    try:
+                        related_model = field.related_model
+                        if related_model and related_model == Counteragent:
+                            related_fields.append({
+                                'model': model,
+                                'field': field,
+                                'field_name': field.name,  # Имя поля, например "counteragent"
+                                'verbose_name': model._meta.verbose_name,
+                                'app_label': model._meta.app_label,
+                                'model_name': model._meta.model_name,
+                            })
+                    except AttributeError:
+                        # Если не удалось получить related_model, пропускаем
+                        continue
+
+        return related_fields
+
+    def _update_related_objects_safe(self, main_obj, duplicates):
+        """
+        Безопасное обновление связанных объектов с обработкой ошибок
+        Возвращает информацию об обновлении
+        """
+        update_info = {
+            'total_updated': 0,
+            'models_updated': [],
+            'errors': []
+        }
+
+        # Получаем все связанные поля
+        related_fields = self._get_all_related_fields()
+
+        for dup in duplicates:
+            # Для каждого дубликата обновляем все связанные модели
+            for rel_info in related_fields:
+                model = rel_info['model']
+                field_name = rel_info['field_name']
+                model_display = f"{rel_info['app_label']}.{rel_info['model_name']}"
+
+                try:
+                    # Фильтруем объекты, которые ссылаются на текущий дубликат
+                    filter_kwargs = {field_name: dup}
+                    related_queryset = model.objects.filter(**filter_kwargs)
+
+                    # Обновляем ссылки на основной объект
+                    updated_count = related_queryset.update(**{field_name: main_obj})
+
+                    if updated_count > 0:
+                        update_info['total_updated'] += updated_count
+                        if model_display not in update_info['models_updated']:
+                            update_info['models_updated'].append(model_display)
+
+                        logger.info(
+                            f"Обновлено {updated_count} записей в {model_display}.{field_name} "
+                            f"с {dup.id} на {main_obj.id}"
+                        )
+
+                except FieldError as fe:
+                    # Поле не найдено в модели
+                    error_msg = f"Поле {field_name} не найдено в модели {model_display}: {fe}"
+                    update_info['errors'].append(error_msg)
+                    logger.warning(error_msg)
+                    continue
+                except Exception as e:
+                    # Другие ошибки
+                    error_msg = f"Ошибка при обновлении {model_display}.{field_name}: {e}"
+                    update_info['errors'].append(error_msg)
+                    logger.error(error_msg, exc_info=True)
+                    # Продолжаем с другими моделями
+                    continue
+
+        return update_info
+
+    # Альтернативный метод с диагностикой
+    def diagnose_related_models(self, request, queryset):
+        """
+        Диагностика - показывает какие модели ссылаются на выбранные контрагенты
+        """
+        if queryset.count() > 5:
+            self.message_user(request, "Выберите не более 5 контрагентов для диагностики", messages.WARNING)
+            return
+
+        related_fields = self._get_all_related_fields()
+
+        message_parts = ["<strong>Модели, ссылающиеся на Counteragent:</strong>"]
+
+        for rel_info in related_fields:
+            model_display = f"{rel_info['app_label']}.{rel_info['model_name']}"
+            field_name = rel_info['field_name']
+            verbose_name = rel_info['verbose_name']
+
+            # Проверяем, есть ли записи для выбранных контрагентов
+            total_count = 0
+            for obj in queryset:
+                try:
+                    filter_kwargs = {field_name: obj}
+                    count = rel_info['model'].objects.filter(**filter_kwargs).count()
+                    total_count += count
+                except Exception as e:
+                    count = f"ошибка: {e}"
+
+            message_parts.append(
+                f"• {model_display} ({verbose_name}) - поле: <code>{field_name}</code>, "
+                f"связей с выбранными: {total_count}"
+            )
+
+        self.message_user(request, format_html("<br>".join(message_parts)), messages.INFO)
+
+    diagnose_related_models.short_description = "Диагностика связанных моделей"
+
+    # Улучшенная версия merge с диагностикой
+    def merge_duplicates_with_diagnosis(self, request, queryset):
+        """
+        Объединение с предварительной диагностикой
+        """
+        # 1. Диагностика
+        self.diagnose_related_models(request, queryset)
+
+        # 2. Продолжение с объединением
+        return self.merge_duplicates(request, queryset)
+
+    merge_duplicates_with_diagnosis.short_description = "Объединить с диагностикой"
