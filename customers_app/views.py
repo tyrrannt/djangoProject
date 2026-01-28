@@ -952,10 +952,48 @@ class CounteragentDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView
         counteragent = self.get_object()
 
         # Получаем все связанные документы
-        related_documents = counteragent.get_related_documents(counteragent)
+        related_documents = self.get_related_documents(counteragent)
 
         context['related_documents'] = related_documents
         return context
+
+    def get_related_documents(self, counteragent):
+        """
+        Возвращает сгруппированный список связанных документов
+        """
+        related_docs = {}
+
+        all_models = apps.get_models()
+
+        for model in all_models:
+            # Пропускаем саму модель Counteragent
+            if model == Counteragent:
+                continue
+
+            for field in model._meta.get_fields():
+                if (isinstance(field, ForeignKey) and
+                        field.related_model == Counteragent):
+
+                    try:
+                        # Получаем все объекты этой модели
+                        related_objects = model.objects.filter(**{field.name: counteragent})
+                        if related_objects.exists():
+                            model_info = {
+                                'verbose_name': model._meta.verbose_name,
+                                'verbose_name_plural': model._meta.verbose_name_plural,
+                                'model_name': model._meta.model_name,
+                                'objects': related_objects,
+                                'count': related_objects.count(),
+                                'field_name': field.verbose_name if field.verbose_name else field.name
+                            }
+
+                            # Группируем по модели
+                            key = f"{model._meta.app_label}.{model._meta.model_name}"
+                            related_docs[key] = model_info
+                    except OperationalError:
+                        print('Ошибка')
+
+        return related_docs
 
 
 class CounteragentUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
