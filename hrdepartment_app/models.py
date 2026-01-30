@@ -933,6 +933,36 @@ class ApprovalProcess(models.Model):
     )
     history_change = GenericRelation(HistoryChange)
 
+class ApprovalOficialMemoProcessManager(models.Manager):
+    def get_expense_report_data(self):
+        """
+        Получает данные для отчета по затратам
+        """
+        return self.select_related(
+            'document',
+            'document__person',
+            'document__person__user_work_profile',
+            'document__person__user_work_profile__job'
+        ).filter(
+            document__isnull=False,
+            document__person__isnull=False
+        ).values(
+            'id',
+            'document__period_from',
+            'document__period_for',
+            'document__person__id',
+            'document__person__last_name',
+            'document__person__first_name',
+            'document__person__surname',
+            'document__person__service_number',
+            'document__person__user_work_profile__job__name',
+            'document__person__user_work_profile__job__type_of_job',
+            'daily_allowance',
+            'travel_expense',
+            'accommodation_expense',
+            'other_expense',
+            'prepaid_expense_summ'
+        )
 
 class ApprovalOficialMemoProcess(ApprovalProcess):
     """
@@ -1041,6 +1071,8 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         max_digits=10,
         decimal_places=2,
     )
+
+    objects = ApprovalOficialMemoProcessManager()
 
     def save(self, *args, **kwargs):
         # Автоматически рассчитываем сумму всех расходов

@@ -1,0 +1,178 @@
+<!-- templates/reports/expense_report.html -->
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Отчет по затратам на командировки{% endblock %}
+
+{% block content %}
+    <section role="main" class="content-body content-body-modern mt-0">
+        <div class="container mt-4">
+            <h1 class="mb-4">Отчет по затратам на командировки</h1>
+
+            <!-- Форма фильтрации -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Фильтры</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Год</label>
+                            <select name="year" class="form-select">
+                                {% for year in years %}
+                                    <option value="{{ year }}"
+                                            {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
+                                        {{ year }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Месяц</label>
+                            <select name="month" class="form-select">
+                                <option value="">Все месяцы</option>
+                                {% for month_num, month_name in months %}
+                                    <option value="{{ month_num }}"
+                                            {% if selected_month == month_num|stringformat:"s" %}selected{% endif %}>
+                                        {{ month_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Тип должности</label>
+                            <select name="job_type" class="form-select">
+                                <option value="">Все типы</option>
+                                {% for type_value, type_name in job_types %}
+                                    <option value="{{ type_value }}"
+                                            {% if selected_job_type == type_value %}selected{% endif %}>
+                                        {{ type_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Сотрудник</label>
+                            <select name="employee_id" class="form-select">
+                                <option value="">Все сотрудники</option>
+                                {% for emp in employees %}
+                                    <option value="{{ emp.document__person__id }}"
+                                            {% if selected_employee == emp.document__person__id|stringformat:"s" %}selected{% endif %}>
+                                        {{ emp.employee_full_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel"></i> Применить фильтры
+                            </button>
+                            <a href="{% url 'hrdepartment_app:expense_report' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Сбросить
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if no_data %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> Нет данных для отображения
+                </div>
+            {% else %}
+                <!-- Статистика -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-white bg-info">
+                            <div class="card-body">
+                                <h5 class="card-title">Всего записей</h5>
+                                <h2 class="card-text">{{ total_records }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-success">
+                            <div class="card-body">
+                                <h5 class="card-title">Общая сумма</h5>
+                                <h2 class="card-text">{{ total_amount|floatformat:2 }} ₽</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-warning">
+                            <div class="card-body">
+                                <h5 class="card-title">Уникальных сотрудников</h5>
+                                <h2 class="card-text">{{ total_employees }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Отчет 1: Сводка по месяцам и типам должностей -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Сводка по месяцам и типам должностей</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            {{ report_by_month_job_html|safe }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Отчет 2: Детализация по сотрудникам -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Детализация по сотрудникам</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            {{ report_by_employee_html|safe }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Отчет 3: Подробная таблица всех записей -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Подробная таблица всех записей</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            {{ detailed_report_html|safe }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <style>
+            .table {
+                font-size: 0.9rem;
+            }
+
+            .table th {
+                background-color: #f8f9fa;
+                font-weight: bold;
+            }
+
+            .table td, .table th {
+                vertical-align: middle;
+            }
+
+            .card-header h5 {
+                margin: 0;
+            }
+        </style>
+
+        <script>
+            // Добавляем функциональность для таблиц
+            document.addEventListener('DOMContentLoaded', function () {
+                // Можно добавить сортировку, поиск и т.д.
+            });
+        </script>
+    </section>
+{% endblock %}

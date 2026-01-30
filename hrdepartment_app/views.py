@@ -1,3 +1,7 @@
+# views.py
+from django.views.generic import TemplateView
+from datetime import datetime
+
 import csv
 import datetime
 from calendar import monthrange
@@ -1698,6 +1702,202 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
         context[
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процессы списком"
+        return context
+
+
+class ExpenseReportView(TemplateView):
+    template_name = 'hrdepartment_app/expense_report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Получаем параметры фильтрации
+        year = self.request.GET.get('year', datetime.datetime.now().year)
+        month = self.request.GET.get('month', None)
+        job_type = self.request.GET.get('job_type', None)
+        employee_id = self.request.GET.get('employee_id', None)
+
+        # Получаем данные из базы
+        queryset = ApprovalOficialMemoProcess.objects.get_expense_report_data()
+
+        # Применяем фильтры
+        if year:
+            queryset = queryset.filter(document__period_from__year=year)
+
+        if month:
+            queryset = queryset.filter(document__period_from__month=month)
+
+        if job_type:
+            queryset = queryset.filter(
+                document__person__user_work_profile__job__type_of_job=job_type
+            )
+
+        if employee_id:
+            queryset = queryset.filter(document__person__id=employee_id)
+
+        # Преобразуем в DataFrame
+        df = pd.DataFrame(list(queryset))
+
+        if df.empty:
+            context['no_data'] = True
+        else:
+
+            # Преобразуем даты
+            df['document__period_from'] = pd.to_datetime(df['document__period_from'])
+            df['document__period_for'] = pd.to_datetime(df['document__period_for'])
+
+            # Создаем столбец с месяцем и годом
+            df['month_year'] = df['document__period_from'].dt.to_period('M')
+
+            # Создаем полное имя сотрудника
+            df['employee_full_name'] = (
+                    df['document__person__last_name'] + ' ' +
+                    df['document__person__first_name'] + ' ' +
+                    df['document__person__surname']
+            )
+
+            # Создаем отображение типа должности
+            job_type_display = {
+                '0': 'Общий состав',
+                '1': 'Летный состав',
+                '2': 'Инженерный состав',
+                '3': 'Транспортный отдел'
+            }
+            df['job_type_display'] = df['document__person__user_work_profile__job__type_of_job'].map(job_type_display)
+
+            # ==================== ОТЧЕТ 1: СВОДКА ПО МЕСЯЦАМ И ТИПАМ ДОЛЖНОСТЕЙ ====================
+            report_by_month_job = df.groupby(['month_year', 'job_type_display']).agg({
+                'daily_allowance': 'sum',
+                'travel_expense': 'sum',
+                'accommodation_expense': 'sum',
+                'other_expense': 'sum',
+                'prepaid_expense_summ': 'sum',
+                'id': 'count'
+            }).round(2)
+
+            report_by_month_job.columns = [
+                'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество записей'
+            ]
+
+            report_by_month_job = report_by_month_job.reset_index()
+            report_by_month_job['month_year'] = report_by_month_job['month_year'].astype(str)
+
+            # Добавляем итоговую строку
+            total_row = report_by_month_job.select_dtypes(include=['number']).sum()
+            total_row['month_year'] = 'ИТОГО'
+            total_row['job_type_display'] = ''
+            report_by_month_job = pd.concat([report_by_month_job, pd.DataFrame([total_row])], ignore_index=True)
+
+            # ==================== ОТЧЕТ 2: ДЕТАЛИЗАЦИЯ ПО СОТРУДНИКАМ ====================
+            report_by_employee = df.groupby([
+                'job_type_display',
+                'employee_full_name',
+                'document__person__service_number',
+                'document__person__user_work_profile__job__name'
+            ]).agg({
+                'daily_allowance': 'sum',
+                'travel_expense': 'sum',
+                'accommodation_expense': 'sum',
+                'other_expense': 'sum',
+                'prepaid_expense_summ': 'sum',
+                'id': 'count'
+            }).round(2)
+
+            report_by_employee.columns = [
+                'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество поездок'
+            ]
+
+            report_by_employee = report_by_employee.reset_index()
+
+            # Сортируем по типу должности и итоговой сумме
+            report_by_employee = report_by_employee.sort_values(
+                ['job_type_display', 'Итого'],
+                ascending=[True, False]
+            )
+
+            # ==================== ОТЧЕТ 3: ПОДРОБНАЯ ТАБЛИЦА ВСЕХ ЗАПИСЕЙ ====================
+            detailed_report = df[[
+                'month_year',
+                'employee_full_name',
+                'document__person__service_number',
+                'document__person__user_work_profile__job__name',
+                'job_type_display',
+                'document__period_from',
+                'document__period_for',
+                'daily_allowance',
+                'travel_expense',
+                'accommodation_expense',
+                'other_expense',
+                'prepaid_expense_summ'
+            ]].copy()
+
+            detailed_report.columns = [
+                'Месяц', 'Сотрудник', 'Табельный номер', 'Должность', 'Тип должности',
+                'Дата начала', 'Дата окончания', 'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого'
+            ]
+
+            # Сортируем по месяцу и сотруднику
+            detailed_report = detailed_report.sort_values(['Месяц', 'Сотрудник'])
+
+            # ==================== ФОРМИРОВАНИЕ КОНТЕКСТА ====================
+            # Преобразуем отчеты в HTML
+            context['report_by_month_job_html'] = report_by_month_job.to_html(
+                classes='table table-striped table-bordered',
+                index=False,
+                float_format=lambda x: f'{x:,.2f}'
+            )
+
+            context['report_by_employee_html'] = report_by_employee.to_html(
+                classes='table table-striped table-bordered',
+                index=False,
+                float_format=lambda x: f'{x:,.2f}'
+            )
+
+            context['detailed_report_html'] = detailed_report.to_html(
+                classes='table table-striped table-bordered',
+                index=False,
+                float_format=lambda x: f'{x:,.2f}' if isinstance(x, (int, float)) else x
+            )
+
+            # Статистика
+            context['total_records'] = len(df)
+            context['total_amount'] = df['prepaid_expense_summ'].sum()
+            context['total_employees'] = df['document__person__id'].nunique()
+
+        # Фильтры для формы
+
+        years_unique = set(ApprovalOficialMemoProcess.objects.filter(
+                document__period_from__isnull=False
+            ).values_list('document__period_from__year', flat=True).distinct())
+        context['years'] = sorted(years_unique, reverse=True)
+
+        print(context['years'])
+
+        context['months'] = [
+            (1, 'Январь'), (2, 'Февраль'), (3, 'Март'), (4, 'Апрель'),
+            (5, 'Май'), (6, 'Июнь'), (7, 'Июль'), (8, 'Август'),
+            (9, 'Сентябрь'), (10, 'Октябрь'), (11, 'Ноябрь'), (12, 'Декабрь')
+        ]
+
+        context['job_types'] = [
+            ('0', 'Общий состав'),
+            ('1', 'Летный состав'),
+            ('2', 'Инженерный состав'),
+            ('3', 'Транспортный отдел')
+        ]
+
+        # Параметры фильтрации
+        context['selected_year'] = year
+        context['selected_month'] = month
+        context['selected_job_type'] = job_type
+        context['selected_employee'] = employee_id
+
+        if not df.empty:
+            # Список сотрудников для фильтра
+            employees = df[['document__person__id', 'employee_full_name']].drop_duplicates()
+            employees = employees.sort_values('employee_full_name')
+            context['employees'] = employees.to_dict('records')
+
         return context
 
 
