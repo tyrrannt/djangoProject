@@ -506,8 +506,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
                 update_contract_dates_from_comment()
             if request.GET.get('update') == '19':
                 user_id = request.GET.get('user_id')
-                print(user_id)
-                # vacation_schedule_send.delay(triger=1, user_id=user_id)
+                vacation_schedule_send.delay(triger=1, user_id=user_id)
         return super().get(request, *args, **kwargs)
 
 
