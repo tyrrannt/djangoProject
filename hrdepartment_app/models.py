@@ -1014,6 +1014,46 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         decimal_places=2,
     )
 
+    daily_allowance = models.DecimalField(
+        verbose_name="Суточные",
+        default=0,
+        max_digits=10,
+        decimal_places=2,
+    )
+
+    travel_expense = models.DecimalField(
+        verbose_name="Проезд",
+        default=0,
+        max_digits=10,
+        decimal_places=2,
+    )
+
+    accommodation_expense = models.DecimalField(
+        verbose_name="Дополнительное проживание",
+        default=0,
+        max_digits=10,
+        decimal_places=2,
+    )
+
+    other_expense = models.DecimalField(
+        verbose_name="Прочие расходы",
+        default=0,
+        max_digits=10,
+        decimal_places=2,
+    )
+
+    def save(self, *args, **kwargs):
+        # Автоматически рассчитываем сумму всех расходов
+        summ = (
+                self.daily_allowance +
+                self.travel_expense +
+                self.accommodation_expense +
+                self.other_expense
+        )
+        if summ > 0:
+            self.prepaid_expense_summ = summ
+        super().save(*args, **kwargs)
+
     def __init__(self, *args, **kwargs):
         super(ApprovalOficialMemoProcess, self).__init__(*args, **kwargs)
 

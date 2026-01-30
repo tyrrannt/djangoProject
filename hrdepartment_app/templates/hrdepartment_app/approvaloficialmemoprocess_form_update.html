@@ -438,6 +438,7 @@
                                         </div>
                                         <div class="form-group row align-items-center pb-3"
                                              style="border:1px solid #a6b3ff;">
+                                        <div class="row">
                                             <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
                                                        for="id_person_accounting">Бухгалтерия:</label>
@@ -496,6 +497,53 @@
                                                     {% endif %}
                                                 </div>
                                             </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-12 col-lg-3">
+                                                <label class="col"
+                                                       for="id_daily_allowance">Суточные:</label>
+                                                <div class="col">
+                                                    {% if user in list_accounting %}
+                                                        {{ form.daily_allowance | add_class:"form-control form-control-modern" }}
+                                                    {% else %}
+                                                        <span>{{ form.daily_allowance | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        <div class="col-sm-12 col-lg-3">
+                                                <label class="col"
+                                                       for="id_travel_expense">Проезд:</label>
+                                                <div class="col">
+                                                    {% if user in list_accounting %}
+                                                        {{ form.travel_expense | add_class:"form-control form-control-modern" }}
+                                                    {% else %}
+                                                        <span>{{ form.travel_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        <div class="col-sm-12 col-lg-3">
+                                                <label class="col"
+                                                       for="id_accommodation_expense">Дополнительное проживание:</label>
+                                                <div class="col">
+                                                    {% if user in list_accounting %}
+                                                        {{ form.accommodation_expense | add_class:"form-control form-control-modern" }}
+                                                    {% else %}
+                                                        <span>{{ form.accommodation_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        <div class="col-sm-12 col-lg-3">
+                                                <label class="col"
+                                                       for="id_other_expense">Прочие расходы:</label>
+                                                <div class="col">
+                                                    {% if user in list_accounting %}
+                                                        {{ form.other_expense | add_class:"form-control form-control-modern" }}
+                                                    {% else %}
+                                                        <span>{{ form.other_expense | attr:"readonly" | add_class:"form-control form-control-modern" }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
                                         </div>
                                     {% endif %}
                                     <div class="toggle toggle-primary toggle-lg" data-plugin-toggle>

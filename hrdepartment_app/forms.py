@@ -411,6 +411,10 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     number_business_trip_days = forms.IntegerField(required=False)
     number_flight_days = forms.IntegerField(required=False)
     prepaid_expense_summ = forms.DecimalField(required=False)
+    daily_allowance = forms.DecimalField(required=False)
+    travel_expense = forms.DecimalField(required=False)
+    accommodation_expense = forms.DecimalField(required=False)
+    other_expense = forms.DecimalField(required=False)
 
     class Meta:
         model = ApprovalOficialMemoProcess
@@ -445,6 +449,10 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             "originals_docs_comment",
             "prepaid_expense_summ",
             "submitted_for_signature",
+            "daily_allowance",
+            "travel_expense",
+            "accommodation_expense",
+            "other_expense",
         )
 
     def __init__(self, *args, **kwargs):
