@@ -924,7 +924,7 @@ def vacation_schedule_send(triger=0, user_id=0):
         if user_id == 0:
             employee = DataBaseUser.objects.all().exclude(is_active=False)
         else:
-            employee = DataBaseUser.objects.all().exclude(pk=user_id)
+            employee = DataBaseUser.objects.filter(pk=user_id)
     else:
         employee = DataBaseUser.objects.filter(is_superuser=True).exclude(is_active=False)
     sender = DataBaseUser.objects.get(last_name="Кирюшкина", is_active=True)
