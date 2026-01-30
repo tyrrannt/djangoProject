@@ -302,6 +302,7 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
         context = super().get_context_data(object_list=None, **kwargs)
         context['Group'] = Groups.objects.all()
         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Настройки портала'
+        context['users'] = DataBaseUser.objects.filter(is_active=True)
         return context
 
     def get(self, request, *args, **kwargs):
@@ -504,7 +505,9 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '18':
                 update_contract_dates_from_comment()
             if request.GET.get('update') == '19':
-                vacation_schedule_send.delay(triger=1)
+                user_id = request.GET.get('user_id')
+                print(user_id)
+                # vacation_schedule_send.delay(triger=1, user_id=user_id)
         return super().get(request, *args, **kwargs)
 
 

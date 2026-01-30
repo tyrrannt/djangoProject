@@ -28,6 +28,15 @@
                                             </label>
                                         </div>
 
+                                        <div class="col-auto mb-2">
+                                            <select id="userSelect" class="form-select mb-2">
+                                                <option value="">Выберите пользователя</option>
+                                                {% for user in users %}
+                                                    <option value="{{ user.pk }}">{{ user.title }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+
                                         <div class="container-fluid">
                                             <div class="row">
                                                 <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
@@ -110,7 +119,8 @@
                                                 <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
                                                     <a href="{% url 'administration_app:property_list' %}?update=8"
                                                        class="btn btn-outline-primary btn-px-4 py-3 d-flex 
-                                                align-items-center font-weight-semibold line-height-1" id="submit_time_off">
+                                                align-items-center font-weight-semibold line-height-1"
+                                                       id="submit_time_off">
                                                         <i class='bx bx-sync text-4 me-2'></i> Обновить данные по
                                                         отгулам</a>
                                                 </div>
@@ -183,7 +193,7 @@
                                                     <a href="{% url 'administration_app:property_list' %}?update=17"
                                                        class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1"
-                                                    id="submit_vacation_schedule">
+                                                       id="submit_vacation_schedule">
                                                         <i class='bx bx-group text-4 me-2'></i> Перенос графика
                                                         отпусков в табель учета</a>
                                                 </div>
@@ -191,17 +201,17 @@
                                                     <a href="{% url 'administration_app:property_list' %}?update=18"
                                                        class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1"
-                                                    id="submit_vacation_schedule">
+                                                       id="submit_vacation_schedule">
                                                         <i class='bx bx-group text-4 me-2'></i> Проверка доп документов
-                                                    договоров</a>
+                                                        договоров</a>
                                                 </div>
                                                 <div class="col-sm-12 col-md-6 col-lg-3 px-2 mt-3 mt-0">
+                                                    <!-- Кнопка с обновленным URL через JavaScript -->
                                                     <a href="{% url 'administration_app:property_list' %}?update=19"
-                                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1"
-                                                    id="submit_vacation_schedule">
-                                                        <i class='bx bx-group text-4 me-2'></i> Рассылка графика
-                                                        отпусков (admin)</a>
+       class="btn btn-outline-primary btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
+       id="submit_vacation_schedule_admin">
+        <i class='bx bx-group text-4 me-2'></i> Рассылка графика отпусков (admin)
+    </a>
                                                 </div>
                                             </div>
                                         </div>
@@ -263,6 +273,36 @@
 
 {% block custome_script %}
     <script>
+        document.getElementById('submit_vacation_schedule_admin').addEventListener('click', function (event) {
+            // Предотвращаем стандартное поведение ссылки
+            event.preventDefault();
+
+            // Получаем значение из select с id="userSelect"
+            const userSelect = document.getElementById('userSelect');
+            const selectedUserId = userSelect.value;
+
+            // Проверяем, выбран ли пользователь
+            if (!selectedUserId) {
+                alert('Пожалуйста, выберите пользователя');
+                return; // Прерываем выполнение, если пользователь не выбран
+            }
+
+            // Получаем текущий URL из атрибута href
+            let currentUrl = this.href;
+
+            // Добавляем параметр "user_id" к URL
+            if (currentUrl.includes('?')) {
+                currentUrl += `&user_id=${selectedUserId}`;
+            } else {
+                currentUrl += `?user_id=${selectedUserId}`;
+            }
+
+            // Переходим по обновленному URL
+            window.location.href = currentUrl;
+        });
+    </script>
+
+    <script>
         document.getElementById('update-timecontrol').addEventListener('click', function (event) {
             event.preventDefault(); // Предотвращаем переход по ссылке
 
@@ -277,7 +317,7 @@
             window.location.href = newUrl;
         });
     </script>
-        <script>
+    <script>
         document.getElementById('submit_vacation_schedule').addEventListener('click', function (event) {
             // Предотвращаем стандартное поведение ссылки
             event.preventDefault();
