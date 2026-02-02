@@ -1757,7 +1757,7 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
             expense_cols = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense']
-            if year > 2025:
+            if int(year) > 2025:
                 df['prepaid_expense_summ'] = df[expense_cols].sum(axis=1)
 
             # Создаем полное имя сотрудника
