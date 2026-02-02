@@ -1747,10 +1747,10 @@ class ExpenseReportView(TemplateView):
             df['document__period_for'] = pd.to_datetime(df['document__period_for'])
 
             # Создаем столбец с месяцем и годом
-            df['month_year'] = df['document__period_from'].dt.to_period('M')
+            df['Месяц'] = df['document__period_from'].dt.to_period('M')
 
             # Создаем полное имя сотрудника
-            df['employee_full_name'] = (
+            df['ФИО'] = (
                     df['document__person__last_name'] + ' ' +
                     df['document__person__first_name'] + ' ' +
                     df['document__person__surname']
@@ -1763,10 +1763,10 @@ class ExpenseReportView(TemplateView):
                 '2': 'Инженерный состав',
                 '3': 'Транспортный отдел'
             }
-            df['job_type_display'] = df['document__person__user_work_profile__job__type_of_job'].map(job_type_display)
+            df['Тип'] = df['document__person__user_work_profile__job__type_of_job'].map(job_type_display)
 
             # ==================== ОТЧЕТ 1: СВОДКА ПО МЕСЯЦАМ И ТИПАМ ДОЛЖНОСТЕЙ ====================
-            report_by_month_job = df.groupby(['month_year', 'job_type_display']).agg({
+            report_by_month_job = df.groupby(['Месяц', 'Тип']).agg({
                 'daily_allowance': 'sum',
                 'travel_expense': 'sum',
                 'accommodation_expense': 'sum',
@@ -1778,20 +1778,25 @@ class ExpenseReportView(TemplateView):
             report_by_month_job.columns = [
                 'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество записей'
             ]
+            # Список колонок для конвертации
+            numeric_columns = ['Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого']
 
+            # Конвертируем каждую колонку в числовой формат
+            for col in numeric_columns:
+                report_by_month_job[col] = pd.to_numeric(report_by_month_job[col], errors='coerce')
             report_by_month_job = report_by_month_job.reset_index()
-            report_by_month_job['month_year'] = report_by_month_job['month_year'].astype(str)
-
+            report_by_month_job['Месяц'] = report_by_month_job['Месяц'].astype(str)
+            print(report_by_month_job.info())
             # Добавляем итоговую строку
             total_row = report_by_month_job.select_dtypes(include=['number']).sum()
-            total_row['month_year'] = 'ИТОГО'
-            total_row['job_type_display'] = ''
+            total_row['Месяц'] = 'ИТОГО'
+            total_row['Тип'] = ''
             report_by_month_job = pd.concat([report_by_month_job, pd.DataFrame([total_row])], ignore_index=True)
 
             # ==================== ОТЧЕТ 2: ДЕТАЛИЗАЦИЯ ПО СОТРУДНИКАМ ====================
             report_by_employee = df.groupby([
-                'job_type_display',
-                'employee_full_name',
+                'Тип',
+                'ФИО',
                 'document__person__service_number',
                 'document__person__user_work_profile__job__name'
             ]).agg({
@@ -1808,20 +1813,20 @@ class ExpenseReportView(TemplateView):
             ]
 
             report_by_employee = report_by_employee.reset_index()
-
+            report_by_employee.columns = ['Тип', 'ФИО', 'Табельный номер','Должность', 'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество поездок']
             # Сортируем по типу должности и итоговой сумме
             report_by_employee = report_by_employee.sort_values(
-                ['job_type_display', 'Итого'],
+                ['Тип', 'Итого'],
                 ascending=[True, False]
             )
 
             # ==================== ОТЧЕТ 3: ПОДРОБНАЯ ТАБЛИЦА ВСЕХ ЗАПИСЕЙ ====================
             detailed_report = df[[
-                'month_year',
-                'employee_full_name',
+                'Месяц',
+                'ФИО',
                 'document__person__service_number',
                 'document__person__user_work_profile__job__name',
-                'job_type_display',
+                'Тип',
                 'document__period_from',
                 'document__period_for',
                 'daily_allowance',
@@ -1894,8 +1899,8 @@ class ExpenseReportView(TemplateView):
 
         if not df.empty:
             # Список сотрудников для фильтра
-            employees = df[['document__person__id', 'employee_full_name']].drop_duplicates()
-            employees = employees.sort_values('employee_full_name')
+            employees = df[['document__person__id', 'ФИО']].drop_duplicates()
+            employees = employees.sort_values('ФИО')
             context['employees'] = employees.to_dict('records')
 
         return context
