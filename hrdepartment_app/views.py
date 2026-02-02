@@ -1786,7 +1786,7 @@ class ExpenseReportView(TemplateView):
                 report_by_month_job[col] = pd.to_numeric(report_by_month_job[col], errors='coerce')
             report_by_month_job = report_by_month_job.reset_index()
             report_by_month_job['Месяц'] = report_by_month_job['Месяц'].astype(str)
-            print(report_by_month_job.info())
+
             # Добавляем итоговую строку
             total_row = report_by_month_job.select_dtypes(include=['number']).sum()
             total_row['Месяц'] = 'ИТОГО'
@@ -1864,6 +1864,7 @@ class ExpenseReportView(TemplateView):
                 float_format=lambda x: f'{x:,.2f}' if isinstance(x, (int, float)) else x
             )
 
+            print(df.tail(5))
             # Статистика
             context['total_records'] = len(df)
             context['total_amount'] = df['prepaid_expense_summ'].sum()
@@ -1875,8 +1876,6 @@ class ExpenseReportView(TemplateView):
                 document__period_from__isnull=False
             ).values_list('document__period_from__year', flat=True).distinct())
         context['years'] = sorted(years_unique, reverse=True)
-
-        print(context['years'])
 
         context['months'] = [
             (1, 'Январь'), (2, 'Февраль'), (3, 'Март'), (4, 'Апрель'),

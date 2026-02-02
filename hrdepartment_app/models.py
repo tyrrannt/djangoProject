@@ -945,7 +945,8 @@ class ApprovalOficialMemoProcessManager(models.Manager):
             'document__person__user_work_profile__job'
         ).filter(
             document__isnull=False,
-            document__person__isnull=False
+            document__person__isnull=False,
+            accepted_accounting=True
         ).values(
             'id',
             'document__period_from',
