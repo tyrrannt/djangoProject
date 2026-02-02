@@ -1793,27 +1793,11 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
 
             # Добавляем итоговую строку
             columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие']
-            columns_to_sum_final = ['Итого', 'Количество записей']
-
-            # Суммируем по нужным колонкам
             total_row = report_by_month_job[columns_to_sum].sum()
-            total_row_final = report_by_month_job[columns_to_sum_final].sum()
 
-            # Создаем итоговую строку как словарь
-            total_row_dict = {
-                'Месяц': 'ИТОГО',  # или 'Месяц', в зависимости от названия колонки
-                'Тип': '',  # или 'Тип', в зависимости от названия колонки
-            }
-
-            # Добавляем все суммы
-            total_row_dict.update(total_row.to_dict())
-            total_row_dict.update(total_row_final.to_dict())
-
-            # Создаем DataFrame с итоговой строкой
-            total_row_df = pd.DataFrame([total_row_dict])
-
-            # Объединяем с основным DataFrame
-            report_by_month_job = pd.concat([report_by_month_job, total_row_df], ignore_index=True)
+            total_row['Месяц'] = 'ИТОГО'
+            total_row['Тип'] = ''
+            report_by_month_job = pd.concat([report_by_month_job, pd.DataFrame([total_row])], ignore_index=True)
 
             # ==================== ОТЧЕТ 2: ДЕТАЛИЗАЦИЯ ПО СОТРУДНИКАМ ====================
             report_by_employee = df.groupby([
