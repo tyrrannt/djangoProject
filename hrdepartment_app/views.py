@@ -1791,11 +1791,37 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             report_by_month_job = report_by_month_job.reset_index()
             report_by_month_job['Месяц'] = report_by_month_job['Месяц'].astype(str)
 
+            # # Добавляем итоговую строку
+            # columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие']
+            # total_row = report_by_month_job[columns_to_sum].sum()
+            # columns_to_sum_final = ['Итого', 'Количество записей']
+            # total_row_final = report_by_month_job[columns_to_sum_final].sum()
+            # total_row_df = pd.DataFrame([{
+            #     **total_row.to_dict(),
+            #     **total_row_final.to_dict()
+            # }])
+            # total_row['Месяц'] = 'ИТОГО'
+            # total_row['Тип'] = ''
+            # report_by_month_job = pd.concat([report_by_month_job, pd.DataFrame([total_row_df])], ignore_index=True)
+
             # Добавляем итоговую строку
-            total_row = report_by_month_job.select_dtypes(include=['number']).sum()
-            total_row['Месяц'] = 'ИТОГО'
-            total_row['Тип'] = ''
-            report_by_month_job = pd.concat([report_by_month_job, pd.DataFrame([total_row])], ignore_index=True)
+            columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество записей']
+
+            # Суммируем числовые колонки
+            total_values = report_by_month_job[columns_to_sum].sum()
+
+            # Создаем итоговую строку
+            total_row = {
+                'Месяц': 'ИТОГО',
+                'Тип': '',
+                **total_values.to_dict()
+            }
+
+            # Добавляем итоговую строку
+            report_by_month_job = pd.concat([
+                report_by_month_job,
+                pd.DataFrame([total_row])
+            ], ignore_index=True)
 
             # ==================== ОТЧЕТ 2: ДЕТАЛИЗАЦИЯ ПО СОТРУДНИКАМ ====================
             report_by_employee = df.groupby([
@@ -1868,7 +1894,6 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 float_format=lambda x: f'{x:,.2f}' if isinstance(x, (int, float)) else x
             )
 
-            print(df.tail(5))
             # Статистика
             context['total_records'] = len(df)
             context['total_amount'] = df['prepaid_expense_summ'].sum()
