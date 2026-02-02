@@ -1756,6 +1756,9 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
+            expense_cols = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense']
+            df['prepaid_expense_summ'] = df[expense_cols].sum(axis=1)
+
             # Создаем полное имя сотрудника
             df['ФИО'] = (
                     df['document__person__last_name'] + ' ' +
@@ -1784,7 +1787,6 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 # 'id': 'count'
             }).round(2)
 
-            expense_cols = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense']
             report_by_month_job['total_expense'] = report_by_month_job[expense_cols].sum(axis=1)
             report_by_month_job = report_by_month_job.round(2)
 
