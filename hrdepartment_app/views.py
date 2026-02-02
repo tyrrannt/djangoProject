@@ -1705,7 +1705,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
         return context
 
 
-class ExpenseReportView(TemplateView):
+class ExpenseReportView(LoginRequiredMixin, TemplateView):
     template_name = 'hrdepartment_app/expense_report.html'
 
     def get_context_data(self, **kwargs):
@@ -1749,6 +1749,13 @@ class ExpenseReportView(TemplateView):
             # Создаем столбец с месяцем и годом
             df['Месяц'] = df['document__period_from'].dt.to_period('M')
 
+            # Список колонок для конвертации
+            numeric_columns = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense', 'prepaid_expense_summ']
+
+            # Конвертируем каждую колонку в числовой формат
+            for col in numeric_columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
             # Создаем полное имя сотрудника
             df['ФИО'] = (
                     df['document__person__last_name'] + ' ' +
@@ -1765,6 +1772,8 @@ class ExpenseReportView(TemplateView):
             }
             df['Тип'] = df['document__person__user_work_profile__job__type_of_job'].map(job_type_display)
 
+
+
             # ==================== ОТЧЕТ 1: СВОДКА ПО МЕСЯЦАМ И ТИПАМ ДОЛЖНОСТЕЙ ====================
             report_by_month_job = df.groupby(['Месяц', 'Тип']).agg({
                 'daily_allowance': 'sum',
@@ -1778,12 +1787,7 @@ class ExpenseReportView(TemplateView):
             report_by_month_job.columns = [
                 'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество записей'
             ]
-            # Список колонок для конвертации
-            numeric_columns = ['Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого']
 
-            # Конвертируем каждую колонку в числовой формат
-            for col in numeric_columns:
-                report_by_month_job[col] = pd.to_numeric(report_by_month_job[col], errors='coerce')
             report_by_month_job = report_by_month_job.reset_index()
             report_by_month_job['Месяц'] = report_by_month_job['Месяц'].astype(str)
 
