@@ -1791,37 +1791,29 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             report_by_month_job = report_by_month_job.reset_index()
             report_by_month_job['Месяц'] = report_by_month_job['Месяц'].astype(str)
 
-            # # Добавляем итоговую строку
-            # columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие']
-            # total_row = report_by_month_job[columns_to_sum].sum()
-            # columns_to_sum_final = ['Итого', 'Количество записей']
-            # total_row_final = report_by_month_job[columns_to_sum_final].sum()
-            # total_row_df = pd.DataFrame([{
-            #     **total_row.to_dict(),
-            #     **total_row_final.to_dict()
-            # }])
-            # total_row['Месяц'] = 'ИТОГО'
-            # total_row['Тип'] = ''
-            # report_by_month_job = pd.concat([report_by_month_job, pd.DataFrame([total_row_df])], ignore_index=True)
-
             # Добавляем итоговую строку
-            columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество записей']
+            columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие']
+            columns_to_sum_final = ['Итого', 'Количество записей']
 
-            # Суммируем числовые колонки
-            total_values = report_by_month_job[columns_to_sum].sum()
+            # Суммируем по нужным колонкам
+            total_row = report_by_month_job[columns_to_sum].sum()
+            total_row_final = report_by_month_job[columns_to_sum_final].sum()
 
-            # Создаем итоговую строку
-            total_row = {
-                'Месяц': 'ИТОГО',
-                'Тип': '',
-                **total_values.to_dict()
+            # Создаем итоговую строку как словарь
+            total_row_dict = {
+                'Месяц': 'ИТОГО',  # или 'Месяц', в зависимости от названия колонки
+                'Тип': '',  # или 'Тип', в зависимости от названия колонки
             }
 
-            # Добавляем итоговую строку
-            report_by_month_job = pd.concat([
-                report_by_month_job,
-                pd.DataFrame([total_row])
-            ], ignore_index=True)
+            # Добавляем все суммы
+            total_row_dict.update(total_row.to_dict())
+            total_row_dict.update(total_row_final.to_dict())
+
+            # Создаем DataFrame с итоговой строкой
+            total_row_df = pd.DataFrame([total_row_dict])
+
+            # Объединяем с основным DataFrame
+            report_by_month_job = pd.concat([report_by_month_job, total_row_df], ignore_index=True)
 
             # ==================== ОТЧЕТ 2: ДЕТАЛИЗАЦИЯ ПО СОТРУДНИКАМ ====================
             report_by_employee = df.groupby([
