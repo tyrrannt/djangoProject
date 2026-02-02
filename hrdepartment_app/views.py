@@ -1780,19 +1780,23 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 'travel_expense': 'sum',
                 'accommodation_expense': 'sum',
                 'other_expense': 'sum',
-                'prepaid_expense_summ': 'sum',
-                'id': 'count'
+                # 'prepaid_expense_summ': 'sum',
+                # 'id': 'count'
             }).round(2)
 
+            expense_cols = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense']
+            report_by_month_job['total_expense'] = report_by_month_job[expense_cols].sum(axis=1)
+            report_by_month_job = report_by_month_job.round(2)
+
             report_by_month_job.columns = [
-                'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество записей'
+                'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого'
             ]
 
             report_by_month_job = report_by_month_job.reset_index()
             report_by_month_job['Месяц'] = report_by_month_job['Месяц'].astype(str)
 
             # Добавляем итоговую строку
-            columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие']
+            columns_to_sum = ['Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого']
             total_row = report_by_month_job[columns_to_sum].sum()
 
             total_row['Месяц'] = 'ИТОГО'
