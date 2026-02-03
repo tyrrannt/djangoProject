@@ -3076,7 +3076,13 @@ class ReportCardDelete(LoginRequiredMixin, DeleteView):
 
 class ReportCardDetailYearXLS(View):
     def get(self, request, *args, **kwargs):
-        df = get_year_report(html_mode=False)
+        year = self.request.GET.get("report_year", None)
+        if year:
+            report_year = int(year)
+        else:
+            report_year = datetime.datetime.now().year
+
+        df = get_year_report(report_year=report_year, html_mode=False)
         # Создание Excel-файла
         response = HttpResponse(content_type='application/ms-excel')
         response['Content-Disposition'] = 'attachment; filename="dataframe.xlsx"'
@@ -3092,9 +3098,29 @@ class ReportCardDetailYear(LoginRequiredMixin, ListView):
     model = ReportCard
     template_name = "hrdepartment_app/reportcard_detail_year.html"
 
+    def post(self, request):  # ***** this method required! ******
+        self.object_list = self.get_queryset()
+        return HttpResponseRedirect(reverse("hrdepartment_app:reportcard_detail_year"))
+
+    def get_queryset(self):
+        queryset = ReportCard.objects.all()
+        return queryset
+
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["table"] = get_year_report()
+        year = self.request.GET.get("report_year", None)
+        if year:
+            report_year = int(year)
+        else:
+            report_year = datetime.datetime.now().year
+        # Получить уникальные годы как список чисел
+        years = sorted(
+            set(ReportCard.objects.values_list('report_card_day__year', flat=True)),
+            reverse=True  # от новых к старым
+        )
+        context["years"] = years
+        context["selected_year"] = str(report_year)
+        context["table"] = get_year_report(report_year=report_year)
         return context
 
 

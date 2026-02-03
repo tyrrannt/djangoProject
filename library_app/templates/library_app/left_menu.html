@@ -185,6 +185,18 @@
                                             Отчет по сотрудникам
                                         </a>
                                     </li>
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'hrdepartment_app:management_dashboard' %}">
+                                            Отчеты для руководства
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:expense_report' %}">
+                                            Отчет по <br>
+                                            Служебным поездкам
+                                        </a>
+                                    </li>
 
                                 </ul>
                             </li>
@@ -219,36 +231,6 @@
                                                 Неактивные пользователи
                                             </a>
                                         </li>
-                                    </ul>
-                                </li>
-                            {% endif %}
-                            {% if user.is_staff %}
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <span>Служебные поездки</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:management_dashboard' %}">
-                                                Отчеты для руководства
-                                            </a>
-                                        </li>
-                                        {#                                        <li>#}
-                                        {#                                            <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">#}
-                                        {#                                                Анализ пропусков работы#}
-                                        {#                                            </a>#}
-                                        {#                                        </li>#}
-                                        {#                                        <li>#}
-                                        {#                                            <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">#}
-                                        {#                                                Влияние дня недели на отгулы#}
-                                        {#                                            </a>#}
-                                        {#                                        </li>#}
-                                        {#                                        <li>#}
-                                        {#                                            <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">#}
-                                        {#                                                Распределение типов времени#}
-                                        {#                                            </a>#}
-                                        {#                                        </li>#}
                                     </ul>
                                 </li>
                             {% endif %}
@@ -434,12 +416,7 @@
                                             Служебным запискам
                                         </a>
                                     </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:expense_report' %}">
-                                            Отчет по <br>
-                                            Служебным поездкам
-                                        </a>
-                                    </li>
+
                                 </ul>
                             </li>
                         </ul>
