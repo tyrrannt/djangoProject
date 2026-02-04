@@ -590,10 +590,17 @@ def get_year_report(report_year=None, html_mode=True):
 
     if report_year<year:
         year = report_year
-        first_day_of_current_month = datetime.datetime(report_year, 12, 31)
+        first_day_of_current_month = datetime.datetime(report_year+1, 1, 1)
+        # Начало текущего года
+        start_of_year = datetime.datetime(report_year, 1, 1, 0, 0, 0)
+        current_date = first_day_of_current_month
     else:
         month = datetime.datetime.today().month
-        current_date = datetime.datetime.today()
+        # Текущая дата
+        current_date = datetime.datetime.now()
+
+        # Начало текущего года
+        start_of_year = datetime.datetime(current_date.year, 1, 1, 0, 0, 0)
 
         if datetime.datetime.today().month == 1:
             last_day = calendar.monthrange(year, month)[1]
@@ -668,11 +675,7 @@ def get_year_report(report_year=None, html_mode=True):
     # grouped["Time"] = (grouped["Time"] // 3600) + (((grouped["Time"] % 3600) // 60) / 100) # В часах
     grouped["Time"] = grouped["Time"] // 60  # В минутах
 
-    # Текущая дата
-    current_date = datetime.datetime.now()
 
-    # Начало текущего года
-    start_of_year = datetime.datetime(current_date.year, 1, 1, 0, 0, 0)
 
     # Список для хранения первых дней каждого месяца
     first_days_of_months = []
