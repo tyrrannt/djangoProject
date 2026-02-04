@@ -3076,12 +3076,12 @@ class ReportCardDelete(LoginRequiredMixin, DeleteView):
 
 class ReportCardDetailYearXLS(View):
     def get(self, request, *args, **kwargs):
-        year = self.request.GET.get("report_year", None)
+        year = kwargs.get('year')
         if year:
             report_year = int(year)
         else:
             report_year = datetime.datetime.now().year
-
+        print(year)
         df = get_year_report(report_year=report_year, html_mode=False)
         # Создание Excel-файла
         response = HttpResponse(content_type='application/ms-excel')
