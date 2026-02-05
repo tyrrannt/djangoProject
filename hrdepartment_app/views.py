@@ -5501,55 +5501,52 @@ def management_dashboard(request):
         selected_year = now.year
 
     # Базовый запрос с фильтрацией по году
-    queryset = OfficialMemo.objects.filter(period_from__year=selected_year)
+    queryset = ApprovalOficialMemoProcess.objects.filter(document__period_from__year=selected_year)
 
     # Если выбран месяц - фильтруем дополнительно
     if selected_month:
         try:
             selected_month = int(selected_month)
             first_day, last_day = get_first_and_last_day(selected_year, selected_month)
-            queryset = OfficialMemo.objects.filter(Q(period_from__gte=first_day) & Q(period_for__lte=last_day))
+            queryset = ApprovalOficialMemoProcess.objects.filter(Q(document__period_from__gte=first_day) & Q(document__period_for__lte=last_day))
         except (ValueError, TypeError):
             pass
 
     # Основные метрики (уже с учетом фильтрации по месяцу)
     total_trips = queryset.count()
     active_trips = queryset.filter(
-        Q(period_from__lte=now) & Q(period_for__gte=now)
+        Q(document__period_from__lte=now) & Q(document__period_for__gte=now)
     ).count()
-    total_expenses = queryset.aggregate(Sum('expenses_summ'))['expenses_summ__sum'] or 0
+    total_expenses = queryset.aggregate(Sum('prepaid_expense_summ'))['prepaid_expense_summ__sum'] or 0
 
     # Аналитика по типам (с учетом фильтрации по месяцу)
-    trip_types = queryset.values('type_trip').annotate(
+    trip_types = queryset.values('document__type_trip').annotate(
         count=Count('id'),
-        total_expenses=Sum('expenses_summ')
+        total_expenses=Sum('prepaid_expense_summ')
     )
-
+    print(queryset)
     # Статусы документов (с учетом фильтрации по месяцу)
     status_stats = {
-        'awaiting_approval': ApprovalOficialMemoProcess.objects.filter(
-            document__in=queryset,
+        'awaiting_approval': queryset.filter(
             submit_for_approval=True,
             document_not_agreed=False
         ).count(),
-        'approved': ApprovalOficialMemoProcess.objects.filter(
-            document__in=queryset,
+        'approved': queryset.filter(
             document_not_agreed=True
         ).count(),
-        'rejected': ApprovalOficialMemoProcess.objects.filter(
-            document__in=queryset,
+        'rejected': queryset.filter(
             cancellation=True
         ).count()
     }
 
     # Тренды по месяцам (для выбранного года)
-    monthly_trends = OfficialMemo.objects.filter(
-        period_from__year=selected_year
+    monthly_trends = ApprovalOficialMemoProcess.objects.filter(
+        document__period_from__year=selected_year
     ).annotate(
-        month=ExtractMonth('period_from')
+        month=ExtractMonth('document__period_from')
     ).values('month').annotate(
         count=Count('id'),
-        expenses=Sum('expenses_summ')
+        expenses=Sum('prepaid_expense_summ')
     ).order_by('month')
 
     # # Если выбран конкретный месяц - показываем данные только для него
