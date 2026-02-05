@@ -5514,10 +5514,12 @@ def management_dashboard(request):
 
     # Основные метрики (уже с учетом фильтрации по месяцу)
     total_trips = queryset.count()
+
     active_trips = queryset.filter(
         Q(document__period_from__lte=now) & Q(document__period_for__gte=now)
     ).count()
-    total_expenses = queryset.aggregate(Sum('prepaid_expense_summ'))['prepaid_expense_summ__sum'] or 0
+
+    total_expenses = queryset.aggregate(total=Sum('prepaid_expense_summ'))['total'] or 0
 
     # Аналитика по типам (с учетом фильтрации по месяцу)
     trip_types = queryset.values('document__type_trip').annotate(
