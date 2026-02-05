@@ -5508,7 +5508,7 @@ def management_dashboard(request):
         try:
             selected_month = int(selected_month)
             first_day, last_day = get_first_and_last_day(selected_year, selected_month)
-            queryset = ApprovalOficialMemoProcess.objects.filter(Q(document__period_from__gte=first_day) & Q(document__period_for__lte=last_day))
+            queryset = queryset.filter(Q(document__period_from__gte=first_day) & Q(document__period_for__lte=last_day))
         except (ValueError, TypeError):
             pass
 
@@ -5524,7 +5524,6 @@ def management_dashboard(request):
         count=Count('id'),
         total_expenses=Sum('prepaid_expense_summ')
     )
-    print(queryset)
     # Статусы документов (с учетом фильтрации по месяцу)
     status_stats = {
         'awaiting_approval': queryset.filter(
