@@ -5539,7 +5539,7 @@ def management_dashboard(request):
     }
 
     # Тренды по месяцам (для выбранного года)
-    monthly_trends = ApprovalOficialMemoProcess.objects.filter(
+    monthly_trends = queryset.filter(
         document__period_from__year=selected_year
     ).annotate(
         month=ExtractMonth('document__period_from')
