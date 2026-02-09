@@ -1,5 +1,5 @@
 import datetime
-
+from collections import defaultdict
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.core.mail import EmailMultiAlternatives
@@ -18,6 +18,33 @@ from hrdepartment_app.models import (
     check_day,
 )
 
+
+def get_mpd_statistics(queryset):
+    """
+    Формирует словарь: {название_МПД: количество_сотрудников}
+    Сотрудник учитывается в каждом МПД, указанном в его документе.
+    """
+    # Оптимизация: 1 запрос на документы + 1 запрос на все МПД
+    optimized_qs = queryset.select_related('document').prefetch_related(
+        'document__place_production_activity'
+    )
+
+    stats = defaultdict(int)
+
+    for process in optimized_qs:
+        if not process.document:
+            continue
+        for mpd in process.document.place_production_activity.all():
+            # Берём название: сначала поле 'name', если нет — строковое представление
+            mpd_name = getattr(mpd, 'name', None) or str(mpd)
+            stats[mpd_name] += 1
+
+    return dict(stats)
+
+
+# Пример использования:
+# mpd_stats = get_mpd_statistics(queryset)
+# Результат: {'Москва': 5, 'Санкт-Петербург': 3, 'Казань': 2}
 
 def get_medical_documents():
     """

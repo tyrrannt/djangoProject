@@ -80,7 +80,7 @@ from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
     get_month,
-    get_working_hours, get_notify, get_first_and_last_day,
+    get_working_hours, get_notify, get_first_and_last_day, get_mpd_statistics,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -1750,7 +1750,8 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             df['Месяц'] = df['document__period_from'].dt.to_period('M')
 
             # Список колонок для конвертации
-            numeric_columns = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense', 'prepaid_expense_summ']
+            numeric_columns = ['daily_allowance', 'travel_expense', 'accommodation_expense', 'other_expense',
+                               'prepaid_expense_summ']
 
             # Конвертируем каждую колонку в числовой формат
             for col in numeric_columns:
@@ -1775,8 +1776,6 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 '3': 'Транспортный отдел'
             }
             df['Тип'] = df['document__person__user_work_profile__job__type_of_job'].map(job_type_display)
-
-
 
             # ==================== ОТЧЕТ 1: СВОДКА ПО МЕСЯЦАМ И ТИПАМ ДОЛЖНОСТЕЙ ====================
             report_by_month_job = df.groupby(['Месяц', 'Тип']).agg({
@@ -1826,7 +1825,8 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             ]
 
             report_by_employee = report_by_employee.reset_index()
-            report_by_employee.columns = ['Тип', 'ФИО', 'Табельный номер','Должность', 'Суточные', 'Проезд', 'Проживание', 'Прочие', 'Итого', 'Количество поездок']
+            report_by_employee.columns = ['Тип', 'ФИО', 'Табельный номер', 'Должность', 'Суточные', 'Проезд',
+                                          'Проживание', 'Прочие', 'Итого', 'Количество поездок']
             # Сортируем по типу должности и итоговой сумме
             report_by_employee = report_by_employee.sort_values(
                 ['Тип', 'Итого'],
@@ -1885,8 +1885,8 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
         # Фильтры для формы
 
         years_unique = set(ApprovalOficialMemoProcess.objects.filter(
-                document__period_from__isnull=False
-            ).values_list('document__period_from__year', flat=True).distinct())
+            document__period_from__isnull=False
+        ).values_list('document__period_from__year', flat=True).distinct())
         context['years'] = sorted(years_unique, reverse=True)
 
         context['months'] = [
@@ -5486,6 +5486,7 @@ def export_time_distribution(request):
 #     }
 #     return render(request, 'hrdepartment_app/management_dashboard.html', context)
 
+
 @login_required
 def management_dashboard(request):
     # Получаем текущую дату
@@ -5539,6 +5540,11 @@ def management_dashboard(request):
             cancellation=True
         ).count()
     }
+
+    mpd_stats = get_mpd_statistics(queryset)
+
+    # Сортируем по убыванию для лучшей читаемости
+    mpd_stats = dict(sorted(mpd_stats.items(), key=lambda x: x[1], reverse=True))
 
     # Тренды по месяцам (для выбранного года)
     monthly_trends = queryset.filter(
@@ -5606,6 +5612,7 @@ def management_dashboard(request):
         'selected_month': selected_month,
         'selected_month_name': selected_month_name,
         'months': months,
+        'mpd_stats': mpd_stats,
     }
     return render(request, 'hrdepartment_app/management_dashboard.html', context)
 

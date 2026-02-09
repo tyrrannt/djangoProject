@@ -92,6 +92,12 @@
                         <canvas id="statusChart"></canvas>
                     </div>
                 </div>
+                <div class="chart-card">
+                    <h3>Распределение по МПД</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="mpdChart"></canvas>
+                    </div>
+                </div>
             </div>
 
             <div class="chart-card full-width">
@@ -100,6 +106,7 @@
                     <canvas id="monthlyTrendsChart"></canvas>
                 </div>
             </div>
+
         </div>
 
         <script>
@@ -169,6 +176,62 @@
                 }
             });
 
+            // График МПД
+            createChart('mpdChart', {
+                type: 'bar',
+                data: {
+                    labels: [
+                        {% for mpd_name, count in mpd_stats.items %}
+                            '{{ mpd_name }}',
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        label: 'Количество сотрудников',
+                        data: [
+                            {% for mpd_name, count in mpd_stats.items %}
+                                {{ count }},
+                            {% endfor %}
+                        ],
+                        backgroundColor: '#4BC0C0',
+                        borderColor: '#36A2EB',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                precision: 0
+                            },
+                            title: {
+                                display: true,
+                                text: 'Количество сотрудников'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Место производственной деятельности'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `${context.label}: ${context.raw} сотрудников`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
             // График трендов
             createChart('monthlyTrendsChart', {
                 type: 'bar',
@@ -232,6 +295,8 @@
             document.getElementById('month').addEventListener('change', function () {
                 this.form.submit();
             });
+
+
         </script>
 
         <style>
