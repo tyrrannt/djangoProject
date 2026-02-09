@@ -5541,7 +5541,7 @@ def management_dashboard(request):
         ).count()
     }
 
-    mpd_stats = get_mpd_statistics(queryset)
+    mpd_stats = get_mpd_statistics(queryset.filter(accommodation="1"))
 
     # Сортируем по убыванию для лучшей читаемости
     mpd_stats = dict(sorted(mpd_stats.items(), key=lambda x: x[1], reverse=True))
