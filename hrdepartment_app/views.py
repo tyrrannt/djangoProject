@@ -32,6 +32,7 @@ from django.views.generic import (
     DetailView,
     DeleteView, View,
 )
+from openpyxl import Workbook
 
 from administration_app.models import PortalProperty, Notification
 from administration_app.utils import (
@@ -1876,7 +1877,7 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
                 index=False,
                 float_format=lambda x: f'{x:,.2f}' if isinstance(x, (int, float)) else x
             )
-
+            detailed_report.to_csv('data.csv')
             # Статистика
             context['total_records'] = len(df)
             context['total_amount'] = df['prepaid_expense_summ'].sum()
@@ -1913,6 +1914,131 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
             employees = df[['document__person__id', 'ФИО']].drop_duplicates()
             employees = employees.sort_values('ФИО')
             context['employees'] = employees.to_dict('records')
+
+
+        # ====================================================================
+        #import pandas as pd
+        #import numpy as np
+        #from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, Border, Side
+
+        # Исходный DataFrame
+        df = detailed_report
+
+        # Преобразуем Period в строку
+        df['Месяц'] = df['Месяц'].astype(str)
+
+        # Создаем Excel файл
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Отчет"
+
+        # Настройка стилей
+        bold_font = Font(bold=True)
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # Заголовки
+        ws['A1'] = 'Месяц/год'
+        ws['B1'] = 'Подразделение'
+        ws['C1'] = 'Сумма'
+        ws['A1'].font = bold_font
+        ws['B1'].font = bold_font
+        ws['C1'].font = bold_font
+
+        row = 2
+        total_all = 0
+
+        # Определяем подразделения
+        departments = {
+            'Инженерный состав': 'Технический состав',
+            'Общий состав': 'Общий состав'
+        }
+
+        # Считаем сколько строк нужно для одного месяца
+        rows_per_month = len(departments) * 6  # 4 строки расходов + Итого + пустая
+
+        # Группируем по месяцам
+        for month in sorted(df['Месяц'].unique()):
+            month_data = df[df['Месяц'] == month]
+
+            # СНАЧАЛА объединяем ячейку месяца
+            start_row = row
+            end_row = row + rows_per_month - 1
+            ws.merge_cells(f'A{start_row}:A{end_row}')
+
+            # Записываем месяц ТОЛЬКО в первую ячейку объединённого диапазона
+            ws[f'A{start_row}'] = month
+            ws[f'A{start_row}'].font = Font(bold=True)
+
+            month_total = 0
+
+            for dept_key, dept_name in departments.items():
+                dept_rows = month_data[month_data['Тип должности'] == dept_key]
+
+                # Название подразделения
+                ws[f'B{row}'] = dept_name
+                ws[f'B{row}'].font = Font(bold=True)
+                row += 1
+
+                if not dept_rows.empty:
+                    travel = dept_rows['Проезд'].sum()
+                    daily = dept_rows['Суточные'].sum()
+                    accommodation = dept_rows['Проживание'].sum()
+                    other = dept_rows['Прочие'].sum()
+                    subtotal = dept_rows['Итого'].sum()
+                else:
+                    travel = daily = accommodation = other = subtotal = 0
+
+                # Строки с расходами
+                expenses = [
+                    ('Проезд', travel),
+                    ('Суточные', daily),
+                    ('Проживание', accommodation),
+                    ('Прочее', other)
+                ]
+
+                for exp_name, exp_value in expenses:
+                    ws[f'B{row}'] = exp_name
+                    ws[f'B{row}'].alignment = Alignment(horizontal='right')
+                    ws[f'C{row}'] = exp_value if exp_value != 0 else '-'
+                    row += 1
+
+                # Итого по подразделению
+                ws[f'B{row}'] = 'Итого'
+                ws[f'B{row}'].font = Font(bold=True)
+                ws[f'C{row}'] = subtotal if subtotal != 0 else '-'
+                ws[f'C{row}'].font = Font(bold=True)
+
+                month_total += subtotal
+                row += 1
+
+            total_all += month_total
+
+        # ВСЕГО (после всех месяцев)
+        ws[f'A{row}'] = 'ВСЕГО'
+        ws[f'A{row}'].font = Font(bold=True)
+        ws[f'C{row}'] = total_all
+        ws[f'C{row}'].font = Font(bold=True, size=12)
+
+        # Применяем границы ко всем заполненным ячейкам
+        for cell in ws['A1':f'C{row}']:
+            for c in cell:
+                c.border = thin_border
+
+        # Автоширина колонок
+        ws.column_dimensions['A'].width = 15
+        ws.column_dimensions['B'].width = 35
+        ws.column_dimensions['C'].width = 15
+
+        # Сохраняем
+        wb.save('отчет_по_подразделениям.xlsx')
+        print("Файл успешно создан!")
+        # ====================================================================
 
         return context
 

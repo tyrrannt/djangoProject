@@ -18,7 +18,7 @@
                     <form method="get" class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label">Год</label>
-                            <select name="year" class="form-select">
+                            <select name="year" class="form-select"  id="report-year-select">
                                 {% for year in years %}
                                     <option value="{{ year }}"
                                             {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
@@ -70,8 +70,8 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-funnel"></i> Применить фильтры
                             </button>
-                            <a href="{% url 'hrdepartment_app:expense_report' %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-clockwise"></i> Сбросить
+                            <a id="export-excel-btn" class="btn btn-secondary buttons-excel buttons-html5" href="{% url 'hrdepartment_app:reportcard_detail_year_xls' year=years.0 %}">
+                                <span>Excel</span>
                             </a>
                         </div>
                     </form>
@@ -174,5 +174,18 @@
                 // Можно добавить сортировку, поиск и т.д.
             });
         </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const select = document.getElementById('report-year-select');
+            const btn = document.getElementById('export-excel-btn');
+            const baseHref = btn.href;
+
+            select.addEventListener('change', function () {
+                // Заменяем год в URL
+                const newHref = baseHref.replace(/\/\d+\//, '/' + this.value + '/');
+                btn.href = newHref;
+            });
+        });
+    </script>
     </section>
 {% endblock %}
