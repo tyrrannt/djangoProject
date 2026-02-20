@@ -1,8 +1,10 @@
-<!-- templates/reports/expense_report.html -->
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
-{% block title %}Отчет по затратам на командировки{% endblock %}
+{% block title %}
+    <title>{{ title }}</title>
+{% endblock %}
 
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
@@ -18,7 +20,7 @@
                     <form method="get" class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label">Год</label>
-                            <select name="year" class="form-select"  id="report-year-select">
+                            <select name="year" class="form-select" id="report-year-select">
                                 {% for year in years %}
                                     <option value="{{ year }}"
                                             {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
@@ -71,10 +73,14 @@
                                 <i class="bi bi-funnel"></i> Применить фильтры
                             </button>
                             <!-- КНОПКА ЭКСПОРТА -->
-    <a href="{% url 'hrdepartment_app:expense_report_export' %}?year={{ selected_year }}&month={{ selected_month }}&job_type={{ selected_job_type }}&employee_id={{ selected_employee }}"
-       class="btn btn-success">
-        <i class="fas fa-file-excel"></i> Экспорт в Excel
-    </a>
+                            {#                            <a href="{% url 'hrdepartment_app:expense_report_export' %}?year={{ selected_year }}&month={{ selected_month }}&job_type={{ selected_job_type }}&employee_id={{ selected_employee }}"#}
+                            {#                               class="btn btn-success">#}
+                            {#                                <i class="fas fa-file-excel"></i> Экспорт в Excel#}
+                            {#                            </a>#}
+                            <!-- Кнопка с JavaScript -->
+                            <button onclick="exportToExcel()" class="btn btn-success">
+                                <i class="fas fa-file-excel"></i> Экспорт в Excel
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -171,23 +177,42 @@
         </style>
 
         <script>
+            function exportToExcel() {
+                const params = new URLSearchParams();
+
+                // Добавляем только непустые параметры
+                const year = document.querySelector('select[name="year"]')?.value;
+                const month = document.querySelector('select[name="month"]')?.value;
+                const job_type = document.querySelector('select[name="job_type"]')?.value;
+                const employee_id = document.querySelector('select[name="employee_id"]')?.value;
+
+                if (year) params.append('year', year);
+                if (month) params.append('month', month);
+                if (job_type) params.append('job_type', job_type);
+                if (employee_id) params.append('employee_id', employee_id);
+
+                const exportUrl = `{% url 'hrdepartment_app:expense_report_export' %}?${params.toString()}`;
+                window.open(exportUrl, '_blank');
+            }
+        </script>
+        <script>
             // Добавляем функциональность для таблиц
             document.addEventListener('DOMContentLoaded', function () {
                 // Можно добавить сортировку, поиск и т.д.
             });
         </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const select = document.getElementById('report-year-select');
-            const btn = document.getElementById('export-excel-btn');
-            const baseHref = btn.href;
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const select = document.getElementById('report-year-select');
+                const btn = document.getElementById('export-excel-btn');
+                const baseHref = btn.href;
 
-            select.addEventListener('change', function () {
-                // Заменяем год в URL
-                const newHref = baseHref.replace(/\/\d+\//, '/' + this.value + '/');
-                btn.href = newHref;
+                select.addEventListener('change', function () {
+                    // Заменяем год в URL
+                    const newHref = baseHref.replace(/\/\d+\//, '/' + this.value + '/');
+                    btn.href = newHref;
+                });
             });
-        });
-    </script>
+        </script>
     </section>
 {% endblock %}
