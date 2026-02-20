@@ -70,9 +70,11 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-funnel"></i> Применить фильтры
                             </button>
-                            <a id="export-excel-btn" class="btn btn-secondary buttons-excel buttons-html5" href="{% url 'hrdepartment_app:reportcard_detail_year_xls' year=years.0 %}">
-                                <span>Excel</span>
-                            </a>
+                            <!-- КНОПКА ЭКСПОРТА -->
+    <a href="{% url 'hrdepartment_app:expense_report_export' %}?year={{ selected_year }}&month={{ selected_month }}&job_type={{ selected_job_type }}&employee_id={{ selected_employee }}"
+       class="btn btn-success">
+        <i class="fas fa-file-excel"></i> Экспорт в Excel
+    </a>
                         </div>
                     </form>
                 </div>

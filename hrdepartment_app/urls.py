@@ -26,7 +26,7 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     BusinessProcessRoutesUpdate, LaborProtectionList, LaborProtectionAdd, LaborProtectionDetail, LaborProtectionDelete, \
     LaborProtectionUpdate, LaborProtectionInstructionsDelete, LaborProtectionInstructionsUpdate, \
     LaborProtectionInstructionsDetail, LaborProtectionInstructionsAdd, LaborProtectionInstructionsList, \
-    ExpenseReportView
+    ExpenseReportView, ExportExpenseReportView
 
 app_name = 'hrdepartment_app'
 
@@ -52,6 +52,7 @@ urlpatterns = [
     path('bpmemo/month-report/', ApprovalOficialMemoProcessReportList.as_view(), name='bpmemo_month_report'),
     path('bpmemo/<int:pk>/cancel/', ApprovalOficialMemoProcessCancel.as_view(), name='bpmemo_cancel'),
     path('bpmemo/expense/', ExpenseReportView.as_view(), name='expense_report'),
+    path('bpmemo/expense/export/', ExportExpenseReportView.as_view(), name='expense_report_export'),
     path('bptrip/', BusinessProcessDirectionList.as_view(), name='bptrip_list'),
     path('bptrip/add/', BusinessProcessDirectionAdd.as_view(), name='bptrip_add'),
     path('bptrip/<int:pk>/update/', BusinessProcessDirectionUpdate.as_view(), name='bptrip_update'),
