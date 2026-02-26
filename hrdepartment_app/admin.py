@@ -1,5 +1,8 @@
-from django.contrib import admin
+import datetime
 
+from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
+from django.utils.translation import gettext_lazy as _
 from administration_app.utils import format_name_initials
 from customers_app.mixin import ActiveUsersFilterMixin
 from customers_app.models import Groups
@@ -25,6 +28,60 @@ admin.site.register(Instructions)
 admin.site.register(LaborProtectionInstructions)
 admin.site.register(DocumentAcknowledgment)
 admin.site.register(DataBaseUserEvent)
+
+class DateRangeFilter(SimpleListFilter):
+    """Базовый фильтр по диапазону дат"""
+    title = _('Период')
+    parameter_name = 'date_range'
+    date_field = None  # переопределяется в наследниках
+
+    def lookups(self, request, model_admin):
+        return (
+            ('today', _('Сегодня')),
+            ('week', _('За неделю')),
+            ('month', _('За месяц')),
+            ('quarter', _('За квартал')),
+            ('year', _('За год')),
+            ('custom', _('Произвольный период')),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'today':
+            return queryset.filter(**{f'{self.date_field}__date': datetime.date.today()})
+        elif self.value() == 'week':
+            week_ago = datetime.date.today() - datetime.timedelta(days=7)
+            return queryset.filter(**{f'{self.date_field}__date__gte': week_ago})
+        elif self.value() == 'month':
+            month_ago = datetime.date.today() - datetime.timedelta(days=30)
+            return queryset.filter(**{f'{self.date_field}__date__gte': month_ago})
+        elif self.value() == 'quarter':
+            quarter_ago = datetime.date.today() - datetime.timedelta(days=90)
+            return queryset.filter(**{f'{self.date_field}__date__gte': quarter_ago})
+        elif self.value() == 'year':
+            year_ago = datetime.date.today() - datetime.timedelta(days=365)
+            return queryset.filter(**{f'{self.date_field}__date__gte': year_ago})
+        return queryset
+
+
+class StartDateTripFilter(DateRangeFilter):
+    """Фильтр по дате начала поездки"""
+    title = _('Дата начала поездки')
+    parameter_name = 'start_date_range'
+    date_field = 'start_date_trip'
+
+
+class EndDateTripFilter(DateRangeFilter):
+    """Фильтр по дате окончания поездки"""
+    title = _('Дата окончания поездки')
+    parameter_name = 'end_date_range'
+    date_field = 'end_date_trip'
+
+
+class CreationDateFilter(DateRangeFilter):
+    """Фильтр по дате создания"""
+    title = _('Дата создания')
+    parameter_name = 'creation_date_range'
+    date_field = 'date_of_creation'
 
 
 @admin.register(GuidanceDocuments)
@@ -379,7 +436,15 @@ class ApprovalOficialMemoProcessAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
         list_filter (кортеж): кортеж полей, которые будут использоваться для фильтрации представления списка администраторов.
 
     """
-    list_display = ("document", "order", "email_send", "cancellation")
+    list_display = (
+        "document",
+        "order",
+        "email_send",
+        "cancellation",
+        "start_date_trip",
+        "end_date_trip",
+        "accepted_accounting",
+    )
     # какие поля будут использоваться для поиска
     search_fields = (
         "document__title",
@@ -388,6 +453,10 @@ class ApprovalOficialMemoProcessAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     list_filter = (
         "cancellation",
         "accepted_accounting",
+        "email_send",
+        StartDateTripFilter,
+        EndDateTripFilter,
+        CreationDateFilter,
     )
     # какие поля будут в виде ссылок
     list_display_links = ("document",)
@@ -400,7 +469,32 @@ class ApprovalOficialMemoProcessAdmin(ActiveUsersFilterMixin, admin.ModelAdmin):
     # показывать ли пустые значения
     empty_value_display = '-empty-'
     # какие поля будут использоваться из других моделей, для уменьшения запросов
-    list_select_related = ('order',)
+    list_select_related = ('order', 'document', 'reason_cancellation')
+
+    # --- Переопределение save_model для пересчёта суммы ---
+
+    def save_model(self, request, obj, form, change):
+        # Пересчитываем сумму расходов при сохранении из админки
+        if any(f in form.changed_data for f in [
+            'daily_allowance', 'travel_expense',
+            'accommodation_expense', 'other_expense'
+        ]):
+            obj.prepaid_expense_summ = (
+                    obj.daily_allowance +
+                    obj.travel_expense +
+                    obj.accommodation_expense +
+                    obj.other_expense
+            )
+        super().save_model(request, obj, form, change)
+
+    # --- Оптимизация запросов ---
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            'document', 'order', 'reason_cancellation',
+            'person_executor', 'person_agreement', 'person_accounting'
+        )
 
 
 @admin.register(OrderDescription)
