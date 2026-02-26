@@ -1720,6 +1720,7 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
 
         # Получаем данные из базы
         queryset = ApprovalOficialMemoProcess.objects.get_expense_report_data()
+        queryset = queryset.filter(document__official_memo_type__in=['1', '3'])
 
         # Применяем фильтры
         if year:
