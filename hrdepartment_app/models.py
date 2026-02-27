@@ -946,7 +946,8 @@ class ApprovalOficialMemoProcessManager(models.Manager):
         ).filter(
             document__isnull=False,
             document__person__isnull=False,
-            accepted_accounting=True
+            accepted_accounting=True,
+            cancellation=False
         ).values(
             'id',
             'document__period_from',
