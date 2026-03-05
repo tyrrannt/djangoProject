@@ -140,7 +140,7 @@ class ApartmentsAdmin(admin.ModelAdmin):
 
 @admin.register(Counteragent)
 class CounteragentAdmin(admin.ModelAdmin):
-    list_display = ["pk", 'short_name', 'inn', 'kpp', 'type_counteragent', 'duplicates_info']
+    list_display = ["pk", 'short_name', 'inn', 'kpp', 'type_counteragent', 'duplicates_info', 'related_objects_count']
     list_filter = ['type_counteragent']
     search_fields = ['short_name', 'inn', 'kpp']
     actions = ['find_and_mark_duplicates', 'merge_duplicates']
@@ -160,6 +160,34 @@ class CounteragentAdmin(admin.ModelAdmin):
         return "✓ Уникальный"
 
     duplicates_info.short_description = "Дубликаты"
+
+    def related_objects_count(self, obj):
+        """Отображает общее количество связанных объектов"""
+        total = 0
+        related_fields = self._get_all_related_fields()
+
+        for rel_info in related_fields:
+            model = rel_info['model']
+            field_name = rel_info['field_name']
+            try:
+                # Используем exists() для быстрой проверки, если нужно только >0
+                # Или count() для точного подсчёта
+                count = model.objects.filter(**{field_name: obj}).count()
+                total += count
+            except Exception:
+                continue
+
+        if total > 0:
+            return format_html(
+                '<a href="{}?{}__id={}" target="_blank" style="color: orange; font-weight: bold;">{} 🔗</a>',
+                reverse('admin:customers_app_counteragent_changelist'),
+                'related',  # или имя первого связанного поля для фильтрации
+                obj.pk,
+                total
+            )
+        return format_html('<span style="color: gray;">0</span>')
+
+    related_objects_count.short_description = "Связи"
 
     def find_and_mark_duplicates(self, request, queryset):
         """Находит и помечает дубликаты"""
