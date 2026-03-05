@@ -16,6 +16,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction, OperationalError
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q, F, ForeignKey, Count
@@ -42,7 +43,7 @@ from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm,
     ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 from customers_app.serializers import DataBaseUserSerializer
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
@@ -219,7 +220,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
     # @method_decorator(user_passes_test(lambda u: u.is_active))
     # def dispatch(self, request, *args, **kwargs):
     #     user_object = self.get_object()
-    #     if request.user.pk == user_object.pk or request.user.is_superuser:
+    #     if request.user.pk == user_object.pk or request.user.is_superuser or request.user.is_staff:
     #         return super(DataBaseUserProfileDetail, self).dispatch(request, *args, **kwargs)
     #     else:
     #         raise PermissionDenied
@@ -1192,8 +1193,8 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         has_access = (
                 request.user.pk == user_object.pk or  # Пользователь смотрит свой профиль
                 request.user.is_superuser or  # Суперпользователь
-                request.user.is_staff or  # Персонал
-                request.user.has_perm('customers_app.view_databaseuser')  # Право на просмотр
+                request.user.is_staff   # Персонал
+                # request.user.has_perm('customers_app.view_databaseuser')  # Право на просмотр
         )
 
         if has_access:
@@ -1252,13 +1253,26 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_anonymous:
             return redirect(reverse('customers_app:login'))
+
+        user_object = self.get_object()
+
+        # Проверяем несколько условий доступа
+        has_access = (
+                request.user.pk == user_object.pk or  # Пользователь смотрит свой профиль
+                request.user.is_superuser or  # Суперпользователь
+                request.user.is_staff  # Персонал
+            # request.user.has_perm('customers_app.view_databaseuser')  # Право на просмотр
+        )
+
+        if has_access:
+            return super().dispatch(request, *args, **kwargs)
+        else:
+            logger.warning(
+                f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
+            raise PermissionDenied
+
         return super().dispatch(request, *args, **kwargs)
-        # user_object = self.get_object()
-        # if request.user.pk == user_object.pk or request.user.is_superuser:
-        #     return super().dispatch(request, *args, **kwargs)
-        # else:
-        #     logger.warning(f'Пользователь {request.user} хотел получить доступ к пользователю {user_object.username}')
-        #     raise PermissionDenied
+
 
     def form_valid(self, form):
         if form.is_valid():
