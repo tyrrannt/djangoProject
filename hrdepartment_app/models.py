@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import FileExtensionValidator
 from django.db import models
@@ -933,6 +934,7 @@ class ApprovalProcess(models.Model):
     )
     history_change = GenericRelation(HistoryChange)
 
+
 class ApprovalOficialMemoProcessManager(models.Manager):
     def get_expense_report_data(self):
         """
@@ -965,6 +967,7 @@ class ApprovalOficialMemoProcessManager(models.Manager):
             'other_expense',
             'prepaid_expense_summ'
         )
+
 
 class ApprovalOficialMemoProcess(ApprovalProcess):
     """
@@ -3598,6 +3601,7 @@ def delete_old_file_on_change(sender, instance, **kwargs):
             except Exception as e:
                 logger.warning(f"Ошибка удаления старого файла в поле '{field}' для {sender.__name__}: {e}")
 
+
 # ToDo: Блок кода для автоматического удаления старых файлов
 # @receiver(pre_save)
 # def auto_delete_old_files(sender, instance, **kwargs):
@@ -3640,6 +3644,10 @@ class TrainingUnit(models.Model):
         on_delete=models.CASCADE,
     )
 
+    def __str__(self):
+        return f'{self.unit_name}'
+
+
 class TrainingProgram(models.Model):
     class Meta:
         verbose_name = "Программа обучения"
@@ -3654,7 +3662,11 @@ class TrainingProgram(models.Model):
         'customers_app.Counteragent',
         verbose_name="Наименование АУЦ",
         on_delete=models.CASCADE,
+        limit_choices_to={'educational_organization': True}
     )
+
+    def __str__(self):
+        return f'{self.program_name}'
 
 
 class StudentAgreement(models.Model):
@@ -3684,6 +3696,7 @@ class StudentAgreement(models.Model):
         'customers_app.Counteragent',
         verbose_name="Наименование АУЦ",
         on_delete=models.CASCADE,
+        limit_choices_to={'educational_organization': True}
     )
     training_program = models.ForeignKey(
         'hrdepartment_app.TrainingProgram',
@@ -3694,6 +3707,7 @@ class StudentAgreement(models.Model):
     training_unit = models.ManyToManyField(
         'hrdepartment_app.TrainingUnit',
         verbose_name="Модули",
+        blank=True
     )
 
     training_place = models.CharField(
@@ -3735,3 +3749,13 @@ class StudentAgreement(models.Model):
     def __str__(self):
         return f"{self.student_agreement_number} — {self.full_name}"
 
+    def clean(self):
+        # Вызываем родительский clean
+        super().clean()
+
+        # Проверяем, заполнено ли поле
+        if self.training_center_name:
+            if not self.training_center_name.educational_organization:
+                raise ValidationError({
+                    'training_center_name': 'Можно выбрать только Образовательную организацию.'
+                })

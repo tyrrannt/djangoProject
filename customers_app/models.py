@@ -856,6 +856,7 @@ class Counteragent(models.Model):
         blank=True,
         related_name="contact",
     )
+    educational_organization = models.BooleanField(verbose_name="Образовательная организация", default=False)
 
     @classmethod
     def find_duplicates_by_inn_kpp(cls):
