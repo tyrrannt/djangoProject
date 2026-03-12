@@ -690,27 +690,42 @@ def get_notify(data_table, data_query: Q, notify_table, notify_dict: dict, rules
 def number_to_words_rub(n):
     """
     Простая реализация перевода числа в строку прописью для рублей.
-    Для продакшена рекомендуется использовать библиотеку 'num2words' с настройкой lang='ru'.
     """
-    # Заглушка для примера. В реальном проекте используйте num2words
-    return num2words(n, lang='ru') + " рублей 00 копеек"
+    try:
+        return num2words(n, lang='ru')
+    except ImportError:
+        return str(n)
 
 
 def get_passport_data(user):
     """
-    Извлекает данные паспорта из связанной модели пользователя.
-    Предполагается, что у DataBaseUser есть связанные данные паспорта.
+    Извлекает данные паспорта и работы из связанных моделей пользователя.
     """
-    # Адаптируйте под вашу реальную модель DataBaseUser
+    # Получаем профиль пользователя (DataBaseUserProfile)
+    user_profile = getattr(user, 'user_profile', None)
+
+    # Получаем паспорт из профиля (IdentityDocuments)
+    passport = None
+    if user_profile:
+        passport = getattr(user_profile, 'passport', None)
+
+    # Получаем рабочий профиль (DataBaseUserWorkProfile)
+    work_profile = getattr(user, 'user_work_profile', None)
+
+    # Получаем должность из рабочего профиля (Job)
+    job = None
+    if work_profile:
+        job = getattr(work_profile, 'job', None)
+
     return {
-        'series': getattr(user, 'passport_series', ''),
-        'number': getattr(user, 'passport_number', ''),
-        'date_of_issue': getattr(user, 'passport_date', ''),
-        'issued_by_whom': getattr(user, 'passport_issued_by', ''),
-        'division_code': getattr(user, 'passport_code', ''),
-        'address': getattr(user, 'address', ''),
-        'phone': getattr(user, 'phone', ''),
-        'job': getattr(user, 'job_position', ''),  # Должность
+        'series': passport.series if passport else '',
+        'number': passport.number if passport else '',
+        'date_of_issue': passport.date_of_issue.strftime('%d.%m.%Y') if passport and passport.date_of_issue else '',
+        'issued_by_whom': passport.issued_by_whom if passport else '',
+        'division_code': passport.division_code if passport else '',
+        'address': getattr(user, 'address', '') or '',
+        'phone': getattr(user, 'personal_phone', '') or '',
+        'job': str(job) if job else '',
     }
 
 
