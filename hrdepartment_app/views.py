@@ -49,6 +49,7 @@ from administration_app.utils import (
     get_history,
     get_year_interval, ajax_search, send_notification,
 )
+from contracts_app.templatetags.custom import FIO_format
 from customers_app.models import DataBaseUser, Counteragent
 from djangoProject.settings import EMAIL_HOST_USER
 from hrdepartment_app.forms import (
@@ -6407,6 +6408,7 @@ def generate_student_agreement(request, pk):
 
         # Работник
         'full_name': str(user),
+        'full_name_short': FIO_format(user),
         'job': passport_data.get('job', ''),
         'series': passport_data.get('series', ''),
         'number': passport_data.get('number', ''),
