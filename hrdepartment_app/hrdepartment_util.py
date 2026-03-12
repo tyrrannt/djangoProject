@@ -687,14 +687,84 @@ def get_notify(data_table, data_query: Q, notify_table, notify_dict: dict, rules
     notify.job_list.add(*approve_list)  # добавляем список согласующих лиц
 
 
-def number_to_words_rub(n):
+# def number_to_words_rub(n):
+#     """
+#     Простая реализация перевода числа в строку прописью для рублей.
+#     """
+#     try:
+#         return num2words(n, lang='ru')
+#     except ImportError:
+#         return str(n)
+# hrdepartment_app/utils.py
+
+def format_currency(value):
     """
-    Простая реализация перевода числа в строку прописью для рублей.
+    Форматирует число в денежный формат:
+    - Разделитель тысяч: пробел
+    - Разделитель десятичных: точка
+    - Всегда 2 знака после точки
+    Пример: 276000 -> '276 000.00'
     """
-    try:
-        return num2words(n, lang='ru')
-    except ImportError:
-        return str(n)
+    # Форматируем с точкой как разделителем десятичных
+    formatted = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    # Теперь у нас 276,000.00 (запятая как разделитель тысяч, точка как десятичных)
+    # Нам нужно заменить запятую на пробел
+    parts = formatted.split('.')
+    integer_part = parts[0].replace(',', ' ')
+    decimal_part = parts[1] if len(parts) > 1 else '00'
+    return f"{integer_part}.{decimal_part}"
+
+
+def get_rubles_kopecks(value):
+    """
+    Разделяет сумму на рубли и копейки.
+    Возвращает кортеж (rubles, kopecks).
+    """
+    rubles = int(value)
+    kopecks = int(round((value - rubles) * 100))
+    return rubles, kopecks
+
+
+def number_to_words_rub(value):
+    """
+    Переводит сумму в строку прописью.
+    Если копеек нет (00), пишет только рубли.
+    Если копейки есть, пишет рубли и копейки.
+    """
+    rubles, kopecks = get_rubles_kopecks(value)
+
+    # Склоняем рубли
+    rubles_word = num2words(rubles, lang='ru')
+
+    # Определяем правильное окончание для рублей
+    rubles_suffix = get_currency_suffix(rubles, ['рубль', 'рубля', 'рублей'])
+
+    result = f"{rubles_word} {rubles_suffix}"
+
+    # Если есть копейки, добавляем их
+    if kopecks > 0:
+        kopecks_word = num2words(kopecks, lang='ru')
+        kopecks_suffix = get_currency_suffix(kopecks, ['копейка', 'копейки', 'копеек'])
+        result += f" {kopecks_word} {kopecks_suffix}"
+
+    return result
+
+
+def get_currency_suffix(number, forms):
+    """
+    Выбирает правильное окончание для числа (1 рубль, 2 рубля, 5 рублей).
+    forms = ['единственное', 'двойственное', 'множественное']
+    """
+    number = abs(number) % 100
+    n = number % 10
+
+    if number > 10 and number < 20:
+        return forms[2]
+    if n > 1 and n < 5:
+        return forms[1]
+    if n == 1:
+        return forms[0]
+    return forms[2]
 
 
 def get_passport_data(user):

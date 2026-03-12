@@ -88,7 +88,7 @@ from hrdepartment_app.hrdepartment_util import (
     send_mail_change,
     get_month,
     get_working_hours, get_notify, get_first_and_last_day, get_mpd_statistics, get_passport_data, format_date_rus,
-    number_to_words_rub,
+    number_to_words_rub, format_currency,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -6432,7 +6432,7 @@ def generate_student_agreement(request, pk):
         'form_education': agreement.get_form_education_display(),
 
         # Финансы
-        'training_cost': f"{agreement.training_cost:.2f}".replace('.', ','),
+        'training_cost': format_currency(agreement.training_cost),
         'training_cost_in_word': number_to_words_rub(agreement.training_cost),
 
         # Обязательства
