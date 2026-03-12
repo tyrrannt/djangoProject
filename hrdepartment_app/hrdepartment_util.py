@@ -687,15 +687,15 @@ def get_notify(data_table, data_query: Q, notify_table, notify_dict: dict, rules
     notify.job_list.add(*approve_list)  # добавляем список согласующих лиц
 
 
-# def number_to_words_rub(n):
-#     """
-#     Простая реализация перевода числа в строку прописью для рублей.
-#     """
-#     try:
-#         return num2words(n, lang='ru')
-#     except ImportError:
-#         return str(n)
-# hrdepartment_app/utils.py
+def number_to_words(n):
+    """
+    Простая реализация перевода числа в строку прописью для рублей.
+    """
+    try:
+        return num2words(n, lang='ru')
+    except ImportError:
+        return str(n)
+
 
 def format_currency(value):
     """
@@ -709,8 +709,8 @@ def format_currency(value):
     formatted = f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     # Теперь у нас 276,000.00 (запятая как разделитель тысяч, точка как десятичных)
     # Нам нужно заменить запятую на пробел
-    parts = formatted.split('.')
-    integer_part = parts[0].replace(',', ' ')
+    parts = formatted.split(',')
+    integer_part = parts[0].replace('.', ' ')
     decimal_part = parts[1] if len(parts) > 1 else '00'
     return f"{integer_part}.{decimal_part}"
 
@@ -739,15 +739,14 @@ def number_to_words_rub(value):
     # Определяем правильное окончание для рублей
     rubles_suffix = get_currency_suffix(rubles, ['рубль', 'рубля', 'рублей'])
 
-    result = f"{rubles_word} {rubles_suffix}"
+    # result = f"{rubles_word} {rubles_suffix}"
 
     # Если есть копейки, добавляем их
     if kopecks > 0:
-        kopecks_word = num2words(kopecks, lang='ru')
         kopecks_suffix = get_currency_suffix(kopecks, ['копейка', 'копейки', 'копеек'])
-        result += f" {kopecks_word} {kopecks_suffix}"
-
-    return result
+        return rubles_word, rubles_suffix, kopecks, kopecks_suffix
+    else:
+        return rubles_word, rubles_suffix, "00", "копеек"
 
 
 def get_currency_suffix(number, forms):

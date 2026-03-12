@@ -88,7 +88,7 @@ from hrdepartment_app.hrdepartment_util import (
     send_mail_change,
     get_month,
     get_working_hours, get_notify, get_first_and_last_day, get_mpd_statistics, get_passport_data, format_date_rus,
-    number_to_words_rub, format_currency,
+    number_to_words_rub, format_currency, number_to_words,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -6343,7 +6343,7 @@ class StudentAgreementCreateView(PermissionRequiredMixin, LoginRequiredMixin, Cr
 
 
 class StudentAgreementUpdateView(PermissionRequiredMixin, LoginRequiredMixin,
-                           UpdateView):  # UserPassesTestMixin, UpdateView):
+                                 UpdateView):  # UserPassesTestMixin, UpdateView):
     model = StudentAgreement
     form_class = StudentAgreementForm
     success_url = reverse_lazy('hrdepartment_app:student_agreement_list')
@@ -6353,6 +6353,7 @@ class StudentAgreementUpdateView(PermissionRequiredMixin, LoginRequiredMixin,
         kwargs = super(StudentAgreementUpdateView, self).get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
+
 
 class StudentAgreementDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = StudentAgreement
@@ -6399,6 +6400,7 @@ def generate_student_agreement(request, pk):
     auc_short = getattr(auc, 'short_name', str(auc))
 
     # 4. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
+    rubles_word, rubles_suffix, kopecks, kopecks_suffix = number_to_words_rub(agreement.training_cost)
     context = {
         # Реквизиты договора
         'student_agreement_number': agreement.student_agreement_number,
@@ -6432,12 +6434,16 @@ def generate_student_agreement(request, pk):
         'form_education': agreement.get_form_education_display(),
 
         # Финансы
+
         'training_cost': format_currency(agreement.training_cost),
-        'training_cost_in_word': number_to_words_rub(agreement.training_cost),
+        'training_cost_in_word': rubles_word,
+        'training_cost_in_word_suffix': rubles_suffix,
+        'cost_kopecks': kopecks,
+        'cost_kopecks_suffix': kopecks_suffix,
 
         # Обязательства
         'work_period_years': agreement.work_period_years,
-        'work_period_years_in_words': number_to_words_rub(agreement.work_period_years).split()[0],  # Упрощенно
+        'work_period_years_in_words': number_to_words(agreement.work_period_years).split()[0],  # Упрощенно
 
         # Трудовой договор
         'employment_contract': agreement.contract_number,
