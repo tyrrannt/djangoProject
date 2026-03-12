@@ -73,7 +73,7 @@ def empty_item(string):
     return string or ""
 
 
-def FIO_format(value):
+def FIO_format(value, reverse=False):
     string_obj = str(value)
     list_obj = string_obj.split(" ")
     match len(list_obj):
@@ -84,7 +84,10 @@ def FIO_format(value):
         case 2:
             return f"{list_obj[0]} {list_obj[1][:1]}."
         case 3:
-            return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
+            if reverse:
+                return f"{list_obj[1][:1]}.{list_obj[2][:1]}. {list_obj[0]}"
+            else:
+                return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
 
 
 @register.simple_tag()

@@ -6408,7 +6408,7 @@ def generate_student_agreement(request, pk):
 
         # Работник
         'full_name': str(user),
-        'full_name_short': FIO_format(user),
+        'full_name_short': FIO_format(user, reverse=True),
         'job': passport_data.get('job', ''),
         'series': passport_data.get('series', ''),
         'number': passport_data.get('number', ''),
