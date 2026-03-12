@@ -26,7 +26,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     BusinessProcessRoutesUpdate, LaborProtectionList, LaborProtectionAdd, LaborProtectionDetail, LaborProtectionDelete, \
     LaborProtectionUpdate, LaborProtectionInstructionsDelete, LaborProtectionInstructionsUpdate, \
     LaborProtectionInstructionsDetail, LaborProtectionInstructionsAdd, LaborProtectionInstructionsList, \
-    ExpenseReportView, ExportExpenseReportView
+    ExpenseReportView, ExportExpenseReportView, StudentAgreementListView, StudentAgreementCreateView, \
+    StudentAgreementDetailView, StudentAgreementUpdateView, StudentAgreementDeleteView, generate_student_agreement
 
 app_name = 'hrdepartment_app'
 
@@ -158,4 +159,11 @@ urlpatterns = [
     path('users_events/<int:pk>/', DataBaseUserEventDetail.as_view(), name='users_events'),
     path('users_events/<int:pk>/update/', DataBaseUserEventUpdate.as_view(), name='users_events_update'),
     path('users_events/<int:pk>/delete/', DataBaseUserEventDelete.as_view(), name='users_events_delete'),
+    # Ученические договора
+    path('student_agreement/', StudentAgreementListView.as_view(), name='student_agreement_list'),
+    path('student_agreement/create/', StudentAgreementCreateView.as_view(), name='student_agreement_add'),
+    path('student_agreement/<int:pk>/', StudentAgreementDetailView.as_view(), name='student_agreement_card'),
+    path('student_agreement/<int:pk>/update/', StudentAgreementUpdateView.as_view(), name='student_agreement_update'),
+    path('student_agreement/<int:pk>/delete/', StudentAgreementDeleteView.as_view(), name='student_agreement_delete'),
+    path('student_agreement/<int:pk>/download/', generate_student_agreement, name='download_agreement'),
 ]

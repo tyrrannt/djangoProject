@@ -1,5 +1,7 @@
 import datetime
 from collections import defaultdict
+
+from num2words import num2words
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
 from django.core.mail import EmailMultiAlternatives
@@ -683,3 +685,46 @@ def get_notify(data_table, data_query: Q, notify_table, notify_dict: dict, rules
     notify.count = data_table.objects.filter(data_query).exclude(cancellation=True).count()
     notify.save()
     notify.job_list.add(*approve_list)  # добавляем список согласующих лиц
+
+
+def number_to_words_rub(n):
+    """
+    Простая реализация перевода числа в строку прописью для рублей.
+    Для продакшена рекомендуется использовать библиотеку 'num2words' с настройкой lang='ru'.
+    """
+    # Заглушка для примера. В реальном проекте используйте num2words
+    return num2words(n, lang='ru') + " рублей 00 копеек"
+
+
+def get_passport_data(user):
+    """
+    Извлекает данные паспорта из связанной модели пользователя.
+    Предполагается, что у DataBaseUser есть связанные данные паспорта.
+    """
+    # Адаптируйте под вашу реальную модель DataBaseUser
+    return {
+        'series': getattr(user, 'passport_series', ''),
+        'number': getattr(user, 'passport_number', ''),
+        'date_of_issue': getattr(user, 'passport_date', ''),
+        'issued_by_whom': getattr(user, 'passport_issued_by', ''),
+        'division_code': getattr(user, 'passport_code', ''),
+        'address': getattr(user, 'address', ''),
+        'phone': getattr(user, 'phone', ''),
+        'job': getattr(user, 'job_position', ''),  # Должность
+    }
+
+
+def format_date_rus(date_obj):
+    """Возвращает словарь с днем, месяцем и годом для шаблона."""
+    if not date_obj:
+        return {'data': '', 'month': '', 'year': ''}
+
+    months = {
+        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля', 5: 'мая', 6: 'июня',
+        7: 'июля', 8: 'августа', 9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    }
+    return {
+        'data': date_obj.strftime('%d'),
+        'month': months.get(date_obj.month, ''),
+        'year': date_obj.strftime('%Y')
+    }

@@ -79,6 +79,7 @@ msoffice2pdf==0.0.8
 multidict==6.0.5
 mypy-extensions==1.0.0
 narwhals==1.26.0
+num2words==0.5.14
 numpy==2.1.1
 openpyxl==3.1.2
 packaging==23.2

@@ -1,4 +1,8 @@
 # views.py
+import io
+import os
+
+from django.conf import settings
 from django.views.generic import TemplateView
 from datetime import datetime
 
@@ -17,8 +21,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Count, Sum
 from django.db.models.functions import ExtractMonth
 from django.forms import inlineformset_factory
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
-from django.shortcuts import redirect, render
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, FileResponse
+from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
@@ -32,6 +36,7 @@ from django.views.generic import (
     DetailView,
     DeleteView, View,
 )
+from docxtpl import DocxTemplate
 from openpyxl import Workbook
 
 from administration_app.models import PortalProperty, Notification
@@ -75,13 +80,14 @@ from hrdepartment_app.forms import (
     ReportCardForm, OutfitCardForm, BriefingsAddForm, BriefingsUpdateForm, OperationalAddForm, OperationalUpdateForm,
     DataBaseUserEventAddForm, DataBaseUserEventUpdateForm, BusinessProcessRoutesAddForm,
     BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
-    LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm,
+    LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm, StudentAgreementForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
     get_month,
-    get_working_hours, get_notify, get_first_and_last_day, get_mpd_statistics,
+    get_working_hours, get_notify, get_first_and_last_day, get_mpd_statistics, get_passport_data, format_date_rus,
+    number_to_words_rub,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -96,7 +102,7 @@ from hrdepartment_app.models import (
     ReportCard,
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
-    DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
+    DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions, StudentAgreement,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 from openpyxl.styles import Font, Alignment, Border, Side
@@ -6320,3 +6326,139 @@ class LaborProtectionInstructionsDelete(PermissionRequiredMixin, LoginRequiredMi
             "title"
         ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
         return context
+
+
+# Ученические договора
+class StudentAgreementCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+    model = StudentAgreement
+    form_class = StudentAgreementForm
+    success_url = reverse_lazy('hrdepartment_app:student_agreement_list')
+    permission_required = "hrdepartment_app.create_studentagreement"
+
+    def get_form_kwargs(self):
+        kwargs = super(StudentAgreementCreateView, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+
+class StudentAgreementUpdateView(PermissionRequiredMixin, LoginRequiredMixin,
+                           UpdateView):  # UserPassesTestMixin, UpdateView):
+    model = StudentAgreement
+    form_class = StudentAgreementForm
+    success_url = reverse_lazy('hrdepartment_app:student_agreement_list')
+    permission_required = "hrdepartment_app.change_studentagreement"
+
+    def get_form_kwargs(self):
+        kwargs = super(StudentAgreementUpdateView, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+class StudentAgreementDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
+    model = StudentAgreement
+    permission_required = "hrdepartment_app.view_studentagreement"
+
+
+class StudentAgreementDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = StudentAgreement
+    success_url = reverse_lazy('hrdepartment_app:student_agreement_list')
+    permission_required = "hrdepartment_app.delete_studentagreement"
+
+
+class StudentAgreementListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
+    model = StudentAgreement
+    context_object_name = 'student_agreement'
+    permission_required = "hrdepartment_app.view_studentagreement"
+
+    def get(self, request, *args, **kwargs):
+        query = Q()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['outfit_card_date', 'air_board__registration_number', 'works',
+                           'outfit_card_number', 'workers', 'employee__title']
+            context = ajax_search(request, self, search_list, StudentAgreement, query)
+            return JsonResponse(context, safe=False)
+        return super(StudentAgreementListView, self).get(request, *args, **kwargs)
+
+
+@login_required
+def generate_student_agreement(request, pk):
+    """
+    Генерация ученического договора на основе заполненной модели StudentAgreement.
+    """
+    # 1. Получаем объект договора
+    agreement = get_object_or_404(StudentAgreement, pk=pk)
+
+    # 2. Получаем данные пользователя (Работник)
+    user = agreement.full_name  # ForeignKey к DataBaseUser
+    passport_data = get_passport_data(user)
+
+    # 3. Получаем данные АУЦ (Контрагент)
+    auc = agreement.training_center_name
+    # Предполагаем, что у Counteragent есть поля full_name и short_name
+    auc_full = getattr(auc, 'full_name', str(auc))
+    auc_short = getattr(auc, 'short_name', str(auc))
+
+    # 4. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
+    context = {
+        # Реквизиты договора
+        'student_agreement_number': agreement.student_agreement_number,
+        'data': format_date_rus(agreement.student_agreement_date)['data'],
+        'month': format_date_rus(agreement.student_agreement_date)['month'],
+        'year': format_date_rus(agreement.student_agreement_date)['year'],
+
+        # Работник
+        'full_name': str(user),
+        'job': passport_data.get('job', ''),
+        'series': passport_data.get('series', ''),
+        'number': passport_data.get('number', ''),
+        'date_of_issue': passport_data.get('date_of_issue', ''),
+        'issued_by_whom': passport_data.get('issued_by_whom', ''),
+        'division_code': passport_data.get('division_code', ''),
+        'full_name_address': passport_data.get('address', ''),
+        'full_name_phone': passport_data.get('phone', ''),
+
+        # Обучение
+        'auc_full': auc_full,
+        'auc_short': auc_short,
+        'training_program': str(agreement.training_program),  # program_name
+        'hours': agreement.academic_hours,
+        'start_data': format_date_rus(agreement.training_start_date)['data'],
+        'start_month': format_date_rus(agreement.training_start_date)['month'],
+        'start_year': format_date_rus(agreement.training_start_date)['year'],
+        'end_data': format_date_rus(agreement.training_end_date)['data'],
+        'end_month': format_date_rus(agreement.training_end_date)['month'],
+        'end_year': format_date_rus(agreement.training_end_date)['year'],
+        'form_education': agreement.get_form_education_display(),
+
+        # Финансы
+        'training_cost': f"{agreement.training_cost:.2f}".replace('.', ','),
+        'training_cost_in_word': number_to_words_rub(agreement.training_cost),
+
+        # Обязательства
+        'work_period_years': agreement.work_period_years,
+        'work_period_years_in_words': number_to_words_rub(agreement.work_period_years).split()[0],  # Упрощенно
+
+        # Трудовой договор
+        'employment_contract': agreement.contract_number,
+        'employment_contract_date': agreement.contract_date.strftime('%d.%m.%Y') if agreement.contract_date else '',
+    }
+
+    # 5. Рендеринг документа
+    # Путь к шаблону. Убедитесь, что файл student_agreement.docx лежит в доступной папке
+    template_path = os.path.join(settings.BASE_DIR, 'static', 'DocxTemplates', 'student_agreement.docx')
+
+    doc = DocxTemplate(template_path)
+    doc.render(context)
+
+    # 6. Сохранение в буфер для отправки
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    filename = f"Договор_{agreement.student_agreement_number}_{agreement.full_name}.docx"
+
+    return FileResponse(
+        buffer,
+        as_attachment=True,
+        filename=filename,
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )

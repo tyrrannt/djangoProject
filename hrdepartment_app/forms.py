@@ -26,6 +26,7 @@ from hrdepartment_app.models import (
     ReportCard,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, Briefings,
     Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
+    StudentAgreement,
 )
 
 
@@ -2076,5 +2077,25 @@ class LaborProtectionInstructionsUpdateForm(forms.ModelForm):
         self.fields["actuality"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+
+class StudentAgreementForm(forms.ModelForm):
+
+
+    class Meta:
+        model = StudentAgreement
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
+        """
+        self.user = kwargs.pop("user")
+        super(StudentAgreementForm, self).__init__(*args, **kwargs)
+
         for field in self.fields:
             make_custom_field(self.fields[field])

@@ -3668,6 +3668,10 @@ class TrainingProgram(models.Model):
     def __str__(self):
         return f'{self.program_name}'
 
+class EducationFormChoices(models.TextChoices):
+    FULL_TIME = 'full_time', 'очная'
+    PART_TIME = 'part_time', 'заочная'
+    DISTANCE = 'distance', 'дистанционно'
 
 class StudentAgreement(models.Model):
     class Meta:
@@ -3715,6 +3719,18 @@ class StudentAgreement(models.Model):
         max_length=255
     )
 
+    form_education = models.CharField(
+        max_length=20,
+        choices=EducationFormChoices.choices,
+        verbose_name="Форма обучения",
+        default=EducationFormChoices.FULL_TIME,
+    )
+
+    academic_hours = models.IntegerField(
+        verbose_name="академических часа",
+        default=0
+    )
+
     # Обучающийся
     full_name = models.ForeignKey(
         'customers_app.DataBaseUser',
@@ -3745,6 +3761,15 @@ class StudentAgreement(models.Model):
         "Примечание",
         blank=True
     )
+
+    def get_data(self):
+        return {
+            "pk": self.pk,
+            "document_number": self.contract_number,
+            "document_date": f"{self.contract_date:%d.%m.%Y} г.",
+            "executor": format_name_initials(self.full_name),
+            "auc": self.training_center_name.short_name
+        }
 
     def __str__(self):
         return f"{self.student_agreement_number} — {self.full_name}"
