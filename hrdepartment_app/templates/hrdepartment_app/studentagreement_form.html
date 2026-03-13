@@ -16,7 +16,6 @@
     <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function () {
-            // Инициализация formset если используется
             $('#formset-table tbody').formset({
                 prefix: 'report_cards',
                 addText: 'Add Another Book',
@@ -32,12 +31,14 @@
                 const programField = $('#id_training_program');
                 const unitField = $('#id_training_unit');
 
+                // Сохраняем текущее значение программы, если оно есть (для редактирования)
+                const currentProgramId = programField.val();
+
                 // Сбрасываем и блокируем зависимые поля
                 programField.empty().append('<option value="">---------</option>').prop('disabled', true);
                 unitField.empty().prop('disabled', true);
 
                 if (centerId) {
-                    // Загружаем программы
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_programs' %}",
                         data: {'center_id': centerId},
@@ -48,8 +49,10 @@
                                 });
                                 programField.prop('disabled', false);
 
-                                // Триггерим изменение программы, если она была выбрана ранее (для редактирования)
-                                if (programField.val()) {
+                                // ВОССТАНАВЛИВАЕМ значение, если мы в режиме редактирования
+                                if (currentProgramId) {
+                                    programField.val(currentProgramId);
+                                    // После восстановления программы нужно подгрузить модули
                                     programField.trigger('change');
                                 }
                             }
@@ -63,11 +66,13 @@
                 const programId = $(this).val();
                 const unitField = $('#id_training_unit');
 
+                // Сохраняем текущие выбранные модули (для редактирования, т.к. это SelectMultiple)
+                const currentUnitIds = unitField.val();
+
                 // Сбрасываем и блокируем модули
                 unitField.empty().prop('disabled', true);
 
                 if (programId) {
-                    // Загружаем модули
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_units' %}",
                         data: {'program_id': programId},
@@ -77,6 +82,11 @@
                                     unitField.append(new Option(unit.name, unit.id));
                                 });
                                 unitField.prop('disabled', false);
+
+                                // ВОССТАНАВЛИВАЕМ выбранные модули
+                                if (currentUnitIds) {
+                                    unitField.val(currentUnitIds);
+                                }
                             }
                         }
                     });
@@ -84,9 +94,10 @@
             });
 
             // 3. Инициализация при загрузке страницы (для режима редактирования)
-            // Если мы редактируем объект, нужно проверить, выбран ли УЦ, и подгрузить данные
+            // Важно: мы не просто триггерим change, а даем скрипту выше отработать логику восстановления
             const initialCenterId = $('#id_training_center_name').val();
             if (initialCenterId) {
+                // Запускаем цепочку: УЦ -> Программы -> (восстановление значения) -> Модули
                 $('#id_training_center_name').trigger('change');
             }
         });

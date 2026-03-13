@@ -26,7 +26,7 @@ from hrdepartment_app.models import (
     ReportCard,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, Briefings,
     Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
-    StudentAgreement,
+    StudentAgreement, TrainingProgram, TrainingUnit,
 )
 
 
@@ -2083,8 +2083,6 @@ class LaborProtectionInstructionsUpdateForm(forms.ModelForm):
 
 
 class StudentAgreementForm(forms.ModelForm):
-
-
     class Meta:
         model = StudentAgreement
         fields = "__all__"
@@ -2096,6 +2094,28 @@ class StudentAgreementForm(forms.ModelForm):
         """
         self.user = kwargs.pop("user")
         super(StudentAgreementForm, self).__init__(*args, **kwargs)
+        # Если редактируем существующий объект
+        if self.instance.pk:
+            # 1. Программы: показываем все программы текущего УЦ + текущую выбранную программу
+            current_program = self.instance.training_program
+            if current_program:
+                self.fields['training_program'].queryset = TrainingProgram.objects.filter(
+                    counteragent_name=current_program.counteragent_name
+                ) | TrainingProgram.objects.filter(pk=current_program.pk)
+            else:
+                self.fields['training_program'].queryset = TrainingProgram.objects.none()
 
+            # 2. Модули: показываем все модули текущей Программы + текущие выбранные модули
+            if current_program:
+                current_units = self.instance.training_unit.all()
+                self.fields['training_unit'].queryset = TrainingUnit.objects.filter(
+                    program_units=current_program
+                ) | TrainingUnit.objects.filter(pk__in=current_units.values_list('pk', flat=True))
+            else:
+                self.fields['training_unit'].queryset = TrainingUnit.objects.none()
+        else:
+            # Для нового объекта поля пустые
+            self.fields['training_program'].queryset = TrainingProgram.objects.none()
+            self.fields['training_unit'].queryset = TrainingUnit.objects.none()
         for field in self.fields:
             make_custom_field(self.fields[field])
