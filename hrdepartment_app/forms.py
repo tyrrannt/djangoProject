@@ -2119,3 +2119,23 @@ class StudentAgreementForm(forms.ModelForm):
             self.fields['training_unit'].queryset = TrainingUnit.objects.none()
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+
+class TrainingProgramQuickForm(forms.ModelForm):
+    """Мини-форма для быстрого создания программы в модальном окне"""
+
+    class Meta:
+        model = TrainingProgram
+        fields = ['program_name', 'counteragent_name']
+        widgets = {
+            'counteragent_name': forms.HiddenInput(),  # Скрытое поле
+            'program_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите название программы',
+                'autofocus': True
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['program_name'].required = True

@@ -169,4 +169,5 @@ urlpatterns = [
     # AJAX эндпоинты для каскадных списков
     path('ajax/load-programs/', views.load_programs, name='ajax_load_programs'),
     path('ajax/load-units/', views.load_units, name='ajax_load_units'),
+    path('ajax/create-program/', views.ajax_create_program, name='ajax_create_program'),
 ]

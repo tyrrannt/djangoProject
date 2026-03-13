@@ -82,6 +82,7 @@ from hrdepartment_app.forms import (
     DataBaseUserEventAddForm, DataBaseUserEventUpdateForm, BusinessProcessRoutesAddForm,
     BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
     LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm, StudentAgreementForm,
+    TrainingProgramQuickForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -6495,5 +6496,30 @@ def load_units(request):
         {'id': unit.id, 'name': unit.unit_name}
         for unit in units
     ]
-    print(data)
     return JsonResponse({'units': data})
+
+
+@login_required
+@require_POST
+def ajax_create_program(request):
+    """
+    AJAX обработчик для создания новой программы обучения.
+    Принимает название программы и ID учебного центра.
+    """
+    if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    form = TrainingProgramQuickForm(request.POST)
+
+    if form.is_valid():
+        program = form.save()
+        return JsonResponse({
+            'success': True,
+            'id': program.id,
+            'name': program.program_name
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'errors': form.errors
+        }, status=400)
