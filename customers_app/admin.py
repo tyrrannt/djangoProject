@@ -47,7 +47,8 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': (
-            'title', 'first_name', 'last_name', 'surname', 'email', 'birthday')}),
+            'title', 'first_name', 'last_name', 'surname', 'email', 'birthday', 'employment_contract',
+            'employment_contract_date')}),
         ('Profile info', {'fields': (
             'avatar', 'address', 'type_users', 'service_number', 'user_access', 'personal_phone', 'gender',
             'user_work_profile', 'user_profile', 'ref_key', 'person_ref_key', 'passphrase', 'telegram_id', 'is_ppa')}),

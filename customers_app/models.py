@@ -638,6 +638,12 @@ class DataBaseUser(AbstractUser):
     )
     is_ppa = models.BooleanField(default=False, verbose_name="МПД")
     updated_at = models.DateTimeField(auto_now=True)
+    employment_contract = models.CharField(
+        verbose_name="Номер трудового договора", max_length=15, default="", blank=True
+    )
+    employment_contract_date = models.DateField(
+        verbose_name="Дата трудового договора", blank=True, null=True
+    )
 
     def __str__(self):
         return self.title

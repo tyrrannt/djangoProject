@@ -795,6 +795,8 @@ def get_passport_data(user):
         'address': getattr(user, 'address', '') or '',
         'phone': getattr(user, 'personal_phone', '') or '',
         'job': str(job) if job else '',
+        'employment_contract': getattr(user, 'employment_contract', '') or '',
+        'employment_contract_date': getattr(user, 'employment_contract_date', '') or '',
     }
 
 

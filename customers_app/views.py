@@ -16,7 +16,6 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction, OperationalError
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
-from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q, F, ForeignKey, Count
@@ -27,8 +26,8 @@ from rest_framework import viewsets
 
 from administration_app.models import PortalProperty
 from administration_app.utils import boolean_return, get_jsons_data, \
-    change_session_get, change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
-    process_group, process_group_interval, seconds_to_hhmm, get_active_user, get_today_data_delta
+    change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
+    process_group, process_group_interval, seconds_to_hhmm, get_active_user, get_today_data_delta, get_jsons_data_filter
 from contracts_app.models import TypeDocuments, Contract
 from contracts_app.templatetags.custom import FIO_format
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
@@ -43,7 +42,7 @@ from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm,
     ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm
 from django.contrib import auth
 from django.urls import reverse, reverse_lazy
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 
 from customers_app.serializers import DataBaseUserSerializer
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
@@ -1152,6 +1151,20 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         if self.request.GET.get('update') == '3':
             users_set = DataBaseUser.objects.all().exclude(is_ppa=True)
             for user in users_set:
+                if user.employment_contract == "":
+                    data = get_jsons_data_filter("Document", "ПриемНаРаботу", "Сотрудник_Key", user.ref_key, 0, 0, True,
+                                                 True)
+
+                    try:
+                        user.employment_contract = data['value'][0].get('ТрудовойДоговорНомер', '')
+                        user.employment_contract_date = datetime.datetime.strptime(
+                            data['value'][0].get('ТрудовойДоговорДата', '')[:10], "%Y-%m-%d"
+                        )
+                        user.save()
+                    except TypeError:
+                        pass
+                    except IndexError:
+                        pass
                 if not get_active_user(user.ref_key):
                     user.is_active = False
                     user.save()

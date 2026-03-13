@@ -6420,6 +6420,7 @@ def generate_student_agreement(request, pk):
         'full_name_address': passport_data.get('address', ''),
         'full_name_phone': passport_data.get('phone', ''),
 
+
         # Обучение
         'auc_full': auc_full,
         'auc_short': auc_short,
@@ -6446,8 +6447,8 @@ def generate_student_agreement(request, pk):
         'work_period_years_in_words': number_to_words(agreement.work_period_years).split()[0],  # Упрощенно
 
         # Трудовой договор
-        'employment_contract': agreement.contract_number,
-        'employment_contract_date': agreement.contract_date.strftime('%d.%m.%Y') if agreement.contract_date else '',
+        'employment_contract': passport_data.get('employment_contract', ''),
+        'employment_contract_date': passport_data.get('employment_contract_date', '').strftime('%d.%m.%Y'),
     }
 
     # 5. Рендеринг документа

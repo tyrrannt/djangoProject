@@ -78,7 +78,6 @@ def get_database_user_work_profile():
 
     for units in users_list:
         job_code, division_code, date_of_employment = "", "", "1900-01-01"
-
         todo_str = get_filter_list(todo_str_list, "Сотрудник_Key", units["ref_key"])
         period = datetime.datetime.strptime("1900-01-01", "%Y-%m-%d")
         if units["ref_key"] != "":
