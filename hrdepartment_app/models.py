@@ -3439,7 +3439,9 @@ class LaborProtection(Documents):
     prefix_ext_scan_file = "pdf"
 
     doc_file = models.FileField(
-        verbose_name="Файл документа", upload_to=lbp_directory_path_doc, blank=True,
+        verbose_name="Файл документа",
+        upload_to=lbp_directory_path_doc,
+        blank=True,
         validators=[
             FileExtensionValidator(allowed_extensions=['doc', 'docx']),
         ]
@@ -3668,10 +3670,12 @@ class TrainingProgram(models.Model):
     def __str__(self):
         return f'{self.program_name}'
 
+
 class EducationFormChoices(models.TextChoices):
     FULL_TIME = 'full_time', 'очная'
     PART_TIME = 'part_time', 'заочная'
     DISTANCE = 'distance', 'дистанционно'
+
 
 class StudentAgreement(models.Model):
     class Meta:
