@@ -27,6 +27,25 @@
             cursor: not-allowed;
             opacity: 0.7;
         }
+
+        /* Стили для кнопки просмотра */
+        #btnViewContract {
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #btnViewContract:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #btnViewContract:not(:disabled):hover {
+            background-color: #007bff;
+            color: white;
+        }
     </style>
 {% endblock %}
 
@@ -47,6 +66,20 @@
 
             // --- ЛОГИКА КАСКАДНЫХ СПИСКОВ ---
 
+            // --- Функция обновления кнопки просмотра договора ---
+            function updateContractViewButton() {
+                const contractId = $('#id_counteragent_contract').val();
+                const btnView = $('#btnViewContract');
+
+                if (contractId) {
+                    const viewUrl = "{% url 'contracts_app:detail' 0 %}".replace('0', contractId);
+                    btnView.attr('href', viewUrl).prop('disabled', false);
+                    console.log('Кнопка просмотра активирована:', viewUrl);
+                } else {
+                    btnView.attr('href', '#').prop('disabled', true);
+                }
+            }
+
             // 1. При изменении Учебного Центра
             $('#id_training_center_name').change(function () {
                 const centerId = $(this).val();
@@ -62,6 +95,9 @@
                 programField.empty().append('<option value="">---------</option>').prop('disabled', true);
                 contractField.empty().append('<option value="">---------</option>').prop('disabled', true);
                 unitField.empty().prop('disabled', true);
+
+                // Сбрасываем кнопку просмотра
+                updateContractViewButton();
 
                 if (centerId) {
                     // Добавляем кнопку "Добавить программу" рядом с полем
@@ -88,9 +124,9 @@
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_contracts' %}",
                         data: {'counteragent_id': centerId},
-                        success: function(data) {
+                        success: function (data) {
                             if (data.contracts.length > 0) {
-                                $.each(data.contracts, function(index, contract) {
+                                $.each(data.contracts, function (index, contract) {
                                     contractField.append(new Option(contract.name, contract.id));
                                 });
                                 contractField.prop('disabled', false);
@@ -98,6 +134,7 @@
                                 // Восстанавливаем выбранный договор
                                 if (currentContractId) {
                                     contractField.val(currentContractId);
+                                    updateContractViewButton();
                                 }
                             } else {
                                 contractField.append(new Option('Нет договоров типа "Обучение"', ''));
@@ -136,6 +173,23 @@
                         }
                     });
                 }
+            });
+
+            // 3. При изменении выбранного договора (НОВОЕ: отдельный обработчик)
+            $('#id_counteragent_contract').on('change', function() {
+                updateContractViewButton();
+            });
+
+            // 4. Обработчик клика на кнопку просмотра (НОВОЕ)
+            $('#btnViewContract').on('click', function(e) {
+                if ($(this).prop('disabled') || !$(this).attr('href') || $(this).attr('href') === '#') {
+                    e.preventDefault();
+                    return false;
+                }
+                const url = $(this).attr('href');
+                console.log('Открытие договора:', url);
+                window.open(url, '_blank');
+                e.preventDefault();
             });
 
             // 3. Инициализация при загрузке страницы
@@ -341,11 +395,24 @@
                                                 <small class="text-muted">Выберите учебный центр</small>
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-6">
+                                        <div class="col-sm-12 col-md-4">
                                             <div class="form-group">
                                                 {{ form.counteragent_contract.label_tag }}
                                                 {{ form.counteragent_contract|add_class:"form-control"|attr:"id:id_counteragent_contract"|attr:"disabled:true" }}
                                                 <small class="text-muted">Выберите трудовой договор из реестра</small>
+                                            </div>
+                                        </div>
+                                        <!-- Кнопка просмотра договора -->
+                                        <div class="col-sm-12 col-md-2">
+                                            <div class="form-group">
+                                                <label class="control-label">&nbsp;</label>
+                                                <a href="#"
+                                                   id="btnViewContract"
+                                                   class="btn btn-outline-primary btn-block"
+                                                   disabled
+                                                   title="Просмотреть договор">
+                                                    <i class="bx bx-show me-1"></i> Просмотр
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
