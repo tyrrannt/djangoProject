@@ -3687,12 +3687,14 @@ class StudentAgreement(models.Model):
         verbose_name="Дата ученического договора"
     )
 
-    contract_number = models.CharField(
-        verbose_name="№ договора",
-        max_length=100
-    )
-    contract_date = models.DateField(
-        verbose_name="Дата договора"
+    counteragent_contract = models.ForeignKey(
+        'contracts_app.Contract',
+        verbose_name="Договор",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='student_counteragent_contract',
+        help_text="Выберите договор из системы"
     )
 
     # Обучение
@@ -3765,8 +3767,8 @@ class StudentAgreement(models.Model):
     def get_data(self):
         return {
             "pk": self.pk,
-            "document_number": self.contract_number,
-            "document_date": f"{self.contract_date:%d.%m.%Y} г.",
+            "document_number": self.student_agreement_number,
+            "document_date": f"{self.student_agreement_date:%d.%m.%Y} г.",
             "executor": format_name_initials(self.full_name),
             "auc": self.training_center_name.short_name
         }

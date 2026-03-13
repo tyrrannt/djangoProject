@@ -49,6 +49,7 @@ from administration_app.utils import (
     get_history,
     get_year_interval, ajax_search, send_notification,
 )
+from contracts_app.models import Contract
 from contracts_app.templatetags.custom import FIO_format
 from customers_app.models import DataBaseUser, Counteragent
 from djangoProject.settings import EMAIL_HOST_USER
@@ -6340,7 +6341,7 @@ class StudentAgreementCreateView(PermissionRequiredMixin, LoginRequiredMixin, Cr
 
     def get_form_kwargs(self):
         kwargs = super(StudentAgreementCreateView, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
+        # kwargs['user'] = self.request.user
         return kwargs
 
 
@@ -6353,7 +6354,7 @@ class StudentAgreementUpdateView(PermissionRequiredMixin, LoginRequiredMixin,
 
     def get_form_kwargs(self):
         kwargs = super(StudentAgreementUpdateView, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
+        # kwargs['user'] = self.request.user
         return kwargs
 
 
@@ -6403,6 +6404,7 @@ def generate_student_agreement(request, pk):
 
     # 4. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
     rubles_word, rubles_suffix, kopecks, kopecks_suffix = number_to_words_rub(agreement.training_cost)
+
     context = {
         # Реквизиты договора
         'student_agreement_number': agreement.student_agreement_number,
@@ -6422,7 +6424,6 @@ def generate_student_agreement(request, pk):
         'full_name_address': passport_data.get('address', ''),
         'full_name_phone': passport_data.get('phone', ''),
 
-
         # Обучение
         'auc_full': auc_full,
         'auc_short': auc_short,
@@ -6437,7 +6438,6 @@ def generate_student_agreement(request, pk):
         'form_education': agreement.get_form_education_display(),
 
         # Финансы
-
         'training_cost': format_currency(agreement.training_cost),
         'training_cost_in_word': rubles_word,
         'training_cost_in_word_suffix': rubles_suffix,
@@ -6523,3 +6523,35 @@ def ajax_create_program(request):
             'success': False,
             'errors': form.errors
         }, status=400)
+
+
+def ajax_load_contracts(request):
+    """
+    Возвращает список договоров для выбранного контрагента.
+    Фильтр: только договоры с типом 'Обучение'.
+    """
+    counteragent_id = request.GET.get('counteragent_id')
+
+    # Уточните название типа договора в вашей базе (например, 'Обучение', 'Training' или ID)
+    # Вариант 1: Фильтрация по названию типа договора
+    contracts = Contract.objects.filter(
+        contract_counteragent_id=counteragent_id,
+        type_of_contract__type_contract__icontains='Обучение'  # Проверьте точное название
+    ).order_by('-date_conclusion')
+
+    # Вариант 2 (если есть конкретный ID типа договора):
+    # training_type_id = 5  # ID типа "Обучение"
+    # contracts = Contract.objects.filter(
+    #     contract_counteragent_id=counteragent_id,
+    #     type_of_contract_id=training_type_id
+    # )
+
+    data = [
+        {
+            'id': contract.id,
+            'name': f"№{contract.contract_number} от {contract.date_conclusion.strftime('%d.%m.%Y') if contract.date_conclusion else 'б/д'}"
+        }
+        for contract in contracts
+    ]
+
+    return JsonResponse({'contracts': data})

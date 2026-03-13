@@ -52,18 +52,21 @@
                 const centerId = $(this).val();
                 const centerName = $(this).find('option:selected').text();
                 const programField = $('#id_training_program');
+                const contractField = $('#id_counteragent_contract');
                 const unitField = $('#id_training_unit');
-
+                // Сохраняем текущие значения для восстановления
                 const currentProgramId = programField.val();
+                const currentContractId = contractField.val();
 
                 // Сбрасываем и блокируем зависимые поля
                 programField.empty().append('<option value="">---------</option>').prop('disabled', true);
+                contractField.empty().append('<option value="">---------</option>').prop('disabled', true);
                 unitField.empty().prop('disabled', true);
 
                 if (centerId) {
                     // Добавляем кнопку "Добавить программу" рядом с полем
                     addAddProgramButton(centerId, centerName);
-
+                    // --- Загрузка Программ ---
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_programs' %}",
                         data: {'center_id': centerId},
@@ -78,6 +81,26 @@
                                     programField.val(currentProgramId);
                                     programField.trigger('change');
                                 }
+                            }
+                        }
+                    });
+                    // --- Загрузка Договоров (НОВОЕ) ---
+                    $.ajax({
+                        url: "{% url 'hrdepartment_app:ajax_load_contracts' %}",
+                        data: {'counteragent_id': centerId},
+                        success: function(data) {
+                            if (data.contracts.length > 0) {
+                                $.each(data.contracts, function(index, contract) {
+                                    contractField.append(new Option(contract.name, contract.id));
+                                });
+                                contractField.prop('disabled', false);
+
+                                // Восстанавливаем выбранный договор
+                                if (currentContractId) {
+                                    contractField.val(currentContractId);
+                                }
+                            } else {
+                                contractField.append(new Option('Нет договоров типа "Обучение"', ''));
                             }
                         }
                     });
@@ -306,27 +329,23 @@
                                                 {{ form.student_agreement_date|add_class:"form-control"|attr:"id:id_student_agreement_date" }}
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-4 col-lg-3">
-                                            <div class="form-group">
-                                                {{ form.contract_number.label_tag }}
-                                                {{ form.contract_number|add_class:"form-control"|attr:"id:id_contract_number" }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
-                                            <div class="form-group">
-                                                {{ form.contract_date.label_tag }}
-                                                {{ form.contract_date|add_class:"form-control"|attr:"id:id_contract_date" }}
-                                            </div>
-                                        </div>
+
                                     </div>
 
                                     <!-- Обучение (Каскадные поля) -->
                                     <div class="row">
-                                        <div class="col-sm-12">
+                                        <div class="col-sm-12 col-md-6">
                                             <div class="form-group">
                                                 {{ form.training_center_name.label_tag }}
                                                 {{ form.training_center_name|add_class:"form-control"|attr:"id:id_training_center_name" }}
                                                 <small class="text-muted">Выберите учебный центр</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6">
+                                            <div class="form-group">
+                                                {{ form.counteragent_contract.label_tag }}
+                                                {{ form.counteragent_contract|add_class:"form-control"|attr:"id:id_counteragent_contract"|attr:"disabled:true" }}
+                                                <small class="text-muted">Выберите трудовой договор из реестра</small>
                                             </div>
                                         </div>
                                     </div>

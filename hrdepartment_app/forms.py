@@ -3,6 +3,8 @@ import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+
+from contracts_app.models import Contract
 from core import logger
 from administration_app.utils import make_custom_field
 from customers_app.models import (
@@ -2088,34 +2090,65 @@ class StudentAgreementForm(forms.ModelForm):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        :param kwargs: Содержит словарь, в котором содержится текущий пользователь
-        """
-        self.user = kwargs.pop("user")
-        super(StudentAgreementForm, self).__init__(*args, **kwargs)
-        # Если редактируем существующий объект
-        if self.instance.pk:
-            # 1. Программы: показываем все программы текущего УЦ + текущую выбранную программу
-            current_program = self.instance.training_program
-            if current_program:
-                self.fields['training_program'].queryset = TrainingProgram.objects.filter(
-                    counteragent_name=current_program.counteragent_name
-                ) | TrainingProgram.objects.filter(pk=current_program.pk)
-            else:
-                self.fields['training_program'].queryset = TrainingProgram.objects.none()
+        super().__init__(*args, **kwargs)
 
-            # 2. Модули: показываем все модули текущей Программы + текущие выбранные модули
-            if current_program:
-                current_units = self.instance.training_unit.all()
-                self.fields['training_unit'].queryset = TrainingUnit.objects.filter(
-                    program_units=current_program
-                ) | TrainingUnit.objects.filter(pk__in=current_units.values_list('pk', flat=True))
-            else:
-                self.fields['training_unit'].queryset = TrainingUnit.objects.none()
+        # Определяем, какой УЦ выбран (из POST-данных или из экземпляра)
+        center_id = None
+        if self.data and self.data.get('training_center_name'):
+            center_id = self.data.get('training_center_name')
+        elif self.instance.pk and self.instance.training_center_name_id:
+            center_id = self.instance.training_center_name_id
+
+        # Определяем выбранный договор
+        contract_id = None
+        if self.data and self.data.get('counteragent_contract'):
+            contract_id = self.data.get('counteragent_contract')
+        elif self.instance.pk and self.instance.counteragent_contract_id:
+            contract_id = self.instance.counteragent_contract_id
+
+        # Формируем queryset для договоров
+        if center_id:
+            queryset = Contract.objects.filter(
+                contract_counteragent_id=center_id,
+                type_of_contract__type_contract__icontains='Обучение'  # Тот же фильтр, что в AJAX
+            )
+            # Добавляем текущий выбранный договор, чтобы валидация прошла
+            if contract_id:
+                queryset = queryset | Contract.objects.filter(pk=contract_id)
+            self.fields['counteragent_contract'].queryset = queryset
         else:
-            # Для нового объекта поля пустые
+            self.fields['counteragent_contract'].queryset = Contract.objects.none()
+
+        # Определяем, какая программа выбрана (из POST-данных или из экземпляра)
+        program_id = None
+        if self.data and self.data.get('training_program'):
+            program_id = self.data.get('training_program')
+        elif self.instance.pk and self.instance.training_program_id:
+            program_id = self.instance.training_program_id
+
+        # Формируем queryset для программ
+        if center_id:
+            queryset = TrainingProgram.objects.filter(counteragent_name_id=center_id)
+            # Важно: добавляем выбранную программу в queryset, даже если она не входит в фильтр
+            # (например, только что созданная через модальное окно)
+            if program_id:
+                queryset = queryset | TrainingProgram.objects.filter(pk=program_id)
+            self.fields['training_program'].queryset = queryset
+        else:
             self.fields['training_program'].queryset = TrainingProgram.objects.none()
+
+        # Формируем queryset для модулей
+        if program_id:
+            queryset = TrainingUnit.objects.filter(program_units_id=program_id)
+            # Для множественного выбора: добавляем все текущие выбранные модули
+            if self.data and self.data.getlist('training_unit'):
+                selected_units = self.data.getlist('training_unit')
+                queryset = queryset | TrainingUnit.objects.filter(pk__in=selected_units)
+            elif self.instance.pk:
+                selected_units = self.instance.training_unit.values_list('pk', flat=True)
+                queryset = queryset | TrainingUnit.objects.filter(pk__in=selected_units)
+            self.fields['training_unit'].queryset = queryset
+        else:
             self.fields['training_unit'].queryset = TrainingUnit.objects.none()
         for field in self.fields:
             make_custom_field(self.fields[field])
