@@ -6336,7 +6336,7 @@ class StudentAgreementCreateView(PermissionRequiredMixin, LoginRequiredMixin, Cr
     model = StudentAgreement
     form_class = StudentAgreementForm
     success_url = reverse_lazy('hrdepartment_app:student_agreement_list')
-    permission_required = "hrdepartment_app.create_studentagreement"
+    permission_required = "hrdepartment_app.add_studentagreement"
 
     def get_form_kwargs(self):
         kwargs = super(StudentAgreementCreateView, self).get_form_kwargs()
