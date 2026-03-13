@@ -3,36 +3,93 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
 {% block custome_css %}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
-    {#    <link rel="stylesheet"#}
-    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
-    {#    <link rel="stylesheet"#}
-    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
+    <!-- Стили для формы -->
 {% endblock %}
 
 {% block custome_script %}
-    {#    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
-    {#    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
-    {#    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
-
-
+    <!-- Скрипты -->
 {% endblock %}
+
 {% block SpecificPageVendor %}
     <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function () {
+            // Инициализация formset если используется
             $('#formset-table tbody').formset({
                 prefix: 'report_cards',
                 addText: 'Add Another Book',
                 deleteText: 'Remove',
                 formTemplate: $('#formset-table tbody tr.formset_row:first').clone()
             });
-        });
 
+            // --- ЛОГИКА КАСКАДНЫХ СПИСКОВ ---
+
+            // 1. При изменении Учебного Центра
+            $('#id_training_center_name').change(function() {
+                const centerId = $(this).val();
+                const programField = $('#id_training_program');
+                const unitField = $('#id_training_unit');
+
+                // Сбрасываем и блокируем зависимые поля
+                programField.empty().append('<option value="">---------</option>').prop('disabled', true);
+                unitField.empty().prop('disabled', true);
+
+                if (centerId) {
+                    // Загружаем программы
+                    $.ajax({
+                        url: "{% url 'hrdepartment_app:ajax_load_programs' %}",
+                        data: {'center_id': centerId},
+                        success: function(data) {
+                            if (data.programs.length > 0) {
+                                $.each(data.programs, function(index, program) {
+                                    programField.append(new Option(program.name, program.id));
+                                });
+                                programField.prop('disabled', false);
+
+                                // Триггерим изменение программы, если она была выбрана ранее (для редактирования)
+                                if (programField.val()) {
+                                    programField.trigger('change');
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 2. При изменении Программы обучения
+            $('#id_training_program').change(function() {
+                const programId = $(this).val();
+                const unitField = $('#id_training_unit');
+
+                // Сбрасываем и блокируем модули
+                unitField.empty().prop('disabled', true);
+
+                if (programId) {
+                    // Загружаем модули
+                    $.ajax({
+                        url: "{% url 'hrdepartment_app:ajax_load_units' %}",
+                        data: {'program_id': programId},
+                        success: function(data) {
+                            if (data.units.length > 0) {
+                                $.each(data.units, function(index, unit) {
+                                    unitField.append(new Option(unit.name, unit.id));
+                                });
+                                unitField.prop('disabled', false);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 3. Инициализация при загрузке страницы (для режима редактирования)
+            // Если мы редактируем объект, нужно проверить, выбран ли УЦ, и подгрузить данные
+            const initialCenterId = $('#id_training_center_name').val();
+            if (initialCenterId) {
+                $('#id_training_center_name').trigger('change');
+            }
+        });
     </script>
 {% endblock %}
 
@@ -43,6 +100,8 @@
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
         {% include 'library_app/breadcrumb.html' %}
+
+        <!-- Блок ошибок -->
         <div>
             {% if form.errors %}
                 {% for field in form %}
@@ -54,87 +113,25 @@
                 {% endfor %}
                 {% for error in form.non_field_errors %}
                     <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        <strong>Ошибка</strong>: {{ error|escape }}
                     </div>
                 {% endfor %}
             {% endif %}
         </div>
 
         <style>
-            /* Скрыть элемент по умолчанию */
-            .mobile-only {
-                display: none;
-            }
+            /* Стили для адаптивности и ширины колонок */
+            .mobile-only { display: none; }
+            @media (max-width: 767px) { .mobile-only { display: inline; } }
 
-            /* Показать элемент только на мобильных устройствах */
-            @media (max-width: 767px) {
-                .mobile-only {
-                    display: inline;
-                }
-            }
-
-            th:nth-child(1), td:nth-child(1) {
-                width: 20%;
-            }
-
-            th:nth-child(2), td:nth-child(2) {
-                width: 5%;
-            }
-
-            th:nth-child(3), td:nth-child(3) {
-                width: 5%;
-            }
-
-            th:nth-child(4), td:nth-child(4) {
-                width: 5%;
-            }
-
-            th:nth-child(5), td:nth-child(5) {
-                width: 5%;
-            }
-
-            th:nth-child(6), td:nth-child(6) {
-                width: 20%;
-            }
-
-            th:nth-child(7), td:nth-child(7) {
-                width: 40%;
-            }
-
-            @media (max-width: 576px) {
-                .table-responsive-sm {
-                    display: block;
-                    width: 100%;
-                    overflow-x: auto;
-                    -webkit-overflow-scrolling: touch;
-                }
-
-                .table-responsive-sm table {
-                    width: 100%;
-                }
-
-                .table-responsive-sm th,
-                .table-responsive-sm td {
-                    display: block;
-                    width: 100%;
-                    text-align: left;
-                }
-
-                .table-responsive-sm th {
-                    font-weight: bold;
-                }
-
-                .table-responsive-sm td::before {
-                    content: attr(data-label);
-                    float: left;
-                    font-weight: bold;
-                    text-transform: uppercase;
-                    margin-right: 10px;
-                }
+            /* Стили для disabled полей */
+            select:disabled {
+                background-color: #e9ecef;
+                cursor: not-allowed;
+                opacity: 0.7;
             }
         </style>
 
-        <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="row">
@@ -143,117 +140,130 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-sm-12">
+                                    <!-- Реквизиты -->
                                     <div class="row">
                                         <div class="col-sm-12 col-md-4 col-lg-3">
                                             <div class="form-group">
                                                 {{ form.student_agreement_number.label_tag }}
-                                                {{ form.student_agreement_number }}
+                                                {{ form.student_agreement_number|add_class:"form-control"|attr:"id:id_student_agreement_number" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-4 col-lg-3">
                                             <div class="form-group">
                                                 {{ form.student_agreement_date.label_tag }}
-                                                {{ form.student_agreement_date }}
+                                                {{ form.student_agreement_date|add_class:"form-control"|attr:"id:id_student_agreement_date" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-4 col-lg-3">
                                             <div class="form-group">
                                                 {{ form.contract_number.label_tag }}
-                                                {{ form.contract_number }}
+                                                {{ form.contract_number|add_class:"form-control"|attr:"id:id_contract_number" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-6 col-lg-3">
                                             <div class="form-group">
                                                 {{ form.contract_date.label_tag }}
-                                                {{ form.contract_date }}
+                                                {{ form.contract_date|add_class:"form-control"|attr:"id:id_contract_date" }}
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Обучение (Каскадные поля) -->
                                     <div class="row">
-                                        <div class="col-sm-12 col-md-6 col-lg-3">
+                                        <div class="col-sm-12">
                                             <div class="form-group">
                                                 {{ form.training_center_name.label_tag }}
-                                                {{ form.training_center_name }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-4">
-                                            <div class="form-group">
-                                                {{ form.training_program.label_tag }}
-                                                {{ form.training_program }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-4">
-                                            <div class="form-group">
-                                                {{ form.training_unit.label_tag }}
-                                                {{ form.training_unit }}
+                                                {{ form.training_center_name|add_class:"form-control"|attr:"id:id_training_center_name" }}
+                                                <small class="text-muted">Выберите учебный центр</small>
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div class="row">
+                                        <div class="col-sm-12 col-md-6">
+                                            <div class="form-group">
+                                                {{ form.training_program.label_tag }}
+                                                {{ form.training_program|add_class:"form-control"|attr:"id:id_training_program"|attr:"disabled:true" }}
+                                                <small class="text-muted">Доступно после выбора УЦ</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-6">
+                                            <div class="form-group">
+                                                {{ form.training_unit.label_tag }}
+                                                {{ form.training_unit|add_class:"form-control"|attr:"id:id_training_unit"|attr:"disabled:true" }}
+                                                <small class="text-muted">Доступно после выбора программы</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Детали обучения -->
                                     <div class="row">
                                         <div class="col-sm-12 col-md-4">
                                             <div class="form-group">
                                                 {{ form.form_education.label_tag }}
-                                                {{ form.form_education }}
+                                                {{ form.form_education|add_class:"form-control"|attr:"id:id_form_education" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-4">
                                             <div class="form-group">
                                                 {{ form.academic_hours.label_tag }}
-                                                {{ form.academic_hours }}
+                                                {{ form.academic_hours|add_class:"form-control"|attr:"id:id_academic_hours" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-4">
                                             <div class="form-group">
                                                 {{ form.training_place.label_tag }}
-                                                {{ form.training_place }}
+                                                {{ form.training_place|add_class:"form-control"|attr:"id:id_training_place" }}
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Обучающийся -->
                                     <div class="row">
                                         <div class="col-sm-12 col-md-12">
                                             <div class="form-group">
                                                 {{ form.full_name.label_tag }}
-                                                {{ form.full_name }}
+                                                {{ form.full_name|add_class:"form-control"|attr:"id:id_full_name" }}
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Период и Финансы -->
                                     <div class="row">
                                         <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.training_start_date.label_tag }}
-                                                {{ form.training_start_date }}
+                                                {{ form.training_start_date|add_class:"form-control"|attr:"id:id_training_start_date" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.training_end_date.label_tag }}
-                                                {{ form.training_end_date }}
+                                                {{ form.training_end_date|add_class:"form-control"|attr:"id:id_training_end_date" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.training_cost.label_tag }}
-                                                {{ form.training_cost }}
+                                                {{ form.training_cost|add_class:"form-control"|attr:"id:id_training_cost" }}
                                             </div>
                                         </div>
                                         <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.work_period_years.label_tag }}
-                                                {{ form.work_period_years }}
+                                                {{ form.work_period_years|add_class:"form-control"|attr:"id:id_work_period_years" }}
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="row">
 
-                                    </div>
+                                    <!-- Примечание -->
                                     <div class="row">
                                         <div class="col-sm-12 col-md-12">
                                             <div class="form-group">
                                                 {{ form.note.label_tag }}
-                                                {{ form.note }}
+                                                {{ form.note|add_class:"form-control"|attr:"id:id_note" }}
                                             </div>
                                         </div>
-
                                     </div>
                                 </div>
                             </div>
@@ -261,34 +271,27 @@
                     </section>
                 </div>
             </div>
+
+            <!-- Кнопки действий -->
             <div class="row action-buttons">
                 <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
+                    <button type="submit" class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-save text-4 me-2"></i> Сохранить
                     </button>
                 </div>
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+                    <a href="{% url 'hrdepartment_app:student_agreement_list' %}" class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
+                    </a>
                 </div>
                 {% if object and user.is_superuser %}
                     <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
+                        <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}" class="btn btn-outline-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
                             <i class="bx bx-trash text-4 me-2"></i> Удалить
                         </a>
                     </div>
                 {% endif %}
             </div>
         </form>
-        <!-- end: page -->
     </section>
-
-    <!-- end: page -->
 {% endblock %}

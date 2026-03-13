@@ -166,4 +166,7 @@ urlpatterns = [
     path('student_agreement/<int:pk>/update/', StudentAgreementUpdateView.as_view(), name='student_agreement_update'),
     path('student_agreement/<int:pk>/delete/', StudentAgreementDeleteView.as_view(), name='student_agreement_delete'),
     path('student_agreement/<int:pk>/download/', generate_student_agreement, name='download_agreement'),
+    # AJAX эндпоинты для каскадных списков
+    path('ajax/load-programs/', views.load_programs, name='ajax_load_programs'),
+    path('ajax/load-units/', views.load_units, name='ajax_load_units'),
 ]

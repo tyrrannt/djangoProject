@@ -104,6 +104,7 @@ from hrdepartment_app.models import (
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
     DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions, StudentAgreement,
+    TrainingProgram, TrainingUnit,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 from openpyxl.styles import Font, Alignment, Border, Side
@@ -6471,3 +6472,28 @@ def generate_student_agreement(request, pk):
         filename=filename,
         content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
+
+
+def load_programs(request):
+    """Возвращает программы обучения для выбранного учебного центра."""
+    center_id = request.GET.get('center_id')
+    programs = TrainingProgram.objects.filter(counteragent_name_id=center_id).order_by('program_name')
+
+    data = [
+        {'id': program.id, 'name': program.program_name}
+        for program in programs
+    ]
+    return JsonResponse({'programs': data})
+
+
+def load_units(request):
+    """Возвращает модули для выбранной программы обучения."""
+    program_id = request.GET.get('program_id')
+    units = TrainingUnit.objects.filter(program_units_id=program_id).order_by('unit_name')
+
+    data = [
+        {'id': unit.id, 'name': unit.unit_name}
+        for unit in units
+    ]
+    print(data)
+    return JsonResponse({'units': data})
