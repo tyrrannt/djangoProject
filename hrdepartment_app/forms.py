@@ -2150,6 +2150,7 @@ class StudentAgreementForm(forms.ModelForm):
             self.fields['training_unit'].queryset = queryset
         else:
             self.fields['training_unit'].queryset = TrainingUnit.objects.none()
+        self.fields["full_name"].queryset = DataBaseUser.objects.filter(is_active=True)
         for field in self.fields:
             make_custom_field(self.fields[field])
 
