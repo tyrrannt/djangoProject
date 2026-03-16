@@ -6402,7 +6402,19 @@ def generate_student_agreement(request, pk):
     auc_full = getattr(auc, 'full_name', str(auc))
     auc_short = getattr(auc, 'short_name', str(auc))
 
-    # 4. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
+    # 4. Получаем модули (НОВОЕ)
+    modules = agreement.training_unit.all()
+    if modules:
+        # Формируем список названий модулей
+        modules_list = [str(module.unit_name) for module in modules]
+        # Объединяем с переносом строки для отображения в Word
+        modules_text = '\n'.join(modules_list)
+        show_modules = True
+    else:
+        modules_text = ''
+        show_modules = False
+
+    # 5. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
     rubles_word, rubles_suffix, kopecks, kopecks_suffix = number_to_words_rub(agreement.training_cost)
 
     context = {
@@ -6437,6 +6449,10 @@ def generate_student_agreement(request, pk):
         'end_year': format_date_rus(agreement.training_end_date)['year'],
         'form_education': agreement.get_form_education_display(),
 
+        # Модули
+        'modules_text': modules_text,
+        'show_modules': show_modules,
+
         # Финансы
         'training_cost': format_currency(agreement.training_cost),
         'training_cost_in_word': rubles_word,
@@ -6453,14 +6469,14 @@ def generate_student_agreement(request, pk):
         'employment_contract_date': passport_data.get('employment_contract_date', '').strftime('%d.%m.%Y'),
     }
 
-    # 5. Рендеринг документа
+    # 6. Рендеринг документа
     # Путь к шаблону. Убедитесь, что файл student_agreement.docx лежит в доступной папке
     template_path = os.path.join(settings.BASE_DIR, 'static', 'DocxTemplates', 'student_agreement.docx')
 
     doc = DocxTemplate(template_path)
     doc.render(context)
 
-    # 6. Сохранение в буфер для отправки
+    # 7. Сохранение в буфер для отправки
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
