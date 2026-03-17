@@ -83,7 +83,7 @@ from hrdepartment_app.forms import (
     DataBaseUserEventAddForm, DataBaseUserEventUpdateForm, BusinessProcessRoutesAddForm,
     BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
     LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm, StudentAgreementForm,
-    TrainingProgramQuickForm,
+    TrainingProgramQuickForm, TrainingUnitQuickForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -6571,3 +6571,45 @@ def ajax_load_contracts(request):
     ]
 
     return JsonResponse({'contracts': data})
+
+
+@login_required
+@require_POST
+def ajax_create_unit(request):
+    """
+    AJAX обработчик для создания нового модуля обучения.
+    Принимает название модуля и ID программы.
+    """
+    if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+
+    program_id = request.POST.get('program_id')
+    unit_name = request.POST.get('unit_name', '').strip()
+
+    if not program_id or not unit_name:
+        return JsonResponse({
+            'success': False,
+            'errors': {'unit_name': ['Название модуля обязательно']}
+        }, status=400)
+
+    try:
+        program = TrainingProgram.objects.get(pk=program_id)
+        unit = TrainingUnit.objects.create(
+            unit_name=unit_name,
+            program_units=program
+        )
+        return JsonResponse({
+            'success': True,
+            'id': unit.id,
+            'name': unit.unit_name
+        })
+    except TrainingProgram.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'errors': {'program': ['Программа не найдена']}
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'errors': {'error': str(e)}
+        }, status=400)

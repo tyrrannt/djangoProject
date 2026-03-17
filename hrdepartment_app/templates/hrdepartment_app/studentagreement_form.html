@@ -64,19 +64,27 @@
                 formTemplate: $('#formset-table tbody tr.formset_row:first').clone()
             });
 
-            // --- ЛОГИКА КАСКАДНЫХ СПИСКОВ ---
-
             // --- Функция обновления кнопки просмотра договора ---
             function updateContractViewButton() {
                 const contractId = $('#id_counteragent_contract').val();
                 const btnView = $('#btnViewContract');
-
                 if (contractId) {
                     const viewUrl = "{% url 'contracts_app:detail' 0 %}".replace('0', contractId);
                     btnView.attr('href', viewUrl).prop('disabled', false);
-                    console.log('Кнопка просмотра активирована:', viewUrl);
                 } else {
                     btnView.attr('href', '#').prop('disabled', true);
+                }
+            }
+
+            // --- Функция обновления кнопки добавления модуля ---
+            function updateAddUnitButton(programId, programName) {
+                const btnAddUnit = $('#btnAddUnit');
+                if (programId) {
+                    btnAddUnit.prop('disabled', false)
+                              .data('program-id', programId)
+                              .data('program-name', programName);
+                } else {
+                    btnAddUnit.prop('disabled', true);
                 }
             }
 
@@ -87,25 +95,28 @@
                 const programField = $('#id_training_program');
                 const contractField = $('#id_counteragent_contract');
                 const unitField = $('#id_training_unit');
-                // Сохраняем текущие значения для восстановления
+
                 const currentProgramId = programField.val();
                 const currentContractId = contractField.val();
 
-                // Сбрасываем и блокируем зависимые поля
+                // 🔥 ВАЖНО: захватываем значения модулей ДО очистки поля!
+                const initialUnitIds = unitField.val() || [];
+
+                // Сбрасываем поля
                 programField.empty().append('<option value="">---------</option>').prop('disabled', true);
                 contractField.empty().append('<option value="">---------</option>').prop('disabled', true);
                 unitField.empty().prop('disabled', true);
 
-                // Сбрасываем кнопку просмотра
                 updateContractViewButton();
+                updateAddUnitButton(null, null);
 
                 if (centerId) {
-                    // Добавляем кнопку "Добавить программу" рядом с полем
                     addAddProgramButton(centerId, centerName);
-                    // --- Загрузка Программ ---
+
+                    // Загрузка Программ
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_programs' %}",
-                        data: {'center_id': centerId},
+                        data:  {'center_id': centerId},
                         success: function (data) {
                             if (data.programs.length > 0) {
                                 $.each(data.programs, function (index, program) {
@@ -114,24 +125,23 @@
                                 programField.prop('disabled', false);
 
                                 if (currentProgramId) {
-                                    programField.val(currentProgramId);
-                                    programField.trigger('change');
+                                    // 🔥 ПЕРЕДАЕМ initialUnitIds через триггер
+                                    programField.val(currentProgramId).trigger('change', [initialUnitIds]);
                                 }
                             }
                         }
                     });
-                    // --- Загрузка Договоров (НОВОЕ) ---
+
+                    // Загрузка Договоров
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_contracts' %}",
-                        data: {'counteragent_id': centerId},
+                        data:  {'counteragent_id': centerId},
                         success: function (data) {
                             if (data.contracts.length > 0) {
                                 $.each(data.contracts, function (index, contract) {
                                     contractField.append(new Option(contract.name, contract.id));
                                 });
                                 contractField.prop('disabled', false);
-
-                                // Восстанавливаем выбранный договор
                                 if (currentContractId) {
                                     contractField.val(currentContractId);
                                     updateContractViewButton();
@@ -142,23 +152,27 @@
                         }
                     });
                 } else {
-                    // Если УЦ сброшен - убираем кнопку добавления
                     $('#btnAddProgramWrapper').remove();
                 }
             });
 
-            // 2. При изменении Программы обучения
-            $('#id_training_program').change(function () {
+            // 2. При изменении Программы обучения (загрузка модулей)
+            // 🔥 Добавляем параметр passedUnitIds для получения значений извне
+            $('#id_training_program').change(function (event, passedUnitIds) {
                 const programId = $(this).val();
+                const programName = $(this).find('option:selected').text();
                 const unitField = $('#id_training_unit');
-                const currentUnitIds = unitField.val();
+
+                // 🔥 Используем переданные значения ИЛИ (для ручного изменения) читаем из поля
+                const currentUnitIds = passedUnitIds || unitField.val() || [];
 
                 unitField.empty().prop('disabled', true);
+                updateAddUnitButton(programId, programName);
 
                 if (programId) {
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_units' %}",
-                        data: {'program_id': programId},
+                        data:  {'program_id': programId},
                         success: function (data) {
                             if (data.units.length > 0) {
                                 $.each(data.units, function (index, unit) {
@@ -166,33 +180,47 @@
                                 });
                                 unitField.prop('disabled', false);
 
-                                if (currentUnitIds) {
+                                // 🔥 Восстанавливаем выбранные модули из переданного массива
+                                if (currentUnitIds.length > 0) {
                                     unitField.val(currentUnitIds);
+                                    console.log('Модули восстановлены:', currentUnitIds);
                                 }
+                            } else {
+                                console.log('Нет модулей для этой программы');
                             }
                         }
                     });
+                } else {
+                    updateAddUnitButton(null, null);
                 }
             });
 
-            // 3. При изменении выбранного договора (НОВОЕ: отдельный обработчик)
+            // 3. При изменении выбранного договора
             $('#id_counteragent_contract').on('change', function() {
                 updateContractViewButton();
             });
 
-            // 4. Обработчик клика на кнопку просмотра (НОВОЕ)
+            // 4. Обработчик клика на кнопку просмотра договора
             $('#btnViewContract').on('click', function(e) {
                 if ($(this).prop('disabled') || !$(this).attr('href') || $(this).attr('href') === '#') {
                     e.preventDefault();
                     return false;
                 }
                 const url = $(this).attr('href');
-                console.log('Открытие договора:', url);
                 window.open(url, '_blank');
                 e.preventDefault();
             });
 
-            // 3. Инициализация при загрузке страницы
+            // 5. Обработчик клика на кнопку добавления модуля
+            $('#btnAddUnit').on('click', function() {
+                const programId = $(this).data('program-id');
+                const programName = $(this).data('program-name');
+                if (programId) {
+                    openAddUnitModal(programId, programName);
+                }
+            });
+
+            // 6. Инициализация при загрузке страницы (для редактирования)
             const initialCenterId = $('#id_training_center_name').val();
             if (initialCenterId) {
                 const centerName = $('#id_training_center_name option:selected').text();
@@ -200,13 +228,9 @@
                 $('#id_training_center_name').trigger('change');
             }
 
-            // --- ФУНКЦИИ ДЛЯ МОДАЛЬНОГО ОКНА ---
-
-            // Функция добавления кнопки "+ Добавить программу"
+            // --- ФУНКЦИИ ДЛЯ МОДАЛЬНОГО ОКНА ПРОГРАММЫ ---
             function addAddProgramButton(centerId, centerName) {
-                // Удаляем старую кнопку если есть
                 $('#btnAddProgramWrapper').remove();
-
                 const buttonHtml = `
                     <div id="btnAddProgramWrapper" class="mt-1">
                         <button type="button"
@@ -219,97 +243,130 @@
                     </div>
                 `;
                 $('#id_training_program').after(buttonHtml);
-
-                // Навешиваем обработчик на кнопку
                 $('#btnAddProgram').off('click').on('click', function () {
-                    const cid = $(this).data('center-id');
-                    const cname = $(this).data('center-name');
-                    openAddProgramModal(cid, cname);
+                    openAddProgramModal($(this).data('center-id'), $(this).data('center-name'));
                 });
             }
 
-            // Открытие модального окна
             function openAddProgramModal(centerId, centerName) {
-                // Очищаем форму и ошибки
                 $('#quickProgramForm')[0].reset();
                 $('#programError').text('');
                 $('#id_program_counteragent').val(centerId);
-
-                // Обновляем текст в модалке
                 $('#addProgramModal .modal-title').text(`Новая программа для: ${centerName}`);
-
-                // Показываем модальное окно
                 $('#addProgramModal').modal('show');
-
-                // Фокус на поле ввода
                 setTimeout(() => $('#id_program_name').focus(), 300);
             }
 
-            // Сохранение новой программы
             $('#btnSaveProgram').off('click').on('click', function () {
                 const btn = $(this);
                 const programName = $('#id_program_name').val().trim();
                 const centerId = $('#id_program_counteragent').val();
-
                 if (!programName) {
                     $('#programError').text('Название программы обязательно');
                     return;
                 }
-
-                // Блокируем кнопку
-                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status"></span> Создание...');
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Создание...');
                 $('#programError').text('');
-
                 $.ajax({
                     url: "{% url 'hrdepartment_app:ajax_create_program' %}",
                     type: 'POST',
-                    data: {  // <-- ДОБАВЛЕНО: ключ 'data:'
+                    data:  {
                         'csrfmiddlewaretoken': '{{ csrf_token }}',
                         'program_name': programName,
                         'counteragent_name': centerId
                     },
                     success: function (response) {
                         if (response.success) {
-                            // Добавляем новую программу в список
                             const programField = $('#id_training_program');
                             programField.append(new Option(response.name, response.id));
                             programField.val(response.id).prop('disabled', false);
-
-                            // Закрываем модалку
                             $('#addProgramModal').modal('hide');
-
-                            // Триггерим изменение программы для загрузки модулей
-                            programField.trigger('change');
-
-                            // Очищаем поле ввода для следующего раза
+                            // 🔥 Передаём пустой массив, т.к. при создании программы модулей ещё нет
+                            programField.trigger('change', [[]]);
                             $('#id_program_name').val('');
                         } else {
-                            // Показываем ошибки валидации
                             if (response.errors.program_name) {
                                 $('#programError').text(response.errors.program_name.join(', '));
                             }
                         }
                     },
-                    error: function (xhr, status, error) {
-                        $('#programError').text('Ошибка при создании программы. Попробуйте ещё раз.');
-                        console.error('Error:', error);
+                    error: function () {
+                        $('#programError').text('Ошибка при создании программы');
                     },
                     complete: function () {
-                        // Разблокируем кнопку
                         btn.prop('disabled', false).html('Создать и выбрать');
                     }
                 });
             });
 
-            // Очистка поля ошибки при вводе
-            $('#id_program_name').on('input', function () {
-                $('#programError').text('');
-            });
-
-            // Сброс формы при закрытии модального окна
+            $('#id_program_name').on('input', function () { $('#programError').text(''); });
             $('#addProgramModal').on('hidden.bs.modal', function () {
                 $('#quickProgramForm')[0].reset();
                 $('#programError').text('');
+            });
+
+            // --- ФУНКЦИИ ДЛЯ МОДАЛЬНОГО ОКНА МОДУЛЯ ---
+            function openAddUnitModal(programId, programName) {
+                $('#quickUnitForm')[0].reset();
+                $('#unitError').text('');
+                $('#id_unit_program').val(programId);
+                $('#modalProgramName').text(programName);
+                $('#addUnitModal .modal-title').text(`Новый модуль для: ${programName}`);
+                $('#addUnitModal').modal('show');
+                setTimeout(() => $('#id_unit_name').focus(), 300);
+            }
+
+            $('#btnSaveUnit').off('click').on('click', function () {
+                const btn = $(this);
+                const unitName = $('#id_unit_name').val().trim();
+                const programId = $('#id_unit_program').val();
+
+                if (!unitName) {
+                    $('#unitError').text('Название модуля обязательно');
+                    return;
+                }
+
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Создание...');
+                $('#unitError').text('');
+
+                $.ajax({
+                    url: "{% url 'hrdepartment_app:ajax_create_unit' %}",
+                    type: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}',
+                        'unit_name': unitName,
+                        'program_id': programId
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            const unitField = $('#id_training_unit');
+                            unitField.append(new Option(response.name, response.id));
+                            const currentValues = unitField.val() || [];
+                            if (!currentValues.includes(response.id)) {
+                                currentValues.push(response.id);
+                            }
+                            unitField.val(currentValues);
+                            $('#addUnitModal').modal('hide');
+                            $('#id_unit_name').val('');
+                        } else {
+                            if (response.errors.unit_name) {
+                                $('#unitError').text(response.errors.unit_name.join(', '));
+                            }
+                        }
+                    },
+                    error: function () {
+                        $('#unitError').text('Ошибка при создании модуля');
+                    },
+                    complete: function () {
+                        btn.prop('disabled', false).html('Создать и выбрать');
+                    }
+                });
+            });
+
+            $('#id_unit_name').on('input', function () { $('#unitError').text(''); });
+            $('#addUnitModal').on('hidden.bs.modal', function () {
+                $('#quickUnitForm')[0].reset();
+                $('#unitError').text('');
             });
         });
     </script>
@@ -418,22 +475,40 @@
                                     </div>
 
                                     <div class="row">
-                                        <div class="col-sm-12 col-md-6">
+                                        <div class="col-sm-12 col-md-12">
                                             <div class="form-group">
                                                 {{ form.training_program.label_tag }}
                                                 {{ form.training_program|add_class:"form-control"|attr:"id:id_training_program"|attr:"disabled:true" }}
                                                 <small class="text-muted">Доступно после выбора УЦ</small>
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-6">
+
+                                    </div>
+                                    <!-- Блок с полем модулей + кнопка -->
+                                    <div class="row">
+                                        <div class="col-sm-12 col-md-10">
                                             <div class="form-group">
                                                 {{ form.training_unit.label_tag }}
-                                                {{ form.training_unit|add_class:"form-control"|attr:"id:id_training_unit"|attr:"disabled:true" }}
-                                                <small class="text-muted">Доступно после выбора программы</small>
+                                                {{ form.training_unit|add_class:"form-control"|attr:"id:id_training_unit"|attr:"disabled:true"|attr:"size:5" }}
+                                                <small class="text-muted">Доступно после выбора программы. Удерживайте
+                                                    Ctrl/Cmd для выбора нескольких</small>
+                                            </div>
+                                        </div>
+                                        <!-- Кнопка добавления модуля -->
+                                        <div class="col-sm-12 col-md-2">
+                                            <div class="form-group">
+                                                <label class="control-label">&nbsp;</label>
+                                                <button type="button"
+                                                        id="btnAddUnit"
+                                                        class="btn btn-outline-primary btn-block"
+                                                        disabled
+                                                        title="Добавить новый модуль"
+                                                        style="height: 42px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="bx bx-plus-circle me-1"></i> Модуль
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-
                                     <!-- Детали обучения -->
                                     <div class="row">
                                         <div class="col-sm-12 col-md-4">
@@ -563,6 +638,43 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
                         <button type="button" class="btn btn-primary" id="btnSaveProgram">Создать и выбрать</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Модальное окно для добавления модуля -->
+        <div class="modal fade" id="addUnitModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Добавить новый модуль</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="quickUnitForm">
+                            {% csrf_token %}
+                            <input type="hidden" id="id_unit_program" name="program_id">
+                            <div class="form-group">
+                                <label for="id_unit_name">Наименование модуля *</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="id_unit_name"
+                                       name="unit_name"
+                                       placeholder="Введите название модуля"
+                                       required>
+                                <small class="text-muted" id="unitError" style="color: red;"></small>
+                            </div>
+                            <div class="alert alert-info mt-2">
+                                <small><i class="bx bx-info-circle"></i> Модуль будет автоматически привязан к
+                                    программе: <strong id="modalProgramName"></strong></small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
+                        <button type="button" class="btn btn-primary" id="btnSaveUnit">Создать и выбрать</button>
                     </div>
                 </div>
             </div>

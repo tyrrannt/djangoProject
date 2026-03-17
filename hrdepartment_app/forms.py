@@ -2088,6 +2088,14 @@ class StudentAgreementForm(forms.ModelForm):
     class Meta:
         model = StudentAgreement
         fields = "__all__"
+        widgets = {
+            'training_unit': forms.SelectMultiple(attrs={
+                'class': 'form-control',
+                'id': 'id_training_unit',
+                'size': '5',
+                'multiple': 'multiple',  # Явное указание
+            }),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2137,19 +2145,26 @@ class StudentAgreementForm(forms.ModelForm):
         else:
             self.fields['training_program'].queryset = TrainingProgram.objects.none()
 
-        # Формируем queryset для модулей
+        # Формируем queryset для модулей (ИСПРАВЛЕНО)
         if program_id:
+            # Базовый фильтр: модули текущей программы
             queryset = TrainingUnit.objects.filter(program_units_id=program_id)
-            # Для множественного выбора: добавляем все текущие выбранные модули
+
+            # Собираем выбранные модули из POST-данных или экземпляра
+            selected_pks = []
             if self.data and self.data.getlist('training_unit'):
-                selected_units = self.data.getlist('training_unit')
-                queryset = queryset | TrainingUnit.objects.filter(pk__in=selected_units)
+                selected_pks = self.data.getlist('training_unit')
             elif self.instance.pk:
-                selected_units = self.instance.training_unit.values_list('pk', flat=True)
-                queryset = queryset | TrainingUnit.objects.filter(pk__in=selected_units)
-            self.fields['training_unit'].queryset = queryset
+                selected_pks = self.instance.training_unit.values_list('pk', flat=True)
+
+            # Добавляем выбранные модули в queryset, даже если их нет в базовом фильтре
+            if selected_pks:
+                queryset = queryset | TrainingUnit.objects.filter(pk__in=selected_pks)
+
+            self.fields['training_unit'].queryset = queryset.distinct()
         else:
             self.fields['training_unit'].queryset = TrainingUnit.objects.none()
+        self.fields['training_unit'].required = False
         self.fields["full_name"].queryset = DataBaseUser.objects.filter(is_active=True)
         for field in self.fields:
             make_custom_field(self.fields[field])
@@ -2173,3 +2188,22 @@ class TrainingProgramQuickForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['program_name'].required = True
+
+
+class TrainingUnitQuickForm(forms.ModelForm):
+    """Мини-форма для быстрого создания модуля в модальном окне"""
+    class Meta:
+        model = TrainingUnit
+        fields = ['unit_name', 'program_units']
+        widgets = {
+            'program_units': forms.HiddenInput(),  # Скрытое поле
+            'unit_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите название модуля',
+                'autofocus': True
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['unit_name'].required = True
