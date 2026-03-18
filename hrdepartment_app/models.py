@@ -3854,8 +3854,8 @@ class StudentAgreement(models.Model):
             "document_date": f"{self.student_agreement_date:%d.%m.%Y} г.",
             # Поле для корректной сортировки дат (ISO формат)
             "document_date_sort": self.student_agreement_date.isoformat(),
-            "executor": format_name_initials(self.full_name),
-            "auc": self.training_center_name.short_name,
+            "full_name": format_name_initials(self.full_name),
+            "training_center_name": self.training_center_name.short_name,
             "active": self.full_name.is_active,
             "group": self.full_name.user_work_profile.job.get_type_of_job_display(),
             "remaining_work_period": self.get_remaining_work_period(),  # Новое поле

@@ -998,6 +998,15 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
                 return Q(accommodation__iregex="1")
             else:
                 return Q(accommodation__iregex="0")
+        elif triger == 3 and field == 'full_name__user_work_profile__job__type_of_job':
+            if search_value.lower() in "Общий состав":
+                return Q(full_name__user_work_profile__job__type_of_job__iregex="0")
+            elif search_value.lower() in "Летный состав":
+                return Q(full_name__user_work_profile__job__type_of_job__iregex="1")
+            elif search_value.lower() in "Инженерный состав":
+                return Q(full_name__user_work_profile__job__type_of_job__iregex="2")
+            else:
+                return Q(full_name__user_work_profile__job__type_of_job__iregex="3")
         return Q(**{f"{field}__iregex": search_value})
 
     # Построение общего запроса
