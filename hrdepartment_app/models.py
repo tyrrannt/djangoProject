@@ -3734,6 +3734,11 @@ class StudentAgreement(models.Model):
         default=EducationFormChoices.FULL_TIME,
     )
 
+    remotely = models.BooleanField(
+        verbose_name='С отрывом от работы',
+        default=False
+    )
+
     academic_hours = models.IntegerField(
         verbose_name="академических часа",
         default=0

@@ -6429,6 +6429,15 @@ def generate_student_agreement(request, pk):
 
     # 5. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
     rubles_word, rubles_suffix, kopecks, kopecks_suffix = number_to_words_rub(agreement.training_cost)
+    remotely = '.'
+    terms = 'В период обучения Работнику выплачивается заработная плата по среднему заработку.'
+    if agreement.form_education == 'DISTANCE':
+        if agreement.remotely:
+            remotely = ' с отрывом от работы.'
+        else:
+            remotely = ' без отрыва от работы.'
+            terms = 'В течение всего срока обучения Работнику выплачивается заработная плата в полном объёме, согласно штатному расписанию и условиям трудового договора.'
+
 
     context = {
         # Реквизиты договора
@@ -6461,6 +6470,9 @@ def generate_student_agreement(request, pk):
         'end_month': format_date_rus(agreement.training_end_date)['month'],
         'end_year': format_date_rus(agreement.training_end_date)['year'],
         'form_education': agreement.get_form_education_display(),
+        'remotely': remotely,
+        'terms': terms,
+
 
         # Модули
         'modules_text': modules_text,

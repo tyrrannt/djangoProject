@@ -511,19 +511,25 @@
                                     </div>
                                     <!-- Детали обучения -->
                                     <div class="row">
-                                        <div class="col-sm-12 col-md-4">
+                                        <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.form_education.label_tag }}
                                                 {{ form.form_education|add_class:"form-control"|attr:"id:id_form_education" }}
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-4">
+                                        <div class="col-sm-12 col-md-3">
+                                            <div class="form-group">
+                                                {{ form.remotely.label_tag }}
+                                                {{ form.remotely|add_class:"form-control"|attr:"id:id_remotely" }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.academic_hours.label_tag }}
                                                 {{ form.academic_hours|add_class:"form-control"|attr:"id:id_academic_hours" }}
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-4">
+                                        <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.training_place.label_tag }}
                                                 {{ form.training_place|add_class:"form-control"|attr:"id:id_training_place" }}
