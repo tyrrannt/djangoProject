@@ -39,6 +39,13 @@ from hrdepartment_app.models import (
 from telegram_app.management.commands.bot import send_message_tg
 
 
+PROXY = f"http://{config('PROXY_LOGIN')}:{config('PROXY_PASS')}@{config('PROXY_IP')}:{config('PROXY_PORT')}"
+
+proxies = {
+    "http": PROXY,
+    "https": PROXY,
+}
+
 def xldate_to_datetime(xldate):
     """
         Преобразует Excel-дату (в виде числа) в строку формата 'YYYY-MM-DD HH:MM:SS'.
@@ -263,16 +270,35 @@ def birthday_telegram():
             'disable_web_page_preview': False,
         }
     ).encode()
+    # if count >= 1:
+    #     try:
+    #         req = urllib.request.Request(
+    #             url=api_url,
+    #             data=input_data,
+    #             headers={'Content-Type': 'application/json'}
+    #         )
+    #         with urllib.request.urlopen(req) as response:
+    #             # Тут выводим ответ
+    #             print(response.read().decode('utf-8'))
+    #
+    #     except Exception as e:
+    #         print(e)
     if count >= 1:
         try:
-            req = urllib.request.Request(
-                url=api_url,
-                data=input_data,
-                headers={'Content-Type': 'application/json'}
+            response = requests.post(
+                api_url,
+                json={
+                    'chat_id': TELEGRAM_CHAT_ID,
+                    'parse_mode': 'html',
+                    'text': messages,
+                    'disable_web_page_preview': False,
+                },
+                proxies=proxies,
+                timeout=10
             )
-            with urllib.request.urlopen(req) as response:
-                # Тут выводим ответ
-                print(response.read().decode('utf-8'))
+
+            print(response.status_code)
+            print(response.text)
 
         except Exception as e:
             print(e)
