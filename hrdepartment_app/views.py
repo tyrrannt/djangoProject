@@ -19,7 +19,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Count, Sum
-from django.db.models.functions import ExtractMonth
+from django.db.models.functions import ExtractMonth, ExtractYear
 from django.forms import inlineformset_factory
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, FileResponse
 from django.shortcuts import redirect, render, get_object_or_404
@@ -6373,6 +6373,19 @@ class StudentAgreementListView(PermissionRequiredMixin, LoginRequiredMixin, List
     model = StudentAgreement
     context_object_name = 'student_agreement'
     permission_required = "hrdepartment_app.view_studentagreement"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Применяем сортировку по году (убывание) и номеру договора (убывание)
+        queryset = queryset.annotate(
+            agreement_year=ExtractYear('student_agreement_date')
+        ).order_by(
+            '-agreement_year',  # сначала по году (2026, 2025, ...)
+            '-student_agreement_number'  # затем по номеру договора
+        )
+
+        return queryset
 
     def get(self, request, *args, **kwargs):
         query = Q()

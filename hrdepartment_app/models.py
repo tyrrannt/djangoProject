@@ -3681,7 +3681,7 @@ class StudentAgreement(models.Model):
     class Meta:
         verbose_name = "Ученический договор"
         verbose_name_plural = "Ученические договоры"
-        ordering = ['-student_agreement_number', '-student_agreement_date']
+        ordering = ['-student_agreement_date__year', '-student_agreement_number']
 
 
     # Реквизиты договоров
