@@ -6419,7 +6419,7 @@ def generate_student_agreement(request, pk):
     modules = agreement.training_unit.all()
     if modules:
         # Формируем список названий модулей
-        modules_list = [str(module.unit_name) for module in modules]
+        modules_list = [str(module.full_unit_name) for module in modules]
         # Объединяем с переносом строки для отображения в Word
         modules_text = '\n'.join(modules_list)
         show_modules = True
@@ -6534,7 +6534,7 @@ def load_units(request):
     units = TrainingUnit.objects.filter(program_units_id=program_id).order_by('unit_name')
 
     data = [
-        {'id': unit.id, 'name': unit.unit_name}
+        {'id': unit.id, 'name': unit.unit_name_short}
         for unit in units
     ]
     return JsonResponse({'units': data})
@@ -6609,9 +6609,10 @@ def ajax_create_unit(request):
         return JsonResponse({'error': 'Invalid request'}, status=400)
 
     program_id = request.POST.get('program_id')
+    unit_name_short = request.POST.get('unit_name_short', '').strip()
     unit_name = request.POST.get('unit_name', '').strip()
 
-    if not program_id or not unit_name:
+    if not program_id or not unit_name or not unit_name_short:
         return JsonResponse({
             'success': False,
             'errors': {'unit_name': ['Название модуля обязательно']}
@@ -6620,13 +6621,14 @@ def ajax_create_unit(request):
     try:
         program = TrainingProgram.objects.get(pk=program_id)
         unit = TrainingUnit.objects.create(
+            unit_name_short=unit_name_short,
             unit_name=unit_name,
             program_units=program
         )
         return JsonResponse({
             'success': True,
             'id': unit.id,
-            'name': unit.unit_name
+            'name': unit.unit_name_short
         })
     except TrainingProgram.DoesNotExist:
         return JsonResponse({

@@ -3635,8 +3635,13 @@ class TrainingUnit(models.Model):
         verbose_name = "Модуль"
         verbose_name_plural = "Модули"
 
+    unit_name_short = models.CharField(
+        verbose_name="Краткое наименование",
+        max_length=30,
+        default=''
+    )
     unit_name = models.CharField(
-        verbose_name="Наименование",
+        verbose_name="Полное наименование",
         max_length=350
     )
 
@@ -3646,8 +3651,19 @@ class TrainingUnit(models.Model):
         on_delete=models.CASCADE,
     )
 
+    @property
+    def full_unit_name(self):
+        """Объединяет краткое и полное наименование модуля"""
+        if self.unit_name_short and self.unit_name:
+            return f"{self.unit_name_short} - {self.unit_name}"
+        elif self.unit_name_short:
+            return self.unit_name_short
+        elif self.unit_name:
+            return self.unit_name
+        return ""
+
     def __str__(self):
-        return f'{self.unit_name}'
+        return f'{self.full_unit_name}'
 
 
 class TrainingProgram(models.Model):

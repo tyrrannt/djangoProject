@@ -319,10 +319,16 @@
             $('#btnSaveUnit').off('click').on('click', function () {
                 const btn = $(this);
                 const unitName = $('#id_unit_name').val().trim();
+                const unitNameShort = $('#id_unit_name_short').val().trim();
                 const programId = $('#id_unit_program').val();
 
                 if (!unitName) {
                     $('#unitError').text('Название модуля обязательно');
+                    return;
+                }
+
+                if (!unitNameShort) {
+                    $('#unitError').text('Краткое название модуля обязательно');
                     return;
                 }
 
@@ -335,6 +341,7 @@
                     data: {
                         'csrfmiddlewaretoken': '{{ csrf_token }}',
                         'unit_name': unitName,
+                        'unit_name_short': unitNameShort,
                         'program_id': programId
                     },
                     success: function (response) {
@@ -348,6 +355,7 @@
                             unitField.val(currentValues);
                             $('#addUnitModal').modal('hide');
                             $('#id_unit_name').val('');
+                            $('#id_unit_name_short').val('');
                         } else {
                             if (response.errors.unit_name) {
                                 $('#unitError').text(response.errors.unit_name.join(', '));
@@ -663,7 +671,17 @@
                             {% csrf_token %}
                             <input type="hidden" id="id_unit_program" name="program_id">
                             <div class="form-group">
-                                <label for="id_unit_name">Наименование модуля *</label>
+                                <label for="id_unit_name_short">Краткое наименование модуля *</label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="id_unit_name_short"
+                                       name="unit_name_short"
+                                       placeholder="Введите название модуля"
+                                       required>
+                                <small class="text-muted" id="unitError" style="color: red;"></small>
+                            </div>
+                            <div class="form-group">
+                                <label for="id_unit_name">Полное наименование модуля *</label>
                                 <input type="text"
                                        class="form-control"
                                        id="id_unit_name"
