@@ -6431,7 +6431,7 @@ def generate_student_agreement(request, pk):
     rubles_word, rubles_suffix, kopecks, kopecks_suffix = number_to_words_rub(agreement.training_cost)
     remotely = '.'
     terms = 'В период обучения Работнику выплачивается заработная плата по среднему заработку.'
-    if agreement.form_education == 'DISTANCE':
+    if agreement.form_education == 'distance':
         if agreement.remotely:
             remotely = ' с отрывом от работы.'
         else:

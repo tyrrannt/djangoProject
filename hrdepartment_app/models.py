@@ -3736,7 +3736,7 @@ class StudentAgreement(models.Model):
 
     remotely = models.BooleanField(
         verbose_name='С отрывом от работы',
-        default=False
+        default=True
     )
 
     academic_hours = models.IntegerField(
