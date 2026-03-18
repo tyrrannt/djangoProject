@@ -3857,6 +3857,7 @@ class StudentAgreement(models.Model):
             "executor": format_name_initials(self.full_name),
             "auc": self.training_center_name.short_name,
             "active": self.full_name.is_active,
+            "group": self.full_name.user_work_profile.job.get_type_of_job_display(),
             "remaining_work_period": self.get_remaining_work_period(),  # Новое поле
             "work_period_years": self.work_period_years,  # Исходное значение для справки
             "training_end_date": f"{self.training_end_date:%d.%m.%Y}",  # Дата окончания обучения
