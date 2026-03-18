@@ -45,7 +45,9 @@
                                     <th width="10%">Номер договора</th>
                                     <th width="10%">Дата договора</th>
                                     <th width="20%">Обучающийся</th>
-                                    <th width="60%">Учреждение</th>
+                                    <th width="40%">Учреждение</th>
+                                    <th width="10%">Осталось отработать</th>
+                                    <th width="10%">Сумма обучения</th>
                                 </tr>
                                 </thead>
                             </table>
@@ -115,7 +117,7 @@
                 },
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
-                    if (aData['process_accepted']) {
+                    if (aData['active']) {
                         $(nRow).addClass('text-success fs-6')
                     } else {
                         $(nRow).addClass('text-danger fs-6')
@@ -148,6 +150,8 @@
                     {"data": "document_date"},
                     {"data": "executor"},
                     {"data": "auc"},
+                    {"data": "remaining_work_period"},
+                    {"data": "training_cost"},
                 ],
             });
         });

@@ -3770,13 +3770,64 @@ class StudentAgreement(models.Model):
         blank=True
     )
 
+    def get_remaining_work_period(self):
+        """
+        Вычисляет оставшееся время отработки в формате "X лет Y месяцев"
+        """
+        if not self.student_agreement_date or not self.work_period_years:
+            return "Не указано"
+
+        # Дата окончания отработки = дата договора + количество лет отработки
+        end_work_date = self.student_agreement_date + relativedelta(years=self.work_period_years)
+
+        # Текущая дата
+        current_date = datetime.datetime.now().date()
+
+        # Если дата окончания уже прошла
+        if current_date >= end_work_date:
+            return "Отработка завершена"
+
+        # Вычисляем разницу
+        remaining = relativedelta(end_work_date, current_date)
+
+        # Форматируем результат
+        years = remaining.years
+        months = remaining.months
+
+        if years == 0 and months == 0:
+            return "Менее месяца"
+
+        result_parts = []
+        if years > 0:
+            result_parts.append(f"{years} {self._pluralize(years, 'год', 'года', 'лет')}")
+        if months > 0:
+            result_parts.append(f"{months} {self._pluralize(months, 'месяц', 'месяца', 'месяцев')}")
+
+        return " ".join(result_parts) if result_parts else "Менее месяца"
+
+    def _pluralize(self, count, one, few, many):
+        """
+        Вспомогательный метод для склонения существительных
+        """
+        if count % 10 == 1 and count % 100 != 11:
+            return one
+        elif 2 <= count % 10 <= 4 and (count % 100 < 10 or count % 100 >= 20):
+            return few
+        else:
+            return many
+
     def get_data(self):
         return {
             "pk": self.pk,
             "document_number": self.student_agreement_number,
             "document_date": f"{self.student_agreement_date:%d.%m.%Y} г.",
             "executor": format_name_initials(self.full_name),
-            "auc": self.training_center_name.short_name
+            "auc": self.training_center_name.short_name,
+            "active": self.full_name.is_active,
+            "remaining_work_period": self.get_remaining_work_period(),  # Новое поле
+            "work_period_years": self.work_period_years,  # Исходное значение для справки
+            "training_end_date": f"{self.training_end_date:%d.%m.%Y}",  # Дата окончания обучения
+            "training_cost": float(self.training_cost),  # Сумма обучения
         }
 
     def __str__(self):
