@@ -3774,11 +3774,11 @@ class StudentAgreement(models.Model):
         """
         Вычисляет оставшееся время отработки в формате "X лет Y месяцев"
         """
-        if not self.student_agreement_date or not self.work_period_years:
+        if not self.training_end_date or not self.work_period_years:
             return "Не указано"
 
         # Дата окончания отработки = дата договора + количество лет отработки
-        end_work_date = self.student_agreement_date + relativedelta(years=self.work_period_years)
+        end_work_date = self.training_end_date + relativedelta(years=self.work_period_years)
 
         # Текущая дата
         current_date = datetime.datetime.now().date()
