@@ -531,6 +531,55 @@ class Apartments(models.Model):
             return f"{self.place} {self.address}"
 
 
+class ApartmentBooking(models.Model):
+    class Meta:
+        verbose_name = "Бронирование квартиры"
+        verbose_name_plural = "Бронирования квартир"
+        ordering = ['date_start']
+
+    apartment = models.ForeignKey(
+        'Apartments',
+        on_delete=models.CASCADE,
+        verbose_name="Квартира",
+        related_name='bookings'
+    )
+    process = models.ForeignKey(
+        'hrdepartment_app.ApprovalOficialMemoProcess',
+        on_delete=models.CASCADE,
+        verbose_name="Бизнес-процесс",
+        related_name='apartment_bookings',
+        null=True, blank=True
+    )
+    date_start = models.DateField(verbose_name="Дата начала")
+    date_end = models.DateField(verbose_name="Дата окончания")
+    beds_count = models.IntegerField(verbose_name="Количество мест", default=1)
+    is_active = models.BooleanField(verbose_name="Активно", default=True)
+
+    def clean(self):
+        super().clean()
+        # Проверка на пересечение дат для той же квартиры
+        if self.pk:
+            overlapping = ApartmentBooking.objects.filter(
+                apartment=self.apartment,
+                is_active=True,
+                date_start__lt=self.date_end,
+                date_end__gt=self.date_start
+            ).exclude(pk=self.pk)
+        else:
+            overlapping = ApartmentBooking.objects.filter(
+                apartment=self.apartment,
+                is_active=True,
+                date_start__lt=self.date_end,
+                date_end__gt=self.date_start
+            )
+
+        if overlapping.exists():
+            raise ValidationError("Выбранная квартира занята в этот период!")
+
+    def __str__(self):
+        return f"{self.apartment} ({self.date_start} - {self.date_end})"
+
+
 class RoleType(models.TextChoices):
     COMMON = "0", "Общий"
     NO = "1", "Наземное обеспечение"
