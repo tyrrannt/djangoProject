@@ -1,6 +1,7 @@
 import datetime
 import os
 import pathlib
+import re
 import time
 import uuid
 
@@ -3838,10 +3839,21 @@ class StudentAgreement(models.Model):
             return many
 
     def get_data(self):
+        # Попытка извлечь число из строкового номера договора для сортировки
+        number_sort = 0
+        if self.student_agreement_number:
+            # Извлекаем все цифры из строки, например "Д-100/2024" -> 1002024
+            digits = re.sub(r'\D', '', self.student_agreement_number)
+            if digits:
+                number_sort = int(digits)
         return {
             "pk": self.pk,
             "document_number": self.student_agreement_number,
+            # Поле для корректной сортировки чисел (даже если номер строковый)
+            "document_number_sort": number_sort,
             "document_date": f"{self.student_agreement_date:%d.%m.%Y} г.",
+            # Поле для корректной сортировки дат (ISO формат)
+            "document_date_sort": self.student_agreement_date.isoformat(),
             "executor": format_name_initials(self.full_name),
             "auc": self.training_center_name.short_name,
             "active": self.full_name.is_active,

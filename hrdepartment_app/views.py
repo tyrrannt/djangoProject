@@ -6377,13 +6377,9 @@ class StudentAgreementListView(PermissionRequiredMixin, LoginRequiredMixin, List
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Применяем сортировку по году (убывание) и номеру договора (убывание)
-        queryset = queryset.annotate(
-            agreement_year=ExtractYear('student_agreement_date')
-        ).order_by(
-            '-agreement_year',  # сначала по году (2026, 2025, ...)
-            '-student_agreement_number'  # затем по номеру договора
-        )
+        # Сортировка: сначала по полной дате (убывание), затем по номеру (возрастание)
+        # Финальная сортировка будет доведена DataTables на фронтенде
+        queryset = queryset.order_by('-student_agreement_date', 'student_agreement_number')
 
         return queryset
 

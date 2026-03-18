@@ -100,8 +100,8 @@
                         });
                 },
                 "ordering": true, // Включаем сортировку
-                "order": [[1, 'desc']], // Сортировка по дате по умолчанию (колонка 1)
-                "pageLength": 10,
+                "order": [[1, 'desc'], [0, 'asc']],
+                "pageLength": 25,
                 "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
                 "buttons": [
@@ -146,8 +146,24 @@
                     });
                 },
                 "columns": [
-                    {"data": "document_number"},
-                    {"data": "document_date"},
+                    {"data": "document_number",
+                        // Используем render для разделения отображения и сортировки
+                        "render": function (data, type, row) {
+                            // Для сортировки возвращаем числовое значение
+                            if (type === 'sort' || type === 'type') {
+                                return row.document_number_sort;
+                            }
+                            // Для отображения и фильтрации - исходную строку
+                            return data;
+                        }},
+                    {"data": "document_date",
+                        "render": function (data, type, row) {
+                            // Для сортировки используем ISO-формат даты
+                            if (type === 'sort' || type === 'type') {
+                                return row.document_date_sort;
+                            }
+                            return data;
+                        }},
                     {"data": "executor"},
                     {"data": "auc"},
                     {"data": "remaining_work_period"},
