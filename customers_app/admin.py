@@ -33,7 +33,7 @@ from .models import (
     VacationSchedule,
     CounteragentDocuments,
     UserStats,
-    Apartments,
+    Apartments, ApartmentBooking,
 )
 
 
@@ -132,11 +132,23 @@ class UserStatsAdmin(admin.ModelAdmin):
     # search_fields = ("name", "code",)
     ordering = ('created_at',)
 
+
+class ApartmentBookingInline(admin.TabularInline):
+    model = ApartmentBooking
+    extra = 0
+    readonly_fields = ['date_created']
+
+
 @admin.register(Apartments)
 class ApartmentsAdmin(admin.ModelAdmin):
-    list_display = ("pk", "title", "place", "beds_number",)
-    search_fields = ("title",)
-    ordering = ('pk',)
+    inlines = [ApartmentBookingInline]
+    list_display = ['title', 'place', 'beds_number', 'get_current_occupancy']
+
+    def get_current_occupancy(self, obj):
+        from datetime import date
+        return obj.get_available_beds(date.today(), date.today())
+
+    get_current_occupancy.short_description = "Свободно мест (сейчас)"
 
 
 @admin.register(Counteragent)

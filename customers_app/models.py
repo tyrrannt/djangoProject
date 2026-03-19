@@ -12,6 +12,7 @@ from django.db.models import ForeignKey
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django_ckeditor_5.fields import CKEditor5Field
 
 from contracts_app.templatetags.custom import empty_item
@@ -493,6 +494,34 @@ class Apartments(models.Model):
         default=0
     )
 
+    def get_available_beds(self, date_start, date_end, exclude_process=None):
+        """
+        Возвращает количество доступных мест на период
+        exclude_process: Исключить бронирование конкретного процесса (для редактирования)
+        """
+        from django.db.models import Count, Q
+
+        bookings_query = Q(
+            is_active=True,
+            date_start__lt=date_end,
+            date_end__gt=date_start
+        )
+
+        # Исключаем собственное бронирование при проверке
+        if exclude_process:
+            bookings_query = bookings_query & ~Q(process=exclude_process)
+
+        overlapping_bookings = self.bookings.filter(bookings_query)
+
+        occupied = overlapping_bookings.count()
+        available = self.beds_number - occupied
+
+        return max(0, available)
+
+    def is_available(self, date_start, date_end, exclude_process=None):
+        """Проверяет, есть ли хотя бы одно место на период"""
+        return self.get_available_beds(date_start, date_end, exclude_process) > 0
+
     def clean(self):
         """Проверка корректности occupied_beds при сохранении через форму или админку"""
         if self.occupied_beds < 0:
@@ -532,6 +561,9 @@ class Apartments(models.Model):
 
 
 class ApartmentBooking(models.Model):
+    """
+        Бронирование места в квартире
+    """
     class Meta:
         verbose_name = "Бронирование квартиры"
         verbose_name_plural = "Бронирования квартир"
@@ -552,20 +584,22 @@ class ApartmentBooking(models.Model):
     )
     date_start = models.DateField(verbose_name="Дата начала")
     date_end = models.DateField(verbose_name="Дата окончания")
-    beds_count = models.IntegerField(verbose_name="Количество мест", default=1)
+    date_created = models.DateTimeField(verbose_name="Дата создания", default=timezone.now)
     is_active = models.BooleanField(verbose_name="Активно", default=True)
 
+    def __str__(self):
+        return f"{self.apartment} ({self.date_start} - {self.date_end})"
+
     def clean(self):
-        super().clean()
-        # Проверка на пересечение дат для той же квартиры
-        if self.pk:
+        """Проверка на пересечение дат для этой квартиры (исключая собственное бронирование)"""
+        if self.pk:  # При обновлении
             overlapping = ApartmentBooking.objects.filter(
                 apartment=self.apartment,
                 is_active=True,
                 date_start__lt=self.date_end,
                 date_end__gt=self.date_start
             ).exclude(pk=self.pk)
-        else:
+        else:  # При создании
             overlapping = ApartmentBooking.objects.filter(
                 apartment=self.apartment,
                 is_active=True,
@@ -574,10 +608,7 @@ class ApartmentBooking(models.Model):
             )
 
         if overlapping.exists():
-            raise ValidationError("Выбранная квартира занята в этот период!")
-
-    def __str__(self):
-        return f"{self.apartment} ({self.date_start} - {self.date_end})"
+            raise ValidationError("На выбранный период в этой квартире нет свободных мест.")
 
 
 class RoleType(models.TextChoices):

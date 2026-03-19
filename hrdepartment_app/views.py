@@ -51,7 +51,7 @@ from administration_app.utils import (
 )
 from contracts_app.models import Contract
 from contracts_app.templatetags.custom import FIO_format
-from customers_app.models import DataBaseUser, Counteragent
+from customers_app.models import DataBaseUser, Counteragent, ApartmentBooking
 from djangoProject.settings import EMAIL_HOST_USER
 from hrdepartment_app.forms import (
     MedicalExaminationAddForm,
@@ -1404,6 +1404,12 @@ class ApprovalOficialMemoProcessUpdate(
             object_item = self.get_object()
             # в old_instance сохраняем старые значения записи
             old_instance = object_item.__dict__
+
+            # Сохраняем данные о бронировании ДО сохранения формы
+            old_apartment_booking = None
+            if hasattr(object_item, 'apartment_booking') and object_item.apartment_booking:
+                old_apartment_booking = object_item.apartment_booking
+
             if object_item.document.official_memo_type == "2":
                 refresh_form = form.save(commit=False)
                 refresh_form.hr_accepted = object_item.hr_accepted
@@ -1428,6 +1434,31 @@ class ApprovalOficialMemoProcessUpdate(
                 refresh_form.save()
             else:
                 form.save()
+
+            # Получаем обновленный экземпляр
+            new_instance = self.get_object()
+            accommodation = form.cleaned_data.get("accommodation")
+            apartment = form.cleaned_data.get("apartment")
+            document = new_instance.document
+
+            # Логика управления бронированиями
+            if accommodation == "1" and apartment and document.period_from and document.period_for:
+                # Всегда создаем или обновляем бронирование
+                ApartmentBooking.objects.update_or_create(
+                    process=new_instance,
+                    defaults={
+                        'apartment': apartment,
+                        'date_start': document.period_from,
+                        'date_end': document.period_for,
+                        'is_active': True
+                    }
+                )
+            else:
+                # Если квартира не выбрана или проживание не в квартире - освобождаем
+                if old_apartment_booking:
+                    old_apartment_booking.is_active = False
+                    old_apartment_booking.save()
+
             object_item = self.get_object()
             """
             Если проверено отделом бухгалтерией и документооборот завершен, то выбираем все продления и также 
@@ -1529,6 +1560,12 @@ class ApprovalOficialMemoProcessUpdate(
             if document.cancellation:
                 document.comments = "Документ отменен"
             document.save()
+        # Обработка отмены процесса
+        if request.POST.get("cancellation") == "on":
+            instance = self.get_object()
+            if hasattr(instance, 'apartment_booking') and instance.apartment_booking:
+                instance.apartment_booking.is_active = False
+                instance.apartment_booking.save()
         return super().post(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):

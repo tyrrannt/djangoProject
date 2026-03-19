@@ -30,6 +30,10 @@ app.conf.beat_schedule = {
         'task': 'hrdepartment_app.tasks.send_telegram_notify',
         'schedule': crontab(minute='*/1'),
     },
+    'expire_old_bookings': {
+        'task': 'hrdepartment_app.tasks.expire_old_bookings',
+        'schedule': crontab(hour='0', minute='0'),
+    },
 }
 
 """

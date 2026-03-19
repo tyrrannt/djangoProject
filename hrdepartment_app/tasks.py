@@ -27,7 +27,7 @@ from administration_app.utils import (
 from contracts_app.models import Contract
 
 from customers_app.models import DataBaseUser, Division, Posts, HappyBirthdayGreetings, VacationScheduleList, \
-    VacationSchedule, Counteragent, DataBaseUserProfile
+    VacationSchedule, Counteragent, DataBaseUserProfile, ApartmentBooking
 from djangoProject.celery import app
 from djangoProject.settings import EMAIL_HOST_USER, BASE_DIR, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 from hrdepartment_app.models import (
@@ -45,6 +45,16 @@ proxies = {
     "http": PROXY,
     "https": PROXY,
 }
+
+# В tasks.py
+@app.task()
+def expire_old_bookings():
+    from datetime import date
+    today = date.today()
+    ApartmentBooking.objects.filter(
+        date_end__lt=today,
+        is_active=True
+    ).update(is_active=False)
 
 def xldate_to_datetime(xldate):
     """

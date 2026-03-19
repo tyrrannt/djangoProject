@@ -1078,6 +1078,13 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         decimal_places=2,
     )
 
+    apartment = models.ForeignKey(
+        'customers_app.Apartments',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
+
     objects = ApprovalOficialMemoProcessManager()
 
     def save(self, *args, **kwargs):

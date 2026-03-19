@@ -160,7 +160,7 @@
                                     {% if without_departure %}
                                         <div class="form-group row align-items-center pb-3"
                                              style="border:1px solid #a6b3ff;">
-                                            <div class="col-sm-12 col-lg-4">
+                                            <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
                                                        for="id_person_distributor">Отдел организации наземного
                                                     обслуживания:</label>
@@ -178,7 +178,7 @@
                                                     {% endif %}
                                                 </div>
                                             </div>
-                                            <div class="col-sm-12 col-lg-4 toggleWrapper">
+                                            <div class="col-sm-12 col-lg-3 toggleWrapper">
                                                 <label class="col"
                                                        for="id_location_selected">Место проживания:</label>
                                                 {% if object.process_accepted %}
@@ -197,7 +197,7 @@
                                                     </div>
                                                 {% endif %}
                                             </div>
-                                            <div class="col-sm-12 col-lg-4">
+                                            <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
                                                        for="id_accommodation">Место проживания:</label>
                                                 <div class="col">
@@ -210,6 +210,16 @@
                                                     {% else %}
                                                         <span>{{ form.accommodation | add_class:"form-control form-control-modern" }}</span>
                                                     {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-12 col-lg-3">
+                                                <div class="col">
+                                                    {{ form.apartment.label_tag }}
+                                                    <select class="form-control form-control-modern"
+                                                                id="id_apartment" name="apartment">
+                                                            <option selected
+                                                                    value="{{ object.apartment }}">{{ object.apartment }}</option>
+                                                        </select>
                                                 </div>
                                             </div>
                                         </div>

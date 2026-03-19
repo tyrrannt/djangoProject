@@ -12,7 +12,7 @@ from customers_app.models import (
     DataBaseUser,
     Job,
     HarmfulWorkingConditions,
-    AccessLevel,
+    AccessLevel, Apartments,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -419,6 +419,16 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
     accommodation_expense = forms.DecimalField(required=False)
     other_expense = forms.DecimalField(required=False)
 
+    apartment = forms.ModelChoiceField(
+        queryset=Apartments.objects.none(),  # Будет заполнено в __init__
+        required=False,
+        label="Квартира"
+    )
+    apartment.widget.attrs.update({
+        "class": "form-control form-control-modern",
+        "data-plugin-selectTwo": True
+    })
+
     class Meta:
         model = ApprovalOficialMemoProcess
         fields = (
@@ -434,6 +444,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             "person_department_staff",
             "process_accepted",
             "accommodation",
+            "apartment",  # Добавляем поле
             "order",
             "person_accounting",
             "prepaid_expense",
@@ -478,6 +489,31 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         self.fields["submit_for_approval"].widget.attrs.update(
             {"class": "mobileToggle"}
         )
+        # Если есть экземпляр, подгружаем данные
+        if self.instance.pk and self.instance.document:
+            doc = self.instance.document
+            first_mpd = doc.place_production_activity.first()
+
+            if first_mpd and doc.period_from and doc.period_for:
+                available_apartments = []
+                for apt in Apartments.objects.filter(place=first_mpd):
+                    # ИСКЛЮЧАЕМ текущий процесс из проверки доступности
+                    if apt.is_available(doc.period_from, doc.period_for, exclude_process=self.instance):
+                        available_apartments.append(apt.pk)
+
+                self.fields["apartment"].queryset = Apartments.objects.filter(
+                    pk__in=available_apartments
+                )
+
+                # Если уже есть бронирование, устанавливаем его
+                if hasattr(self.instance, 'apartment_booking') and self.instance.apartment_booking:
+                    self.fields["apartment"].initial = self.instance.apartment_booking.apartment.pk
+                    # ВАЖНО: Добавляем текущую квартиру в queryset даже если она "занята"
+                    current_apt = self.instance.apartment_booking.apartment
+                    if current_apt.pk not in available_apartments:
+                        self.fields["apartment"].queryset = Apartments.objects.filter(
+                            Q(pk__in=available_apartments) | Q(pk=current_apt.pk)
+                        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -486,10 +522,12 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         person_distributor = cleaned_data.get("person_distributor")
         location_selected = cleaned_data.get("location_selected")
         accommodation = cleaned_data.get("accommodation")
+        apartment = cleaned_data.get("apartment")
         person_department_staff = cleaned_data.get("person_department_staff")
         process_accepted = cleaned_data.get("process_accepted")
         order = cleaned_data.get("order")
         d1 = str(cleaned_data.get("document"))
+        document = cleaned_data.get("document")
         originals_received = cleaned_data.get("originals_received")
 
         if not person_agreement and document_not_agreed:
@@ -524,6 +562,17 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                 raise ValidationError(
                     "Ошибка в назначении места проживания. Документ не согласован руководителем!!!"
                 )
+        # Если выбрана квартира, должно быть указано конкретное жилье
+        if accommodation == "1" and location_selected and not apartment:
+            raise ValidationError("При выборе проживания в квартире необходимо указать конкретную квартиру.")
+
+        # Проверка доступности квартиры на период (исключая текущий процесс)
+        if apartment and document and document.period_from and document.period_for:
+            if not apartment.is_available(document.period_from, document.period_for,
+                                          exclude_process=self.instance):
+                raise ValidationError("Выбранная квартира недоступна на указанный период.")
+
+        return cleaned_data
 
 
 class ApprovalOficialMemoProcessChangeForm(forms.ModelForm):
