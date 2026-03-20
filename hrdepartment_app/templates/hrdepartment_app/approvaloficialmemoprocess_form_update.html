@@ -215,11 +215,7 @@
                                             <div class="col-sm-12 col-lg-3">
                                                 <div class="col">
                                                     {{ form.apartment.label_tag }}
-                                                    <select class="form-control form-control-modern"
-                                                                id="id_apartment" name="apartment">
-                                                            <option selected
-                                                                    value="{{ object.apartment }}">{{ object.apartment }}</option>
-                                                        </select>
+                                                    {{ form.apartment }}
                                                 </div>
                                             </div>
                                         </div>

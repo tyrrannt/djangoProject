@@ -1542,6 +1542,7 @@ class ApprovalOficialMemoProcessUpdate(
         """
         order = request.POST.get("order")
         accommodation = request.POST.get("accommodation")
+        apartment =  request.POST.get("apartment")
         change_status = 0
         document = OfficialMemo.objects.get(pk=self.get_object().document.pk)
         if document.order != order:
@@ -1554,6 +1555,7 @@ class ApprovalOficialMemoProcessUpdate(
             # Если добавлено или изменено место проживания, сохраняем его в документ Служебной записки
             if accommodation:
                 document.accommodation = accommodation
+                print(apartment)
                 change_status = 1
 
         if change_status > 0:

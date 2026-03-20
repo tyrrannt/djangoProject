@@ -506,10 +506,10 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                 )
 
                 # Если уже есть бронирование, устанавливаем его
-                if hasattr(self.instance, 'apartment_booking') and self.instance.apartment_booking:
-                    self.fields["apartment"].initial = self.instance.apartment_booking.apartment.pk
+                if hasattr(self.instance, 'apartment') and self.instance.apartment:
+                    self.fields["apartment"].initial = self.instance.apartment.pk
                     # ВАЖНО: Добавляем текущую квартиру в queryset даже если она "занята"
-                    current_apt = self.instance.apartment_booking.apartment
+                    current_apt = self.instance.apartment
                     if current_apt.pk not in available_apartments:
                         self.fields["apartment"].queryset = Apartments.objects.filter(
                             Q(pk__in=available_apartments) | Q(pk=current_apt.pk)
@@ -530,6 +530,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         document = cleaned_data.get("document")
         originals_received = cleaned_data.get("originals_received")
 
+
         if not person_agreement and document_not_agreed:
             # Сохраняем только если оба поля действительны.
             raise ValidationError(
@@ -537,7 +538,6 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             )
         if (not person_distributor or not accommodation) and location_selected:
             # Сохраняем только если оба поля действительны.
-            print(person_distributor, accommodation, location_selected)
             raise ValidationError(
                 "Ошибка согласования места проживания. Лицо ответственное за НО не заполнено!!!"
             )
