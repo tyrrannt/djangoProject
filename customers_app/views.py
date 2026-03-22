@@ -166,9 +166,9 @@ def get_model_fields(model_object):
 
 
 @logger.catch
-def get_profile_fill(self, context):
+def get_profile_fill(self, context, object):
     profile_info = 0
-    user_object = self.get_object()
+    user_object = object
     user_private = user_object.user_profile
     user_work = user_object.user_work_profile
     user_object_list = ['first_name', 'last_name', 'email', 'surname', 'avatar', 'birthday', 'address',
@@ -257,93 +257,170 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
-        user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
+        # user_obj = self.get_object()  # DataBaseUser.objects.get(pk=self.request.user.pk)
         # print(context['databaseuser'].pk)
-        post_obj = Posts.objects.all().exclude(post_date_end__lt=datetime.datetime.today())
-
+        user_obj = self.object  # DetailView уже его получил
+        # post_obj = Posts.objects.all().exclude(post_date_end__lt=datetime.datetime.today())
+        today = datetime.datetime.today()
+        # try:
+        #     # Получаем выборку постов, у которых дата начала больше текущего дня
+        #     post_high = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+        #                                 Q(post_date_start__gt=datetime.datetime.today())).order_by(
+        #         '-post_date_start')
+        #     # Получаем выборку постов, у которых дата начала меньше текущего дня
+        #     post_low = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
+        #                                Q(post_date_start__lte=datetime.datetime.today())).order_by(
+        #         '-post_date_start')
+        #     context['post_high'] = post_high
+        #     context['post_low'] = post_low
+        # except Exception as _ex:
+        #     message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
+        #     logger.debug(message)
+        # ===== Posts (1 запрос вместо 2) =====
         try:
-            # Получаем выборку постов, у которых дата начала больше текущего дня
-            post_high = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                        Q(post_date_start__gt=datetime.datetime.today())).order_by(
-                '-post_date_start')
-            # Получаем выборку постов, у которых дата начала меньше текущего дня
-            post_low = post_obj.filter(Q(post_divisions__pk=user_obj.user_work_profile.divisions.pk) &
-                                       Q(post_date_start__lte=datetime.datetime.today())).order_by(
-                '-post_date_start')
-            context['post_high'] = post_high
-            context['post_low'] = post_low
-        except Exception as _ex:
-            message = f'{user_obj}, У пользователя отсутствует подразделение!!!: {_ex}'
-            logger.debug(message)
+            division_pk = user_obj.user_work_profile.divisions.pk
+
+            posts = Posts.objects.filter(
+                post_date_end__gte=today,
+                post_divisions__pk=division_pk
+            ).order_by('-post_date_start')
+
+            context['post_high'] = posts.filter(post_date_start__gt=today)
+            context['post_low'] = posts.filter(post_date_start__lte=today)
+
+        except Exception as ex:
+            logger.debug(f'{user_obj}, нет подразделения: {ex}')
+        # month_dict, year_dict = get_year_interval(2020)
+        # context['year_dict'] = year_dict
+        # context['month_dict'] = month_dict
+        # context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(
+        #     format_name_initials(user_obj))
+        # context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
+        # context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
+        # context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()
+        # context['bpf'] = ApprovalOficialMemoProcess.objects.filter(cancellation=True).count()
+        # context['contract'] = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True),
+        #                                               Q(type_of_document__type_document='Договор')).count()
+        # context['current_year'] = datetime.datetime.today().year
+        # context['current_month'] = str(datetime.datetime.today().month)
+
+        # ===== PortalProperty (без full scan) =====
+        portal = PortalProperty.objects.only("portal_name").last()
+
         month_dict, year_dict = get_year_interval(2020)
-        context['year_dict'] = year_dict
-        context['month_dict'] = month_dict
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(
-            format_name_initials(user_obj))
-        context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
-        context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
-        context['bp'] = ApprovalOficialMemoProcess.objects.filter(cancellation=False).count()
-        context['bpf'] = ApprovalOficialMemoProcess.objects.filter(cancellation=True).count()
-        context['contract'] = Contract.objects.filter(Q(parent_category=None), Q(allowed_placed=True),
-                                                      Q(type_of_document__type_document='Договор')).count()
-        context['current_year'] = datetime.datetime.today().year
-        context['current_month'] = str(datetime.datetime.today().month)
-        get_profile_fill(self, context)
+        # ===== counts (оставляем, но компактно) =====
+        context.update({
+            'title': f'{portal.portal_name} // Профиль {format_name_initials(user_obj)}',
+            'sp': OfficialMemo.objects.filter(cancellation=False).count(),
+            'spf': OfficialMemo.objects.filter(cancellation=True).count(),
+            'bp': ApprovalOficialMemoProcess.objects.filter(cancellation=False).count(),
+            'bpf': ApprovalOficialMemoProcess.objects.filter(cancellation=True).count(),
+            'current_year': today.year,
+            'current_month': str(today.month),
+            'year_dict': year_dict,
+            'month_dict': month_dict,
+            'contract': Contract.objects.filter(
+                parent_category=None,
+                allowed_placed=True,
+                type_of_document__type_document='Договор'
+            ).count(),
+        })
 
-        posts_list = Posts.objects.all()
-        tasks_list = Task.objects.all()
+        get_profile_fill(self, context, user_obj)
+
+        # posts_list = Posts.objects.all()
+        # tasks_list = Task.objects.all()
+        # repeat_tasks = []
+        # combined_list = chain(posts_list, tasks_list)
+        #
+        # for item in combined_list:
+        #     if isinstance(item, Posts):  # Проверяем, является ли элемент объектом Posts
+        #         # Обработка для posts_list
+        #         post_date_start = datetime.datetime.combine(item.post_date_start, datetime.datetime.min.time(),
+        #                                                     tzinfo=datetime.timezone.utc)
+        #         post_date_end = datetime.datetime.combine(item.post_date_end, datetime.datetime.min.time(),
+        #                                                   tzinfo=datetime.timezone.utc)
+        #
+        #         repeat_tasks.append({
+        #             'title': self.get_task_title_with_icon(item),  # Получаем название задачи
+        #             'rrule': {
+        #                 'freq': 'daily',  # Используем поле repeat для freq
+        #                 'dtstart': post_date_start.isoformat(),  # Начальная дата с временной зоной
+        #                 'until': post_date_end.isoformat(),  # Конечная дата с временной зоной
+        #             },
+        #             'url': reverse('customers_app:post', args=[item.pk]),
+        #             'color': 'info',
+        #         })
+        #     elif isinstance(item, Task):  # Проверяем, является ли элемент объектом Task
+        #         # Обработка для tasks_list
+        #         if (self.request.user == item.user) or (self.request.user in item.shared_with.iterator()):
+        #             repeat_tasks.append({
+        #                 'title': self.get_task_title_with_icon(item),  # Получаем название задачи
+        #                 'rrule': {
+        #                     'freq': 'daily',  # Используем поле repeat для freq
+        #                     'dtstart': item.start_date.isoformat(),  # Начальная дата с временной зоной
+        #                     'until': item.start_date.isoformat(),  # Конечная дата с временной зоной
+        #                 },
+        #                 'url': reverse('tasks_app:task-update', args=[item.pk]),
+        #                 'color': item.priority,
+        #             })
+        # context['repeat_tasks'] = repeat_tasks
+
+        # ===== Tasks + Posts (без N+1) =====
+        posts_qs = Posts.objects.only(
+            "id", "post_title", "post_date_start", "post_date_end"
+        )
+
+        tasks_qs = Task.objects.select_related("user").prefetch_related(
+            "shared_with"
+        ).only(
+            "id", "title", "priority", "start_date", "user"
+        )
+
         repeat_tasks = []
-        # for task in posts_list:
-        #     post_date_start = datetime.datetime.combine(task.post_date_start, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
-        #     post_date_end = datetime.datetime.combine(task.post_date_end, datetime.datetime.min.time(), tzinfo=datetime.timezone.utc)
-        #     repeat_tasks.append({
-        #         'title': task.post_title,  # Получаем название задачи с иконкой task.title,
-        #         'rrule': {
-        #             'freq': 'daily',  # Используем поле repeat для freq
-        #             'dtstart': post_date_start.isoformat(), # Начальная дата с временной зоной
-        #             'until': post_date_end.isoformat(), # Конечная дата с временной зоной
-        #         },
-        #         'url': reverse('customers_app:post', args=[task.pk]),
-        #         'color': 'info',
-        #     })
-        # Объединяем оба списка в один итерируемый объект
-        combined_list = chain(posts_list, tasks_list)
 
-        for item in combined_list:
-            if isinstance(item, Posts):  # Проверяем, является ли элемент объектом Posts
-                # Обработка для posts_list
-                post_date_start = datetime.datetime.combine(item.post_date_start, datetime.datetime.min.time(),
-                                                            tzinfo=datetime.timezone.utc)
-                post_date_end = datetime.datetime.combine(item.post_date_end, datetime.datetime.min.time(),
-                                                          tzinfo=datetime.timezone.utc)
+        # --- Posts ---
+        for item in posts_qs:
+            start = datetime.datetime.combine(
+                item.post_date_start,
+                datetime.datetime.min.time(),
+                tzinfo=datetime.timezone.utc
+            )
+            end = datetime.datetime.combine(
+                item.post_date_end,
+                datetime.datetime.min.time(),
+                tzinfo=datetime.timezone.utc
+            )
 
+            repeat_tasks.append({
+                'title': self.get_task_title_with_icon(item),
+                'rrule': {
+                    'freq': 'daily',
+                    'dtstart': start.isoformat(),
+                    'until': end.isoformat(),
+                },
+                'url': reverse('customers_app:post', args=[item.pk]),
+                'color': 'info',
+            })
+
+        # --- Tasks ---
+        current_user = self.request.user
+
+        for item in tasks_qs:
+            if item.user_id == current_user.id or current_user in item.shared_with.all():
                 repeat_tasks.append({
-                    'title': self.get_task_title_with_icon(item),  # Получаем название задачи
+                    'title': self.get_task_title_with_icon(item),
                     'rrule': {
-                        'freq': 'daily',  # Используем поле repeat для freq
-                        'dtstart': post_date_start.isoformat(),  # Начальная дата с временной зоной
-                        'until': post_date_end.isoformat(),  # Конечная дата с временной зоной
+                        'freq': 'daily',
+                        'dtstart': item.start_date.isoformat(),
+                        'until': item.start_date.isoformat(),
                     },
-                    'url': reverse('customers_app:post', args=[item.pk]),
-                    'color': 'info',
+                    'url': reverse('tasks_app:task-update', args=[item.pk]),
+                    'color': item.priority,
                 })
-            elif isinstance(item, Task):  # Проверяем, является ли элемент объектом Task
-                # Обработка для tasks_list
-                if (self.request.user == item.user) or (self.request.user in item.shared_with.iterator()):
-                    repeat_tasks.append({
-                        'title': self.get_task_title_with_icon(item),  # Получаем название задачи
-                        'rrule': {
-                            'freq': 'daily',  # Используем поле repeat для freq
-                            'dtstart': item.start_date.isoformat(),  # Начальная дата с временной зоной
-                            'until': item.start_date.isoformat(),  # Конечная дата с временной зоной
-                        },
-                        'url': reverse('tasks_app:task-update', args=[item.pk]),
-                        'color': item.priority,
-                    })
+
         context['repeat_tasks'] = repeat_tasks
 
-        # print(repeat_tasks)
-        # context.update(groups())
         return context
 
     def get(self, request, *args, **kwargs):
@@ -1206,8 +1283,8 @@ class StaffDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         has_access = (
                 request.user.pk == user_object.pk or  # Пользователь смотрит свой профиль
                 request.user.is_superuser or  # Суперпользователь
-                request.user.is_staff   # Персонал
-                # request.user.has_perm('customers_app.view_databaseuser')  # Право на просмотр
+                request.user.is_staff  # Персонал
+            # request.user.has_perm('customers_app.view_databaseuser')  # Право на просмотр
         )
 
         if has_access:
@@ -1285,7 +1362,6 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             raise PermissionDenied
 
         return super().dispatch(request, *args, **kwargs)
-
 
     def form_valid(self, form):
         if form.is_valid():
