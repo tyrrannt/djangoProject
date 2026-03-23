@@ -44,6 +44,7 @@ CSRF_TRUSTED_ORIGINS = ["https://corp.barkol.ru", "http://192.168.10.12"]
 
 INSTALLED_APPS = [
     "core",
+    "unfold",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

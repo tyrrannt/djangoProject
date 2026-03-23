@@ -52,6 +52,57 @@ from tasks_app.models import Task
 
 from core import logger
 
+from django.http import HttpResponse
+
+
+def check_access(user, path):
+    """
+    Проверяет доступ пользователя к указанному пути.
+
+    Если путь содержит '/private/', доступ разрешается только для персонала (staff).
+    В остальных случаях доступ разрешается всем пользователям.
+
+    Параметры:
+        user (User): Объект пользователя, для которого проверяется доступ.
+        path (str): Путь, к которому запрашивается доступ.
+
+    Возвращает:
+        bool: True, если доступ разрешён, иначе False.
+    """
+    if "/private/" in path:
+        return user.is_staff
+    return True
+
+
+def auth_check(request):
+    """
+    Проверяет аутентификацию и доступ пользователя к запрошенному ресурсу.
+
+    Функция проверяет, авторизован ли пользователь. Если нет — возвращается статус 401.
+    Затем из заголовка 'X-Original-URI' извлекается путь и с помощью функции `check_access`
+    проверяется доступ к нему. При отсутствии доступа возвращается статус 403.
+    В случае успешной аутентификации и наличии прав — возвращается статус 200.
+
+    Параметры:
+        request (HttpRequest): Объект HTTP-запроса, содержащий информацию о пользователе и заголовки.
+
+    Возвращает:
+        HttpResponse: Ответ с кодом состояния:
+            - 200 OK — пользователь авторизован и имеет доступ;
+            - 401 Unauthorized — пользователь не авторизован;
+            - 403 Forbidden — доступ запрещён.
+    """
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+
+    path = request.headers.get("X-Original-URI")
+
+    # TODO: Дописать логику проверки
+    # if not check_access(request.user, path):
+    #     return HttpResponse(status=403)
+
+    return HttpResponse(status=200)
+
 
 @login_required
 def lock_screen(request):

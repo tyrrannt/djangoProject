@@ -5,7 +5,6 @@ from . import views
 from .views import lock_screen, DataBaseUserViewSet
 from rest_framework.routers import DefaultRouter
 
-
 router = DefaultRouter()
 router.register(r'databaseuser', DataBaseUserViewSet)
 
@@ -20,6 +19,7 @@ router.register(r'databaseuser', DataBaseUserViewSet)
 app_name = "customers_app"
 
 urlpatterns = [
+    path("auth-check/", views.auth_check),
     path('api/', include(router.urls)),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
