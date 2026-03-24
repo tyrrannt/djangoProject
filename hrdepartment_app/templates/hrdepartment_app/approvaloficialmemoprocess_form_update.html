@@ -218,6 +218,14 @@
                                                     {{ form.apartment }}
                                                 </div>
                                             </div>
+                                        <!-- Разместите после поля выбора квартиры -->
+{% if form.apartment.value %}
+    <div id="apartment_info" class="alert alert-info mt-2">
+        <i class="fa fa-info-circle"></i>
+        <strong>Информация о квартире:</strong>
+        <span id="apt_details">Загрузка...</span>
+    </div>
+{% endif %}
                                         </div>
                                         <div class="form-group row align-items-center pb-3"
                                              style="border:1px solid #8bfd8b;">
@@ -676,5 +684,17 @@
         </form>
         <!-- end: page -->
     </section>
+    <script>
+    // Простой скрипт для отображения подсказки (можно развить через AJAX)
+    document.addEventListener('DOMContentLoaded', function() {
+        const aptSelect = document.getElementById('id_apartment');
+        const infoDiv = document.getElementById('apt_details');
+
+        if (aptSelect && aptSelect.options[aptSelect.selectedIndex]) {
+            const aptName = aptSelect.options[aptSelect.selectedIndex].text;
+            infoDiv.textContent = `Выбрана: ${aptName}. При изменении дат доступность будет проверена автоматически.`;
+        }
+    });
+</script>
     <!-- end: page -->
 {% endblock %}

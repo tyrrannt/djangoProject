@@ -510,14 +510,32 @@ class Apartments(models.Model):
             bookings_query = bookings_query & ~Q(process=exclude_process)
 
         overlapping_bookings = self.bookings.filter(bookings_query)
-
         occupied = overlapping_bookings.count()
-        available = self.beds_number - occupied
+        return max(0, self.beds_number - occupied)
 
-        return max(0, available)
+    def get_busy_periods(self, date_start, date_end, exclude_process=None):
+        """
+        Возвращает список периодов, когда квартира занята внутри запрашиваемого диапазона.
+        Используется для отображения пользователю причин недоступности.
+        """
+        query = Q(
+            is_active=True,
+            date_start__lt=date_end,
+            date_end__gt=date_start
+        )
+        if exclude_process:
+            query = query & ~Q(process=exclude_process)
+
+        busy = []
+        for b in self.bookings.filter(query):
+            start = max(b.date_start, date_start)
+            end = min(b.date_end, date_end)
+            if start < end:
+                busy.append({'start': start, 'end': end})
+        return busy
 
     def is_available(self, date_start, date_end, exclude_process=None):
-        """Проверяет, есть ли хотя бы одно место на период"""
+        """Проверка доступности (с исключением текущего процесса при редактировании)"""
         return self.get_available_beds(date_start, date_end, exclude_process) > 0
 
     def clean(self):
@@ -573,12 +591,13 @@ class ApartmentBooking(models.Model):
         verbose_name="Квартира",
         related_name='bookings'
     )
-    process = models.ForeignKey(
+    process = models.OneToOneField(  # ВАЖНО: OneToOneField, не ForeignKey!
         'hrdepartment_app.ApprovalOficialMemoProcess',
-        on_delete=models.CASCADE,
         verbose_name="Бизнес-процесс",
-        related_name='apartment_bookings',
-        null=True, blank=True
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="apartment_booking"  # Это позволяет process.apartment_booking
     )
     date_start = models.DateField(verbose_name="Дата начала")
     date_end = models.DateField(verbose_name="Дата окончания")

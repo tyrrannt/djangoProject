@@ -1454,10 +1454,10 @@ class ApprovalOficialMemoProcessUpdate(
                     }
                 )
             else:
-                # Если квартира не выбрана или проживание не в квартире - освобождаем
-                if old_apartment_booking:
-                    old_apartment_booking.is_active = False
-                    old_apartment_booking.save()
+                # Освобождаем, если тип жилья сменился на гостиницу
+                if hasattr(new_instance, 'apartment_booking') and new_instance.apartment_booking:
+                    new_instance.apartment_booking.is_active = False
+                    new_instance.apartment_booking.save()
 
             object_item = self.get_object()
             """
@@ -1555,7 +1555,6 @@ class ApprovalOficialMemoProcessUpdate(
             # Если добавлено или изменено место проживания, сохраняем его в документ Служебной записки
             if accommodation:
                 document.accommodation = accommodation
-                print(apartment)
                 change_status = 1
 
         if change_status > 0:

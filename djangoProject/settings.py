@@ -15,6 +15,8 @@ from pathlib import Path
 
 # Для работы с переменными которые хранятся в файле .env
 from decouple import config
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -44,7 +46,15 @@ CSRF_TRUSTED_ORIGINS = ["https://corp.barkol.ru", "http://192.168.10.12"]
 
 INSTALLED_APPS = [
     "core",
-    "unfold",
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
+    "unfold.contrib.import_export",  # optional, if django-import-export package is used
+    "unfold.contrib.guardian",  # optional, if django-guardian package is used
+    "unfold.contrib.simple_history",  # optional, if django-simple-history package is used
+    "unfold.contrib.location_field",  # optional, if django-location-field package is used
+    "unfold.contrib.constance",  # optional, if django-constance package is used
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -398,3 +408,744 @@ LOGGING = {}
 from core.loguru_setup import setup_loguru
 
 logger = setup_loguru()
+
+UNFOLD = {
+    "SITE_TITLE": "Корпоративный портал | Админка",  # Суффикс в <title> вкладки браузера
+    "SITE_HEADER": "ООО АК 'БАРКОЛ'",  # Большой текст вверху сайдбара
+    "SITE_SUBHEADER": "Внутренняя система",  # Подзаголовок под SITE_HEADER
+    "SITE_URL": "/",  # Куда ведёт клик по логотипу (обычно "/")
+
+    "BORDER_RADIUS": "8px",
+    "COLORS": {
+        "base": {
+            "50": "oklch(98.5% .002 247.839)",
+            "100": "oklch(96.7% .003 264.542)",
+            "200": "oklch(92.8% .006 264.531)",
+            "300": "oklch(87.2% .01 258.338)",
+            "400": "oklch(70.7% .022 261.325)",
+            "500": "oklch(55.1% .027 264.364)",
+            "600": "oklch(44.6% .03 256.802)",
+            "700": "oklch(37.3% .034 259.733)",
+            "800": "oklch(27.8% .033 256.848)",
+            "900": "oklch(21% .034 264.665)",
+            "950": "oklch(13% .028 261.692)",
+        },
+        "primary": {
+            "50": "oklch(97.7% .014 308.299)",
+            "100": "oklch(94.6% .033 307.174)",
+            "200": "oklch(90.2% .063 306.703)",
+            "300": "oklch(82.7% .119 306.383)",
+            "400": "oklch(71.4% .203 305.504)",
+            "500": "oklch(62.7% .265 303.9)",
+            "600": "oklch(55.8% .288 302.321)",
+            "700": "oklch(49.6% .265 301.924)",
+            "800": "oklch(43.8% .218 303.724)",
+            "900": "oklch(38.1% .176 304.987)",
+            "950": "oklch(29.1% .149 302.717)",
+        },
+        "font": {
+            "subtle-light": "var(--color-base-500)",  # text-base-500
+            "subtle-dark": "var(--color-base-400)",  # text-base-400
+            "default-light": "var(--color-base-600)",  # text-base-600
+            "default-dark": "var(--color-base-300)",  # text-base-300
+            "important-light": "var(--color-base-900)",  # text-base-900
+            "important-dark": "var(--color-base-100)",  # text-base-100
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,  # Поиск по всем пунктам сайдбара
+        "command_search": False,  # Можно включить позже (как командная строка)
+        "show_all_applications": True,
+        # ОЧЕНЬ ВАЖНО! Внизу автоматически появятся все модели, которые не вошли в ручной navigation
+
+        "navigation": [
+            # ==================== 1. ГЛАВНАЯ ====================
+            {
+                "title": _("Главная"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Дашборд"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                ],
+            },
+
+            # ==================== 2. ПОРТАЛ И УВЕДОМЛЕНИЯ ====================
+            {
+                "title": _("Портал и уведомления"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Свойства портала"),
+                        "icon": "settings",
+                        "link": reverse_lazy("admin:administration_app_portalproperty_changelist"),
+                    },
+                    {
+                        "title": _("Главное меню"),
+                        "icon": "menu",
+                        "link": reverse_lazy("admin:administration_app_mainmenu_changelist"),
+                    },
+                    {
+                        "title": _("Уведомления"),
+                        "icon": "notifications",
+                        "link": reverse_lazy("admin:administration_app_notification_changelist"),
+                    },
+                ],
+            },
+
+            # ==================== 3. ЧАТ ====================
+            {
+                "title": _("Чат"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Сообщения"),
+                        "icon": "chat",
+                        "link": reverse_lazy("admin:chat_app_message_changelist"),
+                    },
+                ],
+            },
+
+            # ==================== 4. ДОГОВОРЫ И НЕДВИЖИМОСТЬ ====================
+            {
+                "title": _("Договоры и недвижимость"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Типы свойств"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:contracts_app_typeproperty_changelist"),
+                    },
+                    {
+                        "title": _("Типы договоров"),
+                        "icon": "description",
+                        "link": reverse_lazy("admin:contracts_app_typecontract_changelist"),
+                    },
+                    {
+                        "title": _("Объекты недвижимости"),
+                        "icon": "home",
+                        "link": reverse_lazy("admin:contracts_app_estate_changelist"),
+                    },
+                    {
+                        "title": _("Договоры"),
+                        "icon": "contract",
+                        "link": reverse_lazy("admin:contracts_app_contract_changelist"),
+                    },
+                    {
+                        "title": _("Должности (договоры)"),
+                        "icon": "work",
+                        "link": reverse_lazy("admin:contracts_app_posts_changelist"),
+                    },
+                    {
+                        "title": _("Типы документов"),
+                        "icon": "folder",
+                        "link": reverse_lazy("admin:contracts_app_typedocuments_changelist"),
+                    },
+                    {
+                        "title": _("Свойства компаний"),
+                        "icon": "business",
+                        "link": reverse_lazy("admin:contracts_app_companyproperty_changelist"),
+                    },
+                ],
+            },
+
+            # ==================== 5. СОТРУДНИКИ И СТРУКТУРА (customers_app) ====================
+            {
+                "title": _("Сотрудники и структура"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Пользователи базы"),
+                        "icon": "people",
+                        "link": reverse_lazy("admin:customers_app_databaseuser_changelist"),
+                    },
+                    {
+                        "title": _("Должности"),
+                        "icon": "work",
+                        "link": reverse_lazy("admin:customers_app_job_changelist"),
+                    },
+                    {
+                        "title": _("Подразделения"),
+                        "icon": "account_tree",
+                        "link": reverse_lazy("admin:customers_app_division_changelist"),
+                    },
+                    {
+                        "title": _("Контрагенты"),
+                        "icon": "business",
+                        "link": reverse_lazy("admin:customers_app_counteragent_changelist"),
+                    },
+                    {
+                        "title": _("Должности (сотрудники)"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:customers_app_posts_changelist"),
+                    },
+                    {
+                        "title": _("Уровни доступа"),
+                        "icon": "key",
+                        "link": reverse_lazy("admin:customers_app_accesslevel_changelist"),
+                    },
+                    {
+                        "title": _("Профили пользователей"),
+                        "icon": "person",
+                        "link": reverse_lazy("admin:customers_app_databaseuserprofile_changelist"),
+                    },
+                    {
+                        "title": _("Гражданства"),
+                        "icon": "flag",
+                        "link": reverse_lazy("admin:customers_app_citizenships_changelist"),
+                    },
+                    {
+                        "title": _("Документы, удостоверяющие личность"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:customers_app_identitydocuments_changelist"),
+                    },
+                    {
+                        "title": _("Рабочие профили"),
+                        "icon": "work_history",
+                        "link": reverse_lazy("admin:customers_app_databaseuserworkprofile_changelist"),
+                    },
+                    {
+                        "title": _("Вредные условия труда"),
+                        "icon": "warning",
+                        "link": reverse_lazy("admin:customers_app_harmfulworkingconditions_changelist"),
+                    },
+                    {
+                        "title": _("Просмотр документов физлиц"),
+                        "icon": "visibility",
+                        "link": reverse_lazy("admin:customers_app_viewdocumentsphysical_changelist"),
+                    },
+                    {
+                        "title": _("История изменений"),
+                        "icon": "history",
+                        "link": reverse_lazy("admin:customers_app_historychange_changelist"),
+                    },
+                    {
+                        "title": _("Поздравления с ДР"),
+                        "icon": "cake",
+                        "link": reverse_lazy("admin:customers_app_happybirthdaygreetings_changelist"),
+                    },
+                    {
+                        "title": _("Принадлежность"),
+                        "icon": "group",
+                        "link": reverse_lazy("admin:customers_app_affiliation_changelist"),
+                    },
+                    {
+                        "title": _("Списки графиков отпусков"),
+                        "icon": "calendar_month",
+                        "link": reverse_lazy("admin:customers_app_vacationschedulelist_changelist"),
+                    },
+                    {
+                        "title": _("Графики отпусков"),
+                        "icon": "beach_access",
+                        "link": reverse_lazy("admin:customers_app_vacationschedule_changelist"),
+                    },
+                    {
+                        "title": _("Документы контрагентов"),
+                        "icon": "folder_shared",
+                        "link": reverse_lazy("admin:customers_app_counteragentdocuments_changelist"),
+                    },
+                    {
+                        "title": _("Статистика пользователей"),
+                        "icon": "analytics",
+                        "link": reverse_lazy("admin:customers_app_userstats_changelist"),
+                    },
+                    {
+                        "title": _("Квартиры"),
+                        "icon": "apartment",
+                        "link": reverse_lazy("admin:customers_app_apartments_changelist"),
+                    },
+
+                ],
+            },
+
+            # ==================== 6. HR И КАДРОВЫЕ ПРОЦЕССЫ (hrdepartment_app) ====================
+            {
+                "title": _("HR и кадровые процессы"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Медицинские осмотры"),
+                        "icon": "medical_services",
+                        "link": reverse_lazy("admin:hrdepartment_app_medical_changelist"),
+                    },
+                    {
+                        "title": _("Цели"),
+                        "icon": "flag",
+                        "link": reverse_lazy("admin:hrdepartment_app_purpose_changelist"),
+                    },
+                    {
+                        "title": _("Официальные записки"),
+                        "icon": "description",
+                        "link": reverse_lazy("admin:hrdepartment_app_officialmemo_changelist"),
+                    },
+                    {
+                        "title": _("Процесс согласования записок"),
+                        "icon": "approval",
+                        "link": reverse_lazy("admin:hrdepartment_app_approvaloficialmemoprocess_changelist"),
+                    },
+                    {
+                        "title": _("Направления бизнес-процессов"),
+                        "icon": "route",
+                        "link": reverse_lazy("admin:hrdepartment_app_businessprocessdirection_changelist"),
+                    },
+                    {
+                        "title": _("Медицинские организации"),
+                        "icon": "local_hospital",
+                        "link": reverse_lazy("admin:hrdepartment_app_medicalorganisation_changelist"),
+                    },
+                    {
+                        "title": _("Должностные инструкции"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:hrdepartment_app_documentsjobdescription_changelist"),
+                    },
+                    {
+                        "title": _("Приказы"),
+                        "icon": "gavel",
+                        "link": reverse_lazy("admin:hrdepartment_app_documentsorder_changelist"),
+                    },
+                    {
+                        "title": _("Места производственной деятельности"),
+                        "icon": "factory",
+                        "link": reverse_lazy("admin:hrdepartment_app_placeproductionactivity_changelist"),
+                    },
+                    {
+                        "title": _("Табель учёта рабочего времени"),
+                        "icon": "table_chart",
+                        "link": reverse_lazy("admin:hrdepartment_app_reportcard_changelist"),
+                    },
+                    {
+                        "title": _("Причины отмены"),
+                        "icon": "cancel",
+                        "link": reverse_lazy("admin:hrdepartment_app_reasonforcancellation_changelist"),
+                    },
+                    {
+                        "title": _("Описание приказов"),
+                        "icon": "edit_note",
+                        "link": reverse_lazy("admin:hrdepartment_app_orderdescription_changelist"),
+                    },
+                    {
+                        "title": _("Предпраздничные дни"),
+                        "icon": "event",
+                        "link": reverse_lazy("admin:hrdepartment_app_preholidayday_changelist"),
+                    },
+                    {
+                        "title": _("Выходные дни"),
+                        "icon": "weekend",
+                        "link": reverse_lazy("admin:hrdepartment_app_weekendday_changelist"),
+                    },
+                    {
+                        "title": _("Производственный календарь"),
+                        "icon": "calendar_today",
+                        "link": reverse_lazy("admin:hrdepartment_app_productioncalendar_changelist"),
+                    },
+                    {
+                        "title": _("Типы рабочего времени"),
+                        "icon": "schedule",
+                        "link": reverse_lazy("admin:hrdepartment_app_typesuserworktime_changelist"),
+                    },
+                    {
+                        "title": _("Инструкции"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:hrdepartment_app_instructions_changelist"),
+                    },
+                    {
+                        "title": _("Положения"),
+                        "icon": "policy",
+                        "link": reverse_lazy("admin:hrdepartment_app_provisions_changelist"),
+                    },
+                    {
+                        "title": _("Создание команды"),
+                        "icon": "group_add",
+                        "link": reverse_lazy("admin:hrdepartment_app_creatingteam_changelist"),
+                    },
+                    {
+                        "title": _("Таймшит"),
+                        "icon": "timer",
+                        "link": reverse_lazy("admin:hrdepartment_app_timesheet_changelist"),
+                    },
+                    {
+                        "title": _("Оперативная работа"),
+                        "icon": "construction",
+                        "link": reverse_lazy("admin:hrdepartment_app_operationalwork_changelist"),
+                    },
+                    {
+                        "title": _("Периодическая работа"),
+                        "icon": "repeat",
+                        "link": reverse_lazy("admin:hrdepartment_app_periodicwork_changelist"),
+                    },
+                    {
+                        "title": _("Наряд-допуск"),
+                        "icon": "assignment",
+                        "link": reverse_lazy("admin:hrdepartment_app_outfitcard_changelist"),
+                    },
+                    {
+                        "title": _("Подтверждение документов"),
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:hrdepartment_app_documentacknowledgment_changelist"),
+                    },
+                    {
+                        "title": _("Инструктажи"),
+                        "icon": "school",
+                        "link": reverse_lazy("admin:hrdepartment_app_briefings_changelist"),
+                    },
+                    {
+                        "title": _("Оперативная деятельность"),
+                        "icon": "engineering",
+                        "link": reverse_lazy("admin:hrdepartment_app_operational_changelist"),
+                    },
+                    {
+                        "title": _("События пользователей"),
+                        "icon": "event_note",
+                        "link": reverse_lazy("admin:hrdepartment_app_databaseuserevent_changelist"),
+                    },
+                    {
+                        "title": _("Охрана труда"),
+                        "icon": "shield",
+                        "link": reverse_lazy("admin:hrdepartment_app_laborprotection_changelist"),
+                    },
+                    {
+                        "title": _("Маршруты бизнес-процессов"),
+                        "icon": "route",
+                        "link": reverse_lazy("admin:hrdepartment_app_businessprocessroutes_changelist"),
+                    },
+                    {
+                        "title": _("Руководящие документы"),
+                        "icon": "policy",
+                        "link": reverse_lazy("admin:hrdepartment_app_guidancedocuments_changelist"),
+                    },
+                    {
+                        "title": _("Инструкции по охране труда"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:hrdepartment_app_laborprotectioninstructions_changelist"),
+                    },
+                    {
+                        "title": _("Учебные подразделения"),
+                        "icon": "school",
+                        "link": reverse_lazy("admin:hrdepartment_app_trainingunit_changelist"),
+                    },
+                    {
+                        "title": _("Учебные программы"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:hrdepartment_app_trainingprogram_changelist"),
+                    },
+                    {
+                        "title": _("Студенческие договоры"),
+                        "icon": "contract",
+                        "link": reverse_lazy("admin:hrdepartment_app_studentagreement_changelist"),
+                    },
+                ],
+            },
+
+            # ==================== 7. БИБЛИОТЕКА И СОБЫТИЯ ====================
+            {
+                "title": _("Библиотека и события"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Хэштеги"),
+                        "icon": "tag",
+                        "link": reverse_lazy("admin:library_app_hashtag_changelist"),
+                    },
+                    {
+                        "title": _("Категории помощи"),
+                        "icon": "help",
+                        "link": reverse_lazy("admin:library_app_helpcategory_changelist"),
+                    },
+                    {
+                        "title": _("Темы помощи"),
+                        "icon": "help_outline",
+                        "link": reverse_lazy("admin:library_app_helptopic_changelist"),
+                    },
+                    {
+                        "title": _("Формы документов"),
+                        "icon": "description",
+                        "link": reverse_lazy("admin:library_app_documentform_changelist"),
+                    },
+                    {
+                        "title": _("Конкурсы"),
+                        "icon": "emoji_events",
+                        "link": reverse_lazy("admin:library_app_contest_changelist"),
+                    },
+                    {
+                        "title": _("Стихотворения"),
+                        "icon": "book",
+                        "link": reverse_lazy("admin:library_app_poem_changelist"),
+                    },
+                    {
+                        "title": _("Голосования"),
+                        "icon": "poll",
+                        "link": reverse_lazy("admin:library_app_vote_changelist"),
+                    },
+                    {
+                        "title": _("События компании"),
+                        "icon": "celebration",
+                        "link": reverse_lazy("admin:library_app_companyevent_changelist"),
+                    },
+                ],
+            },
+
+            # ==================== 8. ЛОГИСТИКА И СКЛАД ====================
+            {
+                "title": _("Логистика и склад"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Путевые листы"),
+                        "icon": "local_shipping",
+                        "link": reverse_lazy("admin:logistics_app_waybill_changelist"),
+                    },
+                    {
+                        "title": _("Посылки"),
+                        "icon": "package_2",
+                        "link": reverse_lazy("admin:logistics_app_package_changelist"),
+                    },
+                    {
+                        "title": _("Изображения посылок"),
+                        "icon": "image",
+                        "link": reverse_lazy("admin:logistics_app_packageimage_changelist"),
+                    },
+                    {
+                        "title": _("Оценки"),
+                        "icon": "star",
+                        "link": reverse_lazy("admin:logistics_app_grade_changelist"),
+                    },
+                    {
+                        "title": _("Номенклатура"),
+                        "icon": "inventory",
+                        "link": reverse_lazy("admin:logistics_app_nomenclature_changelist"),
+                    },
+                    {
+                        "title": _("Единицы номенклатуры"),
+                        "icon": "straighten",
+                        "link": reverse_lazy("admin:logistics_app_nomenclatureunit_changelist"),
+                    },
+                    {
+                        "title": _("Группы номенклатуры"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:logistics_app_nomenclaturegroup_changelist"),
+                    },
+                ],
+            },
+
+            # ==================== 9. ЗАДАЧИ ====================
+            {
+                "title": _("Задачи"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Категории задач"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:tasks_app_category_changelist"),
+                    },
+                    {
+                        "title": _("Задачи"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:tasks_app_task_changelist"),
+                    },
+                ],
+            },
+
+            # ==================== 10. TELEGRAM ====================
+            {
+                "title": _("Telegram"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Чаты"),
+                        "icon": "telegram",
+                        "link": reverse_lazy("admin:telegram_app_chatid_changelist"),
+                    },
+                    {
+                        "title": _("Уведомления Telegram"),
+                        "icon": "notifications",
+                        "link": reverse_lazy("admin:telegram_app_telegramnotification_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+
+    "SHOW_HISTORY": True,  # Кнопка "История" в changeform
+    "SHOW_VIEW_ON_SITE": True,  # Кнопка "Посмотреть на сайте"
+    "SHOW_BACK_BUTTON": True,  # Кнопка "Назад" в шапке формы редактирования
+
+    "ENVIRONMENT": "administration_app.environment_callback",
+    # ["Production", "success"] / ["Development", "warning"] и т.д.
+    "ENVIRONMENT_TITLE_PREFIX": "administration_app.environment_title_prefix_callback",
+
+    "SITE_DROPDOWN": [
+        {
+            "icon": "diamond",
+            "title": _("Корпоративный портал"),
+            "link": "https://corp.barkol.ru",
+            "attrs": {
+                "target": "_blank",
+            },
+        },
+        {
+            "icon": "diamond",
+            "title": _("Администрирование"),
+            "link": reverse_lazy("admin:index"),
+        },
+    ],
+    "TABS": [
+        {
+            "models": [
+                # На каких моделях показывать эти вкладки
+                "administration_app.portalproperty",
+                "administration_app.mainmenu",
+                "administration_app.notification",
+
+                "chat_app.message",
+
+                "contracts_app.typeproperty",
+                "contracts_app.typecontract",
+                "contracts_app.estate",
+                "contracts_app.contract",
+                "contracts_app.posts",
+                "contracts_app.typedocuments",
+                "contracts_app.companyproperty",
+
+                "customers_app.databaseuser",
+                "customers_app.job",
+                "customers_app.division",
+                "customers_app.counteragent",
+                "customers_app.posts",
+                "customers_app.accesslevel",
+                "customers_app.databaseuserprofile",
+                "customers_app.citizenships",
+                "customers_app.identitydocuments",
+                "customers_app.databaseuserworkprofile",
+                "customers_app.harmfulworkingconditions",
+                "customers_app.viewdocumentsphysical",
+                "customers_app.historychange",
+                "customers_app.happybirthdaygreetings",
+                "customers_app.affiliation",
+                "customers_app.vacationschedulelist",
+                "customers_app.vacationschedule",
+                "customers_app.counteragentdocuments",
+                "customers_app.userstats",
+                "customers_app.apartments",
+                "customers_app.apartmentbooking",
+
+                "hrdepartment_app.medical",
+                "hrdepartment_app.purpose",
+                "hrdepartment_app.officialmemo",
+                "hrdepartment_app.approvaloficialmemoprocess",
+                "hrdepartment_app.businessprocessdirection",
+                "hrdepartment_app.medicalorganisation",
+                "hrdepartment_app.documentsjobdescription",
+                "hrdepartment_app.documentsorder",
+                "hrdepartment_app.placeproductionactivity",
+                "hrdepartment_app.reportcard",
+                "hrdepartment_app.reasonforcancellation",
+                "hrdepartment_app.orderdescription",
+                "hrdepartment_app.preholidayday",
+                "hrdepartment_app.weekendday",
+                "hrdepartment_app.productioncalendar",
+                "hrdepartment_app.typesuserworktime",
+                "hrdepartment_app.instructions",
+                "hrdepartment_app.provisions",
+                "hrdepartment_app.creatingteam",
+                "hrdepartment_app.timesheet",
+                "hrdepartment_app.operationalwork",
+                "hrdepartment_app.periodicwork",
+                "hrdepartment_app.outfitcard",
+                "hrdepartment_app.documentacknowledgment",
+                "hrdepartment_app.briefings",
+                "hrdepartment_app.operational",
+                "hrdepartment_app.databaseuserevent",
+                "hrdepartment_app.laborprotection",
+                "hrdepartment_app.businessprocessroutes",
+                "hrdepartment_app.guidancedocuments",
+                "hrdepartment_app.laborprotectioninstructions",
+                "hrdepartment_app.trainingunit",
+                "hrdepartment_app.trainingprogram",
+                "hrdepartment_app.studentagreement",
+
+                "library_app.hashtag",
+                "library_app.helpcategory",
+                "library_app.helptopic",
+                "library_app.documentform",
+                "library_app.contest",
+                "library_app.poem",
+                "library_app.vote",
+                "library_app.companyevent",
+
+                "logistics_app.waybill",
+                "logistics_app.package",
+                "logistics_app.packageimage",
+                "logistics_app.grade",
+                "logistics_app.nomenclature",
+                "logistics_app.nomenclatureunit",
+                "logistics_app.nomenclaturegroup",
+
+                "tasks_app.category",
+                "tasks_app.task",
+
+                "telegram_app.chatid",
+                "telegram_app.telegramnotification",
+            ],
+            "items": [
+                {
+                    "title": _("Портал и уведомления"),
+                    "icon": "settings",  # или любой другой из Material Icons
+                    "link": reverse_lazy("admin:administration_app_portalproperty_changelist"),
+                    "permission": lambda request: request.user.has_perm("administration_app.view_portalproperty"),
+                },
+                {
+                    "title": _("Чат"),
+                    "icon": "chat",
+                    "link": reverse_lazy("admin:chat_app_message_changelist"),
+                },
+                {
+                    "title": _("Договоры"),
+                    "icon": "description",
+                    "link": reverse_lazy("admin:contracts_app_contract_changelist"),
+                },
+                {
+                    "title": _("Сотрудники и структура"),
+                    "icon": "people",
+                    "link": reverse_lazy("admin:customers_app_databaseuser_changelist"),
+                },
+                {
+                    "title": _("HR и кадровые процессы"),
+                    "icon": "badge",
+                    "link": reverse_lazy("admin:hrdepartment_app_officialmemo_changelist"),
+                },
+                {
+                    "title": _("Библиотека и события"),
+                    "icon": "library_books",
+                    "link": reverse_lazy("admin:library_app_helptopic_changelist"),
+                },
+                {
+                    "title": _("Логистика и склад"),
+                    "icon": "local_shipping",
+                    "link": reverse_lazy("admin:logistics_app_waybill_changelist"),
+                },
+                {
+                    "title": _("Задачи"),
+                    "icon": "task_alt",
+                    "link": reverse_lazy("admin:tasks_app_task_changelist"),
+                },
+                {
+                    "title": _("Telegram"),
+                    "icon": "telegram",
+                    "link": reverse_lazy("admin:telegram_app_chatid_changelist"),
+                },
+            ],
+        },
+    ],
+}

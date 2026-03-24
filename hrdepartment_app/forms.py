@@ -31,6 +31,9 @@ from hrdepartment_app.models import (
     StudentAgreement, TrainingProgram, TrainingUnit,
 )
 
+# Дата начала применения валидации
+VALIDATION_START_DATE = datetime.date(2026, 3, 1)
+
 
 def present_or_future_date(value):
     """
@@ -494,26 +497,45 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             doc = self.instance.document
             first_mpd = doc.place_production_activity.first()
 
+            # 1. Определяем текущую квартиру из бронирования
+            current_apartment = None
+            if hasattr(self.instance, 'apartment_booking') and self.instance.apartment_booking:
+                current_apartment = self.instance.apartment_booking.apartment
+
             if first_mpd and doc.period_from and doc.period_for:
-                available_apartments = []
-                for apt in Apartments.objects.filter(place=first_mpd):
-                    # ИСКЛЮЧАЕМ текущий процесс из проверки доступности
-                    if apt.is_available(doc.period_from, doc.period_for, exclude_process=self.instance):
-                        available_apartments.append(apt.pk)
+                # 2. Показываем ВСЕ квартиры МПД (не только свободные)
+                all_apartments = Apartments.objects.filter(place=first_mpd)
 
-                self.fields["apartment"].queryset = Apartments.objects.filter(
-                    pk__in=available_apartments
-                )
+                # 3. Формируем queryset со всеми квартирами
+                self.fields["apartment"].queryset = all_apartments
 
-                # Если уже есть бронирование, устанавливаем его
-                if hasattr(self.instance, 'apartment') and self.instance.apartment:
-                    self.fields["apartment"].initial = self.instance.apartment.pk
-                    # ВАЖНО: Добавляем текущую квартиру в queryset даже если она "занята"
-                    current_apt = self.instance.apartment
-                    if current_apt.pk not in available_apartments:
-                        self.fields["apartment"].queryset = Apartments.objects.filter(
-                            Q(pk__in=available_apartments) | Q(pk=current_apt.pk)
-                        )
+                # 4. Если есть текущая бронь, устанавливаем её как начальное значение
+                if current_apartment:
+                    self.fields["apartment"].initial = current_apartment.pk
+
+                # 5. Добавляем информацию о занятости в label каждой квартиры
+                # Это будет отображаться в выпадающем списке
+                apartment_choices = []
+                for apt in all_apartments:
+                    available_beds = apt.get_available_beds(
+                        doc.period_from,
+                        doc.period_for,
+                        exclude_process=self.instance
+                    )
+                    if available_beds > 0:
+                        label = f"{apt} (свободно: {available_beds}/{apt.beds_number})"
+                    else:
+                        label = f"{apt} (ЗАНЯТО на этот период)"
+                    apartment_choices.append((apt.pk, label))
+
+                # Обновляем choices для отображения в форме
+                self.fields["apartment"].choices = [('', '---------')] + apartment_choices
+            else:
+                if current_apartment:
+                    self.fields["apartment"].queryset = Apartments.objects.filter(pk=current_apartment.pk)
+                    self.fields["apartment"].initial = current_apartment.pk
+                else:
+                    self.fields["apartment"].queryset = Apartments.objects.none()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -562,15 +584,41 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
                 raise ValidationError(
                     "Ошибка в назначении места проживания. Документ не согласован руководителем!!!"
                 )
+
+        # Проверяем, применяется ли валидация (только с 1 марта 2026)
+        validation_applies = False
+        if document and document.period_from:
+            validation_applies = document.period_from >= VALIDATION_START_DATE
+
         # Если выбрана квартира, должно быть указано конкретное жилье
-        if accommodation == "1" and location_selected and not apartment:
+        if validation_applies and accommodation == "1" and location_selected and not apartment:
             raise ValidationError("При выборе проживания в квартире необходимо указать конкретную квартиру.")
 
         # Проверка доступности квартиры на период (исключая текущий процесс)
-        if apartment and document and document.period_from and document.period_for:
-            if not apartment.is_available(document.period_from, document.period_for,
-                                          exclude_process=self.instance):
-                raise ValidationError("Выбранная квартира недоступна на указанный период.")
+        if validation_applies and apartment and document and document.period_from and document.period_for:
+            # Проверяем доступность (исключая текущий процесс)
+            available_beds = apartment.get_available_beds(
+                document.period_from,
+                document.period_for,
+                exclude_process=self.instance
+            )
+
+            if available_beds <= 0:
+                # Квартира занята другими бронированиями
+                busy_periods = apartment.get_busy_periods(
+                    document.period_from,
+                    document.period_for,
+                    exclude_process=self.instance
+                )
+
+                msg = f"Квартира '{apartment}' недоступна на выбранный период (нет свободных мест)."
+                if busy_periods:
+                    msg += " Занята в периоды: "
+                    for period in busy_periods:
+                        msg += f"{period['start']} по {period['end']}; "
+                    msg += "Выберите другую квартиру или измените даты."
+
+                raise ValidationError(msg)
 
         return cleaned_data
 
