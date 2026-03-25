@@ -1,5 +1,6 @@
 import datetime
 
+from decouple import config
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
@@ -32,7 +33,7 @@ from hrdepartment_app.models import (
 )
 
 # Дата начала применения валидации
-VALIDATION_START_DATE = datetime.date(2026, 3, 1)
+VALIDATION_START_DATE = datetime.datetime.strptime(config("VALIDATION_START_DATE", default="2026-04-01"), "%Y-%m-%d").date()
 
 
 def present_or_future_date(value):

@@ -1592,6 +1592,14 @@ class ApprovalOficialMemoProcessCancel(LoginRequiredMixin, UpdateView):
         if form.is_valid():
             form.save()
             obj_item = self.get_object()
+
+            # === ДОБАВЛЕННЫЙ БЛОК: Освобождение квартиры ===
+            # Проверяем, есть ли у процесса активное бронирование квартиры
+            if hasattr(obj_item, 'apartment_booking') and obj_item.apartment_booking:
+                obj_item.apartment_booking.is_active = False
+                obj_item.apartment_booking.save()
+            # ================================================
+
             official_memo = obj_item.document
             order = obj_item.order
             try:
