@@ -42,7 +42,7 @@ django-dynamic-formsets==0.0.8
 django-redis==5.4.0
 django-stubs==5.2.8
 django-stubs-ext==5.2.8
-django-unfold==0.86.1
+django-unfold
 django-widget-tweaks==1.5.0
 django-xff==1.4.0
 djangorestframework==3.16.1
