@@ -49,6 +49,7 @@
                                     <th width="10%">Принадлежность</th>
                                     <th width="10%">Осталось отработать</th>
                                     <th width="10%">Сумма обучения</th>
+                                    <th width="10%">Подписан</th>
                                 </tr>
                                 </thead>
                             </table>
@@ -169,6 +170,18 @@
                     {"data": "group"},
                     {"data": "remaining_work_period"},
                     {"data": "training_cost"},
+                    {
+                        "data": null,
+                        "mRender": function (data, type, row) {
+                            if (row.signed)  {
+                                return "<span class='text-success' title='Договор с сотрудником подписан'><i class='bx bx-check-shield'></i></span>";
+                            }
+                            else   {
+                                return "<span class='text-danger' title='Договор с сотрудником не подписан'><i class='bx bxs-shield-x' ></i></span>";
+                            }
+
+                        },
+                    },
                 ],
             });
         });

@@ -3799,6 +3799,8 @@ class StudentAgreement(models.Model):
         blank=True
     )
 
+    signed = models.BooleanField('Подписан', default=False)
+
     def get_remaining_work_period(self):
         """
         Вычисляет оставшееся время отработки в формате "X лет Y месяцев"
@@ -3869,6 +3871,7 @@ class StudentAgreement(models.Model):
             "work_period_years": self.work_period_years,  # Исходное значение для справки
             "training_end_date": f"{self.training_end_date:%d.%m.%Y}",  # Дата окончания обучения
             "training_cost": float(self.training_cost),  # Сумма обучения
+            "signed": self.signed,
         }
 
     def __str__(self):

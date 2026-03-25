@@ -436,16 +436,22 @@
                                 <div class="col-sm-12">
                                     <!-- Реквизиты -->
                                     <div class="row">
-                                        <div class="col-sm-12 col-md-4 col-lg-3">
+                                        <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.student_agreement_number.label_tag }}
                                                 {{ form.student_agreement_number|add_class:"form-control"|attr:"id:id_student_agreement_number" }}
                                             </div>
                                         </div>
-                                        <div class="col-sm-12 col-md-4 col-lg-3">
+                                        <div class="col-sm-12 col-md-3">
                                             <div class="form-group">
                                                 {{ form.student_agreement_date.label_tag }}
                                                 {{ form.student_agreement_date|add_class:"form-control"|attr:"id:id_student_agreement_date" }}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-12 col-md-3">
+                                            <div class="form-group">
+                                                {{ form.signed.label_tag }}
+                                                {{ form.signed }}
                                             </div>
                                         </div>
 
