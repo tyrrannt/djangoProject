@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import hashlib
 import pathlib
+import sys
 from pathlib import Path
 
 # Для работы с переменными которые хранятся в файле .env
@@ -408,6 +409,8 @@ LOGGING = {}
 from core.loguru_setup import setup_loguru
 
 logger = setup_loguru()
+
+IS_PRODUCTION = not DEBUG
 
 UNFOLD = {
     "SITE_TITLE": "Корпоративный портал | Админка",  # Суффикс в <title> вкладки браузера
@@ -981,9 +984,9 @@ UNFOLD = {
     "SHOW_VIEW_ON_SITE": True,  # Кнопка "Посмотреть на сайте"
     "SHOW_BACK_BUTTON": True,  # Кнопка "Назад" в шапке формы редактирования
 
-    "ENVIRONMENT": "administration_app.environment_callback",
-    # ["Production", "success"] / ["Development", "warning"] и т.д.
-    "ENVIRONMENT_TITLE_PREFIX": "administration_app.environment_title_prefix_callback",
+    # Отключите отладочные функции в production
+    "ENVIRONMENT": "administration_app.environment_callback" if not IS_PRODUCTION else None,
+    "ENVIRONMENT_TITLE_PREFIX": "administration_app.environment_title_prefix_callback" if not IS_PRODUCTION else None,
 
     "SITE_DROPDOWN": [
         {
