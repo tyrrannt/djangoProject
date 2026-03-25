@@ -9,7 +9,7 @@
 {% block content %}
     <section role="main" class="content-body content-body-modern mt-0">
 
-{#        {% include 'library_app/breadcrumb.html' %}#}
+        {#        {% include 'library_app/breadcrumb.html' %}#}
 
         <!-- start: page -->
         <div class="row">
@@ -24,7 +24,7 @@
                                         <a href="{% url 'hrdepartment_app:student_agreement_add' %}"
                                            class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить договор </a>
+                                            <i class='bx bx-list-plus text-4 me-2'></i> Добавить договор </a>
                                     </div>
                                 </div>
                             </div>
@@ -42,19 +42,31 @@
                                    style="min-width: 750px;">
                                 <thead>
                                 <tr>
-                                    <th width="10%">Номер договора</th>
-                                    <th width="10%">Дата договора</th>
-                                    <th width="20%">Обучающийся</th>
-                                    <th width="40%">Учреждение</th>
-                                    <th width="10%">Принадлежность</th>
-                                    <th width="10%">Осталось отработать</th>
-                                    <th width="10%">Сумма обучения</th>
-                                    <th width="10%">Подписан</th>
+                                    <th width="10%" title="Введите номер договора для поиска">Номер договора</th>
+                                    <th width="10%" title="Введите дату договора в формате ДД.ММ.ГГГГ">Дата договора
+                                    </th>
+                                    <th width="20%" title="Введите ФИО обучающегося">Обучающийся</th>
+                                    <th width="40%" title="Введите название учебного учреждения">Учреждение</th>
+                                    <th width="10%"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-html="true"
+                                        data-bs-placement="top"
+                                        title="0 = Общий состав<br>1 = Летный<br>2 = Инженерный<br>3 = Транспортный">
+                                        Принадлежность
+                                    </th>
+                                    <th width="10%" title="Осталось отработать дней">Осталось отработать</th>
+                                    <th width="10%" title="Сумма обучения в рублях">Сумма обучения</th>
+                                    <th width="10%"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-html="true"
+                                        data-bs-placement="top"
+                                        title="0 = Не подписан<br>1 = Подписан">
+                                        Подписан</th>
                                 </tr>
                                 </thead>
                             </table>
                             <hr class="solid mt-5 opacity-4">
-{#                            {% include 'library_app/paginator.html' %}#}
+                            {#                            {% include 'library_app/paginator.html' %}#}
                             <div class="datatable-footer">
                                 <div class="row align-items-center justify-content-between mt-3">
                                     <div class="col-md-auto order-1 mb-3 mb-lg-0">
@@ -82,10 +94,24 @@
 {% block custome_script %}
     <script>
         $(document).ready(function () {
-            // Setup - add a text input to each footer cell
+            // Setup - add a text input to each header cell with tooltip
             $('#datatable-ecommerce-list thead th').each(function () {
                 var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
+                var tooltipText = $(this).attr('title') || 'Поиск по ' + title;
+
+                // Создаем поле ввода и оборачиваем в div с tooltip
+                var inputHtml = '<input type="text" placeholder="' + title + '" class="fs-6" />';
+                $(this).html(inputHtml);
+
+                // Добавляем всплывающую подсказку к полю ввода
+                $(this).find('input').attr('title', tooltipText);
+
+                // Инициализируем Bootstrap tooltip (если используется Bootstrap)
+                $(this).find('input').tooltip({
+                    placement: 'top',
+                    trigger: 'hover',
+                    title: tooltipText
+                });
             });
             var table = $('#datatable-ecommerce-list').DataTable({
                 "initComplete": function () {
@@ -136,7 +162,7 @@
                             $('td:eq(10)', nRow).html('<i class="bx bx-check-double"></i>')
                         }
                     } else {
-                            $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
+                        $('td:eq(10)', nRow).html('<i class="bx bx-dna"></i>')
                     }
 
                     $(nRow).attr("href", id + '/');
@@ -147,7 +173,8 @@
                     });
                 },
                 "columns": [
-                    {"data": "document_number",
+                    {
+                        "data": "document_number",
                         // Используем render для разделения отображения и сортировки
                         "render": function (data, type, row) {
                             // Для сортировки возвращаем числовое значение
@@ -156,15 +183,18 @@
                             }
                             // Для отображения и фильтрации - исходную строку
                             return data;
-                        }},
-                    {"data": "document_date",
+                        }
+                    },
+                    {
+                        "data": "document_date",
                         "render": function (data, type, row) {
                             // Для сортировки используем ISO-формат даты
                             if (type === 'sort' || type === 'type') {
                                 return row.document_date_sort;
                             }
                             return data;
-                        }},
+                        }
+                    },
                     {"data": "full_name"},
                     {"data": "training_center_name"},
                     {"data": "group"},
@@ -173,10 +203,9 @@
                     {
                         "data": null,
                         "mRender": function (data, type, row) {
-                            if (row.signed)  {
+                            if (row.signed) {
                                 return "<span class='text-success' title='Договор с сотрудником подписан'><i class='bx bx-check-shield'></i></span>";
-                            }
-                            else   {
+                            } else {
                                 return "<span class='text-danger' title='Договор с сотрудником не подписан'><i class='bx bxs-shield-x' ></i></span>";
                             }
 
