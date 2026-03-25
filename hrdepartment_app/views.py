@@ -6433,7 +6433,7 @@ class StudentAgreementListView(PermissionRequiredMixin, LoginRequiredMixin, List
         query = Q()
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             search_list = ['student_agreement_number', 'student_agreement_date', 'full_name__title', 'training_center_name__short_name',
-                           "full_name__user_work_profile__job__type_of_job"]
+                           "full_name__user_work_profile__job__type_of_job", None, "training_cost", "signed"]
             context = ajax_search(request, self, search_list, StudentAgreement, query, triger=3)
             return JsonResponse(context, safe=False)
         return super(StudentAgreementListView, self).get(request, *args, **kwargs)
