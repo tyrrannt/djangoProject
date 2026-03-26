@@ -2283,6 +2283,14 @@ class TrainingDebtReportForm(forms.Form):
         initial=datetime.datetime.now().date()
     )
 
+    def __init__(self, *args, **kwargs):
+        """
+        :param args:
+        """
+        super(TrainingDebtReportForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class TrainingProgramQuickForm(forms.ModelForm):
     """Мини-форма для быстрого создания программы в модальном окне"""

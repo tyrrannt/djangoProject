@@ -135,7 +135,7 @@ def get_approval_oficial_memo_process(request):
                 person_agreement_cto.add(r["person_agreement__pk"])
                 person_clerk_cto.add(r["person_clerk__pk"])
                 person_hr_cto.add(r["person_hr__pk"])
-        print(person_hr, person_hr_cto, person_clerk, person_accounting, person_distributor, person_agreement, person_agreement_cto, person_clerk_cto, user.pk)
+
         # ===== Базовый queryset (убрали N+1) =====
         bpmemo_qs = ApprovalOficialMemoProcess.objects.exclude(cancellation=True).select_related(
             "document",

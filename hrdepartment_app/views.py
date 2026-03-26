@@ -6583,7 +6583,6 @@ def training_debt_report(request):
             # Получаем все подписанные ученические договоры сотрудника
             agreements = StudentAgreement.objects.filter(
                 full_name=employee,
-                signed=True
             ).order_by('training_start_date')
 
             report_rows = []
@@ -6594,6 +6593,10 @@ def training_debt_report(request):
                 work_off_end_date = agreement.training_end_date + relativedelta(
                     years=agreement.work_period_years
                 )
+
+                # Пропускаем договоры с завершённой отработкой
+                if dismissal_date >= work_off_end_date:
+                    continue
 
                 # Общий срок отработки в днях
                 total_work_off_days = (work_off_end_date - agreement.training_end_date).days
@@ -6685,14 +6688,48 @@ def export_training_debt_excel(request):
     employee_name = f"{employee.last_name} {employee.first_name} {employee.surname or ''}".strip()
 
     # Парсим дату увольнения
-    from datetime import datetime
     dismissal_date = datetime.strptime(dismissal_date_str, '%Y-%m-%d').date()
 
     # Получаем договоры
     agreements = StudentAgreement.objects.filter(
         full_name=employee,
-        signed=True
     ).order_by('training_start_date')
+
+    # Фильтруем договоры с незавершённой отработкой
+    active_agreements = []
+    for agreement in agreements:
+        work_off_end_date = agreement.training_end_date + relativedelta(
+            years=agreement.work_period_years
+        )
+        # Оставляем только договоры, где отработка ещё не завершена
+        if dismissal_date < work_off_end_date:
+            active_agreements.append(agreement)
+
+    # Если нет активных договоров
+    if not active_agreements:
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response[
+            'Content-Disposition'] = f'attachment; filename="Задолженность_{employee.last_name}_{dismissal_date.strftime("%Y%m%d")}.xlsx"'
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Задолженность за обучение"
+
+        ws['A1'] = f"ОТЧЕТ О ЗАДОЛЖЕННОСТИ ЗА ОБУЧЕНИЕ"
+        ws['A1'].font = Font(bold=True, size=14)
+        ws.merge_cells('A1:C1')
+
+        ws['A3'] = f"ФИО: {employee_name}"
+        ws['A4'] = f"Дата увольнения: {dismissal_date.strftime('%d.%m.%Y')}"
+        ws['A6'] = "Нет действующих договоров с незавершённой отработкой"
+        ws['A6'].font = Font(italic=True, color="FF0000")
+
+        wb.save(response)
+        return response
+
+    agreements = active_agreements  # Используем отфильтрованный список
 
     # Создаем книгу Excel
     wb = openpyxl.Workbook()
