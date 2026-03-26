@@ -619,12 +619,20 @@ class PeriodicWorkAdmin(ActiveUsersFilterMixin, ModelAdmin):
 
 @admin.register(TrainingProgram)
 class TrainingProgramAdmin(ModelAdmin):
+    list_display = ("pk", "counteragent_name", "program_name")
     search_fields = ["program_name", ]
+    list_filter = (
+        "counteragent_name",
+    )
 
 
 @admin.register(TrainingUnit)
 class TrainingUnitAdmin(ModelAdmin):
-    search_fields = ["unit_name", ]
+    list_display = ("pk", "unit_name_short", "program_units")
+    search_fields = ["unit_name", "unit_name_short"]
+    list_filter = (
+        "program_units",
+    )
 
 
 @admin.register(StudentAgreement)
