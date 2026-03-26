@@ -7,6 +7,7 @@ import uuid
 
 from dateutil import rrule
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal, ROUND_HALF_UP
 from dateutil.rrule import DAILY
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -3887,3 +3888,37 @@ class StudentAgreement(models.Model):
                 raise ValidationError({
                     'training_center_name': 'Можно выбрать только Образовательную организацию.'
                 })
+
+    # В модели StudentAgreement
+    def calculate_debt_by_days(self, dismissal_date):
+        """
+        Рассчитывает задолженность по дням для исключения ошибок округления.
+
+        Логика:
+        - До окончания обучения: 100% стоимости
+        - После: пропорционально оставшимся дням отработки
+        """
+        from dateutil.relativedelta import relativedelta
+        from decimal import Decimal, ROUND_HALF_UP
+
+        work_off_end_date = self.training_end_date + relativedelta(
+            years=self.work_period_years
+        )
+        total_days = (work_off_end_date - self.training_end_date).days
+
+        if dismissal_date <= self.training_end_date:
+            # Полная стоимость, если увольнение до окончания обучения
+            return self.training_cost, total_days
+
+        if dismissal_date >= work_off_end_date:
+            # Отработка завершена
+            return Decimal('0'), 0
+
+        # Пропорциональный расчёт по дням
+        remaining_days = (work_off_end_date - dismissal_date).days
+        daily_cost = self.training_cost / total_days
+        debt = (daily_cost * remaining_days).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+
+        return debt, remaining_days

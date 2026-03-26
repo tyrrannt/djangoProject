@@ -2,7 +2,9 @@
 import io
 import os
 
+import openpyxl
 from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
 from django.views.generic import TemplateView
 from datetime import datetime
 
@@ -25,6 +27,7 @@ from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, FileRe
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from decimal import Decimal, ROUND_HALF_UP
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -38,6 +41,7 @@ from django.views.generic import (
 )
 from docxtpl import DocxTemplate
 from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 
 from administration_app.models import PortalProperty, Notification
 from administration_app.utils import (
@@ -83,14 +87,14 @@ from hrdepartment_app.forms import (
     DataBaseUserEventAddForm, DataBaseUserEventUpdateForm, BusinessProcessRoutesAddForm,
     BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
     LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm, StudentAgreementForm,
-    TrainingProgramQuickForm, TrainingUnitQuickForm,
+    TrainingProgramQuickForm, TrainingUnitQuickForm, TrainingDebtReportForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
     send_mail_change,
     get_month,
     get_working_hours, get_notify, get_first_and_last_day, get_mpd_statistics, get_passport_data, format_date_rus,
-    number_to_words_rub, format_currency, number_to_words,
+    number_to_words_rub, format_currency, number_to_words, format_date_russian,
 )
 from hrdepartment_app.models import (
     Medical,
@@ -109,7 +113,7 @@ from hrdepartment_app.models import (
     TrainingProgram, TrainingUnit,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
-from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from core import logger
 
 
@@ -6557,6 +6561,289 @@ def generate_student_agreement(request, pk):
         content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     )
 
+
+@staff_member_required
+def training_debt_report(request):
+    """
+    Отчет о задолженности сотрудника за обучение при увольнении
+    Расчет ведется по дням для исключения ошибок округления
+    """
+    form = TrainingDebtReportForm()
+    report_data = None
+    employee_name = None
+    dismissal_date = None
+
+    if request.method == 'POST':
+        form = TrainingDebtReportForm(request.POST)
+        if form.is_valid():
+            employee = form.cleaned_data['employee']
+            dismissal_date = form.cleaned_data['dismissal_date']
+            employee_name = f"{employee.last_name} {employee.first_name} {employee.surname or ''}".strip()
+
+            # Получаем все подписанные ученические договоры сотрудника
+            agreements = StudentAgreement.objects.filter(
+                full_name=employee,
+                signed=True
+            ).order_by('training_start_date')
+
+            report_rows = []
+            total_debt = Decimal('0')
+
+            for agreement in agreements:
+                # Дата окончания отработки
+                work_off_end_date = agreement.training_end_date + relativedelta(
+                    years=agreement.work_period_years
+                )
+
+                # Общий срок отработки в днях
+                total_work_off_days = (work_off_end_date - agreement.training_end_date).days
+
+                # Стоимость обучения за 1 день (без округления для точности промежуточных расчётов)
+                if total_work_off_days > 0:
+                    daily_cost = agreement.training_cost / total_work_off_days
+                else:
+                    daily_cost = Decimal('0')
+
+                # Рассчитываем задолженность
+                if dismissal_date <= agreement.training_end_date:
+                    # Увольнение до или в день окончания обучения — полный долг
+                    remaining_days = total_work_off_days
+                    debt = agreement.training_cost
+                elif dismissal_date >= work_off_end_date:
+                    # Отработка полностью завершена
+                    remaining_days = 0
+                    debt = Decimal('0')
+                else:
+                    # Увольнение в период отработки — считаем по дням
+                    remaining_days = (work_off_end_date - dismissal_date).days
+                    debt = (daily_cost * remaining_days).quantize(
+                        Decimal('0.01'), rounding=ROUND_HALF_UP
+                    )
+
+                # Стоимость за 1 месяц (для отображения, округляем)
+                avg_days_in_month = Decimal('30.44')  # среднее количество дней в месяце
+                monthly_cost = (daily_cost * avg_days_in_month).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
+
+                # Срок отработки в месяцах (для отображения)
+                total_work_off_months = agreement.work_period_years * 12
+
+                # Оставшиеся месяцы (для отображения, приблизительно)
+                if remaining_days > 0:
+                    remaining_months = int(remaining_days / 30.44) + 1
+                else:
+                    remaining_months = 0
+
+                total_debt += debt
+
+                report_rows.append({
+                    'agreement': agreement,
+                    'training_start_date': agreement.training_start_date,
+                    'training_end_date': agreement.training_end_date,
+                    'work_off_end_date': work_off_end_date,
+                    'total_work_off_days': total_work_off_days,
+                    'total_work_off_months': total_work_off_months,
+                    'remaining_days': remaining_days,
+                    'remaining_months': remaining_months,
+                    'training_cost': agreement.training_cost,
+                    'daily_cost': daily_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+                    'monthly_cost': monthly_cost,
+                    'dismissal_date': dismissal_date,
+                    'debt': debt,
+                })
+
+            report_data = {
+                'rows': report_rows,
+                'total_debt': total_debt.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+                'dismissal_date': dismissal_date,
+            }
+
+    context = {
+        'form': form,
+        'report_data': report_data,
+        'employee_name': employee_name,
+        'title': 'Отчет о задолженности за обучение',
+    }
+
+    return render(request, 'hrdepartment_app/training_debt_report.html', context)
+
+
+@staff_member_required
+def export_training_debt_excel(request):
+    """
+    Экспорт отчета о задолженности за обучение в Excel
+    """
+    employee_id = request.GET.get('employee')
+    dismissal_date_str = request.GET.get('date')
+
+    if not employee_id or not dismissal_date_str:
+        return HttpResponse("Некорректные параметры", status=400)
+
+    # Получаем сотрудника
+    employee = get_object_or_404(DataBaseUser, pk=employee_id)
+    employee_name = f"{employee.last_name} {employee.first_name} {employee.surname or ''}".strip()
+
+    # Парсим дату увольнения
+    from datetime import datetime
+    dismissal_date = datetime.strptime(dismissal_date_str, '%Y-%m-%d').date()
+
+    # Получаем договоры
+    agreements = StudentAgreement.objects.filter(
+        full_name=employee,
+        signed=True
+    ).order_by('training_start_date')
+
+    # Создаем книгу Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Задолженность за обучение"
+
+    # Стили
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    center_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    right_alignment = Alignment(horizontal='right', vertical='center')
+
+    # Заголовок отчета
+    ws.merge_cells('A1:I1')
+    ws['A1'] = f"ОТЧЕТ О ЗАДОЛЖЕННОСТИ ЗА ОБУЧЕНИЕ"
+    ws['A1'].font = Font(bold=True, size=14)
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+
+    # Информация о сотруднике
+    ws.merge_cells('A2:I2')
+    ws['A2'] = f"ФИО: {employee_name}"
+    ws['A2'].font = Font(bold=True, size=11)
+
+    ws.merge_cells('A3:I3')
+    ws['A3'] = f"Дата увольнения: {dismissal_date.strftime('%d.%m.%Y')}"
+    ws['A3'].font = Font(bold=True, size=11)
+
+    # Заголовки таблицы
+    headers = [
+        'ДАТА НАЧАЛА ОБУЧЕНИЯ',
+        'ДАТА ОКОНЧАНИЯ ОБУЧЕНИЯ',
+        'СРОК ОТРАБОТКИ\n(день,месяц,год)',
+        'СРОК ОТРАБОТКИ,\nМЕСЯЦ',
+        'ОБЩАЯ СТОИМОСТЬ\nОБУЧЕНИЯ',
+        '1 МЕСЯЦ',
+        'ДАТА УВОЛЬНЕНИЯ',
+        'ОСТАЛОСЬ КОЛИЧЕСТВО\nМЕСЯЦЕВ ДО ОТРАБОТКИ',
+        'ДОЛГ ПЕРЕД АВИАКОМПАНИЕЙ\nПО КАЖДОМУ ОБУЧЕНИЮ'
+    ]
+
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=5, column=col_num, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = center_alignment
+
+    # Устанавливаем ширину колонок
+    column_widths = [15, 15, 18, 12, 18, 15, 15, 18, 22]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+
+    # Данные
+    total_debt = Decimal('0')
+    row_num = 6
+
+    for agreement in agreements:
+        # Дата окончания отработки
+        work_off_end_date = agreement.training_end_date + relativedelta(
+            years=agreement.work_period_years
+        )
+
+        # Общий срок в днях и месяцах
+        total_work_off_days = (work_off_end_date - agreement.training_end_date).days
+        total_work_off_months = agreement.work_period_years * 12
+
+        # Стоимость за день
+        if total_work_off_days > 0:
+            daily_cost = agreement.training_cost / total_work_off_days
+        else:
+            daily_cost = Decimal('0')
+
+        # Расчет задолженности
+        if dismissal_date <= agreement.training_end_date:
+            remaining_days = total_work_off_days
+            debt = agreement.training_cost
+        elif dismissal_date >= work_off_end_date:
+            remaining_days = 0
+            debt = Decimal('0')
+        else:
+            remaining_days = (work_off_end_date - dismissal_date).days
+            debt = (daily_cost * remaining_days).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+
+        # Стоимость за месяц (для отображения)
+        avg_days_in_month = Decimal('30.44')
+        monthly_cost = (daily_cost * avg_days_in_month).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+
+        # Оставшиеся месяцы
+        remaining_months = int(remaining_days / 30.44) + 1 if remaining_days > 0 else 0
+
+        total_debt += debt
+
+        # Записываем строку
+        ws.cell(row=row_num, column=1,
+                value=format_date_russian(agreement.training_start_date)).alignment = center_alignment
+        ws.cell(row=row_num, column=2,
+                value=format_date_russian(agreement.training_end_date)).alignment = center_alignment
+        ws.cell(row=row_num, column=3,
+                value=format_date_russian(work_off_end_date)).alignment = center_alignment
+        ws.cell(row=row_num, column=4, value=total_work_off_months).alignment = center_alignment
+        ws.cell(row=row_num, column=5, value=float(agreement.training_cost)).number_format = '#,##0.00 ₽'
+        ws.cell(row=row_num, column=6, value=float(monthly_cost)).number_format = '#,##0.00 ₽'
+        ws.cell(row=row_num, column=7,
+                value=format_date_russian(dismissal_date)).alignment = center_alignment
+        ws.cell(row=row_num, column=8, value=remaining_months).alignment = center_alignment
+        ws.cell(row=row_num, column=9, value=float(debt)).number_format = '#,##0.00 ₽'
+
+        # Применяем границы ко всем ячейкам строки
+        for col in range(1, 10):
+            ws.cell(row=row_num, column=col).border = thin_border
+
+        row_num += 1
+
+    # Итоговая строка
+    ws.merge_cells(f'A{row_num}:H{row_num}')
+    total_cell = ws.cell(row=row_num, column=1, value='ОБЩАЯ СУММА К ВОЗВРАТУ НА ДАТУ УВОЛЬНЕНИЯ')
+    total_cell.font = Font(bold=True, size=11)
+    total_cell.alignment = Alignment(horizontal='right', vertical='center')
+    total_cell.border = thin_border
+
+    ws.cell(row=row_num, column=9, value=float(total_debt)).number_format = '#,##0.00 ₽'
+    ws.cell(row=row_num, column=9).font = Font(bold=True, size=12)
+    ws.cell(row=row_num, column=9).border = thin_border
+
+    # Применяем границы к итоговой строке
+    for col in range(1, 10):
+        ws.cell(row=row_num, column=col).border = thin_border
+
+    # Автофильтр для заголовков
+    ws.auto_filter.ref = 'A5:I5'
+
+    # Подготовка ответа
+    filename = f"Задолженность_{employee.last_name}_{dismissal_date.strftime('%Y%m%d')}.xlsx"
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    wb.save(response)
+    return response
 
 def load_programs(request):
     """Возвращает программы обучения для выбранного учебного центра."""

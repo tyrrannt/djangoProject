@@ -2267,6 +2267,23 @@ class StudentAgreementForm(forms.ModelForm):
             make_custom_field(self.fields[field])
 
 
+class TrainingDebtReportForm(forms.Form):
+    employee = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True),
+        label='Сотрудник',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    dismissal_date = forms.DateField(
+        label='Дата увольнения',
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'value': datetime.datetime.now().date().isoformat()
+        }),
+        initial=datetime.datetime.now().date()
+    )
+
+
 class TrainingProgramQuickForm(forms.ModelForm):
     """Мини-форма для быстрого создания программы в модальном окне"""
 

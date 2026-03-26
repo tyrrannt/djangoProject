@@ -814,3 +814,14 @@ def format_date_rus(date_obj):
         'month': months.get(date_obj.month, ''),
         'year': date_obj.strftime('%Y')
     }
+
+def format_date_russian(date_obj):
+    """
+    Форматирует дату в формате '01-Апр-2026'
+    """
+    months_ru = {
+        1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр',
+        5: 'Май', 6: 'Июн', 7: 'Июл', 8: 'Авг',
+        9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+    }
+    return f"{date_obj.day:02d}-{months_ru[date_obj.month]}-{date_obj.year}"
