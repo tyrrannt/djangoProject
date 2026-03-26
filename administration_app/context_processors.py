@@ -104,7 +104,7 @@ def get_approval_oficial_memo_process(request):
 
         # ===== Роли (1 запрос вместо 8) =====
         routes = BusinessProcessRoutes.objects.filter(
-            business_process_type__in=[1, 2]
+            business_process_type__in=["1", "2"]
         ).values(
             "business_process_type",
             "person_agreement__pk",
@@ -125,7 +125,7 @@ def get_approval_oficial_memo_process(request):
         person_hr_cto = set()
 
         for r in routes:
-            if r["business_process_type"] == 1:
+            if r["business_process_type"] == "1":
                 person_agreement.add(r["person_agreement__pk"])
                 person_clerk.add(r["person_clerk__pk"])
                 person_hr.add(r["person_hr__pk"])
@@ -135,7 +135,7 @@ def get_approval_oficial_memo_process(request):
                 person_agreement_cto.add(r["person_agreement__pk"])
                 person_clerk_cto.add(r["person_clerk__pk"])
                 person_hr_cto.add(r["person_hr__pk"])
-
+        print(person_hr, person_hr_cto, person_clerk, person_accounting, person_distributor, person_agreement, person_agreement_cto, person_clerk_cto, user.pk)
         # ===== Базовый queryset (убрали N+1) =====
         bpmemo_qs = ApprovalOficialMemoProcess.objects.exclude(cancellation=True).select_related(
             "document",
