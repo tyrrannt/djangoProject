@@ -2271,25 +2271,24 @@ class TrainingDebtReportForm(forms.Form):
     employee = forms.ModelChoiceField(
         queryset=DataBaseUser.objects.filter(is_active=True),
         label='Сотрудник',
-        widget=forms.Select(attrs={'class': 'form-control'})
+        widget=forms.Select(attrs={
+            'class': 'form-control form-control-modern',
+            'data-plugin-selectTwo': True
+        })
     )
     dismissal_date = forms.DateField(
         label='Дата увольнения',
         widget=forms.DateInput(attrs={
             'type': 'date',
-            'class': 'form-control',
+            'class': 'form-control form-control-modern',
+            'data-date-language': 'ru',
+            'todayBtn': True,
+            'clearBtn': True,
+            'data-plugin-options': '{"orientation": "bottom"}',
             'value': datetime.datetime.now().date().isoformat()
         }),
         initial=datetime.datetime.now().date()
     )
-
-    def __init__(self, *args, **kwargs):
-        """
-        :param args:
-        """
-        super(TrainingDebtReportForm, self).__init__(*args, **kwargs)
-        for field in self.fields:
-            make_custom_field(self.fields[field])
 
 
 class TrainingProgramQuickForm(forms.ModelForm):
