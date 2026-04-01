@@ -2119,16 +2119,26 @@ class ApartmentsUsageReportView(TemplateView):
         total_occupied = 0
 
         for apartment in apartments_query:
-            # Получаем доступные места на период
-            available_beds = apartment.get_available_beds(date_start, date_end)
+            # Получаем активные бронирования на период
+            active_bookings = apartment.bookings.filter(
+                is_active=True,
+                date_start__lt=date_end,
+                date_end__gt=date_start
+            )
+
+            # Считаем количество занятых мест на период (кол-во бронирований)
+            occupied_beds = active_bookings.count()
+
+            # Доступные места = всего мест - занято на период
+            available_beds = max(0, apartment.beds_number - occupied_beds)
 
             # Получаем периоды занятости для отображения
             busy_periods = apartment.get_busy_periods(date_start, date_end)
 
-            # Рассчитываем загруженность
+            # Рассчитываем загруженность на период
             occupancy_rate = 0
             if apartment.beds_number > 0:
-                occupancy_rate = (apartment.occupied_beds / apartment.beds_number) * 100
+                occupancy_rate = (occupied_beds / apartment.beds_number) * 100
 
             apartments_data.append({
                 'id': apartment.id,
@@ -2137,14 +2147,14 @@ class ApartmentsUsageReportView(TemplateView):
                 'place': apartment.place,
                 'contracts': apartment.contracts,
                 'beds_number': apartment.beds_number,
-                'occupied_beds': apartment.occupied_beds,
+                'occupied_beds': occupied_beds,  # Занято на выбранный период
                 'available_beds': available_beds,
                 'occupancy_rate': occupancy_rate,
                 'busy_periods': busy_periods,
             })
 
             total_beds += apartment.beds_number
-            total_occupied += apartment.occupied_beds
+            total_occupied += occupied_beds
 
         # Сводная статистика
         total_apartments = apartments_query.count()
@@ -2249,7 +2259,6 @@ def apartments_usage_report(request):
     Функция представления для отчета использования квартир.
     Альтернатива классу ApartmentsUsageReportView.
     """
-    from datetime import datetime, timedelta
 
     # Получаем параметры фильтрации
     date_start_str = request.GET.get('date_start')
@@ -2257,12 +2266,12 @@ def apartments_usage_report(request):
     place_id = request.GET.get('place')
 
     # Даты по умолчанию
-    today = datetime.now().date()
+    today = datetime.datetime.now().date()
     date_start = today.replace(day=1) if date_start_str is None else \
-        datetime.strptime(date_start_str, '%Y-%m-%d').date()
-    date_end = (today.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1) \
+        datetime.datetime.strptime(date_start_str, '%Y-%m-%d').date()
+    date_end = (today.replace(day=1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1) \
         if date_end_str is None else \
-        datetime.strptime(date_end_str, '%Y-%m-%d').date()
+        datetime.datetime.strptime(date_end_str, '%Y-%m-%d').date()
 
     # Queryset квартир
     apartments_query = Apartments.objects.select_related('place', 'contracts').all()
@@ -2276,9 +2285,24 @@ def apartments_usage_report(request):
     total_occupied = 0
 
     for apartment in apartments_query:
-        available_beds = apartment.get_available_beds(date_start, date_end)
+        # Получаем активные бронирования на период
+        active_bookings = apartment.bookings.filter(
+            is_active=True,
+            date_start__lt=date_end,
+            date_end__gt=date_start
+        )
+
+        # Считаем количество занятых мест на период (кол-во бронирований)
+        occupied_beds = active_bookings.count()
+
+        # Доступные места = всего мест - занято на период
+        available_beds = max(0, apartment.beds_number - occupied_beds)
+
+        # Получаем периоды занятости для отображения
         busy_periods = apartment.get_busy_periods(date_start, date_end)
-        occupancy_rate = (apartment.occupied_beds / apartment.beds_number * 100) \
+
+        # Рассчитываем загруженность на период
+        occupancy_rate = (occupied_beds / apartment.beds_number * 100) \
             if apartment.beds_number > 0 else 0
 
         apartments_data.append({
@@ -2288,14 +2312,14 @@ def apartments_usage_report(request):
             'place': apartment.place,
             'contracts': apartment.contracts,
             'beds_number': apartment.beds_number,
-            'occupied_beds': apartment.occupied_beds,
+            'occupied_beds': occupied_beds,  # Занято на выбранный период
             'available_beds': available_beds,
             'occupancy_rate': occupancy_rate,
             'busy_periods': busy_periods,
         })
 
         total_beds += apartment.beds_number
-        total_occupied += apartment.occupied_beds
+        total_occupied += occupied_beds
 
     # Сводка
     total_apartments = apartments_query.count()
@@ -2318,7 +2342,7 @@ def apartments_usage_report(request):
         'places': places,
     }
 
-    return render(request, 'apartments_usage_report.html', context)
+    return render(request, 'customers_app/apartments_usage_report.html', context)
 
 
 def _export_report_csv(apartments_data, date_start, date_end):
@@ -2347,8 +2371,6 @@ def _export_report_csv(apartments_data, date_start, date_end):
         ])
 
     return response
-
-
 # ----------------------------------------- DRF -----------------------------------------
 class DataBaseUserViewSet(viewsets.ModelViewSet):
     queryset = DataBaseUser.objects.all()
