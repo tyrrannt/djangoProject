@@ -2207,7 +2207,7 @@ class ApartmentsUsageReportView(TemplateView):
     def _parse_date(self, date_str):
         """Парсинг строки даты в формат date"""
         try:
-            return datetime.datetime.strptime(date_str, '%Y-%m-%d')
+            return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
         except (ValueError, TypeError):
             return datetime.datetime.today()
 
