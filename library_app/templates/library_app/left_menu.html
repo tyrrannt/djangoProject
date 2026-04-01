@@ -200,12 +200,12 @@
 
                                 </ul>
                             </li>
-                            {% if user.is_staff %}
                                 <li class="nav-parent">
                                     <a class="nav-link" href="#">
                                         <span>Персонал</span>
                                     </a>
                                     <ul class="nav nav-children">
+                                        {% if user.is_staff %}
                                         <li>
                                             <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
                                                 Сезонность отпусков
@@ -237,9 +237,15 @@
                                                 Расчет долга за обучение
                                             </a>
                                         </li>
+                                        {% endif %}
+                                        <li>
+                                            <a class="nav-link"
+                                               href="{% url 'customers_app:apartments_usage_report' %}">
+                                                Отчет использования квартир
+                                            </a>
+                                        </li>
                                     </ul>
                                 </li>
-                            {% endif %}
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:event_list' %}">
                                     Мероприятия
