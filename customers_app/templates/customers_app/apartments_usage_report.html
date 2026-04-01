@@ -103,18 +103,12 @@
                         {% for apartment in apartments %}
                         <tr>
                             <td>
-{#                                <a href="{% url 'apartments:detail' apartment.id %}">#}
-{#                                    {{ apartment.title|default:"Без названия" }}#}
-{#                                </a>#}
+                                {{ apartment.title|default:"Без названия" }}
                             </td>
                             <td>{{ apartment.address|default:"—" }}</td>
                             <td>{{ apartment.place.name|default:"—" }}</td>
                             <td>
-                                {% if apartment.contracts %}
-                                    {{ apartment.contracts.number|default:"—" }}
-                                {% else %}
-                                    —
-                                {% endif %}
+                                    {{ apartment.contracts.contract_number|default:"—" }}
                             </td>
                             <td class="text-center">{{ apartment.beds_number }}</td>
                             <td class="text-center text-danger">{{ apartment.occupied_beds }}</td>
