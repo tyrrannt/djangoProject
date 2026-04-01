@@ -2077,7 +2077,6 @@ def inactive_users_report(request):
 
     return render(request, 'customers_app/inactive_users.html', {'report': dict(report_data)})
 
-
 class ApartmentsUsageReportView(TemplateView):
     """
     Класс представления для отчета использования квартир.
@@ -2099,7 +2098,7 @@ class ApartmentsUsageReportView(TemplateView):
         place_id = self.request.GET.get('place')
 
         # Устанавливаем даты по умолчанию (текущий месяц)
-        today = datetime.datetime.now().date()
+        today = datetime.datetime.today()
         date_start = today.replace(day=1) if date_start_str is None else self._parse_date(date_start_str)
         date_end = (today.replace(day=1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1) \
             if date_end_str is None else self._parse_date(date_end_str)
@@ -2124,6 +2123,12 @@ class ApartmentsUsageReportView(TemplateView):
                 is_active=True,
                 date_start__lt=date_end,
                 date_end__gt=date_start
+            ).select_related(
+                'process',
+                'process__document',
+                'process__document__person',
+                'process__document__person__user_work_profile',
+                'process__document__person__user_work_profile__job'
             )
 
             # Считаем количество занятых мест на период (кол-во бронирований)
@@ -2134,6 +2139,21 @@ class ApartmentsUsageReportView(TemplateView):
 
             # Получаем периоды занятости для отображения
             busy_periods = apartment.get_busy_periods(date_start, date_end)
+
+            # Формируем детализацию по бронированиям
+            bookings_detail = []
+            for booking in active_bookings:
+                employee = None
+                if booking.process and booking.process.document:
+                    employee = booking.process.document.person
+
+                bookings_detail.append({
+                    'date_start': booking.date_start,
+                    'date_end': booking.date_end,
+                    'employee_fio': employee.get_full_name() if employee else '—',
+                    'employee_position': str(
+                        employee.user_work_profile.job) if employee and employee.user_work_profile and employee.user_work_profile.job else '—',
+                })
 
             # Рассчитываем загруженность на период
             occupancy_rate = 0
@@ -2151,6 +2171,7 @@ class ApartmentsUsageReportView(TemplateView):
                 'available_beds': available_beds,
                 'occupancy_rate': occupancy_rate,
                 'busy_periods': busy_periods,
+                'bookings_detail': bookings_detail,
             })
 
             total_beds += apartment.beds_number
@@ -2186,9 +2207,9 @@ class ApartmentsUsageReportView(TemplateView):
     def _parse_date(self, date_str):
         """Парсинг строки даты в формат date"""
         try:
-            return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            return datetime.datetime.strptime(date_str, '%Y-%m-%d')
         except (ValueError, TypeError):
-            return datetime.datetime.now().date()
+            return datetime.datetime.today()
 
     def export_to_csv(self, apartments_data, date_start, date_end):
         """
@@ -2266,12 +2287,12 @@ def apartments_usage_report(request):
     place_id = request.GET.get('place')
 
     # Даты по умолчанию
-    today = datetime.datetime.now().date()
+    today = datetime.datetime.today()
     date_start = today.replace(day=1) if date_start_str is None else \
-        datetime.datetime.strptime(date_start_str, '%Y-%m-%d').date()
+        datetime.datetime.strptime(date_start_str, '%Y-%m-%d')
     date_end = (today.replace(day=1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1) \
         if date_end_str is None else \
-        datetime.datetime.strptime(date_end_str, '%Y-%m-%d').date()
+        datetime.datetime.strptime(date_end_str, '%Y-%m-%d')
 
     # Queryset квартир
     apartments_query = Apartments.objects.select_related('place', 'contracts').all()
@@ -2290,6 +2311,12 @@ def apartments_usage_report(request):
             is_active=True,
             date_start__lt=date_end,
             date_end__gt=date_start
+        ).select_related(
+            'process',
+            'process__document',
+            'process__document__person',
+            'process__document__person__user_work_profile',
+            'process__document__person__user_work_profile__job'
         )
 
         # Считаем количество занятых мест на период (кол-во бронирований)
@@ -2300,6 +2327,21 @@ def apartments_usage_report(request):
 
         # Получаем периоды занятости для отображения
         busy_periods = apartment.get_busy_periods(date_start, date_end)
+
+        # Формируем детализацию по бронированиям
+        bookings_detail = []
+        for booking in active_bookings:
+            employee = None
+            if booking.process and booking.process.document:
+                employee = booking.process.document.person
+
+            bookings_detail.append({
+                'date_start': booking.date_start,
+                'date_end': booking.date_end,
+                'employee_fio': employee.get_full_name() if employee else '—',
+                'employee_position': str(
+                    employee.user_work_profile.job) if employee and employee.user_work_profile and employee.user_work_profile.job else '—',
+            })
 
         # Рассчитываем загруженность на период
         occupancy_rate = (occupied_beds / apartment.beds_number * 100) \
@@ -2316,6 +2358,7 @@ def apartments_usage_report(request):
             'available_beds': available_beds,
             'occupancy_rate': occupancy_rate,
             'busy_periods': busy_periods,
+            'bookings_detail': bookings_detail,
         })
 
         total_beds += apartment.beds_number
