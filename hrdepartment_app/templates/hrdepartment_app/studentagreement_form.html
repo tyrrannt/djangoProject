@@ -81,8 +81,8 @@
                 const btnAddUnit = $('#btnAddUnit');
                 if (programId) {
                     btnAddUnit.prop('disabled', false)
-                              .data('program-id', programId)
-                              .data('program-name', programName);
+                        .data('program-id', programId)
+                        .data('program-name', programName);
                 } else {
                     btnAddUnit.prop('disabled', true);
                 }
@@ -116,7 +116,7 @@
                     // Загрузка Программ
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_programs' %}",
-                        data:  {'center_id': centerId},
+                        data: {'center_id': centerId},
                         success: function (data) {
                             if (data.programs.length > 0) {
                                 $.each(data.programs, function (index, program) {
@@ -135,7 +135,7 @@
                     // Загрузка Договоров
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_contracts' %}",
-                        data:  {'counteragent_id': centerId},
+                        data: {'counteragent_id': centerId},
                         success: function (data) {
                             if (data.contracts.length > 0) {
                                 $.each(data.contracts, function (index, contract) {
@@ -172,7 +172,7 @@
                 if (programId) {
                     $.ajax({
                         url: "{% url 'hrdepartment_app:ajax_load_units' %}",
-                        data:  {'program_id': programId},
+                        data: {'program_id': programId},
                         success: function (data) {
                             if (data.units.length > 0) {
                                 $.each(data.units, function (index, unit) {
@@ -196,12 +196,12 @@
             });
 
             // 3. При изменении выбранного договора
-            $('#id_counteragent_contract').on('change', function() {
+            $('#id_counteragent_contract').on('change', function () {
                 updateContractViewButton();
             });
 
             // 4. Обработчик клика на кнопку просмотра договора
-            $('#btnViewContract').on('click', function(e) {
+            $('#btnViewContract').on('click', function (e) {
                 if ($(this).prop('disabled') || !$(this).attr('href') || $(this).attr('href') === '#') {
                     e.preventDefault();
                     return false;
@@ -212,7 +212,7 @@
             });
 
             // 5. Обработчик клика на кнопку добавления модуля
-            $('#btnAddUnit').on('click', function() {
+            $('#btnAddUnit').on('click', function () {
                 const programId = $(this).data('program-id');
                 const programName = $(this).data('program-name');
                 if (programId) {
@@ -270,7 +270,7 @@
                 $.ajax({
                     url: "{% url 'hrdepartment_app:ajax_create_program' %}",
                     type: 'POST',
-                    data:  {
+                    data: {
                         'csrfmiddlewaretoken': '{{ csrf_token }}',
                         'program_name': programName,
                         'counteragent_name': centerId
@@ -299,7 +299,9 @@
                 });
             });
 
-            $('#id_program_name').on('input', function () { $('#programError').text(''); });
+            $('#id_program_name').on('input', function () {
+                $('#programError').text('');
+            });
             $('#addProgramModal').on('hidden.bs.modal', function () {
                 $('#quickProgramForm')[0].reset();
                 $('#programError').text('');
@@ -371,7 +373,9 @@
                 });
             });
 
-            $('#id_unit_name').on('input', function () { $('#unitError').text(''); });
+            $('#id_unit_name').on('input', function () {
+                $('#unitError').text('');
+            });
             $('#addUnitModal').on('hidden.bs.modal', function () {
                 $('#quickUnitForm')[0].reset();
                 $('#unitError').text('');
@@ -385,329 +389,308 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
 
-        <!-- Блок ошибок -->
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>Ошибка</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
+    <style>
+        /* Стили для адаптивности и ширины колонок */
+        .mobile-only {
+            display: none;
+        }
 
-        <style>
-            /* Стили для адаптивности и ширины колонок */
+        @media (max-width: 767px) {
             .mobile-only {
-                display: none;
+                display: inline;
             }
+        }
 
-            @media (max-width: 767px) {
-                .mobile-only {
-                    display: inline;
-                }
-            }
+        /* Стили для disabled полей */
+        select:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+    </style>
 
-            /* Стили для disabled полей */
-            select:disabled {
-                background-color: #e9ecef;
-                cursor: not-allowed;
-                opacity: 0.7;
-            }
-        </style>
-
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <!-- Реквизиты -->
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.student_agreement_number.label_tag }}
-                                                {{ form.student_agreement_number|add_class:"form-control"|attr:"id:id_student_agreement_number" }}
-                                            </div>
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <!-- Реквизиты -->
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.student_agreement_number.label_tag }}
+                                            {{ form.student_agreement_number|add_class:"form-control"|attr:"id:id_student_agreement_number" }}
                                         </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.student_agreement_date.label_tag }}
-                                                {{ form.student_agreement_date|add_class:"form-control"|attr:"id:id_student_agreement_date" }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.signed.label_tag }}
-                                                {{ form.signed }}
-                                            </div>
-                                        </div>
-
                                     </div>
-
-                                    <!-- Обучение (Каскадные поля) -->
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-6">
-                                            <div class="form-group">
-                                                {{ form.training_center_name.label_tag }}
-                                                {{ form.training_center_name|add_class:"form-control"|attr:"id:id_training_center_name" }}
-                                                <small class="text-muted">Выберите учебный центр</small>
-                                            </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.student_agreement_date.label_tag }}
+                                            {{ form.student_agreement_date|add_class:"form-control"|attr:"id:id_student_agreement_date" }}
                                         </div>
-                                        <div class="col-sm-12 col-md-4">
-                                            <div class="form-group">
-                                                {{ form.counteragent_contract.label_tag }}
-                                                {{ form.counteragent_contract|add_class:"form-control"|attr:"id:id_counteragent_contract"|attr:"disabled:true" }}
-                                                <small class="text-muted">Выберите трудовой договор из реестра</small>
-                                            </div>
-                                        </div>
-                                        <!-- Кнопка просмотра договора -->
-                                        <div class="col-sm-12 col-md-2">
-                                            <div class="form-group">
-                                                <label class="control-label">&nbsp;</label>
-                                                <a href="#"
-                                                   id="btnViewContract"
-                                                   class="btn btn-outline-primary btn-block"
-                                                   disabled
-                                                   title="Просмотреть договор">
-                                                    <i class="bx bx-show me-1"></i> Просмотр
-                                                </a>
-                                            </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.signed.label_tag }}
+                                            {{ form.signed }}
                                         </div>
                                     </div>
 
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-12">
-                                            <div class="form-group">
-                                                {{ form.training_program.label_tag }}
-                                                {{ form.training_program|add_class:"form-control"|attr:"id:id_training_program"|attr:"disabled:true" }}
-                                                <small class="text-muted">Доступно после выбора УЦ</small>
-                                            </div>
-                                        </div>
+                                </div>
 
-                                    </div>
-                                    <!-- Блок с полем модулей + кнопка -->
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-10">
-                                            <div class="form-group">
-                                                {{ form.training_unit.label_tag }}
-                                                {{ form.training_unit|add_class:"form-control"|attr:"id:id_training_unit"|attr:"disabled:true"|attr:"size:5" }}
-                                                <small class="text-muted">Доступно после выбора программы. Удерживайте
-                                                    Ctrl/Cmd для выбора нескольких</small>
-                                            </div>
-                                        </div>
-                                        <!-- Кнопка добавления модуля -->
-                                        <div class="col-sm-12 col-md-2">
-                                            <div class="form-group">
-                                                <label class="control-label">&nbsp;</label>
-                                                <button type="button"
-                                                        id="btnAddUnit"
-                                                        class="btn btn-outline-primary btn-block"
-                                                        disabled
-                                                        title="Добавить новый модуль"
-                                                        style="height: 42px; display: flex; align-items: center; justify-content: center;">
-                                                    <i class="bx bx-plus-circle me-1"></i> Модуль
-                                                </button>
-                                            </div>
+                                <!-- Обучение (Каскадные поля) -->
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-6">
+                                        <div class="form-group">
+                                            {{ form.training_center_name.label_tag }}
+                                            {{ form.training_center_name|add_class:"form-control"|attr:"id:id_training_center_name" }}
+                                            <small class="text-muted">Выберите учебный центр</small>
                                         </div>
                                     </div>
-                                    <!-- Детали обучения -->
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.form_education.label_tag }}
-                                                {{ form.form_education|add_class:"form-control"|attr:"id:id_form_education" }}
-                                            </div>
+                                    <div class="col-sm-12 col-md-4">
+                                        <div class="form-group">
+                                            {{ form.counteragent_contract.label_tag }}
+                                            {{ form.counteragent_contract|add_class:"form-control"|attr:"id:id_counteragent_contract"|attr:"disabled:true" }}
+                                            <small class="text-muted">Выберите трудовой договор из реестра</small>
                                         </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.remotely.label_tag }}
-                                                {{ form.remotely|add_class:"form-control"|attr:"id:id_remotely" }}
-                                            </div>
+                                    </div>
+                                    <!-- Кнопка просмотра договора -->
+                                    <div class="col-sm-12 col-md-2">
+                                        <div class="form-group">
+                                            <label class="control-label">&nbsp;</label>
+                                            <a href="#"
+                                               id="btnViewContract"
+                                               class="btn btn-outline-primary btn-block"
+                                               disabled
+                                               title="Просмотреть договор">
+                                                <i class="bx bx-show me-1"></i> Просмотр
+                                            </a>
                                         </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.academic_hours.label_tag }}
-                                                {{ form.academic_hours|add_class:"form-control"|attr:"id:id_academic_hours" }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.training_place.label_tag }}
-                                                {{ form.training_place|add_class:"form-control"|attr:"id:id_training_place" }}
-                                            </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-12">
+                                        <div class="form-group">
+                                            {{ form.training_program.label_tag }}
+                                            {{ form.training_program|add_class:"form-control"|attr:"id:id_training_program"|attr:"disabled:true" }}
+                                            <small class="text-muted">Доступно после выбора УЦ</small>
                                         </div>
                                     </div>
 
-                                    <!-- Обучающийся -->
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-12">
-                                            <div class="form-group">
-                                                {{ form.full_name.label_tag }}
-                                                {{ form.full_name|add_class:"form-control"|attr:"id:id_full_name" }}
-                                            </div>
+                                </div>
+                                <!-- Блок с полем модулей + кнопка -->
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-10">
+                                        <div class="form-group">
+                                            {{ form.training_unit.label_tag }}
+                                            {{ form.training_unit|add_class:"form-control"|attr:"id:id_training_unit"|attr:"disabled:true"|attr:"size:5" }}
+                                            <small class="text-muted">Доступно после выбора программы. Удерживайте
+                                                Ctrl/Cmd для выбора нескольких</small>
                                         </div>
                                     </div>
-
-                                    <!-- Период и Финансы -->
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.training_start_date.label_tag }}
-                                                {{ form.training_start_date|add_class:"form-control"|attr:"id:id_training_start_date" }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.training_end_date.label_tag }}
-                                                {{ form.training_end_date|add_class:"form-control"|attr:"id:id_training_end_date" }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.training_cost.label_tag }}
-                                                {{ form.training_cost|add_class:"form-control"|attr:"id:id_training_cost" }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12 col-md-3">
-                                            <div class="form-group">
-                                                {{ form.work_period_years.label_tag }}
-                                                {{ form.work_period_years|add_class:"form-control"|attr:"id:id_work_period_years" }}
-                                            </div>
+                                    <!-- Кнопка добавления модуля -->
+                                    <div class="col-sm-12 col-md-2">
+                                        <div class="form-group">
+                                            <label class="control-label">&nbsp;</label>
+                                            <button type="button"
+                                                    id="btnAddUnit"
+                                                    class="btn btn-outline-primary btn-block"
+                                                    disabled
+                                                    title="Добавить новый модуль"
+                                                    style="height: 42px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="bx bx-plus-circle me-1"></i> Модуль
+                                            </button>
                                         </div>
                                     </div>
+                                </div>
+                                <!-- Детали обучения -->
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.form_education.label_tag }}
+                                            {{ form.form_education|add_class:"form-control"|attr:"id:id_form_education" }}
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.remotely.label_tag }}
+                                            {{ form.remotely|add_class:"form-control"|attr:"id:id_remotely" }}
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.academic_hours.label_tag }}
+                                            {{ form.academic_hours|add_class:"form-control"|attr:"id:id_academic_hours" }}
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.training_place.label_tag }}
+                                            {{ form.training_place|add_class:"form-control"|attr:"id:id_training_place" }}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                    <!-- Примечание -->
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-12">
-                                            <div class="form-group">
-                                                {{ form.note.label_tag }}
-                                                {{ form.note|add_class:"form-control"|attr:"id:id_note" }}
-                                            </div>
+                                <!-- Обучающийся -->
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-12">
+                                        <div class="form-group">
+                                            {{ form.full_name.label_tag }}
+                                            {{ form.full_name|add_class:"form-control"|attr:"id:id_full_name" }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Период и Финансы -->
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.training_start_date.label_tag }}
+                                            {{ form.training_start_date|add_class:"form-control"|attr:"id:id_training_start_date" }}
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.training_end_date.label_tag }}
+                                            {{ form.training_end_date|add_class:"form-control"|attr:"id:id_training_end_date" }}
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.training_cost.label_tag }}
+                                            {{ form.training_cost|add_class:"form-control"|attr:"id:id_training_cost" }}
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-3">
+                                        <div class="form-group">
+                                            {{ form.work_period_years.label_tag }}
+                                            {{ form.work_period_years|add_class:"form-control"|attr:"id:id_work_period_years" }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Примечание -->
+                                <div class="row">
+                                    <div class="col-sm-12 col-md-12">
+                                        <div class="form-group">
+                                            {{ form.note.label_tag }}
+                                            {{ form.note|add_class:"form-control"|attr:"id:id_note" }}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
             </div>
+        </div>
 
-            <!-- Кнопки действий -->
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
+        <!-- Кнопки действий -->
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto">
+                <button type="submit"
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
+            </div>
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
+                </a>
+            </div>
+            {% if object and user.is_superuser %}
                 <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
+                    <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
                     </a>
                 </div>
-                {% if object and user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </form>
-        <!-- Модальное окно для добавления программы -->
-        <div class="modal fade" id="addProgramModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Добавить новую программу</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="quickProgramForm">
-                            {% csrf_token %}
-                            <input type="hidden" id="id_program_counteragent" name="counteragent_name">
-                            <div class="form-group">
-                                <label for="id_program_name">Наименование программы *</label>
-                                <input type="text"
-                                       class="form-control"
-                                       id="id_program_name"
-                                       name="program_name"
-                                       placeholder="Введите название программы"
-                                       required>
-                                <small class="text-muted" id="programError" style="color: red;"></small>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
-                        <button type="button" class="btn btn-primary" id="btnSaveProgram">Создать и выбрать</button>
-                    </div>
+            {% endif %}
+        </div>
+    </form>
+    <!-- Модальное окно для добавления программы -->
+    <div class="modal fade" id="addProgramModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить новую программу</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickProgramForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="id_program_counteragent" name="counteragent_name">
+                        <div class="form-group">
+                            <label for="id_program_name">Наименование программы *</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="id_program_name"
+                                   name="program_name"
+                                   placeholder="Введите название программы"
+                                   required>
+                            <small class="text-muted" id="programError" style="color: red;"></small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveProgram">Создать и выбрать</button>
                 </div>
             </div>
         </div>
-        <!-- Модальное окно для добавления модуля -->
-        <div class="modal fade" id="addUnitModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Добавить новый модуль</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="quickUnitForm">
-                            {% csrf_token %}
-                            <input type="hidden" id="id_unit_program" name="program_id">
-                            <div class="form-group">
-                                <label for="id_unit_name_short">Краткое наименование модуля *</label>
-                                <input type="text"
-                                       class="form-control"
-                                       id="id_unit_name_short"
-                                       name="unit_name_short"
-                                       placeholder="Введите название модуля"
-                                       required>
-                                <small class="text-muted" id="unitError" style="color: red;"></small>
-                            </div>
-                            <div class="form-group">
-                                <label for="id_unit_name">Полное наименование модуля *</label>
-                                <input type="text"
-                                       class="form-control"
-                                       id="id_unit_name"
-                                       name="unit_name"
-                                       placeholder="Введите название модуля"
-                                       required>
-                                <small class="text-muted" id="unitError" style="color: red;"></small>
-                            </div>
-                            <div class="alert alert-info mt-2">
-                                <small><i class="bx bx-info-circle"></i> Модуль будет автоматически привязан к
-                                    программе: <strong id="modalProgramName"></strong></small>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
-                        <button type="button" class="btn btn-primary" id="btnSaveUnit">Создать и выбрать</button>
-                    </div>
+    </div>
+    <!-- Модальное окно для добавления модуля -->
+    <div class="modal fade" id="addUnitModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить новый модуль</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickUnitForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="id_unit_program" name="program_id">
+                        <div class="form-group">
+                            <label for="id_unit_name_short">Краткое наименование модуля *</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="id_unit_name_short"
+                                   name="unit_name_short"
+                                   placeholder="Введите название модуля"
+                                   required>
+                            <small class="text-muted" id="unitError" style="color: red;"></small>
+                        </div>
+                        <div class="form-group">
+                            <label for="id_unit_name">Полное наименование модуля *</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="id_unit_name"
+                                   name="unit_name"
+                                   placeholder="Введите название модуля"
+                                   required>
+                            <small class="text-muted" id="unitError" style="color: red;"></small>
+                        </div>
+                        <div class="alert alert-info mt-2">
+                            <small><i class="bx bx-info-circle"></i> Модуль будет автоматически привязан к
+                                программе: <strong id="modalProgramName"></strong></small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveUnit">Создать и выбрать</button>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 {% endblock %}

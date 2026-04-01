@@ -24,66 +24,60 @@
 {% endblock %}
 
 {% block content %}
-
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc"><strong>{{ object.name }}</strong></p>
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_type_property">Тип имущества</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_type_property"
-                                                   class="form-control form-control-modern"
-                                                   name="type_property" value="{{ object.type_property }}" disabled/>
-                                        </div>
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-2-5 col-xl-1-5">
+                                <i class="card-big-info-icon bx bxl-netlify"></i>
+                                <p class="card-big-info-desc"><strong>{{ object.name }}</strong></p>
+                            </div>
+                            <div class="col-lg-3-5 col-xl-4-5">
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_type_property">Тип имущества</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <input type="text" id="id_type_property"
+                                               class="form-control form-control-modern"
+                                               name="type_property" value="{{ object.type_property }}" disabled/>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                {% if user.access_level.guide_access_edit %}
-                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                        <a href="{% url 'contracts_app:typepropertys_update' object.pk %}"
-                           class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
                     </div>
-                {% endif %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'contracts_app:typepropertys_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
+                </section>
             </div>
-        </form>
-        <!-- end: page -->
-    </section>
+        </div>
+        <div class="row action-buttons">
+            {% if user.access_level.guide_access_edit %}
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                    <a href="{% url 'contracts_app:typepropertys_update' object.pk %}"
+                       class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-edit text-4 me-2"></i> Изменить</a>
+                </div>
+            {% endif %}
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'contracts_app:typepropertys_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </form>
     <!-- end: page -->
-
+    <!-- end: page -->
 {% endblock %}

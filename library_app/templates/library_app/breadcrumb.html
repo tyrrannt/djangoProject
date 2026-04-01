@@ -1,9 +1,9 @@
 {% load static %}
-{#<header class="page-header page-header-left-inline-breadcrumb" style="position: sticky; top: 20px;">#}
-{% if title %}
-    <div class="breadcrumbs col-sm-12 mobile-hide" style="display: flex; justify-content: center; align-items: center; ">
 
-             <span style="align-content: center; width: auto"><h3>{{ title }}</h3></span>
+{% if title %}
+<div class="breadcrumbs-wrapper mobile-hide">
+    <div class="breadcrumbs-content">
+        <h5 class="breadcrumbs-title">{{ title }}</h5>
     </div>
+</div>
 {% endif %}
-{#</header>#}

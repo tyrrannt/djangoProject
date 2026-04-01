@@ -20,32 +20,30 @@
 {% block content %}
     <form method="post">
         {% csrf_token %}
-        <section role="main" class="content-body content-body-modern mt-0">
-            <header class="card-header">
-                <h2 class="card-title">Вы уверены?</h2>
-            </header>
-            <div class="card-body">
-                <div class="modal-wrapper">
-                    <div class="modal-icon">
-                        <i class="fas fa-question-circle"></i>
-                    </div>
-                    <div class="modal-text">
-                        <p>Вы уверены, что хотите удалить эту запись?</p>
-                    </div>
+        <header class="card-header">
+            <h2 class="card-title">Вы уверены?</h2>
+        </header>
+        <div class="card-body">
+            <div class="modal-wrapper">
+                <div class="modal-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <div class="modal-text">
+                    <p>Вы уверены, что хотите удалить эту запись?</p>
                 </div>
             </div>
-            <footer class="card-footer">
-                <div class="row">
-                    <div class="col-md-12 text-center">
-                        <button class="btn btn-outline-danger btn-px-4 py-3 d-flex
+        </div>
+        <footer class="card-footer">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <button class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1 modal-confirm">Да
-                        </button>
-                        <button class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                    </button>
+                    <button class="btn btn-outline-dark btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1 modal-dismiss">Нет
-                        </button>
-                    </div>
+                    </button>
                 </div>
-            </footer>
-        </section>
+            </div>
+        </footer>
     </form>
 {% endblock %}

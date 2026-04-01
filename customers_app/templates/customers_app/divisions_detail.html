@@ -24,10 +24,6 @@
 {% endblock %}
 
 {% block content %}
-
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-
         <!-- start: page -->
         <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
             {% csrf_token %}
@@ -108,7 +104,6 @@
             </div>
         </form>
         <!-- end: page -->
-    </section>
     <!-- end: page -->
 
 {% endblock %}

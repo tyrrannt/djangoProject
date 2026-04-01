@@ -7,63 +7,54 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
 
-        {% include 'library_app/breadcrumb.html' %}
-
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                        <div class="col-6 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:order_add' %}"
-                                               class="btn btn-outline-primary btn-px-4 py-3 d-flex
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-6 col-lg-auto mb-3 mb-lg-0">
+                                    <a href="{% url 'hrdepartment_app:order_add' %}"
+                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-list-plus text-4 me-2' ></i> Добавить Приказ </a>
-                                        </div>
-{#                                        <div class="col-6 col-lg-auto mb-3 mb-lg-0">#}
-{#                                            <label for="id_cancellation">Все приказы</label><br>#}
-{#                                            <input class="form-check-input" type="checkbox" name="cancellation" id="id_cancellation" onclick="CancellationChange()" >#}
-{#                                        </div>#}
+                                        <i class='bx bx-list-plus text-4 me-2'></i> Добавить Приказ </a>
                                 </div>
+                            </div>
 
-                            </div>
-                            <style>
-                                thead input {
-                                    width: 100%;
-                                    padding: 3px;
-                                    box-sizing: border-box;
-                                    border-radius: 10px;
-                                    border-color: #ff7300;
-                                    color: #003994;
-                                }
-                            </style>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
-                                    <th width="10%">Номер</th>
-                                    <th width="10%">Дата</th>
-                                    <th width="20%">Наименование</th>
-                                    <th width="20%">Сотрудник</th>
-                                    <th width="20%">Состояние</th>
-                                </tr>
-                                </thead>
-                            </table>
-                            <hr class="solid mt-5 opacity-4">
-                            </div>
+                        </div>
+                        <style>
+                            thead input {
+                                width: 100%;
+                                padding: 3px;
+                                box-sizing: border-box;
+                                border-radius: 10px;
+                                border-color: #ff7300;
+                                color: #003994;
+                            }
+                        </style>
+                        <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                               style="min-width: 750px;">
+                            <thead>
+                            <tr>
+                                <th width="10%">Номер</th>
+                                <th width="10%">Дата</th>
+                                <th width="20%">Наименование</th>
+                                <th width="20%">Сотрудник</th>
+                                <th width="20%">Состояние</th>
+                            </tr>
+                            </thead>
+                        </table>
+                        <hr class="solid mt-5 opacity-4">
                     </div>
-
                 </div>
+
             </div>
         </div>
-        <!-- end: page -->
-    </section>
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custome_script %}
@@ -102,10 +93,10 @@
 
                 "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                     var id = aData['pk'];
-                    if (aData['approved'] === 'Действует'){
+                    if (aData['approved'] === 'Действует') {
                         $(nRow).addClass('text-success fs-6')
                     }
-                    if (aData['cancellation']){
+                    if (aData['cancellation']) {
                         $(nRow).addClass('text-decoration-line-through text-danger fs-6')
                     }
                     $(nRow).attr("href", id + '/');

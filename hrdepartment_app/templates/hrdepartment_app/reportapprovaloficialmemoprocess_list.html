@@ -21,101 +21,99 @@
             z-index: 1;
         }
     </style>
-    <section role="main" class="content-body content-body-modern mt-0">
 
-        {% include 'library_app/breadcrumb.html' %}
-
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    <div class="col-sm-12 col-lg-4 mb-1">
-                                        <select class="form-control select-style-1 filter-by" name="filter_month"
-                                                id="id_filter_month">
-                                            {% for key, value in month_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_month == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-lg-4 mb-1">
-                                        <select class="form-control select-style-1 filter-by" name="filter_year"
-                                                id="id_filter_year">
-                                            {% for key, value in year_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_year == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-lg-4 mb-1">
-                                        <select class="form-control select-style-1 filter-by multi" name="filter_person"
-                                                id="id_filter_person" multiple data-plugin-multiselect data-plugin-options='{"maxHeight": 200,  "includeSelectAllOption": true, "enableCaseInsensitiveFiltering": true }'>
-                                            {% for key, value in all_person.items %}
-                                                <option value="{{ key }}">{{ value }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-lg-3 mb-2 mt-2">
-                                        <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">
-                                            Сформировать
-                                        </button>
-                                    </div>
-                                    <div class="col-sm-12 col-lg-3 mb-2 mt-2">
-                                        <button class="btn btn-primary" style="width: 100%"  id="print">Печать таблицы</button>
-                                    </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-sm-12 col-lg-4 mb-1">
+                                    <select class="form-control select-style-1 filter-by" name="filter_month"
+                                            id="id_filter_month">
+                                        {% for key, value in month_dict.items %}
+                                            <option value="{{ key }}"
+                                                    {% if current_month == key %}selected{% endif %}> {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-sm-12 col-lg-4 mb-1">
+                                    <select class="form-control select-style-1 filter-by" name="filter_year"
+                                            id="id_filter_year">
+                                        {% for key, value in year_dict.items %}
+                                            <option value="{{ key }}"
+                                                    {% if current_year == key %}selected{% endif %}> {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-sm-12 col-lg-4 mb-1">
+                                    <select class="form-control select-style-1 filter-by multi" name="filter_person"
+                                            id="id_filter_person" multiple data-plugin-multiselect
+                                            data-plugin-options='{"maxHeight": 200,  "includeSelectAllOption": true, "enableCaseInsensitiveFiltering": true }'>
+                                        {% for key, value in all_person.items %}
+                                            <option value="{{ key }}">{{ value }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-sm-12 col-lg-3 mb-2 mt-2">
+                                    <button class="btn btn-primary" style="width: 100%" onclick="filter_date()">
+                                        Сформировать
+                                    </button>
+                                </div>
+                                <div class="col-sm-12 col-lg-3 mb-2 mt-2">
+                                    <button class="btn btn-primary" style="width: 100%" id="print">Печать таблицы
+                                    </button>
                                 </div>
                             </div>
-                            <style>
-                                #ajaxSpinnerImage {
-                                    display: none;
-                                    width: auto;
-                                    height : auto;
-                                    max-height: 100%;
-                                    max-width: 100%;
-                                }
-                            </style>
+                        </div>
+                        <style>
+                            #ajaxSpinnerImage {
+                                display: none;
+                                width: auto;
+                                height: auto;
+                                max-height: 100%;
+                                max-width: 100%;
+                            }
+                        </style>
 
-                            <div id="ajaxSpinnerContainer" style="align-items:center; justify-content: center;">
-                                <img src="{% static 'admin/img/spinner.gif' %}" id="ajaxSpinnerImage"
-                                     title="working..."/>
-                            </div>
-                            <div id="id_tables" class="table-responsive">
-                                <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
-                                       style="min-width: 1000px; display: block; overflow: auto;">
-                                    <thead>
-                                    <tr>
-                                        <th width="14%"
+                        <div id="ajaxSpinnerContainer" style="align-items:center; justify-content: center;">
+                            <img src="{% static 'admin/img/spinner.gif' %}" id="ajaxSpinnerImage"
+                                 title="working..."/>
+                        </div>
+                        <div id="id_tables" class="table-responsive">
+                            <table class="table table-ecommerce-simple table-striped mb-0" id="id_datatable"
+                                   style="min-width: 1000px; display: block; overflow: auto;">
+                                <thead>
+                                <tr>
+                                    <th width="14%"
+                                        style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff">
+                                        <span style="color: #0a53be;">ФИО</span></th>
+                                    {% for item in table_count %}
+                                        <th width="2%"
                                             style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff">
-                                            <span style="color: #0a53be;">ФИО</span></th>
-                                        {% for item in table_count %}
-                                            <th width="2%"
-                                                style="position: -webkit-sticky;  position: sticky;  top: -3px; z-index: 2; background: #ffffff">
-                                                <span style="color: #0a53be">{{ item }}</span></th>
-                                        {% endfor %}
-                                    </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <hr class="solid mt-5 opacity-4">
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
+                                            <span style="color: #0a53be">{{ item }}</span></th>
+                                    {% endfor %}
+                                </tr>
+                                </thead>
+                            </table>
+                        </div>
+                        <hr class="solid mt-5 opacity-4">
+                        <div class="datatable-footer">
+                            <div class="row align-items-center justify-content-between mt-3">
+                                <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                    <div class="d-flex align-items-stretch">
+                                        {#                                            ToDo: Тут можно в подвал что то вывести #}
                                     </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
+                                </div>
+                                <div class="col-lg-auto text-center order-3 order-lg-2">
+                                    <div class="results-info-wrapper"></div>
+                                </div>
+                                <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                    <div class="pagination-wrapper"></div>
                                 </div>
                             </div>
                         </div>
@@ -123,8 +121,8 @@
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-    </section>
+    </div>
+    <!-- end: page -->
 
     <script type="text/javascript">
 

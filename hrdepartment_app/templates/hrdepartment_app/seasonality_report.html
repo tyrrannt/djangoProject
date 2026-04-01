@@ -22,167 +22,121 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        <h1>Анализ сезонности отпусков</h1>
+    <h1>Анализ сезонности отпусков</h1>
 
-        <!-- Форма выбора года -->
-        <form method="GET" action="{% url 'hrdepartment_app:seasonality-report' %}">
-            <div class="row">
-                <div class="col-md-2">
-                    <label for="year">Выберите год:</label>
-                </div>
-                <div class="col-md-8 col-sm-12">
-                    <select name="year" id="year" class="form-control">
-                        {% for year in years %}
-                            <option value="{{ year }}"
-                                    {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit">Применить</button>
-                </div>
-            </div>
-
-
-        </form>
-
-        <!-- График распределения отпусков -->
+    <!-- Форма выбора года -->
+    <form method="GET" action="{% url 'hrdepartment_app:seasonality-report' %}">
         <div class="row">
-            <div class="col-md-2"></div>
-            <div class="col-md-8 col-sm-12">
-                <canvas id="vacationChart" width="400" height="200"></canvas>
+            <div class="col-md-2">
+                <label for="year">Выберите год:</label>
             </div>
-            <div class="col-md-2"></div>
+            <div class="col-md-8 col-sm-12">
+                <select name="year" id="year" class="form-control">
+                    {% for year in years %}
+                        <option value="{{ year }}"
+                                {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit">Применить</button>
+            </div>
         </div>
 
-        <table class="table table-hover">
-            <thead class="table-dark">
-            <tr>
-                <th>Месяц</th>
-                <th>План</th>
-                <th>Основной</th>
-                <th>Прочий</th>
-                <th>Соотношение общего к плану</th>
-                <th>Статус</th>
-                <th>Анализ</th>
+
+    </form>
+
+    <!-- График распределения отпусков -->
+    <div class="row">
+        <div class="col-md-2"></div>
+        <div class="col-md-8 col-sm-12">
+            <canvas id="vacationChart" width="400" height="200"></canvas>
+        </div>
+        <div class="col-md-2"></div>
+    </div>
+
+    <table class="table table-hover">
+        <thead class="table-dark">
+        <tr>
+            <th>Месяц</th>
+            <th>План</th>
+            <th>Основной</th>
+            <th>Прочий</th>
+            <th>Соотношение общего к плану</th>
+            <th>Статус</th>
+            <th>Анализ</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in overload_analysis %}
+            <tr class="{% if 'перегруз' in item.status %}table-warning{% elif 'Нет плана' in item.status %}table-danger{% endif %}">
+                <td>{{ item.month }}</td>
+                <td>{{ item.planned }}</td>
+                <td>{{ item.main }}</td>
+                <td>{{ item.other }}</td>
+                <td>
+                    {% if item.planned > 0 %}
+                        {{ item.main|add:item.other }} / {{ item.planned }}
+                        ({{ item.main|add:item.other|div:item.planned|floatformat:1 }}x)
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.reason }}</td>
             </tr>
-            </thead>
-            <tbody>
-            {% for item in overload_analysis %}
-                <tr class="{% if 'перегруз' in item.status %}table-warning{% elif 'Нет плана' in item.status %}table-danger{% endif %}">
-                    <td>{{ item.month }}</td>
-                    <td>{{ item.planned }}</td>
-                    <td>{{ item.main }}</td>
-                    <td>{{ item.other }}</td>
-                    <td>
-                        {% if item.planned > 0 %}
-                            {{ item.main|add:item.other }} / {{ item.planned }}
-                            ({{ item.main|add:item.other|div:item.planned|floatformat:1 }}x)
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>{{ item.status }}</td>
-                    <td>{{ item.reason }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+        {% endfor %}
+        </tbody>
+    </table>
 
-        <div class="alert alert-info">
-            Всего проблемных месяцев: <strong>{{ total_overloads }}</strong>
-        </div>
+    <div class="alert alert-info">
+        Всего проблемных месяцев: <strong>{{ total_overloads }}</strong>
+    </div>
 
-        <!-- Статистика -->
-        <div class="stats">
-            <p>Среднее за год:</p>
-            <ul>
-                <li>Основные отпуска: {{ avg_main }} (типы 2, 3)</li>
-                <li>Прочие отпуска: {{ avg_other }} (типы 4-19)</li>
-                <li>Запланировано: {{ avg_planned }} (тип 18)</li>
-            </ul>
-        </div>
+    <!-- Статистика -->
+    <div class="stats">
+        <p>Среднее за год:</p>
+        <ul>
+            <li>Основные отпуска: {{ avg_main }} (типы 2, 3)</li>
+            <li>Прочие отпуска: {{ avg_other }} (типы 4-19)</li>
+            <li>Запланировано: {{ avg_planned }} (тип 18)</li>
+        </ul>
+    </div>
 
-        <!-- Экспорт данных -->
-        <a href="{% url 'hrdepartment_app:export-seasonality-data' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт
-            данных</a>
-        <script>
-            const ctx = document.getElementById('vacationChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: {{ months|safe }},
-                    datasets: [
-                        {
-                            label: 'Запланировано',
-                            data: {{ planned_counts|safe }},
-                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        },
-                        {
-                            label: 'Основные отпуска',
-                            data: {{ main_counts|safe }},
-                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                        },
-                        {
-                            label: 'Прочие отпуска',
-                            data: {{ other_counts|safe }},
-                            backgroundColor: 'rgba(255, 159, 64, 0.5)',
-                        }
-                    ]
-                },
-                options: {
-                    scales: {
-                        x: {stacked: true},
-                        y: {stacked: false}
+    <!-- Экспорт данных -->
+    <a href="{% url 'hrdepartment_app:export-seasonality-data' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт
+        данных</a>
+    <script>
+        const ctx = document.getElementById('vacationChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ months|safe }},
+                datasets: [
+                    {
+                        label: 'Запланировано',
+                        data: {{ planned_counts|safe }},
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    },
+                    {
+                        label: 'Основные отпуска',
+                        data: {{ main_counts|safe }},
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    },
+                    {
+                        label: 'Прочие отпуска',
+                        data: {{ other_counts|safe }},
+                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
                     }
+                ]
+            },
+            options: {
+                scales: {
+                    x: {stacked: true},
+                    y: {stacked: false}
                 }
-            });
-        </script>
-        {#<script>#}
-        {#    const ctx = document.getElementById('vacationChart').getContext('2d');#}
-        {#    new Chart(ctx, {#}
-        {#        type: 'bar',#}
-        {#        data: {#}
-        {#            labels: {{ months|safe }},#}
-        {#            datasets: [#}
-        {#                {#}
-        {#                    label: 'Запланировано',#}
-        {#                    data: {{ planned_counts|safe }},#}
-        {#                    backgroundColor: 'rgba(54, 162, 235, 0.5)',#}
-        {#                },#}
-        {#                {#}
-        {#                    label: 'Фактически',#}
-        {#                    data: {{ actual_counts|safe }},#}
-        {#                    backgroundColor: 'rgba(255, 99, 132, 0.5)',#}
-        {#                }#}
-        {#            ]#}
-        {#        }#}
-        {#    });#}
-        {#</script>#}
-        {#        <script>#}
-        {#            // Отображение графика#}
-        {#            const ctx = document.getElementById('vacationChart').getContext('2d');#}
-        {#            const vacationChart = new Chart(ctx, {#}
-        {#                type: 'bar',#}
-        {#                data: {#}
-        {#                    labels: {{ months|safe }},#}
-        {#                    datasets: [{#}
-        {#                        label: 'Количество отпусков (в днях)',#}
-        {#                        data: {{ vacation_counts|safe }},#}
-        {#                        backgroundColor: 'rgba(75, 192, 192, 0.2)',#}
-        {#                        borderColor: 'rgba(75, 192, 192, 1)',#}
-        {#                        borderWidth: 1#}
-        {#                    }]#}
-        {#                },#}
-        {#                options: {#}
-        {#                    scales: {#}
-        {#                        y: {#}
-        {#                            beginAtZero: true#}
-        {#                        }#}
-        {#                    }#}
-        {#                }#}
-        {#            });#}
-        {#        </script>#}
-    </section>
+            }
+        });
+    </script>
+
 {% endblock %}

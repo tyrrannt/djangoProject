@@ -5,7 +5,7 @@
 
 {% block title %}
     <title>{{ title }}</title>
-    
+
 {% endblock %}
 
 {% block content %}
@@ -19,32 +19,16 @@
             display: flex;
             flex-wrap: wrap;
         }
+
         video {
             width: 300px;
             height: 200px;
             margin: 10px;
         }
     </style>
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <div id="videos"></div>
+
+    <!-- start: page -->
+    <div id="videos"></div>
     <script>
         const ROOM_ID = "{{ room_name }}";
         const USER_ID = Math.random().toString(36).substring(2, 15);
@@ -52,8 +36,7 @@
     <script src="{% static 'admin_templates/vendor/simplewebrtc/socket.io.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/simplewebrtc/simplepeer.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/simplewebrtc/video_conference.js' %}"></script>
-        <!-- end: page -->
-    </section>
+    <!-- end: page -->
     <!-- end: page -->
 
 {% endblock %}

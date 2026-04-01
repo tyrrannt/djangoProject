@@ -4,117 +4,97 @@
 {% load widget_tweaks %}
 
 {% block content %}
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="col-lg-12">
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
+            {{ form.as_p }}
+            {% with named_formsets.variants as formset %}
+                {{ formset.management_form }}
+                <script type="text/html" id="variants-template">  // id="inlineformsetname-template"
+                // id='inlineformsetname-__prefix__'
+                <tr id="variants-__prefix__" class=hide_all>
+                    {% for fields in formset.empty_form.hidden_fields %}
+                        {{ fields }}
                     {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+
+                    {% for fields in formset.empty_form.visible_fields %}
+                        <td>{{ fields }}</td>
+                    {% endfor %}
+                </tr>
+                </script>
+                <div class="table-responsive card mt-4">
+                    <div class="card-header card-header-secondary">
+                        <h4 class="card-title">Отправка</h4>
                     </div>
-                {% endfor %}
+                    <table class="table card-header" id="id_way_bills">
+                        <thead class="text-secondary">
+                        <th>Дата документа <span style="color: red;" class="required">*</span></th>
+                        <th>Куда <span style="color: red;" class="required">*</span></th>
+                        <th>Комментарий <span style="color: red;" class="required">*</span></th>
+                        <th>Подразделение <span style="color: red;" class="required">*</span></th>
+                        <th>Отправитель <span style="color: red;" class="required">*</span></th>
+                        <th>Состояние <span style="color: red;" class="required">*</span></th>
+                        <th>Получение <span style="color: red;" class="required">*</span></th>
+                        <th>Исполнитель <span style="color: red;" class="required">*</span></th>
+                        <th>Срочность <span style="color: red;" class="required">*</span></th>
+                        </thead>
+                        <tbody id="item-variants">
+                        {% for item in way_bills %}
+                            <tr>
+                                <td>{{ item.document_date | date:"d.m.Y" }}<span style="color: red;"
+                                                                                 class="required">*</span></td>
+                                <td>{{ item.place_of_departure }} <span style="color: red;"
+                                                                        class="required">*</span></td>
+                                <td>{{ item.comment }} <span style="color: red;" class="required">*</span></td>
+                                <td>{{ item.place_division }} <span style="color: red;" class="required">*</span>
+                                </td>
+                                <td>{{ item.sender | FIO_format }} <span style="color: red;"
+                                                                         class="required">*</span></td>
+                                <td>{{ item.get_state_display }} <span style="color: red;" class="required">*</span>
+                                </td>
+                                <td>{{ item.responsible | FIO_format }} <span style="color: red;"
+                                                                              class="required">*</span></td>
+                                <td>{{ item.executor | FIO_format }} <span style="color: red;"
+                                                                           class="required">*</span></td>
+                                <td>{{ item.get_urgency_display }} <span style="color: red;"
+                                                                         class="required">*</span></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <!-- id="add-inlineformsetname-button" -->
+                </div>
+
+            {% endwith %}
+        </div>
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                <button type="submit"
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
+                        data-loading-text="Loading...">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
+            </div>
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'logistics_app:waybill_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
             {% endif %}
         </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="col-lg-12">
-
-                {{ form.as_p }}
-                {% with named_formsets.variants as formset %}
-                    {{ formset.management_form }}
-                    <script type="text/html" id="variants-template">  // id="inlineformsetname-template"
-                    // id='inlineformsetname-__prefix__'
-                    <tr id="variants-__prefix__" class=hide_all>
-                        {% for fields in formset.empty_form.hidden_fields %}
-                            {{ fields }}
-                        {% endfor %}
-
-                        {% for fields in formset.empty_form.visible_fields %}
-                            <td>{{ fields }}</td>
-                        {% endfor %}
-                    </tr>
-                    </script>
-                    <div class="table-responsive card mt-4">
-                        <div class="card-header card-header-secondary">
-                            <h4 class="card-title">Отправка</h4>
-                        </div>
-                        <table class="table card-header" id="id_way_bills">
-                            <thead class="text-secondary">
-                            <th>Дата документа <span style="color: red;" class="required">*</span></th>
-                            <th>Куда <span style="color: red;" class="required">*</span></th>
-                            <th>Комментарий <span style="color: red;" class="required">*</span></th>
-                            <th>Подразделение <span style="color: red;" class="required">*</span></th>
-                            <th>Отправитель <span style="color: red;" class="required">*</span></th>
-                            <th>Состояние <span style="color: red;" class="required">*</span></th>
-                            <th>Получение <span style="color: red;" class="required">*</span></th>
-                            <th>Исполнитель <span style="color: red;" class="required">*</span></th>
-                            <th>Срочность <span style="color: red;" class="required">*</span></th>
-                            </thead>
-                            <tbody id="item-variants">
-                            {% for item in way_bills %}
-                                <tr>
-                                    <td>{{ item.document_date | date:"d.m.Y" }}<span style="color: red;"
-                                                                                     class="required">*</span></td>
-                                    <td>{{ item.place_of_departure }} <span style="color: red;"
-                                                                            class="required">*</span></td>
-                                    <td>{{ item.comment }} <span style="color: red;" class="required">*</span></td>
-                                    <td>{{ item.place_division }} <span style="color: red;" class="required">*</span>
-                                    </td>
-                                    <td>{{ item.sender | FIO_format }} <span style="color: red;"
-                                                                             class="required">*</span></td>
-                                    <td>{{ item.get_state_display }} <span style="color: red;" class="required">*</span>
-                                    </td>
-                                    <td>{{ item.responsible | FIO_format }} <span style="color: red;"
-                                                                                  class="required">*</span></td>
-                                    <td>{{ item.executor | FIO_format }} <span style="color: red;"
-                                                                               class="required">*</span></td>
-                                    <td>{{ item.get_urgency_display }} <span style="color: red;"
-                                                                             class="required">*</span></td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                        <!-- id="add-inlineformsetname-button" -->
-                    </div>
-
-                {% endwith %}
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'logistics_app:waybill_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
-            </div>
-        </form>
-        <!-- end: page -->
-    </section>
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
 {% endblock %}

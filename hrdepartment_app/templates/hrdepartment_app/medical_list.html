@@ -7,50 +7,43 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
 
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if error %}
-                <div class="alert alert-danger">
-                    <strong><a href="{% url 'hrdepartment_app:medicalorg_list' %}">{{ error }}</a></strong>
-                </div>
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
+    <div>
+        {% if error %}
+            <div class="alert alert-danger">
+                <strong><a href="{% url 'hrdepartment_app:medicalorg_list' %}">{{ error }}</a></strong>
+            </div>
+        {% endif %}
+    </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
 
-{#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
-{#                                            <a href="{% url 'hrdepartment_app:medical_add' %}"#}
-{#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
-{#                                                Добавить направление </a>#}
-{#                                        </div>#}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'hrdepartment_app:medical_list' %}?update=0"
-                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
+                                <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                    <a href="{% url 'hrdepartment_app:medical_list' %}?update=0"
+                                       class="btn btn-outline-info btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-sync text-4 me-2' ></i> Синхронизация с 1С </a>
-                                        </div>
-
+                                        <i class='bx bx-sync text-4 me-2'></i> Синхронизация с 1С </a>
                                 </div>
+
                             </div>
-                            <style>
-                                thead input {
-                                    width: 100%;
-                                    padding: 3px;
-                                    box-sizing: border-box;
-                                    border-radius: 10px;
-                                    border-color: #ff7300;
-                                    color: #003994;
-                                }
-                            </style>
-                            <div class="table-responsive">
+                        </div>
+                        <style>
+                            thead input {
+                                width: 100%;
+                                padding: 3px;
+                                box-sizing: border-box;
+                                border-radius: 10px;
+                                border-color: #ff7300;
+                                color: #003994;
+                            }
+                        </style>
+                        <div class="table-responsive">
                             <table class="table table-striped mb-0" id="datatable-ecommerce-list"
                                    style="min-width: 750px;">
                                 <thead>
@@ -65,21 +58,20 @@
                                 </tr>
                                 </thead>
                             </table>
-                            </div>
-                            <hr class="solid mt-5 opacity-4">
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
+                        </div>
+                        <hr class="solid mt-5 opacity-4">
+                        <div class="datatable-footer">
+                            <div class="row align-items-center justify-content-between mt-3">
+                                <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                    <div class="d-flex align-items-stretch">
+                                        {#                                            ToDo: Тут можно в подвал что то вывести #}
                                     </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
+                                </div>
+                                <div class="col-lg-auto text-center order-3 order-lg-2">
+                                    <div class="results-info-wrapper"></div>
+                                </div>
+                                <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                    <div class="pagination-wrapper"></div>
                                 </div>
                             </div>
                         </div>
@@ -87,8 +79,8 @@
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-    </section>
+    </div>
+    <!-- end: page -->
 
 {% endblock %}
 

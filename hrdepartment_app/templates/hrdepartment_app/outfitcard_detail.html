@@ -32,90 +32,72 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <div class="card text-left">
+                    <div class="card-header">
+                        <h2>Карта-наряд № {{ object.outfit_card_number }} от {{ object.outfit_card_date }}</h2>
                     </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">МПД:&nbsp;&nbsp;&nbsp;{{ object.outfit_card_place }}</h5>
+                        <h5 class="card-title mb-3">Воздушный
+                            борт:&nbsp;&nbsp;&nbsp;{{ object.air_board.type_property }} {{ object.air_board }}</h5>
+                        {% if object.operational_work.count > 0 %}
+                            <h4 class="card-text">Оперативные
+                                работы:&nbsp;&nbsp;&nbsp;{{ object.operational_work.all|join:", " }}</h4>
+                        {% endif %}
+                        {% if object.periodic_work.count > 0 %}
+                            <h4 class="card-text">Периодические
+                                работы:&nbsp;&nbsp;&nbsp;{{ object.periodic_work.all|join:", " }}</h4>
+                        {% endif %}
+                        {% if object.other_work %}
+                            <h4 class="card-text">Другие работы:&nbsp;&nbsp;&nbsp;{{ object.other_work }}</h4>
+                        {% endif %}
+                        {% if object.notes %}
+                            <h4 class="card-text">Примечания:&nbsp;&nbsp;&nbsp;{{ object.notes }}</h4>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer text-muted">
+                        <h3>Старший бригады:&nbsp;&nbsp;&nbsp;{{ object.employee | FIO_format }}</h3>
+                    </div>
+                </div>
+                {% if object.scan_document %}
                     <div class="card text-left">
-                        <div class="card-header">
-                            <h2>Карта-наряд № {{ object.outfit_card_number }} от {{ object.outfit_card_date }}</h2>
+                        <input id="id_contract_number"
+                               value="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
+                        <div class="form-row outerContainer" id="outerContainer" style="height: 1080px">
+                            {% include 'contracts_app/pdf-js.html' %}
                         </div>
-                        <div class="card-body">
-                            <h5 class="card-title mb-3">МПД:&nbsp;&nbsp;&nbsp;{{ object.outfit_card_place }}</h5>
-                            <h5 class="card-title mb-3">Воздушный
-                                борт:&nbsp;&nbsp;&nbsp;{{ object.air_board.type_property }} {{ object.air_board }}</h5>
-                            {% if object.operational_work.count > 0 %}
-                                <h4 class="card-text">Оперативные
-                                    работы:&nbsp;&nbsp;&nbsp;{{ object.operational_work.all|join:", " }}</h4>
-                            {% endif %}
-                            {% if object.periodic_work.count > 0 %}
-                                <h4 class="card-text">Периодические
-                                    работы:&nbsp;&nbsp;&nbsp;{{ object.periodic_work.all|join:", " }}</h4>
-                            {% endif %}
-                            {% if object.other_work %}
-                                <h4 class="card-text">Другие работы:&nbsp;&nbsp;&nbsp;{{ object.other_work }}</h4>
-                            {% endif %}
-                            {% if object.notes %}
-                                <h4 class="card-text">Примечания:&nbsp;&nbsp;&nbsp;{{ object.notes }}</h4>
-                            {% endif %}
-                        </div>
-                        <div class="card-footer text-muted">
-                            <h3>Старший бригады:&nbsp;&nbsp;&nbsp;{{ object.employee | FIO_format }}</h3>
-                        </div>
-                    </div>
-                    {% if object.scan_document %}
-                        <div class="card text-left">
-                            <input id="id_contract_number" value="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" hidden="true">
-                            <div class="form-row outerContainer" id="outerContainer" style="height: 1080px">
-                                {% include 'contracts_app/pdf-js.html' %}
-                            </div>
-                            <a href="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" target="_blank">Открыть документ</a>
-                        </div>
-                    {% endif %}
-                </div>
-
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:outfit_card_update' object.pk %}"
-                       class="btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
-                </div>
-
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                        <a href="{{ object.scan_document.url }}?v={{ object.updated_at.timestamp }}" target="_blank">Открыть
+                            документ</a>
                     </div>
                 {% endif %}
             </div>
 
-        </form>
-        <!-- end: page -->
-    </section>
+        </div>
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                <a href="{% url 'hrdepartment_app:outfit_card_update' object.pk %}"
+                   class="btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
+            </div>
 
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                <a href="{% url 'hrdepartment_app:outfit_card_list' %}"
+                   class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:outfit_card_delete' object.pk %}"
+                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                </div>
+            {% endif %}
+        </div>
+
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
 {% endblock %}

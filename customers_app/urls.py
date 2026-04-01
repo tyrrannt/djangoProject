@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
-from .views import lock_screen, DataBaseUserViewSet
+from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -95,6 +95,7 @@ urlpatterns = [
     path('save_stats/', views.save_stats, name='save_stats'),
     path('get_leaderboard/', views.get_leaderboard, name='get_leaderboard'),
     path('inactive_users/', views.inactive_users_report, name='inactive_users_report'),
+    path('apartments-usage-report/', ApartmentsUsageReportView.as_view(), name='apartments_usage_report'),
     # path(
     #     "password/<int:pk>/update/",
     #     views.ChangeAvatarUpdate.as_view(),

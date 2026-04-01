@@ -25,25 +25,6 @@
 
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        {#        {% include 'library_app/breadcrumb.html' %}#}
-        <div><p></p></div>
         <!-- start: page -->
         <form action="{% url 'customers_app:documents_add' %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -77,5 +58,4 @@
             </div>
         </form>
         <!-- end: page -->
-    </section>
 {% endblock %}

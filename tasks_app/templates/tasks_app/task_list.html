@@ -37,126 +37,115 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-
-        <!-- Фильтры -->
-        <section class="card mb-4">
-            <div class="card-body">
-                <h3>Фильтры</h3>
-                <form method="get" class="mb-3">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="category">Категория:</label>
-                            <select name="category" id="category" class="form-control">
-                                <option value="">Все категории</option>
-                                {% for category in categories %}
-                                    <option value="{{ category.name }}" {% if category.name == request.GET.category %}selected{% endif %}>
-                                        {{ category.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="priority">Приоритет:</label>
-                            <select name="priority" id="priority" class="form-control">
-                                <option value="">Все приоритеты</option>
-                                {% for code, name in priorities %}
-                                    <option value="{{ code }}" {% if code == request.GET.priority %}selected{% endif %}>
-                                        {{ name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="shared">Доступ:</label>
-                            <select name="shared" id="shared" class="form-control">
-                                <option value="">Все задачи</option>
-                                <option value="my" {% if request.GET.shared == 'my' %}selected{% endif %}>Только мои задачи</option>
-                                <option value="shared" {% if request.GET.shared == 'shared' %}selected{% endif %}>Задачи, к которым у меня есть доступ</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary btn-block mt-4">Применить фильтры</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <!-- Календарь и перетаскиваемые события -->
-        <section class="card">
-            <div class="card-body">
+    <!-- Фильтры -->
+    <section class="card mb-4">
+        <div class="card-body">
+            <h3>Фильтры</h3>
+            <form method="get" class="mb-3">
                 <div class="row">
-                    <div class="col-lg-9">
-                        <div id="calendar"></div>
+                    <div class="col-md-3">
+                        <label for="category">Категория:</label>
+                        <select name="category" id="category" class="form-control">
+                            <option value="">Все категории</option>
+                            {% for category in categories %}
+                                <option value="{{ category.name }}"
+                                        {% if category.name == request.GET.category %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="col-lg-3">
-                        <h4 class="font-weight-bold text-dark">Перетаскиваемые события</h4>
-                        <hr/>
-                        <div id="external-events">
-                            <h3 class="mb-4">Задачи</h3>
-                            <div class="form-group">
-                                {% if user.is_authenticated %}
-                                    <a href="{% url 'tasks_app:task-create' %}" class="btn btn-success mb-3">Добавить задачу</a>
-                                {% endif %}
+                    <div class="col-md-3">
+                        <label for="priority">Приоритет:</label>
+                        <select name="priority" id="priority" class="form-control">
+                            <option value="">Все приоритеты</option>
+                            {% for code, name in priorities %}
+                                <option value="{{ code }}" {% if code == request.GET.priority %}selected{% endif %}>
+                                    {{ name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="shared">Доступ:</label>
+                        <select name="shared" id="shared" class="form-control">
+                            <option value="">Все задачи</option>
+                            <option value="my" {% if request.GET.shared == 'my' %}selected{% endif %}>Только мои
+                                задачи
+                            </option>
+                            <option value="shared" {% if request.GET.shared == 'shared' %}selected{% endif %}>Задачи, к
+                                которым у меня есть доступ
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary btn-block mt-4">Применить фильтры</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Календарь и перетаскиваемые события -->
+    <section class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-9">
+                    <div id="calendar"></div>
+                </div>
+                <div class="col-lg-3">
+                    <h4 class="font-weight-bold text-dark">Перетаскиваемые события</h4>
+                    <hr/>
+                    <div id="external-events">
+                        <h3 class="mb-4">Задачи</h3>
+                        <div class="form-group">
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'tasks_app:task-create' %}" class="btn btn-success mb-3">Добавить
+                                    задачу</a>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <div class="external-event badge badge-primary"
+                                 data-event='{ "title": "Основное событие", "allDay": true, "className": "fc-event-primary", "priority": "primary" }'>
+                                Основное событие
                             </div>
-                            <div class="form-group">
-                                <div class="external-event badge badge-primary"
-                                     data-event='{ "title": "Основное событие", "allDay": true, "className": "fc-event-primary", "priority": "primary" }'>
-                                    Основное событие
-                                </div>
-                                <div class="external-event badge badge-warning"
-                                     data-event='{ "title": "Предупреждающее событие", "allDay": true, "className": "fc-event-warning", "priority": "warning" }'>
-                                    Предупреждающее событие
-                                </div>
-                                <div class="external-event badge badge-info"
-                                     data-event='{ "title": "Информационное событие", "allDay": true, "className": "fc-event-info", "priority": "info" }'>
-                                    Информационное событие
-                                </div>
-                                <div class="external-event badge badge-danger"
-                                     data-event='{ "title": "Опасное событие", "allDay": true, "className": "fc-event-danger", "priority": "danger" }'>
-                                    Опасное событие
-                                </div>
-                                <div class="external-event badge badge-dark"
-                                     data-event='{ "title": "Темное событие", "allDay": true, "className": "fc-event-dark", "priority": "dark" }'>
-                                    Темное событие
-                                </div>
+                            <div class="external-event badge badge-warning"
+                                 data-event='{ "title": "Предупреждающее событие", "allDay": true, "className": "fc-event-warning", "priority": "warning" }'>
+                                Предупреждающее событие
                             </div>
-                            <div class="form-group">
-                                <label for="shared_with">Доступ для:</label>
-                                <select name="shared_with" id="shared_with" class="form-select select2 form-control-modern" multiple="multiple" data-plugin-multiselect data-plugin-options='{ "maxHeight": 200 }' data-multiselect-toggle-all="true">
-                                    {% for user in users %}
-                                        <option value="{{ user.id }}">{{ user.title | FIO_format }}</option>
-                                    {% endfor %}
-                                </select>
+                            <div class="external-event badge badge-info"
+                                 data-event='{ "title": "Информационное событие", "allDay": true, "className": "fc-event-info", "priority": "info" }'>
+                                Информационное событие
                             </div>
-                            <div>
-                                <div class="checkbox-custom checkbox-default ib">
-                                    <input id="RemoveAfterDrop" type="checkbox"/>
-                                    <label for="RemoveAfterDrop">удалить после переноса</label>
-                                </div>
+                            <div class="external-event badge badge-danger"
+                                 data-event='{ "title": "Опасное событие", "allDay": true, "className": "fc-event-danger", "priority": "danger" }'>
+                                Опасное событие
+                            </div>
+                            <div class="external-event badge badge-dark"
+                                 data-event='{ "title": "Темное событие", "allDay": true, "className": "fc-event-dark", "priority": "dark" }'>
+                                Темное событие
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="shared_with">Доступ для:</label>
+                            <select name="shared_with" id="shared_with" class="form-select select2 form-control-modern"
+                                    multiple="multiple" data-plugin-multiselect
+                                    data-plugin-options='{ "maxHeight": 200 }' data-multiselect-toggle-all="true">
+                                {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.title | FIO_format }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <div class="checkbox-custom checkbox-default ib">
+                                <input id="RemoveAfterDrop" type="checkbox"/>
+                                <label for="RemoveAfterDrop">удалить после переноса</label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
     </section>
 {% endblock %}
 

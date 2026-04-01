@@ -24,76 +24,56 @@
 {% endblock %}
 
 {% block content %}
-
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxs-buildings"></i>
-                                    <p class="card-big-info-desc">Форма изменения бланка.</p>
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        {{ form.as_p }}
-                                    </div>
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-2-5 col-xl-1-5">
+                                <i class="card-big-info-icon bx bxs-buildings"></i>
+                                <p class="card-big-info-desc">Форма изменения бланка.</p>
+                            </div>
+                            <div class="col-lg-3-5 col-xl-4-5">
+                                <div class="form-group row align-items-center pb-3">
+                                    {{ form.as_p }}
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
             </div>
-            <div class="row action-buttons">
+        </div>
+        <div class="row action-buttons">
 
-                <div class="col-12 col-md-auto">
-                    <button type="submit" {% if not user.is_superuser %}{% if object.executor != user %} disabled {% endif %}{% endif %}
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+            <div class="col-12 col-md-auto">
+                <button type="submit"
+                        {% if not user.is_superuser %}{% if object.executor != user %} disabled {% endif %}{% endif %}
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'library_app:blank_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                        data-loading-text="Loading...">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
+            </div>
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'library_app:blank_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2' ></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
                        class="btn btn-outline-danger btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
                         <i class="bx bx-trash text-4 me-2"></i> Удалить
                     </a>
-                    </div>
-                {% endif %}
-            </div>
-        </form>
-        <!-- end: page -->
-    </section>
+                </div>
+            {% endif %}
+        </div>
+    </form>
     <!-- end: page -->
-
+    <!-- end: page -->
 {% endblock %}

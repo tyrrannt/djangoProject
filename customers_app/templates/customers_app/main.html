@@ -64,6 +64,28 @@
     <link rel="stylesheet" href="{% static 'admin_templates/css/custom.css' %}"/>
 
     {% block custome_css %}
+        <style>
+            .breadcrumbs-wrapper {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                margin: 20px 0;
+            }
+
+            .breadcrumbs-content {
+                padding: 10px 20px;
+                border-radius: 10px;
+                background: #f8f9fa;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            }
+
+            .breadcrumbs-title {
+                margin: 0;
+                font-size: 18px;
+                font-weight: 600;
+                color: #343a40;
+            }
+        </style>
     {% endblock %}
     <!-- Head Libs -->
     <script src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
@@ -125,8 +147,27 @@
 
         <!-- end: sidebar -->
         <!-- БЛОК КОНТЕНТА -->
-        {% block content %}
-        {% endblock %}
+        <section role="main" class="content-body content-body-modern mt-0">
+            {% include 'library_app/breadcrumb.html' %}
+            <div>
+                {% if form.errors %}
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger">
+                                <strong>{{ field.label }}</strong>: {{ error|escape }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            <strong>{{ field.label }}</strong>: {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            {% block content %}
+            {% endblock %}
+        </section>
     </div>
 
     <aside id="sidebar-right" class="sidebar-right">
@@ -229,42 +270,46 @@
 
 <!-- Bootstrap Modal -->
 <div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="sendMessageLabel">Сообщение пользователю</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-      </div>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="sendMessageLabel">Сообщение пользователю</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Закрыть"></button>
+            </div>
 
-      <div class="modal-body">
-        <textarea id="modal-text" class="form-control" rows="5" placeholder="Введите сообщение..." style="color:black;"></textarea>
-      </div>
+            <div class="modal-body">
+                <textarea id="modal-text" class="form-control" rows="5" placeholder="Введите сообщение..."
+                          style="color:black;"></textarea>
+            </div>
 
-      <div class="modal-footer">
-        <button type="button" id="modal-send" class="btn btn-success">Отправить</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-      </div>
+            <div class="modal-footer">
+                <button type="button" id="modal-send" class="btn btn-success">Отправить</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            </div>
 
+        </div>
     </div>
-  </div>
 </div>
 <style>
-.toast-soft {
-    background: #f8f9fa !important; /* мягкий бело-серый фон */
-    border: 1px solid #38517e !important;
-    color: #333 !important;
-    border-radius: 10px !important;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.15);
-    min-width: 300px;
-}
-.toast-soft .toast-header {
-    background: #94c9fb !important;
-    border-bottom: 1px solid #38517e !important;
-}
-.toast-soft .btn-close {
-    filter: brightness(0);
-}
+    .toast-soft {
+        background: #f8f9fa !important; /* мягкий бело-серый фон */
+        border: 1px solid #38517e !important;
+        color: #333 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+        min-width: 300px;
+    }
+
+    .toast-soft .toast-header {
+        background: #94c9fb !important;
+        border-bottom: 1px solid #38517e !important;
+    }
+
+    .toast-soft .btn-close {
+        filter: brightness(0);
+    }
 </style>
 
 <div id="toastAreaCenter"

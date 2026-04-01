@@ -7,75 +7,67 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-
-        {% include 'library_app/breadcrumb.html' %}
-
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-
-                            </div>
-                            <style>
-                                thead input {
-                                    width: 100%;
-                                    padding: 3px;
-                                    box-sizing: border-box;
-                                    border-radius: 10px;
-                                    border-color: #ff7300;
-                                    color: #003994;
-                                }
-                                .table-ecommerce-simple td {
-                                    font-family: Verdana, Geneva, Tahoma, sans-serif;
-                                    font-size: 14px;
-                                }
-                            </style>
-                            <table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
-                                    <th width="15%">Сотрудник</th>
-                                    <th width="10%">Должность</th>
-                                    <th width="10%">С</th>
-                                    <th width="10%">По</th>
-                                    <th width="10%">Приказ</th>
-                                    <th width="10%">Сумма</th>
-                                    <th width="4%"></th>
-                                </tr>
-                                </thead>
-                            </table>
-                            <hr class="solid mt-5 opacity-4">
-
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            {#                                            ToDo: Тут можно в подвал что то вывести #}
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
-                                </div>
-                            </div>
-
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
 
                         </div>
-                    </div>
+                        <style>
+                            thead input {
+                                width: 100%;
+                                padding: 3px;
+                                box-sizing: border-box;
+                                border-radius: 10px;
+                                border-color: #ff7300;
+                                color: #003994;
+                            }
 
+                            .table-ecommerce-simple td {
+                                font-family: Verdana, Geneva, Tahoma, sans-serif;
+                                font-size: 14px;
+                            }
+                        </style>
+                        <table class="table table-ecommerce-simple mb-0" id="datatable-ecommerce-list"
+                               style="min-width: 750px;">
+                            <thead>
+                            <tr>
+                                <th width="15%">Сотрудник</th>
+                                <th width="10%">Должность</th>
+                                <th width="10%">С</th>
+                                <th width="10%">По</th>
+                                <th width="10%">Приказ</th>
+                                <th width="10%">Сумма</th>
+                                <th width="4%"></th>
+                            </tr>
+                            </thead>
+                        </table>
+                        <hr class="solid mt-5 opacity-4">
+
+                        <div class="datatable-footer">
+                            <div class="row align-items-center justify-content-between mt-3">
+                                <div class="col-md-auto order-1 mb-3 mb-lg-0">
+                                    <div class="d-flex align-items-stretch">
+                                        {#                                            ToDo: Тут можно в подвал что то вывести #}
+                                    </div>
+                                </div>
+                                <div class="col-lg-auto text-center order-3 order-lg-2">
+                                    <div class="results-info-wrapper"></div>
+                                </div>
+                                <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
+                                    <div class="pagination-wrapper"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-    </section>
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custome_script %}
@@ -105,8 +97,8 @@
                 "scrollX": true,
                 "sDom": 'BT<"clear">lrtip',
                 "buttons": [
-                            'copy', 'csv', 'excel', 'pdf', 'print'
-                            ],
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ],
                 "ajax": "{% url 'hrdepartment_app:expenses_list' %}",
                 "processing": true,
                 "serverSide": true,
@@ -123,14 +115,16 @@
                     {"data": "period_for"},
                     {"data": "order"},
                     {"data": "expenses_summ"},
-                    {"data": null,
-                        "mRender":function(data,type,full){
+                    {
+                        "data": null,
+                        "mRender": function (data, type, full) {
                             {
-                                ret ='<h2><a class="underline" href="/hr/expenses/'+data.pk+'/update/" alt="Пометка выплаты"><i class="bx bxs-bank"></i></a><h2>';
+                                ret = '<h2><a class="underline" href="/hr/expenses/' + data.pk + '/update/" alt="Пометка выплаты"><i class="bx bxs-bank"></i></a><h2>';
                                 return ret;
                             }
                             return data.name;
-                        }},
+                        }
+                    },
                 ],
             });
             table.column(10).visible(false);

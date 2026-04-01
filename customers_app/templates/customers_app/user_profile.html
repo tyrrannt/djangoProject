@@ -183,7 +183,6 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body">
         <!-- start: page -->
         <div class="row">
             <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0">
@@ -193,103 +192,7 @@
                     {% include 'customers_app/block_statistics.html' %}
                 </section>
                 {% if user.is_superuser %}
-                    {#                    <section class="card">#}
-                    {#                        <header class="card-header">#}
-                    {#                            <div class="card-actions">#}
-                    {#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
-                    {#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
-                    {#                            </div>#}
-                    {##}
-                    {#                            <h2 class="card-title">#}
-                    {#                                <span class="badge badge-primary label-sm font-weight-normal va-middle me-3">298</span>#}
-                    {#                                <span class="va-middle">Friends</span>#}
-                    {#                            </h2>#}
-                    {#                        </header>#}
-                    {#                        <div class="card-body">#}
-                    {#                            <div class="content">#}
-                    {#                                <ul class="simple-user-list">#}
-                    {#                                    <li>#}
-                    {#                                        <figure class="image rounded">#}
-                    {#                                            <img src="{% static 'admin_templates/img/!sample-user.jpg' %}"#}
-                    {#                                                 alt="Joseph Doe Junior" class="rounded-circle">#}
-                    {#                                        </figure>#}
-                    {#                                        <span class="title">Joseph Doe Junior</span>#}
-                    {#                                        <span class="message truncate">Lorem ipsum dolor sit.</span>#}
-                    {#                                    </li>#}
-                    {#                                </ul>#}
-                    {#                                <hr class="dotted short">#}
-                    {#                                <div class="text-end">#}
-                    {#                                    <a class="text-uppercase text-muted" href="#">(View All)</a>#}
-                    {#                                </div>#}
-                    {#                            </div>#}
-                    {#                        </div>#}
-                    {#                        <div class="card-footer">#}
-                    {#                            <div class="input-group">#}
-                    {#                                <input type="text" class="form-control" name="s" id="s" placeholder="Поиск...">#}
-                    {#                                <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>#}
-                    {#                            </div>#}
-                    {#                        </div>#}
-                    {#                    </section>#}
-                    {##}
-                    {#                    <section class="card">#}
-                    {#                        <header class="card-header">#}
-                    {#                            <div class="card-actions">#}
-                    {#                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>#}
-                    {#                                <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
-                    {#                            </div>#}
-                    {##}
-                    {#                            <h2 class="card-title">Popular Posts</h2>#}
-                    {#                        </header>#}
-                    {#                        <div class="card-body">#}
-                    {#                            <ul class="simple-post-list">#}
-                    {#                                <li>#}
-                    {#                                    <div class="post-image">#}
-                    {#                                        <div class="img-thumbnail">#}
-                    {#                                            <a href="#">#}
-                    {#                                                <img src="{% static 'admin_templates/img/post-thumb-1.jpg' %}" alt="">#}
-                    {#                                            </a>#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                    <div class="post-info">#}
-                    {#                                        <a href="#">Nullam Vitae Nibh Un Odiosters</a>#}
-                    {#                                        <div class="post-meta">#}
-                    {#                                            Jan 10, 2021#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                </li>#}
-                    {#                                <li>#}
-                    {#                                    <div class="post-image">#}
-                    {#                                        <div class="img-thumbnail">#}
-                    {#                                            <a href="#">#}
-                    {#                                                <img src="{% static 'admin_templates/img/post-thumb-2.jpg' %}" alt="">#}
-                    {#                                            </a>#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                    <div class="post-info">#}
-                    {#                                        <a href="#">Vitae Nibh Un Odiosters</a>#}
-                    {#                                        <div class="post-meta">#}
-                    {#                                            Jan 10, 2021#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                </li>#}
-                    {#                                <li>#}
-                    {#                                    <div class="post-image">#}
-                    {#                                        <div class="img-thumbnail">#}
-                    {#                                            <a href="#">#}
-                    {#                                                <img src="{% static 'admin_templates/img/post-thumb-3.jpg' %}" alt="">#}
-                    {#                                            </a>#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                    <div class="post-info">#}
-                    {#                                        <a href="#">Odiosters Nullam Vitae</a>#}
-                    {#                                        <div class="post-meta">#}
-                    {#                                            Jan 10, 2021#}
-                    {#                                        </div>#}
-                    {#                                    </div>#}
-                    {#                                </li>#}
-                    {#                            </ul>#}
-                    {#                        </div>#}
-                    {#                    </section>#}
+
                 {% endif %}
             </div>
             <div class="col-lg-8">
@@ -553,18 +456,6 @@
                                     </div>
                                 </div>
                                 <hr>
-                                {#                                <div class="row">#}
-                                {#                                        <div class="col-sm-12">#}
-                                {#                                            <p>Обозначение цветов:<br>#}
-                                {#                                            <strong><span style="color: #0c00ad">Синий</span></strong> - Отпуска;<br>#}
-                                {#                                            <strong><span style="color: #000000">Черный</span></strong> - Явка;<br>#}
-                                {#                                            <strong><span>--//--</span></strong> - Уход не зарегистрирован;<br>#}
-                                {#                                            <strong><span style="color: #ff0000">Красный</span></strong> - Недоработка;<br>#}
-                                {#                                            <strong><span style="background-color: #b0ffd5">Зеленый фон</span></strong> - Несколько интервалов за день.</p>#}
-                                {#                                            <p>Сокращения:<br>#}
-                                {#                                            <strong><span>Я&nbsp;-&nbsp;Явка; СП&nbsp;-&nbsp;Служебная поездка; К&nbsp;-&nbsp;Командировка; О&nbsp;-&nbsp;Отпуск; Б&nbsp;-&nbsp;Больничный; М&nbsp;-&nbsp;Мед осмотр; В&nbsp;-&nbsp;Выходной; П&nbsp;-&nbsp;Праздник; </span><span style="color: #ff0000">Н&nbsp;-&nbsp;Отсутствие.</span></strong><br>#}
-                                {#                                        </div>#}
-                                {#                                </div>#}
                             </div>
                         </div>
                         <div id="sout" class="tab-pane">
@@ -637,7 +528,6 @@
 
         </div>
         <!-- end: page -->
-    </section>
     <script type="text/javascript">
         function filter_date() {
             current_year = $("#id_filter_year").val();

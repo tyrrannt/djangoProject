@@ -24,115 +24,96 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <p class="card-big-info-desc">Создание служебной записки на служебную
-                                            поездку</p>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <div class="col-sm-6">
-                                            <label class="col"
-                                                   for="id_person_executor">Исполнитель:</label>
-                                            <div class="col">
-                                                {{ form.person_executor }}
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <label class="col"
-                                                   for="id_person_agreement">Руководитель:</label>
-                                            <div class="col">
-                                                <span>{{ form.person_agreement }}</span>
-                                            </div>
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="form-group row align-items-center pb-3">
+                                    <p class="card-big-info-desc">Создание служебной записки на служебную
+                                        поездку</p>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <div class="col-sm-6">
+                                        <label class="col"
+                                               for="id_person_executor">Исполнитель:</label>
+                                        <div class="col">
+                                            {{ form.person_executor }}
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <div class="col-sm-12">
-                                            <label class="col"
-                                                   for="id_comments_for_approval">Комментарий для согласования:</label>
-                                            <div class="col">
-                                                {% if object.submit_for_approval %}
-                                                    <span>{{ form.comments_for_approval | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
-                                                {% else %}
-                                                    <span>{{ form.comments_for_approval | add_class:"form-control form-control-modern" }}</span>
-                                                {% endif %}
-                                            </div>
+                                    <div class="col-sm-6">
+                                        <label class="col"
+                                               for="id_person_agreement">Руководитель:</label>
+                                        <div class="col">
+                                            <span>{{ form.person_agreement }}</span>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <div class="col-sm-3">
-                                            <div class="switch switch-sm switch-success text-black-50 mt-3">
-                                                <label for="id_submit_for_approval">Передан на согласование:</label>
-                                                {{ form.submit_for_approval }}
-                                            </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <div class="col-sm-12">
+                                        <label class="col"
+                                               for="id_comments_for_approval">Комментарий для согласования:</label>
+                                        <div class="col">
+                                            {% if object.submit_for_approval %}
+                                                <span>{{ form.comments_for_approval | attr:"disabled" | add_class:"form-control form-control-modern" }}</span>
+                                            {% else %}
+                                                <span>{{ form.comments_for_approval | add_class:"form-control form-control-modern" }}</span>
+                                            {% endif %}
                                         </div>
-                                        <div class="col-sm-9">
-                                            <label class="col"
-                                                   for="id_document">Служебная записка:</label>
-                                            <div class="col">
-                                                <span>{{ form.document }}</span>
-                                            </div>
+                                    </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <div class="col-sm-3">
+                                        <div class="switch switch-sm switch-success text-black-50 mt-3">
+                                            <label for="id_submit_for_approval">Передан на согласование:</label>
+                                            {{ form.submit_for_approval }}
                                         </div>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <label class="col"
+                                               for="id_document">Служебная записка:</label>
+                                        <div class="col">
+                                            <span>{{ form.document }}</span>
+                                        </div>
+                                    </div>
 
-                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
                     </div>
-                {% endif %}
+                </section>
             </div>
-        </form>
-        <!-- end: page -->
-    </section>
+        </div>
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto">
+                <button type="submit"
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
+                        data-loading-text="Loading...">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
+            </div>
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'hrdepartment_app:bpmemo_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
 {% endblock %}

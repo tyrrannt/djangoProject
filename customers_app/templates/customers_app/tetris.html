@@ -95,7 +95,6 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
         {#        {% include 'library_app/breadcrumb.html' %}#}
 {#        <div id="overlay" class="overlay">#}
 {#            <button onclick="startGame()">Начать игру</button>#}
@@ -507,11 +506,8 @@
             window.addEventListener('resize', resizeCanvas);
             window.addEventListener('load', resizeCanvas);
 
-
         </script>
         {% csrf_token %}
         <!-- end: page -->
-    </section>
     <!-- end: page -->
-
 {% endblock %}

@@ -24,130 +24,112 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div class="row">
-                                        <div class="col">
-                                            <div class="card text-left">
-                                                <div class="card-header">
-                                                    <h2>Табель учета рабочего времени от {{ object.date }}</h2>
-                                                    <h3>Старший
-                                                        бригады:&nbsp;&nbsp;&nbsp;{{ object.employee | FIO_format }},
-                                                        МПД:&nbsp;&nbsp;&nbsp;{{ object.time_sheets_place }}</h3>
-                                                </div>
-                                                <div class="card-body">
-                                                    {% if object.notes %}
-                                                        <h5 class="card-title mb-3">
-                                                            Примечания:&nbsp;&nbsp;&nbsp;{{ object.notes }}</h5>
-                                                    {% endif %}
-                                                </div>
-                                                <div class="card-footer text-muted">
 
-                                                </div>
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="row">
+                                    <div class="col">
+                                        <div class="card text-left">
+                                            <div class="card-header">
+                                                <h2>Табель учета рабочего времени от {{ object.date }}</h2>
+                                                <h3>Старший
+                                                    бригады:&nbsp;&nbsp;&nbsp;{{ object.employee | FIO_format }},
+                                                    МПД:&nbsp;&nbsp;&nbsp;{{ object.time_sheets_place }}</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                {% if object.notes %}
+                                                    <h5 class="card-title mb-3">
+                                                        Примечания:&nbsp;&nbsp;&nbsp;{{ object.notes }}</h5>
+                                                {% endif %}
+                                            </div>
+                                            <div class="card-footer text-muted">
+
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <div class="col-sm-12">
-                                            <h2>Записи в табеле</h2>
-                                            <table class="table table-responsive table-responsive-sm">
-                                                <thead>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <div class="col-sm-12">
+                                        <h2>Записи в табеле</h2>
+                                        <table class="table table-responsive table-responsive-sm">
+                                            <thead>
+                                            <tr>
+                                                <th>Дата:</th>
+                                                <th>Сотрудник:</th>
+                                                <th>Время прихода:</th>
+                                                <th>Время ухода:</th>
+                                                <th>Карты-наряда:</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for report_card in object.report_cards.all %}
                                                 <tr>
-                                                    <th>Дата:</th>
-                                                    <th>Сотрудник:</th>
-                                                    <th>Время прихода:</th>
-                                                    <th>Время ухода:</th>
-                                                    <th>Карты-наряда:</th>
+                                                    <td>{{ report_card.report_card_day }}</td>
+                                                    <td>{{ report_card.employee }}</td>
+                                                    <td>{{ report_card.start_time }}</td>
+                                                    <td>{{ report_card.end_time }}</td>
+                                                    <td>{{ report_card.outfit_card.all }}</td>
                                                 </tr>
-                                                </thead>
-                                                <tbody>
-                                                {% for report_card in object.report_cards.all %}
-                                                    <tr>
-                                                        <td>{{ report_card.report_card_day }}</td>
-                                                        <td>{{ report_card.employee }}</td>
-                                                        <td>{{ report_card.start_time }}</td>
-                                                        <td>{{ report_card.end_time }}</td>
-                                                        <td>{{ report_card.outfit_card.all }}</td>
-                                                    </tr>
-                                                {% endfor %}
-                                                </tbody>
-                                            </table>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
 
-                                        </div>
                                     </div>
-                                    <div class="row action-buttons">
-                                        <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0">
-                                            <a href="{% url 'hrdepartment_app:timesheet_update' object.pk %}"
-                                               class="btn btn-outline-success btn-px-4 py-3 d-flex
+                                </div>
+                                <div class="row action-buttons">
+                                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0">
+                                        <a href="{% url 'hrdepartment_app:timesheet_update' object.pk %}"
+                                           class="btn btn-outline-success btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1">
-                                                <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
-                                        </div>
-                                        <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                                            <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                                               class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                                            <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
+                                    </div>
+                                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                                        <a href="{% url 'hrdepartment_app:timesheet_list' %}"
+                                           class="btn btn-outline-dark btn-px-4 py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
-                                        </div>
-                                        {% if user.is_superuser %}
-                                            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                                                <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                                                   class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                                                    <i class="bx bx-trash text-4 me-2"></i> Удалить
-                                                </a>
-                                            </div>
-                                        {% endif %}
+                                            <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
                                     </div>
+                                    {% if user.is_superuser %}
+                                        <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                                            <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
+                                               class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                                                <i class="bx bx-trash text-4 me-2"></i> Удалить
+                                            </a>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                       align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
                     </div>
-                {% endif %}
+                </section>
             </div>
-        </form>
-        <!-- end: page -->
-    </section>
+        </div>
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'hrdepartment_app:timesheet_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                       align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
 {% endblock %}

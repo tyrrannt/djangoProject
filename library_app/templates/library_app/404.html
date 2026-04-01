@@ -7,34 +7,113 @@
 {% endblock %}
 
 {% block content %}
-    <section class="body-error error-inside">
-        <div class="center-error">
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="main-error mb-3">
-                        <h2 class="error-code text-dark text-center font-weight-semibold m-0">404 <i
-                                class="fas fa-file"></i></h2>
-                        <p class="error-explanation text-center">Извините, по вашему запросу информация отсутствует!</p>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <h4 class="text">Перейти в:</h4>
-                    <ul class="nav nav-list flex-column primary">
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'customers_app:profile' user.pk %}"><i class="fas fa-caret-right text-dark"></i> Лента событий</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'customers_app:staff' user.pk %}"><i class="fas fa-caret-right text-dark"></i> Профиль пользователя</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#"><i class="fas fa-caret-right text-dark"></i> Вопросы и ответы</a>
-                        </li>
-                    </ul>
-                </div>
+<style>
+    .error-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .error-card {
+        max-width: 800px;
+        width: 100%;
+        padding: 40px;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    }
+
+    .error-code {
+        font-size: 80px;
+        font-weight: 700;
+        color: #343a40;
+    }
+
+    .error-icon {
+        font-size: 60px;
+        color: #6c757d;
+        margin-left: 10px;
+    }
+
+    .error-text {
+        font-size: 18px;
+        color: #6c757d;
+        margin-top: 10px;
+    }
+
+    .nav-links a {
+        display: block;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #343a40;
+        background: #f8f9fa;
+        transition: all 0.2s ease;
+    }
+
+    .nav-links a:hover {
+        background: #e9ecef;
+        transform: translateX(4px);
+    }
+
+    .nav-links i {
+        margin-right: 8px;
+    }
+
+    .home-btn {
+        margin-top: 20px;
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 10px;
+        background: #343a40;
+        color: #fff;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+    .home-btn:hover {
+        background: #23272b;
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-card text-center">
+
+        <div>
+            <span class="error-code">404</span>
+            <i class="fas fa-file-alt error-icon"></i>
+        </div>
+
+        <p class="error-text">
+            Извините, по вашему запросу информация отсутствует
+        </p>
+
+        <a href="/" class="home-btn">
+            <i class="fas fa-home"></i> На главную
+        </a>
+
+        <hr class="my-4">
+
+        <div class="text-start">
+            <h5 class="mb-3">Куда перейти:</h5>
+
+            <div class="nav-links">
+                <a href="{% url 'customers_app:profile' user.pk %}">
+                    <i class="fas fa-stream"></i> Лента событий
+                </a>
+
+                <a href="{% url 'customers_app:staff' user.pk %}">
+                    <i class="fas fa-user"></i> Профиль пользователя
+                </a>
+
+                <a href="#">
+                    <i class="fas fa-question-circle"></i> Вопросы и ответы
+                </a>
             </div>
         </div>
-    </section>
+
+    </div>
+</div>
 {% endblock %}
-
-
-

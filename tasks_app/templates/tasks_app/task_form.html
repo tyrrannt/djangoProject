@@ -3,21 +3,9 @@
 {% load custom %}
 {% load widget_tweaks %}
 {% load django_bootstrap5 %}
-{#{% block custome_css %}#}
-{##}
-{##}
-{##}
-{#{% endblock %}#}
+
 {% block custome_css %}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
-    {#    <link rel="stylesheet"#}
-    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
-    {#    <link rel="stylesheet"#}
-    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
-    <!-- Стили для отображения файлов -->
+
     <style>
         .file-grid {
             display: grid;
@@ -69,9 +57,7 @@
 {% endblock %}
 
 {% block custome_script %}
-    {#        <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
-    {#        <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
-    {#        <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
+
     <script>
         // Инициализация Dropzone.js
         Dropzone.autoDiscover = false;  // Отключаем автоинициализацию
@@ -113,97 +99,79 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <div class="container mt-5">
-            <h1 class="mb-4">{% if object %}Редактировать задачу{% else %}Добавить задачу{% endif %}</h1>
-            <form method="post" class="form" enctype="multipart/form-data">
-                {% csrf_token %}
-                {% bootstrap_form form %}
-                <!-- Контейнер для Dropzone.js -->
-                <div class="form-group">
-                    <label for="files">Прикрепить файлы:</label>
-                    <div id="dropzone" class="dropzone"></div>
-                </div>
-
-                <!-- Настройка значений для полей даты и времени -->
-                {% if form.instance.start_date %}
-                    <script>
-                        document.querySelector('input[name="start_date"]').value = '{{ form.instance.start_date|date:"Y-m-d" }}T{{ form.instance.start_date|time:"H:i" }}';
-                    </script>
-                {% endif %}
-                {% if form.instance.end_date %}
-                    <script>
-                        document.querySelector('input[name="end_date"]').value = '{{ form.instance.end_date|date:"Y-m-d" }}T{{ form.instance.end_date|time:"H:i" }}';
-                    </script>
-                {% endif %}
-                <button type="submit" class="btn btn-success">Сохранить</button>
-                <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary">Отмена</a>
-            </form>
-
-            <div class="container">
-                <h4>Загруженные файлы:</h4>
-                <div class="file-grid">
-                    {% for document in task.files.all %}
-                        {% with file_extension=document.file.name|split:"."|last|lower %}
-                            <div class="file-item" onclick="window.open('{{ document.file.url }}', '_blank')">
-                    <i class="file-icon {% get_file_icon file_extension %}"></i>
-                    <div class="file-info">
-                        <h4>{{ document.title }}</h4>
-                        <p>{{ document.file.name|basename }}</p>
-                    </div>
-                </div>
-                        {% endwith %}
-                    {% endfor %}
-                </div>
+    <!-- start: page -->
+    <div class="container mt-5">
+        <h1 class="mb-4">{% if object %}Редактировать задачу{% else %}Добавить задачу{% endif %}</h1>
+        <form method="post" class="form" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% bootstrap_form form %}
+            <!-- Контейнер для Dropzone.js -->
+            <div class="form-group">
+                <label for="files">Прикрепить файлы:</label>
+                <div id="dropzone" class="dropzone"></div>
             </div>
-            {% bootstrap_javascript %}
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    const repeatField = document.querySelector('select[name="repeat"]');
-                    const dueDateField = document.querySelector('input[name="due_date"]');
-                    const startDateField = document.querySelector('input[name="start_date"]');
-                    const endDateField = document.querySelector('input[name="end_date"]');
 
-                    function toggleFields() {
-                        if (repeatField.value === 'none') {
-                            // Показываем due_date и скрываем start_date и end_date
+            <!-- Настройка значений для полей даты и времени -->
+            {% if form.instance.start_date %}
+                <script>
+                    document.querySelector('input[name="start_date"]').value = '{{ form.instance.start_date|date:"Y-m-d" }}T{{ form.instance.start_date|time:"H:i" }}';
+                </script>
+            {% endif %}
+            {% if form.instance.end_date %}
+                <script>
+                    document.querySelector('input[name="end_date"]').value = '{{ form.instance.end_date|date:"Y-m-d" }}T{{ form.instance.end_date|time:"H:i" }}';
+                </script>
+            {% endif %}
+            <button type="submit" class="btn btn-success">Сохранить</button>
+            <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary">Отмена</a>
+        </form>
 
-                            startDateField.parentElement.classList.add('hidden');
-                            endDateField.parentElement.classList.add('hidden');
-                        } else {
-                            // Скрываем due_date и показываем start_date и end_date
+        <div class="container">
+            <h4>Загруженные файлы:</h4>
+            <div class="file-grid">
+                {% for document in task.files.all %}
+                    {% with file_extension=document.file.name|split:"."|last|lower %}
+                        <div class="file-item" onclick="window.open('{{ document.file.url }}', '_blank')">
+                            <i class="file-icon {% get_file_icon file_extension %}"></i>
+                            <div class="file-info">
+                                <h4>{{ document.title }}</h4>
+                                <p>{{ document.file.name|basename }}</p>
+                            </div>
+                        </div>
+                    {% endwith %}
+                {% endfor %}
+            </div>
+        </div>
+        {% bootstrap_javascript %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const repeatField = document.querySelector('select[name="repeat"]');
+                const dueDateField = document.querySelector('input[name="due_date"]');
+                const startDateField = document.querySelector('input[name="start_date"]');
+                const endDateField = document.querySelector('input[name="end_date"]');
 
-                            startDateField.parentElement.classList.remove('hidden');
-                            endDateField.parentElement.classList.remove('hidden');
-                        }
+                function toggleFields() {
+                    if (repeatField.value === 'none') {
+                        // Показываем due_date и скрываем start_date и end_date
+
+                        startDateField.parentElement.classList.add('hidden');
+                        endDateField.parentElement.classList.add('hidden');
+                    } else {
+                        // Скрываем due_date и показываем start_date и end_date
+
+                        startDateField.parentElement.classList.remove('hidden');
+                        endDateField.parentElement.classList.remove('hidden');
                     }
+                }
 
-                    // Инициализация состояния полей
-                    toggleFields();
+                // Инициализация состояния полей
+                toggleFields();
 
-                    // Слушаем изменения в поле repeat
-                    repeatField.addEventListener('change', toggleFields);
-                });
-            </script>
-            <!-- end: page -->
-    </section>
-    <!-- end: page -->
+                // Слушаем изменения в поле repeat
+                repeatField.addEventListener('change', toggleFields);
+            });
+        </script>
+        <!-- end: page -->
+        <!-- end: page -->
 
 {% endblock %}

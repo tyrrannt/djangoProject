@@ -232,7 +232,8 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:training_debt_report' %}">
+                                            <a class="nav-link"
+                                               href="{% url 'hrdepartment_app:training_debt_report' %}">
                                                 Расчет долга за обучение
                                             </a>
                                         </li>
@@ -653,41 +654,7 @@
                                 <div class="widget-summary-col">
                                     <div class="summary">
                                         <ul id="online-users"></ul>
-                                        {#                                        <script>#}
-                                        {#                                            var online_users = "wss://corp.barkol.ru/ws/online_users/";#}
-                                        {#                                            const socket_online_users = new WebSocket(online_users);#}
-                                        {#                                            socket_online_users.onmessage = function (event) {#}
-                                        {#                                                const data = JSON.parse(event.data);#}
-                                        {#                                                if (data.is_admin) {#}
-                                        {#                                                    if (data.type === 'online_users') {#}
-                                        {#                                                        const usersList = document.getElementById('online-users');#}
-                                        {#                                                        usersList.innerHTML = '';#}
-                                        {#                                                        data.users.forEach(user => {#}
-                                        {#                                                            const li = document.createElement('li');#}
-                                        {#                                                            const link = document.createElement('a');#}
-                                        {#                                                            link.href = `/users/staff/${user[1]}/`;  // Ссылка на профиль пользователя#}
-                                        {#                                                            link.textContent = user[0];#}
-                                        {#                                                            li.appendChild(link);#}
-                                        {#                                                            usersList.appendChild(li);#}
-                                        {#                                                        });#}
-                                        {#                                                    }#}
-                                        {#                                                } else {#}
-                                        {#                                                    if (data.type === 'online_users') {#}
-                                        {#                                                        const usersList = document.getElementById('online-users');#}
-                                        {#                                                        usersList.innerHTML = '';#}
-                                        {#                                                        data.users.forEach(user => {#}
-                                        {#                                                            const li = document.createElement('li');#}
-                                        {#                                                            li.textContent = user[0];#}
-                                        {#                                                            usersList.appendChild(li);#}
-                                        {#                                                        });#}
-                                        {#                                                    }#}
-                                        {#                                                }#}
-                                        {##}
-                                        {#                                            };#}
-                                        {#                                            socket_online_users.onclose = function (event) {#}
-                                        {#                                                console.error('WebSocket closed unexpectedly');#}
-                                        {#                                            };#}
-                                        {#                                        </script>#}
+
                                         <script>
                                             function showMessageToast(from, text) {
                                                 const toastId = "toast-" + Date.now();
@@ -722,14 +689,11 @@
                                         <script>
 
                                             document.addEventListener("DOMContentLoaded", function () {
-
                                                 const modalElement = document.getElementById('sendMessageModal');
-
                                                 if (!modalElement) {
                                                     console.error('Modal element #sendMessageModal not found in DOM');
                                                     return;
                                                 }
-
                                                 const bsModal = new bootstrap.Modal(modalElement);
 
                                                 let selectedUserId = null;

@@ -7,80 +7,71 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        <style>
-            .table-ecommerce-simple {
-                overflow-x: auto;
-                position: relative;
-            }
+    <style>
+        .table-ecommerce-simple {
+            overflow-x: auto;
+            position: relative;
+        }
 
-            .table-ecommerce-simple th {
-                position: -webkit-sticky;
-                position: sticky;
-                top: -3px;
-            / / при нуле в chrome остаётся странный зазор z-index: 2;
-            }
-        </style>
-        {% include 'library_app/breadcrumb.html' %}
+        .table-ecommerce-simple th {
+            position: -webkit-sticky;
+            position: sticky;
+            top: -3px;
+        / / при нуле в chrome остаётся странный зазор z-index: 2;
+        }
+    </style>
 
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <!-- Форма фильтрации -->
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Фильтры</h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="get" class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Год:</label>
-                                <select name="report_year" class="form-select" id="report-year-select" >
-                                    {% for year in years %}
-                                        <option value="{{ year }}"
-                                                {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
-                                            {{ year }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-funnel"></i> Применить фильтры
-                                </button>
-                                <a href="{% url 'hrdepartment_app:reportcard_detail_year' %}" class="btn btn-secondary">
-                                    <i class="bi bi-arrow-clockwise"></i> Сбросить
-                                </a>
-                            </div>
-                        </form>
-                    </div>
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <!-- Форма фильтрации -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Фильтры</h5>
                 </div>
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="dt-buttons btn-group">
-                            <!-- Кнопка экспорта -->
-                            <a id="export-excel-btn"
-                               class="btn btn-secondary buttons-excel buttons-html5"
-                               href="{% url 'hrdepartment_app:reportcard_detail_year_xls' year=years.0 %}">
-                                <span>Excel</span>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Год:</label>
+                            <select name="report_year" class="form-select" id="report-year-select">
+                                {% for year in years %}
+                                    <option value="{{ year }}"
+                                            {% if selected_year == year|stringformat:"s" %}selected{% endif %}>
+                                        {{ year }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel"></i> Применить фильтры
+                            </button>
+                            <a href="{% url 'hrdepartment_app:reportcard_detail_year' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Сбросить
                             </a>
-                            {#                            <a class="btn btn-secondary buttons-copy buttons-html5" tabindex="0" aria-controls="datatable-editable" href="#"><span>Copy</span></a>#}
-                            {#                            <a class="btn btn-secondary buttons-csv buttons-html5" tabindex="0" aria-controls="datatable-editable" href="#"><span>CSV</span></a>#}
-                            {#                            <a class="btn btn-secondary buttons-excel buttons-html5" tabindex="0" aria-controls="datatable-editable" href="{% url 'hrdepartment_app:reportcard_detail_year_xls' %}"><span>Excel</span></a>#}
-                            {#                            <a class="btn btn-secondary buttons-pdf buttons-html5" tabindex="0" aria-controls="datatable-editable" href="#"><span>PDF</span></a>#}
-                            {#                            <a class="btn btn-secondary buttons-print" tabindex="0" aria-controls="datatable-editable" href="#"><span>Print</span></a> #}
                         </div>
-                        {{ table_error }}
-                        <div id="id_tables" class="table-responsive">
-                            {{ table | safe }}
-                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="dt-buttons btn-group">
+                        <!-- Кнопка экспорта -->
+                        <a id="export-excel-btn"
+                           class="btn btn-secondary buttons-excel buttons-html5"
+                           href="{% url 'hrdepartment_app:reportcard_detail_year_xls' year=years.0 %}">
+                            <span>Excel</span>
+                        </a>
                     </div>
-
+                    {{ table_error }}
+                    <div id="id_tables" class="table-responsive">
+                        {{ table | safe }}
+                    </div>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-    </section>
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custome_script %}

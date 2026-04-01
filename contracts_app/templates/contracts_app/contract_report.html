@@ -2,7 +2,6 @@
 
 {% extends 'customers_app/main.html' %}
 {% block content %}
-    <section role="main" class="content-body">
         <form method="get" class="mb-4">
             <label>Период:</label>
             <input type="date" name="start" value="{{ start_date }}">
@@ -48,5 +47,4 @@
         {% else %}
             <p>Контракты не найдены.</p>
         {% endif %}
-    </section>
 {% endblock %}

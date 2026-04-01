@@ -18,15 +18,13 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        <div class="container mt-5">
-            <h1 class="mb-4">Удалить задачу?</h1>
-            <p>Вы уверены, что хотите удалить задачу "{{ object.title }}"?</p>
-            <form method="post">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger">Да, удалить</button>
-                <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary">Отмена</a>
-            </form>
-        </div>
-    </section>
+    <div class="container mt-5">
+        <h1 class="mb-4">Удалить задачу?</h1>
+        <p>Вы уверены, что хотите удалить задачу "{{ object.title }}"?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Да, удалить</button>
+            <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary">Отмена</a>
+        </form>
+    </div>
 {% endblock %}

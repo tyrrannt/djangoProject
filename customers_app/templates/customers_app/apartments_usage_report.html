@@ -1,0 +1,167 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}Отчет использования квартир{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Отчет использования квартир</h1>
+
+    <!-- Фильтры -->
+    <form method="get" class="card p-3 mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="id_date_start" class="form-label">Дата начала</label>
+                <input type="date" name="date_start" id="id_date_start" 
+                       class="form-control" value="{{ date_start|date:'Y-m-d'|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <label for="id_date_end" class="form-label">Дата окончания</label>
+                <input type="date" name="date_end" id="id_date_end" 
+                       class="form-control" value="{{ date_end|date:'Y-m-d'|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <label for="id_place" class="form-label">Место</label>
+                <select name="place" id="id_place" class="form-select">
+                    <option value="">Все места</option>
+                    {% for place in places %}
+                        <option value="{{ place.id }}" {% if place.id == place_id %}selected{% endif %}>
+                            {{ place.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Применить фильтры
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Сводная информация -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Всего квартир</h5>
+                    <p class="display-4">{{ total_apartments }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Всего мест</h5>
+                    <p class="display-4">{{ total_beds }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Занято мест</h5>
+                    <p class="display-4 text-danger">{{ total_occupied }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Загруженность</h5>
+                    <p class="display-4 {% if occupancy_rate > 80 %}text-danger{% elif occupancy_rate > 50 %}text-warning{% else %}text-success{% endif %}">
+                        {{ occupancy_rate|floatformat:1 }}%
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица отчета -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Детализация по квартирам</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Наименование</th>
+                            <th>Адрес</th>
+                            <th>Место</th>
+                            <th>Договор</th>
+                            <th>Всего мест</th>
+                            <th>Занято</th>
+                            <th>Свободно</th>
+                            <th>Загруженность</th>
+                            <th>Периоды занятости</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for apartment in apartments %}
+                        <tr>
+                            <td>
+{#                                <a href="{% url 'apartments:detail' apartment.id %}">#}
+{#                                    {{ apartment.title|default:"Без названия" }}#}
+{#                                </a>#}
+                            </td>
+                            <td>{{ apartment.address|default:"—" }}</td>
+                            <td>{{ apartment.place.name|default:"—" }}</td>
+                            <td>
+                                {% if apartment.contracts %}
+                                    {{ apartment.contracts.number|default:"—" }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ apartment.beds_number }}</td>
+                            <td class="text-center text-danger">{{ apartment.occupied_beds }}</td>
+                            <td class="text-center text-success">{{ apartment.available_beds }}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if apartment.occupancy_rate > 80 %}bg-danger{% elif apartment.occupancy_rate > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ apartment.occupancy_rate }}%;" 
+                                         aria-valuenow="{{ apartment.occupancy_rate }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ apartment.occupancy_rate|floatformat:0 }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if apartment.busy_periods %}
+                                    <small class="text-muted">
+                                        {% for period in apartment.busy_periods %}
+                                            {{ period.start|date:"d.m" }} - {{ period.end|date:"d.m" }}
+                                            {% if not forloop.last %}<br>{% endif %}
+                                        {% endfor %}
+                                    </small>
+                                {% else %}
+                                    <span class="text-success">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                Квартиры не найдены
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка экспорта -->
+    <div class="mt-3 text-end">
+        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-outline-secondary">
+            <i class="bi bi-download"></i> Экспорт в CSV
+        </a>
+    </div>
+</div>
+{% endblock %}

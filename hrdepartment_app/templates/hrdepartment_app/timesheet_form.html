@@ -3,24 +3,13 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
+
 {% block custome_css %}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>#}
-    {#    <link rel="stylesheet"#}
-    {#          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>#}
-    {#    <link rel="stylesheet"#}
-    {#          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>#}
-    {#    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>#}
 {% endblock %}
 
 {% block custome_script %}
-    {#    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>#}
-    {#    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>#}
-    {#    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>#}
-
-
 {% endblock %}
+
 {% block SpecificPageVendor %}
 
     <script src="{% static 'admin_templates/vendor/jquery/jquery.formset.js' %}"></script>
@@ -158,215 +147,196 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
+
     {{ reportcard_formset }}
-        <div>
-            {% if reportcard_formset %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
+    <div>
+        {% if reportcard_formset %}
+            {% for field in form %}
+                {% for error in field.errors %}
                     <div class="alert alert-danger">
                         <strong>{{ field.label }}</strong>: {{ error|escape }}
                     </div>
                 {% endfor %}
-            {% endif %}
-        </div>
-        <style>
-            /* Скрыть элемент по умолчанию */
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <strong>{{ field.label }}</strong>: {{ error|escape }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <style>
+        /* Скрыть элемент по умолчанию */
+        .mobile-only {
+            display: none;
+        }
+
+        /* Показать элемент только на мобильных устройствах */
+        @media (max-width: 767px) {
             .mobile-only {
+                display: inline;
+            }
+
+            .desktop-only {
                 display: none;
             }
+        }
 
-            /* Показать элемент только на мобильных устройствах */
-            @media (max-width: 767px) {
-                .mobile-only {
-                    display: inline;
-                }
+        th:nth-child(1), td:nth-child(1) {
+            width: 20%;
+        }
 
-                .desktop-only {
-                    display: none;
-                }
+        th:nth-child(2), td:nth-child(2) {
+            width: 5%;
+        }
+
+        th:nth-child(3), td:nth-child(3) {
+            width: 5%;
+        }
+
+        th:nth-child(4), td:nth-child(4) {
+            width: 5%;
+        }
+
+        th:nth-child(5), td:nth-child(5) {
+            width: 5%;
+        }
+
+        th:nth-child(6), td:nth-child(6) {
+            width: 20%;
+        }
+
+        th:nth-child(7), td:nth-child(7) {
+            width: 40%;
+        }
+
+        @media (max-width: 576px) {
+            .table-responsive-sm {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
-            th:nth-child(1), td:nth-child(1) {
-                width: 20%;
+            .table-responsive-sm table {
+                width: 100%;
             }
 
-            th:nth-child(2), td:nth-child(2) {
-                width: 5%;
+            .table-responsive-sm th,
+            .table-responsive-sm td {
+                display: block;
+                width: 100%;
+                text-align: left;
             }
 
-            th:nth-child(3), td:nth-child(3) {
-                width: 5%;
+            .table-responsive-sm th {
+                font-weight: bold;
             }
 
-            th:nth-child(4), td:nth-child(4) {
-                width: 5%;
+            .table-responsive-sm td::before {
+                content: attr(data-label);
+                float: left;
+                font-weight: bold;
+                text-transform: uppercase;
+                margin-right: 10px;
             }
+        }
+    </style>
 
-            th:nth-child(5), td:nth-child(5) {
-                width: 5%;
-            }
-
-            th:nth-child(6), td:nth-child(6) {
-                width: 20%;
-            }
-
-            th:nth-child(7), td:nth-child(7) {
-                width: 40%;
-            }
-
-            @media (max-width: 576px) {
-                .table-responsive-sm {
-                    display: block;
-                    width: 100%;
-                    overflow-x: auto;
-                    -webkit-overflow-scrolling: touch;
-                }
-
-                .table-responsive-sm table {
-                    width: 100%;
-                }
-
-                .table-responsive-sm th,
-                .table-responsive-sm td {
-                    display: block;
-                    width: 100%;
-                    text-align: left;
-                }
-
-                .table-responsive-sm th {
-                    font-weight: bold;
-                }
-
-                .table-responsive-sm td::before {
-                    content: attr(data-label);
-                    float: left;
-                    font-weight: bold;
-                    text-transform: uppercase;
-                    margin-right: 10px;
-                }
-            }
-        </style>
-
-        <!-- start: page -->
-        <h2>{% if object %}Изменить{% else %}Создать{% endif %} табель</h2>
-        <form method="post">
-            {% csrf_token %}
-            <div class="row text">
-                <div class="col-sm-12 col-md-4 text-black-50">
-                    <label for="id_date">Дата:</label>
-                    {{ form.date }}
-                </div>
-                <div class="col-sm-12 col-md-4 text-black-50">
-                    <label for="id_employee">Старший бригады:</label>
-                    {{ form.employee }}
-                </div>
-                <div class="col-sm-12 col-md-4 text-black-50">
-                    <label for="id_time_sheets_place">МПД:</label>
-                    {{ form.time_sheets_place }}
-                </div>
+    <!-- start: page -->
+    <h2>{% if object %}Изменить{% else %}Создать{% endif %} табель</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="row text">
+            <div class="col-sm-12 col-md-4 text-black-50">
+                <label for="id_date">Дата:</label>
+                {{ form.date }}
             </div>
-            <div class="row text">
-                <div class="col-sm-12 text-black-50">
-                    <label for="id_notes">Примечание:</label>
-                    {{ form.notes }}
-                </div>
+            <div class="col-sm-12 col-md-4 text-black-50">
+                <label for="id_employee">Старший бригады:</label>
+                {{ form.employee }}
             </div>
-            <button type="button" class="btn btn-info mt-3" id="fill-from-events">Заполнить из отметок</button>
+            <div class="col-sm-12 col-md-4 text-black-50">
+                <label for="id_time_sheets_place">МПД:</label>
+                {{ form.time_sheets_place }}
+            </div>
+        </div>
+        <div class="row text">
+            <div class="col-sm-12 text-black-50">
+                <label for="id_notes">Примечание:</label>
+                {{ form.notes }}
+            </div>
+        </div>
+        <button type="button" class="btn btn-info mt-3" id="fill-from-events">Заполнить из отметок</button>
 
-            <h3>Табель учета рабочего времени</h3>
-            {{ reportcard_formset.management_form }}
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
+        <h3>Табель учета рабочего времени</h3>
+        {{ reportcard_formset.management_form }}
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                <button type="submit"
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex
                            align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:timesheet_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if object and user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
-                <select id="all-employees" style="display: none">
-                    {% for item in all_employee.iterator %}
-                        <option value="{{ item.pk }}">{{ item }}</option>
-                    {% endfor %}
-                </select>
+                        data-loading-text="Loading...">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
             </div>
-            <div class="table-responsive">
-                <table class="table table-responsive-sm" id="id_reportcard_set">
-                    <thead>
-                    <tr class="desktop-only">
-                        <th>ФИО</th>
-                        <th>Время прихода</th>
-                        <th>Время ухода</th>
-                        <th>Обед (мин.)</th>
-                        <th>Летные часы</th>
-                        <th>Карты-наряда</th>
-                        <th>Дополнительные работы</th>
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'hrdepartment_app:timesheet_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if object and user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:timesheet_delete' object.pk %}"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
+            {% endif %}
+            <select id="all-employees" style="display: none">
+                {% for item in all_employee.iterator %}
+                    <option value="{{ item.pk }}">{{ item }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-responsive-sm" id="id_reportcard_set">
+                <thead>
+                <tr class="desktop-only">
+                    <th>ФИО</th>
+                    <th>Время прихода</th>
+                    <th>Время ухода</th>
+                    <th>Обед (мин.)</th>
+                    <th>Летные часы</th>
+                    <th>Карты-наряда</th>
+                    <th>Дополнительные работы</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for form in reportcard_formset %}
+                    <tr>
+                        <td><label for="id_employee" class="mobile-only">ФИО:</label>{{ form.employee }}</td>
+                        <td><label for="id_start_time" class="mobile-only">Время
+                            прихода:</label>{{ form.start_time }}</td>
+                        <td><label for="id_end_time" class="mobile-only">Время ухода:</label>{{ form.end_time }}
+                        </td>
+                        <td><label for="id_lunch_time" class="mobile-only">Обед (мин.):</label>{{ form.lunch_time }}
+                        </td>
+                        <td><label for="id_flight_hours" class="mobile-only">Летные
+                            часы:</label>{{ form.flight_hours }}</td>
+                        <td><label for="id_outfit_card"
+                                   class="mobile-only">Карты-наряда:</label>{{ form.outfit_card }}</td>
+                        <td><label for="id_additional_work" class="mobile-only">Дополнительные
+                            работы:</label>{{ form.additional_work }}</td>
+                        <td><label for="id_id" class="mobile-only"></label>{{ form.id }}</td>
                     </tr>
-                    </thead>
-                    <tbody>
-                    {% for form in reportcard_formset %}
-                        <tr>
-
-                            <td><label for="id_employee" class="mobile-only">ФИО:</label>{{ form.employee }}</td>
-                            <td><label for="id_start_time" class="mobile-only">Время
-                                прихода:</label>{{ form.start_time }}</td>
-                            <td><label for="id_end_time" class="mobile-only">Время ухода:</label>{{ form.end_time }}
-                            </td>
-                            <td><label for="id_lunch_time" class="mobile-only">Обед (мин.):</label>{{ form.lunch_time }}
-                            </td>
-                            <td><label for="id_flight_hours" class="mobile-only">Летные
-                                часы:</label>{{ form.flight_hours }}</td>
-                            <td><label for="id_outfit_card"
-                                       class="mobile-only">Карты-наряда:</label>{{ form.outfit_card }}</td>
-                            <td><label for="id_additional_work" class="mobile-only">Дополнительные
-                                работы:</label>{{ form.additional_work }}</td>
-                            <td><label for="id_id" class="mobile-only"></label>{{ form.id }}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                <button type="button" class="btn btn-primary" id="add-reportcard">Добавить</button>
-        </form>       <!-- end: page -->
-    </section>
-
+                {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-primary" id="add-reportcard">Добавить</button>
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
 {% endblock %}

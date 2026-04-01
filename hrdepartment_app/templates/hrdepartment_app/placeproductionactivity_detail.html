@@ -25,98 +25,79 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc">Форма редактирования места назначения</p>
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-2-5 col-xl-1-5">
+                                <i class="card-big-info-icon bx bxl-netlify"></i>
+                                <p class="card-big-info-desc">Форма редактирования места назначения</p>
+                            </div>
+                            <div class="col-lg-3-5 col-xl-4-5">
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_name">Наименование</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <input type="text" id="id_name"
+                                               class="form-control form-control-modern"
+                                               name="name" value="{{ object.name }}"/>
+                                    </div>
                                 </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_name">Наименование</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_name"
-                                                   class="form-control form-control-modern"
-                                                   name="name" value="{{ object.name }}"/>
-                                        </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_address">Адрес</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <input type="text" id="id_address"
+                                               class="form-control form-control-modern"
+                                               name="address" value="{{ object.address }}"/>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_address">Адрес</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_address"
-                                                   class="form-control form-control-modern"
-                                                   name="address" value="{{ object.address }}"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_short_name">Краткое наименование</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <input type="text" id="id_short_name"
-                                                   class="form-control form-control-modern"
-                                                   name="short_name" value="{{ object.short_name }}"/>
-                                        </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_short_name">Краткое наименование</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <input type="text" id="id_short_name"
+                                               class="form-control form-control-modern"
+                                               name="short_name" value="{{ object.short_name }}"/>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:place_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
                     </div>
-                {% endif %}
+                </section>
             </div>
-        </form>
-        <!-- end: page -->
-    </section>
+        </div>
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto">
+                <button type="submit"
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
+                        data-loading-text="Loading...">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
+            </div>
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'hrdepartment_app:place_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
 
 {% endblock %}

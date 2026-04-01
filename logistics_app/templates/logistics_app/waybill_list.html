@@ -10,123 +10,109 @@
 {% endblock %}
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-
-        {% include 'library_app/breadcrumb.html' %}
-
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
-                <section class="card">
-                    <header class="card-header">
-                        <div class="card-actions">
-                            <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
-                        </div>
-                        <h2 class="card-title">Основной</h2>
-                    </header>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-9">
-                                <div class="row">
-                                    <!-- Button trigger modal -->
-                                    <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                        <a href="#"
-                                           class="btn btn-outline-primary btn-px-4 py-3 d-flex
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <section class="card">
+                <header class="card-header">
+                    <div class="card-actions">
+                        <a href="#" class="card-action card-action-toggle" data-card-toggle=""></a>
+                    </div>
+                    <h2 class="card-title">Основной</h2>
+                </header>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-9">
+                            <div class="row">
+                                <!-- Button trigger modal -->
+                                <div class="col-12 col-lg-auto mb-3 mb-lg-0">
+                                    <a href="#"
+                                       class="btn btn-outline-primary btn-px-4 py-3 d-flex
                                                 align-items-center font-weight-semibold line-height-1">
-                                            <i class='bx bx-list-plus text-4 me-2'></i> Добавить запись</a>
-                                    </div>
+                                        <i class='bx bx-list-plus text-4 me-2'></i> Добавить запись</a>
+                                </div>
 
-                                    <!-- Modal -->
-                                    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
-                                         data-bs-keyboard="false" tabindex="-1"
-                                         aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <form action="{% url 'logistics_app:waybill_add' %}" method="post">
-                                                    {% csrf_token %}
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="staticBackdropLabel">Modal
-                                                            title</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                                aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        {{ form.as_p }}
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary"
-                                                                data-bs-dismiss="modal">Close
-                                                        </button>
-                                                        <button type="button" class="btn btn-primary">Understood
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            </div>
+                                <!-- Modal -->
+                                <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
+                                     data-bs-keyboard="false" tabindex="-1"
+                                     aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form action="{% url 'logistics_app:waybill_add' %}" method="post">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="staticBackdropLabel">Modal
+                                                        title</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    {{ form.as_p }}
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Close
+                                                    </button>
+                                                    <button type="button" class="btn btn-primary">Understood
+                                                    </button>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
-                            <div class="row">
-                            </div>
-                            <style>
-                                thead input {
-                                    width: 100%;
-                                    padding: 3px;
-                                    box-sizing: border-box;
-                                    border-radius: 10px;
-                                    border-color: #ff7300;
-                                    color: #003994;
-                                }
-                            </style>
-                            <table class="table table-ecommerce-simple mb-0 table-hover" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
-                                <thead>
-                                <tr>
-
-                                    <th width="8%">Дата документа</th>
-                                    <th width="10%">Куда</th>
-                                    <th width="10%">Содержание</th>
-                                    <th width="10%">Комментарий</th>
-                                    <th width="10%">Подразделение</th>
-                                    <th width="10%">Отправитель</th>
-                                    <th width="10%">Состояние</th>
-                                    <th width="10%">Получение</th>
-                                    <th width="10%">Исполнитель</th>
-                                    <th width="10%">Срочность</th>
-                                    <th width="4%"></th>
-                                    <th width="4%"></th>
-                                </tr>
-                                </thead>
-                            </table>
-                        </div>
                     </div>
-                </section>
-
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            {#                            <div class="datatable-header">#}
-                            {#                                <div class="row align-items-center mb-3">#}
-                            {#                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">#}
-                            {#                                            <a href="{% url 'hrdepartment_app:reportcard_detail' %}"#}
-                            {#                                               class="btn btn-primary btn-md font-weight-semibold btn-py-2 px-4">+#}
-                            {#                                                Сводная таблица по месяцам </a>#}
-                            {#                                        </div>#}
-                            {#                                </div>#}
-                            {#                            </div>#}
-
-                            <hr class="solid mt-5 opacity-4">
-
+                    <div id="datatable-editable_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                        <div class="row">
                         </div>
-                    </div>
+                        <style>
+                            thead input {
+                                width: 100%;
+                                padding: 3px;
+                                box-sizing: border-box;
+                                border-radius: 10px;
+                                border-color: #ff7300;
+                                color: #003994;
+                            }
+                        </style>
+                        <table class="table table-ecommerce-simple mb-0 table-hover" id="datatable-ecommerce-list"
+                               style="min-width: 750px;">
+                            <thead>
+                            <tr>
 
+                                <th width="8%">Дата документа</th>
+                                <th width="10%">Куда</th>
+                                <th width="10%">Содержание</th>
+                                <th width="10%">Комментарий</th>
+                                <th width="10%">Подразделение</th>
+                                <th width="10%">Отправитель</th>
+                                <th width="10%">Состояние</th>
+                                <th width="10%">Получение</th>
+                                <th width="10%">Исполнитель</th>
+                                <th width="10%">Срочность</th>
+                                <th width="4%"></th>
+                                <th width="4%"></th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
+            </section>
+
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+
+                        <hr class="solid mt-5 opacity-4">
+
+                    </div>
+                </div>
+
             </div>
         </div>
-        <!-- end: page -->
-    </section>
+    </div>
+    <!-- end: page -->
 {% endblock %}
 
 {% block custome_script %}

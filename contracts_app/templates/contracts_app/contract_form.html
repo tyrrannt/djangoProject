@@ -378,25 +378,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        {#        {% include 'library_app/breadcrumb.html' %}#}
-        <div><p></p></div>
         <!-- start: page -->
         <form action="{% url 'contracts_app:create' %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -410,15 +391,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <div class="row text">
                                         <input class="form-control form-control-modern" id="id_parent_category"
                                                name="parent_category" type="text" value="{{ parent }}" hidden="hidden">
-                                        {#                                        <div class="col-md-6 text-black-50">#}
-                                        {#                                            <label for="id_parent_category" hidden="hidden">Основной документ</label>#}
-                                        {#                                            <select class="form-control form-control-modern" name="parent_category_text"#}
-                                        {#                                                    id="id_parent_category_text" data-plugin-selectTwo>#}
-                                        {#                                                    <option selected value="{{ parent }}">{{ parent }}</option>#}
-                                        {#                                            </select>#}
-                                        {#                                            {{ form.parent_category }}#}
-                                        {#                                            <input class="form-control form-control-modern" id="id_parent_category" name="parent_category" type="text" value="{{ parent }}" hidden="hidden">#}
-                                        {#                                        </div>#}
                                         <div class="col-md-6 text-black-50">
                                             <label for="id_contract_counteragent">Контрагент</label>
                                             {{ form.contract_counteragent }}
@@ -553,8 +525,6 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         </form>
         <!-- end: page -->
-    </section>
-
 {% endblock %}
 
 

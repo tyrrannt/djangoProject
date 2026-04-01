@@ -1,3 +1,4 @@
+import csv
 import datetime
 import hashlib
 import json
@@ -21,7 +22,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.db.models import Q, F, ForeignKey, Count
 from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
-from django.views.generic import DetailView, UpdateView, CreateView, ListView
+from django.views.generic import DetailView, UpdateView, CreateView, ListView, TemplateView
 from rest_framework import viewsets
 
 from administration_app.models import PortalProperty
@@ -34,7 +35,7 @@ from customers_app.customers_util import get_database_user_work_profile, get_dat
     get_settlement_sheet, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments, \
-    UserStats
+    UserStats, Apartments
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
@@ -46,7 +47,7 @@ from django.contrib.auth.decorators import login_required
 
 from customers_app.serializers import DataBaseUserSerializer
 from hrdepartment_app.models import OfficialMemo, ApprovalOficialMemoProcess, ReportCard, ProductionCalendar, \
-    get_norm_time_at_custom_day
+    get_norm_time_at_custom_day, PlaceProductionActivity
 from hrdepartment_app.tasks import send_email_single_notification
 from tasks_app.models import Task
 
@@ -2075,6 +2076,277 @@ def inactive_users_report(request):
         })
 
     return render(request, 'customers_app/inactive_users.html', {'report': dict(report_data)})
+
+
+class ApartmentsUsageReportView(TemplateView):
+    """
+    Класс представления для отчета использования квартир.
+
+    Показывает:
+    - Сводную статистику по всем квартирам
+    - Загруженность каждой квартиры
+    - Периоды занятости
+    - Фильтрацию по датам и месту
+    """
+    template_name = 'customers_app/apartments_usage_report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Получаем параметры фильтрации из GET-запроса
+        date_start_str = self.request.GET.get('date_start')
+        date_end_str = self.request.GET.get('date_end')
+        place_id = self.request.GET.get('place')
+
+        # Устанавливаем даты по умолчанию (текущий месяц)
+        today = datetime.datetime.now().date()
+        date_start = today.replace(day=1) if date_start_str is None else self._parse_date(date_start_str)
+        date_end = (today.replace(day=1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1) \
+            if date_end_str is None else self._parse_date(date_end_str)
+
+        # Фильтрация квартир
+        apartments_query = Apartments.objects.select_related(
+            'place', 'contracts'
+        ).prefetch_related('bookings').all()
+
+        # Применяем фильтр по месту
+        if place_id:
+            apartments_query = apartments_query.filter(place_id=place_id)
+
+        # Формируем данные для отчета
+        apartments_data = []
+        total_beds = 0
+        total_occupied = 0
+
+        for apartment in apartments_query:
+            # Получаем доступные места на период
+            available_beds = apartment.get_available_beds(date_start, date_end)
+
+            # Получаем периоды занятости для отображения
+            busy_periods = apartment.get_busy_periods(date_start, date_end)
+
+            # Рассчитываем загруженность
+            occupancy_rate = 0
+            if apartment.beds_number > 0:
+                occupancy_rate = (apartment.occupied_beds / apartment.beds_number) * 100
+
+            apartments_data.append({
+                'id': apartment.id,
+                'title': apartment.title,
+                'address': apartment.address,
+                'place': apartment.place,
+                'contracts': apartment.contracts,
+                'beds_number': apartment.beds_number,
+                'occupied_beds': apartment.occupied_beds,
+                'available_beds': available_beds,
+                'occupancy_rate': occupancy_rate,
+                'busy_periods': busy_periods,
+            })
+
+            total_beds += apartment.beds_number
+            total_occupied += apartment.occupied_beds
+
+        # Сводная статистика
+        total_apartments = apartments_query.count()
+        occupancy_rate = 0
+        if total_beds > 0:
+            occupancy_rate = (total_occupied / total_beds) * 100
+
+        # Список мест для фильтра
+        places = PlaceProductionActivity.objects.all()
+
+        context.update({
+            'apartments': apartments_data,
+            'total_apartments': total_apartments,
+            'total_beds': total_beds,
+            'total_occupied': total_occupied,
+            'occupancy_rate': occupancy_rate,
+            'date_start': date_start,
+            'date_end': date_end,
+            'place_id': int(place_id) if place_id else None,
+            'places': places,
+        })
+
+        # Проверка на экспорт в CSV
+        if self.request.GET.get('export') == 'csv':
+            return self.export_to_csv(apartments_data, date_start, date_end)
+
+        return context
+
+    def _parse_date(self, date_str):
+        """Парсинг строки даты в формат date"""
+        try:
+            return datetime.strptime(date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            return datetime.now().date()
+
+    def export_to_csv(self, apartments_data, date_start, date_end):
+        """
+        Экспорт отчета в CSV формат
+        """
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="apartments_report_{date_start}_{date_end}.csv"'
+
+        # Добавляем BOM для корректного отображения кириллицы в Excel
+        response.write('\ufeff')
+
+        writer = csv.writer(response, delimiter=';')
+
+        # Заголовок отчета
+        writer.writerow([f'Отчет использования квартир'])
+        writer.writerow([f'Период: {date_start} - {date_end}'])
+        writer.writerow([])
+
+        # Заголовки столбцов
+        writer.writerow([
+            'Наименование',
+            'Адрес',
+            'Место',
+            'Договор',
+            'Всего мест',
+            'Занято',
+            'Свободно',
+            'Загруженность, %',
+        ])
+
+        # Данные
+        for apt in apartments_data:
+            writer.writerow([
+                apt['title'] or 'Без названия',
+                apt['address'] or '',
+                str(apt['place']) if apt['place'] else '',
+                str(apt['contracts']) if apt['contracts'] else '',
+                apt['beds_number'],
+                apt['occupied_beds'],
+                apt['available_beds'],
+                f'{apt["occupancy_rate"]:.1f}',
+            ])
+
+        # Итоговая строка
+        total_occupied = sum(apt['occupied_beds'] for apt in apartments_data)
+        total_beds = sum(apt['beds_number'] for apt in apartments_data)
+        total_available = sum(apt['available_beds'] for apt in apartments_data)
+        avg_occupancy = (total_occupied / total_beds * 100) if total_beds > 0 else 0
+
+        writer.writerow([])
+        writer.writerow([
+            'ИТОГО',
+            '',
+            '',
+            '',
+            total_beds,
+            total_occupied,
+            total_available,
+            f'{avg_occupancy:.1f}',
+        ])
+
+        return response
+
+
+# Функция-представление (альтернативный вариант)
+def apartments_usage_report(request):
+    """
+    Функция представления для отчета использования квартир.
+    Альтернатива классу ApartmentsUsageReportView.
+    """
+    from datetime import datetime, timedelta
+
+    # Получаем параметры фильтрации
+    date_start_str = request.GET.get('date_start')
+    date_end_str = request.GET.get('date_end')
+    place_id = request.GET.get('place')
+
+    # Даты по умолчанию
+    today = datetime.now().date()
+    date_start = today.replace(day=1) if date_start_str is None else \
+        datetime.strptime(date_start_str, '%Y-%m-%d').date()
+    date_end = (today.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1) \
+        if date_end_str is None else \
+        datetime.strptime(date_end_str, '%Y-%m-%d').date()
+
+    # Queryset квартир
+    apartments_query = Apartments.objects.select_related('place', 'contracts').all()
+
+    if place_id:
+        apartments_query = apartments_query.filter(place_id=place_id)
+
+    # Обработка данных
+    apartments_data = []
+    total_beds = 0
+    total_occupied = 0
+
+    for apartment in apartments_query:
+        available_beds = apartment.get_available_beds(date_start, date_end)
+        busy_periods = apartment.get_busy_periods(date_start, date_end)
+        occupancy_rate = (apartment.occupied_beds / apartment.beds_number * 100) \
+            if apartment.beds_number > 0 else 0
+
+        apartments_data.append({
+            'id': apartment.id,
+            'title': apartment.title,
+            'address': apartment.address,
+            'place': apartment.place,
+            'contracts': apartment.contracts,
+            'beds_number': apartment.beds_number,
+            'occupied_beds': apartment.occupied_beds,
+            'available_beds': available_beds,
+            'occupancy_rate': occupancy_rate,
+            'busy_periods': busy_periods,
+        })
+
+        total_beds += apartment.beds_number
+        total_occupied += apartment.occupied_beds
+
+    # Сводка
+    total_apartments = apartments_query.count()
+    occupancy_rate = (total_occupied / total_beds * 100) if total_beds > 0 else 0
+    places = PlaceProductionActivity.objects.all()
+
+    # Экспорт в CSV
+    if request.GET.get('export') == 'csv':
+        return _export_report_csv(apartments_data, date_start, date_end)
+
+    context = {
+        'apartments': apartments_data,
+        'total_apartments': total_apartments,
+        'total_beds': total_beds,
+        'total_occupied': total_occupied,
+        'occupancy_rate': occupancy_rate,
+        'date_start': date_start,
+        'date_end': date_end,
+        'place_id': int(place_id) if place_id else None,
+        'places': places,
+    }
+
+    return render(request, 'apartments_usage_report.html', context)
+
+
+def _export_report_csv(apartments_data, date_start, date_end):
+    """Вспомогательная функция для экспорта в CSV"""
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="apartments_report_{date_start}_{date_end}.csv"'
+    response.write('\ufeff')
+
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow(['Отчет использования квартир'])
+    writer.writerow([f'Период: {date_start} - {date_end}'])
+    writer.writerow([])
+    writer.writerow(['Наименование', 'Адрес', 'Место', 'Договор', 'Всего мест',
+                     'Занято', 'Свободно', 'Загруженность, %'])
+
+    for apt in apartments_data:
+        writer.writerow([
+            apt['title'] or 'Без названия',
+            apt['address'] or '',
+            str(apt['place']) if apt['place'] else '',
+            str(apt['contracts']) if apt['contracts'] else '',
+            apt['beds_number'],
+            apt['occupied_beds'],
+            apt['available_beds'],
+            f'{apt["occupancy_rate"]:.1f}',
+        ])
+
+    return response
 
 
 # ----------------------------------------- DRF -----------------------------------------

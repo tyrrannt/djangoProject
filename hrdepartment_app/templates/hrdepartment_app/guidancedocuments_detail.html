@@ -86,77 +86,78 @@
 {% endblock %}
 
 {% block content %}
-
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post" id="acknowledgment-form">
-            {% csrf_token %}
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" id="acknowledgment-form">
+        {% csrf_token %}
         <input type="hidden" id="content-type-id" value="{{ object|content_type_id }}">
-            <div class="col-lg-12">
-                <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
-                    от {{ object.document_date }} г.</h4>
-                <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
-                    <section class="toggle active">
-                        <label>Основные реквизиты</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        <h4>{{ object.document_name }}, №: {{ object.document_number }}
-                                            от: {{ object.document_date | date:"c" }} г.</h4>
-                                        <h4>Действителен с: {{ object.validity_period_start }}
-                                            {% if object.validity_period_end %} по:
-                                                {{ object.validity_period_end }}{% endif %}</h4>
-                                        <h4>Место хранения оригинала: {{ object.storage_location_division }}.</h4>
-                                        <h4>Исполнитель: {{ object.executor | FIO_format }}</h4>
-                                        <h4>Ответственные лица:
-                                            {% for item in object.employee.iterator %}{% if forloop.last %}
-                                                {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
-                                            {% endif %}{% endfor %}</h4>
-                                    </div>
+        <div class="col-lg-12">
+            <h4 class="font-weight-bold text-dark">{{ object.type_of_document }} № {{ object.document_number }}
+                от {{ object.document_date }} г.</h4>
+            <div class="toggle toggle-primary" data-plugin-toggle data-plugin-options="{ 'isAccordion': true }">
+                <section class="toggle active">
+                    <label>Основные реквизиты</label>
+                    <div class="toggle-content">
+                        <div class="form-row">
+                            <div class="form-group col mb-3">
+                                <div class="row text">
+                                    <h4>{{ object.document_name }}, №: {{ object.document_number }}
+                                        от: {{ object.document_date | date:"c" }} г.</h4>
+                                    <h4>Действителен с: {{ object.validity_period_start }}
+                                        {% if object.validity_period_end %} по:
+                                            {{ object.validity_period_end }}{% endif %}</h4>
+                                    <h4>Место хранения оригинала: {{ object.storage_location_division }}.</h4>
+                                    <h4>Исполнитель: {{ object.executor | FIO_format }}</h4>
+                                    <h4>Ответственные лица:
+                                        {% for item in object.employee.iterator %}{% if forloop.last %}
+                                            {{ item | FIO_format }}{% else %}{{ item | FIO_format }},
+                                        {% endif %}{% endfor %}</h4>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                    <section class="toggle">
-                        <label>Файл</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <div class="form-group col mb-3">
-                                    <div class="row text">
-                                        {% if object.scan_file %}
-                                            <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" target="_blank">Открыть документ</a>
-                                            <object data="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" type="application/pdf"
-                                                    width="750px"
-                                                    height="750px">
-                                                <embed src="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}" type="application/pdf">
-                                                <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
-                                                    PDF-файл, чтобы
-                                                    просмотреть его: <a
-                                                            href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}">Скачать PDF.</a>.</p>
-                                                </embed>
-                                            </object>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    </div>
+                </section>
                 <section class="toggle">
-                        <label>Лист ознакомления</label>
-                        <div class="toggle-content">
-                            <div class="form-row">
-                                <section class="card">
-                                    <header class="card-header">
-                                        <div class="card-actions">
-                                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-{#                                            <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
-                                        </div>
-                                        <h2 class="card-title">Список сотрудников</h2>
-                                    </header>
-                                    <div class="card-body">
-                                        <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
+                    <label>Файл</label>
+                    <div class="toggle-content">
+                        <div class="form-row">
+                            <div class="form-group col mb-3">
+                                <div class="row text">
+                                    {% if object.scan_file %}
+                                        <a href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
+                                           target="_blank">Открыть документ</a>
+                                        <object data="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
+                                                type="application/pdf"
+                                                width="750px"
+                                                height="750px">
+                                            <embed src="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}"
+                                                   type="application/pdf">
+                                            <p>Этот браузер не поддерживает PDF-файлы. Пожалуйста, загрузите
+                                                PDF-файл, чтобы
+                                                просмотреть его: <a
+                                                        href="{{ object.scan_file.url }}?v={{ object.document_updated_at.timestamp }}">Скачать
+                                                    PDF.</a>.</p>
+                                            </embed>
+                                        </object>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="toggle">
+                    <label>Лист ознакомления</label>
+                    <div class="toggle-content">
+                        <div class="form-row">
+                            <section class="card">
+                                <header class="card-header">
+                                    <div class="card-actions">
+                                        <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                                        {#                                            <a href="#" class="card-action card-action-dismiss" data-card-dismiss></a>#}
+                                    </div>
+                                    <h2 class="card-title">Список сотрудников</h2>
+                                </header>
+                                <div class="card-body">
+                                    <table class="table table-responsive-lg table-bordered table-striped table-sm mb-0">
                                         <thead>
                                         <tr>
                                             <th>№</th>
@@ -178,49 +179,48 @@
                                         {% endfor %}
                                         </tbody>
                                     </table>
-                                    </div>
-                                </section>
-                            </div>
+                                </div>
+                            </section>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                {% if user|has_group:"Положения" or user.is_superuser %}
-                    <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
-                        <a href="{% url 'hrdepartment_app:guidance_documents_update' object.pk %}"
-                           class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
                     </div>
-                {% endif %}
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:guidance_documents_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                </section>
+            </div>
+        </div>
+        <div class="row action-buttons">
+            {% if user|has_group:"Положения" or user.is_superuser %}
+                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0 mx-2">
+                    <a href="{% url 'hrdepartment_app:guidance_documents_update' object.pk %}"
+                       class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-edit text-4 me-2"></i> Изменить </a>
+                </div>
+            {% endif %}
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'hrdepartment_app:guidance_documents_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
                        align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
-                </div>
-                <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
-
-                    <div class="switch switch-lg switch-success">
-                        <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
-                               data-plugin-ios-switch {% if agree %}checked{% endif %}>
-                    </div>
-                    <label for="acknowledgment-checkbox">Я ознакомился</label>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
-                    </div>
-                {% endif %}
+                    <i class='bx bx-window-close text-4 me-2'></i> Закрыть </a>
             </div>
-        </form>
-        <!-- end: page -->
-    </section>
+            <div class="col-12 col-md-auto px-md-2 mt-3 mt-md-0">
+
+                <div class="switch switch-lg switch-success">
+                    <input type="checkbox" id="acknowledgment-checkbox" data-object-id="{{ object.id }}"
+                           data-plugin-ios-switch {% if agree %}checked{% endif %}>
+                </div>
+                <label for="acknowledgment-checkbox">Я ознакомился</label>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
 
 {% endblock %}

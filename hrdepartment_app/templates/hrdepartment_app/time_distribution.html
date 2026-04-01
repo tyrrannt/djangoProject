@@ -23,8 +23,7 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
-            <h1>Распределение типов времени</h1>
+    <h1>Распределение типов времени</h1>
 
     <!-- Форма выбора года -->
     <form method="GET" action="{% url 'hrdepartment_app:time_distribution' %}">
@@ -43,15 +42,15 @@
     <!-- Детализация по сотрудникам -->
     <h2>Детализация по сотрудникам</h2>
     <table border="1">
-    <thead>
+        <thead>
         <tr>
             <th>Сотрудник</th>
             {% for time_type in time_types %}
                 <th>{{ time_type }}</th>
             {% endfor %}
         </tr>
-    </thead>
-    <tbody>
+        </thead>
+        <tbody>
         {% for employee, data in employee_data.items %}
             <tr>
                 <td>{{ employee }}</td>
@@ -60,11 +59,12 @@
                 {% endfor %}
             </tr>
         {% endfor %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
 
     <!-- Экспорт данных -->
-    <a href="{% url 'hrdepartment_app:export-time-distribution' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт данных</a>
+    <a href="{% url 'hrdepartment_app:export-time-distribution' %}?year={{ selected_year }}" class="btn btn-primary">Экспорт
+        данных</a>
 
     <script>
         // Отображение графика
@@ -90,5 +90,4 @@
             }
         });
     </script>
-    </section>
 {% endblock %}

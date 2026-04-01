@@ -24,47 +24,27 @@
 {% endblock %}
 
 {% block content %}
+    <!-- start: page -->
+    <h1>Пользователи, которые никогда не входили</h1>
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <h1>Пользователи, которые никогда не входили</h1>
-
-{% for job_type, users in report.items %}
-  <h2>{{ job_type }}</h2>
-  <table class="table table-ecommerce-simple table-striped mb-0">
-    <tr>
-      <th>ФИО</th>
-      <th>Дата регистрации</th>
-      <th>Должность</th>
-    </tr>
-    {% for user in users %}
-      <tr>
-        <td>{{ user.full_name }}</td>
-        <td>{{ user.registration_date|date:"d.m.Y" }}</td>
-        <td>{{ user.job_name }}</td>
-      </tr>
+    {% for job_type, users in report.items %}
+        <h2>{{ job_type }}</h2>
+        <table class="table table-ecommerce-simple table-striped mb-0">
+            <tr>
+                <th>ФИО</th>
+                <th>Дата регистрации</th>
+                <th>Должность</th>
+            </tr>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.registration_date|date:"d.m.Y" }}</td>
+                    <td>{{ user.job_name }}</td>
+                </tr>
+            {% endfor %}
+        </table>
     {% endfor %}
-  </table>
-{% endfor %}
-        <!-- end: page -->
-    </section>
+    <!-- end: page -->
     <!-- end: page -->
 
 {% endblock %}

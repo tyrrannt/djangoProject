@@ -38,23 +38,21 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        <h1>Детализация пропусков для {{ employee.first_name }} {{ employee.last_name }}</h1>
-        <table class="table table-ecommerce-simple table-striped mb-0">
-            <thead>
+    <h1>Детализация пропусков для {{ employee.first_name }} {{ employee.last_name }}</h1>
+    <table class="table table-ecommerce-simple table-striped mb-0">
+        <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Тип пропуска</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for absence in absences %}
             <tr>
-                <th>Дата</th>
-                <th>Тип пропуска</th>
+                <td>{{ absence.report_card_day }}</td>
+                <td>{{ absence.get_record_type_display }}</td>
             </tr>
-            </thead>
-            <tbody>
-            {% for absence in absences %}
-                <tr>
-                    <td>{{ absence.report_card_day }}</td>
-                    <td>{{ absence.get_record_type_display }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </section>
+        {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

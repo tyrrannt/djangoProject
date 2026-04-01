@@ -65,208 +65,169 @@
 {% endblock %}
 
 {% block content %}
-    {#    <script>#}
-    {#        /* Локализация datepicker */#}
-    {#        $.datepicker.regional['ru'] = {#}
-    {#            closeText: 'Закрыть',#}
-    {#            prevText: 'Предыдущий',#}
-    {#            nextText: 'Следующий',#}
-    {#            currentText: 'Сегодня',#}
-    {#            monthNames: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],#}
-    {#            monthNamesShort: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],#}
-    {#            dayNames: ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'],#}
-    {#            dayNamesShort: ['вск', 'пнд', 'втр', 'срд', 'чтв', 'птн', 'сбт'],#}
-    {#            dayNamesMin: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],#}
-    {#            weekHeader: 'Не',#}
-    {#            dateFormat: 'dd.mm.yy',#}
-    {#            firstDay: 1,#}
-    {#            isRTL: false,#}
-    {#            showMonthAfterYear: false,#}
-    {#            yearSuffix: ''#}
-    {#        };#}
-    {#        $.datepicker.setDefaults($.datepicker.regional['ru']);#}
-    {#    </script>#}
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <i class="card-big-info-icon bx bxl-netlify"></i>
-                                    <p class="card-big-info-desc" id="testof">Служебная записка на служебную поездку</p>
-                                    <h5 id="test_off" style="color: #0c63e4"></h5>
+
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-2-5 col-xl-1-5">
+                                <i class="card-big-info-icon bx bxl-netlify"></i>
+                                <p class="card-big-info-desc" id="testof">Служебная записка на служебную поездку</p>
+                                <h5 id="test_off" style="color: #0c63e4"></h5>
+                            </div>
+                            <div class="col-lg-3-5 col-xl-4-5">
+                                <div class="form-group row align-items-center pb-3" id="employee_divisions">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_person">Сотрудник:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <label for="employee_divisions"></label>
+                                        <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
+                                    </div>
                                 </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="form-group row align-items-center pb-3" id="employee_divisions">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_person">Сотрудник:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <label for="employee_divisions"></label>
-                                            <span>{{ form.person | attr:"onchange=employee_change()" }}</span>
-                                        </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_official_memo_type">Тип служебной поездки:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()" }}
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_official_memo_type">Тип служебной поездки:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.official_memo_type | add_class:"form-control form-control-modern" | attr:"onchange=memo_type_change()" }}
-                                        </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_document_extension">Документ основания:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.document_extension | add_class:"form-control form-control-modern" | attr:"disabled" }}
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_document_extension">Документ основания:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.document_extension | add_class:"form-control form-control-modern" | attr:"disabled" }}
-                                        </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_type_trip">Вид служебной поездки:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.type_trip | add_class:"form-control form-control-modern" }}
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_type_trip">Вид служебной поездки:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.type_trip | add_class:"form-control form-control-modern" }}
-                                        </div>
-                                    </div>
-                                    <div class="form-group row pb-3">
-                                        <label class="col-lg-3 control-label text-lg-end pt-2">Дата начала:</label>
-                                        <div class="col-lg-6">
-                                            <div class="input-group">
+                                </div>
+                                <div class="form-group row pb-3">
+                                    <label class="col-lg-3 control-label text-lg-end pt-2">Дата начала:</label>
+                                    <div class="col-lg-6">
+                                        <div class="input-group">
                                                 <span class="input-group-text">
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
-                                                <input type="date" id="id_period_from"
-                                                       class="form-control form-control-modern"
-                                                       onchange=minimumPeriodFor() onblur=expenses()
-                                                       name="period_from" value="{{ object.period_from | date:'c' }}"/>
-                                            </div>
+                                            <input type="date" id="id_period_from"
+                                                   class="form-control form-control-modern"
+                                                   onchange=minimumPeriodFor() onblur=expenses()
+                                                   name="period_from" value="{{ object.period_from | date:'c' }}"/>
                                         </div>
                                     </div>
-                                    <div class="form-group row pb-3">
-                                        <label class="col-lg-3 control-label text-lg-end pt-2">Дата окончания:</label>
-                                        <div class="col-lg-6">
-                                            <div class="input-group">
+                                </div>
+                                <div class="form-group row pb-3">
+                                    <label class="col-lg-3 control-label text-lg-end pt-2">Дата окончания:</label>
+                                    <div class="col-lg-6">
+                                        <div class="input-group">
                                                 <span class="input-group-text">
                                                     <i class="fas fa-calendar-alt"></i>
                                                 </span>
-                                                <input type="date" id="id_period_for"
-                                                       class="form-control form-control-modern "
-                                                       onblur=expenses()
-                                                       name="period_for" value="{{ object.period_for | date:'c' }}"/>
-                                                <label id="id_check_date" for="check_date"
-                                                       style="color: #ff000e; font-weight: bold; bo"></label>
+                                            <input type="date" id="id_period_for"
+                                                   class="form-control form-control-modern "
+                                                   onblur=expenses()
+                                                   name="period_for" value="{{ object.period_for | date:'c' }}"/>
+                                            <label id="id_check_date" for="check_date"
+                                                   style="color: #ff000e; font-weight: bold; bo"></label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group row pb-3">
+                                    <label class="col-lg-3 control-label text-lg-end pt-2">Подтверждаю, что документ
+                                        введен задним числом</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        {{ form.creation_retroactively }}
+                                    </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_place_departure">Место отправления:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <span>{{ form.place_departure }}</span>
+                                    </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_place_production_activity">Место назначения:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <div class="input-group">
+                                            <div class="col-11">
+                                                {{ form.place_production_activity | attr:"multiple" | add_class:"input-group-text" }}
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row pb-3">
-                                        <label class="col-lg-3 control-label text-lg-end pt-2">Подтверждаю, что документ
-                                            введен задним числом</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            {{ form.creation_retroactively }}
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_place_departure">Место отправления:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.place_departure }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_place_production_activity">Место назначения:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <div class="input-group">
-                                                <div class="col-11">
-                                                    {{ form.place_production_activity | attr:"multiple" | add_class:"input-group-text" }}
-                                                </div>
-                                                <div class="col-1" style="align-content: center">
-                                                    <a class="btn btn-primary form-control form-control-modern"
-                                                       href="{% url 'hrdepartment_app:place_add' %}">+</a>
-                                                </div>
-
+                                            <div class="col-1" style="align-content: center">
+                                                <a class="btn btn-primary form-control form-control-modern"
+                                                   href="{% url 'hrdepartment_app:place_add' %}">+</a>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_purpose_trip">Цель:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.purpose_trip }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_expenses_summ">Сумма аванса:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.expenses_summ }}</span>
 
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_accommodation">Ответственный:</label>
-                                        <div class="col-lg-7 col-xl-6">
-                                            <select class="form-control form-control-modern" name="responsible"
-                                                    id="id_responsible" data-plugin-selectTwo>
-                                                <option value="{{ user.pk }}" selected>{{ user }}</option>
-                                            </select>
-                                        </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_purpose_trip">Цель:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <span>{{ form.purpose_trip }}</span>
+                                    </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_expenses_summ">Сумма аванса:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <span>{{ form.expenses_summ }}</span>
+
+                                    </div>
+                                </div>
+                                <div class="form-group row align-items-center pb-3">
+                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
+                                           for="id_accommodation">Ответственный:</label>
+                                    <div class="col-lg-7 col-xl-6">
+                                        <select class="form-control form-control-modern" name="responsible"
+                                                id="id_responsible" data-plugin-selectTwo>
+                                            <option value="{{ user.pk }}" selected>{{ user }}</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'hrdepartment_app:memo_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
                     </div>
-                {% endif %}
+                </section>
             </div>
+        </div>
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto">
+                <button type="submit"
+                        class="btn btn-outline-success btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1"
+                        data-loading-text="Loading...">
+                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                </button>
+            </div>
+            <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
+                <a href="{% url 'hrdepartment_app:memo_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="#"
+                       class="btn btn-outline-danger btn-px-4 py-3 d-flex
+                           align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить
+                    </a>
+                </div>
+            {% endif %}
+        </div>
 
-        </form>
-        <!-- end: page -->
-    </section>
+    </form>
+    <!-- end: page -->
     <script type="text/javascript">
         function expenses() {
             period_from = new Date(document.getElementById("id_period_from").value);

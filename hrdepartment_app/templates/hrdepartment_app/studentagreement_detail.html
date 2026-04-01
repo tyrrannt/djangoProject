@@ -30,83 +30,64 @@
 
 {% block content %}
 
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col">
+                <div class="card text-left">
+                    <div class="card-header">
+                        <h2>Ученический договор № {{ object.student_agreement_number }}
+                            от {{ object.student_agreement_date }}</h2>
                     </div>
-                {% endfor %}
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            Сотрудник:&nbsp;&nbsp;&nbsp;{{ object.full_name | FIO_format }}</h5>
+                        <h5 class="card-title mb-3">Наименование
+                            АУЦ:&nbsp;&nbsp;&nbsp;{{ object.training_center_name }}</h5>
+                        <h5 class="card-title mb-3">Программа
+                            обучения:&nbsp;&nbsp;&nbsp;{{ object.training_program }}</h5>
+                        <h5 class="card-title mb-3">Место оказания
+                            услуг:&nbsp;&nbsp;&nbsp;{{ object.training_place }}</h5>
+                    </div>
+                    <div class="card-footer text-muted">
+                        <h4>Дата начала обучения:&nbsp;&nbsp;&nbsp;{{ object.training_start_date }}</h4>
+                        <h4>Дата окончания обучения:&nbsp;&nbsp;&nbsp;{{ object.training_start_date }}</h4>
+                        <h4>Сумма обучения:&nbsp;&nbsp;&nbsp;{{ object.training_cost }} руб.</h4>
+                        <h4>Срок отработки:&nbsp;&nbsp;&nbsp;{{ object.work_period_years }} (года)</h4>
+                        <h4>Примечание:&nbsp;&nbsp;&nbsp;{{ object.note }}</h4>
+                    </div>
+                </div>
+                <!-- Кнопка скачивания -->
+                <div class="mt-3">
+                    <a href="{% url 'hrdepartment_app:download_agreement' object.pk %}" class="btn btn-primary">
+                        <i class="fas fa-file-word"></i> Скачать договор (.docx)
+                    </a>
+                </div>
+            </div>
+
+        </div>
+        <div class="row action-buttons">
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                <a href="{% url 'hrdepartment_app:student_agreement_update' object.pk %}"
+                   class="btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
+            </div>
+
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
+                   class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
+            </div>
+            {% if user.is_superuser %}
+                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
+                    <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}"
+                       class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
+                        <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
+                </div>
             {% endif %}
         </div>
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <div class="card text-left">
-                        <div class="card-header">
-                            <h2>Ученический договор № {{ object.student_agreement_number }}
-                                от {{ object.student_agreement_date }}</h2>
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title mb-3">
-                                Сотрудник:&nbsp;&nbsp;&nbsp;{{ object.full_name | FIO_format }}</h5>
-                            <h5 class="card-title mb-3">Наименование
-                                АУЦ:&nbsp;&nbsp;&nbsp;{{ object.training_center_name }}</h5>
-                            <h5 class="card-title mb-3">Программа
-                                обучения:&nbsp;&nbsp;&nbsp;{{ object.training_program }}</h5>
-                            <h5 class="card-title mb-3">Место оказания
-                                услуг:&nbsp;&nbsp;&nbsp;{{ object.training_place }}</h5>
-                        </div>
-                        <div class="card-footer text-muted">
-                            <h4>Дата начала обучения:&nbsp;&nbsp;&nbsp;{{ object.training_start_date }}</h4>
-                            <h4>Дата окончания обучения:&nbsp;&nbsp;&nbsp;{{ object.training_start_date }}</h4>
-                            <h4>Сумма обучения:&nbsp;&nbsp;&nbsp;{{ object.training_cost }} руб.</h4>
-                            <h4>Срок отработки:&nbsp;&nbsp;&nbsp;{{ object.work_period_years }} (года)</h4>
-                            <h4>Примечание:&nbsp;&nbsp;&nbsp;{{ object.note }}</h4>
-                        </div>
-                    </div>
-                    <!-- Кнопка скачивания -->
-                    <div class="mt-3">
-                        <a href="{% url 'hrdepartment_app:download_agreement' object.pk %}" class="btn btn-primary">
-                            <i class="fas fa-file-word"></i> Скачать договор (.docx)
-                        </a>
-                    </div>
-                </div>
 
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:student_agreement_update' object.pk %}"
-                       class="btn btn-secondary btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Изменить</a>
-                </div>
-
-                <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                    <a href="{% url 'hrdepartment_app:student_agreement_list' %}"
-                       class="cancel-button btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Закрыть</a>
-                </div>
-                {% if user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="{% url 'hrdepartment_app:student_agreement_delete' object.pk %}"
-                           class="delete-button btn btn-danger btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить </a>
-                    </div>
-                {% endif %}
-            </div>
-
-        </form>
-        <!-- end: page -->
-    </section>
+    </form>
+    <!-- end: page -->
 
     <!-- end: page -->
 {% endblock %}

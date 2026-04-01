@@ -2,194 +2,179 @@
 {% load static %}
 {% load custom %}
 {% block content %}
-    <section role="main" class="content-body content-body-modern mt-0">
-        {% include 'library_app/breadcrumb.html' %}
-        <div>
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        <strong>{{ field.label }}</strong>: {{ error|escape }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
 
-        <style>
-            /* Стили для первого места */
-            .first-place {
-                color: gold; /* Золотой цвет */
-                font-weight: bold;
-            }
+    <style>
+        /* Стили для первого места */
+        .first-place {
+            color: gold; /* Золотой цвет */
+            font-weight: bold;
+        }
 
-            /* Стили для второго места */
-            .second-place {
-                color: silver; /* Серебряный цвет */
-                font-weight: bold;
-            }
+        /* Стили для второго места */
+        .second-place {
+            color: silver; /* Серебряный цвет */
+            font-weight: bold;
+        }
 
-            /* Стили для третьего места */
-            .third-place {
-                color: #cd7f32; /* Бронзовый цвет */
-                font-weight: bold;
-            }
-        </style>
+        /* Стили для третьего места */
+        .third-place {
+            color: #cd7f32; /* Бронзовый цвет */
+            font-weight: bold;
+        }
+    </style>
 
-        <h1>Результаты голосования</h1>
+    <h1>Результаты голосования</h1>
 
-        {% if grouped_poems.0 %}
-            <div class="col-sm-12">
-                <section class="card outer-card card-warning mb-4">
-                    <header class="card-header">
-                        <h2 class="card-title">1 МЕСТО ({{ grouped_poems.0.votes }} голосов)</h2>
-                    </header>
-                    <div class="card-body">
-                        <div class="row">
-                            {% for key, value in grouped_poems.0.poems.items %}
-                                <div class="col-sm-3">
-                                    <div class="card inner-card shadow-lg border-warning">
-                                        <h3 class="card-header-top text-warning text-center">{{ value.user }}</h3>
-                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
-                                             class="card-img-top" alt="...">
-                                        <div class="card-body">
-                                            <h4 class="card-text text-center">{{ value.title }}</h4>
-                                            <ul class="list-group list-group-flush">
-                                                {% if request.user.is_superuser %}
-                                                    {% for key_votes, user_votes in users_vote.items %}
-                                                        {% if key_votes == value.pk %}
-                                                            {% for item in user_votes %}
-                                                                <li class="list-group-item">{{ item.user }}</li>
-                                                            {% endfor %}
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                {% endif %}
-                                            </ul>
-                                        </div>
+    {% if grouped_poems.0 %}
+        <div class="col-sm-12">
+            <section class="card outer-card card-warning mb-4">
+                <header class="card-header">
+                    <h2 class="card-title">1 МЕСТО ({{ grouped_poems.0.votes }} голосов)</h2>
+                </header>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, value in grouped_poems.0.poems.items %}
+                            <div class="col-sm-3">
+                                <div class="card inner-card shadow-lg border-warning">
+                                    <h3 class="card-header-top text-warning text-center">{{ value.user }}</h3>
+                                    <img src="
+                                            {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                         class="card-img-top" alt="...">
+                                    <div class="card-body">
+                                        <h4 class="card-text text-center">{{ value.title }}</h4>
+                                        <ul class="list-group list-group-flush">
+                                            {% if request.user.is_superuser %}
+                                                {% for key_votes, user_votes in users_vote.items %}
+                                                    {% if key_votes == value.pk %}
+                                                        {% for item in user_votes %}
+                                                            <li class="list-group-item">{{ item.user }}</li>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        </ul>
                                     </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
-            </div>
-        {% endif %}
-        {% if grouped_poems.1 %}
-            <div class="col-sm-12">
-                <section class="card outer-card card-success mb-4">
-                    <header class="card-header">
-                        <h2 class="card-title">2 МЕСТО ({{ grouped_poems.1.votes }} голосов)</h2>
-                    </header>
-                    <div class="card-body">
-                        <div class="row">
-                            {% for key, value in grouped_poems.1.poems.items %}
-                                <div class="col-sm-3">
-                                    <div class="card inner-card shadow-lg border-success">
-                                        <h3 class="card-header-top text-success text-center">{{ value.user }}</h3>
-                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
-                                             class="card-img-top" alt="...">
-                                        <div class="card-body">
-                                            <h4 class="card-text text-center">{{ value.title }}</h4>
-                                            <ul class="list-group list-group-flush">
-                                                {% if request.user.is_superuser %}
-                                                    {% for key_votes, user_votes in users_vote.items %}
-                                                        {% if key_votes == value.pk %}
-                                                            {% for item in user_votes %}
-                                                                <li class="list-group-item">{{ item.user }}</li>
-                                                            {% endfor %}
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                {% endif %}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
-            </div>
-        {% endif %}
-        {% if grouped_poems.2 %}
-            <div class="col-sm-12">
-                <section class="card outer-card card-info mb-4">
-                    <header class="card-header">
-                        <h2 class="card-title">3 МЕСТО ({{ grouped_poems.2.votes }} голосов)</h2>
-                    </header>
-                    <div class="card-body">
-                        <div class="row">
-                            {% for key, value in grouped_poems.2.poems.items %}
-                                <div class="col-sm-3">
-                                    <div class="card inner-card shadow-lg border-info">
-                                        <h3 class="card-header-top text-info text-center">{{ value.user }}</h3>
-                                        <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
-                                             class="card-img-top" alt="...">
-                                        <div class="card-body">
-                                            <h4 class="card-text text-center">{{ value.title }}</h4>
-                                            <ul class="list-group list-group-flush">
-                                                {% if request.user.is_superuser %}
-                                                    {% for key_votes, user_votes in users_vote.items %}
-                                                        {% if key_votes == value.pk %}
-                                                            {% for item in user_votes %}
-                                                                <li class="list-group-item">{{ item.user }}</li>
-                                                            {% endfor %}
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                {% endif %}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
-            </div>
-        {% endif %}
-        {% if user.is_superuser %}
-            {% for item in grouped_poems %}
-                {% if forloop.counter > 3 %}
-                    <div class="col-sm-12">
-                        <section class="card outer-card card-info mb-4">
-                            <header class="card-header">
-                                <h2 class="card-title">{{ forloop.counter }} МЕСТО ({{ item.votes }} голосов)</h2>
-                            </header>
-                            <div class="card-body">
-                                <div class="row">
-                                    {% for key, value in item.poems.items %}
-                                        <div class="col-sm-3">
-                                            <div class="card inner-card shadow-lg border-info">
-                                                <h3 class="card-header-top text-info text-center">{{ value.user }}</h3>
-                                                <img src="{% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
-                                                     class="card-img-top" alt="...">
-                                                <div class="card-body">
-                                                    <h4 class="card-text text-center">{{ value.title }}</h4>
-                                                    <ul class="list-group list-group-flush">
-                                                {% if request.user.is_superuser %}
-                                                    {% for key_votes, user_votes in users_vote.items %}
-                                                        {% if key_votes == value.pk %}
-                                                            {% for item in user_votes %}
-                                                                <li class="list-group-item">{{ item.user }}</li>
-                                                            {% endfor %}
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                {% endif %}
-                                            </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
                                 </div>
                             </div>
-                        </section>
+                        {% endfor %}
                     </div>
-                {% endif %}
-            {% endfor %}
-        {% endif %}
-    </section>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+    {% if grouped_poems.1 %}
+        <div class="col-sm-12">
+            <section class="card outer-card card-success mb-4">
+                <header class="card-header">
+                    <h2 class="card-title">2 МЕСТО ({{ grouped_poems.1.votes }} голосов)</h2>
+                </header>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, value in grouped_poems.1.poems.items %}
+                            <div class="col-sm-3">
+                                <div class="card inner-card shadow-lg border-success">
+                                    <h3 class="card-header-top text-success text-center">{{ value.user }}</h3>
+                                    <img src="
+                                            {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                         class="card-img-top" alt="...">
+                                    <div class="card-body">
+                                        <h4 class="card-text text-center">{{ value.title }}</h4>
+                                        <ul class="list-group list-group-flush">
+                                            {% if request.user.is_superuser %}
+                                                {% for key_votes, user_votes in users_vote.items %}
+                                                    {% if key_votes == value.pk %}
+                                                        {% for item in user_votes %}
+                                                            <li class="list-group-item">{{ item.user }}</li>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+    {% if grouped_poems.2 %}
+        <div class="col-sm-12">
+            <section class="card outer-card card-info mb-4">
+                <header class="card-header">
+                    <h2 class="card-title">3 МЕСТО ({{ grouped_poems.2.votes }} голосов)</h2>
+                </header>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, value in grouped_poems.2.poems.items %}
+                            <div class="col-sm-3">
+                                <div class="card inner-card shadow-lg border-info">
+                                    <h3 class="card-header-top text-info text-center">{{ value.user }}</h3>
+                                    <img src="
+                                            {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                         class="card-img-top" alt="...">
+                                    <div class="card-body">
+                                        <h4 class="card-text text-center">{{ value.title }}</h4>
+                                        <ul class="list-group list-group-flush">
+                                            {% if request.user.is_superuser %}
+                                                {% for key_votes, user_votes in users_vote.items %}
+                                                    {% if key_votes == value.pk %}
+                                                        {% for item in user_votes %}
+                                                            <li class="list-group-item">{{ item.user }}</li>
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+        </div>
+    {% endif %}
+    {% if user.is_superuser %}
+        {% for item in grouped_poems %}
+            {% if forloop.counter > 3 %}
+                <div class="col-sm-12">
+                    <section class="card outer-card card-info mb-4">
+                        <header class="card-header">
+                            <h2 class="card-title">{{ forloop.counter }} МЕСТО ({{ item.votes }} голосов)</h2>
+                        </header>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for key, value in item.poems.items %}
+                                    <div class="col-sm-3">
+                                        <div class="card inner-card shadow-lg border-info">
+                                            <h3 class="card-header-top text-info text-center">{{ value.user }}</h3>
+                                            <img src="
+                                                    {% if value.user.avatar %}{{ value.user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                                 class="card-img-top" alt="...">
+                                            <div class="card-body">
+                                                <h4 class="card-text text-center">{{ value.title }}</h4>
+                                                <ul class="list-group list-group-flush">
+                                                    {% if request.user.is_superuser %}
+                                                        {% for key_votes, user_votes in users_vote.items %}
+                                                            {% if key_votes == value.pk %}
+                                                                {% for item in user_votes %}
+                                                                    <li class="list-group-item">{{ item.user }}</li>
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
 {% endblock %}
