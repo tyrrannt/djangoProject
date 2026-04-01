@@ -2176,9 +2176,9 @@ class ApartmentsUsageReportView(TemplateView):
     def _parse_date(self, date_str):
         """Парсинг строки даты в формат date"""
         try:
-            return datetime.strptime(date_str, '%Y-%m-%d').date()
+            return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
         except (ValueError, TypeError):
-            return datetime.now().date()
+            return datetime.datetime.now().date()
 
     def export_to_csv(self, apartments_data, date_start, date_end):
         """
