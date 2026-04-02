@@ -2210,7 +2210,7 @@ class ApartmentsUsageReportView(TemplateView):
             return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
         except (ValueError, TypeError):
             logger.error('Ошибка даты.')
-            return datetime.datetime.today()
+            return datetime.datetime.today().date()
 
     def export_to_csv(self, apartments_data, date_start, date_end):
         """
