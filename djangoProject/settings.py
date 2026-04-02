@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "telegram_app.apps.TelegramAppConfig",
     "tasks_app.apps.TasksAppConfig",
     "ppequipment_app.apps.PpequipmentAppConfig",
+    "tickets_app.apps.TicketsAppConfig",
     "widget_tweaks",
     "django_ckeditor_5",
     "channels",

@@ -200,12 +200,12 @@
 
                                 </ul>
                             </li>
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <span>Персонал</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        {% if user.is_staff %}
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
+                                    <span>Персонал</span>
+                                </a>
+                                <ul class="nav nav-children">
+                                    {% if user.is_staff %}
                                         <li>
                                             <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
                                                 Сезонность отпусков
@@ -237,15 +237,15 @@
                                                 Расчет долга за обучение
                                             </a>
                                         </li>
-                                        {% endif %}
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'customers_app:apartments_usage_report' %}">
-                                                Отчет использования квартир
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
+                                    {% endif %}
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'customers_app:apartments_usage_report' %}">
+                                            Отчет использования квартир
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                             <li>
                                 <a class="nav-link" href="{% url 'library_app:event_list' %}">
                                     Мероприятия
@@ -544,6 +544,21 @@
                             <span>Справка</span>
                         </a>
                     </li>
+                    {% if user.is_staff %}
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                                <span>Книга жалоб и предложений</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'tickets_app:list' %}">
+                                        Общий список
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% endif %}
                     {% if user.is_superuser %}
                         <li class="nav-parent">
                             <a class="nav-link" href="#">

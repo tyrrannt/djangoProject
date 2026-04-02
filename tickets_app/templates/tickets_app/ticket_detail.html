@@ -1,0 +1,232 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Заявка #{{ ticket.pk }} - {{ ticket.title }}{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <!-- Хлебные крошки -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'tickets_app:list' %}">Книга жалоб</a></li>
+                <li class="breadcrumb-item active">Заявка #{{ ticket.pk }}</li>
+            </ol>
+        </nav>
+
+        <!-- Уведомления -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="row">
+            <!-- Основная информация -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Заявка #{{ ticket.pk }}</h5>
+                        {% if ticket.status == 'new' %}
+                            <span class="badge bg-success">Новая</span>
+                        {% elif ticket.status == 'in_progress' %}
+                            <span class="badge bg-primary">В работе</span>
+                        {% elif ticket.status == 'redirected' %}
+                            <span class="badge bg-warning text-dark">Переадресована</span>
+                        {% elif ticket.status == 'resolved' %}
+                            <span class="badge bg-info">Решена</span>
+                        {% elif ticket.status == 'closed' %}
+                            <span class="badge bg-secondary">Закрыта</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h4>{{ ticket.title }}</h4>
+                        <p class="text-muted">
+                            Автор: {{ ticket.author.get_full_name|default:ticket.author.username }} |
+                            {{ ticket.created_at|date:"d.m.Y H:i" }}
+                        </p>
+                        <hr>
+                        <p>{{ ticket.description|linebreaks }}</p>
+
+                        {% if ticket.parent_ticket %}
+                            <div class="alert alert-warning mt-3">
+                                <strong>Это обжалование заявки:</strong>
+                                <a href="{% url 'tickets_app:detail' ticket.parent_ticket.pk %}">#{{ ticket.parent_ticket.pk }}</a>
+                            </div>
+                        {% endif %}
+
+                        {% if ticket.appeals.exists %}
+                            <div class="alert alert-danger mt-3">
+                                <strong>Есть обжалования:</strong>
+                                <ul class="mb-0">
+                                    {% for appeal in ticket.appeals.all %}
+                                        <li><a href="{% url 'tickets_app:detail' appeal.pk %}">#{{ appeal.pk }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <!-- Вложения к заявке -->
+                        {% if ticket.attachments.all %}
+                            <div class="mt-3">
+                                <h6>Вложения:</h6>
+                                <ul class="list-unstyled">
+                                    {% for attachment in ticket.attachments.all %}
+                                        <li>
+                                            <a href="{{ attachment.file.url }}" target="_blank">
+                                                <i class="bi bi-paperclip"></i> {{ attachment }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if user.is_staff or user.is_superuser or ticket.author == user %}
+                        {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
+                            <div class="card-footer">
+                                <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i> Редактировать
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="card-footer text-muted">
+                                <small><i class="bi bi-lock"></i> Редактирование закрыто</small>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <!-- Сообщения -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">История переписки ({{ ticket.messages.count }})</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for message in ticket.messages.all %}
+                            <div class="mb-3 {% if message.is_internal %}bg-light{% endif %} p-3 rounded {% if message.is_internal %}border-start border-4 border-warning{% endif %}">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong>{{ message.sender.get_full_name|default:message.sender.username }}</strong>
+                                    <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
+                                </div>
+                                <p class="mb-2">{{ message.text|linebreaks }}</p>
+
+                                {% if message.is_internal %}
+                                    <small class="text-warning"><i class="bi bi-lock"></i> Внутренняя заметка</small>
+                                {% endif %}
+
+                                {% if message.attachments.all %}
+                                    <div class="mt-2">
+                                        {% for attachment in message.attachments.all %}
+                                            <a href="{{ attachment.file.url }}" target="_blank" class="me-2">
+                                                <i class="bi bi-paperclip"></i> {{ attachment }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            <p class="text-muted">Сообщений пока нет</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Форма добавления сообщения -->
+                {% if user.is_staff or user.is_superuser or ticket.author == user or ticket.responsible == user %}
+                    {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Добавить сообщение</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{% url 'tickets_app:add_message' ticket.pk %}"
+                                      enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <textarea name="text" class="form-control" rows="3"
+                                                  placeholder="Введите сообщение..." required></textarea>
+                                    </div>
+                                    {% if user.is_staff or user.is_superuser %}
+                                        <div class="form-check mb-3">
+                                            <input type="checkbox" name="is_internal" class="form-check-input"
+                                                   id="id_is_internal">
+                                            <label class="form-check-label" for="id_is_internal">
+                                                Внутренняя заметка (не видно пользователю)
+                                            </label>
+                                        </div>
+                                    {% endif %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Вложения:</label>
+                                        <input type="file" name="attachments" class="form-control" multiple
+                                               accept=".pdf,.jpg,.jpeg,.png">
+                                        <small class="text-muted">Разрешены: PDF, JPG, PNG</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-send"></i> Отправить
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-secondary mt-4">
+                            <i class="bi bi-lock"></i> Заявка закрыта или решена. Добавление сообщений невозможно.
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Боковая панель -->
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Информация</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Ответственный:</strong><br>
+                            {% if ticket.responsible %}
+                                {{ ticket.responsible.get_full_name|default:ticket.responsible.username }}
+                            {% else %}
+                                <span class="text-muted">Не назначен</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Дата создания:</strong><br>{{ ticket.created_at|date:"d.m.Y H:i" }}</p>
+                        <p><strong>Дата обновления:</strong><br>{{ ticket.updated_at|date:"d.m.Y H:i" }}</p>
+                        {% if ticket.resolved_at %}
+                            <p><strong>Дата решения:</strong><br>{{ ticket.resolved_at|date:"d.m.Y H:i" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if user.is_staff or user.is_superuser %}
+                    {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Действия руководства</h5>
+                            </div>
+                            <div class="card-body">
+                                <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-primary w-100 mb-2">
+                                    <i class="bi bi-person-check"></i> Назначить ответственного
+                                </a>
+                                <a href="{% url 'tickets_app:edit' ticket.pk %}"
+                                   class="btn btn-outline-secondary w-100">
+                                    <i class="bi bi-arrow-repeat"></i> Изменить статус
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Действия руководства</h5>
+                            </div>
+                            <div class="card-body text-muted text-center">
+                                <small><i class="bi bi-lock"></i> Заявка закрыта</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

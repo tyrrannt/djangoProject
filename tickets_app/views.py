@@ -1,0 +1,182 @@
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Q
+from django.utils import timezone
+from .models import Ticket, Message, Attachment, TicketStatus
+from .forms import TicketCreateForm, TicketUpdateForm, MessageForm, AttachmentForm
+
+
+class TicketListView(LoginRequiredMixin, ListView):
+    """
+    Список заявок (Dashboard)
+    - Пользователь видит только свои
+    - Сотрудник видит назначенные ему
+    - Руководство видит все
+    """
+    model = Ticket
+    template_name = 'tickets_app/ticket_list.html'
+    context_object_name = 'tickets'
+    paginate_by = 20
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Ticket.objects.select_related('author', 'responsible', 'parent_ticket')
+
+        # Руководство видит все
+        if user.is_staff or user.is_superuser:
+            # Фильтр "Новые без ответственного"
+            if self.request.GET.get('unassigned') == '1':
+                queryset = queryset.filter(responsible__isnull=True, status=TicketStatus.NEW)
+            return queryset
+
+        # Обычный пользователь видит только свои
+        return queryset.filter(author=user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['unassigned_count'] = Ticket.objects.filter(
+            responsible__isnull=True,
+            status=TicketStatus.NEW
+        ).count()
+        return context
+
+
+class TicketDetailView(LoginRequiredMixin, DetailView):
+    """Детальный просмотр заявки"""
+    model = Ticket
+    template_name = 'tickets_app/ticket_detail.html'
+    context_object_name = 'ticket'
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Ticket.objects.select_related(
+            'author', 'responsible', 'parent_ticket'
+        ).prefetch_related('messages__sender', 'messages__attachments', 'attachments')
+
+        # Руководство видит все, остальные - только свои или назначенные
+        if user.is_staff or user.is_superuser:
+            return queryset
+        return queryset.filter(Q(author=user) | Q(responsible=user))
+
+
+class TicketCreateView(LoginRequiredMixin, CreateView):
+    """Создание новой заявки"""
+    model = Ticket
+    form_class = TicketCreateForm
+    template_name = 'tickets_app/ticket_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        response = super().form_valid(form)
+
+        # Уведомление руководству
+        send_mail(
+            subject=f'Новая заявка: {self.object.title}',
+            message=f'Автор: {self.object.author}\nОписание: {self.object.description}',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email for _, email in settings.ADMINS],
+            fail_silently=True,
+        )
+
+        messages.success(self.request, 'Заявка успешно создана')
+        return response
+
+
+class TicketUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """Редактирование заявки (назначение ответственного, смена статуса)"""
+    model = Ticket
+    form_class = TicketUpdateForm
+    template_name = 'tickets_app/ticket_form.html'
+
+    def test_func(self):
+        ticket = self.get_object()
+        user = self.request.user
+        # Проверка прав доступа
+        if not (user.is_staff or user.is_superuser or ticket.author == user):
+            return False
+        # Запрет редактирования закрытых/решенных заявок
+        if ticket.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
+            return False
+        return True
+
+    def form_valid(self, form):
+        old_ticket = Ticket.objects.get(pk=self.object.pk)
+
+        # Дополнительная проверка статуса (на случай если статус изменился между запросами)
+        if old_ticket.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
+            messages.error(self.request, 'Нельзя редактировать закрытую или решенную заявку')
+            return redirect('tickets_app:detail', pk=self.object.pk)
+
+        response = super().form_valid(form)
+
+        # Уведомление сотруднику при назначении
+        if form.instance.responsible and form.instance.responsible != old_ticket.responsible:
+            send_mail(
+                subject=f'Вам назначена заявка: {form.instance.title}',
+                message=f'Автор: {form.instance.author}\nОписание: {form.instance.description}',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[form.instance.responsible.email],
+                fail_silently=True,
+            )
+            messages.success(self.request, 'Ответственный назначен')
+
+        # Уведомление пользователю при решении
+        if form.instance.status == TicketStatus.RESOLVED and old_ticket.status != TicketStatus.RESOLVED:
+            form.instance.resolved_at = timezone.now()
+            form.instance.save(update_fields=['resolved_at'])
+            send_mail(
+                subject=f'Ваша заявка решена: {form.instance.title}',
+                message='Зайдите в систему, чтобы ознакомиться с решением.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[form.instance.author.email],
+                fail_silently=True,
+            )
+            messages.success(self.request, 'Заявка помечена как решенная')
+
+        return response
+
+
+def add_message_to_ticket(request, pk):
+    """Добавление сообщения к заявке"""
+    ticket = get_object_or_404(Ticket, pk=pk)
+
+    # Проверка прав
+    if not (request.user.is_staff or request.user.is_superuser or
+            ticket.author == request.user or ticket.responsible == request.user):
+        messages.error(request, 'Нет доступа к этой заявке')
+        return redirect('tickets_app:list')
+
+    # Проверка статуса - нельзя писать в закрытые/решенные заявки
+    if ticket.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
+        messages.error(request, 'Нельзя добавлять сообщения в закрытую или решенную заявку')
+        return redirect('tickets_app:detail', pk=ticket.pk)
+
+    if request.method == 'POST':
+        message_form = MessageForm(request.POST)
+
+        if message_form.is_valid():
+            message = message_form.save(commit=False)
+            message.ticket = ticket
+            message.sender = request.user
+            message.save()
+
+            # Сохраняем вложения
+            files = request.FILES.getlist('attachments')
+            for f in files:
+                Attachment.objects.create(file=f, message=message)
+
+            messages.success(request, 'Сообщение добавлено')
+            return redirect('tickets_app:detail', pk=ticket.pk)
+    else:
+        message_form = MessageForm()
+
+    return redirect('tickets_app:detail', pk=ticket.pk)

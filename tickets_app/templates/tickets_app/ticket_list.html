@@ -1,0 +1,155 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Книга жалоб и предложений{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Книга жалоб и предложений</h1>
+        <a href="{% url 'tickets_app:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Создать заявку
+        </a>
+    </div>
+
+    <!-- Уведомления -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Статистика для руководства -->
+    {% if user.is_staff or user.is_superuser %}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Всего заявок</h5>
+                    <p class="display-4">{{ tickets.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="?unassigned=1" class="text-white text-decoration-none">
+                            Новые без ответственного
+                        </a>
+                    </h5>
+                    <p class="display-4">{{ unassigned_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">В работе</h5>
+                    <p class="display-4">{{ tickets|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Список заявок -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                {% if request.GET.unassigned == '1' %}
+                    Новые заявки без ответственного
+                {% else %}
+                    Мои заявки
+                {% endif %}
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Заголовок</th>
+                            <th>Автор</th>
+                            <th>Ответственный</th>
+                            <th>Статус</th>
+                            <th>Дата создания</th>
+                            <th>Обжалования</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr class="{% if ticket.parent_ticket %}table-warning{% endif %}">
+                            <td><a href="{% url 'tickets_app:detail' ticket.pk %}">#{{ ticket.pk }}</a></td>
+                            <td>{{ ticket.title }}</td>
+                            <td>{{ ticket.author.get_full_name|default:ticket.author.username }}</td>
+                            <td>
+                                {% if ticket.responsible %}
+                                    {{ ticket.responsible.get_full_name|default:ticket.responsible.username }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ticket.status == 'new' %}
+                                    <span class="badge bg-success">Новая</span>
+                                {% elif ticket.status == 'in_progress' %}
+                                    <span class="badge bg-primary">В работе</span>
+                                {% elif ticket.status == 'redirected' %}
+                                    <span class="badge bg-warning text-dark">Переадресована</span>
+                                {% elif ticket.status == 'resolved' %}
+                                    <span class="badge bg-info">Решена</span>
+                                {% elif ticket.status == 'closed' %}
+                                    <span class="badge bg-secondary">Закрыта</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if ticket.appeals.count > 0 %}
+                                    <span class="badge bg-danger">{{ ticket.appeals.count }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                Заявок не найдено
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Пагинация -->
+    {% if is_paginated %}
+    <nav aria-label="Пагинация" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+                </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперед</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
