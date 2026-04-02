@@ -2098,7 +2098,7 @@ class ApartmentsUsageReportView(TemplateView):
         place_id = self.request.GET.get('place')
 
         # Устанавливаем даты по умолчанию (текущий месяц)
-        today = datetime.datetime.today()
+        today = datetime.date.today()
         date_start = today.replace(day=1) if date_start_str is None else self._parse_date(date_start_str)
         date_end = (today.replace(day=1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1) \
             if date_end_str is None else self._parse_date(date_end_str)
@@ -2207,10 +2207,12 @@ class ApartmentsUsageReportView(TemplateView):
     def _parse_date(self, date_str):
         """Парсинг строки даты в формат date"""
         try:
+            # Добавляем .date() в конце, чтобы отсечь время
             return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
         except (ValueError, TypeError):
             logger.error('Ошибка даты.')
-            return datetime.datetime.today().date()
+            # Возвращаем сегодня как date, а не datetime
+            return datetime.date.today()
 
     def export_to_csv(self, apartments_data, date_start, date_end):
         """
