@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
+
+from administration_app.utils import make_custom_field
 from .models import Ticket, Message, Attachment, TicketStatus
 
 User = get_user_model()
@@ -39,6 +41,9 @@ class TicketCreateForm(forms.ModelForm):
         else:
             self.fields['parent_ticket'].queryset = Ticket.objects.none()
 
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
     def clean_parent_ticket(self):
         parent_ticket = self.cleaned_data.get('parent_ticket')
 
@@ -63,7 +68,7 @@ class TicketUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Ticket
-        fields = ['responsible', 'status']
+        fields = ['title', 'description', 'responsible', 'status']
         widgets = {
             'responsible': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
@@ -71,8 +76,27 @@ class TicketUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Показываем только сотрудников
-        self.fields['responsible'].queryset = User.objects.filter(is_staff=True)
+
+        # 1. Делаем поля необязательными на уровне формы
+        self.fields['responsible'].required = False
+        self.fields['status'].required = False
+
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+    def clean_responsible(self):
+        # 2. Если поле пустое в POST-запросе, возвращаем старое значение из instance
+        responsible = self.cleaned_data.get('responsible')
+        if not responsible and self.instance.pk:
+            return self.instance.responsible
+        return responsible
+
+    def clean_status(self):
+        # Аналогично для статуса
+        status = self.cleaned_data.get('status')
+        if not status and self.instance.pk:
+            return self.instance.status
+        return status
 
 
 class MessageForm(forms.ModelForm):

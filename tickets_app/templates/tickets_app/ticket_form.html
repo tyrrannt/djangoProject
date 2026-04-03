@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}
     {% if form.instance.pk %}Редактирование заявки #{{ form.instance.pk }}{% else %}Новая заявка{% endif %}
@@ -12,10 +13,10 @@
             <!-- Хлебные крошки -->
             <nav aria-label="breadcrumb" class="mb-4">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'tickets_app:list' %}">Книга жалоб</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'tickets_app:list' %}">Добровольные сообщения</a></li>
                     <li class="breadcrumb-item active">
                         {% if form.instance.pk %}
-                            Редактирование #{{ form.instance.pk }}
+                            Редактирование заявки №{{ form.instance.pk }}
                         {% else %}
                             Новая заявка
                         {% endif %}
@@ -84,7 +85,7 @@
                         {% endif %}
 
                         <!-- Поля для назначения ответственного (только для редактирования) -->
-                        {% if form.responsible %}
+                        {% if form.responsible and request.user|has_group:'Руководители' %}
                         <div class="mb-3">
                             <label for="{{ form.responsible.id_for_label }}" class="form-label">
                                 Ответственный
@@ -96,7 +97,7 @@
                         </div>
                         {% endif %}
 
-                        {% if form.status %}
+                        {% if form.status and request.user|has_group:'Руководители' %}
                         <div class="mb-3">
                             <label for="{{ form.status.id_for_label }}" class="form-label">
                                 Статус

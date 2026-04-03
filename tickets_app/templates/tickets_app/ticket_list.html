@@ -2,14 +2,14 @@
 {% load static %}
 {% load custom %}
 
-{% block title %}Книга жалоб и предложений{% endblock %}
+{% block title %}Добровольные сообщения{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Книга жалоб и предложений</h1>
+        <h1>Добровольные сообщения</h1>
         <a href="{% url 'tickets_app:create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Создать заявку
+            <i class="bi bi-plus-circle"></i> Создать сообщение
         </a>
     </div>
 
@@ -29,7 +29,7 @@
         <div class="col-md-4">
             <div class="card text-white bg-primary">
                 <div class="card-body">
-                    <h5 class="card-title">Всего заявок</h5>
+                    <h5 class="card-title">Всего сообщений</h5>
                     <p class="display-4">{{ tickets.count }}</p>
                 </div>
             </div>
@@ -62,9 +62,9 @@
         <div class="card-header">
             <h5 class="mb-0">
                 {% if request.GET.unassigned == '1' %}
-                    Новые заявки без ответственного
+                    Новые сообщения без ответственного
                 {% else %}
-                    Мои заявки
+                    Мои сообщения
                 {% endif %}
             </h5>
         </div>
@@ -97,15 +97,15 @@
                             </td>
                             <td>
                                 {% if ticket.status == 'new' %}
-                                    <span class="badge bg-success">Новая</span>
+                                    <span class="badge bg-success">Новое</span>
                                 {% elif ticket.status == 'in_progress' %}
                                     <span class="badge bg-primary">В работе</span>
                                 {% elif ticket.status == 'redirected' %}
-                                    <span class="badge bg-warning text-dark">Переадресована</span>
+                                    <span class="badge bg-warning text-dark">Переадресовано</span>
                                 {% elif ticket.status == 'resolved' %}
-                                    <span class="badge bg-info">Решена</span>
+                                    <span class="badge bg-info">Решено</span>
                                 {% elif ticket.status == 'closed' %}
-                                    <span class="badge bg-secondary">Закрыта</span>
+                                    <span class="badge bg-secondary">Закрыто</span>
                                 {% endif %}
                             </td>
                             <td>{{ ticket.created_at|date:"d.m.Y H:i" }}</td>
@@ -120,7 +120,7 @@
                         {% empty %}
                         <tr>
                             <td colspan="7" class="text-center text-muted py-4">
-                                Заявок не найдено
+                                Сообщений не найдено
                             </td>
                         </tr>
                         {% endfor %}

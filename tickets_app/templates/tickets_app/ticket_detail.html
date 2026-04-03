@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}Заявка #{{ ticket.pk }} - {{ ticket.title }}{% endblock %}
 
@@ -8,7 +9,7 @@
         <!-- Хлебные крошки -->
         <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'tickets_app:list' %}">Книга жалоб</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'tickets_app:list' %}">Добровольные сообщения</a></li>
                 <li class="breadcrumb-item active">Заявка #{{ ticket.pk }}</li>
             </ol>
         </nav>
@@ -30,21 +31,21 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Заявка #{{ ticket.pk }}</h5>
                         {% if ticket.status == 'new' %}
-                            <span class="badge bg-success">Новая</span>
+                            <span class="badge bg-success">Новое</span>
                         {% elif ticket.status == 'in_progress' %}
                             <span class="badge bg-primary">В работе</span>
                         {% elif ticket.status == 'redirected' %}
-                            <span class="badge bg-warning text-dark">Переадресована</span>
+                            <span class="badge bg-warning text-dark">Переадресовано</span>
                         {% elif ticket.status == 'resolved' %}
-                            <span class="badge bg-info">Решена</span>
+                            <span class="badge bg-info">Решено</span>
                         {% elif ticket.status == 'closed' %}
-                            <span class="badge bg-secondary">Закрыта</span>
+                            <span class="badge bg-secondary">Закрыто</span>
                         {% endif %}
                     </div>
                     <div class="card-body">
                         <h4>{{ ticket.title }}</h4>
                         <p class="text-muted">
-                            Автор: {{ ticket.author.get_full_name|default:ticket.author.username }} |
+                            Автор: {{ ticket.author|FIO_format|default:ticket.author.username }} |
                             {{ ticket.created_at|date:"d.m.Y H:i" }}
                         </p>
                         <hr>
@@ -76,7 +77,7 @@
                                     {% for attachment in ticket.attachments.all %}
                                         <li>
                                             <a href="{{ attachment.file.url }}" target="_blank">
-                                                <i class="bi bi-paperclip"></i> {{ attachment }}
+                                                <i class="bi bi-paperclip"></i> {{ attachment.original_name }}
                                             </a>
                                         </li>
                                     {% endfor %}
@@ -84,7 +85,7 @@
                             </div>
                         {% endif %}
                     </div>
-                    {% if user.is_staff or user.is_superuser or ticket.author == user %}
+                    {% if user|has_group:"Руководители" or user.is_superuser or ticket.author == user %}
                         {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
                             <div class="card-footer">
                                 <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-outline-primary btn-sm">
@@ -108,7 +109,7 @@
                         {% for message in ticket.messages.all %}
                             <div class="mb-3 {% if message.is_internal %}bg-light{% endif %} p-3 rounded {% if message.is_internal %}border-start border-4 border-warning{% endif %}">
                                 <div class="d-flex justify-content-between mb-2">
-                                    <strong>{{ message.sender.get_full_name|default:message.sender.username }}</strong>
+                                    <strong>{{ message.sender|FIO_format|default:message.sender.username }}</strong>
                                     <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
                                 </div>
                                 <p class="mb-2">{{ message.text|linebreaks }}</p>
@@ -134,7 +135,7 @@
                 </div>
 
                 <!-- Форма добавления сообщения -->
-                {% if user.is_staff or user.is_superuser or ticket.author == user or ticket.responsible == user %}
+                {% if user|has_group:"Руководители" or user.is_superuser or ticket.author == user or ticket.responsible == user %}
                     {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
                         <div class="card mt-4">
                             <div class="card-header">
@@ -148,7 +149,7 @@
                                         <textarea name="text" class="form-control" rows="3"
                                                   placeholder="Введите сообщение..." required></textarea>
                                     </div>
-                                    {% if user.is_staff or user.is_superuser %}
+                                    {% if user|has_group:"Руководители" or user.is_superuser %}
                                         <div class="form-check mb-3">
                                             <input type="checkbox" name="is_internal" class="form-check-input"
                                                    id="id_is_internal">
@@ -186,7 +187,7 @@
                     <div class="card-body">
                         <p><strong>Ответственный:</strong><br>
                             {% if ticket.responsible %}
-                                {{ ticket.responsible.get_full_name|default:ticket.responsible.username }}
+                                {{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
                             {% else %}
                                 <span class="text-muted">Не назначен</span>
                             {% endif %}
@@ -199,7 +200,7 @@
                     </div>
                 </div>
 
-                {% if user.is_staff or user.is_superuser %}
+                {% if user|has_group:"Руководители" or user.is_superuser %}
                     {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
                         <div class="card">
                             <div class="card-header">

@@ -36,11 +36,11 @@ def validate_file_extension(value):
 
 class TicketStatus(models.TextChoices):
     """Статусы заявки"""
-    NEW = 'new', _('Новая')
+    NEW = 'new', _('Новое')
     IN_PROGRESS = 'in_progress', _('В работе')
-    REDIRECTED = 'redirected', _('Переадресована')
-    RESOLVED = 'resolved', _('Решена')
-    CLOSED = 'closed', _('Закрыта')
+    REDIRECTED = 'redirected', _('Переадресовано')
+    RESOLVED = 'resolved', _('Решено')
+    CLOSED = 'closed', _('Закрыто')
 
 
 class Ticket(models.Model):
@@ -77,12 +77,12 @@ class Ticket(models.Model):
     )
     parent_ticket = models.ForeignKey(
         'self',
-        verbose_name='Родительская заявка (обжалование)',
+        verbose_name='Родительское сообщение (обжалование)',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='appeals',
-        help_text='Если это обжалование, укажите предыдущую закрытую заявку'
+        help_text='Если это обжалование, укажите предыдущее закрытое сообщение'
     )
 
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
