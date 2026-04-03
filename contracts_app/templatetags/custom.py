@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from typing import Any
 from urllib.parse import quote
 
 from django import template
@@ -73,31 +74,122 @@ def empty_item(string):
     return string or ""
 
 
-def FIO_format(value, reverse=False):
-    string_obj = str(value)
-    list_obj = string_obj.split(" ")
-    match len(list_obj):
-        case 0:
-            return ""
-        case 1:
-            return list_obj[0]
-        case 2:
-            return f"{list_obj[0]} {list_obj[1][:1]}."
-        case 3:
-            if reverse:
-                return f"{list_obj[1][:1]}.{list_obj[2][:1]}. {list_obj[0]}"
-            else:
-                return f"{list_obj[0]} {list_obj[1][:1]}.{list_obj[2][:1]}."
+@register.filter
+def FIO_format(value: Any, reverse: bool = False) -> str:
+    """
+    Форматирует ФИО в виде:
+      - Обычный: "Фамилия И.О."
+      - Reverse:  "И.О. Фамилия"
+
+    Поддерживает 1–3 части имени. Лишние части игнорируются.
+    Пустые строки, None и некорректные значения обрабатываются корректно.
+    """
+    if not value:
+        return ""
+
+    # Приводим к строке и разбиваем по пробелам, удаляя пустые
+    parts = str(value).strip().split()
+    parts = [part for part in parts if part]
+
+    if not parts:
+        return ""
+
+    if len(parts) == 1:
+        return parts[0]
+    elif len(parts) == 2:
+        return f"{parts[0]} {parts[1][0]}."
+    else:  # len >= 3
+        last_name, first_name, patronymic = parts[0], parts[1], parts[2]
+        formatted = f"{first_name[0]}.{patronymic[0]}." if not reverse else f"{last_name}"
+        if reverse:
+            return f"{first_name[0]}.{patronymic[0]}. {last_name}"
+        else:
+            return f"{last_name} {first_name[0]}.{patronymic[0]}."
 
 
 @register.simple_tag()
 def multiply(first, second, *args, **kwargs):
-    # you would need to do any localization of the result here
+    """Возвращает произведение двух чисел в виде кастомного шаблонного фильтра Django.
+
+    Кастомный фильтр для использования в шаблонах Django. Принимает два аргумента —
+    первый и второй множители — и возвращает их произведение. Может использоваться
+    в HTML-шаблонах для выполнения простых арифметических операций без предварительного
+    вычисления значений в представлении (view).
+
+    Поддерживает передачу дополнительных позиционных (*args) и именованных (**kwargs)
+    аргументов для возможного расширения функциональности (например, локализация,
+    форматирование результата), хотя в текущей реализации они не используются.
+
+    Внимание: фильтр не выполняет проверку типов. Если переданные значения не поддерживают
+    операцию умножения, будет выброшено исключение во время рендеринга шаблона.
+
+    Args:
+        first (int | float): Первый множитель. Ожидается числовое значение.
+        second (int | float): Второй множитель. Ожидается числовое значение.
+        *args: Дополнительные позиционные аргументы (не используются).
+        **kwargs: Дополнительные именованные аргументы (не используются).
+
+    Returns:
+        int | float: Результат умножения `first` на `second`. Тип зависит от входных данных
+        (например, умножение целых даст int, смешанные типы могут привести к float).
+
+    Raises:
+        TypeError: Может быть выброшено, если `first` или `second` не являются
+                   типами, поддерживающими операцию умножения (например, str, None).
+
+    Example:
+        В шаблоне Django:
+        {% load custom %}
+        {{ 5|multiply:3 }}  <!-- выведет 15 -->
+
+        Также можно использовать с переменными:
+        {{ value|multiply:2 }}
+
+    Note:
+        Убедитесь, что в шаблоне загружены кастомные теги:
+        {% load custom %}
+    """
     return first * second
 
 
 @register.filter(name="has_group")
 def has_group(user, group_name):
+    """Проверяет, состоит ли пользователь в группе Django с указанным именем.
+
+    Кастомный шаблонный фильтр для Django, используемый в HTML-шаблонах
+    для управления отображением элементов интерфейса на основе принадлежности
+    пользователя к определённой группе (например, 'Managers', 'Editors' и т.д.).
+
+    Фильтр работает через связь Many-to-Many между моделью User и Group
+    (auth.Group). Выполняет запрос к базе данных: проверяет существование
+    связи пользователя с группой, имеющей заданное имя. Используется метод
+    `.exists()`, который эффективен по производительности, так как возвращает
+    булево значение и останавливает выполнение запроса при первом совпадении.
+
+    Пример использования в шаблоне:
+        {% if request.user|has_group:"Managers" %}
+            <a href="/admin/">Админ-панель</a>
+        {% endif %}
+
+    Args:
+        user (django.contrib.auth.models.User): Объект пользователя,
+            полученный, например, из `request.user`. Должен быть экземпляром
+            модели User из Django auth.
+        group_name (str): Название группы (соответствует полю `name` в таблице `auth_group`).
+
+    Returns:
+        bool: True, если пользователь состоит в группе с указанным именем;
+              False в противном случае.
+
+    Raises:
+        Никакие исключения не выбрасываются. Если пользователь анонимный
+        (AnonymousUser), метод `.groups.filter(...)` вернёт пустой QuerySet,
+        и результат будет False — поведение безопасно.
+
+    Note:
+        Убедитесь, что в шаблоне загружены кастомные теги:
+        {% load custom %}
+    """
     return user.groups.filter(name=group_name).exists()
 
 
@@ -260,6 +352,5 @@ def get_trip_type_display(value):
 
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)
-register.filter("FIO_format", FIO_format)
 register.filter("empty_item", empty_item)
 register.filter("media_folder_products", media_folder_products)

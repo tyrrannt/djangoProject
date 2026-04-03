@@ -27,7 +27,7 @@ class TicketListView(LoginRequiredMixin, ListView):
         queryset = Ticket.objects.select_related('author', 'responsible', 'parent_ticket')
 
         # Руководство видит все
-        if user.is_staff or user.is_superuser:
+        if user.groups.filter(name='Руководство').exists() or user.is_superuser:
             # Фильтр "Новые без ответственного"
             if self.request.GET.get('unassigned') == '1':
                 queryset = queryset.filter(responsible__isnull=True, status=TicketStatus.NEW)
@@ -58,7 +58,7 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
         ).prefetch_related('messages__sender', 'messages__attachments', 'attachments')
 
         # Руководство видит все, остальные - только свои или назначенные
-        if user.is_staff or user.is_superuser:
+        if user.groups.filter(name='Руководство').exists() or user.is_superuser:
             return queryset
         return queryset.filter(Q(author=user) | Q(responsible=user))
 
@@ -101,7 +101,7 @@ class TicketUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         ticket = self.get_object()
         user = self.request.user
         # Проверка прав доступа
-        if not (user.is_staff or user.is_superuser or ticket.author == user):
+        if not (user.groups.filter(name='Руководство').exists() or user.is_superuser or ticket.author == user):
             return False
         # Запрет редактирования закрытых/решенных заявок
         if ticket.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
@@ -150,7 +150,7 @@ def add_message_to_ticket(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
 
     # Проверка прав
-    if not (request.user.is_staff or request.user.is_superuser or
+    if not (request.user.groups.filter(name='Руководство').exists() or request.user.is_superuser or
             ticket.author == request.user or ticket.responsible == request.user):
         messages.error(request, 'Нет доступа к этой заявке')
         return redirect('tickets_app:list')

@@ -521,7 +521,8 @@
                                     </li>
                                     <li>
                                         <a class="nav-link" href="{% url 'hrdepartment_app:labor_protection_list' %}">
-                                            Процедуры по охране труда
+                                            Процедуры по  <br>
+                                            охране труда
                                         </a>
                                     </li>
                                 </ul>
@@ -544,7 +545,7 @@
                             <span>Справка</span>
                         </a>
                     </li>
-                    {% if user.is_staff %}
+{#                    {% if user.is_superuser or user|has_group:"Руководство"  %}#}
                         <li class="nav-parent">
                             <a class="nav-link" href="#">
                                 <i class='bx bxs-help-circle' aria-hidden="true"></i>
@@ -558,7 +559,7 @@
                                 </li>
                             </ul>
                         </li>
-                    {% endif %}
+{#                    {% endif %}#}
                     {% if user.is_superuser %}
                         <li class="nav-parent">
                             <a class="nav-link" href="#">

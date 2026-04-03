@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}Книга жалоб и предложений{% endblock %}
 
@@ -37,7 +38,7 @@
             <div class="card text-white bg-warning">
                 <div class="card-body">
                     <h5 class="card-title">
-                        <a href="?unassigned=1" class="text-white text-decoration-none">
+                        <a href="?unassigned=1" class="text-decoration-none">
                             Новые без ответственного
                         </a>
                     </h5>
@@ -86,10 +87,10 @@
                         <tr class="{% if ticket.parent_ticket %}table-warning{% endif %}">
                             <td><a href="{% url 'tickets_app:detail' ticket.pk %}">#{{ ticket.pk }}</a></td>
                             <td>{{ ticket.title }}</td>
-                            <td>{{ ticket.author.get_full_name|default:ticket.author.username }}</td>
+                            <td>{{ ticket.author|FIO_format|default:ticket.author.username }}</td>
                             <td>
                                 {% if ticket.responsible %}
-                                    {{ ticket.responsible.get_full_name|default:ticket.responsible.username }}
+                                    {{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
                                 {% else %}
                                     <span class="text-muted">—</span>
                                 {% endif %}

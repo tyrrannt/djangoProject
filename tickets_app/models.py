@@ -3,9 +3,27 @@ import uuid
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from customers_app.models import DataBaseUser
+
+
+def get_attachment_upload_path(instance, filename):
+    # Извлекаем расширение файла (например, .jpg)
+    ext = filename.split('.')[-1]
+    # Генерируем UUID и создаем новое имя
+    filename = f"{uuid.uuid4()}.{ext}"
+
+    # Формируем путь: tickets/attachments/YYYY/MM/DD/uuid.ext
+    # Используем timezone.now() для консистентности с Django
+    now = timezone.now()
+    return os.path.join(
+        'tickets', 'attachments',
+        now.strftime('%Y'), now.strftime('%m'), now.strftime('%d'),
+        filename
+    )
 
 
 def validate_file_extension(value):
@@ -66,6 +84,7 @@ class Ticket(models.Model):
         related_name='appeals',
         help_text='Если это обжалование, укажите предыдущую закрытую заявку'
     )
+
     created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField(verbose_name='Дата обновления', auto_now=True)
     resolved_at = models.DateTimeField(verbose_name='Дата решения', null=True, blank=True)
@@ -74,16 +93,9 @@ class Ticket(models.Model):
         return f'#{self.pk} - {self.title}'
 
     def get_absolute_url(self):
-        from django.urls import reverse
         return reverse('tickets_app:detail', kwargs={'pk': self.pk})
 
-    def clean(self):
-        """Проверка корректности обжалования"""
-        if self.parent_ticket:
-            if self.parent_ticket.author != self.author:
-                raise ValidationError('Можно обжаловать только свои заявки')
-            if self.parent_ticket.status != TicketStatus.CLOSED:
-                raise ValidationError('Можно обжаловать только закрытые заявки')
+
 
 
 class Message(models.Model):
@@ -128,7 +140,7 @@ class Attachment(models.Model):
 
     file = models.FileField(
         verbose_name='Файл',
-        upload_to='tickets/attachments/%Y/%m/%d/',
+        upload_to=get_attachment_upload_path,
         validators=[validate_file_extension]
     )
     message = models.ForeignKey(
@@ -148,6 +160,13 @@ class Attachment(models.Model):
         related_name='attachments'
     )
     uploaded_at = models.DateTimeField(verbose_name='Дата загрузки', auto_now_add=True)
+
+    original_name = models.CharField(max_length=255, editable=False, null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.original_name and self.file:
+            self.original_name = self.file.name
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return os.path.basename(self.file.name)

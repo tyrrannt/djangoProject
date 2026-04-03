@@ -27,17 +27,35 @@ class TicketCreateForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
         # Показываем только закрытые заявки автора для обжалования
-        if user:
+        if self.user:
             self.fields['parent_ticket'].queryset = Ticket.objects.filter(
-                author=user,
-                status=TicketStatus.CLOSED
+                author=self.user,
+                status__in=[TicketStatus.CLOSED, TicketStatus.RESOLVED]
             ).select_related('responsible')
         else:
             self.fields['parent_ticket'].queryset = Ticket.objects.none()
+
+    def clean_parent_ticket(self):
+        parent_ticket = self.cleaned_data.get('parent_ticket')
+
+        if parent_ticket:
+            # 1. Проверка на авторство
+            if self.user and parent_ticket.author != self.user:
+                raise forms.ValidationError('Можно обжаловать только свои заявки.')
+
+            # 2. Проверка статуса родительской заявки
+            allowed_statuses = [TicketStatus.CLOSED, TicketStatus.RESOLVED]
+            if parent_ticket.status not in allowed_statuses:
+                raise forms.ValidationError(
+                    f'Обжалование возможно только для заявок в статусе: '
+                    f'{", ".join(dict(TicketStatus.choices).values())}'
+                )
+
+        return parent_ticket
 
 
 class TicketUpdateForm(forms.ModelForm):
