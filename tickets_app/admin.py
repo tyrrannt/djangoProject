@@ -3,10 +3,11 @@ import os
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Ticket, Message, Attachment, TicketStatus
+from unfold.admin import ModelAdmin
 
 
 @admin.register(Ticket)
-class TicketAdmin(admin.ModelAdmin):
+class TicketAdmin(ModelAdmin):
     list_display = ['id', 'title', 'author', 'responsible', 'status_badge', 'created_at', 'has_appeals']
     list_filter = ['status', 'created_at', 'responsible']
     search_fields = ['title', 'description', 'author__username']
@@ -53,7 +54,7 @@ class TicketAdmin(admin.ModelAdmin):
 
 
 @admin.register(Message)
-class MessageAdmin(admin.ModelAdmin):
+class MessageAdmin(ModelAdmin):
     list_display = ['id', 'ticket', 'sender', 'is_internal', 'created_at']
     list_filter = ['is_internal', 'created_at']
     search_fields = ['text', 'sender__username']
@@ -61,7 +62,7 @@ class MessageAdmin(admin.ModelAdmin):
 
 
 @admin.register(Attachment)
-class AttachmentAdmin(admin.ModelAdmin):
+class AttachmentAdmin(ModelAdmin):
     list_display = ['id', 'file_link', 'ticket', 'message', 'uploaded_at']
     list_filter = ['uploaded_at']
     readonly_fields = ['uploaded_at']

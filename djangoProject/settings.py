@@ -978,6 +978,31 @@ UNFOLD = {
                     },
                 ],
             },
+
+            # ==================== 11. ДОБРОВОЛЬНЫЕ СООБЩЕНИЯ ====================
+            {
+                "title": _("Сообщения"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Заявки"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:tickets_app_ticket_changelist"),
+                    },
+                    {
+                        "title": _("Сообщения"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:tickets_app_message_changelist"),
+                    },
+                    {
+                        "title": _("Вложения"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:tickets_app_attachment_changelist"),
+                    },
+                ],
+            },
+
         ],
     },
 
