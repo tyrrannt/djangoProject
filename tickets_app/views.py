@@ -6,6 +6,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
+
+from administration_app.utils import send_notification
 from .models import Ticket, Message, Attachment, TicketStatus
 from .forms import TicketCreateForm, TicketUpdateForm, MessageForm, AttachmentForm
 
@@ -41,6 +43,9 @@ class TicketListView(LoginRequiredMixin, ListView):
         context['unassigned_count'] = Ticket.objects.filter(
             responsible__isnull=True,
             status=TicketStatus.NEW
+        ).count()
+        context['done_count'] = Ticket.objects.filter(
+            status__in=[TicketStatus.NEW, TicketStatus.IN_PROGRESS, TicketStatus.REDIRECTED]
         ).count()
         return context
 
@@ -85,6 +90,17 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email for _, email in settings.ADMINS],
             fail_silently=True,
+        )
+        context = {}
+        send_notification(
+            self.request.user,
+            'bvs@barkol.ru',
+            f'Новая заявка: {self.object.title}',
+            "hrdepartment_app/creatingteam_email.html",
+            context,
+            '',
+            0,
+            0,
         )
 
         messages.success(self.request, 'Заявка успешно создана')

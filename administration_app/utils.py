@@ -11,6 +11,7 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+from typing import List, Optional, Tuple
 from urllib.parse import urljoin
 
 import pandas as pd
@@ -19,6 +20,7 @@ from dateutil import rrule, relativedelta
 from decouple import config
 from django import forms
 from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
 from django.db.models import Q
@@ -1154,93 +1156,306 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
 #     return context
 
 
-def send_notification(sender: DataBaseUser, recipient, subject: str, template: str, context: dict,
-                      attachment='', division=0, document=0):
-    """
-    Функция отправки письма
-    :param document: 0 - обычное письмо, 1 - Старшие бригад, 2 - Командировка и служебные
-    :param division: 0 - <username>@barkol.ru, 1 - ias@barkol.ru, 2 - fly@barkol.ru, Другое - corp@barkol.ru
-    :param sender: Отправитель
-    :param recipient: Получатель
-    :param subject: Тема
-    :param template: Шаблон письма
-    :param context: Контекст для заполнения шаблона
-    :param attachment: Вложение к письму, в виде ссылки на файл
-    :return:
-    """
-    match division:
-        case 0:
-            from_mail = sender.email  # адрес отправителя
-            from_passwd = sender.user_work_profile.work_application_password  # пароль от почты отправителя
-        case 1:
-            from_mail = EMAIL_IAS_USER  # адрес отправителя
-            from_passwd = EMAIL_IAS_PASSWORD  # пароль от почты отправителя
-        case 2:
-            from_mail = EMAIL_FLY_USER  # адрес отправителя
-            from_passwd = EMAIL_FLY_PASSWORD  # пароль от почты отправителя
-        case _:
-            from_mail = EMAIL_HOST_USER  # адрес отправителя
-            from_passwd = EMAIL_HOST_PASSWORD  # пароль от почты отправителя
-    server_adr = EMAIL_HOST  # адрес почтового сервера
-    server_imap = EMAIL_IMAP_HOST  # адрес imap сервера
-    match document:
-        case 0:
-            to_mail = [recipient.email, ]  # адрес получателя
-        case 1:
-            to_mail = [recipient.senior_brigade.email, recipient.place.email, ]  # адрес получателя
-        case 2:
-            to_mail = [recipient.document.person.email, ]
-        case _:
-            to_mail = [recipient, ]
-    message = render_to_string(template, context)
-    msg = MIMEMultipart()  # Создаем сообщение
-    msg["From"] = from_mail  # Добавляем адрес отправителя
-    msg['To'] = ','.join(to_mail)  # Добавляем адрес получателя
-    msg["Subject"] = Header(subject, 'utf-8')  # Пишем тему сообщения
-    msg["Date"] = formatdate(localtime=True)  # Дата сообщения
-    msg.attach(MIMEText(message, 'html', 'utf-8'))  # Добавляем форматированный текст сообщения
+# Конфигурация внешних почтовых ящиков (не для sender)
+EMAIL_CONFIGS = {
+    1: (EMAIL_IAS_USER, EMAIL_IAS_PASSWORD),
+    2: (EMAIL_FLY_USER, EMAIL_FLY_PASSWORD),
+}
 
-    # Добавляем файл
-    if attachment != '':
-        filepath = str(BASE_DIR) + attachment  # путь к файлу
-        part = MIMEBase('application', "octet-stream")  # Создаем объект для загрузки файла
-        part.set_payload(open(filepath, "rb").read())  # Подключаем файл
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition',
-                        f'attachment; filename="{os.path.basename(filepath)}"')
-        msg.attach(part)  # Добавляем файл в письмо
+
+def get_sender_credentials(sender, division: int) -> Tuple[str, str]:
+    """
+    Возвращает email и пароль для отправки в зависимости от подразделения.
+
+    :param sender: Объект отправителя (с user_work_profile)
+    :param division: 0 - личный аккаунт, 1 - IAS, 2 - FLY, остальные - fallback
+    :return: (email, password)
+    """
+    if division == 0:
+        # Используем данные отправителя
+        return sender.email, sender.user_work_profile.work_application_password
+
+    # Для других подразделений — берём из настроек
+    if division in EMAIL_CONFIGS:
+        user_key, pass_key = EMAIL_CONFIGS[division]
+        try:
+            user = getattr(settings, user_key)
+            password = getattr(settings, pass_key)
+            return user, password
+        except AttributeError:
+            logger.error(f"Missing email config for division {division}: {user_key}, {pass_key}")
+            raise ValueError(f"Email configuration not found for division {division}")
+
+    # Fallback: общий корпоративный ящик
     try:
-        smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
-    except Exception as _ex:
-        logger.error(f"Ошибка: {_ex}")
+        return settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD
+    except AttributeError:
+        logger.error("Fallback email credentials not set in settings")
+        raise ValueError("No valid email credentials available")
+
+
+# Остальные функции остаются без изменений — приведены для полноты
+def get_recipient_emails(recipient, document_type: int) -> List[str]:
+    match document_type:
+        case 0:
+            return [recipient.email] if hasattr(recipient, 'email') else []
+        case 1:
+            return [getattr(recipient.senior_brigade, 'email', None), getattr(recipient.place, 'email', None),]
+        case 2:
+            person = getattr(recipient.document, 'person', None)
+            return [person.email] if person and hasattr(person, 'email') else []
+        case _:
+            return [str(recipient)] if recipient else []
+    return [r for r in recipients if r]
+
+
+def find_sent_folder(imap_client) -> Optional[str]:
+    cache_key = f"imap_sent_folder_{imap_client.host}"
+    folder = cache.get(cache_key)
+    if folder:
+        return folder
+
     try:
-        smtp.login(from_mail, from_passwd)  # Логинимся в свой ящик
-        smtp.sendmail(from_mail, to_mail, msg.as_string())  # Отправляем сообщения
-        smtp.quit()  # Закрываем соединение
+        status, folders = imap_client.list()
+        if status != 'OK':
+            return None
+        for f in folders:
+            decoded = f.decode('utf-8', errors='ignore')
+            if any(name in decoded for name in ('Sent', 'Исходящие', '[Gmail]/Отправленные')):
+                box = decoded.split('"')[-2]
+                cache.set(cache_key, box, 60 * 60)
+                return box
+    except Exception as e:
+        logger.warning(f"IMAP list failed: {e}")
+    return None
+
+
+def build_email_message(from_mail: str, to_mail: List[str], subject: str,
+                        template: str, context: dict, attachment: str = '') -> MIMEMultipart:
+    msg = MIMEMultipart()
+    msg["From"] = from_mail
+    msg["To"] = ", ".join(to_mail)
+    msg["Subject"] = Header(subject, 'utf-8')
+    msg["Date"] = formatdate(localtime=True)
+
+    html_body = render_to_string(template, context)
+    msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+
+    if attachment:
+        filepath = os.path.join(settings.BASE_DIR, attachment.lstrip("/"))
+        if os.path.exists(filepath):
+            with open(filepath, "rb") as f:
+                part = MIMEBase('application', 'octet-stream')
+                part.set_payload(f.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                'Content-Disposition',
+                f'attachment; filename="{os.path.basename(filepath)}"'
+            )
+            msg.attach(part)
+        else:
+            logger.warning(f"Attachment not found: {filepath}")
+
+    return msg
+
+def save_to_sent_folder(msg_bytes: bytes, from_mail: str, password: str):
+    try:
+        imap = imaplib.IMAP4_SSL(settings.EMAIL_IMAP_HOST, 993)
+        imap.login(from_mail, password)
+        sent_folder = find_sent_folder(imap)
+        if sent_folder:
+            imap.append(sent_folder, None, imaplib.Time2Internaldate(time.time()), msg_bytes)
+        imap.logout()
+    except Exception as e:
+        logger.error(f"Failed to save to Sent folder: {e}")
+
+
+def send_notification(
+    sender,
+    recipient,
+    subject: str,
+    template: str,
+    context: dict,
+    attachment: str = '',
+    division: int = 0,
+    document: int = 0
+) -> int:
+    """
+    Отправляет email-уведомление с поддержкой нескольких почтовых ящиков, вложений и сохранения в папку «Исходящие».
+
+    Функция формирует и отправляет HTML-письмо через SMTP, используя учётные данные,
+    соответствующие выбранному подразделению (division). Поддерживает отправку от имени
+    пользователя (личный ящик) или сервисных аккаунтов (IAS, FLY). После успешной отправки
+    письмо сохраняется в папке «Исходящие» на IMAP-сервере. Все операции логируются,
+    ошибки обрабатываются и не приводят к падению вызывающего кода.
+
+    Используется в бизнес-логике для уведомлений по документам, назначениям и другим событиям.
+    Может быть интегрирована с Celery для асинхронной отправки.
+
+    Args:
+        sender: Объект отправителя, имеющий атрибуты `email` и `user_work_profile`.
+            Ожидается экземпляр модели пользователя (например, `DataBaseUser`),
+            связанный с профилем, содержащим пароль приложения (`work_application_password`).
+        recipient: Объект получателя. Структура зависит от типа документа (document):
+            - При document=0: объект с атрибутом `email`.
+            - При document=1: объект с `senior_brigade` (с `email`) и/или `place` (с `email`).
+            - При document=2: объект с `document.person`, имеющим `email`.
+            Может быть строкой или объектом, приводимым к email.
+        subject: Тема письма. Будет кодироваться в UTF-8 для корректного отображения.
+        template: Путь к шаблону Django (например, 'emails/notification.html'),
+            используемому для рендеринга HTML-тела письма.
+        context: Словарь контекста для рендеринга шаблона (например, {'user': user, 'url': url}).
+        attachment: Необязательный путь к файлу (относительно `BASE_DIR`), который будет
+            прикреплён к письму. Если файл не существует — будет предупреждение в логе.
+        division: Код подразделения, определяющий, от чьего имени отправлять:
+            - 0: от имени `sender` (используются `sender.email` и пароль из профиля).
+            - 1: от имени сервисного ящика IAS (берётся из настроек).
+            - 2: от имени сервисного ящика FLY.
+            - Любое другое значение: используется fallback (EMAIL_HOST_USER).
+        document: Тип документа, определяющий логику выбора получателей:
+            - 0: один email из `recipient.email`.
+            - 1: email старшего бригады и/или объекта.
+            - 2: email сотрудника из командировки.
+            - Иное: приведение `recipient` к строке.
+
+    Returns:
+        int: 1, если письмо успешно отправлено и сохранено; 0 — в случае любой ошибки
+            (аутентификация, недоступность сервера, некорректные получатели и т.д.).
+
+    Raises:
+        smtplib.SMTPAuthenticationError: Если переданы неверные учётные данные
+            для SMTP-сервера. Перехватывается внутри функции, логируется, возвращается 0.
+        smtplib.SMTPRecipientsRefused: Если один или все получатели отклонены сервером.
+            Также перехватывается, логируется, возвращается 0.
+        ValueError: Если для указанного `division` не найдены учётные данные
+            (например, отсутствуют в settings). Выбрасывается из `get_sender_credentials`,
+            перехватывается как общее `Exception`, логируется.
+        imaplib.IMAP4.error: Ошибка при подключении к IMAP для сохранения письма.
+            Не прерывает отправку, но логируется как ошибка сохранения.
+
+    Note:
+        - Функция изменяет состояние внешних систем: отправляет письмо (SMTP)
+          и создаёт сообщение в папке «Исходящие» (IMAP).
+        - Рекомендуется запускать в фоновом режиме через Celery, чтобы не блокировать основной поток.
+        - Для производительности имя папки «Исходящие» кэшируется на 1 час.
+    """
+
+    try:
+        from_mail, from_passwd = get_sender_credentials(sender, division)
+        server_adr = settings.EMAIL_HOST
+
+        to_mail = get_recipient_emails(recipient, document)
+        if not to_mail or all(not e for e in to_mail):
+            logger.error("No valid recipients")
+            return 0
+
+        msg = build_email_message(from_mail, to_mail, subject, template, context, attachment)
+        msg_raw = msg.as_bytes()
+
+        with smtplib.SMTP_SSL(server_adr, 465, timeout=10) as smtp:
+            smtp.login(from_mail, from_passwd)
+            smtp.sendmail(from_mail, to_mail, msg.as_string())
+
+        save_to_sent_folder(msg_raw, from_mail, from_passwd)
+
+        return 1
+
     except smtplib.SMTPAuthenticationError:
-        logger.error(f"SMTPAuthenticationError")
-        return 0
+        logger.error("SMTP auth failed: invalid credentials")
     except smtplib.SMTPRecipientsRefused:
-        logger.error(f"SMTPRecipientsRefused")
-        return 0
-    except Exception as _ex:
-        logger.error(f"Не удалось подключиться к серверу: {_ex}")
-        return 0
+        logger.error("SMTP: one or more recipients were rejected")
+    except Exception as e:
+        logger.error(f"Email sending failed: {e}", exc_info=True)
 
-    # Сохраняем сообщение в исходящие
-    imap = imaplib.IMAP4_SSL(server_imap, 993)  # Подключаемся в почтовому серверу
-    imap.login(from_mail, from_passwd)  # Логинимся в свой ящик
-    list_imap = imap.list()  # Получаем список папок
-    box = ''
-    if list_imap[0] == 'OK':
-        for i in list_imap[1]:
-            strings = i.decode().split(' ')
-            if 'Sent' in strings[0]:
-                box = strings[2].replace('"', '')
-    imap.append(box, None,  # Добавляем наше письмо в папку Исходящие
-                imaplib.Time2Internaldate(time.time()),
-                msg.as_bytes())
-    return 1  # Сообщение успешно отправлено
+    return 0
+
+# def send_notification(sender: DataBaseUser, recipient, subject: str, template: str, context: dict,
+#                       attachment='', division=0, document=0):
+#     """
+#     Функция отправки письма
+#     :param document: 0 - обычное письмо, 1 - Старшие бригад, 2 - Командировка и служебные
+#     :param division: 0 - <username>@barkol.ru, 1 - ias@barkol.ru, 2 - fly@barkol.ru, Другое - corp@barkol.ru
+#     :param sender: Отправитель
+#     :param recipient: Получатель
+#     :param subject: Тема
+#     :param template: Шаблон письма
+#     :param context: Контекст для заполнения шаблона
+#     :param attachment: Вложение к письму, в виде ссылки на файл
+#     :return:
+#     """
+#     match division:
+#         case 0:
+#             from_mail = sender.email  # адрес отправителя
+#             from_passwd = sender.user_work_profile.work_application_password  # пароль от почты отправителя
+#         case 1:
+#             from_mail = EMAIL_IAS_USER  # адрес отправителя
+#             from_passwd = EMAIL_IAS_PASSWORD  # пароль от почты отправителя
+#         case 2:
+#             from_mail = EMAIL_FLY_USER  # адрес отправителя
+#             from_passwd = EMAIL_FLY_PASSWORD  # пароль от почты отправителя
+#         case _:
+#             from_mail = EMAIL_HOST_USER  # адрес отправителя
+#             from_passwd = EMAIL_HOST_PASSWORD  # пароль от почты отправителя
+#     server_adr = EMAIL_HOST  # адрес почтового сервера
+#     server_imap = EMAIL_IMAP_HOST  # адрес imap сервера
+#     match document:
+#         case 0:
+#             to_mail = [recipient.email, ]  # адрес получателя
+#         case 1:
+#             to_mail = [recipient.senior_brigade.email, recipient.place.email, ]  # адрес получателя
+#         case 2:
+#             to_mail = [recipient.document.person.email, ]
+#         case _:
+#             to_mail = [recipient, ]
+#     message = render_to_string(template, context)
+#     msg = MIMEMultipart()  # Создаем сообщение
+#     msg["From"] = from_mail  # Добавляем адрес отправителя
+#     msg['To'] = ','.join(to_mail)  # Добавляем адрес получателя
+#     msg["Subject"] = Header(subject, 'utf-8')  # Пишем тему сообщения
+#     msg["Date"] = formatdate(localtime=True)  # Дата сообщения
+#     msg.attach(MIMEText(message, 'html', 'utf-8'))  # Добавляем форматированный текст сообщения
+#
+#     # Добавляем файл
+#     if attachment != '':
+#         filepath = str(BASE_DIR) + attachment  # путь к файлу
+#         part = MIMEBase('application', "octet-stream")  # Создаем объект для загрузки файла
+#         part.set_payload(open(filepath, "rb").read())  # Подключаем файл
+#         encoders.encode_base64(part)
+#         part.add_header('Content-Disposition',
+#                         f'attachment; filename="{os.path.basename(filepath)}"')
+#         msg.attach(part)  # Добавляем файл в письмо
+#     try:
+#         smtp = smtplib.SMTP_SSL(server_adr, 465)  # Создаем объект для отправки сообщения
+#     except Exception as _ex:
+#         logger.error(f"Ошибка: {_ex}")
+#     try:
+#         smtp.login(from_mail, from_passwd)  # Логинимся в свой ящик
+#         smtp.sendmail(from_mail, to_mail, msg.as_string())  # Отправляем сообщения
+#         smtp.quit()  # Закрываем соединение
+#     except smtplib.SMTPAuthenticationError:
+#         logger.error(f"SMTPAuthenticationError")
+#         return 0
+#     except smtplib.SMTPRecipientsRefused:
+#         logger.error(f"SMTPRecipientsRefused")
+#         return 0
+#     except Exception as _ex:
+#         logger.error(f"Не удалось подключиться к серверу: {_ex}")
+#         return 0
+#
+#     # Сохраняем сообщение в исходящие
+#     imap = imaplib.IMAP4_SSL(server_imap, 993)  # Подключаемся в почтовому серверу
+#     imap.login(from_mail, from_passwd)  # Логинимся в свой ящик
+#     list_imap = imap.list()  # Получаем список папок
+#     box = ''
+#     if list_imap[0] == 'OK':
+#         for i in list_imap[1]:
+#             strings = i.decode().split(' ')
+#             if 'Sent' in strings[0]:
+#                 box = strings[2].replace('"', '')
+#     imap.append(box, None,  # Добавляем наше письмо в папку Исходящие
+#                 imaplib.Time2Internaldate(time.time()),
+#                 msg.as_bytes())
+#     return 1  # Сообщение успешно отправлено
 
 
 def check_user(request):

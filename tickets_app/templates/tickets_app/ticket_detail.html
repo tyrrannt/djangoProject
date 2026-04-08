@@ -2,6 +2,72 @@
 {% load static %}
 {% load custom %}
 
+{% block custome_css %}
+    <style>
+        /* 1. Увеличиваем мелкие подсказки (тег <small>) */
+        .card-body small,
+        .card-footer small {
+            font-size: 0.95rem !important; /* Было ~0.8rem, теперь почти как основной текст */
+            display: inline-block;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* 2. Увеличиваем текст с классом .text-muted (подписи автора, даты и т.д.) */
+        /* В вашем коде это затронет строки "Автор: ... | Дата" и "Сообщений пока нет" */
+        .text-ticket {
+            font-size: 1rem !important; /* Возвращаем к стандартному размеру 16px */
+            font-weight: 500;
+            color: #000000 !important;
+        }
+
+        /* 3. Увеличиваем подписи к полям формы (Label) */
+        .form-label {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        /* 4. Дополнительно: увеличиваем текст в хлебных крошках и истории */
+        .breadcrumb-item, .history-meta {
+            font-size: 1rem;
+        }
+
+        /* 5. Делаем текст ошибок (если они появятся в форме сообщения) жирнее */
+        .text-danger {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        /* 6. Стили для модального окна просмотра вложений */
+        .attachment-viewer {
+            cursor: pointer;
+            text-decoration: none;
+            color: #0d6efd;
+        }
+        .attachment-viewer:hover {
+            color: #0a58ca;
+            text-decoration: underline;
+        }
+        .modal-body .attachment-preview {
+            max-width: 100%;
+            max-height: 70vh;
+            display: block;
+            margin: 0 auto;
+        }
+        .modal-body .pdf-preview {
+            width: 100%;
+            height: 70vh;
+            border: none;
+        }
+        .modal-body .pdf-fallback {
+            text-align: center;
+            padding: 2rem;
+        }
+    </style>
+{% endblock %}
+
 {% block title %}Заявка #{{ ticket.pk }} - {{ ticket.title }}{% endblock %}
 
 {% block content %}
@@ -26,7 +92,61 @@
 
         <div class="row">
             <!-- Основная информация -->
-            <div class="col-lg-8">
+            <div class="col-lg-12">
+                {% if user|has_group:"Руководители" or user.is_superuser %}
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Информация</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Ответственный:</strong><br>
+                                        {% if ticket.responsible %}
+                                            {{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
+                                        {% else %}
+                                            <span class="text-muted">Не назначен</span>
+                                        {% endif %}
+                                    </p>
+                                    <p><strong>Дата создания:</strong><br>{{ ticket.created_at|date:"d.m.Y H:i" }}</p>
+                                    <p><strong>Дата обновления:</strong><br>{{ ticket.updated_at|date:"d.m.Y H:i" }}</p>
+                                    {% if ticket.resolved_at %}
+                                        <p><strong>Дата решения:</strong><br>{{ ticket.resolved_at|date:"d.m.Y H:i" }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Действия:</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <a href="{% url 'tickets_app:edit' ticket.pk %}"
+                                           class="btn btn-primary w-100 mb-2">
+                                            <i class="bi bi-person-check"></i> Назначить ответственного
+                                        </a>
+                                        <a href="{% url 'tickets_app:edit' ticket.pk %}"
+                                           class="btn btn-outline-secondary w-100">
+                                            <i class="bi bi-arrow-repeat"></i> Изменить статус
+                                        </a>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Действия руководства</h5>
+                                    </div>
+                                    <div class="card-body text-muted text-center">
+                                        <small><i class="bi bi-lock"></i> Заявка закрыта</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Заявка #{{ ticket.pk }}</h5>
@@ -49,7 +169,7 @@
                             {{ ticket.created_at|date:"d.m.Y H:i" }}
                         </p>
                         <hr>
-                        <p>{{ ticket.description|linebreaks }}</p>
+                        <span class="text-ticket">{{ ticket.description|linebreaks }}</span>
 
                         {% if ticket.parent_ticket %}
                             <div class="alert alert-warning mt-3">
@@ -76,7 +196,12 @@
                                 <ul class="list-unstyled">
                                     {% for attachment in ticket.attachments.all %}
                                         <li>
-                                            <a href="{{ attachment.file.url }}" target="_blank">
+                                            <a href="javascript:void(0)"
+                                               class="attachment-viewer"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#attachmentModal"
+                                               data-file-url="{{ attachment.file.url }}"
+                                               data-file-name="{{ attachment.original_name }}">
                                                 <i class="bi bi-paperclip"></i> {{ attachment.original_name }}
                                             </a>
                                         </li>
@@ -112,7 +237,7 @@
                                     <strong>{{ message.sender|FIO_format|default:message.sender.username }}</strong>
                                     <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
                                 </div>
-                                <p class="mb-2">{{ message.text|linebreaks }}</p>
+                                <span class="text-ticket mb-2">{{ message.text|linebreaks }}</span>
 
                                 {% if message.is_internal %}
                                     <small class="text-warning"><i class="bi bi-lock"></i> Внутренняя заметка</small>
@@ -121,7 +246,12 @@
                                 {% if message.attachments.all %}
                                     <div class="mt-2">
                                         {% for attachment in message.attachments.all %}
-                                            <a href="{{ attachment.file.url }}" target="_blank" class="me-2">
+                                            <a href="javascript:void(0)"
+                                               class="attachment-viewer me-2"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#attachmentModal"
+                                               data-file-url="{{ attachment.file.url }}"
+                                               data-file-name="{{ attachment.original_name }}">
                                                 <i class="bi bi-paperclip"></i> {{ attachment.original_name }}
                                             </a>
                                         {% endfor %}
@@ -179,55 +309,119 @@
             </div>
 
             <!-- Боковая панель -->
-            <div class="col-lg-4">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Информация</h5>
+
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра вложений -->
+    <div class="modal fade" id="attachmentModal" tabindex="-1" aria-labelledby="attachmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="attachmentModalLabel">Просмотр вложения</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <!-- Контейнер для изображений -->
+                    <img id="modalImagePreview" class="attachment-preview" style="display: none;" alt="Предпросмотр">
+                    <!-- Контейнер для PDF -->
+                    <div id="modalPdfContainer" style="display: none;">
+                        <iframe id="modalPdfPreview" class="pdf-preview"></iframe>
+                        <div class="pdf-fallback" style="display: none;">
+                            <p><i class="bi bi-file-earmark-pdf"></i> PDF файл не может быть отображён в браузере.</p>
+                            <a id="modalPdfDownload" href="#" class="btn btn-primary" download>
+                                <i class="bi bi-download"></i> Скачать PDF
+                            </a>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <p><strong>Ответственный:</strong><br>
-                            {% if ticket.responsible %}
-                                {{ ticket.responsible|FIO_format|default:ticket.responsible.username }}
-                            {% else %}
-                                <span class="text-muted">Не назначен</span>
-                            {% endif %}
-                        </p>
-                        <p><strong>Дата создания:</strong><br>{{ ticket.created_at|date:"d.m.Y H:i" }}</p>
-                        <p><strong>Дата обновления:</strong><br>{{ ticket.updated_at|date:"d.m.Y H:i" }}</p>
-                        {% if ticket.resolved_at %}
-                            <p><strong>Дата решения:</strong><br>{{ ticket.resolved_at|date:"d.m.Y H:i" }}</p>
-                        {% endif %}
+                    <!-- Контейнер для других файлов -->
+                    <div id="modalFileContainer" style="display: none;">
+                        <p><i class="bi bi-file-earmark"></i> <span id="modalFileName"></span></p>
+                        <a id="modalFileDownload" href="#" class="btn btn-primary" download>
+                            <i class="bi bi-download"></i> Скачать файл
+                        </a>
                     </div>
                 </div>
-
-                {% if user|has_group:"Руководители" or user.is_superuser %}
-                    {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Действия руководства</h5>
-                            </div>
-                            <div class="card-body">
-                                <a href="{% url 'tickets_app:edit' ticket.pk %}" class="btn btn-primary w-100 mb-2">
-                                    <i class="bi bi-person-check"></i> Назначить ответственного
-                                </a>
-                                <a href="{% url 'tickets_app:edit' ticket.pk %}"
-                                   class="btn btn-outline-secondary w-100">
-                                    <i class="bi bi-arrow-repeat"></i> Изменить статус
-                                </a>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Действия руководства</h5>
-                            </div>
-                            <div class="card-body text-muted text-center">
-                                <small><i class="bi bi-lock"></i> Заявка закрыта</small>
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endif %}
+                <div class="modal-footer">
+                    <a id="modalDownloadLink" href="#" class="btn btn-outline-secondary btn-sm" download>
+                        <i class="bi bi-download"></i> Скачать
+                    </a>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
+                </div>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const attachmentModal = document.getElementById('attachmentModal');
+            if (!attachmentModal) return;
+
+            const modalImagePreview = document.getElementById('modalImagePreview');
+            const modalPdfContainer = document.getElementById('modalPdfContainer');
+            const modalPdfPreview = document.getElementById('modalPdfPreview');
+            const modalPdfFallback = modalPdfContainer.querySelector('.pdf-fallback');
+            const modalFileContainer = document.getElementById('modalFileContainer');
+            const modalFileName = document.getElementById('modalFileName');
+            const modalFileDownload = document.getElementById('modalFileDownload');
+            const modalDownloadLink = document.getElementById('modalDownloadLink');
+            const modalPdfDownload = document.getElementById('modalPdfDownload');
+            const modalTitle = document.getElementById('attachmentModalLabel');
+
+            // Расширения файлов
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            const pdfExtension = '.pdf';
+
+            // Обработчик открытия модального окна
+            attachmentModal.addEventListener('show.bs.modal', function(event) {
+                const trigger = event.relatedTarget;
+                const fileUrl = trigger.getAttribute('data-file-url');
+                const fileName = trigger.getAttribute('data-file-name');
+
+                // Получаем расширение файла
+                const extension = '.' + fileName.split('.').pop().toLowerCase();
+
+                // Скрываем все контейнеры
+                modalImagePreview.style.display = 'none';
+                modalPdfContainer.style.display = 'none';
+                modalPdfPreview.style.display = 'none';
+                modalPdfFallback.style.display = 'none';
+                modalFileContainer.style.display = 'none';
+
+                // Устанавливаем заголовок и ссылку скачивания
+                modalTitle.textContent = fileName;
+                modalDownloadLink.href = fileUrl;
+
+                // Проверяем тип файла
+                if (imageExtensions.includes(extension)) {
+                    // Изображение
+                    modalImagePreview.src = fileUrl;
+                    modalImagePreview.style.display = 'block';
+                } else if (extension === pdfExtension) {
+                    // PDF файл
+                    modalPdfContainer.style.display = 'block';
+                    modalPdfPreview.src = fileUrl;
+                    modalPdfPreview.style.display = 'block';
+                    modalPdfDownload.href = fileUrl;
+
+                    // Fallback если iframe не загрузится
+                    modalPdfPreview.onerror = function() {
+                        modalPdfPreview.style.display = 'none';
+                        modalPdfFallback.style.display = 'block';
+                    };
+                } else {
+                    // Другие файлы
+                    modalFileContainer.style.display = 'block';
+                    modalFileName.textContent = fileName;
+                    modalFileDownload.href = fileUrl;
+                }
+            });
+
+            // Очистка при закрытии модального окна
+            attachmentModal.addEventListener('hidden.bs.modal', function() {
+                modalImagePreview.src = '';
+                modalPdfPreview.src = '';
+            });
+        });
+    </script>
 {% endblock %}

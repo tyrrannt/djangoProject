@@ -8,7 +8,7 @@
             <img src="{% static 'admin_templates/img/!logged-user.jpg' %}" class="rounded img-fluid"
                  alt="{{ databaseuser.username }}">
         {% endif %}
-        <div class="thumb-info-title">
+        <div class="thumb-info-title mt-8">
             <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}: {{ birthday_difference }}</span>
             <span class="thumb-info-type">{{ object.user_work_profile.job }}</span>
         </div>

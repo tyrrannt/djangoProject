@@ -119,12 +119,6 @@
         <!-- start: search & user box -->
         {% block notifications %}
             <div class="header-right">
-                {#                <form action="#" class="search nav-form">#}
-                {#                    <div class="input-group">#}
-                {#                        <input type="text" class="form-control" name="q" id="q" placeholder="Поиск...">#}
-                {#                        <button class="btn btn-default" type="submit"><i class="bx bx-search"></i></button>#}
-                {#                    </div>#}
-                {#                </form>#}
                 <span class="separator"></span>
                 {% include 'library_app/notifications.html' %}
                 <span class="separator"></span>
@@ -147,10 +141,11 @@
 
         <!-- end: sidebar -->
         <!-- БЛОК КОНТЕНТА -->
-        <section role="main" class="content-body content-body-modern mt-0">
+
             {% include 'library_app/breadcrumb.html' %}
-            <div>
+
                 {% if form.errors %}
+                <div>
                     {% for field in form %}
                         {% for error in field.errors %}
                             <div class="alert alert-danger">
@@ -163,8 +158,10 @@
                             <strong>{{ field.label }}</strong>: {{ error|escape }}
                         </div>
                     {% endfor %}
+                </div>
                 {% endif %}
-            </div>
+
+        <section role="main" class="content-body">
             {% block content %}
             {% endblock %}
         </section>
