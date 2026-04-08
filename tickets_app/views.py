@@ -79,12 +79,6 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
         kwargs['user'] = self.request.user
         return kwargs
 
-    def post(self, request, *args, **kwargs):
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        return self.form_invalid(form)
-
     def form_valid(self, form):
         form.instance.author = self.request.user
         response = super().form_valid(form)

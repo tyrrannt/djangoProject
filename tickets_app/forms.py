@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 
 from administration_app.utils import make_custom_field
-from .models import Ticket, Message, Attachment, TicketStatus
+from .models import Ticket, Message, Attachment, TicketStatus, validate_file_extension
 
 User = get_user_model()
 
@@ -18,15 +18,29 @@ class MultipleFileInput(forms.ClearableFileInput):
         super().__init__(attrs=attrs)
 
 
+class MultipleFileField(forms.FileField):
+    """Поле для множественной загрузки файлов"""
+    widget = MultipleFileInput
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('widget', self.widget)
+        super().__init__(**kwargs)
+
+    def to_python(self, data):
+        if data in self.empty_values:
+            return None
+        # Если data — список файлов, возвращаем его как есть
+        if isinstance(data, (list, tuple)):
+            return data
+        # Если один файл — оборачиваем в список
+        return [data]
+
+
 class TicketCreateForm(forms.ModelForm):
     """Форма создания заявки"""
-    attachments = forms.FileField(
+    attachments = MultipleFileField(
         label='Вложения',
         required=False,
-        widget=MultipleFileInput(attrs={
-            'class': 'form-control',
-            'accept': '.pdf,.jpg,.jpeg,.png',
-        }),
         help_text='Можно выбрать несколько файлов. Разрешены: PDF, JPG, PNG',
     )
 
