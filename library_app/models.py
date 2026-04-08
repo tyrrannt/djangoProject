@@ -85,6 +85,7 @@ class HelpTopic(models.Model):
     category = models.ForeignKey(HelpCategory, on_delete=models.SET_NULL, blank=True, null=True)
     text = CKEditor5Field('Содержание', config_name='extends', blank=True)
     hash_tag = models.ManyToManyField(HashTag, blank=True)
+    custom_css = models.TextField(blank=True)
 
     def __str__(self):
         return self.title
