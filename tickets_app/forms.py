@@ -7,14 +7,24 @@ from .models import Ticket, Message, Attachment, TicketStatus
 User = get_user_model()
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    """Виджет для множественной загрузки файлов"""
+    allow_multiple_selected = True
+
+    def __init__(self, attrs=None):
+        if attrs is None:
+            attrs = {}
+        attrs['multiple'] = 'multiple'
+        super().__init__(attrs=attrs)
+
+
 class TicketCreateForm(forms.ModelForm):
     """Форма создания заявки"""
     attachments = forms.FileField(
         label='Вложения',
         required=False,
-        widget=forms.ClearableFileInput(attrs={
+        widget=MultipleFileInput(attrs={
             'class': 'form-control',
-            'multiple': True,
             'accept': '.pdf,.jpg,.jpeg,.png',
         }),
         help_text='Можно выбрать несколько файлов. Разрешены: PDF, JPG, PNG',
