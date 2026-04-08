@@ -108,6 +108,22 @@
                                 </div>
                             {% endif %}
 
+                            <!-- Поле вложений (только при создании) -->
+                            {% if not form.instance.pk and form.attachments %}
+                                <div class="mb-3">
+                                    <label for="{{ form.attachments.id_for_label }}" class="form-label">
+                                        Вложения
+                                    </label>
+                                    {{ form.attachments }}
+                                    {% if form.attachments.errors %}
+                                        <div class="text-danger">{{ form.attachments.errors }}</div>
+                                    {% endif %}
+                                    <small class="text-muted">
+                                        {{ form.attachments.help_text }}
+                                    </small>
+                                </div>
+                            {% endif %}
+
                             <!-- Поля для назначения ответственного (только для редактирования) -->
                             {% if form.responsible and request.user|has_group:'Руководители' %}
                                 <div class="mb-3">
@@ -151,8 +167,8 @@
                         <h5><i class="bi bi-info-circle"></i> Как подать заявку?</h5>
                         <ol class="mb-0">
                             <li>Укажите краткий заголовок проблемы</li>
-                            <li>Подробно опишите ситуацию в поле "Описание"</li>
-                            <li>При необходимости приложите файлы (после создания)</li>
+                            <li>Подробно опишите ситуацию в поле «Описание»</li>
+                            <li>При необходимости прикрепите файлы (PDF, JPG, PNG)</li>
                             <li>Руководство рассмотрит заявку и назначит ответственного</li>
                             <li>Вы получите уведомление о решении</li>
                         </ol>

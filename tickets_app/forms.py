@@ -9,6 +9,16 @@ User = get_user_model()
 
 class TicketCreateForm(forms.ModelForm):
     """Форма создания заявки"""
+    attachments = forms.FileField(
+        label='Вложения',
+        required=False,
+        widget=forms.ClearableFileInput(attrs={
+            'class': 'form-control',
+            'multiple': True,
+            'accept': '.pdf,.jpg,.jpeg,.png',
+        }),
+        help_text='Можно выбрать несколько файлов. Разрешены: PDF, JPG, PNG',
+    )
 
     class Meta:
         model = Ticket
