@@ -1322,7 +1322,6 @@ def send_notification(
         - Для производительности имя папки «Исходящие» кэшируется на 1 час.
     """
 
-    print(*get_sender_credentials(sender, division=0))
     try:
         from_mail, from_passwd = get_sender_credentials(sender, division)
         server_adr = settings.EMAIL_HOST
