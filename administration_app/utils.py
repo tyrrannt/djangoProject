@@ -1173,7 +1173,7 @@ def get_sender_credentials(sender, division: int) -> Tuple[str, str]:
     """
     if division == 0:
         # Используем данные отправителя
-        return sender.email, sender.user_work_profile.work_application_password
+        return sender.email, sender.user_work_profile.work_email_password
 
     # Для других подразделений — берём из настроек
     if division in EMAIL_CONFIGS:
@@ -1322,6 +1322,7 @@ def send_notification(
         - Для производительности имя папки «Исходящие» кэшируется на 1 час.
     """
 
+    print(*get_sender_credentials(sender, division=0))
     try:
         from_mail, from_passwd = get_sender_credentials(sender, division)
         server_adr = settings.EMAIL_HOST
