@@ -1264,7 +1264,9 @@ def save_to_sent_folder(msg_bytes: bytes, from_mail: str, password: str):
         imap.login(from_mail, password)
         sent_folder = find_sent_folder(imap)
         if sent_folder:
-            imap.append(sent_folder, None, imaplib.Time2Internaldate(time.time()), msg_bytes)
+            # Передаём None вместо Time2Internaldate — сервер сам подставит дату.
+            # Это решает проблему "Malformed date parameter" на строгих IMAP-серверах.
+            imap.append(sent_folder, None, None, msg_bytes)
         imap.logout()
     except Exception as e:
         logger.error(f"Failed to save to Sent folder: {e}")
