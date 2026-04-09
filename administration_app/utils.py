@@ -1341,7 +1341,7 @@ def send_notification(
         if division < 3:
             save_to_sent_folder(msg_raw, from_mail, from_passwd)
         else:
-            save_to_sent_folder(msg_raw, *get_sender_credentials(recipient, 0))
+            save_to_sent_folder(msg_raw, *get_sender_credentials(sender, 0))
 
         return 1
 
