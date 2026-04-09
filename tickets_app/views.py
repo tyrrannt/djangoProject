@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.utils import timezone
 
 from administration_app.utils import send_notification
@@ -36,7 +36,9 @@ class TicketListView(LoginRequiredMixin, ListView):
             return queryset
 
         # Обычный пользователь видит только свои
-        return queryset.filter(author=user)
+        return queryset.filter(
+            Q(author=user) | Q(responsible=user)
+        ).distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -58,14 +60,39 @@ class TicketDetailView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         user = self.request.user
+        is_staff = user.is_superuser or user.groups.filter(name='Руководство').exists()
+
+        # Всегда загружаем все сообщения, фильтрация видимости — в get_context_data
         queryset = Ticket.objects.select_related(
             'author', 'responsible', 'parent_ticket'
-        ).prefetch_related('messages__sender', 'messages__attachments', 'attachments')
+        ).prefetch_related(
+            Prefetch('messages', queryset=Message.objects.select_related('sender').prefetch_related('attachments')),
+            'attachments'
+        )
 
         # Руководство видит все, остальные - только свои или назначенные
-        if user.groups.filter(name='Руководство').exists() or user.is_superuser:
+        if is_staff:
             return queryset
         return queryset.filter(Q(author=user) | Q(responsible=user))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        ticket = self.object
+        is_staff = user.is_superuser or user.groups.filter(name='Руководство').exists()
+        is_responsible = ticket.responsible == user
+
+        # Фильтруем сообщения: обычные пользователи не видят внутренние заметки
+        # Но ответственный по заявке — видит
+        if not is_staff and not is_responsible:
+            visible_messages = [m for m in ticket.messages.all() if not m.is_internal]
+            context['visible_messages'] = visible_messages
+            context['visible_messages_count'] = len(visible_messages)
+        else:
+            context['visible_messages'] = ticket.messages.all()
+            context['visible_messages_count'] = ticket.messages.count()
+
+        return context
 
 
 class TicketCreateView(LoginRequiredMixin, CreateView):
@@ -171,8 +198,11 @@ def add_message_to_ticket(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
 
     # Проверка прав
-    if not (request.user.groups.filter(name='Руководство').exists() or request.user.is_superuser or
-            ticket.author == request.user or ticket.responsible == request.user):
+    is_staff = request.user.groups.filter(name='Руководство').exists() or request.user.is_superuser
+    is_author = ticket.author == request.user
+    is_responsible = ticket.responsible == request.user
+
+    if not (is_staff or is_author or is_responsible):
         messages.error(request, 'Нет доступа к этой заявке')
         return redirect('tickets_app:list')
 
@@ -195,9 +225,28 @@ def add_message_to_ticket(request, pk):
             for f in files:
                 Attachment.objects.create(file=f, message=message)
 
+            # Логика смены статуса
+            new_status = request.POST.get('status')  # Получаем статус из формы
+
+            if ticket.status == TicketStatus.NEW:
+                # Если статус НЕ передан явно или он пустой (пользователь ничего не выбрал)
+                if not new_status:
+                    ticket.status = TicketStatus.IN_PROGRESS
+                    ticket.save(update_fields=['status'])
+
+                # Если статус ПЕРЕДАН явно (и это делает не автор, а сотрудник/админ)
+                elif not is_author and new_status != ticket.status:
+                    valid_statuses = [s[0] for s in TicketStatus.choices]
+                    if new_status in valid_statuses:
+                        ticket.status = new_status
+                        if new_status == TicketStatus.RESOLVED:
+                            ticket.resolved_at = timezone.now()
+                        ticket.save(update_fields=['status', 'resolved_at'])
+
             messages.success(request, 'Сообщение добавлено')
             return redirect('tickets_app:detail', pk=ticket.pk)
     else:
         message_form = MessageForm()
 
+    # Перенаправляем на detail — форма рендерится там
     return redirect('tickets_app:detail', pk=ticket.pk)

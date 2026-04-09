@@ -104,11 +104,30 @@
             letter-spacing: 0.5px;
         }
 
-        .status-new { background: var(--accent-success); color: #fff; }
-        .status-in_progress { background: #3b82f6; color: #fff; }
-        .status-redirected { background: var(--accent-warning); color: #1a1a1a; }
-        .status-resolved { background: var(--accent-info); color: #fff; }
-        .status-closed { background: var(--accent-secondary); color: #fff; }
+        .status-new {
+            background: var(--accent-success);
+            color: #fff;
+        }
+
+        .status-in_progress {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .status-redirected {
+            background: var(--accent-warning);
+            color: #1a1a1a;
+        }
+
+        .status-resolved {
+            background: var(--accent-info);
+            color: #fff;
+        }
+
+        .status-closed {
+            background: var(--accent-secondary);
+            color: #fff;
+        }
 
         .ticket-title-display {
             font-size: 1.6rem;
@@ -639,6 +658,20 @@
             outline: none;
         }
 
+        .message-form-body .form-select {
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .message-form-body .form-select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+            outline: none;
+        }
+
         .form-check-label {
             font-size: 0.95rem;
             color: #4b5563;
@@ -1050,7 +1083,8 @@
                         <!-- Обжалования: если есть апелляции -->
                         {% if ticket.appeals.exists %}
                             <div class="appeal-danger">
-                                <strong><i class='bx bx-error'></i> Есть обжалования ({{ ticket.appeals.count }}):</strong>
+                                <strong><i class='bx bx-error'></i> Есть обжалования
+                                    ({{ ticket.appeals.count }}):</strong>
                                 <ul class="appeal-list mb-0">
                                     {% for appeal in ticket.appeals.all %}
                                         <li>
@@ -1088,23 +1122,25 @@
 
                     <!-- Футер с кнопками -->
                     {% if request.user|has_group:'Руководство' or user.is_superuser or ticket.author == user %}
-                        <div class="card-footer" style="background: #fafbfc; border-top: 1px solid #e5e7eb; padding: 16px 24px;">
-                            {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
-                                <div class="action-buttons">
+                        <div class="card-footer"
+                             style="background: #fafbfc; border-top: 1px solid #e5e7eb; padding: 16px 24px;">
+                            <div class="action-buttons">
+                                {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
                                     <a href="{% url 'tickets_app:edit' ticket.pk %}"
                                        class="btn-action btn-action-edit">
                                         <i class='bx bx-edit'></i> Редактировать
                                     </a>
-                                    <a href="{% url 'tickets_app:list' %}"
-                                       class="btn-action btn-action-back">
-                                        <i class='bx bx-arrow-back'></i> Назад к списку
+                                {% else %}
+                                    <a href="#"
+                                       class="btn-action text-muted">
+                                        <i class='bx bx-lock-alt'></i> Редактирование закрыто
                                     </a>
-                                </div>
-                            {% else %}
-                                <span class="text-muted">
-                                    <i class='bx bx-lock-alt'></i> Редактирование закрыто
-                                </span>
-                            {% endif %}
+                                {% endif %}
+                                <a href="{% url 'tickets_app:list' %}"
+                                   class="btn-action btn-action-back">
+                                    <i class='bx bx-arrow-back'></i> Назад к списку
+                                </a>
+                            </div>
                         </div>
                     {% endif %}
                 </div>
@@ -1115,11 +1151,11 @@
                         <h5>
                             <i class='bx bx-conversation' style="color: var(--accent-primary);"></i>
                             История переписки
-                            <span class="messages-count">{{ ticket.messages.count }}</span>
+                            <span class="messages-count">{{ visible_messages_count }}</span>
                         </h5>
                     </div>
                     <div class="messages-body">
-                        {% for message in ticket.messages.all %}
+                        {% for message in visible_messages %}
                             <div class="message-item
                                 {% if message.is_internal %}is-internal
                                 {% elif message.sender == ticket.author %}is-author
@@ -1166,8 +1202,8 @@
                                                    class="message-attachment"
                                                    data-bs-toggle="modal"
                                                    data-bs-target="#attachmentModal"
-                                                   data-file-url="{{ attachment.file.url|escapejs }}"
-                                                   data-file-name="{{ attachment.original_name|escapejs }}">
+                                                   data-file-url="{{ attachment.file.url }}"
+                                                   data-file-name="{{ attachment.original_name }}">
                                                     <i class='bx bx-paperclip'></i> {{ attachment.original_name }}
                                                 </a>
                                             {% endfor %}
@@ -1209,6 +1245,28 @@
                                             <label class="form-check-label" for="id_is_internal">
                                                 <i class='bx bx-lock'></i> Внутренняя заметка (не видно пользователю)
                                             </label>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Смена статуса (только не автором) -->
+                                    {% if ticket.author != request.user %}
+                                        <div class="mb-3">
+                                            <label class="form-label" style="font-weight: 600; font-size: 0.95rem;">
+                                                <i class='bx bx-transfer' style="color: var(--accent-primary);"></i>
+                                                Изменить статус
+                                            </label>
+                                            <select name="status" class="form-select">
+                                                <option value="">-- Оставить текущий --</option>
+                                                <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>
+                                                    В работе
+                                                </option>
+                                                <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>
+                                                    Решено
+                                                </option>
+                                                <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>
+                                                    Закрыто
+                                                </option>
+                                            </select>
                                         </div>
                                     {% endif %}
 
