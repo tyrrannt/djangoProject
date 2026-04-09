@@ -2,14 +2,18 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
-from django.core.mail import send_mail
-from django.conf import settings
 from django.db.models import Q, Prefetch
 from django.utils import timezone
+from django.urls import reverse
 
 from administration_app.utils import send_notification
+from customers_app.models import DataBaseUser
 from .models import Ticket, Message, Attachment, TicketStatus
 from .forms import TicketCreateForm, TicketUpdateForm, MessageForm, AttachmentForm
+from core import logger
+
+# Division 3 — сервисная рассылка (fallback на EMAIL_HOST_USER)
+NOTIFICATION_DIVISION = 3
 
 
 class TicketListView(LoginRequiredMixin, ListView):
@@ -115,25 +119,39 @@ class TicketCreateView(LoginRequiredMixin, CreateView):
         for f in files:
             Attachment.objects.create(file=f, ticket=self.object)
 
-        # Уведомление руководству
-        send_mail(
-            subject=f'Новая заявка: {self.object.title}',
-            message=f'Автор: {self.object.author}\nОписание: {self.object.description}',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email for _, email in settings.ADMINS],
-            fail_silently=True,
+        # Уведомление руководству о новой заявке
+        ticket_url = self.request.build_absolute_uri(
+            reverse('tickets_app:detail', kwargs={'pk': self.object.pk})
         )
-        context = {}
-        send_notification(
-            self.request.user,
-            'bvs@barkol.ru',
-            f'Новая заявка: {self.object.title}',
-            "hrdepartment_app/creatingteam_email.html",
-            context,
-            '',
-            0,
-            0,
-        )
+        context = {
+            'event_type': 'new',
+            'ticket_title': self.object.title,
+            'ticket_description': self.object.description,
+            'author_name': str(self.object.author),
+            'ticket_pk': self.object.pk,
+            'ticket_url': ticket_url,
+            'year': timezone.now().year,
+        }
+
+        # Находим пользователей руководства для уведомления
+        leadership_users = DataBaseUser.objects.filter(
+            groups__name='Руководство'
+        ).distinct()
+
+        for leader in leadership_users:
+            if leader.email:
+                try:
+                    send_notification(
+                        self.request.user,
+                        leader,
+                        f'Новая заявка: {self.object.title}',
+                        'tickets_app/email_notification.html',
+                        context,
+                        division=NOTIFICATION_DIVISION,
+                        document=0,
+                    )
+                except Exception as e:
+                    logger.error(f'Ошибка отправки уведомления руководству: {e}')
 
         messages.success(self.request, 'Заявка успешно создана')
         return response
@@ -166,28 +184,58 @@ class TicketUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
         response = super().form_valid(form)
 
+        ticket_url = self.request.build_absolute_uri(
+            reverse('tickets_app:detail', kwargs={'pk': self.object.pk})
+        )
+
         # Уведомление сотруднику при назначении
         if form.instance.responsible and form.instance.responsible != old_ticket.responsible:
-            send_mail(
-                subject=f'Вам назначена заявка: {form.instance.title}',
-                message=f'Автор: {form.instance.author}\nОписание: {form.instance.description}',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[form.instance.responsible.email],
-                fail_silently=True,
-            )
+            context = {
+                'event_type': 'assigned',
+                'ticket_title': form.instance.title,
+                'ticket_description': form.instance.description,
+                'author_name': str(form.instance.author),
+                'ticket_pk': form.instance.pk,
+                'ticket_url': ticket_url,
+                'year': timezone.now().year,
+            }
+            try:
+                send_notification(
+                    self.request.user,
+                    form.instance.responsible,
+                    f'Вам назначена заявка: {form.instance.title}',
+                    'tickets_app/email_notification.html',
+                    context,
+                    division=NOTIFICATION_DIVISION,
+                    document=0,
+                )
+            except Exception as e:
+                logger.error(f'Ошибка отправки уведомления ответственному: {e}')
             messages.success(self.request, 'Ответственный назначен')
 
         # Уведомление пользователю при решении
         if form.instance.status == TicketStatus.RESOLVED and old_ticket.status != TicketStatus.RESOLVED:
             form.instance.resolved_at = timezone.now()
             form.instance.save(update_fields=['resolved_at'])
-            send_mail(
-                subject=f'Ваша заявка решена: {form.instance.title}',
-                message='Зайдите в систему, чтобы ознакомиться с решением.',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[form.instance.author.email],
-                fail_silently=True,
-            )
+            context = {
+                'event_type': 'resolved',
+                'ticket_title': form.instance.title,
+                'ticket_pk': form.instance.pk,
+                'ticket_url': ticket_url,
+                'year': timezone.now().year,
+            }
+            try:
+                send_notification(
+                    self.request.user,
+                    form.instance.author,
+                    f'Ваша заявка решена: {form.instance.title}',
+                    'tickets_app/email_notification.html',
+                    context,
+                    division=NOTIFICATION_DIVISION,
+                    document=0,
+                )
+            except Exception as e:
+                logger.error(f'Ошибка отправки уведомления автору о решении: {e}')
             messages.success(self.request, 'Заявка помечена как решенная')
 
         return response
@@ -242,6 +290,54 @@ def add_message_to_ticket(request, pk):
                         if new_status == TicketStatus.RESOLVED:
                             ticket.resolved_at = timezone.now()
                         ticket.save(update_fields=['status', 'resolved_at'])
+
+            # Уведомления о новом сообщении
+            ticket_url = request.build_absolute_uri(
+                reverse('tickets_app:detail', kwargs={'pk': ticket.pk})
+            )
+            context = {
+                'event_type': 'message',
+                'ticket_title': ticket.title,
+                'sender_name': str(request.user),
+                'ticket_pk': ticket.pk,
+                'ticket_url': ticket_url,
+                'year': timezone.now().year,
+            }
+
+            notified_emails = set()
+
+            # Уведомляем автора (если сообщение не от него)
+            if not is_author and ticket.author.email and ticket.author.email not in notified_emails:
+                try:
+                    send_notification(
+                        request.user,
+                        ticket.author,
+                        f'Новое сообщение в заявке: {ticket.title}',
+                        'tickets_app/email_notification.html',
+                        context,
+                        division=NOTIFICATION_DIVISION,
+                        document=0,
+                    )
+                    notified_emails.add(ticket.author.email)
+                except Exception as e:
+                    logger.error(f'Ошибка отправки уведомления автору: {e}')
+
+            # Уведомляем ответственного (если сообщение не от него)
+            if not is_responsible and ticket.responsible and ticket.responsible.email:
+                if ticket.responsible.email not in notified_emails:
+                    try:
+                        send_notification(
+                            request.user,
+                            ticket.responsible,
+                            f'Новое сообщение в заявке: {ticket.title}',
+                            'tickets_app/email_notification.html',
+                            context,
+                            division=NOTIFICATION_DIVISION,
+                            document=0,
+                        )
+                        notified_emails.add(ticket.responsible.email)
+                    except Exception as e:
+                        logger.error(f'Ошибка отправки уведомления ответственному: {e}')
 
             messages.success(request, 'Сообщение добавлено')
             return redirect('tickets_app:detail', pk=ticket.pk)
