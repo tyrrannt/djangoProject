@@ -283,13 +283,13 @@ def add_message_to_ticket(request, pk):
                     ticket.save(update_fields=['status'])
 
                 # Если статус ПЕРЕДАН явно (и это делает не автор, а сотрудник/админ)
-                elif not is_author and new_status != ticket.status:
-                    valid_statuses = [s[0] for s in TicketStatus.choices]
-                    if new_status in valid_statuses:
-                        ticket.status = new_status
-                        if new_status == TicketStatus.RESOLVED:
-                            ticket.resolved_at = timezone.now()
-                        ticket.save(update_fields=['status', 'resolved_at'])
+            elif not is_author and new_status != ticket.status:
+                valid_statuses = [s[0] for s in TicketStatus.choices]
+                if new_status in valid_statuses:
+                    ticket.status = new_status
+                    if new_status == TicketStatus.RESOLVED:
+                        ticket.resolved_at = timezone.now()
+                    ticket.save(update_fields=['status', 'resolved_at'])
 
             # Уведомления о новом сообщении
             ticket_url = request.build_absolute_uri(
