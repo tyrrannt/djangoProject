@@ -67,7 +67,7 @@
 
         .ticket-header-card .card-body {
             padding: 28px 32px;
-            color: #fff;
+            color: #0d0d0e;
         }
 
         .ticket-header-top {
@@ -89,7 +89,7 @@
             border-radius: 20px;
             font-size: 0.9rem;
             font-weight: 600;
-            color: #fff;
+            color: #808080;
         }
 
         .ticket-status-badge {
@@ -1120,28 +1120,26 @@
                     </div>
                     <div class="messages-body">
                         {% for message in ticket.messages.all %}
-                            {% comment %} Определяем тип сообщения {% endcomment %}
-                            {% if message.is_internal %}
-                                {% with msg_type='is-internal' role_text='Внутренняя заметка' %}
-                            {% elif message.sender == ticket.author %}
-                                {% with msg_type='is-author' role_text='Автор заявки' %}
-                            {% elif message.sender == ticket.responsible %}
-                                {% with msg_type='is-responsible' role_text='Ответственный' %}
-                            {% else %}
-                                {% with msg_type='is-other' role_text='Участник' %}
-                            {% endif %}
-
-                            <div class="message-item {{ msg_type }}">
+                            <div class="message-item
+                                {% if message.is_internal %}is-internal
+                                {% elif message.sender == ticket.author %}is-author
+                                {% elif message.sender == ticket.responsible %}is-responsible
+                                {% else %}is-other{% endif %}">
                                 <div class="message-header">
                                     <div class="message-sender">
                                         <div class="sender-avatar">
-                                            {{ message.sender|first }}
+                                            {{ message.sender.get_full_name|default:message.sender.username|slice:":1"|upper }}
                                         </div>
                                         <div class="sender-info">
                                             <span class="sender-name">
                                                 {{ message.sender|FIO_format|default:message.sender.username }}
                                             </span>
-                                            <span class="sender-role">{{ role_text }}</span>
+                                            <span class="sender-role">
+                                                {% if message.is_internal %}Внутренняя заметка
+                                                {% elif message.sender == ticket.author %}Автор заявки
+                                                {% elif message.sender == ticket.responsible %}Ответственный
+                                                {% else %}Участник{% endif %}
+                                            </span>
                                         </div>
                                     </div>
                                     <span class="message-date">
@@ -1168,8 +1166,8 @@
                                                    class="message-attachment"
                                                    data-bs-toggle="modal"
                                                    data-bs-target="#attachmentModal"
-                                                   data-file-url="{{ attachment.file.url }}"
-                                                   data-file-name="{{ attachment.original_name }}">
+                                                   data-file-url="{{ attachment.file.url|escapejs }}"
+                                                   data-file-name="{{ attachment.original_name|escapejs }}">
                                                     <i class='bx bx-paperclip'></i> {{ attachment.original_name }}
                                                 </a>
                                             {% endfor %}
@@ -1177,16 +1175,6 @@
                                     {% endif %}
                                 </div>
                             </div>
-
-                            {% if message.is_internal %}
-                                {% endwith %}
-                            {% elif message.sender == ticket.author %}
-                                {% endwith %}
-                            {% elif message.sender == ticket.responsible %}
-                                {% endwith %}
-                            {% else %}
-                                {% endwith %}
-                            {% endif %}
 
                         {% empty %}
                             <div class="empty-messages">
@@ -1198,7 +1186,7 @@
                 </div>
 
                 <!-- Форма добавления сообщения -->
-                {% if user|has_group:'Руководство' or user.is_superuser or ticket.author == user or ticket.responsible == user %}
+                {% if request.user|has_group:'Руководство' or request.user.is_superuser or ticket.author == request.user or ticket.responsible == request.user %}
                     {% if ticket.status != 'resolved' and ticket.status != 'closed' %}
                         <div class="message-form-card">
                             <div class="message-form-header">
@@ -1214,7 +1202,7 @@
                                                   placeholder="Введите ваше сообщение..." required></textarea>
                                     </div>
 
-                                    {% if user|has_group:'Руководство' or user.is_superuser %}
+                                    {% if request.user|has_group:'Руководство' or request.user.is_superuser %}
                                         <div class="form-check mb-3">
                                             <input type="checkbox" name="is_internal" class="form-check-input"
                                                    id="id_is_internal">
