@@ -903,7 +903,7 @@
             <div class="card-body">
                 <div class="ticket-header-top">
                     <span class="ticket-id-badge">
-                        <i class='bx bx-hash'></i> #{{ ticket.pk }}
+                        <i class='bx bx-hash'></i> {{ ticket.pk }}
                     </span>
                     {% if ticket.status == 'new' %}
                         <span class="ticket-status-badge status-new">
@@ -928,7 +928,7 @@
                     {% endif %}
                 </div>
 
-                <h1 class="ticket-title-display">{{ ticket.title }}</h1>
+                <h1 class="ticket-title-display">Тема: {{ ticket.title }}</h1>
 
                 <div class="ticket-meta">
                     <span class="ticket-meta-item">
