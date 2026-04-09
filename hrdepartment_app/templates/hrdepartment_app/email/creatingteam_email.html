@@ -1,0 +1,113 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Формирование экипажа</title>
+    <style type="text/css">
+        body { width: 100% !important; background-color: #f4f7f9; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+        table { border-collapse: collapse; }
+        .main-card { background-color: #ffffff; border-radius: 12px; border: 1px solid #e1e8ed; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .label-text { color: #718096; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 4px; display: block; }
+        .value-text { color: #2d3748; font-weight: 600; font-size: 17px; }
+        .info-block { padding: 15px 0; border-bottom: 1px solid #edf2f7; }
+        .team-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; background-color: #fff9eb; color: #d69e2e; margin-bottom: 15px; }
+        @media only screen and (max-width: 640px) {
+            .container590 { width: 90% !important; }
+            .content-padding { padding: 25px !important; }
+        }
+    </style>
+</head>
+<body bgcolor="#f4f7f9">
+    <table border="0" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="center" style="padding: 30px 0;">
+                <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590">
+                    <tr>
+                        <td align="center">
+                        <img width="140" src="https://corp.barkol.ru/static/admin_templates/img/logo.png" alt="BARKOL"
+                             style="display: block; margin-bottom: 10px;"/>
+                        <div style="font-size: 12px; color: #a0aec0; letter-spacing: 2px; font-weight: bold;">
+                            КОРПОРАТИВНЫЙ ПОРТАЛ
+                        </div>
+                    </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table border="0" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="center">
+                <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590 main-card">
+                    <tr>
+                        <td height="4" style="background-color: #d69e2e; border-radius: 12px 12px 0 0;"></td>
+                    </tr>
+                    <tr>
+                        <td class="content-padding" style="padding: 40px;">
+                            <div class="team-badge">Формирование экипажа</div>
+
+                            <h2 style="margin: 0 0 10px 0; color: #1a202c; font-size: 22px; line-height: 1.3;">
+                                {{ person_executor }}, <span style="color: #d69e2e;">экипаж сформирован</span>
+                            </h2>
+                            <p style="color: #718096; margin-bottom: 30px;">Данные по новой команде успешно внесены в систему документооборота.</p>
+
+                            <div class="info-block">
+                                <span class="label-text">Основание</span>
+                                <span class="value-text">Служебная записка № {{ memo_pk }}</span>
+                            </div>
+
+                            <div class="info-block">
+                                <span class="label-text">Место и период</span>
+                                <span class="value-text">{{ place }} | {{ period }}</span>
+                            </div>
+
+                            <div style="margin-top: 25px; padding: 20px; background-color: #fcfaf2; border: 1px solid #f6e0b5; border-radius: 8px;">
+                                <span class="label-text" style="color: #b7791f;">Состав экипажа</span>
+                                <div style="color: #2d3748; font-size: 15px; line-height: 1.6; margin-top: 10px;">
+                                    {{ message | safe }}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table border="0" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590">
+                    <tr>
+                        <td align="left" style="padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+                            <table border="0" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="padding-right: 15px;">
+                                        <img src="https://corp.barkol.ru/static/admin_templates/img/plane.png" width="32" style="display: block; opacity: 0.5;">
+                                    </td>
+                                    <td>
+                                        <div style="font-size: 14px; font-weight: bold; color: #2d3748;">{{ person_executor }}</div>
+                                        <div style="font-size: 12px; color: #718096;">Диспетчер по планированию</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding-top: 25px;">
+                        <div style="font-size: 13px; color: #4361ee; line-height: 20px; margin: 0;">
+                            <strong>ООО Авиакомпания "БАРКОЛ"</strong><br/>
+                            Это автоматическое уведомление, на него не нужно отвечать.<br/>
+                            <a href="https://corp.barkol.ru" style="color: #4361ee; text-decoration: none;">{{ Year }} ©
+                                Все права защищены</a>
+                        </div>
+                    </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
