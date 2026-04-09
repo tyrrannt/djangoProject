@@ -1200,7 +1200,7 @@ def get_recipient_emails(recipient, document_type: int) -> List[str]:
         case 0:
             return [recipient.email] if hasattr(recipient, 'email') else []
         case 1:
-            return [getattr(recipient.senior_brigade, 'email', None), getattr(recipient.place, 'email', None),]
+            return [getattr(recipient.senior_brigade, 'email', None), getattr(recipient.place, 'email', None), ]
         case 2:
             person = getattr(recipient.document, 'person', None)
             return [person.email] if person and hasattr(person, 'email') else []
@@ -1221,7 +1221,7 @@ def find_sent_folder(imap_client) -> Optional[str]:
             return None
         for f in folders:
             decoded = f.decode('utf-8', errors='ignore')
-            if any(name in decoded for name in ('Sent', 'Исходящие', '[Gmail]/Отправленные')):
+            if any(name in decoded for name in ('"Sent Items"', '"Исходящие"', '"Отправленные"')):
                 box = decoded.split('"')[-2]
                 cache.set(cache_key, box, 60 * 60)
                 return box
@@ -1258,27 +1258,28 @@ def build_email_message(from_mail: str, to_mail: List[str], subject: str,
 
     return msg
 
+
 def save_to_sent_folder(msg_bytes: bytes, from_mail: str, password: str):
     try:
         imap = imaplib.IMAP4_SSL(settings.EMAIL_IMAP_HOST, 993)
         imap.login(from_mail, password)
         sent_folder = find_sent_folder(imap)
         if sent_folder:
-            imap.append(sent_folder, None, imaplib.Time2Internaldate(time.time()), msg_bytes)
+            imap.append(sent_folder, None, None, msg_bytes)
         imap.logout()
     except Exception as e:
         logger.error(f"Failed to save to Sent folder: {e}")
 
 
 def send_notification(
-    sender,
-    recipient,
-    subject: str,
-    template: str,
-    context: dict,
-    attachment: str = '',
-    division: int = 0,
-    document: int = 0
+        sender,
+        recipient,
+        subject: str,
+        template: str,
+        context: dict,
+        attachment: str = '',
+        division: int = 0,
+        document: int = 0
 ) -> int:
     """
     Отправляет email-уведомление с поддержкой нескольких почтовых ящиков, вложений и сохранения в папку «Исходящие».
@@ -1368,6 +1369,7 @@ def send_notification(
         logger.error(f"Email sending failed: {e}", exc_info=True)
 
     return 0
+
 
 # def send_notification(sender: DataBaseUser, recipient, subject: str, template: str, context: dict,
 #                       attachment='', division=0, document=0):
