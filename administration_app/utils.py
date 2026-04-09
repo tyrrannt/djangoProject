@@ -1242,7 +1242,7 @@ def save_to_sent_folder(msg_bytes: bytes, from_mail: str, password: str):
     try:
         imap = imaplib.IMAP4_SSL(settings.EMAIL_IMAP_HOST, 993)
         imap.login(from_mail, password)
-        sent_folder = '"Sent Items"'.encode('utf-8')
+        sent_folder = '"Sent Items"'
         if sent_folder:
             imap.append(sent_folder, None, None, msg_bytes)
         imap.logout()
