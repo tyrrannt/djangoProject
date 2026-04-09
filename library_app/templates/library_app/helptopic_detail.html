@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block custome_css %}
-    {{ object.custom_css }}
+    {{ object.custom_css | safe }}
 {% endblock %}
 
 {% block content %}
