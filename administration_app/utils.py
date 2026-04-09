@@ -1185,6 +1185,8 @@ def get_sender_credentials(sender, division: int) -> Tuple[str, str]:
         except AttributeError:
             logger.error(f"Missing email config for division {division}: {user_key}, {pass_key}")
             raise ValueError(f"Email configuration not found for division {division}")
+    else:
+        return EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
 
     # Fallback: общий корпоративный ящик
     try:
