@@ -1,22 +1,51 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Уведомление</title>
     <style type="text/css">
-        body { width: 100% !important; background-color: #f0f2f5; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        .card { background-color: #ffffff; border-radius: 12px; border: 1px solid #e0e0e0; overflow: hidden; }
-        .content-padding { padding: 40px; }
-        .status-badge {
-            display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 15px;
-            {% if event_type == 'new' %} background-color: #e3f2fd; color: #1976d2;
-            {% elif event_type == 'resolved' %} background-color: #e8f5e9; color: #2e7d32;
-            {% else %} background-color: #f5f5f5; color: #616161; {% endif %}
+        body {
+            width: 100% !important;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+
+        .content-padding {
+            padding: 40px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        {% if event_type == 'new' %} background-color: #e3f2fd; color: #1976d2;
+        {% elif event_type == 'resolved' %} background-color: #e8f5e9; color: #2e7d32;
+        {% else %} background-color: #f5f5f5; color: #616161; {% endif %}
+        }
+
         @media only screen and (max-width: 640px) {
-            .container590 { width: 90% !important; }
-            .content-padding { padding: 20px !important; }
+            .container590 {
+                width: 90% !important;
+            }
+
+            .content-padding {
+                padding: 20px !important;
+            }
         }
     </style>
 </head>
@@ -27,10 +56,12 @@
         <td align="center" style="padding: 30px 0;">
             <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590">
                 <tr>
-                    <td align="center" style="padding-bottom: 30px;">
-                        <a href="https://corp.barkol.ru/" style="text-decoration: none;">
-                            <img width="140" src="https://corp.barkol.ru/static/admin_templates/img/logo.png" alt="BARKOL" style="display: block; opacity: 0.8;"/>
-                        </a>
+                    <td align="center">
+                        <img width="140" src="https://corp.barkol.ru/static/admin_templates/img/logo.png" alt="BARKOL"
+                             style="display: block; margin-bottom: 10px;"/>
+                        <div style="font-size: 12px; color: #a0aec0; letter-spacing: 2px; font-weight: bold;">
+                            КОРПОРАТИВНЫЙ ПОРТАЛ
+                        </div>
                     </td>
                 </tr>
 
@@ -39,9 +70,9 @@
                         <table border="0" width="100%" cellpadding="0" cellspacing="0">
                             <tr>
                                 <td height="4" style="font-size: 4px; line-height: 4px;
-                                    {% if event_type == 'new' %} background-color: #4361ee;
-                                    {% elif event_type == 'resolved' %} background-color: #2ecc71;
-                                    {% else %} background-color: #8e9aaf; {% endif %}">
+                                        {% if event_type == 'new' %} background-color: #4361ee;
+                                        {% elif event_type == 'resolved' %} background-color: #2ecc71;
+                                        {% else %} background-color: #8e9aaf; {% endif %}">
                                     &nbsp;
                                 </td>
                             </tr>
@@ -61,13 +92,17 @@
 
                                     <div style="color: #4a4a4a; font-size: 16px; line-height: 26px;">
                                         {% if event_type == 'new' %}
-                                            Поступила новая заявка от <strong style="color: #1a1a1a;">{{ author_name }}</strong>.
+                                            Поступила новая заявка от
+                                            <strong style="color: #1a1a1a;">{{ author_name }}</strong>.
                                         {% elif event_type == 'assigned' %}
-                                            Вам назначена заявка от <strong style="color: #1a1a1a;">{{ author_name }}</strong>.
+                                            Вам назначена заявка от
+                                            <strong style="color: #1a1a1a;">{{ author_name }}</strong>.
                                         {% elif event_type == 'resolved' %}
-                                            Ваша заявка успешно переведена в статус <strong style="color: #2e7d32;">«Решено»</strong>.
+                                            Ваша заявка успешно переведена в статус
+                                            <strong style="color: #2e7d32;">«Решено»</strong>.
                                         {% elif event_type == 'message' %}
-                                            В заявке новое сообщение от <strong style="color: #1a1a1a;">{{ sender_name }}</strong>.
+                                            В заявке новое сообщение от
+                                            <strong style="color: #1a1a1a;">{{ sender_name }}</strong>.
                                         {% endif %}
 
                                         {% if ticket_description %}
@@ -95,12 +130,13 @@
                 </tr>
 
                 <tr>
-                    <td align="center" style="padding-top: 30px;">
-                        <p style="color: #999999; font-size: 13px; line-height: 20px; margin: 0;">
-                            ООО Авиакомпания "БАРКОЛ"<br/>
+                    <td align="center" style="padding-top: 25px;">
+                        <div style="font-size: 13px; color: #4361ee; line-height: 20px; margin: 0;">
+                            <strong>ООО Авиакомпания "БАРКОЛ"</strong><br/>
                             Это автоматическое уведомление, на него не нужно отвечать.<br/>
-                            <a href="https://corp.barkol.ru/" style="color: #4361ee; text-decoration: none;">{{ year }} © Система поддержки</a>
-                        </p>
+                            <a href="https://corp.barkol.ru" style="color: #4361ee; text-decoration: none;">{{ Year }} ©
+                                Все права защищены</a>
+                        </div>
                     </td>
                 </tr>
             </table>

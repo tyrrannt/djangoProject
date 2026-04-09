@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Направление</title>
+    <style type="text/css">
+        body {
+            width: 100% !important;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        .main-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e1e8ed;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .content-text {
+            color: #4a5568;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .label-text {
+            color: #718096;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .value-text {
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 17px;
+        }
+
+        .info-block {
+            padding: 15px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .last-block {
+            padding: 15px 0;
+            border-bottom: none;
+        }
+
+        @media only screen and (max-width: 640px) {
+            .container590 {
+                width: 90% !important;
+            }
+
+            .content-padding {
+                padding: 25px !important;
+            }
+        }
+    </style>
+</head>
+<body bgcolor="#f4f7f9">
+<table border="0" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td align="center" style="padding: 30px 0;">
+            <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590">
+                <tr>
+                    <td align="center">
+                        <img width="140" src="https://corp.barkol.ru/static/admin_templates/img/logo.png" alt="BARKOL"
+                             style="display: block; margin-bottom: 10px;"/>
+                        <div style="font-size: 12px; color: #a0aec0; letter-spacing: 2px; font-weight: bold;">
+                            КОРПОРАТИВНЫЙ ПОРТАЛ
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<table border="0" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td align="center">
+            <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590 main-card">
+                <tr>
+                    <td class="content-padding" style="padding: 40px;">
+                        <h2 style="margin: 0 0 10px 0; color: #1a202c; font-size: 24px;">{{ greetings }}, <span
+                                style="color: #4361ee;">{{ person }}</span>!</h2>
+                        <p style="color: #718096; margin-bottom: 30px;">Вам сформировано новое направление. Пожалуйста,
+                            ознакомьтесь с деталями ниже:</p>
+
+                        <div class="info-block">
+                            <span class="label-text">Назначение</span>
+                            <span class="value-text">{{ type_trip }} в {{ place }}</span>
+                        </div>
+
+                        <div class="info-block">
+                            <span class="label-text">Цель поездки</span>
+                            <span class="value-text">{{ purpose_trip }}</span>
+                        </div>
+
+                        <div class="info-block">
+                            <span class="label-text">Период и приказ</span>
+                            <span class="value-text">
+                                    {{ period_from }} г. — {{ period_for }} г. ({{ delta }})<br/>
+                                    <span style="font-size: 14px; font-weight: normal; color: #718096;">Приказ № {{ order_number }} от {{ order_date }} г.</span>
+                                </span>
+                        </div>
+
+                        <div class="info-block">
+                            <span class="label-text">Размещение</span>
+                            <span class="value-text">{{ accommodation }}</span>
+                        </div>
+
+                        <div class="last-block">
+                            <span class="label-text">Ответственные лица</span>
+                            <table width="100%" style="margin-top: 8px;">
+                                <tr>
+                                    <td style="font-size: 14px; color: #4a5568;">За {{ type_trip_variant_second }}:</td>
+                                    <td align="right"
+                                        style="font-size: 14px; color: #2d3748; font-weight: bold;">{{ person_executor }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-size: 14px; color: #4a5568; padding-top: 5px;">За проживание:</td>
+                                    <td align="right"
+                                        style="font-size: 14px; color: #2d3748; font-weight: bold; padding-top: 5px;">{{ person_distributor }}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        {% if type_trip_extension %}
+                            <div style="margin-top: 20px; padding: 15px; background-color: #ebf4ff; border-radius: 8px; color: #2b6cb0; font-size: 14px; font-weight: 600;">
+                                {{ type_trip_extension }}
+                            </div>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<table border="0" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td align="center" style="padding: 40px 0;">
+            <table border="0" align="center" width="590" cellpadding="0" cellspacing="0" class="container590">
+                <tr>
+                    <td align="left" style="padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+                        <table border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding-right: 15px;">
+                                    <div style="width: 40px; height: 40px; background-color: #4361ee; border-radius: 50%; color: #fff; text-align: center; line-height: 40px; font-weight: bold;">
+                                        B
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="font-size: 14px; font-weight: bold; color: #2d3748;">{{ person_executor }}</div>
+                                    <div style="font-size: 12px; color: #718096;">Исполнитель | <a
+                                            href="mailto:{{ mail_to_copy }}"
+                                            style="color: #4361ee; text-decoration: none;">{{ mail_to_copy }}</a></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding-top: 25px;">
+                        <div style="font-size: 13px; color: #4361ee; line-height: 20px; margin: 0;">
+                            <strong>ООО Авиакомпания "БАРКОЛ"</strong><br/>
+                            Это автоматическое уведомление, на него не нужно отвечать.<br/>
+                            <a href="https://corp.barkol.ru" style="color: #4361ee; text-decoration: none;">{{ Year }} ©
+                                Все права защищены</a>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>
