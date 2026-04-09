@@ -1209,27 +1209,6 @@ def get_recipient_emails(recipient, document_type: int) -> List[str]:
     return [r for r in recipients if r]
 
 
-def find_sent_folder(imap_client) -> Optional[str]:
-    cache_key = f"imap_sent_folder_{imap_client.host}"
-    folder = cache.get(cache_key)
-    if folder:
-        return folder
-
-    try:
-        status, folders = imap_client.list()
-        if status != 'OK':
-            return None
-        for f in folders:
-            decoded = f.decode('utf-8', errors='ignore')
-            if any(name in decoded for name in ('"Sent Items"', '"Исходящие"', '"Отправленные"')):
-                box = decoded.split('"')[-2]
-                cache.set(cache_key, box, 60 * 60)
-                return box
-    except Exception as e:
-        logger.warning(f"IMAP list failed: {e}")
-    return None
-
-
 def build_email_message(from_mail: str, to_mail: List[str], subject: str,
                         template: str, context: dict, attachment: str = '') -> MIMEMultipart:
     msg = MIMEMultipart()
@@ -1263,7 +1242,7 @@ def save_to_sent_folder(msg_bytes: bytes, from_mail: str, password: str):
     try:
         imap = imaplib.IMAP4_SSL(settings.EMAIL_IMAP_HOST, 993)
         imap.login(from_mail, password)
-        sent_folder = find_sent_folder(imap)
+        sent_folder = '"Sent Items"'.encode('utf-8')
         if sent_folder:
             imap.append(sent_folder, None, None, msg_bytes)
         imap.logout()
