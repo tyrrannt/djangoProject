@@ -1338,7 +1338,10 @@ def send_notification(
             smtp.login(from_mail, from_passwd)
             smtp.sendmail(from_mail, to_mail, msg.as_string())
 
-        save_to_sent_folder(msg_raw, from_mail, from_passwd)
+        if division < 3:
+            save_to_sent_folder(msg_raw, from_mail, from_passwd)
+        else:
+            save_to_sent_folder(msg_raw, *get_sender_credentials(recipient, 0))
 
         return 1
 
