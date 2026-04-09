@@ -251,6 +251,19 @@ CKEDITOR_5_CONFIGS = {
                     'bulletedList', 'numberedList', 'todoList', '|', 'blockQuote', 'imageUpload', '|',
                     'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'mediaEmbed', 'removeFormat',
                     'insertTable', ],
+        'htmlSupport': {
+            'allow': [
+                {
+                    'name': '/.*/',     # Разрешить все теги
+                    'attributes': True, # Разрешить все атрибуты (классы)
+                    'classes': True,    # Разрешить любые названия классов
+                    'styles': True      # Разрешить inline-стили
+                }
+            ]
+        },
+        # Важно: если вы хотите вставлять произвольный HTML,
+        # добавьте плагин Source Editing
+        'extraPlugins': ['GeneralHtmlSupport', 'SourceEditing'],
         'image': {
             'toolbar': ['imageTextAlternative', '|', 'imageStyle:alignLeft',
                         'imageStyle:alignRight', 'imageStyle:alignCenter', 'imageStyle:side', '|'],
