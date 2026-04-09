@@ -13,6 +13,7 @@
     <meta name="description" content="Корпоративный сайт ООО Авиакомпания 'БАРКОЛ'">
     <meta name="author" content="tyrrannt">
     <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'android/mipmap-hdpi/ic_launcher_round.png' %}">
     <!-- Mobile Metas -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
@@ -110,7 +111,7 @@
 
             <div class="d-md-none toggle-sidebar-left" data-toggle-class="sidebar-left-opened" data-target="html"
                  data-fire-event="sidebar-left-opened">
-                <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
+                <i class="fas fa-bars" aria-label="Toggle sidebar" aria-hidden="true"></i>
             </div>
 
         </div>
@@ -119,9 +120,9 @@
         {% block notifications %}
             <div class="header-right">
                 <span class="separator"></span>
-                {% include 'library_app/notifications.html' %}
+                {% include 'customers_app/includes/notifications.html' %}
                 <span class="separator"></span>
-                {% include 'library_app/user-dropdown-menu.html' %}
+                {% include 'customers_app/includes/user-dropdown-menu.html' %}
             </div>
         {% endblock %}
 
@@ -134,30 +135,15 @@
         {% block left_menu %}
             <aside id="sidebar-left" class="sidebar-left">
                 <!-- Левое меню -->
-                {% include 'library_app/left_menu.html' %}
+                {% include 'customers_app/includes/left_menu.html' %}
             </aside>
         {% endblock %}
 
         <!-- end: sidebar -->
         <!-- БЛОК КОНТЕНТА -->
         <section role="main" class="content-body">
-            {% include 'library_app/breadcrumb.html' %}
-            {% if form.errors %}
-                <div>
-                    {% for field in form %}
-                        {% for error in field.errors %}
-                            <div class="alert alert-danger">
-                                <strong>{{ field.label }}</strong>: {{ error|escape }}
-                            </div>
-                        {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ field.label }}</strong>: {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+            {% include 'customers_app/includes/breadcrumb.html' %}
+            {% include 'customers_app/includes/_form_errors.html' with form=form %}
 
             {% block content %}
             {% endblock %}
@@ -166,7 +152,7 @@
 
     <aside id="sidebar-right" class="sidebar-right">
         <!-- Правое меню -->
-        {% include 'library_app/right_menu.html' %}
+        {% include 'customers_app/includes/right_menu.html' %}
     </aside>
 
 </section>
