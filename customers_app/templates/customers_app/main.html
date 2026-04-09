@@ -24,7 +24,7 @@
     <!-- Vendor CSS -->
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/hover/hover.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.css' %}"/>
-    <script src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script defer src="{% static 'admin_templates/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/animate/animate.compat.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/font-awesome/css/all.min.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/boxicons/css/boxicons.min.css' %}"/>
@@ -87,7 +87,7 @@
         </style>
     {% endblock %}
     <!-- Head Libs -->
-    <script src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
+    <script defer src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
 
 </head>
 <body class="loading-overlay-showing" data-loading-overlay>
@@ -103,7 +103,7 @@
     <!-- start: header -->
     <header class="header">
         <div class="logo-container">
-            <a href="{% if user.is_superuser %}/bklproxmoxadmin/{% else %}/users/profile/{{ user.pk }}/{% endif %}"
+            <a href="{% if user.is_superuser %}{% url 'admin:index' %}{% else %}/users/profile/{{ user.pk }}/{% endif %}"
                class="logo">
                 <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Панель администрирования"/>
             </a>
@@ -140,9 +140,9 @@
 
         <!-- end: sidebar -->
         <!-- БЛОК КОНТЕНТА -->
-
+        <section role="main" class="content-body">
             {% include 'library_app/breadcrumb.html' %}
-                {% if form.errors %}
+            {% if form.errors %}
                 <div>
                     {% for field in form %}
                         {% for error in field.errors %}
@@ -157,9 +157,8 @@
                         </div>
                     {% endfor %}
                 </div>
-                {% endif %}
+            {% endif %}
 
-        <section role="main" class="content-body">
             {% block content %}
             {% endblock %}
         </section>
@@ -237,27 +236,24 @@
 <script>
     let inactivityTime = function () {
         let time;
-        window.onload = resetTimer;
-        document.onmousemove = resetTimer;
-        document.onkeypress = resetTimer;
+        const timeout = 3600000; // 1 час
 
         function lockScreen() {
-            fetch('{% url "customers_app:lock_screen" %}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'password='
-            }).then(() => {
-                window.location.href = "{% url 'customers_app:lock_screen' %}";
-            });
+            // Простая переадресация на lock-screen,
+            // а там сервер уже проверит сессию
+            window.location.href = "{% url 'customers_app:lock_screen' %}";
         }
 
         function resetTimer() {
             clearTimeout(time);
-            time = setTimeout(lockScreen, 3600000); // 60000 мс = 1 минута
+            time = setTimeout(lockScreen, timeout);
         }
+
+        // Слушаем больше событий для точности
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        events.forEach(name => document.addEventListener(name, resetTimer, true));
+
+        resetTimer();
     };
 
     inactivityTime();
