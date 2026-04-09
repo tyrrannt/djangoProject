@@ -81,7 +81,7 @@
         {% endif %}
 
         <!-- Статистика для руководства -->
-        {% if user.is_staff or user.is_superuser %}
+        {% if request.user|has_group:'Руководство' or user.is_superuser %}
             <div class="row mb-4">
                 <div class="col-md-4">
                     <div class="card text-white bg-primary">
