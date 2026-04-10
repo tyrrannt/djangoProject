@@ -1,0 +1,16 @@
+{% extends "ppequipment_app/base.html" %}
+{% block title %}<title>Сверка {{ object.inventory_number }}</title>{% endblock %}
+{% block page_content %}
+<h2>Сверка {{ object.inventory_number }}</h2>
+<dl class="row">
+    <dt class="col-sm-3">Оборудование</dt><dd class="col-sm-9">{{ object.equipment|default:"—" }}</dd>
+    <dt class="col-sm-3">Где</dt><dd class="col-sm-9">{{ object.location_ref|default:"—" }}</dd>
+    <dt class="col-sm-3">Контр-раб</dt><dd class="col-sm-9">{{ object.contractor_status|default:"—" }}</dd>
+    <dt class="col-sm-3">Последняя сверка</dt><dd class="col-sm-9">{{ object.last_verification_date|default:"—" }}</dd>
+    <dt class="col-sm-3">Примечание</dt><dd class="col-sm-9">{{ object.notes|default:"—" }}</dd>
+    <dt class="col-sm-3">№ ВС</dt><dd class="col-sm-9">{{ object.vs_number|default:"—" }}</dd>
+    <dt class="col-sm-3">Дата оконч.</dt><dd class="col-sm-9">{{ object.end_date|default:"—" }}</dd>
+    <dt class="col-sm-3">Уничтожен</dt><dd class="col-sm-9">{{ object.is_destroyed|yesno:"Да,Нет" }}</dd>
+</dl>
+<a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary">Назад к списку</a>
+{% endblock %}

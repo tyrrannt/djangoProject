@@ -1,0 +1,41 @@
+{% extends "ppequipment_app/base.html" %}
+{% block title %}<title>Оборудование</title>{% endblock %}
+{% block page_content %}
+<h2>Оборудование</h2>
+<form method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Поиск..." value="{{ search }}">
+        <button class="btn btn-primary" type="submit">Найти</button>
+        <a href="{% url 'ppequipment_app:equipment_create' %}" class="btn btn-success">Добавить</a>
+    </div>
+</form>
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>№</th>
+            <th>Наименование</th>
+            <th>Тип ВС</th>
+            <th>Приоритет</th>
+            <th>Назн-лит</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for obj in object_list %}
+        <tr>
+            <td><a href="{% url 'ppequipment_app:equipment_detail' obj.pk %}">{{ obj.number }}</a></td>
+            <td>{{ obj.name|truncatechars:60 }}</td>
+            <td>{{ obj.aircraft_type|default:"—" }}</td>
+            <td>{{ obj.priority|default:"—" }}</td>
+            <td>{{ obj.dest_lit|default:"—" }}</td>
+            <td>
+                <a href="{% url 'ppequipment_app:equipment_update' obj.pk %}" class="btn btn-sm btn-outline-primary">Изменить</a>
+                <a href="{% url 'ppequipment_app:equipment_delete' obj.pk %}" class="btn btn-sm btn-outline-danger">Удалить</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center">Нет данных</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "ppequipment_app/base.html" %}
+{% block title %}<title>{{ object.name }}</title>{% endblock %}
+{% block page_content %}
+<h2>Оборудование #{{ object.number }}</h2>
+<dl class="row">
+    <dt class="col-sm-3">Наименование</dt><dd class="col-sm-9">{{ object.name }}</dd>
+    <dt class="col-sm-3">Тип ВС</dt><dd class="col-sm-9">{{ object.aircraft_type|default:"—" }}</dd>
+    <dt class="col-sm-3">Издание</dt><dd class="col-sm-9">{{ object.edition|default:"—" }}</dd>
+    <dt class="col-sm-3">Выпуск</dt><dd class="col-sm-9">{{ object.issue|default:"—" }}</dd>
+    <dt class="col-sm-3">Кем утверждён</dt><dd class="col-sm-9">{{ object.approved_by|default:"—" }}</dd>
+    <dt class="col-sm-3">Дата утверждения</dt><dd class="col-sm-9">{{ object.approval_date|default:"—" }}</dd>
+    <dt class="col-sm-3">Приоритет</dt><dd class="col-sm-9">{{ object.priority|default:"—" }}</dd>
+    <dt class="col-sm-3">Назн-лит</dt><dd class="col-sm-9">{{ object.dest_lit|default:"—" }}</dd>
+</dl>
+
+<h4 class="mt-4">Местоположения</h4>
+<ul>
+    {% for loc in object.locations.all %}
+        <li>{{ loc.location_ref }}</li>
+    {% empty %}
+        <li>Нет местоположений</li>
+    {% endfor %}
+</ul>
+
+<h4 class="mt-4">Сверки</h4>
+<table class="table table-sm">
+    <thead><tr><th>Инв. №</th><th>Где</th><th>Контр-раб</th><th>Последняя сверка</th><th>Уничтожен</th></tr></thead>
+    <tbody>
+        {% for v in object.verifications.all %}
+        <tr>
+            <td>{{ v.inventory_number }}</td>
+            <td>{{ v.location_ref|default:"—" }}</td>
+            <td>{{ v.contractor_status|default:"—" }}</td>
+            <td>{{ v.last_verification_date|default:"—" }}</td>
+            <td>{{ v.is_destroyed|yesno:"Да,Нет" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Нет сверок</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-secondary">Назад к списку</a>
+{% endblock %}

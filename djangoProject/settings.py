@@ -1004,7 +1004,7 @@ UNFOLD = {
                         "link": reverse_lazy("admin:tickets_app_ticket_changelist"),
                     },
                     {
-                        "title": _("Сообщения"),
+                        "title": _("Добровольные сообщения"),
                         "icon": "task_alt",
                         "link": reverse_lazy("admin:tickets_app_message_changelist"),
                     },
@@ -1012,6 +1012,29 @@ UNFOLD = {
                         "title": _("Вложения"),
                         "icon": "task_alt",
                         "link": reverse_lazy("admin:tickets_app_attachment_changelist"),
+                    },
+                ],
+            },
+            # ==================== 12. ИНВЕНТАРНЫЙ УЧЕТ ====================
+            {
+                "title": _("Инвентарный учёт"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Справочник оборудования"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:ppequipment_app_equipment_changelist"),
+                    },
+                    {
+                        "title": _("Справочник местоположения"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:ppequipment_app_location_changelist"),
+                    },
+                    {
+                        "title": _("Данные инвентаризации"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:ppequipment_app_verification_changelist"),
                     },
                 ],
             },

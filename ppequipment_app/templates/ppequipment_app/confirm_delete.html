@@ -1,0 +1,11 @@
+{% extends "ppequipment_app/base.html" %}
+{% block title %}Удаление{% endblock %}
+{% block content %}
+<h2>Подтверждение удаления</h2>
+<p>Вы уверены, что хотите удалить "{{ object }}"?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Удалить</button>
+    <a href="javascript:history.back()" class="btn btn-secondary">Отмена</a>
+</form>
+{% endblock %}

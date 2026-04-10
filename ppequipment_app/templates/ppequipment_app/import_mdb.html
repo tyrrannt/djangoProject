@@ -1,0 +1,50 @@
+{% extends "ppequipment_app/base.html" %}
+{% block title %}<title>Импорт из MDB</title>{% endblock %}
+{% block page_content %}
+<h2>Импорт данных из MDB-файла</h2>
+<p>Данные будут извлечены из файла <code>inventory.mdb</code> и нормализованы: текстовые поля заменены на справочники с FK-связями.</p>
+
+{% if imported %}
+<div class="alert alert-success">
+    <h5>Результат импорта:</h5>
+    <div class="row">
+        <div class="col-md-6">
+            <h6>Справочники:</h6>
+            <ul>
+                <li>Назн-лит: <strong>{{ imported.dest_lit }}</strong></li>
+                <li>Типы ВС: <strong>{{ imported.aircraft_types }}</strong></li>
+                <li>Местоположения: <strong>{{ imported.locations }}</strong></li>
+                <li>Статусы контр-раб: <strong>{{ imported.contractor_statuses }}</strong></li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h6>Данные:</h6>
+            <ul>
+                <li>Оборудование: <strong>{{ imported.equipment }}</strong></li>
+                <li>Записи местоположений: <strong>{{ imported.location_entries }}</strong></li>
+                <li>Сверки: <strong>{{ imported.verifications }}</strong></li>
+                <li>Даты сверок: <strong>{{ imported.dates }}</strong></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if errors %}
+<div class="alert alert-danger">
+    <h5>Ошибки:</h5>
+    <ul>
+        {% for error in errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary btn-lg">Импортировать данные</button>
+</form>
+
+<a href="{% url 'ppequipment_app:index' %}" class="btn btn-secondary mt-3">На главную</a>
+{% endblock %}
