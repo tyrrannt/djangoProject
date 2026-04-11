@@ -255,7 +255,7 @@ def _crud_create_update(request, model, form_class, template, obj=None, title=""
 
 # DestLit
 def dest_lit_list(request):
-    return _crud_list(request, DestLit, "ppequipment_app/ref_list.html", search_fields=["name"])
+    return _crud_list(request, DestLit, "ppequipment_app/ref_list.html", "is_dest_lit", search_fields=["name"])
 
 def dest_lit_create(request):
     return _crud_create_update(request, DestLit, DestLitForm, "ppequipment_app/ref_form.html", title="Создать Назн-лит")
@@ -275,7 +275,7 @@ def dest_lit_delete(request, pk):
 
 # LocationRef
 def location_ref_list(request):
-    return _crud_list(request, LocationRef, "ppequipment_app/ref_list.html", search_fields=["name"])
+    return _crud_list(request, LocationRef, "ppequipment_app/ref_list.html", "is_location_ref", search_fields=["name"])
 
 def location_ref_create(request):
     return _crud_create_update(request, LocationRef, LocationRefForm, "ppequipment_app/ref_form.html", title="Создать местоположение")
@@ -295,7 +295,7 @@ def location_ref_delete(request, pk):
 
 # AircraftType
 def aircraft_type_list(request):
-    return _crud_list(request, AircraftType, "ppequipment_app/ref_list.html", search_fields=["name"])
+    return _crud_list(request, AircraftType, "ppequipment_app/ref_list.html", "is_aircraft_type", search_fields=["name"])
 
 def aircraft_type_create(request):
     return _crud_create_update(request, AircraftType, AircraftTypeForm, "ppequipment_app/ref_form.html", title="Создать тип ВС")
@@ -315,7 +315,7 @@ def aircraft_type_delete(request, pk):
 
 # ContractorStatus
 def contractor_status_list(request):
-    return _crud_list(request, ContractorStatus, "ppequipment_app/ref_list.html", search_fields=["name"])
+    return _crud_list(request, ContractorStatus, "ppequipment_app/ref_list.html", "is_contractor_status", search_fields=["name"])
 
 def contractor_status_create(request):
     return _crud_create_update(request, ContractorStatus, ContractorStatusForm, "ppequipment_app/ref_form.html", title="Создать статус контр-раб")
