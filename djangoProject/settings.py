@@ -1027,7 +1027,7 @@ UNFOLD = {
                         "link": reverse_lazy("admin:ppequipment_app_equipment_changelist"),
                     },
                     {
-                        "title": _("Справочник местоположения"),
+                        "title": _("Связь оборудования с местоположением"),
                         "icon": "task_alt",
                         "link": reverse_lazy("admin:ppequipment_app_location_changelist"),
                     },
@@ -1035,6 +1035,26 @@ UNFOLD = {
                         "title": _("Данные инвентаризации"),
                         "icon": "task_alt",
                         "link": reverse_lazy("admin:ppequipment_app_verification_changelist"),
+                    },
+{
+                        "title": _("Справочник «Назн-лит»"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:ppequipment_app_destlit_changelist"),
+                    },
+                    {
+                        "title": _("Справочник местоположений"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:ppequipment_app_locationref_changelist"),
+                    },
+                    {
+                        "title": _("Справочник типов ВС"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:ppequipment_app_aircrafttype_changelist"),
+                    },
+{
+                        "title": _("Справочник статусов контр-раб"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:ppequipment_app_contractorstatus_changelist"),
                     },
                 ],
             },

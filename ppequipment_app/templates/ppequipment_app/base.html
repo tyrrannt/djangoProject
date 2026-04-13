@@ -1,35 +1,95 @@
 {% extends 'customers_app/main.html' %}
+{% load static %}
+
 {% block title %}<title>Учёт оборудования</title>{% endblock %}
+
 {% block content %}
-
-<nav class="mb-3">
-    <div class="btn-group" role="group">
-        <a href="{% url 'ppequipment_app:index' %}" class="btn btn-outline-primary btn-sm">Главная</a>
-        <a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-outline-primary btn-sm">Оборудование</a>
-        <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-primary btn-sm">Сверки</a>
-        <a href="{% url 'ppequipment_app:location_list' %}" class="btn btn-outline-primary btn-sm">Местоположения</a>
-        <a href="{% url 'ppequipment_app:verification_date_list' %}" class="btn btn-outline-primary btn-sm">Даты сверок</a>
-        <div class="btn-group">
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">Справочники</button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{% url 'ppequipment_app:dest_lit_list' %}">Назн-лит</a></li>
-                <li><a class="dropdown-item" href="{% url 'ppequipment_app:location_ref_list' %}">Местоположения</a></li>
-                <li><a class="dropdown-item" href="{% url 'ppequipment_app:aircraft_type_list' %}">Типы ВС</a></li>
-                <li><a class="dropdown-item" href="{% url 'ppequipment_app:contractor_status_list' %}">Статусы контр-раб</a></li>
-            </ul>
+    <!-- Хлебные крошки -->
+    <div class="breadcrumbs-wrapper">
+        <div class="breadcrumbs-content">
+            <h4 class="breadcrumbs-title">
+                <i class="fas fa-boxes me-2"></i>
+                {% block breadcrumb_title %}Учёт оборудования{% endblock %}
+            </h4>
+            <nav aria-label="breadcrumb" class="mt-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'ppequipment_app:index' %}">
+                            <i class="fas fa-home"></i> Главная
+                        </a>
+                    </li>
+                    {% block breadcrumb_items %}{% endblock %}
+                </ol>
+            </nav>
         </div>
-        <a href="{% url 'ppequipment_app:import_mdb' %}" class="btn btn-outline-success btn-sm">Импорт из MDB</a>
     </div>
-</nav>
 
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Навигационная панель -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-compass me-2"></i>Навигация</h5>
         </div>
-    {% endfor %}
-{% endif %}
+        <div class="card-body p-2">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{% url 'ppequipment_app:index' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-home me-1"></i>Главная
+                </a>
+                <a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-box me-1"></i>Оборудование
+                </a>
+                <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-clipboard-check me-1"></i>Сверки
+                </a>
+                <a href="{% url 'ppequipment_app:location_list' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-map-marker-alt me-1"></i>Местоположения
+                </a>
+                <a href="{% url 'ppequipment_app:verification_date_list' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-calendar-alt me-1"></i>Даты сверок
+                </a>
+                <a href="{% url 'ppequipment_app:verification_labels' %}" class="btn btn-outline-info btn-sm">
+                    <i class="fas fa-tags me-1"></i>Сверочные этикетки
+                </a>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-book me-1"></i>Справочники
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:dest_lit_list' %}">
+                            <i class="fas fa-tag me-2"></i>Назн-лит
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:location_ref_list' %}">
+                            <i class="fas fa-map-pin me-2"></i>Местоположения
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:aircraft_type_list' %}">
+                            <i class="fas fa-plane me-2"></i>Типы ВС
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'ppequipment_app:contractor_status_list' %}">
+                            <i class="fas fa-tasks me-2"></i>Статусы контр-раб
+                        </a></li>
+                    </ul>
+                </div>
+                <a href="{% url 'ppequipment_app:import_mdb' %}" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-file-import me-1"></i>Импорт из MDB
+                </a>
+            </div>
+        </div>
+    </div>
 
-{% block page_content %}{% endblock %}
+    <!-- Сообщения -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Основной контент -->
+    <div class="card">
+        <div class="card-body">
+            {% block page_content %}{% endblock %}
+        </div>
+    </div>
 {% endblock %}

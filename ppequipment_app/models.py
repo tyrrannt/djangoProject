@@ -1,4 +1,6 @@
 from django.db import models
+from django.urls import reverse
+from django.utils.text import slugify
 
 
 # ─── Справочники ─────────────────────────────────────────────────────────────
@@ -155,6 +157,7 @@ class Verification(models.Model):
     vs_number = models.CharField("№ ВС", max_length=5, blank=True, null=True)
     end_date = models.DateField("Дата оконч.", blank=True, null=True)
     is_destroyed = models.BooleanField("Уничтожен", default=False)
+    slug = models.SlugField(max_length=150, blank=True, editable=False)
 
     class Meta:
         db_table = "ppequipment_verification"
@@ -164,6 +167,30 @@ class Verification(models.Model):
 
     def __str__(self):
         return f"Инв. {self.inventory_number} — {self.equipment}"
+
+    def get_slug(self):
+        """Генерирует безопасный slug из inventory_number"""
+        # Заменяем / на - и другие проблемные символы
+        safe_string = self.inventory_number.replace('/', '-').replace('р', 'p')
+        return slugify(safe_string)
+
+    def save(self, *args, **kwargs):
+        """Автоматически создаем slug при сохранении"""
+        if not self.slug:  # Если slug пустой или None
+            safe_string = self.inventory_number.replace('/', '-').replace('р', 'p')
+            base_slug = slugify(safe_string)
+            self.slug = base_slug
+
+            # Проверка уникальности slug
+            counter = 1
+            while Verification.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{base_slug}-{counter}"
+                counter += 1
+
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('ppequipment_app:verification_detail', kwargs={'slug': self.slug})
 
 
 class VerificationDate(models.Model):

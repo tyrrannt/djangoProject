@@ -1,0 +1,182 @@
+{% extends "ppequipment_app/base.html" %}
+{% load static %}
+
+{% block title %}<title>Свёрочные этикетки</title>{% endblock %}
+
+{% block breadcrumb_title %}Свёрочные этикетки{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item active" aria-current="page">Сверочные этикетки</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <i class="fas fa-tags me-2 text-primary"></i>Сверочные этикетки
+    </h2>
+</div>
+
+<div class="card mb-4 bg-info bg-opacity-10 border-info">
+    <div class="card-body">
+        <div class="d-flex">
+            <i class="fas fa-info-circle fa-2x text-info me-3 mt-1"></i>
+            <div>
+                <h5 class="text-info">Информация</h5>
+                <p class="mb-0">Выберите условия для формирования сврочных этикеток. Этикетки будут сформированы на основе данных инвентаризации и готовы к печати.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Условия отбора</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger alert-dismissible fade show mb-4">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Ошибки в форме:</strong>
+                    <ul class="mb-0 mt-2">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endif %}
+            
+            <div class="row">
+                <!-- Местоположение -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-map-marker-alt me-2 text-info"></i>{{ form.location_ref.label }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted d-block mb-2">
+                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
+                            </small>
+                            {{ form.location_ref }}
+                            {% if form.location_ref.errors %}
+                                <div class="text-danger small mt-1">{{ form.location_ref.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Статус контр-раб -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-tasks me-2 text-warning"></i>{{ form.contractor_status.label }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted d-block mb-2">
+                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
+                            </small>
+                            {{ form.contractor_status }}
+                            {% if form.contractor_status.errors %}
+                                <div class="text-danger small mt-1">{{ form.contractor_status.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Назн-лит -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-tag me-2 text-primary"></i>{{ form.dest_lit.label }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted d-block mb-2">
+                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
+                            </small>
+                            {{ form.dest_lit }}
+                            {% if form.dest_lit.errors %}
+                                <div class="text-danger small mt-1">{{ form.dest_lit.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Тип ВС -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-plane me-2 text-success"></i>{{ form.aircraft_type.label }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted d-block mb-2">
+                                <i class="fas fa-info-circle me-1"></i>Удерживайте Ctrl для выбора нескольких значений
+                            </small>
+                            {{ form.aircraft_type }}
+                            {% if form.aircraft_type.errors %}
+                                <div class="text-danger small mt-1">{{ form.aircraft_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Уничтожен -->
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-trash me-2 text-danger"></i>{{ form.is_destroyed.label }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {{ form.is_destroyed }}
+                            {% if form.is_destroyed.errors %}
+                                <div class="text-danger small mt-1">{{ form.is_destroyed.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Инвентарные номера -->
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-barcode me-2 text-secondary"></i>{{ form.inventory_numbers.label }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {{ form.inventory_numbers }}
+                            {% if form.inventory_numbers.help_text %}
+                                <div class="form-text">{{ form.inventory_numbers.help_text }}</div>
+                            {% endif %}
+                            {% if form.inventory_numbers.errors %}
+                                <div class="text-danger small mt-1">{{ form.inventory_numbers.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success btn-lg me-2">
+                    <i class="fas fa-print me-1"></i>Сформировать этикетки
+                </button>
+                <a href="{% url 'ppequipment_app:index' %}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-home me-1"></i>На главную
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

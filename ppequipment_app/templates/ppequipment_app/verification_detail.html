@@ -1,16 +1,86 @@
 {% extends "ppequipment_app/base.html" %}
+{% load static %}
+
 {% block title %}<title>Сверка {{ object.inventory_number }}</title>{% endblock %}
+
+{% block breadcrumb_title %}Сверка {{ object.inventory_number }}{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'ppequipment_app:verification_list' %}">Сверки</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ object.inventory_number }}</li>
+{% endblock %}
+
 {% block page_content %}
-<h2>Сверка {{ object.inventory_number }}</h2>
-<dl class="row">
-    <dt class="col-sm-3">Оборудование</dt><dd class="col-sm-9">{{ object.equipment|default:"—" }}</dd>
-    <dt class="col-sm-3">Где</dt><dd class="col-sm-9">{{ object.location_ref|default:"—" }}</dd>
-    <dt class="col-sm-3">Контр-раб</dt><dd class="col-sm-9">{{ object.contractor_status|default:"—" }}</dd>
-    <dt class="col-sm-3">Последняя сверка</dt><dd class="col-sm-9">{{ object.last_verification_date|default:"—" }}</dd>
-    <dt class="col-sm-3">Примечание</dt><dd class="col-sm-9">{{ object.notes|default:"—" }}</dd>
-    <dt class="col-sm-3">№ ВС</dt><dd class="col-sm-9">{{ object.vs_number|default:"—" }}</dd>
-    <dt class="col-sm-3">Дата оконч.</dt><dd class="col-sm-9">{{ object.end_date|default:"—" }}</dd>
-    <dt class="col-sm-3">Уничтожен</dt><dd class="col-sm-9">{{ object.is_destroyed|yesno:"Да,Нет" }}</dd>
-</dl>
-<a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary">Назад к списку</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <i class="fas fa-clipboard-check me-2 text-primary"></i>Сверка {{ object.inventory_number }}
+    </h2>
+    <div>
+        <a href="{% url 'ppequipment_app:verification_update' object.pk %}" class="btn btn-primary me-2">
+            <i class="fas fa-edit me-1"></i>Редактировать
+        </a>
+        <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Назад к списку
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Информация о сверке</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4 text-muted">Оборудование</dt>
+            <dd class="col-sm-8 fw-bold">{{ object.equipment|default:"—" }}</dd>
+            
+            <dt class="col-sm-4 text-muted">Где</dt>
+            <dd class="col-sm-8">
+                <i class="fas fa-map-pin me-2 text-info"></i>{{ object.location_ref|default:"—" }}
+            </dd>
+            
+            <dt class="col-sm-4 text-muted">Контр-раб</dt>
+            <dd class="col-sm-8">{{ object.contractor_status|default:"—" }}</dd>
+            
+            <dt class="col-sm-4 text-muted">Последняя сверка</dt>
+            <dd class="col-sm-8">
+                {% if object.last_verification_date %}
+                    <span class="badge bg-success">{{ object.last_verification_date|date:"d.m.Y" }}</span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </dd>
+            
+            <dt class="col-sm-4 text-muted">Примечание</dt>
+            <dd class="col-sm-8">{{ object.notes|default:"—" }}</dd>
+            
+            <dt class="col-sm-4 text-muted">№ ВС</dt>
+            <dd class="col-sm-8">
+                {% if object.vs_number %}
+                    <span class="badge bg-info">{{ object.vs_number }}</span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </dd>
+            
+            <dt class="col-sm-4 text-muted">Дата оконч.</dt>
+            <dd class="col-sm-8">
+                {% if object.end_date %}
+                    {{ object.end_date|date:"d.m.Y" }}
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </dd>
+            
+            <dt class="col-sm-4 text-muted">Уничтожен</dt>
+            <dd class="col-sm-8">
+                {% if object.is_destroyed %}
+                    <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Да</span>
+                {% else %}
+                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Нет</span>
+                {% endif %}
+            </dd>
+        </dl>
+    </div>
+</div>
 {% endblock %}

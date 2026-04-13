@@ -1,11 +1,42 @@
 {% extends "ppequipment_app/base.html" %}
-{% block title %}Удаление{% endblock %}
-{% block content %}
-<h2>Подтверждение удаления</h2>
-<p>Вы уверены, что хотите удалить "{{ object }}"?</p>
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Удалить</button>
-    <a href="javascript:history.back()" class="btn btn-secondary">Отмена</a>
-</form>
+{% load static %}
+
+{% block title %}<title>Удаление записи</title>{% endblock %}
+
+{% block breadcrumb_title %}Удаление записи{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="javascript:history.back()">Назад</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Удаление</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Подтверждение удаления</h5>
+    </div>
+    <div class="card-body text-center">
+        <div class="mb-4">
+            <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+            <h4>Вы уверены, что хотите удалить этот объект?</h4>
+            <p class="text-muted fs-5 mt-3">"{{ object }}"</p>
+            <p class="text-warning">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Это действие нельзя отменить!
+            </p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-center gap-3">
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="fas fa-trash me-2"></i>Удалить
+                </button>
+                <a href="javascript:history.back()" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-times me-2"></i>Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

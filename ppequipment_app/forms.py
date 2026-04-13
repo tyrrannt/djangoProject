@@ -1,4 +1,6 @@
 from django import forms
+
+from administration_app.utils import make_custom_field
 from .models import Equipment, Location, Verification, VerificationDate, DestLit, LocationRef, AircraftType, ContractorStatus
 
 
@@ -74,3 +76,52 @@ class ContractorStatusForm(forms.ModelForm):
     class Meta:
         model = ContractorStatus
         fields = ["name"]
+
+
+class VerificationLabelForm(forms.Form):
+    """Форма для выбора условий печати свёрочных этикеток"""
+    location_ref = forms.ModelMultipleChoiceField(
+        queryset=LocationRef.objects.all().order_by("name"),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": 8}),
+        label="Местоположение",
+        required=False,
+    )
+    contractor_status = forms.ModelMultipleChoiceField(
+        queryset=ContractorStatus.objects.all().order_by("name"),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": 8}),
+        label="Статус контр-раб",
+        required=False,
+    )
+    dest_lit = forms.ModelMultipleChoiceField(
+        queryset=DestLit.objects.all().order_by("name"),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": 8}),
+        label="Назн-лит",
+        required=False,
+    )
+    is_destroyed = forms.ChoiceField(
+        choices=[
+            ("", "Все"),
+            ("0", "Не уничтожен"),
+            ("1", "Уничтожен"),
+        ],
+        widget=forms.Select,
+        label="Уничтожен",
+        required=False,
+    )
+    aircraft_type = forms.ModelMultipleChoiceField(
+        queryset=AircraftType.objects.all().order_by("name"),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": 8}),
+        label="Тип ВС",
+        required=False,
+    )
+    inventory_numbers = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 4, "placeholder": "Введите инвентарные номера через запятую или каждый с новой строки"}),
+        label="Инвентарные номера",
+        required=False,
+        help_text="Если заполнено, фильтрует по указанным номерам",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(VerificationLabelForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])

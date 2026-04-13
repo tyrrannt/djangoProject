@@ -1,44 +1,160 @@
 {% extends "ppequipment_app/base.html" %}
+{% load static %}
+
 {% block title %}<title>{{ object.name }}</title>{% endblock %}
+
+{% block breadcrumb_title %}Оборудование #{{ object.number }}{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'ppequipment_app:equipment_list' %}">Оборудование</a></li>
+    <li class="breadcrumb-item active" aria-current="page">#{{ object.number }}</li>
+{% endblock %}
+
 {% block page_content %}
-<h2>Оборудование #{{ object.number }}</h2>
-<dl class="row">
-    <dt class="col-sm-3">Наименование</dt><dd class="col-sm-9">{{ object.name }}</dd>
-    <dt class="col-sm-3">Тип ВС</dt><dd class="col-sm-9">{{ object.aircraft_type|default:"—" }}</dd>
-    <dt class="col-sm-3">Издание</dt><dd class="col-sm-9">{{ object.edition|default:"—" }}</dd>
-    <dt class="col-sm-3">Выпуск</dt><dd class="col-sm-9">{{ object.issue|default:"—" }}</dd>
-    <dt class="col-sm-3">Кем утверждён</dt><dd class="col-sm-9">{{ object.approved_by|default:"—" }}</dd>
-    <dt class="col-sm-3">Дата утверждения</dt><dd class="col-sm-9">{{ object.approval_date|default:"—" }}</dd>
-    <dt class="col-sm-3">Приоритет</dt><dd class="col-sm-9">{{ object.priority|default:"—" }}</dd>
-    <dt class="col-sm-3">Назн-лит</dt><dd class="col-sm-9">{{ object.dest_lit|default:"—" }}</dd>
-</dl>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <i class="fas fa-box me-2 text-primary"></i>Оборудование #{{ object.number }}
+    </h2>
+    <div>
+        <a href="{% url 'ppequipment_app:equipment_update' object.pk %}" class="btn btn-primary me-2">
+            <i class="fas fa-edit me-1"></i>Редактировать
+        </a>
+        <a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Назад к списку
+        </a>
+    </div>
+</div>
 
-<h4 class="mt-4">Местоположения</h4>
-<ul>
-    {% for loc in object.locations.all %}
-        <li>{{ loc.location_ref }}</li>
-    {% empty %}
-        <li>Нет местоположений</li>
-    {% endfor %}
-</ul>
+<!-- Основная информация -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Основная информация</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4 text-muted">Наименование</dt>
+            <dd class="col-sm-8 fw-bold">{{ object.name }}</dd>
+            
+            <dt class="col-sm-4 text-muted">Тип ВС</dt>
+            <dd class="col-sm-8">
+                {% if object.aircraft_type %}
+                    <span class="badge bg-info">{{ object.aircraft_type }}</span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </dd>
+            
+            <dt class="col-sm-4 text-muted">Издание</dt>
+            <dd class="col-sm-8">{{ object.edition|default:"—" }}</dd>
+            
+            <dt class="col-sm-4 text-muted">Выпуск</dt>
+            <dd class="col-sm-8">{{ object.issue|default:"—" }}</dd>
+            
+            <dt class="col-sm-4 text-muted">Кем утверждён</dt>
+            <dd class="col-sm-8">{{ object.approved_by|default:"—" }}</dd>
+            
+            <dt class="col-sm-4 text-muted">Дата утверждения</dt>
+            <dd class="col-sm-8">
+                {% if object.approval_date %}
+                    {{ object.approval_date|date:"d.m.Y" }}
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </dd>
+            
+            <dt class="col-sm-4 text-muted">Приоритет</dt>
+            <dd class="col-sm-8">
+                {% if object.priority %}
+                    <span class="badge bg-{% if object.priority > 5 %}danger{% elif object.priority > 3 %}warning{% else %}success{% endif %}">
+                        {{ object.priority }}
+                    </span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </dd>
+            
+            <dt class="col-sm-4 text-muted">Назн-лит</dt>
+            <dd class="col-sm-8">
+                {% if object.dest_lit %}
+                    <span class="badge bg-secondary">{{ object.dest_lit }}</span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </dd>
+        </dl>
+    </div>
+</div>
 
-<h4 class="mt-4">Сверки</h4>
-<table class="table table-sm">
-    <thead><tr><th>Инв. №</th><th>Где</th><th>Контр-раб</th><th>Последняя сверка</th><th>Уничтожен</th></tr></thead>
-    <tbody>
-        {% for v in object.verifications.all %}
-        <tr>
-            <td>{{ v.inventory_number }}</td>
-            <td>{{ v.location_ref|default:"—" }}</td>
-            <td>{{ v.contractor_status|default:"—" }}</td>
-            <td>{{ v.last_verification_date|default:"—" }}</td>
-            <td>{{ v.is_destroyed|yesno:"Да,Нет" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5">Нет сверок</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!-- Местоположения -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Местоположения</h5>
+    </div>
+    <div class="card-body">
+        {% if object.locations.all %}
+            <div class="list-group">
+                {% for loc in object.locations.all %}
+                    <div class="list-group-item">
+                        <i class="fas fa-map-pin me-2 text-info"></i>{{ loc.location_ref }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>Нет местоположений
+            </p>
+        {% endif %}
+    </div>
+</div>
 
-<a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-secondary">Назад к списку</a>
+<!-- Сверки -->
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Сверки</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if object.verifications.all %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Инв. №</th>
+                            <th>Где</th>
+                            <th>Контр-раб</th>
+                            <th>Последняя сверка</th>
+                            <th>Уничтожен</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in object.verifications.all %}
+                        <tr>
+                            <td class="fw-bold">{{ v.inventory_number }}</td>
+                            <td>{{ v.location_ref|default:"—" }}</td>
+                            <td>{{ v.contractor_status|default:"—" }}</td>
+                            <td>
+                                {% if v.last_verification_date %}
+                                    {{ v.last_verification_date|date:"d.m.Y" }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if v.is_destroyed %}
+                                    <span class="badge bg-danger">Да</span>
+                                {% else %}
+                                    <span class="badge bg-success">Нет</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted text-center my-4">
+                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>Нет сверок
+            </p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

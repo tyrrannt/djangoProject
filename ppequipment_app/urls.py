@@ -16,9 +16,9 @@ urlpatterns = [
     # Сверки
     path('verifications/', views.verification_list, name='verification_list'),
     path('verifications/create/', views.verification_create, name='verification_create'),
-    path('verifications/<str:pk>/', views.verification_detail, name='verification_detail'),
-    path('verifications/<str:pk>/update/', views.verification_update, name='verification_update'),
-    path('verifications/<str:pk>/delete/', views.verification_delete, name='verification_delete'),
+    path('verifications/<slug:slug>/', views.verification_detail, name='verification_detail'),
+    path('verifications/<slug:slug>/update/', views.verification_update, name='verification_update'),
+    path('verifications/<slug:slug>/delete/', views.verification_delete, name='verification_delete'),
 
     # Местоположения
     path('locations/', views.location_list, name='location_list'),
@@ -55,4 +55,7 @@ urlpatterns = [
 
     # Импорт
     path('import-mdb/', views.import_from_mdb, name='import_mdb'),
+
+    # Свёрочные этикетки
+    path('verification-labels/', views.verification_labels, name='verification_labels'),
 ]

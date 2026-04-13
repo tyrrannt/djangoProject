@@ -1,50 +1,120 @@
 {% extends "ppequipment_app/base.html" %}
+{% load static %}
+
 {% block title %}<title>Импорт из MDB</title>{% endblock %}
+
+{% block breadcrumb_title %}Импорт из MDB{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item active" aria-current="page">Импорт из MDB</li>
+{% endblock %}
+
 {% block page_content %}
-<h2>Импорт данных из MDB-файла</h2>
-<p>Данные будут извлечены из файла <code>inventory.mdb</code> и нормализованы: текстовые поля заменены на справочники с FK-связями.</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <i class="fas fa-file-import me-2 text-primary"></i>Импорт данных из MDB
+    </h2>
+    <a href="{% url 'ppequipment_app:index' %}" class="btn btn-secondary">
+        <i class="fas fa-home me-1"></i>На главную
+    </a>
+</div>
+
+<div class="card mb-4 bg-info bg-opacity-10 border-info">
+    <div class="card-body">
+        <div class="d-flex">
+            <i class="fas fa-info-circle fa-2x text-info me-3 mt-1"></i>
+            <div>
+                <h5 class="text-info">Информация</h5>
+                <p class="mb-0">Данные будут извлечены из файла <code class="bg-light px-2 py-1 rounded">inventory.mdb</code> и нормализованы: текстовые поля заменены на справочники с FK-связями.</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% if imported %}
-<div class="alert alert-success">
-    <h5>Результат импорта:</h5>
-    <div class="row">
-        <div class="col-md-6">
-            <h6>Справочники:</h6>
-            <ul>
-                <li>Назн-лит: <strong>{{ imported.dest_lit }}</strong></li>
-                <li>Типы ВС: <strong>{{ imported.aircraft_types }}</strong></li>
-                <li>Местоположения: <strong>{{ imported.locations }}</strong></li>
-                <li>Статусы контр-раб: <strong>{{ imported.contractor_statuses }}</strong></li>
-            </ul>
-        </div>
-        <div class="col-md-6">
-            <h6>Данные:</h6>
-            <ul>
-                <li>Оборудование: <strong>{{ imported.equipment }}</strong></li>
-                <li>Записи местоположений: <strong>{{ imported.location_entries }}</strong></li>
-                <li>Сверки: <strong>{{ imported.verifications }}</strong></li>
-                <li>Даты сверок: <strong>{{ imported.dates }}</strong></li>
-            </ul>
+<div class="card mb-4 border-success">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Результат импорта</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-success"><i class="fas fa-book me-2"></i>Справочники:</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-tag me-2 text-primary"></i>Назн-лит</span>
+                        <span class="badge bg-primary rounded-pill">{{ imported.dest_lit }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-plane me-2 text-primary"></i>Типы ВС</span>
+                        <span class="badge bg-primary rounded-pill">{{ imported.aircraft_types }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-map-pin me-2 text-primary"></i>Местоположения</span>
+                        <span class="badge bg-primary rounded-pill">{{ imported.locations }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-tasks me-2 text-primary"></i>Статусы контр-раб</span>
+                        <span class="badge bg-primary rounded-pill">{{ imported.contractor_statuses }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-success"><i class="fas fa-database me-2"></i>Данные:</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-box me-2 text-success"></i>Оборудование</span>
+                        <span class="badge bg-success rounded-pill">{{ imported.equipment }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-map-marker-alt me-2 text-success"></i>Записи местоположений</span>
+                        <span class="badge bg-success rounded-pill">{{ imported.location_entries }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-clipboard-check me-2 text-success"></i>Сверки</span>
+                        <span class="badge bg-success rounded-pill">{{ imported.verifications }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar me-2 text-success"></i>Даты сверок</span>
+                        <span class="badge bg-success rounded-pill">{{ imported.dates }}</span>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>
 {% endif %}
 
 {% if errors %}
-<div class="alert alert-danger">
-    <h5>Ошибки:</h5>
-    <ul>
-        {% for error in errors %}
-            <li>{{ error }}</li>
-        {% endfor %}
-    </ul>
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Ошибки импорта</h5>
+    </div>
+    <div class="card-body">
+        <ul class="text-danger mb-0">
+            {% for error in errors %}
+                <li><i class="fas fa-times-circle me-2"></i>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
 {% endif %}
 
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-primary btn-lg">Импортировать данные</button>
-</form>
-
-<a href="{% url 'ppequipment_app:index' %}" class="btn btn-secondary mt-3">На главную</a>
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-play-circle me-2"></i>Запуск импорта</h5>
+    </div>
+    <div class="card-body text-center">
+        <p class="text-muted mb-4">
+            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+            Внимание! При импорте существующие данные могут быть изменены.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-file-import me-2"></i>Импортировать данные
+            </button>
+        </form>
+    </div>
+</div>
 {% endblock %}

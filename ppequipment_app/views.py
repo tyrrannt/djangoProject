@@ -3,6 +3,8 @@ import subprocess
 import csv
 import io
 from datetime import datetime
+
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
@@ -13,6 +15,7 @@ from .models import (
 from .forms import (
     EquipmentForm, LocationForm, VerificationForm, VerificationDateForm,
     DestLitForm, LocationRefForm, AircraftTypeForm, ContractorStatusForm,
+    VerificationLabelForm,
 )
 
 MDB_FILE = os.path.join(os.path.dirname(__file__), "inventory.mdb")
@@ -42,7 +45,6 @@ def _run_mdb_table(table_name: str) -> list[dict]:
 
 
 # ─── Equipment ───────────────────────────────────────────────────────────────
-
 def equipment_list(request):
     qs = Equipment.objects.select_related("aircraft_type", "dest_lit").all()
     search = request.GET.get("q", "")
@@ -93,7 +95,6 @@ def equipment_delete(request, pk):
 
 
 # ─── Verification ────────────────────────────────────────────────────────────
-
 def verification_list(request):
     qs = Verification.objects.select_related("equipment", "location_ref", "contractor_status").all()
     search = request.GET.get("q", "")
@@ -107,8 +108,9 @@ def verification_list(request):
     })
 
 
-def verification_detail(request, pk):
-    obj = get_object_or_404(Verification.objects.select_related("equipment", "location_ref", "contractor_status"), pk=pk)
+def verification_detail(request, slug):
+    obj = get_object_or_404(Verification.objects.select_related("equipment", "location_ref", "contractor_status"),
+                            slug=slug)
     return render(request, "ppequipment_app/verification_detail.html", {"object": obj})
 
 
@@ -124,8 +126,8 @@ def verification_create(request):
     return render(request, "ppequipment_app/verification_form.html", {"form": form, "title": "Создать сверку"})
 
 
-def verification_update(request, pk):
-    obj = get_object_or_404(Verification, pk=pk)
+def verification_update(request, slug):
+    obj = get_object_or_404(Verification, slug=slug)
     if request.method == "POST":
         form = VerificationForm(request.POST, instance=obj)
         if form.is_valid():
@@ -137,8 +139,8 @@ def verification_update(request, pk):
     return render(request, "ppequipment_app/verification_form.html", {"form": form, "title": "Редактировать сверку"})
 
 
-def verification_delete(request, pk):
-    obj = get_object_or_404(Verification, pk=pk)
+def verification_delete(request, slug):
+    obj = get_object_or_404(Verification, slug=slug)
     if request.method == "POST":
         obj.delete()
         messages.success(request, "Сверка удалена")
@@ -147,7 +149,6 @@ def verification_delete(request, pk):
 
 
 # ─── Location ────────────────────────────────────────────────────────────────
-
 def location_list(request):
     qs = Location.objects.select_related("equipment", "location_ref").all()
     return render(request, "ppequipment_app/location_list.html", {"object_list": qs})
@@ -175,7 +176,8 @@ def location_update(request, pk):
             return redirect("ppequipment_app:location_list")
     else:
         form = LocationForm(instance=obj)
-    return render(request, "ppequipment_app/location_form.html", {"form": form, "title": "Редактировать местоположение"})
+    return render(request, "ppequipment_app/location_form.html",
+                  {"form": form, "title": "Редактировать местоположение"})
 
 
 def location_delete(request, pk):
@@ -188,7 +190,6 @@ def location_delete(request, pk):
 
 
 # ─── VerificationDate ────────────────────────────────────────────────────────
-
 def verification_date_list(request):
     qs = VerificationDate.objects.all().order_by("-verification_date")
     return render(request, "ppequipment_app/verificationdate_list.html", {"object_list": qs})
@@ -216,7 +217,8 @@ def verification_date_update(request, pk):
             return redirect("ppequipment_app:verification_date_list")
     else:
         form = VerificationDateForm(instance=obj)
-    return render(request, "ppequipment_app/verificationdate_form.html", {"form": form, "title": "Редактировать дату сверки"})
+    return render(request, "ppequipment_app/verificationdate_form.html",
+                  {"form": form, "title": "Редактировать дату сверки"})
 
 
 def verification_date_delete(request, pk):
@@ -229,7 +231,6 @@ def verification_date_delete(request, pk):
 
 
 # ─── Справочники CRUD ────────────────────────────────────────────────────────
-
 def _crud_list(request, model, template, context_name, search_fields=None):
     qs = model.objects.all()
     search = request.GET.get("q", "")
@@ -257,12 +258,16 @@ def _crud_create_update(request, model, form_class, template, obj=None, title=""
 def dest_lit_list(request):
     return _crud_list(request, DestLit, "ppequipment_app/ref_list.html", "is_dest_lit", search_fields=["name"])
 
+
 def dest_lit_create(request):
     return _crud_create_update(request, DestLit, DestLitForm, "ppequipment_app/ref_form.html", title="Создать Назн-лит")
 
+
 def dest_lit_update(request, pk):
     obj = get_object_or_404(DestLit, pk=pk)
-    return _crud_create_update(request, DestLit, DestLitForm, "ppequipment_app/ref_form.html", obj=obj, title="Редактировать Назн-лит")
+    return _crud_create_update(request, DestLit, DestLitForm, "ppequipment_app/ref_form.html", obj=obj,
+                               title="Редактировать Назн-лит")
+
 
 def dest_lit_delete(request, pk):
     obj = get_object_or_404(DestLit, pk=pk)
@@ -277,12 +282,17 @@ def dest_lit_delete(request, pk):
 def location_ref_list(request):
     return _crud_list(request, LocationRef, "ppequipment_app/ref_list.html", "is_location_ref", search_fields=["name"])
 
+
 def location_ref_create(request):
-    return _crud_create_update(request, LocationRef, LocationRefForm, "ppequipment_app/ref_form.html", title="Создать местоположение")
+    return _crud_create_update(request, LocationRef, LocationRefForm, "ppequipment_app/ref_form.html",
+                               title="Создать местоположение")
+
 
 def location_ref_update(request, pk):
     obj = get_object_or_404(LocationRef, pk=pk)
-    return _crud_create_update(request, LocationRef, LocationRefForm, "ppequipment_app/ref_form.html", obj=obj, title="Редактировать местоположение")
+    return _crud_create_update(request, LocationRef, LocationRefForm, "ppequipment_app/ref_form.html", obj=obj,
+                               title="Редактировать местоположение")
+
 
 def location_ref_delete(request, pk):
     obj = get_object_or_404(LocationRef, pk=pk)
@@ -295,14 +305,20 @@ def location_ref_delete(request, pk):
 
 # AircraftType
 def aircraft_type_list(request):
-    return _crud_list(request, AircraftType, "ppequipment_app/ref_list.html", "is_aircraft_type", search_fields=["name"])
+    return _crud_list(request, AircraftType, "ppequipment_app/ref_list.html", "is_aircraft_type",
+                      search_fields=["name"])
+
 
 def aircraft_type_create(request):
-    return _crud_create_update(request, AircraftType, AircraftTypeForm, "ppequipment_app/ref_form.html", title="Создать тип ВС")
+    return _crud_create_update(request, AircraftType, AircraftTypeForm, "ppequipment_app/ref_form.html",
+                               title="Создать тип ВС")
+
 
 def aircraft_type_update(request, pk):
     obj = get_object_or_404(AircraftType, pk=pk)
-    return _crud_create_update(request, AircraftType, AircraftTypeForm, "ppequipment_app/ref_form.html", obj=obj, title="Редактировать тип ВС")
+    return _crud_create_update(request, AircraftType, AircraftTypeForm, "ppequipment_app/ref_form.html", obj=obj,
+                               title="Редактировать тип ВС")
+
 
 def aircraft_type_delete(request, pk):
     obj = get_object_or_404(AircraftType, pk=pk)
@@ -315,14 +331,20 @@ def aircraft_type_delete(request, pk):
 
 # ContractorStatus
 def contractor_status_list(request):
-    return _crud_list(request, ContractorStatus, "ppequipment_app/ref_list.html", "is_contractor_status", search_fields=["name"])
+    return _crud_list(request, ContractorStatus, "ppequipment_app/ref_list.html", "is_contractor_status",
+                      search_fields=["name"])
+
 
 def contractor_status_create(request):
-    return _crud_create_update(request, ContractorStatus, ContractorStatusForm, "ppequipment_app/ref_form.html", title="Создать статус контр-раб")
+    return _crud_create_update(request, ContractorStatus, ContractorStatusForm, "ppequipment_app/ref_form.html",
+                               title="Создать статус контр-раб")
+
 
 def contractor_status_update(request, pk):
     obj = get_object_or_404(ContractorStatus, pk=pk)
-    return _crud_create_update(request, ContractorStatus, ContractorStatusForm, "ppequipment_app/ref_form.html", obj=obj, title="Редактировать статус контр-раб")
+    return _crud_create_update(request, ContractorStatus, ContractorStatusForm, "ppequipment_app/ref_form.html",
+                               obj=obj, title="Редактировать статус контр-раб")
+
 
 def contractor_status_delete(request, pk):
     obj = get_object_or_404(ContractorStatus, pk=pk)
@@ -334,7 +356,6 @@ def contractor_status_delete(request, pk):
 
 
 # ─── Import from MDB ─────────────────────────────────────────────────────────
-
 def import_from_mdb(request):
     """Импорт данных из MDB-файла с нормализацией в справочники"""
     if request.method != "POST":
@@ -404,7 +425,8 @@ def import_from_mdb(request):
             aircraft_type_val = (row.get("тип") or "").strip()
 
             dest_lit_obj = DestLit.objects.filter(name=dest_lit_val).first() if dest_lit_val else None
-            aircraft_type_obj = AircraftType.objects.filter(name=aircraft_type_val).first() if aircraft_type_val else None
+            aircraft_type_obj = AircraftType.objects.filter(
+                name=aircraft_type_val).first() if aircraft_type_val else None
 
             _, created = Equipment.objects.update_or_create(
                 number=equip_number,
@@ -486,10 +508,73 @@ def import_from_mdb(request):
             f"записи местоположений={imported['location_entries']}, "
             f"сверки={imported['verifications']}, даты={imported['dates']}"
         )
-    except Exception as e:
-        errors.append(str(e))
-        messages.error(request, f"Ошибка импорта: {e}")
+    except TypeError:
+        pass
+    # except Exception as e:
+    #     errors.append(str(e))
+    #     messages.error(request, f"Ошибка импорта: {e}")
 
     return render(request, "ppequipment_app/import_mdb.html", {
         "imported": imported, "errors": errors,
     })
+
+
+# ─── Сверочные этикетки ──────────────────────────────────────────────────────
+def verification_labels(request):
+    """Страница выбора условий для печати свёрочных этикеток"""
+    if request.method == "POST":
+        form = VerificationLabelForm(request.POST)
+        if form.is_valid():
+            # Собираем фильтры
+            qs = Verification.objects.select_related(
+                "equipment", "location_ref", "contractor_status", "equipment__aircraft_type", "equipment__dest_lit"
+            ).all()
+
+            # Местоположение
+            location_refs = form.cleaned_data.get("location_ref")
+            if location_refs:
+                qs = qs.filter(location_ref__in=location_refs)
+
+            # Статус контр-раб
+            contractor_statuses = form.cleaned_data.get("contractor_status")
+            if contractor_statuses:
+                qs = qs.filter(contractor_status__in=contractor_statuses)
+
+            # Назн-лит (через оборудование)
+            dest_lits = form.cleaned_data.get("dest_lit")
+            if dest_lits:
+                qs = qs.filter(equipment__dest_lit__in=dest_lits)
+
+            # Уничтожен
+            is_destroyed = form.cleaned_data.get("is_destroyed")
+            if is_destroyed == "0":
+                qs = qs.filter(is_destroyed=False)
+            elif is_destroyed == "1":
+                qs = qs.filter(is_destroyed=True)
+
+            # Тип ВС
+            aircraft_types = form.cleaned_data.get("aircraft_type")
+            if aircraft_types:
+                qs = qs.filter(equipment__aircraft_type__in=aircraft_types)
+
+            # Инвентарные номера
+            inventory_numbers = form.cleaned_data.get("inventory_numbers")
+            if inventory_numbers:
+                # Разбиваем по запятым и новым строкам
+                inv_list = [inv.strip() for inv in inventory_numbers.replace("\n", ",").split(",") if inv.strip()]
+                if inv_list:
+                    qs = qs.filter(inventory_number__in=inv_list)
+
+            # Если ничего не выбрано, показываем все записи
+            if not qs.exists():
+                messages.warning(request, "Нет данных для печати этикеток. Измените условия фильтрации.")
+                return render(request, "ppequipment_app/verification_labels.html", {"form": form})
+
+            return render(request, "ppequipment_app/verification_labels_print.html", {
+                "labels": qs,
+                "count": qs.count(),
+            })
+    else:
+        form = VerificationLabelForm()
+
+    return render(request, "ppequipment_app/verification_labels.html", {"form": form})
