@@ -38,19 +38,15 @@
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_name">Наименование</label>
+                                        {{ form.name.label_tag }}
                                         <div class="col-lg-7 col-xl-6">
-                                            <input type="text" class="form-control form-control-modern"
-                                                   name="name" id="id_name"
-                                                   value="{{ object.name }}"/>
+                                            {{ form.name }}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
-                                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0"
-                                               for="id_permissions">Список прав группы</label>
+                                        {{ form.permissions.label_tag }}
                                         <div class="col-lg-7 col-xl-6">
-                                            <span>{{ form.permissions }}</span>
+                                            {{ form.permissions }}
                                         </div>
                                     </div>
 
