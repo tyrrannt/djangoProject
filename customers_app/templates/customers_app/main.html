@@ -85,6 +85,7 @@
                 font-weight: 600;
                 color: #343a40;
             }
+
         </style>
     {% endblock %}
     <!-- Head Libs -->
@@ -132,13 +133,7 @@
     <!-- end: header -->
 
     <div class="inner-wrapper">
-        <!-- start: sidebar -->
-        <aside id="sidebar-left" class="sidebar-left">
-            <!-- Левое меню -->
-            {% include 'customers_app/includes/left_menu.html' %}
-        </aside>
-
-        <!-- end: sidebar -->
+        {% include 'customers_app/includes/left_menu.html' %}
         <!-- БЛОК КОНТЕНТА -->
         <section role="main" class="content-body">
             {% include 'customers_app/includes/breadcrumb.html' %}
@@ -148,11 +143,10 @@
             {% endblock %}
         </section>
     </div>
-
-    <aside id="sidebar-right" class="sidebar-right">
-        <!-- Правое меню -->
-        {% include 'customers_app/includes/right_menu.html' %}
-    </aside>
+        <aside id="sidebar-right" class="sidebar-right">
+            <!-- Правое меню -->
+            {% include 'customers_app/includes/right_menu.html' %}
+        </aside>
 
 </section>
 
