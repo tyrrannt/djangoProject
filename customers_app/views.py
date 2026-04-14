@@ -23,6 +23,8 @@ from django.db.models import Q, F, ForeignKey, Count
 from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
 from django.views.generic import DetailView, UpdateView, CreateView, ListView, TemplateView
+from qrcode.image.styledpil import StyledPilImage
+from qrcode.image.styles.moduledrawers import CircleModuleDrawer
 from rest_framework import viewsets
 
 from administration_app.models import PortalProperty
@@ -150,7 +152,12 @@ def generate_qr_code(request, current_url):
     qr.make(fit=True)
 
     # Создаем изображение QR-кода
-    img = qr.make_image(fill_color="black", back_color="white")
+    img = qr.make_image(
+        image_factory=StyledPilImage,
+        module_drawer=CircleModuleDrawer(radius_factor=0.5),
+        fill_color=(0, 0, 0),
+        back_color=(255, 255, 255),
+    )
 
     # Сохраняем изображение в буфер
     buffer = BytesIO()
