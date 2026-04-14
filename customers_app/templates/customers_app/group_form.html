@@ -1,23 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% block custome_css %}
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
-    <link rel="stylesheet"
-          href="{% static 'admin_templates/vendor/bootstrap-multiselect/css/bootstrap-multiselect.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
-{% endblock %}
-
-{% block custome_script %}
-    <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-
-    <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
-{% endblock %}
 
 {% block title %}
     <title>{{ title }}</title>
@@ -38,13 +21,13 @@
                                 </div>
                                 <div class="col-lg-3-5 col-xl-4-5">
                                     <div class="form-group row align-items-center pb-3">
-                                        {{ form.name.label_tag }}
+                                        {{ form.name.label }}
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.name }}
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center pb-3">
-                                        {{ form.permissions.label_tag }}
+                                        {{ form.permissions.label }}
                                         <div class="col-lg-7 col-xl-6">
                                             {{ form.permissions }}
                                         </div>
