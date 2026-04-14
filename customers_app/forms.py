@@ -458,6 +458,11 @@ class GroupAddForm(forms.ModelForm):
         model = Groups
         fields = ("name", "permissions")
 
+    def __init__(self, *args, **kwargs):
+        super(GroupAddForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class GroupUpdateForm(forms.ModelForm):
     permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all())
@@ -468,6 +473,11 @@ class GroupUpdateForm(forms.ModelForm):
     class Meta:
         model = Groups
         fields = ("name", "permissions")
+
+    def __init__(self, *args, **kwargs):
+        super(GroupUpdateForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class CounteragentDocumentsAddForm(forms.ModelForm):
