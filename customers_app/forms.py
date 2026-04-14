@@ -449,7 +449,7 @@ class ChangePassPraseUpdateForm(forms.ModelForm):
 
 
 class GroupAddForm(forms.ModelForm):
-    permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all())
+    permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all(), label='Права доступа')
     permissions.widget.attrs.update(
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
@@ -465,7 +465,7 @@ class GroupAddForm(forms.ModelForm):
 
 
 class GroupUpdateForm(forms.ModelForm):
-    permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all())
+    permissions = forms.ModelMultipleChoiceField(queryset=Permission.objects.all(), label='Права доступа')
     permissions.widget.attrs.update(
         {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )

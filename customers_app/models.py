@@ -34,11 +34,6 @@ class Groups(Group):
             "permissions": "; ".join(permissions),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Динамически меняем заголовок поля для админки и форм
-        self._meta.get_field('permissions').verbose_name = 'Права доступа'
-
 
 class ViewDocumentsPhysical(models.Model):
     class Meta:
@@ -584,6 +579,7 @@ class ApartmentBooking(models.Model):
     """
         Бронирование места в квартире
     """
+
     class Meta:
         verbose_name = "Бронирование квартиры"
         verbose_name_plural = "Бронирования квартир"
