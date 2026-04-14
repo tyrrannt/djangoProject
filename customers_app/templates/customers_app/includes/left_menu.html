@@ -2,682 +2,682 @@
 {% load custom %}
 
 <!-- start: sidebar -->
-<aside id="sidebar-left" class="sidebar-left">
-    <div class="sidebar-header">
-        <div class="sidebar-title">
-            Главное меню
-        </div>
-        <div class="sidebar-toggle d-none d-md-block" data-toggle-class="sidebar-left-collapsed"
-             data-target="html" data-fire-event="sidebar-left-toggle">
-            <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
-        </div>
+<div class="sidebar-header">
+    <div class="sidebar-title">
+        Главное меню
     </div>
-    <div class="nano">
-        <div class="nano-content">
-            <nav id="menu" class="nav-main" role="navigation">
-                <ul class="nav nav-main">
-                    {% if user.is_superuser %}
+    <div class="sidebar-toggle d-none d-md-block" data-toggle-class="sidebar-left-collapsed"
+         data-target="html" data-fire-event="sidebar-left-toggle">
+        <i class="fas fa-bars" aria-label="Toggle sidebar"></i>
+    </div>
+</div>
+
+<div class="nano">
+    <div class="nano-content">
+        <nav id="menu" class="nav-main" role="navigation">
+            <ul class="nav nav-main">
+                {% if user.is_superuser %}
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class='bx bx-shield-quarter' aria-hidden="true"></i>
+                            <span>Чат</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'chat_app:room' room_name='shakirov' %}">
+                                    Shakirov
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link"
+                                   href="{% url 'library_app:video_conference' room_name='shakirov' %}">
+                                    Видеоконференция
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link"
+                                   href="{% url 'library_app:audio_conference' room_name='shakirov' %}">
+                                    Аудиоконференция
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link"
+                                   href="{% url 'tasks_app:task-list' %}">
+                                    Планировщик
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class='bx bx-hard-hat' aria-hidden="true"></i>
+                            <span>СИЗ</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'ppequipment_app:index' %}">
+                                    Shakirov
+                                </a>
+                            </li>
+
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if user.is_superuser %}
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class='bx bx-shield-quarter' aria-hidden="true"></i>
+                            <span>Настройки</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'administration_app:property_list' %}">
+                                    Настройки портала
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link"
+                                   href="{% url 'hrdepartment_app:business_process_routes_list' %}">
+                                    Настройки бизнес процессов
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
+                                    (Устаревшее) Настройки бизнес процессов
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'customers_app:group_list' %}">
+                                    Группы
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'administration_app:json' %}">
+                                    Загрузка данных из файла
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'administration_app:monitoring' %}">
+                                    Мониторинг системы
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'administration_app:1c_odata_request' %}">
+                                    Генератор OData-запросов
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
+                <li class="nav-parent">
+                    <a class="nav-link" href="#">
+                        <i class='bx bxs-report' aria-hidden="true"></i>
+                        <span>Отчеты</span>
+                    </a>
+                    <ul class="nav nav-children">
                         <li class="nav-parent">
                             <a class="nav-link" href="#">
-                                <i class='bx bx-shield-quarter' aria-hidden="true"></i>
-                                <span>Чат</span>
+                                <span>Учет рабочего времени</span>
                             </a>
                             <ul class="nav nav-children">
                                 <li>
-                                    <a class="nav-link" href="{% url 'chat_app:room' room_name='shakirov' %}">
-                                        Shakirov
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">
+                                        Журнал разъездов
                                     </a>
                                 </li>
+                                {% if user|has_group:"Журнал разъездов" %}
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'hrdepartment_app:reportcard_listmanual' %}">
+                                            Список разъездов
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'hrdepartment_app:reportcard_listadmin' %}">
+                                            Список разъездов (admin)
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if user|has_group:"Отчеты РВ" %}
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
+                                            Табель РВ
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'hrdepartment_app:reportcard_detail_year' %}">
+                                            Табель РВ (годовой)
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'hrdepartment_app:reportcard_detail_fact' %}">
+                                            Табель РВ (факт)
+                                        </a>
+                                    </li>
+                                {% endif %}
                                 <li>
                                     <a class="nav-link"
-                                       href="{% url 'library_app:video_conference' room_name='shakirov' %}">
-                                        Видеоконференция
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link"
-                                       href="{% url 'library_app:audio_conference' room_name='shakirov' %}">
-                                        Аудиоконференция
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link"
-                                       href="{% url 'tasks_app:task-list' %}">
-                                        Планировщик
+                                       href="{% url 'hrdepartment_app:reportcard_detail_ias' %}">
+                                        Табель РВ (ИАС)
                                     </a>
                                 </li>
                             </ul>
                         </li>
-                    {% endif %}
-                    {% if user.is_superuser %}
                         <li class="nav-parent">
                             <a class="nav-link" href="#">
-                                <i class='bx bx-hard-hat' aria-hidden="true"></i>
-                                <span>СИЗ</span>
+                                <span>Служебные поездки</span>
                             </a>
                             <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_month_report' %}">
+                                        Служебные поездки (контроль)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_report' %}">
+                                        Отчет по сотрудникам
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link"
+                                       href="{% url 'hrdepartment_app:management_dashboard' %}">
+                                        Отчеты для руководства
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:expense_report' %}">
+                                        Отчет по <br>
+                                        Служебным поездкам
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </li>
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <span>Персонал</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                {% if user.is_staff %}
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
+                                            Сезонность отпусков
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">
+                                            Анализ пропусков работы
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">
+                                            Влияние дня недели на отгулы
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">
+                                            Распределение типов времени
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'customers_app:inactive_users_report' %}">
+                                            Неактивные пользователи
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link"
+                                           href="{% url 'hrdepartment_app:training_debt_report' %}">
+                                            Расчет долга за обучение
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                <li>
+                                    <a class="nav-link"
+                                       href="{% url 'customers_app:apartments_usage_report' %}">
+                                        Отчет использования квартир
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'library_app:event_list' %}">
+                                Мероприятия
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-parent">
+                    <a class="nav-link" href="#">
+                        <i class="bx bx-book-content" aria-hidden="true"></i>
+                        <span>Справочники</span>
+                    </a>
+                    <ul class="nav nav-children">
+                        <li>
+                            <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
+                                Сотрудники
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
+                                Должности
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}">
+                                Вредные условия труда
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
+                                Типы документов
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
+                                Типы договоров
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
+                                Типы имущества
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'contracts_app:estate_list' %}">
+                                Имущество
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'customers_app:divisions_list' %}">
+                                Подразделения
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
+                                Контрагенты
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'customers_app:documents_list' %}">
+                                Документы контрагенты
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'hrdepartment_app:purpose_list' %}">
+                                Цели служебной поездки
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'hrdepartment_app:medicalorg_list' %}">
+                                Медицинские организации
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'hrdepartment_app:place_list' %}">
+                                Места назначения
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-parent">
+                    <a class="nav-link" href="#">
+                        <i class='bx bxs-book-content' aria-hidden="true"></i>
+                        <span>Договора</span>
+                    </a>
+                    <ul class="nav nav-children">
+                        <li>
+                            <a class="nav-link" href="{% url 'contracts_app:index' %}">
+                                Общий список договоров
+                            </a>
+                        </li>
+                        {% if request.user.is_superuser %}
+                            <li>
+                                <a class="nav-link" href="{% url 'contracts_app:index-admin' %}">
+                                    Общий список договоров - admin
+                                </a>
+                            </li>
+                        {% endif %}
+                        <li>
+                            <a class="nav-link" href="{% url 'contracts_app:counteragent_check' %}">
+                                Поиск контрагента
+                            </a>
+                        </li>
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <i class='bx bxs-book-content' aria-hidden="true"></i>
+                                <span>Отчеты</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'contracts_app:contract_report' %}">
+                                        Общий список договоров
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'hrdepartment_app:student_agreement_list' %}">
+                                Ученические договора
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-parent">
+                    <a class="nav-link" href="#">
+                        <i class='bx bx-task' aria-hidden="true"></i>
+                        <span>ЭДО</span>
+                    </a>
+                    <ul class="nav nav-children">
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <span>Договора</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="#">
+                                        Бланк согласования <br>
+                                        договора
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="#">
+                                        Бизнес-процесс по <br>
+                                        договорам
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-children">
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <span>Логистика</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'logistics_app:waybill_list' %}">
+                                        Транспортная накладная
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'logistics_app:package_list' %}">
+                                        Посылки
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-children">
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <span>Служебные задания</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:memo_list' %}">
+                                        Служебная записка <br>
+                                        на служебную поездку
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_list' %}">
+                                        Бизнес-процесс по <br>
+                                        Служебным запискам
+                                    </a>
+                                </li>
+
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="nav nav-children">
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                <span>ИАС</span>
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:team_list' %}">
+                                        <span>Старшие бригад</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:timesheet_list' %}">
+                                        <span>Табель МПД</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:outfit_card_list' %}">
+                                        Журнал регистрации <br>
+                                        карт-нарядов
+                                    </a>
+                                </li>
                                 <li>
                                     <a class="nav-link" href="{% url 'ppequipment_app:index' %}">
-                                        Shakirov
-                                    </a>
-                                </li>
-
-                            </ul>
-                        </li>
-                    {% endif %}
-                    {% if user.is_superuser %}
-                        <li class="nav-parent">
-                            <a class="nav-link" href="#">
-                                <i class='bx bx-shield-quarter' aria-hidden="true"></i>
-                                <span>Настройки</span>
-                            </a>
-                            <ul class="nav nav-children">
-                                <li>
-                                    <a class="nav-link" href="{% url 'administration_app:property_list' %}">
-                                        Настройки портала
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link"
-                                       href="{% url 'hrdepartment_app:business_process_routes_list' %}">
-                                        Настройки бизнес процессов
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
-                                        (Устаревшее) Настройки бизнес процессов
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'customers_app:group_list' %}">
-                                        Группы
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'administration_app:json' %}">
-                                        Загрузка данных из файла
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'administration_app:monitoring' %}">
-                                        Мониторинг системы
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'administration_app:1c_odata_request' %}">
-                                        Генератор OData-запросов
+                                        Инвентарный учёт
                                     </a>
                                 </li>
                             </ul>
                         </li>
-                    {% endif %}
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class='bx bxs-report' aria-hidden="true"></i>
-                            <span>Отчеты</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>Учет рабочего времени</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_list' %}">
-                                            Журнал разъездов
-                                        </a>
-                                    </li>
-                                    {% if user|has_group:"Журнал разъездов" %}
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:reportcard_listmanual' %}">
-                                                Список разъездов
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    {% if user.is_superuser %}
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:reportcard_listadmin' %}">
-                                                Список разъездов (admin)
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    {% if user|has_group:"Отчеты РВ" %}
-                                        <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:reportcard_detail' %}">
-                                                Табель РВ
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:reportcard_detail_year' %}">
-                                                Табель РВ (годовой)
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:reportcard_detail_fact' %}">
-                                                Табель РВ (факт)
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    <li>
-                                        <a class="nav-link"
-                                           href="{% url 'hrdepartment_app:reportcard_detail_ias' %}">
-                                            Табель РВ (ИАС)
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>Служебные поездки</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_month_report' %}">
-                                            Служебные поездки (контроль)
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_report' %}">
-                                            Отчет по сотрудникам
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link"
-                                           href="{% url 'hrdepartment_app:management_dashboard' %}">
-                                            Отчеты для руководства
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:expense_report' %}">
-                                            Отчет по <br>
-                                            Служебным поездкам
-                                        </a>
-                                    </li>
-
-                                </ul>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>Персонал</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    {% if user.is_staff %}
-                                        <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:seasonality-report' %}">
-                                                Сезонность отпусков
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:absence_analysis' %}">
-                                                Анализ пропусков работы
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:weekday-analysis' %}">
-                                                Влияние дня недели на отгулы
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:time_distribution' %}">
-                                                Распределение типов времени
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'customers_app:inactive_users_report' %}">
-                                                Неактивные пользователи
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:training_debt_report' %}">
-                                                Расчет долга за обучение
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    <li>
-                                        <a class="nav-link"
-                                           href="{% url 'customers_app:apartments_usage_report' %}">
-                                            Отчет использования квартир
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:event_list' %}">
-                                    Мероприятия
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class="bx bx-book-content" aria-hidden="true"></i>
-                            <span>Справочники</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:staff_list' %}">
-                                    Сотрудники
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:jobs_list' %}">
-                                    Должности
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:harmfuls_list' %}">
-                                    Вредные условия труда
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:typedocuments_list' %}">
-                                    Типы документов
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:typecontracts_list' %}">
-                                    Типы договоров
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:typepropertys_list' %}">
-                                    Типы имущества
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:estate_list' %}">
-                                    Имущество
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:divisions_list' %}">
-                                    Подразделения
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:counteragent_list' %}">
-                                    Контрагенты
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'customers_app:documents_list' %}">
-                                    Документы контрагенты
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:purpose_list' %}">
-                                    Цели служебной поездки
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:medicalorg_list' %}">
-                                    Медицинские организации
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:place_list' %}">
-                                    Места назначения
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class='bx bxs-book-content' aria-hidden="true"></i>
-                            <span>Договора</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:index' %}">
-                                    Общий список договоров
-                                </a>
-                            </li>
-                            {% if request.user.is_superuser %}
-                                <li>
-                                    <a class="nav-link" href="{% url 'contracts_app:index-admin' %}">
-                                        Общий список договоров - admin
-                                    </a>
-                                </li>
-                            {% endif %}
-                            <li>
-                                <a class="nav-link" href="{% url 'contracts_app:counteragent_check' %}">
-                                    Поиск контрагента
-                                </a>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <i class='bx bxs-book-content' aria-hidden="true"></i>
-                                    <span>Отчеты</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'contracts_app:contract_report' %}">
-                                            Общий список договоров
-                                        </a>
-                                    </li>
-
-                                </ul>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:student_agreement_list' %}">
-                                    Ученические договора
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class='bx bx-task' aria-hidden="true"></i>
-                            <span>ЭДО</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>Договора</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="#">
-                                            Бланк согласования <br>
-                                            договора
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="#">
-                                            Бизнес-процесс по <br>
-                                            договорам
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-children">
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>Логистика</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'logistics_app:waybill_list' %}">
-                                            Транспортная накладная
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'logistics_app:package_list' %}">
-                                            Посылки
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-children">
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>Служебные задания</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:memo_list' %}">
-                                            Служебная записка <br>
-                                            на служебную поездку
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:bpmemo_list' %}">
-                                            Бизнес-процесс по <br>
-                                            Служебным запискам
-                                        </a>
-                                    </li>
-
-                                </ul>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-children">
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    <span>ИАС</span>
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:team_list' %}">
-                                            <span>Старшие бригад</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:timesheet_list' %}">
-                                            <span>Табель МПД</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:outfit_card_list' %}">
-                                            Журнал регистрации <br>
-                                            карт-нарядов
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'ppequipment_app:index' %}">
-                                            Инвентарный учёт
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </li>
-                    <li class="nav-parent">
-                        <a class="nav-link" href="#">
-                            <i class="bx bx-briefcase-alt-2" aria-hidden="true"></i>
-                            <span>Документация</span>
-                        </a>
-                        <ul class="nav nav-children">
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:blank_list' %}">
-                                    Бланки документов
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:medical_list' %}">
-                                    Медицинские направления
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:guidance_documents_list' %}">
-                                    Руководящие документы
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'hrdepartment_app:operational_list' %}">
-                                    Нормативные акты
-                                </a>
-                            </li>
-                            <li class="nav-parent">
-                                <a class="nav-link" href="#">
-                                    Локально-нормативные акты
-                                </a>
-                                <ul class="nav nav-children">
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:jobdescription_list' %}">
-                                            Должностные инструкции
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:briefings_list' %}">
-                                            Инструктажи
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:lpi_list' %}">
-                                            Инструкции по ТО ВС
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:provisions_list' %}">
-                                            Положения
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:order_list' %}">
-                                            Приказы
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="nav-link" href="{% url 'hrdepartment_app:labor_protection_list' %}">
-                                            Процедуры по <br>
-                                            охране труда
-                                        </a>
-                                    </li>
-                                </ul>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="#">
-                                    Входящие документы
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="#">
-                                    Исходящие документы
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a class="nav-link" href="{% url 'library_app:help_list' %}">
-                            <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                            <span>Справка</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="nav-link" href="{% url 'tickets_app:list' %}">
-                            <i class='bx bx-envelope' aria-hidden="true"></i>
-                            <span>Добровольные сообщения</span>
-                        </a>
-                    </li>
-                    {% if user.is_superuser %}
-                        <li class="nav-parent">
-                            <a class="nav-link" href="#">
-                                <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                <span>Конкурс</span>
-                            </a>
-                            <ul class="nav nav-children">
-                                <li>
-                                    <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
-                                        Прием стихов
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'library_app:vote' %}">
-                                        Голосование
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="nav-link" href="{% url 'library_app:results' %}">
-                                        Результаты
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            <hr class="separator"/>
-            <div class="sidebar-widget widget-tasks">
-                <div class="widget-header">
-                    <h6>Наши проекты</h6>
-                    <div class="widget-toggle">+</div>
-                </div>
-                <div class="widget-content">
-                    <ul class="list-unstyled m-0">
-                        <li><a href="https://barkol.ru/" target="_blank">Главный сайт</a></li>
-                        <li><a href="http://lk.barkol.ru/pls/apex/f?p=506" target="_blank">Кабинет авиаспециалиста</a>
-                        </li>
-                        <li><a href="https://ms.barkol.ru/" target="_blank">Почтовый сервер БАРКОЛ</a></li>
                     </ul>
-                </div>
+                </li>
+                <li class="nav-parent">
+                    <a class="nav-link" href="#">
+                        <i class="bx bx-briefcase-alt-2" aria-hidden="true"></i>
+                        <span>Документация</span>
+                    </a>
+                    <ul class="nav nav-children">
+                        <li>
+                            <a class="nav-link" href="{% url 'library_app:blank_list' %}">
+                                Бланки документов
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'hrdepartment_app:medical_list' %}">
+                                Медицинские направления
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'hrdepartment_app:guidance_documents_list' %}">
+                                Руководящие документы
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="{% url 'hrdepartment_app:operational_list' %}">
+                                Нормативные акты
+                            </a>
+                        </li>
+                        <li class="nav-parent">
+                            <a class="nav-link" href="#">
+                                Локально-нормативные акты
+                            </a>
+                            <ul class="nav nav-children">
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:jobdescription_list' %}">
+                                        Должностные инструкции
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:briefings_list' %}">
+                                        Инструктажи
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:lpi_list' %}">
+                                        Инструкции по ТО ВС
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:provisions_list' %}">
+                                        Положения
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:order_list' %}">
+                                        Приказы
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nav-link" href="{% url 'hrdepartment_app:labor_protection_list' %}">
+                                        Процедуры по <br>
+                                        охране труда
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#">
+                                Входящие документы
+                            </a>
+                        </li>
+                        <li>
+                            <a class="nav-link" href="#">
+                                Исходящие документы
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <a class="nav-link" href="{% url 'library_app:help_list' %}">
+                        <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                        <span>Справка</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-link" href="{% url 'tickets_app:list' %}">
+                        <i class='bx bx-envelope' aria-hidden="true"></i>
+                        <span>Добровольные сообщения</span>
+                    </a>
+                </li>
+                {% if user.is_superuser %}
+                    <li class="nav-parent">
+                        <a class="nav-link" href="#">
+                            <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                            <span>Конкурс</span>
+                        </a>
+                        <ul class="nav nav-children">
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
+                                    Прием стихов
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:vote' %}">
+                                    Голосование
+                                </a>
+                            </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'library_app:results' %}">
+                                    Результаты
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        <hr class="separator"/>
+        <div class="sidebar-widget widget-tasks">
+            <div class="widget-header">
+                <h6>Наши проекты</h6>
+                <div class="widget-toggle">+</div>
             </div>
-            <hr class="separator"/>
-            <div class="sidebar-widget widget-stats">
-                <div class="widget-header">
-                    <h6>СТАТИСТИКА КОМПАНИИ</h6>
-                    <div class="widget-toggle">+</div>
-                </div>
+            <div class="widget-content">
+                <ul class="list-unstyled m-0">
+                    <li><a href="https://barkol.ru/" target="_blank">Главный сайт</a></li>
+                    <li><a href="http://lk.barkol.ru/pls/apex/f?p=506" target="_blank">Кабинет авиаспециалиста</a>
+                    </li>
+                    <li><a href="https://ms.barkol.ru/" target="_blank">Почтовый сервер БАРКОЛ</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr class="separator"/>
+        <div class="sidebar-widget widget-stats">
+            <div class="widget-header">
+                <h6>СТАТИСТИКА КОМПАНИИ</h6>
+                <div class="widget-toggle">+</div>
+            </div>
 
-                <div class="widget-content">
-                    <section class="card">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            </div>
-                            <h2 class="card-title">Всего договоров</h2>
-                        </header>
-                        <div class="card-body">
-                            <div class="widget-summary">
-                                <div class="widget-summary-col text-center">
-                                    <div class="summary">
-                                        <div class="info">
-                                            <strong class="amount">{{ contracts_count }}</strong>
-                                        </div>
+            <div class="widget-content">
+                <section class="card">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                        </div>
+                        <h2 class="card-title">Всего договоров</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="widget-summary">
+                            <div class="widget-summary-col text-center">
+                                <div class="summary">
+                                    <div class="info">
+                                        <strong class="amount">{{ contracts_count }}</strong>
                                     </div>
-                                    <div class="summary-footer">
-                                        <a href="{% url 'contracts_app:index' %}" class="text-uppercase">Открыть
-                                            базу</a>
+                                </div>
+                                <div class="summary-footer">
+                                    <a href="{% url 'contracts_app:index' %}" class="text-uppercase">Открыть
+                                        базу</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="widget-content">
+                <section class="card">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
+                        </div>
+                        <h2 class="card-title">QR код</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="widget-summary">
+                            <div class="widget-summary-col text-center">
+                                <div class="summary">
+                                    <img id="qr-code-image"
+                                         src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
+                                         alt="QR Code" width="50%">
+                                    <br>
+                                    <span id="qr-code-message" class="text-3">QR код действителен еще:</span>
+                                    <div id="countdown" style="margin-top: 10px;"></div>
+                                    <div id="expired-message" style="display: none; margin-top: 10px; color: red;">
+                                        QR код устарел
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
+            </div>
 
-                <div class="widget-content">
-                    <section class="card">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            </div>
-                            <h2 class="card-title">QR код</h2>
-                        </header>
-                        <div class="card-body">
-                            <div class="widget-summary">
-                                <div class="widget-summary-col text-center">
-                                    <div class="summary">
-                                        <img id="qr-code-image"
-                                             src="{% url 'customers_app:generate_qr_code' current_url=request.get_full_path|url_encode %}"
-                                             alt="QR Code" width="50%">
-                                        <br>
-                                        <span id="qr-code-message" class="text-3">QR код действителен еще:</span>
-                                        <div id="countdown" style="margin-top: 10px;"></div>
-                                        <div id="expired-message" style="display: none; margin-top: 10px; color: red;">
-                                            QR код устарел
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+            <div class="widget-content">
+                <section class="card">
+                    <header class="card-header">
+                        <div class="card-actions">
+                            <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
                         </div>
-                    </section>
-                </div>
+                        <h2 class="card-title">Сотрудники OnLine</h2>
+                    </header>
+                    <div class="card-body">
+                        <div class="widget-summary">
+                            <div class="widget-summary-col">
+                                <div class="summary">
+                                    <ul id="online-users"></ul>
 
-                <div class="widget-content">
-                    <section class="card">
-                        <header class="card-header">
-                            <div class="card-actions">
-                                <a href="#" class="card-action card-action-toggle" data-card-toggle></a>
-                            </div>
-                            <h2 class="card-title">Сотрудники OnLine</h2>
-                        </header>
-                        <div class="card-body">
-                            <div class="widget-summary">
-                                <div class="widget-summary-col">
-                                    <div class="summary">
-                                        <ul id="online-users"></ul>
+                                    <script>
+                                        function showMessageToast(from, text) {
+                                            const toastId = "toast-" + Date.now();
 
-                                        <script>
-                                            function showMessageToast(from, text) {
-                                                const toastId = "toast-" + Date.now();
-
-                                                const toastHtml = `
+                                            const toastHtml = `
         <div id="${toastId}" class="toast toast-soft fade" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">
                 <strong class="me-auto">${from}</strong>
@@ -690,154 +690,149 @@
         </div>
     `;
 
-                                                document.getElementById("toastAreaCenter").insertAdjacentHTML('beforeend', toastHtml);
+                                            document.getElementById("toastAreaCenter").insertAdjacentHTML('beforeend', toastHtml);
 
-                                                const toastElement = document.getElementById(toastId);
+                                            const toastElement = document.getElementById(toastId);
 
-                                                const bsToast = new bootstrap.Toast(toastElement, {
-                                                    autohide: false, // не закрывать автоматически
-                                                    animation: true
-                                                });
-
-                                                bsToast.show();
-                                            }
-                                        </script>
-
-
-                                        <script>
-
-                                            document.addEventListener("DOMContentLoaded", function () {
-                                                const modalElement = document.getElementById('sendMessageModal');
-                                                if (!modalElement) {
-                                                    console.error('Modal element #sendMessageModal not found in DOM');
-                                                    return;
-                                                }
-                                                const bsModal = new bootstrap.Modal(modalElement);
-
-                                                let selectedUserId = null;
-
-                                                window.openModal = function (username, userId) {
-                                                    selectedUserId = userId;
-                                                    document.getElementById("sendMessageLabel").textContent = "Сообщение для " + username;
-                                                    document.getElementById("modal-text").value = "";
-                                                    bsModal.show();
-                                                };
-
-                                                document.getElementById("modal-send").onclick = function () {
-                                                    const msg = document.getElementById("modal-text").value.trim();
-                                                    if (msg && selectedUserId) {
-                                                        private_socket.send(JSON.stringify({
-                                                            type: "private_message",
-                                                            to: selectedUserId,
-                                                            message: msg
-                                                        }));
-                                                    }
-                                                    bsModal.hide();
-                                                };
-
+                                            const bsToast = new bootstrap.Toast(toastElement, {
+                                                autohide: false, // не закрывать автоматически
+                                                animation: true
                                             });
 
-                                            // --- Online users WebSocket ---
-                                            const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
-                                            const socket_online_users = new WebSocket(online_users_url);
+                                            bsToast.show();
+                                        }
+                                    </script>
 
-                                            // --- Private messages WebSocket ---
-                                            const private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
 
-                                            // --- Получение личных сообщений ---
-                                            private_socket.onmessage = function (event) {
-                                                const data = JSON.parse(event.data);
+                                    <script>
 
-                                                if (data.type === "private_message") {
-                                                    showMessageToast(data.from_name, data.message);
+                                        document.addEventListener("DOMContentLoaded", function () {
+                                            const modalElement = document.getElementById('sendMessageModal');
+                                            if (!modalElement) {
+                                                console.error('Modal element #sendMessageModal not found in DOM');
+                                                return;
+                                            }
+                                            const bsModal = new bootstrap.Modal(modalElement);
+
+                                            let selectedUserId = null;
+
+                                            window.openModal = function (username, userId) {
+                                                selectedUserId = userId;
+                                                document.getElementById("sendMessageLabel").textContent = "Сообщение для " + username;
+                                                document.getElementById("modal-text").value = "";
+                                                bsModal.show();
+                                            };
+
+                                            document.getElementById("modal-send").onclick = function () {
+                                                const msg = document.getElementById("modal-text").value.trim();
+                                                if (msg && selectedUserId) {
+                                                    private_socket.send(JSON.stringify({
+                                                        type: "private_message",
+                                                        to: selectedUserId,
+                                                        message: msg
+                                                    }));
                                                 }
+                                                bsModal.hide();
                                             };
 
-                                            private_socket.onclose = function () {
-                                                console.error("Private WebSocket закрыт");
-                                            };
+                                        });
 
-                                            // --- Получение списка онлайн пользователей ---
-                                            socket_online_users.onmessage = function (event) {
-                                                const data = JSON.parse(event.data);
+                                        // --- Online users WebSocket ---
+                                        const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
+                                        const socket_online_users = new WebSocket(online_users_url);
 
-                                                if (data.type === 'online_users') {
-                                                    const usersList = document.getElementById('online-users');
-                                                    usersList.innerHTML = '';
+                                        // --- Private messages WebSocket ---
+                                        const private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
 
-                                                    data.users.forEach(user => {
-                                                        const username = user[0]; // отображаемое имя
-                                                        const userId = user[1];   // PK пользователя
+                                        // --- Получение личных сообщений ---
+                                        private_socket.onmessage = function (event) {
+                                            const data = JSON.parse(event.data);
 
-                                                        const li = document.createElement('li');
-                                                        const link = document.createElement('a');
+                                            if (data.type === "private_message") {
+                                                showMessageToast(data.from_name, data.message);
+                                            }
+                                        };
 
-                                                        link.textContent = username;
+                                        private_socket.onclose = function () {
+                                            console.error("Private WebSocket закрыт");
+                                        };
 
-                                                        // --- Двойной клик для отправки сообщения ---
-                                                        link.addEventListener("dblclick", function (e) {
-                                                            e.preventDefault();
-                                                            openModal(username, userId);
-                                                        });
+                                        // --- Получение списка онлайн пользователей ---
+                                        socket_online_users.onmessage = function (event) {
+                                            const data = JSON.parse(event.data);
 
-                                                        li.appendChild(link);
-                                                        usersList.appendChild(li);
+                                            if (data.type === 'online_users') {
+                                                const usersList = document.getElementById('online-users');
+                                                usersList.innerHTML = '';
+
+                                                data.users.forEach(user => {
+                                                    const username = user[0]; // отображаемое имя
+                                                    const userId = user[1];   // PK пользователя
+
+                                                    const li = document.createElement('li');
+                                                    const link = document.createElement('a');
+
+                                                    link.textContent = username;
+
+                                                    // --- Двойной клик для отправки сообщения ---
+                                                    link.addEventListener("dblclick", function (e) {
+                                                        e.preventDefault();
+                                                        openModal(username, userId);
                                                     });
-                                                }
-                                            };
 
-                                            socket_online_users.onclose = function () {
-                                                console.error('Online WebSocket закрыт');
-                                            };
-                                        </script>
+                                                    li.appendChild(link);
+                                                    usersList.appendChild(li);
+                                                });
+                                            }
+                                        };
 
-                                    </div>
+                                        socket_online_users.onclose = function () {
+                                            console.error('Online WebSocket закрыт');
+                                        };
+                                    </script>
+
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
             </div>
         </div>
-        <script>
-            // Maintain Scroll Position
-            if (typeof localStorage !== 'undefined') {
-                if (localStorage.getItem('sidebar-left-position') !== null) {
-                    var initialPosition = localStorage.getItem('sidebar-left-position'),
-                        sidebarLeft = document.querySelector('#sidebar-left .nano-content');
-                    sidebarLeft.scrollTop = initialPosition;
+    </div>
+    <script>
+        // Maintain Scroll Position
+        if (typeof localStorage !== 'undefined') {
+            if (localStorage.getItem('sidebar-left-position') !== null) {
+                var initialPosition = localStorage.getItem('sidebar-left-position'),
+                    sidebarLeft = document.querySelector('#sidebar-left .nano-content');
+                sidebarLeft.scrollTop = initialPosition;
+            }
+        }
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const countdownElement = document.getElementById('countdown');
+            const qrCodeImage = document.getElementById('qr-code-image');
+            const expiredMessage = document.getElementById('expired-message');
+            const qrCodeMessage = document.getElementById('qr-code-message');
+
+            let timeLeft = 30;
+
+            function updateCountdown() {
+                countdownElement.textContent = `${timeLeft} секунд`;
+                timeLeft--;
+
+                if (timeLeft < 0) {
+                    clearInterval(countdownInterval);
+                    countdownElement.style.display = 'none';
+                    qrCodeImage.style.display = 'none';
+                    qrCodeMessage.style.display = 'none';
+                    expiredMessage.style.display = 'block';
                 }
             }
-        </script>
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                const countdownElement = document.getElementById('countdown');
-                const qrCodeImage = document.getElementById('qr-code-image');
-                const expiredMessage = document.getElementById('expired-message');
-                const qrCodeMessage = document.getElementById('qr-code-message');
 
-                let timeLeft = 30;
-
-                function updateCountdown() {
-                    countdownElement.textContent = `${timeLeft} секунд`;
-                    timeLeft--;
-
-                    if (timeLeft < 0) {
-                        clearInterval(countdownInterval);
-                        countdownElement.style.display = 'none';
-                        qrCodeImage.style.display = 'none';
-                        qrCodeMessage.style.display = 'none';
-                        expiredMessage.style.display = 'block';
-                    }
-                }
-
-                updateCountdown();
-                const countdownInterval = setInterval(updateCountdown, 1000);
-            });
-        </script>
-    </div>
-</aside>
-
-{% block SpecificPageVendor %}
-
-{% endblock %}
+            updateCountdown();
+            const countdownInterval = setInterval(updateCountdown, 1000);
+        });
+    </script>
+</div>

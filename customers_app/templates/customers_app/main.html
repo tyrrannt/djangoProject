@@ -104,7 +104,8 @@
     <!-- start: header -->
     <header class="header">
         <div class="logo-container">
-            <a href="{% if user.is_superuser %}{% url 'admin:index' %}{% else %}/users/profile/{{ user.pk }}/{% endif %}"
+            <a href="
+                    {% if user.is_superuser %}{% url 'admin:index' %}{% else %}/users/profile/{{ user.pk }}/{% endif %}"
                class="logo">
                 <img src="{% static 'admin_templates/img/logo.png' %}" height="35" alt="Панель администрирования"/>
             </a>
@@ -132,12 +133,10 @@
 
     <div class="inner-wrapper">
         <!-- start: sidebar -->
-        {% block left_menu %}
-            <aside id="sidebar-left" class="sidebar-left">
-                <!-- Левое меню -->
-                {% include 'customers_app/includes/left_menu.html' %}
-            </aside>
-        {% endblock %}
+        <aside id="sidebar-left" class="sidebar-left">
+            <!-- Левое меню -->
+            {% include 'customers_app/includes/left_menu.html' %}
+        </aside>
 
         <!-- end: sidebar -->
         <!-- БЛОК КОНТЕНТА -->
