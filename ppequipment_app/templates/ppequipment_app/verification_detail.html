@@ -1,14 +1,7 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
 
-{% block title %}<title>Сверка {{ object.inventory_number }}</title>{% endblock %}
-
-{% block breadcrumb_title %}Сверка {{ object.inventory_number }}{% endblock %}
-
-{% block breadcrumb_items %}
-    <li class="breadcrumb-item"><a href="{% url 'ppequipment_app:verification_list' %}">Сверки</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ object.inventory_number }}</li>
-{% endblock %}
+{% block title %}<title>{{ title|default:object.inventory_number }}</title>{% endblock %}
 
 {% block page_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">

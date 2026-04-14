@@ -1,85 +1,78 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
 
-{% block title %}<title>Печать свёрочных этикеток</title>{% endblock %}
+{% block title %}<title>Печать сверочных этикеток</title>{% endblock %}
 
 {% block breadcrumb_title %}Печать этикеток{% endblock %}
 
 {% block breadcrumb_items %}
-    <li class="breadcrumb-item"><a href="{% url 'ppequipment_app:verification_labels' %}">Свёрочные этикетки</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'ppequipment_app:verification_labels' %}">Сверочные этикетки</a></li>
     <li class="breadcrumb-item active" aria-current="page">Печать</li>
 {% endblock %}
 
 {% block custome_css %}
 <style>
-    /* Стили для печати этикеток */
-    @media print {
-        @page {
-            size: A4;
-            margin: 10mm;
-        }
-
-        body * {
-            visibility: hidden;
-        }
-        #labels-container, #labels-container * {
-            visibility: visible;
-        }
-        #labels-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-        }
-        .no-print {
-            display: none !important;
-        }
-        .label-card {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-bottom: 15px;
-        }
-        .label-card {
-            border: 2px solid #333 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        .label-header {
-            background: #f0f0f0 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
+    /* Стили для контейнера этикеток */
+    #labels-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .label-card {
+    /* Карточка этикетки с QR-кодом */
+    .label-card-wrapper {
+        display: flex;
+        gap: 15px;
         border: 2px solid #333;
         border-radius: 5px;
-        padding: 12px 15px;
-        margin-bottom: 15px;
+        padding: 10px;
         background: #fff;
-        font-size: 13px;
+        break-inside: avoid;
+        page-break-inside: avoid;
         width: 100%;
+    }
+
+    /* QR-код слева */
+    .label-qr {
+        flex-shrink: 0;
+        width: 180px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .label-qr img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    /* Правая часть - этикетка */
+    .label-card {
+        flex: 1;
+        font-size: 11px;
     }
 
     .label-header {
         background: #f0f0f0;
-        padding: 6px 10px;
-        margin: -12px -15px 12px -15px;
+        padding: 4px 8px;
+        margin: -10px -10px 8px -10px;
         border-bottom: 2px solid #333;
         font-weight: bold;
         text-align: center;
-        font-size: 15px;
+        font-size: 13px;
     }
 
     .label-row {
         display: flex;
-        margin-bottom: 6px;
+        margin-bottom: 3px;
         align-items: baseline;
     }
 
     .label-label {
         font-weight: bold;
-        min-width: 180px;
+        min-width: 140px;
         color: #555;
         flex-shrink: 0;
     }
@@ -89,13 +82,83 @@
     }
 
     .label-inv {
-        font-size: 18px;
+        font-size: 14px;
         font-weight: bold;
         text-align: center;
-        padding: 10px;
+        padding: 6px;
         background: #f8f9fa;
         border: 1px dashed #999;
-        margin: 12px 0;
+        margin: 6px 0;
+    }
+
+    /* Двухколоночная сетка внутри этикетки */
+    .label-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3px 10px;
+    }
+
+    /* Стили для печати */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+
+        body .body {
+            overflow: visible !important;
+        }
+
+        /* Скрываем шапку, боковые меню и блок навигации */
+        body .header,
+        body .logo-container,
+        body #sidebar-left,
+        body #sidebar-right,
+        body .toggle-sidebar-left,
+        body .header-right,
+        body .breadcrumbs-wrapper,
+        body .loading-overlay {
+            display: none !important;
+        }
+
+        section[role="main"] {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .card-body {
+            padding: 0 !important;
+        }
+
+        #labels-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .label-card-wrapper {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .label-qr {
+            width: 150px;
+            height: 150px;
+        }
+
+        .label-qr img {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
     }
 </style>
 {% endblock %}
@@ -104,7 +167,7 @@
 <!-- Кнопки управления (не печатаются) -->
 <div class="d-flex justify-content-between align-items-center mb-4 no-print">
     <h2 class="mb-0">
-        <i class="fas fa-print me-2 text-primary"></i>Свёрочные этикетки
+        <i class="fas fa-print me-2 text-primary"></i>Сверочные этикетки
     </h2>
     <div>
         <button onclick="window.print()" class="btn btn-success btn-lg me-2">
@@ -119,90 +182,107 @@
 <div class="alert alert-info no-print">
     <i class="fas fa-info-circle me-2"></i>
     <strong>Сформировано этикеток:</strong> {{ count }}
+    {% if verification_date_label %}
+        <br>
+        <strong>Дата сверки:</strong> {{ verification_date_label|date:"d.m.Y" }}
+    {% endif %}
     <br>
-    <small>Нажмите кнопку "Печать" для вывода на принтер. Формат: A4, этикетки на всю ширину листа.</small>
+    <small>Нажмите кнопку "Печать" для вывода на принтер. Формат: A4 книжная, QR + этикетка.</small>
 </div>
 
 <!-- Контейнер с этикетками -->
 <div id="labels-container">
     {% for label in labels %}
-    <div class="label-card">
-        <div class="label-header">
-            <i class="fas fa-tags"></i> СВЁРОЧНАЯ ЭТИКЕТКА
+    <div class="label-card-wrapper">
+        <!-- QR-код слева -->
+        <div class="label-qr">
+            <img src="{% url 'ppequipment_app:verification_qr' label.slug %}" alt="QR-код">
         </div>
 
-        <div class="label-inv">
-            Инв. №: {{ label.inventory_number }}
-        </div>
+        <!-- Этикетка справа -->
+        <div class="label-card">
+            <div class="label-header">
+                <i class="fas fa-tags"></i> СВЕРОЧНАЯ ЭТИКЕТКА
+                {% if verification_date_label %}
+                    — {{ verification_date_label|date:"d.m.Y" }}
+                {% endif %}
+            </div>
 
-        <div class="row">
-            <div class="col-md-6">
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-box me-1"></i>Оборудование:</span>
-                    <span class="label-value">{{ label.equipment.name|default:"—" }}</span>
+            <div class="label-inv">
+                Инв. №: {{ label.inventory_number }}
+            </div>
+
+            <!-- Оборудование на всю ширину -->
+            <div class="label-row">
+                <span class="label-label"><i class="fas fa-box me-1"></i>Оборудование:</span>
+                <span class="label-value">{{ label.equipment.name|default:"—" }}</span>
+            </div>
+
+            <!-- Остальные поля в 2 колонки -->
+            <div class="label-grid">
+                <div>
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-plane me-1"></i>Тип ВС:</span>
+                        <span class="label-value">{{ label.equipment.aircraft_type|default:"—" }}</span>
+                    </div>
+
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-tag me-1"></i>Назн-лит:</span>
+                        <span class="label-value">{{ label.equipment.dest_lit|default:"—" }}</span>
+                    </div>
+
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-map-marker-alt me-1"></i>Местоположение:</span>
+                        <span class="label-value">{{ label.location_ref|default:"—" }}</span>
+                    </div>
+
+                    {% if label.notes %}
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-sticky-note me-1"></i>Примечание:</span>
+                        <span class="label-value">{{ label.notes }}</span>
+                    </div>
+                    {% endif %}
                 </div>
 
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-plane me-1"></i>Тип ВС:</span>
-                    <span class="label-value">{{ label.equipment.aircraft_type|default:"—" }}</span>
-                </div>
+                <div>
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-tasks me-1"></i>Статус:</span>
+                        <span class="label-value">{{ label.contractor_status|default:"—" }}</span>
+                    </div>
 
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-tag me-1"></i>Назн-лит:</span>
-                    <span class="label-value">{{ label.equipment.dest_lit|default:"—" }}</span>
-                </div>
+                    {% if label.last_verification_date %}
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-calendar me-1"></i>Последняя сверка:</span>
+                        <span class="label-value">{{ label.last_verification_date|date:"d.m.Y" }}</span>
+                    </div>
+                    {% endif %}
 
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-map-marker-alt me-1"></i>Местоположение:</span>
-                    <span class="label-value">{{ label.location_ref|default:"—" }}</span>
+                    {% if label.vs_number %}
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-hashtag me-1"></i>№ ВС:</span>
+                        <span class="label-value">{{ label.vs_number }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if label.end_date %}
+                    <div class="label-row">
+                        <span class="label-label"><i class="fas fa-calendar-check me-1"></i>Дата оконч.:</span>
+                        <span class="label-value">{{ label.end_date|date:"d.m.Y" }}</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-tasks me-1"></i>Статус:</span>
-                    <span class="label-value">{{ label.contractor_status|default:"—" }}</span>
-                </div>
-
-                {% if label.last_verification_date %}
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-calendar me-1"></i>Последняя сверка:</span>
-                    <span class="label-value">{{ label.last_verification_date|date:"d.m.Y" }}</span>
-                </div>
-                {% endif %}
-
-                {% if label.vs_number %}
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-hashtag me-1"></i>№ ВС:</span>
-                    <span class="label-value">{{ label.vs_number }}</span>
-                </div>
-                {% endif %}
-
-                {% if label.end_date %}
-                <div class="label-row">
-                    <span class="label-label"><i class="fas fa-calendar-check me-1"></i>Дата оконч.:</span>
-                    <span class="label-value">{{ label.end_date|date:"d.m.Y" }}</span>
-                </div>
-                {% endif %}
+            <div class="label-row">
+                <span class="label-label"><i class="fas fa-trash me-1"></i>Уничтожен:</span>
+                <span class="label-value">
+                    {% if label.is_destroyed %}
+                        <span class="badge bg-danger">Да</span>
+                    {% else %}
+                        <span class="badge bg-success">Нет</span>
+                    {% endif %}
+                </span>
             </div>
-        </div>
-
-        {% if label.notes %}
-        <div class="label-row">
-            <span class="label-label"><i class="fas fa-sticky-note me-1"></i>Примечание:</span>
-            <span class="label-value">{{ label.notes }}</span>
-        </div>
-        {% endif %}
-
-        <div class="label-row">
-            <span class="label-label"><i class="fas fa-trash me-1"></i>Уничтожен:</span>
-            <span class="label-value">
-                {% if label.is_destroyed %}
-                    <span class="badge bg-danger">Да</span>
-                {% else %}
-                    <span class="badge bg-success">Нет</span>
-                {% endif %}
-            </span>
         </div>
     </div>
     {% empty %}

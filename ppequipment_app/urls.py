@@ -58,4 +58,7 @@ urlpatterns = [
 
     # Свёрочные этикетки
     path('verification-labels/', views.verification_labels, name='verification_labels'),
+
+    # QR-код для этикетки
+    path('qr/<slug:slug>/', views.generate_verification_qr, name='verification_qr'),
 ]

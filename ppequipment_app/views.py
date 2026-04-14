@@ -2,12 +2,20 @@ import os
 import subprocess
 import csv
 import io
+import json
 from datetime import datetime
+from io import BytesIO
+
+import qrcode
+from qrcode.image.styledpil import StyledPilImage
+from qrcode.image.styles.moduledrawers import CircleModuleDrawer
+from PIL import Image, ImageDraw, ImageFont
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
+from django.http import HttpResponse
 from .models import (
     Equipment, Location, Verification, VerificationDate,
     DestLit, LocationRef, AircraftType, ContractorStatus,
@@ -51,13 +59,13 @@ def equipment_list(request):
     if search:
         qs = qs.filter(Q(name__icontains=search) | Q(number__icontains=search))
     return render(request, "ppequipment_app/equipment_list.html", {
-        "object_list": qs, "search": search,
+        "object_list": qs, "search": search, "title": "Оборудование",
     })
 
 
 def equipment_detail(request, pk):
     obj = get_object_or_404(Equipment.objects.select_related("aircraft_type", "dest_lit"), pk=pk)
-    return render(request, "ppequipment_app/equipment_detail.html", {"object": obj})
+    return render(request, "ppequipment_app/equipment_detail.html", {"object": obj, "title": f"Оборудование #{obj.number}"})
 
 
 def equipment_create(request):
@@ -104,14 +112,14 @@ def verification_list(request):
             Q(equipment__name__icontains=search)
         )
     return render(request, "ppequipment_app/verification_list.html", {
-        "object_list": qs, "search": search,
+        "object_list": qs, "search": search, "title": "Сверки",
     })
 
 
 def verification_detail(request, slug):
     obj = get_object_or_404(Verification.objects.select_related("equipment", "location_ref", "contractor_status"),
                             slug=slug)
-    return render(request, "ppequipment_app/verification_detail.html", {"object": obj})
+    return render(request, "ppequipment_app/verification_detail.html", {"object": obj, "title": f"Сверка {obj.inventory_number}"})
 
 
 def verification_create(request):
@@ -151,7 +159,7 @@ def verification_delete(request, slug):
 # ─── Location ────────────────────────────────────────────────────────────────
 def location_list(request):
     qs = Location.objects.select_related("equipment", "location_ref").all()
-    return render(request, "ppequipment_app/location_list.html", {"object_list": qs})
+    return render(request, "ppequipment_app/location_list.html", {"object_list": qs, "title": "Местоположения оборудования"})
 
 
 def location_create(request):
@@ -192,7 +200,7 @@ def location_delete(request, pk):
 # ─── VerificationDate ────────────────────────────────────────────────────────
 def verification_date_list(request):
     qs = VerificationDate.objects.all().order_by("-verification_date")
-    return render(request, "ppequipment_app/verificationdate_list.html", {"object_list": qs})
+    return render(request, "ppequipment_app/verificationdate_list.html", {"object_list": qs, "title": "Даты сверок"})
 
 
 def verification_date_create(request):
@@ -520,6 +528,7 @@ def import_from_mdb(request):
 
 
 # ─── Сверочные этикетки ──────────────────────────────────────────────────────
+@login_required
 def verification_labels(request):
     """Страница выбора условий для печати свёрочных этикеток"""
     if request.method == "POST":
@@ -529,6 +538,11 @@ def verification_labels(request):
             qs = Verification.objects.select_related(
                 "equipment", "location_ref", "contractor_status", "equipment__aircraft_type", "equipment__dest_lit"
             ).all()
+
+            # Дата сверки
+            verification_date = form.cleaned_data.get("verification_date")
+            if verification_date:
+                qs = qs.filter(last_verification_date=verification_date.verification_date)
 
             # Местоположение
             location_refs = form.cleaned_data.get("location_ref")
@@ -573,8 +587,62 @@ def verification_labels(request):
             return render(request, "ppequipment_app/verification_labels_print.html", {
                 "labels": qs,
                 "count": qs.count(),
+                "verification_date_label": verification_date.verification_date if verification_date else None,
             })
     else:
         form = VerificationLabelForm()
 
     return render(request, "ppequipment_app/verification_labels.html", {"form": form})
+
+
+# ─── QR-код для этикетки ────────────────────────────────────────────────────
+def generate_verification_qr(request, slug):
+    """Генерирует QR-код с полными данными сверочной этикетки"""
+    verification = get_object_or_404(
+        Verification.objects.select_related(
+            "equipment", "location_ref", "contractor_status",
+            "equipment__aircraft_type", "equipment__dest_lit"
+        ),
+        slug=slug,
+    )
+
+    # Формируем данные для QR-кода
+    qr_data = f"""СВЕРОЧНАЯ ЭТИКЕТКА
+Инв. №: {verification.inventory_number}
+Оборудование: {verification.equipment.name if verification.equipment else "—"}
+Тип ВС: {verification.equipment.aircraft_type if verification.equipment and verification.equipment.aircraft_type else "—"}
+Назн-лит: {verification.equipment.dest_lit if verification.equipment and verification.equipment.dest_lit else "—"}
+Местоположение: {verification.location_ref if verification.location_ref else "—"}
+Статус: {verification.contractor_status if verification.contractor_status else "—"}
+Последняя сверка: {verification.last_verification_date.strftime('%d.%m.%Y') if verification.last_verification_date else "—"}
+№ ВС: {verification.vs_number if verification.vs_number else "—"}
+Дата оконч.: {verification.end_date.strftime('%d.%m.%Y') if verification.end_date else "—"}
+Примечание: {verification.notes if verification.notes else "—"}
+Уничтожен: {"Да" if verification.is_destroyed else "Нет"}"""
+
+    # Создаём QR-код
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=2,
+    )
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+
+    # Генерируем изображение с CircleModule
+    img = qr.make_image(
+        image_factory=StyledPilImage,
+        module_drawer=CircleModuleDrawer(radius_factor=0.5),
+        fill_color=(0, 0, 0),
+        back_color=(255, 255, 255),
+    )
+
+    # Конвертируем в PNG и отдаём
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type="image/png")
+    response["Cache-Control"] = "public, max-age=86400"
+    return response

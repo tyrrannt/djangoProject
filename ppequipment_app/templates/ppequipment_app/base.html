@@ -1,31 +1,11 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 
-{% block title %}<title>Учёт оборудования</title>{% endblock %}
+{% block title %}<title>{{ title|default:"Учёт оборудования" }}</title>{% endblock %}
 
 {% block content %}
-    <!-- Хлебные крошки -->
-    <div class="breadcrumbs-wrapper">
-        <div class="breadcrumbs-content">
-            <h4 class="breadcrumbs-title">
-                <i class="fas fa-boxes me-2"></i>
-                {% block breadcrumb_title %}Учёт оборудования{% endblock %}
-            </h4>
-            <nav aria-label="breadcrumb" class="mt-2">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item">
-                        <a href="{% url 'ppequipment_app:index' %}">
-                            <i class="fas fa-home"></i> Главная
-                        </a>
-                    </li>
-                    {% block breadcrumb_items %}{% endblock %}
-                </ol>
-            </nav>
-        </div>
-    </div>
-
     <!-- Навигационная панель -->
-    <div class="card mb-4">
+    <div class="card mb-4 no-print">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0"><i class="fas fa-compass me-2"></i>Навигация</h5>
         </div>

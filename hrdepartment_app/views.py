@@ -6448,118 +6448,130 @@ def generate_student_agreement(request, pk):
     """
     Генерация ученического договора на основе заполненной модели StudentAgreement.
     """
-    # 1. Получаем объект договора
-    agreement = get_object_or_404(StudentAgreement, pk=pk)
+    try:
+        # 1. Получаем объект договора
+        agreement = get_object_or_404(StudentAgreement, pk=pk)
 
-    # 2. Получаем данные пользователя (Работник)
-    user = agreement.full_name  # ForeignKey к DataBaseUser
-    passport_data = get_passport_data(user)
+        # 2. Получаем данные пользователя (Работник)
+        user = agreement.full_name  # ForeignKey к DataBaseUser
+        passport_data = get_passport_data(user)
 
-    # 3. Получаем данные АУЦ (Контрагент)
-    auc = agreement.training_center_name
-    # Предполагаем, что у Counteragent есть поля full_name и short_name
-    auc_full = getattr(auc, 'full_name', str(auc))
-    auc_short = getattr(auc, 'short_name', str(auc))
+        # 3. Получаем данные АУЦ (Контрагент)
+        auc = agreement.training_center_name
+        # Предполагаем, что у Counteragent есть поля full_name и short_name
+        auc_full = getattr(auc, 'full_name', str(auc))
+        auc_short = getattr(auc, 'short_name', str(auc))
 
-    # 4. Получаем модули (НОВОЕ)
-    modules = agreement.training_unit.all()
-    if modules:
-        # Формируем список названий модулей
-        modules_list = [str(module.full_unit_name) for module in modules]
-        # Объединяем с переносом строки для отображения в Word
-        modules_text = '\n'.join(modules_list)
-        show_modules = True
-    else:
-        modules_text = ''
-        show_modules = False
-
-    # 5. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
-    rubles_word, rubles_suffix, kopecks, kopecks_suffix = number_to_words_rub(agreement.training_cost)
-    remotely = '.'
-    terms = 'В период обучения Работнику выплачивается заработная плата по среднему заработку.'
-    if agreement.form_education == 'distance':
-        if agreement.remotely:
-            remotely = ' с отрывом от работы.'
+        # 4. Получаем модули (НОВОЕ)
+        modules = agreement.training_unit.all()
+        if modules:
+            # Формируем список названий модулей
+            modules_list = [str(module.full_unit_name) for module in modules]
+            # Объединяем с переносом строки для отображения в Word
+            modules_text = '\n'.join(modules_list)
+            show_modules = True
         else:
-            remotely = ' без отрыва от работы.'
-            terms = 'В течение всего срока обучения Работнику выплачивается заработная плата в полном объёме, согласно штатному расписанию и условиям трудового договора.'
+            modules_text = ''
+            show_modules = False
+
+        # 5. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
+        rubles_word, rubles_suffix, kopecks, kopecks_suffix = number_to_words_rub(agreement.training_cost)
+        remotely = '.'
+        terms = 'В период обучения Работнику выплачивается заработная плата по среднему заработку.'
+        if agreement.form_education == 'distance':
+            if agreement.remotely:
+                remotely = ' с отрывом от работы.'
+            else:
+                remotely = ' без отрыва от работы.'
+                terms = 'В течение всего срока обучения Работнику выплачивается заработная плата в полном объёме, согласно штатному расписанию и условиям трудового договора.'
 
 
-    context = {
-        # Реквизиты договора
-        'student_agreement_number': agreement.student_agreement_number,
-        'data': format_date_rus(agreement.student_agreement_date)['data'],
-        'month': format_date_rus(agreement.student_agreement_date)['month'],
-        'year': format_date_rus(agreement.student_agreement_date)['year'],
+        context = {
+            # Реквизиты договора
+            'student_agreement_number': agreement.student_agreement_number,
+            'data': format_date_rus(agreement.student_agreement_date)['data'],
+            'month': format_date_rus(agreement.student_agreement_date)['month'],
+            'year': format_date_rus(agreement.student_agreement_date)['year'],
 
-        # Работник
-        'full_name': str(user),
-        'full_name_short': FIO_format(user, reverse=True),
-        'job': passport_data.get('job', ''),
-        'series': passport_data.get('series', ''),
-        'number': passport_data.get('number', ''),
-        'date_of_issue': passport_data.get('date_of_issue', ''),
-        'issued_by_whom': passport_data.get('issued_by_whom', ''),
-        'division_code': passport_data.get('division_code', ''),
-        'full_name_address': passport_data.get('address', ''),
-        'full_name_phone': passport_data.get('phone', ''),
+            # Работник
+            'full_name': str(user),
+            'full_name_short': FIO_format(user, reverse=True),
+            'job': passport_data.get('job', ''),
+            'series': passport_data.get('series', ''),
+            'number': passport_data.get('number', ''),
+            'date_of_issue': passport_data.get('date_of_issue', ''),
+            'issued_by_whom': passport_data.get('issued_by_whom', ''),
+            'division_code': passport_data.get('division_code', ''),
+            'full_name_address': passport_data.get('address', ''),
+            'full_name_phone': passport_data.get('phone', ''),
 
-        # Обучение
-        'auc_full': auc_full,
-        'auc_short': auc_short,
-        'training_program': str(agreement.training_program),  # program_name
-        'hours': agreement.academic_hours,
-        'start_data': format_date_rus(agreement.training_start_date)['data'],
-        'start_month': format_date_rus(agreement.training_start_date)['month'],
-        'start_year': format_date_rus(agreement.training_start_date)['year'],
-        'end_data': format_date_rus(agreement.training_end_date)['data'],
-        'end_month': format_date_rus(agreement.training_end_date)['month'],
-        'end_year': format_date_rus(agreement.training_end_date)['year'],
-        'form_education': agreement.get_form_education_display(),
-        'remotely': remotely,
-        'terms': terms,
+            # Обучение
+            'auc_full': auc_full,
+            'auc_short': auc_short,
+            'training_program': str(agreement.training_program),  # program_name
+            'hours': agreement.academic_hours,
+            'start_data': format_date_rus(agreement.training_start_date)['data'],
+            'start_month': format_date_rus(agreement.training_start_date)['month'],
+            'start_year': format_date_rus(agreement.training_start_date)['year'],
+            'end_data': format_date_rus(agreement.training_end_date)['data'],
+            'end_month': format_date_rus(agreement.training_end_date)['month'],
+            'end_year': format_date_rus(agreement.training_end_date)['year'],
+            'form_education': agreement.get_form_education_display(),
+            'remotely': remotely,
+            'terms': terms,
 
 
-        # Модули
-        'modules_text': modules_text,
-        'show_modules': show_modules,
+            # Модули
+            'modules_text': modules_text,
+            'show_modules': show_modules,
 
-        # Финансы
-        'training_cost': format_currency(agreement.training_cost),
-        'training_cost_in_word': rubles_word,
-        'training_cost_in_word_suffix': rubles_suffix,
-        'cost_kopecks': kopecks,
-        'cost_kopecks_suffix': kopecks_suffix,
+            # Финансы
+            'training_cost': format_currency(agreement.training_cost),
+            'training_cost_in_word': rubles_word,
+            'training_cost_in_word_suffix': rubles_suffix,
+            'cost_kopecks': kopecks,
+            'cost_kopecks_suffix': kopecks_suffix,
 
-        # Обязательства
-        'work_period_years': agreement.work_period_years,
-        'work_period_years_in_words': number_to_words(agreement.work_period_years).split()[0],  # Упрощенно
+            # Обязательства
+            'work_period_years': agreement.work_period_years,
+            'work_period_years_in_words': number_to_words(agreement.work_period_years).split()[0],  # Упрощенно
 
-        # Трудовой договор
-        'employment_contract': passport_data.get('employment_contract', ''),
-        'employment_contract_date': passport_data.get('employment_contract_date', '').strftime('%d.%m.%Y'),
-    }
+            # Трудовой договор
+            'employment_contract': passport_data.get('employment_contract', ''),
+            'employment_contract_date': passport_data.get('employment_contract_date', '').strftime('%d.%m.%Y'),
+        }
 
-    # 6. Рендеринг документа
-    # Путь к шаблону. Убедитесь, что файл student_agreement.docx лежит в доступной папке
-    template_path = os.path.join(settings.BASE_DIR, 'static', 'DocxTemplates', 'student_agreement.docx')
+        # 6. Рендеринг документа
+        # Путь к шаблону. Убедитесь, что файл student_agreement.docx лежит в доступной папке
+        template_path = os.path.join(settings.BASE_DIR, 'static', 'DocxTemplates', 'student_agreement.docx')
 
-    doc = DocxTemplate(template_path)
-    doc.render(context)
+        if not os.path.exists(template_path):
+            logger.error(f"Файл шаблона не найден по пути: {template_path}")
+            raise FileNotFoundError("Шаблон .docx отсутствует")
 
-    # 7. Сохранение в буфер для отправки
-    buffer = io.BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
+        doc = DocxTemplate(template_path)
+        doc.render(context)
 
-    filename = f"Договор_{agreement.student_agreement_number}_{agreement.full_name}.docx"
+        # 7. Сохранение в буфер для отправки
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
 
-    return FileResponse(
-        buffer,
-        as_attachment=True,
-        filename=filename,
-        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    )
+        filename = f"Договор_{agreement.student_agreement_number}_{agreement.full_name}.docx"
+
+        return FileResponse(
+            buffer,
+            as_attachment=True,
+            filename=filename,
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+
+    except Exception as e:
+        # exc_info=True добавит в лог полный traceback (строку ошибки и тип)
+        logger.error(f"Ошибка при генерации договора ID {pk}: {e}", exc_info=True)
+        # Для отладки в консоли можно использовать:
+        # print(traceback.format_exc())
+        return HttpResponse("Произошла ошибка при генерации документа. Подробности в логах.", status=500)
 
 
 @staff_member_required

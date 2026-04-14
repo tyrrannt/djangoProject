@@ -42,7 +42,7 @@ django-dynamic-formsets==0.0.8
 django-redis==5.4.0
 django-stubs==5.2.8
 django-stubs-ext==5.2.8
-django-unfold==0.81.0
+django-unfold==0.89.0
 django-widget-tweaks==1.5.0
 django-xff==1.4.0
 djangorestframework==3.16.1
@@ -110,7 +110,7 @@ python-decouple==3.8
 python-docx==1.1.0
 python-magic==0.4.27
 pytz==2023.3.post1
-qrcode==7.4.2
+qrcode==8.2
 redis==5.0.4
 redis-cli==1.0.1
 requests==2.31.0

@@ -1,14 +1,7 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
 
-{% block title %}<title>{{ object.name }}</title>{% endblock %}
-
-{% block breadcrumb_title %}Оборудование #{{ object.number }}{% endblock %}
-
-{% block breadcrumb_items %}
-    <li class="breadcrumb-item"><a href="{% url 'ppequipment_app:equipment_list' %}">Оборудование</a></li>
-    <li class="breadcrumb-item active" aria-current="page">#{{ object.number }}</li>
-{% endblock %}
+{% block title %}<title>{{ title|default:object.name }}</title>{% endblock %}
 
 {% block page_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">

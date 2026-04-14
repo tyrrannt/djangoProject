@@ -1,18 +1,12 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
 
-{% block title %}<title>Оборудование</title>{% endblock %}
-
-{% block breadcrumb_title %}Оборудование{% endblock %}
-
-{% block breadcrumb_items %}
-    <li class="breadcrumb-item active" aria-current="page">Оборудование</li>
-{% endblock %}
+{% block title %}<title>{{ title|default:"Оборудование" }}</title>{% endblock %}
 
 {% block page_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">
-        <i class="fas fa-box me-2 text-primary"></i>Оборудование
+        <i class="fas fa-box me-2 text-primary"></i>{{ title|default:"Оборудование" }}
     </h2>
     <a href="{% url 'ppequipment_app:equipment_create' %}" class="btn btn-success">
         <i class="fas fa-plus me-1"></i>Добавить оборудование

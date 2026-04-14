@@ -18,6 +18,11 @@ class EquipmentForm(forms.ModelForm):
             "approved_by": forms.Textarea(attrs={"rows": 2}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super(EquipmentForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class LocationForm(forms.ModelForm):
     """Форма для местоположения"""
@@ -25,6 +30,11 @@ class LocationForm(forms.ModelForm):
     class Meta:
         model = Location
         fields = ["equipment", "location_ref"]
+
+    def __init__(self, *args, **kwargs):
+        super(LocationForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class VerificationForm(forms.ModelForm):
@@ -40,6 +50,11 @@ class VerificationForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super(VerificationForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class VerificationDateForm(forms.ModelForm):
     """Форма для даты сверки"""
@@ -51,6 +66,11 @@ class VerificationDateForm(forms.ModelForm):
             "verification_date": forms.DateInput(attrs={"type": "date"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super(VerificationDateForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 # Формы для справочников
 
@@ -59,11 +79,21 @@ class DestLitForm(forms.ModelForm):
         model = DestLit
         fields = ["name"]
 
+    def __init__(self, *args, **kwargs):
+        super(DestLitForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class LocationRefForm(forms.ModelForm):
     class Meta:
         model = LocationRef
         fields = ["name"]
+
+    def __init__(self, *args, **kwargs):
+        super(LocationRefForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
 
 class AircraftTypeForm(forms.ModelForm):
@@ -71,15 +101,32 @@ class AircraftTypeForm(forms.ModelForm):
         model = AircraftType
         fields = ["name"]
 
+    def __init__(self, *args, **kwargs):
+        super(AircraftTypeForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class ContractorStatusForm(forms.ModelForm):
     class Meta:
         model = ContractorStatus
         fields = ["name"]
 
+    def __init__(self, *args, **kwargs):
+        super(ContractorStatusForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
 
 class VerificationLabelForm(forms.Form):
     """Форма для выбора условий печати свёрочных этикеток"""
+    verification_date = forms.ModelChoiceField(
+        queryset=VerificationDate.objects.all().order_by("-verification_date"),
+        widget=forms.Select,
+        label="Дата сверки",
+        required=False,
+        empty_label="Все даты",
+    )
     location_ref = forms.ModelMultipleChoiceField(
         queryset=LocationRef.objects.all().order_by("name"),
         widget=forms.SelectMultiple(attrs={"class": "form-control", "size": 8}),
