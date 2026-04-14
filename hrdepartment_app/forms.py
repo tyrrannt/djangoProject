@@ -91,42 +91,21 @@ class OfficialMemoAddForm(forms.ModelForm):
     place_production_activity = forms.ModelMultipleChoiceField(
         queryset=PlaceProductionActivity.objects.all()
     )
-    place_production_activity.widget.attrs.update(
-        {
-            "class": "form-control form-control-modern data-plugin-selectTwo",
-            "data-plugin-selectTwo": True,
-        }
-    )
     place_departure = forms.ModelChoiceField(
         queryset=PlaceProductionActivity.objects.all()
-    )
-    place_departure.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
     person = forms.ModelChoiceField(
         queryset=DataBaseUser.objects.all()
         .exclude(is_active=False, username__in=["admin", "proxmox"])
         .order_by("last_name")
     )
-    person.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
-    purpose_trip.widget.attrs.update(
-        {
-            "class": "form-control form-control-modern data-plugin-selectTwo",
-            "data-plugin-selectTwo": True,
-        }
-    )
     official_memo_type = forms.ChoiceField(choices=memo_type)
     type_trip = forms.ChoiceField(choices=type_of_trip)
     period_from = forms.DateField(label="Дата начала", required=True)
     period_for = forms.DateField(label="Дата окончания", required=True)
     document_extension = forms.ModelChoiceField(
         queryset=OfficialMemo.objects.all(), required=False
-    )
-    document_extension.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
 
     class Meta:
@@ -154,6 +133,8 @@ class OfficialMemoAddForm(forms.ModelForm):
         self.fields["creation_retroactively"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
     def date_difference(self, day):
         """
@@ -203,39 +184,15 @@ class OfficialMemoUpdateForm(forms.ModelForm):
     place_departure = forms.ModelChoiceField(
         queryset=PlaceProductionActivity.objects.all()
     )
-    place_departure.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
-    )
     official_memo_type = forms.ChoiceField(choices=memo_type)
     place_production_activity = forms.ModelMultipleChoiceField(
         queryset=PlaceProductionActivity.objects.all()
     )
-    place_production_activity.widget.attrs.update(
-        {
-            "class": "form-control form-control-modern data-plugin-selectTwo",
-            "data-plugin-selectTwo": True,
-        }
-    )
     person = forms.ModelChoiceField(queryset=DataBaseUser.objects.all())
-    person.widget.attrs.update(
-        {
-            "class": "form-control form-control-modern data-plugin-selectTwo",
-            "data-plugin-selectTwo": True,
-        }
-    )
     purpose_trip = forms.ModelChoiceField(queryset=Purpose.objects.all())
-    purpose_trip.widget.attrs.update(
-        {
-            "class": "form-control form-control-modern data-plugin-selectTwo",
-            "data-plugin-selectTwo": True,
-        }
-    )
     type_trip = forms.ChoiceField(choices=type_of_trip)
     document_extension = forms.ModelChoiceField(
         queryset=OfficialMemo.objects.all(), required=False
-    )
-    document_extension.widget.attrs.update(
-        {"class": "form-control form-control-modern", "data-plugin-selectTwo": True}
     )
 
     class Meta:
@@ -253,6 +210,11 @@ class OfficialMemoUpdateForm(forms.ModelForm):
             "document_extension",
             "expenses_summ"
         )
+
+    def __init__(self, *args, **kwargs):
+        super(OfficialMemoUpdateForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
     def clean(self):
         """
