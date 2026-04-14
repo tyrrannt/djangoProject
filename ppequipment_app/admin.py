@@ -3,22 +3,24 @@ from django.shortcuts import redirect, render
 from django.urls import path, reverse
 from django import forms
 from django.db import models
+from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from .models import (
     Equipment, Location, Verification, VerificationDate,
     DestLit, LocationRef, AircraftType, ContractorStatus,
 )
 from .utils import replace_reference
-from unfold.admin import ModelAdmin, TabularInline
+from unfold.admin import ModelAdmin
 
 
 # ─── Inline для Equipment ─────────────────────────────────────────────────────
 
-class LocationInline(TabularInline):
+class LocationInline(admin.TabularInline):
     model = Location
     extra = 1
 
 
-class VerificationInline(TabularInline):
+class VerificationInline(admin.TabularInline):
     model = Verification
     extra = 1
     readonly_fields = ["inventory_number"]
@@ -31,7 +33,8 @@ class ReplaceForm(forms.Form):
     new_item = forms.ModelChoiceField(
         queryset=None,
         label="Заменить на",
-        help_text="Выберите элемент, на который нужно заменить выбранный"
+        help_text="Выберите элемент, на который нужно заменить выбранный",
+        widget=forms.Select(attrs={"class": "vTextField"})
     )
 
     def __init__(self, *args, **kwargs):
@@ -78,8 +81,7 @@ class ReplaceReferenceAdminMixin:
                         replaced_count = sum(stats.get('replaced', {}).values())
                         self.message_user(
                             request,
-                            f'Элемент "{obj}" заменён на "{new_item}". '
-                            f'Обновлено записей: {replaced_count}',
+                            f'Элемент "{obj}" заменён на "{new_item}". Обновлено записей: {replaced_count}',
                             messages.SUCCESS
                         )
                     except Exception as e:
@@ -88,7 +90,7 @@ class ReplaceReferenceAdminMixin:
         else:
             form = ReplaceForm(model_class=self.model)
 
-        # Получаем связанные модели для отобра
+        # Получаем связанные модели для отображения
         related_info = self._get_related_info()
 
         context = {
@@ -115,16 +117,24 @@ class ReplaceReferenceAdminMixin:
         return related
 
     def replace_link(self, obj):
-        """Ссылка на страницу замены в списке"""
+        """Ссылка на страницу замены в списке - для django-unfold"""
         url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_replace', args=[obj.pk])
-        return f'<a href="{url}" class="button" style="margin-left: 5px;">Заменить</a>'
-    replace_link.short_description = 'Действие'
-    replace_link.allow_tags = True
+        return format_html(
+            '<a href="{}" class="flex items-center text-xs cursor-pointer transition hover:text-primary">'
+            '<span class="material-symbols-outlined mr-1 text-sm">swap_horiz</span>Заменить</a>',
+            url
+        )
+    replace_link.short_description = _('Действие')
 
     def get_list_display(self, request):
         """Добавляем колонку с действием замены"""
         base_display = super().get_list_display(request)
         return list(base_display) + ['replace_link']
+
+    def get_list_filter(self, request):
+        """Настраиваем фильтры для unfold"""
+        base_filter = super().get_list_filter(request)
+        return base_filter
 
 
 # ─── Справочники ──────────────────────────────────────────────────────────────

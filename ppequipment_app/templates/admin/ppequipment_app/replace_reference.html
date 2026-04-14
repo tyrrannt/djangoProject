@@ -1,69 +1,113 @@
-{% extends "admin/base_site.html" %}
-{% load i18n admin_urls static %}
+{% extends "unfold/layouts/base.html" %}
+{% load i18n admin_urls static unfold %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block breadcrumbs %}
-<div class="breadcrumbs">
-    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
-    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
-    &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
-    &rsaquo; {% blocktranslate with object=object %}Заменить "{{ object }}"{% endblocktranslate %}
-</div>
+    <div class="px-12">
+        <div class="container-wide mb-8">
+            <div class="flex items-center gap-2 text-sm">
+                <a href="{% url 'admin:index' %}" class="text-gray-500 hover:text-primary transition">
+                    {% translate 'Home' %}
+                </a>
+                <span class="text-gray-300">›</span>
+                <a href="{% url 'admin:app_list' app_label=opts.app_label %}" class="text-gray-500 hover:text-primary transition">
+                    {{ opts.app_config.verbose_name }}
+                </a>
+                <span class="text-gray-300">›</span>
+                <a href="{% url opts|admin_urlname:'changelist' %}" class="text-gray-500 hover:text-primary transition">
+                    {{ opts.verbose_name_plural|capfirst }}
+                </a>
+                <span class="text-gray-300">›</span>
+                <span class="text-gray-700 font-semibold">{{ title }}</span>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <form method="post">
-        {% csrf_token %}
-        <fieldset class="module aligned">
-            <h2>Заменить "{{ object }}" на другой элемент</h2>
+    <div class="flex flex-col lg:flex-row">
+        <div class="w-full lg:w-2/3">
+            <form method="post" novalidate>
+                {% csrf_token %}
 
-            <div class="form-row">
-                <div>
-                    <label class="required">Текущий элемент:</label>
-                    <div><strong>{{ object }}</strong> (ID: {{ object.pk }})</div>
+                <div class="flex flex-col gap-6">
+                    <!-- Основная информация -->
+                    <div class="flex flex-col gap-4">
+                        <h2 class="text-2xl font-semibold text-gray-700">
+                            {% blocktranslate with object=object %}Заменить "{{ object }}"{% endblocktranslate %}
+                        </h2>
+
+                        <!-- Текущий элемент -->
+                        <div class="flex flex-col gap-2 p-4 bg-gray-50 border border-gray-200">
+                            <label class="block text-sm font-medium text-gray-700">{% translate 'Текущий элемент' %}</label>
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-gray-500">info</span>
+                                <strong class="text-gray-800">{{ object }}</strong>
+                                <span class="text-gray-400 text-sm">(ID: {{ object.pk }})</span>
+                            </div>
+                        </div>
+
+                        <!-- Форма выбора -->
+                        <div class="flex flex-col gap-2 p-4 border border-gray-200">
+                            {{ form.new_item.label_tag }}
+                            {{ form.new_item }}
+                            {% if form.new_item.help_text %}
+                                <p class="text-xs text-gray-500">{{ form.new_item.help_text }}</p>
+                            {% endif %}
+                            {% if form.new_item.errors %}
+                                <p class="text-xs text-red-600">{{ form.new_item.errors }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="flex items-center gap-3">
+                        <button type="submit"
+                                class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 text-sm font-medium transition cursor-pointer flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                            {% translate 'Заменить и удалить старый элемент' %}
+                        </button>
+                        <a href="{% url opts|admin_urlname:'changelist' %}"
+                           class="border border-gray-200 text-gray-700 px-6 py-2 text-sm font-medium transition hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                            {% translate 'Отмена' %}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Правая панель с информацией -->
+        {% if related_info %}
+            <div class="w-full lg:w-1/3 lg:pl-6 mt-6 lg:mt-0">
+                <div class="border border-gray-200 p-4">
+                    <h3 class="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-gray-500">link</span>
+                        {% translate 'Связанные данные' %}
+                    </h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        {% translate 'При замене будут обновлены следующие таблицы:' %}
+                    </p>
+
+                    <div class="flex flex-col gap-2">
+                        {% for rel in related_info %}
+                            <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-100">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-700">{{ rel.model }}</div>
+                                    <div class="text-xs text-gray-500">Поле: {{ rel.field }}</div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold bg-primary-100 text-primary-700">
+                                        {{ rel.count }}
+                                    </span>
+                                    <div class="text-xs text-gray-500 mt-1">{% translate 'записей' %}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
-
-            <div class="form-row">
-                {{ form.new_item.label_tag }}
-                {{ form.new_item }}
-                {% if form.new_item.help_text %}
-                    <p class="help">{{ form.new_item.help_text }}</p>
-                {% endif %}
-                {% if form.new_item.errors %}
-                    <p class="errornote">{{ form.new_item.errors }}</p>
-                {% endif %}
-            </div>
-        </fieldset>
-
-        {% if related_info %}
-        <fieldset class="module aligned">
-            <h2>Связанные данные (будут обновлены)</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Модель</th>
-                        <th>Поле FK</th>
-                        <th>Записей с FK</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for rel in related_info %}
-                    <tr>
-                        <td>{{ rel.model }}</td>
-                        <td>{{ rel.field }}</td>
-                        <td>{{ rel.count }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </fieldset>
         {% endif %}
-
-        <div class="submit-row">
-            <input type="submit" value="Заменить и удалить старый элемент" class="default" name="_replace">
-            <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">Отмена</a>
-        </div>
-    </form>
-</div>
+    </div>
 {% endblock %}
