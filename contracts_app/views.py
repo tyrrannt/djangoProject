@@ -532,7 +532,7 @@ class TypeDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'Просмотр - {self.get_object()}'
+        context['title'] = f'{self.get_object()}'
         return context
 
 
@@ -614,7 +614,7 @@ class TypeContractsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'Просмотр - {self.get_object()}'
+        context['title'] = f'{self.get_object()}'
         return context
 
 
@@ -696,7 +696,7 @@ class TypePropertysDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'Просмотр - {self.get_object()}'
+        context['title'] = f'{self.get_object()}'
         return context
 
 
@@ -775,7 +775,7 @@ class EstateDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'Просмотр - {self.get_object()}'
+        context['title'] = f'{self.get_object()}'
         return context
 
 

@@ -2747,7 +2747,7 @@ class DocumentsJobDescriptionDetail(
                                                       user=user).exists()
         previous = DocumentsJobDescription.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         context["agree"] = agree
         return context
 
@@ -2933,7 +2933,7 @@ class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -3053,7 +3053,7 @@ class PlaceProductionActivityDetail(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -3849,7 +3849,7 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -3992,7 +3992,7 @@ class BriefingsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -4153,7 +4153,7 @@ class OperationalDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView)
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -4290,7 +4290,7 @@ class GuidanceDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, Detai
         context['agree'] = agree
         list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -4434,7 +4434,7 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         user_job = self.request.user.pk
         persons_list = BusinessProcessRoutes.objects.filter(business_process_type="2")
         for person in persons_list:
@@ -5877,7 +5877,7 @@ class DataBaseUserEventDetail(PermissionRequiredMixin, LoginRequiredMixin, Detai
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -6011,7 +6011,7 @@ class LaborProtectionDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailV
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -6165,7 +6165,7 @@ class LaborProtectionInstructionsDetail(PermissionRequiredMixin, LoginRequiredMi
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context["title"] = f"Просмотр - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 

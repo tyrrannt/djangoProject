@@ -336,7 +336,7 @@ class CompanyEventDetailView(LoginRequiredMixin, DetailView):
                                                            document_id=document_id).order_by('user')
         context['list_agree'] = list_agree
         context['agree'] = agree
-        context['title'] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context['title'] = f"{self.get_object()}"
         return context
 
 
