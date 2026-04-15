@@ -194,7 +194,7 @@ class MedicalOrganisationUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -265,7 +265,7 @@ class MedicalExaminationUpdate(PermissionRequiredMixin, LoginRequiredMixin, Upda
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_success_url(self):
@@ -536,7 +536,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             content["form"].fields[
                 "document_extension"
             ].queryset = OfficialMemo.objects.filter(pk=0).exclude(cancellation=True)
-        content["title"] = f"Редактирование - {self.object}"
+        content["title"] = f"{self.object}"
         content["change_history"] = get_history(self, OfficialMemo)
         return content
 
@@ -1185,9 +1185,7 @@ class ApprovalOficialMemoProcessUpdate(
     #             return {}
     #     content["list_hr"] = list_hr
     #
-    #     content[
-    #         "title"
-    #     ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {document.document.title}"
+    #     content["title"] = f"{document.document.title}"
     #     # Выбираем приказ
     #     if document.document.official_memo_type == "1":
     #         content["form"].fields["order"].queryset = DocumentsOrder.objects.filter(
@@ -1339,9 +1337,7 @@ class ApprovalOficialMemoProcessUpdate(
         content["list_hr"] = list_hr
 
         # Заголовок
-        content["title"] = (
-            f"{PortalProperty.objects.last().portal_name} // Редактирование - {document.document.title}"
-        )
+        content["title"] = f"{document.document.title}"
 
         # --- Приказ ---
         if document.document.official_memo_type in ("1", "2"):
@@ -2190,7 +2186,7 @@ class PurposeUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -2228,7 +2224,7 @@ class BusinessProcessDirectionUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -2267,7 +2263,7 @@ class BusinessProcessRoutesUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -2770,7 +2766,7 @@ class DocumentsJobDescriptionUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     # def form_valid(self, form):
@@ -2960,7 +2956,7 @@ class DocumentsOrderUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get(self, request, *args, **kwargs):
@@ -3072,7 +3068,7 @@ class PlaceProductionActivityUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -3869,7 +3865,7 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4012,7 +4008,7 @@ class BriefingsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4173,7 +4169,7 @@ class OperationalUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4310,7 +4306,7 @@ class GuidanceDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4513,7 +4509,7 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -5896,7 +5892,7 @@ class DataBaseUserEventUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -6030,7 +6026,7 @@ class LaborProtectionUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -6185,7 +6181,7 @@ class LaborProtectionInstructionsUpdate(PermissionRequiredMixin, LoginRequiredMi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def get_form_kwargs(self):

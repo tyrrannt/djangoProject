@@ -1884,7 +1884,7 @@ class CounteragentDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, U
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context["title"] = f"Редактирование - {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
     def form_valid(self, form):
