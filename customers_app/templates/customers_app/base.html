@@ -5,10 +5,9 @@
 
     <!-- Basic -->
     <meta charset="UTF-8">
-    {% block title %}
-    {% endblock %}
+    <title>Корпоративный портал // {% block title %}{% endblock %}</title>
     <meta name="keywords" content="HTML5"/>
-    <meta name="description" content="Корпоративный сайт ООО Авиакомпания 'БАРКОЛ'">
+    <meta name="description" content="Корпоративный портал ООО Авиакомпания 'БАРКОЛ'">
     <meta name="author" content="">
     <link rel="shortcut icon" href="{% static 'android/mipmap-hdpi/ic_launcher_round.png' %}">
     <link rel="manifest" href="{% static 'manifest.json' %}">
@@ -20,6 +19,7 @@
               rel="stylesheet" type="text/css">
 
         <!-- Vendor CSS -->
+        <link rel="stylesheet" href="{% static 'admin_templates/vendor/nanoscroller/nanoscroller.css' %}"/>
         <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.css' %}"/>
         <link rel="stylesheet" href="{% static 'admin_templates/vendor/animate/animate.compat.css' %}">
         <link rel="stylesheet" href="{% static 'admin_templates/vendor/font-awesome/css/all.min.css' %}"/>

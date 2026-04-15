@@ -201,7 +201,7 @@ class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Группы'
+        context['title'] = f'Группы'
         return context
 
 
@@ -352,7 +352,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         # month_dict, year_dict = get_year_interval(2020)
         # context['year_dict'] = year_dict
         # context['month_dict'] = month_dict
-        # context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль ' + str(
+        # context['title'] = f'Профиль ' + str(
         #     format_name_initials(user_obj))
         # context['sp'] = OfficialMemo.objects.filter(cancellation=False).count()
         # context['spf'] = OfficialMemo.objects.filter(cancellation=True).count()
@@ -803,7 +803,7 @@ class ChangeAvatarUpdate(LoginRequiredMixin, UpdateView):
 #             message = f'{user_obj}, Ошибка получения записей. У пользователя |{user_obj.username}| отсутствует подразделение!!!: {_ex}'
 #             logger.error(message)
 #
-#         context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Профиль пользователя'
+#         context['title'] = f'Профиль пользователя'
 #
 #         context['sp'] = OfficialMemo.objects.all().count()
 #         context['bp'] = ApprovalOficialMemoProcess.objects.all().count()
@@ -1039,7 +1039,7 @@ class CounteragentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(CounteragentListView, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список контрагентов'
+        context['title'] = f'Список контрагентов'
         change_session_context(context, self)
         return context
 
@@ -1274,7 +1274,7 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super(StaffListView, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Список пользователей'
+        context['title'] = f'Список пользователей'
         return context
 
     def get_queryset(self):
@@ -1592,7 +1592,7 @@ class DivisionsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Подразделения'
+        context['title'] = f'Подразделения'
         return context
 
 
@@ -1728,7 +1728,7 @@ class JobsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(JobsList, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Должности'
+        context['title'] = f'Должности'
         change_session_context(context, self)
         return context
 
@@ -1833,7 +1833,7 @@ class HarmfulWorkingConditionsList(LoginRequiredMixin, PermissionRequiredMixin, 
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Вредные условия труда'
+        context['title'] = f'Вредные условия труда'
         return context
 
 
@@ -1852,9 +1852,7 @@ class CounteragentDocumentsList(PermissionRequiredMixin, LoginRequiredMixin, Lis
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Документы контрагентов"
+        context["title"] = f"Документы контрагентов"
         return context
 
 
@@ -1865,9 +1863,7 @@ class CounteragentDocumentsAdd(PermissionRequiredMixin, LoginRequiredMixin, Crea
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить документ контрагента"
+        context["title"] = f"Добавить документ контрагента"
         return context
 
     def form_valid(self, form):
@@ -1888,9 +1884,7 @@ class CounteragentDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, U
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def form_valid(self, form):

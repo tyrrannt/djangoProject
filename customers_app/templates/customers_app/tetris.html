@@ -1,7 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
-{% block custome_css %}
+{% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
           href="{% static 'admin_templates/vendor/select2-bootstrap-theme/select2-bootstrap.min.css' %}"/>
@@ -28,13 +28,13 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 400px;
+            max-width: 200px;
             position: relative;
         }
 
         #tetris {
-            width: 100vw;
-            height: 80vh;
+            width: 40vw;
+            height: 120vh;
             max-height: 600px; /* Подстрой этот параметр */
             border: 2px solid white;
             background-color: #222;
@@ -82,7 +82,7 @@
     </style>
 {% endblock %}
 
-{% block custome_script %}
+{% block custom_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
 
@@ -90,15 +90,10 @@
 {% endblock %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
 {% block content %}
-
-        {#        {% include 'library_app/breadcrumb.html' %}#}
-{#        <div id="overlay" class="overlay">#}
-{#            <button onclick="startGame()">Начать игру</button>#}
-{#        </div>#}
         <div id="tetris-container">
             <canvas id="tetris"></canvas>
         </div>
@@ -498,10 +493,6 @@
                     document.getElementById('mobile-controls').style.display = 'none';
                 }
             }
-
-            {#function startGame() {#}
-            {#    document.getElementById('overlay').classList.add('hidden'); // Убираем затемнение#}
-            {#}#}
 
             window.addEventListener('resize', resizeCanvas);
             window.addEventListener('load', resizeCanvas);

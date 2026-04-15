@@ -31,7 +31,7 @@ class ContractList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractList, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // База договоров'
+        context['title'] = f'База договоров'
         return context
 
     def get_queryset(self):
@@ -73,7 +73,7 @@ class ContractListAdmin(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super(ContractListAdmin, self).get_context_data(**kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // База договоров'
+        context['title'] = f'База договоров'
         return context
 
     def get_queryset(self):
@@ -172,7 +172,7 @@ class ContractSearch(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         else:
             context['s'] = get_request_string
 
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Поиск по базе договоров'
+        context['title'] = f'Поиск по базе договоров'
         return context
 
 
@@ -241,7 +241,7 @@ class ContractAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         context = super(ContractAdd, self).get_context_data(**kwargs)
         if self.request.GET.get('parent'):
             context['parent'] = self.request.GET.get('parent')
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить новый договор'
+        context['title'] = f'Добавить новый договор'
         return context
 
     def get_form_kwargs(self):
@@ -498,7 +498,7 @@ class TypeDocumentsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Типы документов'
+        context['title'] = f'Типы документов'
         return context
 
 
@@ -521,7 +521,7 @@ class TypeDocumentsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить тип документа'
+        context['title'] = f'Добавить тип документа'
         return context
 
 
@@ -532,7 +532,7 @@ class TypeDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context['title'] = f'Просмотр - {self.get_object()}'
         return context
 
 
@@ -555,7 +555,7 @@ class TypeDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context['title'] = f'Редактирование - {self.get_object()}'
         return context
 
 
@@ -580,7 +580,7 @@ class TypeContractsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Типы договоров'
+        context['title'] = f'Типы договоров'
         return context
 
 
@@ -603,7 +603,7 @@ class TypeContractsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить тип договора'
+        context['title'] = f'Добавить тип договора'
         return context
 
 
@@ -614,7 +614,7 @@ class TypeContractsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context['title'] = f'Просмотр - {self.get_object()}'
         return context
 
 
@@ -637,7 +637,7 @@ class TypeContractsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context['title'] = f'Редактирование - {self.get_object()}'
         return context
 
 
@@ -662,7 +662,7 @@ class TypePropertysList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Типы имущества'
+        context['title'] = f'Типы имущества'
         return context
 
 
@@ -685,7 +685,7 @@ class TypePropertysAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить тип имущества'
+        context['title'] = f'Добавить тип имущества'
         return context
 
 
@@ -696,7 +696,7 @@ class TypePropertysDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context['title'] = f'Просмотр - {self.get_object()}'
         return context
 
 
@@ -719,7 +719,7 @@ class TypePropertysUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context['title'] = f'Редактирование - {self.get_object()}'
         return context
 
 
@@ -743,7 +743,7 @@ class EstateList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Имущества'
+        context['title'] = f'Имущества'
         return context
 
 
@@ -765,7 +765,7 @@ class EstateAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Добавить имущества'
+        context['title'] = f'Добавить имущества'
         return context
 
 
@@ -775,7 +775,7 @@ class EstateDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}'
+        context['title'] = f'Просмотр - {self.get_object()}'
         return context
 
 
@@ -797,7 +797,7 @@ class EstateUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context['title'] = f'{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}'
+        context['title'] = f'Редактирование - {self.get_object()}'
         return context
 
 

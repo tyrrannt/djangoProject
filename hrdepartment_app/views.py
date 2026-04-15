@@ -161,9 +161,7 @@ class MedicalOrganisationList(PermissionRequiredMixin, LoginRequiredMixin, ListV
             dict: данные контекста для представления.
         """
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Медицинские организации"
+        context["title"] = f"Медицинские организации"
         return context
 
     def get_queryset(self):
@@ -183,9 +181,7 @@ class MedicalOrganisationAdd(PermissionRequiredMixin, LoginRequiredMixin, Create
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить медицинскую организацию"
+        context["title"] = f"Добавить медицинскую организацию"
         return context
 
 
@@ -198,9 +194,7 @@ class MedicalOrganisationUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
 
@@ -215,9 +209,7 @@ class MedicalExamination(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Медицинские направления"
+        context["title"] = f"Медицинские направления"
         change_session_context(context, self)
         return context
 
@@ -275,9 +267,7 @@ class MedicalExaminationUpdate(PermissionRequiredMixin, LoginRequiredMixin, Upda
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_success_url(self):
@@ -325,9 +315,7 @@ class OfficialMemoList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(OfficialMemoList, self).get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Служебные записки"
+        context["title"] = f"Служебные записки"
         return context
 
 
@@ -897,9 +885,7 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процесс по служебным поездкам"
+        context["title"] = f"Бизнес процесс по служебным поездкам"
         return context
 
 
@@ -1012,9 +998,7 @@ class ApprovalOficialMemoProcessDetail(
         context = super(ApprovalOficialMemoProcessDetail, self).get_context_data(
             object_list=None, **kwargs
         )
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процесс по служебным поездкам"
+        context["title"] = f"Бизнес процесс по служебным поездкам"
         document = self.get_object()
         context["document"] = document.document
         delta = document.document.period_for - document.document.period_from
@@ -1760,9 +1744,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
         context["month_dict"] = month_dict
         context["current_year"] = self.request.session["current_year"]
         context["current_month"] = str(self.request.session["current_month"])
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Бизнес процессы списком"
+        context["title"] = f"Бизнес процессы списком"
         return context
 
 
@@ -2191,9 +2173,7 @@ class PurposeList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Цели служебных поездок"
+        context["title"] = f"Цели служебных поездок"
         return context
 
 
@@ -2204,9 +2184,7 @@ class PurposeAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить цель СП"
+        context["title"] = f"Добавить цель СП"
         return context
 
 
@@ -2217,9 +2195,7 @@ class PurposeUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
 
@@ -2231,9 +2207,7 @@ class BusinessProcessDirectionList(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Направление бизнес-процессов"
+        context["title"] = f"Направление бизнес-процессов"
         return context
 
 
@@ -2246,9 +2220,7 @@ class BusinessProcessDirectionAdd(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить направление бизнес процесса"
+        context["title"] = f"Добавить направление бизнес процесса"
         return context
 
 
@@ -2261,9 +2233,7 @@ class BusinessProcessDirectionUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
 
@@ -2276,9 +2246,7 @@ class BusinessProcessRoutesList(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Направление бизнес-процессов"
+        context["title"] = f"Направление бизнес-процессов"
         return context
 
 
@@ -2291,9 +2259,7 @@ class BusinessProcessRoutesAdd(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить направление бизнес процесса"
+        context["title"] = f"Добавить направление бизнес процесса"
         return context
 
 
@@ -2306,9 +2272,7 @@ class BusinessProcessRoutesUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
 
@@ -2717,9 +2681,7 @@ class DocumentsJobDescriptionList(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Должностные инструкции"
+        context["title"] = f"Должностные инструкции"
         return context
 
 
@@ -2796,9 +2758,7 @@ class DocumentsJobDescriptionDetail(
                                                       user=user).exists()
         previous = DocumentsJobDescription.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         context["agree"] = agree
         return context
 
@@ -2817,9 +2777,7 @@ class DocumentsJobDescriptionUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     # def form_valid(self, form):
@@ -2891,9 +2849,7 @@ class DocumentsOrderList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Приказы"
+        context["title"] = f"Приказы"
         return context
 
 
@@ -2908,9 +2864,7 @@ class DocumentsOrderAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавление приказа"
+        context["title"] = f"Добавление приказа"
         return context
 
     def get(self, request, *args, **kwargs):
@@ -2990,9 +2944,7 @@ class DocumentsOrderDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailVi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -3015,9 +2967,7 @@ class DocumentsOrderUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get(self, request, *args, **kwargs):
@@ -3087,9 +3037,7 @@ class PlaceProductionActivityList(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Места назначения"
+        context["title"] = f"Места назначения"
         return context
 
 
@@ -3103,9 +3051,7 @@ class PlaceProductionActivityAdd(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить место назначения"
+        context["title"] = f"Добавить место назначения"
         return context
 
 
@@ -3118,9 +3064,7 @@ class PlaceProductionActivityDetail(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -3135,9 +3079,7 @@ class PlaceProductionActivityUpdate(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
 
@@ -3195,9 +3137,7 @@ class ReportCardList(LoginRequiredMixin, ListView):
         context["month_dict"] = month_dict
         context["current_year"] = self.request.session["current_year"]
         context["current_month"] = str(self.request.session["current_month"])
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком"
+        context["title"] = f"Табель учета рабочего времени списком"
         return context
 
 
@@ -3263,9 +3203,7 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
         context["month_dict"] = month_dict
         context["current_year"] = self.request.session["current_year"]
         context["current_month"] = str(self.request.session["current_month"])
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком"
+        context["title"] = f"Табель учета рабочего времени списком"
         return context
 
 
@@ -3322,9 +3260,7 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
         context["month_dict"] = month_dict
         context["current_year"] = self.request.session["current_year"]
         context["current_month"] = str(self.request.session["current_month"])
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени списком"
+        context["title"] = f"Табель учета рабочего времени списком"
         return context
 
 
@@ -3482,9 +3418,7 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         context["current_year"] = datetime.datetime.today().year
         context["current_month"] = str(datetime.datetime.today().month)
         context["tabel_month"] = first_day
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени (факт)"
+        context["title"] = f"Табель учета рабочего времени (факт)"
         return context
 
 
@@ -3550,9 +3484,7 @@ class ReportCardDetailIAS(LoginRequiredMixin, ListView):
         context["current_year"] = datetime.datetime.today().year
         context["current_month"] = str(datetime.datetime.today().month)
         context["tabel_month"] = first_day
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени (факт)"
+        context["title"] = f"Табель учета рабочего времени (факт)"
         return context
 
 
@@ -3654,9 +3586,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         context["current_year"] = datetime.datetime.today().year
         context["current_month"] = str(datetime.datetime.today().month)
         context["tabel_month"] = first_day
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Табель учета рабочего времени"
+        context["title"] = f"Табель учета рабочего времени"
         return context
 
 
@@ -3855,9 +3785,7 @@ class ProvisionsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Положения"
+        context["title"] = f"Положения"
         return context
 
 
@@ -3934,9 +3862,7 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -3952,9 +3878,7 @@ class ProvisionsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4006,9 +3930,7 @@ class BriefingsList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструктажи"
+        context["title"] = f"Инструктажи"
         return context
 
 
@@ -4085,9 +4007,7 @@ class BriefingsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -4103,9 +4023,7 @@ class BriefingsUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4145,9 +4063,7 @@ class BriefingsDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        context["title"] = f"Удаление - {self.get_object()}"
         return context
 
     # def get(self, request, *args, **kwargs):
@@ -4189,9 +4105,7 @@ class OperationalList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Нормативные акты"
+        context["title"] = f"Нормативные акты"
         return context
 
 
@@ -4256,9 +4170,7 @@ class OperationalDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView)
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -4274,9 +4186,7 @@ class OperationalUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4328,9 +4238,7 @@ class GuidanceDocumentsList(PermissionRequiredMixin, LoginRequiredMixin, ListVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Руководящие документы"
+        context["title"] = f"Руководящие документы"
         return context
 
 
@@ -4401,9 +4309,7 @@ class GuidanceDocumentsDetail(PermissionRequiredMixin, LoginRequiredMixin, Detai
         context['agree'] = agree
         list_agree = DocumentAcknowledgment.objects.filter(document_type=content_type_id, document_id=document_id)
         context['list_agree'] = list_agree
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -4419,9 +4325,7 @@ class GuidanceDocumentsUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4459,9 +4363,7 @@ class CreatingTeamList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Приказы о старших бригад"
+        context["title"] = f"Приказы о старших бригад"
         return context
 
 
@@ -4553,9 +4455,7 @@ class CreatingTeamDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         user_job = self.request.user.pk
         persons_list = BusinessProcessRoutes.objects.filter(business_process_type="2")
         for person in persons_list:
@@ -4630,9 +4530,7 @@ class CreatingTeamUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4692,9 +4590,7 @@ class CreatingTeamDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        context["title"] = f"Удаление - {self.get_object()}"
         return context
 
 
@@ -4706,9 +4602,7 @@ class CreatingTeamAgreed(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Согласование - {self.get_object()}"
+        context["title"] = f"Согласование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -4755,9 +4649,7 @@ class CreatingTeamSetNumber(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Присвоение номера - {self.get_object()}"
+        context["title"] = f"Присвоение номера - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -5968,9 +5860,7 @@ class DataBaseUserEventList(PermissionRequiredMixin, LoginRequiredMixin, ListVie
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструктажи"
+        context["title"] = f"Инструктажи"
         return context
 
 
@@ -6025,9 +5915,7 @@ class DataBaseUserEventUpdate(PermissionRequiredMixin, LoginRequiredMixin, Updat
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -6047,9 +5935,7 @@ class DataBaseUserEventDelete(PermissionRequiredMixin, LoginRequiredMixin, Delet
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        context["title"] = f"Удаление - {self.get_object()}"
         return context
 
 
@@ -6073,9 +5959,7 @@ class LaborProtectionList(PermissionRequiredMixin, LoginRequiredMixin, ListView)
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Процедуры по охране труда"
+        context["title"] = f"Процедуры по охране труда"
         return context
 
 
@@ -6152,9 +6036,7 @@ class LaborProtectionDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailV
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -6169,9 +6051,7 @@ class LaborProtectionUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateV
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -6210,9 +6090,7 @@ class LaborProtectionDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteV
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        context["title"] = f"Удаление - {self.get_object()}"
         return context
 
 
@@ -6237,9 +6115,7 @@ class LaborProtectionInstructionsList(PermissionRequiredMixin, LoginRequiredMixi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Инструкции по ТО ВС"
+        context["title"] = f"Инструкции по ТО ВС"
         return context
 
 
@@ -6316,9 +6192,7 @@ class LaborProtectionInstructionsDetail(PermissionRequiredMixin, LoginRequiredMi
             context['outdated'] = self.object.validity_period_end < datetime.date.today()
         except TypeError:
             context['outdated'] = False
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Просмотр - {self.get_object()}"
+        context["title"] = f"Просмотр - {self.get_object()}"
         return context
 
 
@@ -6334,9 +6208,7 @@ class LaborProtectionInstructionsUpdate(PermissionRequiredMixin, LoginRequiredMi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.get_object()}"
+        context["title"] = f"Редактирование - {self.get_object()}"
         return context
 
     def get_form_kwargs(self):
@@ -6376,9 +6248,7 @@ class LaborProtectionInstructionsDelete(PermissionRequiredMixin, LoginRequiredMi
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Удаление - {self.get_object()}"
+        context["title"] = f"Удаление - {self.get_object()}"
         return context
 
 

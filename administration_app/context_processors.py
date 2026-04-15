@@ -8,7 +8,86 @@ from hrdepartment_app.models import (
     DocumentsJobDescription, CreatingTeam, BusinessProcessRoutes,
 )
 from core import logger
+from django.urls import resolve, Resolver404
+from django.utils.translation import gettext as _
 
+
+def breadcrumbs(request):
+    path = request.path
+    path_segments = [s for s in path.split('/') if s]
+    crumbs = []
+    url_acc = '/'
+
+    # Словарь для перевода статических сегментов (если не используете стандартный .po файл)
+    # Можно расширять по мере добавления разделов
+    MAPPING = {
+        'forms': _('Формы'),
+        'advanced': _('Дополнительно'),
+        'users': _('Пользователи'),
+        'profile': _('Профиль'),
+        'settings': _('Настройки'),
+        'contracts': _('Договора'),
+        'blank': _('Бланки'),
+        'guidance_documents': _('Руководящие документы'),
+        'medical': _('Медицинские направления'),
+        'hr': _('Документация'),
+        'operational': _('Нормативные акты'),
+        'jobdescription': _('Должностные инструкции'),
+        'briefings': _('Инструктажи'),
+        'labor_protection_instructions': _('Инструкции по ТО ВС'),
+        'provisions': _('Положения'),
+        'order': _('Приказы'),
+        'labor_protection': _('Процедуры по охране труда'),
+        'help': _('Справка'),
+        'staff': _('Список пользователей'),
+        'team': _('Старшие бригад'),
+        'report': _('Отчёты'),
+        'jobs': _('Должности'),
+        'harmful': _('Вредные условия труда'),
+        'typedocuments': _('Типы документов'),
+        'typecontracts': _('Типы договоров'),
+        'typepropertys': _('Типы имущества'),
+        'estate': _('Имущество'),
+        'divisions': _('Подразделения'),
+        'counteragent': _('Контрагенты'),
+        'documents': _('Документы контрагентов'),
+        'purpose': _('Цели служебных поездок'),
+        'medicalorg': _('Медицинские организации'),
+        'place': _('Места назначения'),
+        'student_agreement': _('Ученические договора'),
+        'bpmemo': _('Бизнес-процесс'),
+        'memo': _('Служебные записки'),
+        'lock-screen': _('Блокировка экрана'),
+        # '': _(''),
+        # '': _(''),
+        # '': _(''),
+        # '': _(''),
+        # '': _(''),
+    }
+
+    for i, segment in enumerate(path_segments):
+        url_acc += f"{segment}/"
+
+        # 1. Проверяем в словаре MAPPING
+        # 2. Если нет — делаем человекочитаемым (заменяем тире и ставим заглавную)
+        name = MAPPING.get(segment.lower())
+        if not name:
+            name = segment.replace('-', ' ').replace('_', ' ').capitalize()
+
+        try:
+            resolve(url_acc)
+            crumbs.append({
+                'name': name,
+                'url': url_acc if i < len(path_segments) - 1 else None
+            })
+        except Resolver404:
+            # Для ID или ненайденных путей оставляем просто текст
+            crumbs.append({
+                'name': name,
+                'url': None
+            })
+
+    return {'breadcrumbs': crumbs}
 
 # ToDo: Создать модель в которую будет записываться вся статистика,
 #  а занесение информации будет посредством метода моделей save()

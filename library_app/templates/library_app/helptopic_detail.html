@@ -4,10 +4,10 @@
 {% load widget_tweaks %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
-{% block custome_css %}
+{% block custom_css %}
     {{ object.custom_css | safe }}
 {% endblock %}
 

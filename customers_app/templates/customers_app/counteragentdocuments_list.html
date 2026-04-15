@@ -3,7 +3,7 @@
 {% load custom %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
 {% block content %}
@@ -73,7 +73,7 @@
 
 {% endblock %}
 
-{% block custome_script %}
+{% block custom_script %}
     <script>
         $(document).ready(function () {
             $('#datatable-ecommerce-list thead th').each(function () {

@@ -2,17 +2,17 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
-{% block custome_css %}
+{% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/autocomplete/src/jquery-ui.css' %}"/>
 {% endblock %}
 
-{% block custome_script %}
+{% block custom_script %}
     <script src="{% static 'admin_templates/vendor/autocomplete/src/jquery-ui.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/autocomplete/src/custom.autocomplete.js' %}"></script>
 {% endblock %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
 {% block content %}

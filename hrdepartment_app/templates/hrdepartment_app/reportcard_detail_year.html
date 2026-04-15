@@ -3,7 +3,7 @@
 {% load custom %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
 {% block content %}
@@ -74,7 +74,7 @@
     <!-- end: page -->
 {% endblock %}
 
-{% block custome_script %}
+{% block custom_script %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const select = document.getElementById('report-year-select');

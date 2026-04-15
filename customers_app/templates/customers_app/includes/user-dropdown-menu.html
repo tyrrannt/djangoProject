@@ -1,48 +1,98 @@
 {% load static %}
+{#<div id="userbox" class="userbox">#}
+{#    <a href="#" data-bs-toggle="dropdown">#}
+{#        <figure class="profile-picture">#}
+{#            <img src="#}
+{#                {% if user.avatar %}#}
+{#                    {{ user.avatar.url }}?v={{ object.updated_at.timestamp }}#}
+{#                {% else %}#}
+{#                    {% static 'admin_templates/img/!logged-user.jpg' %}#}
+{#                 {% endif %}"#}
+{#                 alt="{{ user.last_name }} {{ user.first_name }}"#}
+{#                 class="rounded"#}
+{#                 data-lock-picture="{% static 'admin_templates/img/!logged-user.jpg' %}"/>#}
+{#        </figure>#}
+{#        <div class="profile-info" data-lock-name="{{ user.username }}" data-lock-email="{{ user.email }}">#}
+{#            <span class="name">{{ user.last_name }} {{ user.first_name }}</span>#}
+{#            <span class="role">{{ user.job }}</span>#}
+{#        </div>#}
+{##}
+{#        <i class="fa custom-caret"></i>#}
+{#    </a>#}
+{#    <div class="dropdown-menu col-sm-12 col-lg-6">#}
+{#        <ul class="list-unstyled mb-2 col-sm-12">#}
+{#            <li class="divider"></li>#}
+{#            {% if user.is_superuser %}#}
+{#                <li>#}
+{#                    <a role="menuitem" tabindex="-1" href="{% url "admin:index" %}"><i#}
+{#                            class="bx bx-user-circle"></i> Панель администратора</a>#}
+{#                </li>#}
+{#            {% endif %}#}
+{#            <li>#}
+{#                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:profile' user.pk %}"><i#}
+{#                        class="bx bx-user-circle"></i> Мой профиль</a>#}
+{#            </li>#}
+{#            <li>#}
+{#                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:game' %}"><i#}
+{#                        class="bx bx-user-circle"></i> Тетрис</a>#}
+{#            </li>#}
+{#            <li>#}
+{#                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:lock_screen' %}" ><i class="bx bx-lock"></i> Блокировка экрана</a>#}
+{#            </li>#}
+{#            <li>#}
+{#                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:logout' %}"><i#}
+{#                        class="bx bx-power-off"></i>#}
+{#                    Выход</a>#}
+{#            </li>#}
+{#        </ul>#}
+{#    </div>#}
+{#</div>#}
+
+{% load static %}
 <div id="userbox" class="userbox">
     <a href="#" data-bs-toggle="dropdown">
         <figure class="profile-picture">
-            <img src="
-                {% if user.avatar %}
-                    {{ user.avatar.url }}?v={{ object.updated_at.timestamp }}
-                {% else %}
-                    {% static 'admin_templates/img/!logged-user.jpg' %}
-                 {% endif %}"
-                 alt="{{ user.last_name }} {{ user.first_name }}"
-                 class="rounded"
-                 data-lock-picture="{% static 'admin_templates/img/!logged-user.jpg' %}"/>
+            <img src="{% if user.avatar %}{{ user.avatar.url }}?v={{ user.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                 alt="{{ user.username }}"
+                 class="rounded-circle"
+                 data-lock-picture="{% if user.avatar %}{{ user.avatar.url }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}" />
         </figure>
-        <div class="profile-info" data-lock-name="{{ user.username }}" data-lock-email="{{ user.email }}">
-            <span class="name">{{ user.last_name }} {{ user.first_name }}</span>
-            <span class="role">{{ user.job }}</span>
+        <div class="profile-info" data-lock-name="{{ user.get_full_name }}" data-lock-email="{{ user.email }}">
+            <span class="name">{{ user.get_full_name|default:user.username }}</span>
+            <span class="role">{% if user.is_superuser %}Администратор{% else %}{{ user.job|default:"User" }}{% endif %}</span>
         </div>
-
         <i class="fa custom-caret"></i>
     </a>
-    <div class="dropdown-menu col-sm-12 col-lg-6">
-        <ul class="list-unstyled mb-2 col-sm-12">
+
+    <div class="dropdown-menu">
+        <ul class="list-unstyled mb-2">
             <li class="divider"></li>
             {% if user.is_superuser %}
-                <li>
-                    <a role="menuitem" tabindex="-1" href="/bklproxmoxadmin/"><i
-                            class="bx bx-user-circle"></i> Панель администратора</a>
-                </li>
+            <li>
+                <a role="menuitem" tabindex="-1" href="{% url 'admin:index' %}">
+                    <i class="bx bx-shield-quarter"></i> Панель администратора
+                </a>
+            </li>
             {% endif %}
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:profile' user.pk %}"><i
-                        class="bx bx-user-circle"></i> Мой профиль</a>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:profile' user.pk %}">
+                    <i class="bx bx-user-circle"></i> Мой профиль
+                </a>
             </li>
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:game' %}"><i
-                        class="bx bx-user-circle"></i> Тетрис</a>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:game' %}">
+                    <i class="bx bx-joystick"></i> Тетрис
+                </a>
             </li>
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:lock_screen' %}" ><i class="bx bx-lock"></i> Блокировка экрана</a>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:lock_screen' %}">
+                    <i class="bx bx-lock"></i> Блокировка экрана
+                </a>
             </li>
             <li>
-                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:logout' %}"><i
-                        class="bx bx-power-off"></i>
-                    Выход</a>
+                <a role="menuitem" tabindex="-1" href="{% url 'customers_app:logout' %}">
+                    <i class="bx bx-power-off"></i> Выход
+                </a>
             </li>
         </ul>
     </div>

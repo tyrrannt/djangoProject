@@ -3,7 +3,7 @@
 {% load custom %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
 {% block content %}
@@ -265,7 +265,7 @@
         <!-- end: page -->
 {% endblock %}
 
-{% block custome_script %}
+{% block custom_script %}
     <script>
         document.getElementById('submit_vacation_schedule_admin').addEventListener('click', function (event) {
             // Предотвращаем стандартное поведение ссылки

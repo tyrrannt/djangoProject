@@ -59,9 +59,7 @@ class HelpList(LoginRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         context["help_category"] = HelpCategory.objects.all()
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Справка"
+        context["title"] = f"Справка"
         return context
 
     def get(self, request, *args, **kwargs):
@@ -80,9 +78,7 @@ class HelpItem(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -93,9 +89,7 @@ class HelpItemAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить справку"
+        context["title"] = f"Добавить справку"
         return context
 
 
@@ -106,9 +100,7 @@ class HelpItemUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование: {self.get_object()}"
+        context["title"] = f"Редактирование: {self.get_object()}"
         return context
 
 
@@ -118,9 +110,7 @@ class DocumentFormList(LoginRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
         context["help_category"] = DocumentForm.objects.all()
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Бланки документов"
+        context["title"] = f"Бланки документов"
         return context
 
     def get(self, request, *args, **kwargs):
@@ -147,9 +137,7 @@ class DocumentFormItem(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // {self.get_object()}"
+        context["title"] = f"{self.get_object()}"
         return context
 
 
@@ -160,9 +148,7 @@ class DocumentFormAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить бланк"
+        context["title"] = f"Добавить бланк"
         return context
 
     def get_success_url(self):
@@ -186,9 +172,7 @@ class DocumentFormUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование: {self.get_object()}"
+        context["title"] = f"Редактирование: {self.get_object()}"
         return context
 
     def get_success_url(self):
@@ -332,9 +316,7 @@ class CompanyEventListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=None, **kwargs)
-        context[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Мероприятия компании"
+        context["title"] = f"Мероприятия компании"
         return context
 
 

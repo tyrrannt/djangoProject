@@ -3,10 +3,10 @@
 {% load custom %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
-{% block custome_css %}
+{% block custom_css %}
     <title>Мониторинг сервера</title>
     {#  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">#}
     <link rel="stylesheet"
@@ -23,7 +23,7 @@
     </style>
 {% endblock %}
 
-{% block custome_script %}
+{% block custom_script %}
     <script src="{% static 'admin_templates/vendor/jquery.easy-pie-chart/jquery.easypiechart.min.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/jquery.easy-pie-chart/chart.min.js' %}"></script>
     <script>

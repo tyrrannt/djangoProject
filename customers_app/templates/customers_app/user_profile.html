@@ -3,10 +3,10 @@
 {% load custom %}
 
 {% block title %}
-    <title>{{ title }}</title>
+    {{ title }}
 {% endblock %}
 
-{% block custome_script %}
+{% block custom_script %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             {% for task in tasks %}
