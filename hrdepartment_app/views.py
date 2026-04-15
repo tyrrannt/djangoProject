@@ -248,9 +248,7 @@ class MedicalExaminationAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateV
         content["all_contragent"] = Counteragent.objects.all()
         content["all_status"] = Medical.type_of
         content["all_harmful"] = ""
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить медицинское направление"
+        content["title"] = f"Добавить медицинское направление"
         return content
 
     def get_success_url(self):
@@ -353,9 +351,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         content["form"].fields[
             "place_production_activity"
         ].queryset = PlaceProductionActivity.objects.all()
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить служебную записку"
+        content["title"] = f"Добавить служебную записку"
         return content
 
     def get_success_url(self):
@@ -463,6 +459,7 @@ class OfficialMemoDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView
     def get_context_data(self, **kwargs):
         content = super().get_context_data(**kwargs)
         content["change_history"] = get_history(self, OfficialMemo)
+        content["title"] = f"{self.object}"
         return content
 
 
@@ -539,9 +536,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
             content["form"].fields[
                 "document_extension"
             ].queryset = OfficialMemo.objects.filter(pk=0).exclude(cancellation=True)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Редактирование - {self.object}"
+        content["title"] = f"Редактирование - {self.object}"
         content["change_history"] = get_history(self, OfficialMemo)
         return content
 
@@ -2646,7 +2641,7 @@ class ReportApprovalOficialMemoProcessList(
         content["all_person"] = all_person
         content["table_set"] = dict_obj
         content["table_count"] = range(1, (date_end - date_start).days + 2)
-        content["title"] = f"{PortalProperty.objects.all().last().portal_name} // Отчет"
+        content["title"] = f"Отчет"
         content["current_year"] = current_year
         content["current_month"] = current_month
 
@@ -2698,9 +2693,7 @@ class DocumentsJobDescriptionAdd(
 
     def get_context_data(self, *, object_list=None, **kwargs):
         content = super().get_context_data(object_list=None, **kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить должностную инструкцию"
+        content["title"] = f"Добавить должностную инструкцию"
         return content
 
     # def get_form_kwargs(self):
@@ -3800,9 +3793,7 @@ class ProvisionsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(ProvisionsAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить положение"
+        content["title"] = f"Добавить положение"
         return content
 
     def get_form_kwargs(self):
@@ -3945,9 +3936,7 @@ class BriefingsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(BriefingsAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить инструктаж"
+        content["title"] = f"Добавить инструктаж"
         return content
 
     def get_form_kwargs(self):
@@ -4120,9 +4109,7 @@ class OperationalAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(OperationalAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить нормативный акт"
+        content["title"] = f"Добавить нормативный акт"
         return content
 
     def get_form_kwargs(self):
@@ -4253,9 +4240,7 @@ class GuidanceDocumentsAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateVi
 
     def get_context_data(self, **kwargs):
         content = super(GuidanceDocumentsAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить руководящий документ"
+        content["title"] = f"Добавить руководящий документ"
         return content
 
     def get_form_kwargs(self):
@@ -4378,9 +4363,7 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         content = super(CreatingTeamAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить приказ о старших бригад"
+        content["title"] = f"Добавить приказ о старших бригад"
 
         return content
 
@@ -5875,9 +5858,7 @@ class DataBaseUserEventAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateVi
 
     def get_context_data(self, **kwargs):
         content = super(DataBaseUserEventAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить мое местоположение"
+        content["title"] = f"Добавить мое местоположение"
         return content
 
     def get_form_kwargs(self):
@@ -5974,9 +5955,7 @@ class LaborProtectionAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView
 
     def get_context_data(self, **kwargs):
         content = super(LaborProtectionAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить процедуру по охране труда"
+        content["title"] = f"Добавить процедуру по охране труда"
         return content
 
     def get_form_kwargs(self):
@@ -6130,9 +6109,7 @@ class LaborProtectionInstructionsAdd(PermissionRequiredMixin, LoginRequiredMixin
 
     def get_context_data(self, **kwargs):
         content = super(LaborProtectionInstructionsAdd, self).get_context_data(**kwargs)
-        content[
-            "title"
-        ] = f"{PortalProperty.objects.all().last().portal_name} // Добавить инструкцию"
+        content["title"] = f"Добавить инструкцию"
         return content
 
     def get_form_kwargs(self):
