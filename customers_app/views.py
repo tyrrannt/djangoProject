@@ -1452,11 +1452,16 @@ class StaffUpdate(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             work_kwargs = {
                 'date_of_employment': content['date_of_employment'] if content['date_of_employment'] != '' else None,
                 'internal_phone': content['internal_phone'],
-                'work_email_password': content['work_email_password'],
-                'work_application_password': content['work_application_password'],
                 'personal_work_schedule_start': content['personal_work_schedule_start'],
                 'personal_work_schedule_end': content['personal_work_schedule_end'],
             }
+            # ПАРОЛИ: обновляем ТОЛЬКО если поле явно пришло в запросе
+            if 'work_email_password' in content:
+                work_kwargs['work_email_password'] = content['work_email_password']
+            # Если поля нет в content — просто не добавляем его в kwargs, и оно не изменится при update()
+            if 'work_application_password' in content:
+                work_kwargs['work_application_password'] = content['work_application_password']
+
             # Формируем словарь записей, которые будем записывать, поля citizenship и passport обрабатываем отдельно
             personal_kwargs = {
                 'snils': content['snils'],
