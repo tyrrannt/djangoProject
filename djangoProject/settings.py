@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "tasks_app.apps.TasksAppConfig",
     "ppequipment_app.apps.PpequipmentAppConfig",
     "tickets_app.apps.TicketsAppConfig",
+    "password_manager.apps.PasswordManagerConfig",
     "widget_tweaks",
     "django_ckeditor_5",
     "channels",
@@ -255,10 +256,10 @@ CKEDITOR_5_CONFIGS = {
         'htmlSupport': {
             'allow': [
                 {
-                    'name': '/.*/',     # Разрешить все теги
-                    'attributes': True, # Разрешить все атрибуты (классы)
-                    'classes': True,    # Разрешить любые названия классов
-                    'styles': True      # Разрешить inline-стили
+                    'name': '/.*/',  # Разрешить все теги
+                    'attributes': True,  # Разрешить все атрибуты (классы)
+                    'classes': True,  # Разрешить любые названия классов
+                    'styles': True  # Разрешить inline-стили
                 }
             ]
         },
@@ -1037,7 +1038,7 @@ UNFOLD = {
                         "icon": "task_alt",
                         "link": reverse_lazy("admin:ppequipment_app_verification_changelist"),
                     },
-{
+                    {
                         "title": _("Справочник «Назн-лит»"),
                         "icon": "category",
                         "link": reverse_lazy("admin:ppequipment_app_destlit_changelist"),
@@ -1052,7 +1053,7 @@ UNFOLD = {
                         "icon": "task_alt",
                         "link": reverse_lazy("admin:ppequipment_app_aircrafttype_changelist"),
                     },
-{
+                    {
                         "title": _("Справочник статусов контр-раб"),
                         "icon": "task_alt",
                         "link": reverse_lazy("admin:ppequipment_app_contractorstatus_changelist"),
