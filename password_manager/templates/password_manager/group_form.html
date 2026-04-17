@@ -1,0 +1,19 @@
+<!-- group_form.html -->
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% block title %}{{ title|default:"Группа" }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm col-lg-6 mx-auto">
+        <div class="card-body">
+            <form method="post">{% csrf_token %}
+                {{ form.as_p }}
+                <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-success">Сохранить</button>
+                    <a href="{% url 'password_manager:group_list' %}" class="btn btn-light border">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

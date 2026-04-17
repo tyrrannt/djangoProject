@@ -1,0 +1,54 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Настройка ключевой фразы{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0"><i class="fas fa-key me-2"></i>Первоначальная настройка</h4>
+            </div>
+            <div class="card-body">
+                <!-- Вывод сообщений Django -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <p class="text-muted mb-4">Для безопасного хранения паролей необходимо задать мастер-фразу. 
+                Она будет использоваться для шифрования ваших данных. Убедитесь, что вы запомните её!</p>
+                
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_passphrase" class="form-label fw-bold">Ключевая фраза</label>
+                        {{ form.passphrase }}
+                        <div class="form-text">{{ form.passphrase.help_text }}</div>
+                        {% if form.passphrase.errors %}
+                            <div class="text-danger small mt-1">{{ form.passphrase.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label for="id_confirm_passphrase" class="form-label fw-bold">Подтверждение</label>
+                        {{ form.confirm_passphrase }}
+                        {% if form.confirm_passphrase.errors %}
+                            <div class="text-danger small mt-1">{{ form.confirm_passphrase.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-shield-alt me-2"></i>Сохранить и продолжить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

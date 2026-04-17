@@ -1,0 +1,44 @@
+<!-- group_list.html -->
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% block title %}Группы паролей{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-folder-open me-2 text-primary"></i>Группы</h5>
+            <a href="{% url 'password_manager:group_create' %}" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Создать группу</a>
+        </div>
+        <div class="card-body p-0">
+            <table id="groupsTable" class="table table-striped table-hover w-100">
+                <thead class="table-light"><tr><th>Название</th><th>Родитель</th><th>Паролей</th><th class="text-end">Действия</th></tr></thead>
+                <tbody>
+                    {% for grp in groups %}
+                    <tr>
+                        <td><i class="fas fa-folder text-warning me-1"></i>{{ grp.name }}</td>
+                        <td>{{ grp.parent_group.name|default:"Корневая" }}</td>
+                        <td>{{ grp.passwords.count }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'password_manager:group_update' grp.pk %}" class="btn btn-outline-secondary btn-sm me-1"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'password_manager:group_delete' grp.pk %}" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-3">Групп не создано</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block custom_script %}
+<script>$(document).ready(() => $('#groupsTable').DataTable({language: {url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/ru.json"}}));</script>
+{% endblock %}
