@@ -244,8 +244,13 @@
                                             </a>
                                         </li>
                                         <li>
+                                            <a class="nav-link" href="{% url 'password_manager:key_setup' %}">
+                                                Ключевая фраза
+                                            </a>
+                                        </li>
+                                        <li>
                                             <a class="nav-link" href="{% url 'password_manager:password_list' %}">
-                                                Пароли
+                                                Хранилище паролей
                                             </a>
                                         </li>
                                     </ul>
@@ -706,6 +711,11 @@
                                     <span>Добровольные сообщения</span>
                                 </a>
                             </li>
+                            <li>
+                                <a class="nav-link" href="{% url 'password_manager:password_list' %}">
+                                    Хранилище паролей
+                                </a>
+                            </li>
                             {% if user.is_superuser %}
                                 <li class="nav-parent">
                                     <a class="nav-link" href="#">
@@ -1082,13 +1092,13 @@
                         <h6>Friends</h6>
                         <ul>
                             <li class="status-online">
-{#                                <figure class="profile-picture">#}
-{#                                    <img src="img/!sample-user.jpg" alt="Joseph Doe" class="rounded-circle">#}
-{#                                </figure>#}
-{#                                <div class="profile-info">#}
-{#                                    <span class="name">Joseph Doe Junior</span>#}
-{#                                    <span class="title">Hey, how are you?</span>#}
-{#                                </div>#}
+                                {#                                <figure class="profile-picture">#}
+                                {#                                    <img src="img/!sample-user.jpg" alt="Joseph Doe" class="rounded-circle">#}
+                                {#                                </figure>#}
+                                {#                                <div class="profile-info">#}
+                                {#                                    <span class="name">Joseph Doe Junior</span>#}
+                                {#                                    <span class="title">Hey, how are you?</span>#}
+                                {#                                </div>#}
                             </li>
 
                         </ul>

@@ -33,6 +33,7 @@ coverage report
 """
 
 from django.contrib import admin, messages
+from django.db.models import Count
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.contrib.admin import display, action
@@ -79,7 +80,7 @@ class PasswordGroupAdmin(admin.ModelAdmin):
         return obj.passwords.count()
 
     def get_queryset(self, request):
-        return super().get_queryset(request).annotate(passwords_count=admin.models.Count('passwords'))
+        return super().get_queryset(request).annotate(passwords_count=Count('passwords'))
 
 
 class SharedPasswordInline(admin.TabularInline):

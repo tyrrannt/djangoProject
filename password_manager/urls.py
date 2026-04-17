@@ -17,6 +17,7 @@ urlpatterns = [
     path('key/setup/', views.KeySetupView.as_view(), name='key_setup'),
 
     # CRUD для групп паролей
+    path('groups/tree-data/', views.GroupTreeDataView.as_view(), name='group_tree_data'),
     path('groups/', views.GroupListView.as_view(), name='group_list'),
     path('groups/create/', views.GroupCreateView.as_view(), name='group_create'),
     path('groups/<int:pk>/update/', views.GroupUpdateView.as_view(), name='group_update'),

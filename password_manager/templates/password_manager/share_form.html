@@ -1,0 +1,183 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Управление доступом: {{ password_record.login }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'password_manager:password_detail' password_record.pk %}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left me-1"></i>Назад к записи
+        </a>
+        <h4 class="mb-0">Управление доступом: {{ password_record.login }}</h4>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Добавить пользователя</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Пользователь</label>
+                            <select name="user_id" class="form-select" required>
+                                <option value="">Выберите пользователя...</option>
+                                {% for user in available_users %}
+                                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Уровень доступа</label>
+                            <select name="permission" class="form-select">
+                                <option value="read">📖 Только чтение</option>
+                                <option value="edit">✏️ Чтение и редактирование</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-share-alt me-1"></i>Предоставить доступ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Пользователи с доступом</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if users_with_access %}
+                        <div class="list-group list-group-flush">
+                            {% for item in users_with_access %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-user me-2"></i>
+                                            <strong>{{ item.user.get_full_name|default:item.user.username }}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                {% if item.permission == 'read' %}
+                                                    <span class="badge bg-info">📖 Только чтение</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">✏️ Редактирование</span>
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editModal{{ item.user.id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#removeModal{{ item.user.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Модальное окно редактирования -->
+                                <div class="modal fade" id="editModal{{ item.user.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="update">
+                                                <input type="hidden" name="user_id" value="{{ item.user.id }}">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Изменить права для {{ item.user.username }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Уровень доступа</label>
+                                                        <select name="permission" class="form-select">
+                                                            <option value="read" {% if item.permission == 'read' %}selected{% endif %}>
+                                                                📖 Только чтение
+                                                            </option>
+                                                            <option value="edit" {% if item.permission == 'edit' %}selected{% endif %}>
+                                                                ✏️ Чтение и редактирование
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Модальное окно удаления -->
+                                <div class="modal fade" id="removeModal{{ item.user.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="remove">
+                                                <input type="hidden" name="user_id" value="{{ item.user.id }}">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Удалить доступ</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Вы уверены, что хотите удалить доступ для пользователя <strong>{{ item.user.username }}</strong>?</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                    <button type="submit" class="btn btn-danger">Удалить</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-info-circle me-2"></i>Нет пользователей с доступом
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+$(document).ready(function() {
+    // Инициализация Select2 для выбора пользователей
+    if (typeof $.fn.select2 !== 'undefined') {
+        $('select[name="user_id"]').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Поиск пользователя...',
+            allowClear: true
+        });
+    }
+});
+</script>
+{% endblock %}

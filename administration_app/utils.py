@@ -909,7 +909,7 @@ def make_custom_field(f: forms.Field):
         (forms.ModelMultipleChoiceField, {
             "class": "form-control form-control-modern",
             "data-plugin-multiselect": "true",  # Соответствие вашему шаблону
-            "data-plugin-options": '{ "maxHeight": 200, "includeSelectAllOption": true }',
+            "data-plugin-options": '{ "maxHeight": 300, "includeSelectAllOption": true, "enableCaseInsensitiveFiltering": true, "buttonWidth": "100%" }',
         }),
         (forms.ModelChoiceField, {
             "class": "form-control form-control-modern",

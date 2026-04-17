@@ -53,6 +53,36 @@ class PasswordGroup(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def get_descendants_ids(self):
+        """
+        Возвращает список ID всех дочерних групп для текущей группы.
+        """
+        descendant_ids = []
+        for child in self.children.all():
+            descendant_ids.append(child.id)
+            descendant_ids.extend(child.get_descendants_ids())
+        return descendant_ids
+
+    def get_descendants(self):
+        """
+        Возвращает QuerySet всех дочерних групп.
+        """
+        from django.db import models
+        # Рекурсивный CTE запрос для получения всех потомков
+        descendant_ids = self.get_descendants_ids()
+        return PasswordGroup.objects.filter(id__in=descendant_ids)
+
+    def get_ancestors(self):
+        """
+        Возвращает список всех родительских групп для текущей группы.
+        """
+        ancestors = []
+        parent = self.parent_group
+        while parent:
+            ancestors.append(parent)
+            parent = parent.parent_group
+        return ancestors
+
 
 class ResourceType(models.TextChoices):
     """
@@ -81,7 +111,9 @@ class EncryptedPassword(models.Model):
     notes = models.TextField(_("Примечание"), blank=True, null=True)
     group = models.ForeignKey(
         PasswordGroup,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,  # Изменено с CASCADE на SET_NULL
+        null=True,  # Добавлено null=True
+        blank=True,  # Добавлено blank=True
         related_name="passwords",
         verbose_name=_("Группа")
     )

@@ -16,11 +16,13 @@ select_for_update(): При обновлении используем блоки
 
 import re
 from django import forms
+from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from administration_app.utils import make_custom_field
 from .models import EncryptedPassword, PasswordGroup, PasswordHistory
 from .services import PasswordService
 
@@ -30,6 +32,17 @@ class EncryptedPasswordForm(forms.ModelForm):
     Основная форма CRUD для записей паролей.
     Интегрирует поле ключевой фразы и сырого пароля для последующего шифрования.
     """
+    use_saved_passphrase = forms.BooleanField(
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input',
+            'id': 'use_saved_passphrase',
+            'data-toggle': 'passphrase-toggle'
+        }),
+        label=_("Я помню свою ключевую фразу"),
+        required=False,
+        initial=True,
+        help_text=_("Если отмечено, фраза будет взята из вашего профиля. Снимите галочку, чтобы ввести фразу вручную.")
+    )
     passphrase = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
@@ -37,7 +50,7 @@ class EncryptedPasswordForm(forms.ModelForm):
             'autocomplete': 'new-password'
         }),
         label=_("Ключевая фраза"),
-        required=True,
+        required=False,
         help_text=_("Необходима для шифрования/дешифрования. Должна совпадать с установленной в профиле.")
     )
     raw_password = forms.CharField(
@@ -68,19 +81,97 @@ class EncryptedPasswordForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # Извлекаем request для фильтрации групп и доступа к user
+        # Извлекаем request и user из kwargs
         self.request = kwargs.pop('request', None)
+        user = kwargs.pop('user', None)  # Извлекаем user если передан
+
         super().__init__(*args, **kwargs)
-        if self.request and hasattr(self.request, 'user'):
+
+        # Определяем, какой объект user использовать
+        current_user = user or (self.request.user if self.request and hasattr(self.request, 'user') else None)
+
+        if current_user:
             # Оптимизация: показываем только группы текущего пользователя
             self.fields['group'].queryset = PasswordGroup.objects.filter(
-                owner=self.request.user
+                owner=current_user
             ).select_related('parent_group')
+
+            # Делаем поле group необязательным
+            self.fields['group'].required = False
+            self.fields['group'].empty_label = _('— Без группы —')
+
+            # Проверяем, есть ли у пользователя сохраненная ключевая фраза
+            has_saved_passphrase = hasattr(current_user, 'encryption_key_hash') and current_user.encryption_key_hash
+            if has_saved_passphrase:
+                # Если есть сохраненная фраза, по умолчанию используем её
+                self.fields['use_saved_passphrase'].initial = True
+                self.fields['passphrase'].required = False
+                self.fields['passphrase'].widget.attrs['placeholder'] = _(
+                    'Необязательно (будет использована сохраненная)')
+                self.fields['passphrase'].help_text = _("Оставьте пустым, если хотите использовать сохраненную фразу.")
+            else:
+                # Если нет сохраненной фразы, скрываем переключатель и требуем ввод
+                self.fields['use_saved_passphrase'].initial = False
+                self.fields['use_saved_passphrase'].widget = forms.HiddenInput()
+                self.fields['passphrase'].required = True
+                self.fields['passphrase'].help_text = _(
+                    "Установите ключевую фразу в настройках профиля или введите её здесь.")
+                messages.warning(self.request, "У вас не установлена ключевая фраза. Пожалуйста, введите её вручную.")
+
+        # Обрабатываем selected_group, если он передан
+        if self.data and self.data.get('selected_group'):
+            selected_group_id = self.data.get('selected_group')
+            if selected_group_id and selected_group_id != '':
+                try:
+                    group = PasswordGroup.objects.get(id=selected_group_id, owner=current_user)
+                    # Устанавливаем значение в поле group
+                    self.initial['group'] = group
+                    self.fields['group'].initial = group
+                except PasswordGroup.DoesNotExist:
+                    pass
+
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
     def clean_passphrase(self):
         """Проверяет корректность ключевой фразы пользователя."""
+        use_saved = self.cleaned_data.get('use_saved_passphrase', False)
         passphrase = self.cleaned_data.get('passphrase')
-        user = self.request.user
+
+        # Получаем пользователя
+        user = None
+        if hasattr(self, 'request') and self.request:
+            user = self.request.user
+        elif hasattr(self, 'user'):
+            user = self.user
+
+        if not user:
+            raise ValidationError(_("Пользователь не определен."))
+
+        # Проверяем, есть ли у пользователя сохраненная фраза
+        has_saved_passphrase = hasattr(user, 'encryption_key_hash') and user.encryption_key_hash
+        print(has_saved_passphrase)
+
+        if use_saved and has_saved_passphrase:
+            # Если используем сохраненную фразу, но фраза не в сессии
+            # Требуем ввод для подтверждения (безопасность)
+            if not passphrase:
+                raise ValidationError(
+                    _("Для подтверждения вашей личности, пожалуйста, введите ключевую фразу.")
+                )
+
+            # Проверяем фразу
+            if not PasswordService.verify_passphrase(user, passphrase):
+                raise ValidationError(
+                    _("Неверная ключевая фраза.")
+                )
+
+            return passphrase
+
+        # Если не используем сохраненную, проверяем введенную
+        if not passphrase:
+            raise ValidationError(_("Пожалуйста, введите ключевую фразу."))
+
         if not PasswordService.verify_passphrase(user, passphrase):
             raise ValidationError(
                 _("Неверная ключевая фраза или она ещё не установлена в настройках профиля.")
@@ -100,28 +191,85 @@ class EncryptedPasswordForm(forms.ModelForm):
             raise ValidationError(_("Требуется минимум одна цифра (0-9)."))
         return password
 
+    def clean(self):
+        """Дополнительная валидация и обработка selected_group."""
+        cleaned_data = super().clean()
+
+        # Обрабатываем selected_group, если он есть в данных
+        if self.data and self.data.get('selected_group'):
+            selected_group_id = self.data.get('selected_group')
+            if selected_group_id and selected_group_id != '':
+                user = self.request.user if self.request else None
+                try:
+                    group = PasswordGroup.objects.get(id=selected_group_id, owner=user)
+                    cleaned_data['group'] = group
+                except PasswordGroup.DoesNotExist:
+                    pass
+
+        return cleaned_data
+
     @transaction.atomic
     def save(self, commit=True):
         """
         Переопределяет сохранение для двойного шифрования и создания истории.
-
-        Логика:
-        1. Получает старый экземпляр (если обновление).
-        2. Шифрует пароль ключом пользователя и мастер-ключом.
-        3. Сохраняет новый экземпляр.
-        4. Создаёт запись в PasswordHistory.
-        5. Обновляет created_at согласно ТЗ.
         """
         instance = super().save(commit=False)
-        user = self.request.user
-        passphrase = self.cleaned_data['passphrase']
+
+        # Получаем пользователя
+        user = None
+        if hasattr(self, 'request') and self.request:
+            user = self.request.user
+        elif hasattr(self, 'user'):
+            user = self.user
+
+        if not user:
+            raise ValidationError(_("Пользователь не определен."))
+
+        # Устанавливаем владельца
+        instance.owner = user
+
+        # Обрабатываем selected_group
+        if self.cleaned_data.get('selected_group'):
+            selected_group_id = self.cleaned_data.get('selected_group')
+            if selected_group_id and selected_group_id != '':
+                try:
+                    group = PasswordGroup.objects.get(id=selected_group_id, owner=user)
+                    instance.group = group
+                except PasswordGroup.DoesNotExist:
+                    pass
+
         raw_password = self.cleaned_data['raw_password']
         is_update = instance.pk is not None
 
         old_record = None
         if is_update:
-            # Фиксируем состояние до изменения для истории
             old_record = EncryptedPassword.objects.select_for_update().get(pk=instance.pk)
+
+        # Получаем ключевую фразу (приоритет: форма > сессия)
+        passphrase = self.cleaned_data.get('passphrase')
+
+        # Если всё ещё нет фразы, проверяем, можем ли мы использовать сохраненную
+        if not passphrase:
+            use_saved = self.cleaned_data.get('use_saved_passphrase', False)
+            has_saved_passphrase = hasattr(user, 'encryption_key_hash') and user.encryption_key_hash
+
+            if use_saved and has_saved_passphrase:
+                # У пользователя есть сохраненная фраза, но мы не можем её получить
+                # (хранится только хеш). Требуем ввод.
+                raise ValidationError({
+                    'passphrase': _(
+                        'Пожалуйста, введите ключевую фразу для шифрования. Она не сохранена в открытом виде.')
+                })
+            else:
+                raise ValidationError({
+                    'passphrase': _('Ключевая фраза обязательна для шифрования пароля.')
+                })
+
+        # Проверяем фразу (если ещё не проверяли)
+        if not PasswordService.verify_passphrase(user, passphrase):
+            raise ValidationError({
+                'passphrase': _('Неверная ключевая фраза.')
+            })
 
         # 1. Шифрование для пользователя
         instance.encrypted_password = PasswordService.encrypt_with_passphrase(
@@ -151,7 +299,6 @@ class EncryptedPasswordForm(forms.ModelForm):
 
         return instance
 
-
 class UserKeySetupForm(forms.Form):
     """Форма первичной настройки/смены ключевой фразы пользователя."""
     passphrase = forms.CharField(
@@ -173,3 +320,107 @@ class UserKeySetupForm(forms.Form):
 
     def save(self, user):
         PasswordService.setup_or_update_key(user, self.cleaned_data['passphrase'])
+
+    def __init__(self, *args, **kwargs):
+        super(UserKeySetupForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
+class PasswordGroupForm(forms.ModelForm):
+    """
+    Форма для создания и редактирования групп паролей.
+    """
+
+    class Meta:
+        model = PasswordGroup
+        fields = ['name', 'parent_group']
+        labels = {
+            'name': _('Название группы'),
+            'parent_group': _('Родительская группа'),
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': _('Введите название группы'),
+            }),
+            'parent_group': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+        }
+        help_texts = {
+            'name': _('Уникальное название для вашей группы паролей.'),
+            'parent_group': _('Выберите родительскую группу для создания иерархии.'),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """
+        Ограничиваем выбор родительских групп только группами текущего пользователя
+        и исключаем текущую группу (при редактировании) для предотвращения циклических ссылок.
+        """
+        user = kwargs.pop('user', None)
+        instance = kwargs.get('instance', None)
+
+        super().__init__(*args, **kwargs)
+
+        if user:
+            # Фильтруем группы только текущего пользователя
+            queryset = PasswordGroup.objects.filter(owner=user)
+
+            # При редактировании исключаем текущую группу и её потомков
+            if instance and instance.pk:
+                # Используем исправленный метод
+                descendant_ids = instance.get_descendants_ids()
+                excluded_ids = descendant_ids + [instance.pk]
+                queryset = queryset.exclude(id__in=excluded_ids)
+
+            self.fields['parent_group'].queryset = queryset
+
+        # Добавляем пустой вариант для родительской группы
+        self.fields['parent_group'].empty_label = _('— Без родительской группы —')
+        self.fields['parent_group'].required = False
+
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+    def clean_parent_group(self):
+        """Дополнительная проверка на уровне формы для предотвращения циклических ссылок."""
+        parent_group = self.cleaned_data.get('parent_group')
+        instance = getattr(self, 'instance', None)
+
+        if instance and instance.pk and parent_group:
+            # Проверяем, не пытается ли пользователь сделать группу родителем самой себя
+            if parent_group.pk == instance.pk:
+                raise forms.ValidationError(_("Группа не может быть родителем самой себя."))
+
+            # Проверяем, не создает ли это циклическую зависимость
+            descendant_ids = parent_group.get_descendants_ids()
+            if instance.pk in descendant_ids:
+                raise forms.ValidationError(_("Эта операция создала бы циклическую зависимость."))
+
+        return parent_group
+
+    def clean_name(self):
+        """Проверка уникальности имени в рамках одного владельца и родительской группы."""
+        name = self.cleaned_data.get('name')
+        parent_group = self.cleaned_data.get('parent_group')
+        instance = getattr(self, 'instance', None)
+        user = getattr(self, 'user', None)
+
+        if user and name:
+            # Проверяем уникальность имени среди групп того же владельца и родителя
+            queryset = PasswordGroup.objects.filter(
+                owner=user,
+                name=name,
+                parent_group=parent_group
+            )
+
+            if instance and instance.pk:
+                queryset = queryset.exclude(pk=instance.pk)
+
+            if queryset.exists():
+                raise forms.ValidationError(
+                    _("Группа с таким именем уже существует в этой категории.")
+                )
+
+        return name

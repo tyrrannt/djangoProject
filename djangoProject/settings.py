@@ -1060,7 +1060,34 @@ UNFOLD = {
                     },
                 ],
             },
-
+            # ==================== 13. МЕНЕДЖЕР ПАРОЛЕЙ ====================
+            {
+                "title": _("Менеджер паролей"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Группы паролей"),
+                        "icon": "folder",
+                        "link": reverse_lazy("admin:password_manager_passwordgroup_changelist"),
+                    },
+                    {
+                        "title": _("Записи паролей"),
+                        "icon": "lock",
+                        "link": reverse_lazy("admin:password_manager_encryptedpassword_changelist"),
+                    },
+                    {
+                        "title": _("История изменений"),
+                        "icon": "history",
+                        "link": reverse_lazy("admin:password_manager_passwordhistory_changelist"),
+                    },
+                    {
+                        "title": _("Хеши ключевых фраз"),
+                        "icon": "vpn_key",
+                        "link": reverse_lazy("admin:password_manager_userkeyhash_changelist"),
+                    },
+                ],
+            },
         ],
     },
 
@@ -1184,8 +1211,21 @@ UNFOLD = {
 
                 "telegram_app.chatid",
                 "telegram_app.telegramnotification",
+
+                # Модели менеджера паролей
+                "password_manager.passwordgroup",
+                "password_manager.encryptedpassword",
+                "password_manager.passwordhistory",
+                "password_manager.userkeyhash",
+                "password_manager.sharedpassword",
             ],
             "items": [
+                {
+                    "title": _("Менеджер паролей"),
+                    "icon": "lock",
+                    "link": reverse_lazy("admin:password_manager_encryptedpassword_changelist"),
+                    "permission": lambda request: request.user.has_perm("password_manager.view_encryptedpassword"),
+                },
                 {
                     "title": _("Портал и уведомления"),
                     "icon": "settings",  # или любой другой из Material Icons
