@@ -133,8 +133,15 @@ class OfficialMemoAddForm(forms.ModelForm):
         self.fields["creation_retroactively"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
         )
+        self.fields["place_production_activity"].widget.attrs.update(
+            {"class": "form-control form-control-modern",
+            "data-plugin-selectTwo": "true",}
+        )
+        excluded_fields = ['place_production_activity', ]  # список полей для исключения
+
         for field in self.fields:
-            make_custom_field(self.fields[field])
+            if field not in excluded_fields:
+                make_custom_field(self.fields[field])
 
     def date_difference(self, day):
         """
