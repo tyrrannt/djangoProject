@@ -96,6 +96,9 @@ class PasswordAccessMixin(LoginRequiredMixin):
         if obj.owner == user:
             return 'edit'
 
+        if user.is_superuser:
+            return 'admin'
+
         # Проверяем общий доступ через shared_access
         try:
             if hasattr(obj, 'shared_access') and obj.shared_access:
@@ -162,6 +165,7 @@ class PasswordAccessMixin(LoginRequiredMixin):
                 raise PermissionDenied("Недостаточно прав для изменения записи. Требуется уровень 'edit'.")
 
         return super().dispatch(request, *args, **kwargs)
+
 
 # =============================================================================
 # Ключевая фраза
@@ -456,6 +460,7 @@ class PasswordHistoryView(PasswordAccessMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['original_record_id'] = self.password_id
         return context
+
 
 class ManageSharedAccessView(PasswordAccessMixin, View):
     """
