@@ -61,7 +61,7 @@ class EncryptedPasswordForm(forms.ModelForm):
             'data-toggle': 'password-input'
         }),
         label=_("Пароль"),
-        required=True,
+        required=False,
         help_text=_("Будет автоматически зашифрован перед сохранением в БД.")
     )
 
@@ -180,6 +180,12 @@ class EncryptedPasswordForm(forms.ModelForm):
     def clean_raw_password(self):
         """Валидация сложности пароля согласно требованиям безопасности."""
         password = self.cleaned_data.get('raw_password')
+
+        # Если мы редактируем запись и пароль не введен (переключатель выключен)
+        # или если поле пустое, просто возвращаем пустую строку/None
+        if not password:
+            return None
+
         if len(password) < 8:
             raise ValidationError(_("Минимальная длина пароля — 8 символов."))
         if not re.search(r'[A-Z]', password):
@@ -193,6 +199,13 @@ class EncryptedPasswordForm(forms.ModelForm):
     def clean(self):
         """Дополнительная валидация и обработка selected_group."""
         cleaned_data = super().clean()
+        password = cleaned_data.get('raw_password')
+        instance = getattr(self, 'instance', None)
+
+        # Если мы создаем новую запись, пароль ОБЯЗАТЕЛЕН
+        if not instance or not instance.pk:
+            if not password:
+                self.add_error('raw_password', 'Для новой записи пароль обязателен.')
 
         # Обрабатываем selected_group, если он есть в данных
         if self.data and self.data.get('selected_group'):
@@ -270,31 +283,32 @@ class EncryptedPasswordForm(forms.ModelForm):
                 'passphrase': _('Неверная ключевая фраза.')
             })
 
-        # 1. Шифрование для пользователя
-        instance.encrypted_password = PasswordService.encrypt_with_passphrase(
-            raw_password, user, passphrase
-        )
-        # 2. Шифрование для администратора
-        instance.admin_encrypted_copy = PasswordService.encrypt_for_admin(raw_password)
+        if raw_password:
+            # 1. Шифрование для пользователя
+            instance.encrypted_password = PasswordService.encrypt_with_passphrase(
+                raw_password, user, passphrase
+            )
+            # 2. Шифрование для администратора
+            instance.admin_encrypted_copy = PasswordService.encrypt_for_admin(raw_password)
 
-        if commit:
-            instance.save()
+            if commit:
+                instance.save()
 
-            # 3. Ведение истории (только при обновлении)
-            if old_record:
-                PasswordHistory.objects.create(
-                    encrypted_password=old_record.encrypted_password,
-                    admin_encrypted_copy=old_record.admin_encrypted_copy,
-                    resource_type=old_record.resource_type,
-                    url=old_record.url,
-                    login=old_record.login,
-                    notes=old_record.notes,
-                    original_record=instance,
-                    owner=user
-                )
-                # 4. Обновление created_at согласно ТЗ
-                instance.created_at = timezone.now()
-                instance.save(update_fields=['created_at'])
+                # 3. Ведение истории (только при обновлении)
+                if old_record:
+                    PasswordHistory.objects.create(
+                        encrypted_password=old_record.encrypted_password,
+                        admin_encrypted_copy=old_record.admin_encrypted_copy,
+                        resource_type=old_record.resource_type,
+                        url=old_record.url,
+                        login=old_record.login,
+                        notes=old_record.notes,
+                        original_record=instance,
+                        owner=user
+                    )
+                    # 4. Обновление created_at согласно ТЗ
+                    instance.created_at = timezone.now()
+                    instance.save(update_fields=['created_at'])
 
         return instance
 
