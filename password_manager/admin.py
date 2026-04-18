@@ -43,10 +43,11 @@ from .models import (
     SharedPassword, UserKeyHash
 )
 from .services import PasswordService
+from unfold.admin import ModelAdmin, TabularInline
 
 
 @admin.register(UserKeyHash)
-class UserKeyHashAdmin(admin.ModelAdmin):
+class UserKeyHashAdmin(ModelAdmin):
     """Управление хешами ключевых фраз пользователей."""
     list_display = ('user', 'key_hash_preview', 'created_display')
     search_fields = ('user__email', 'user__username')
@@ -64,7 +65,7 @@ class UserKeyHashAdmin(admin.ModelAdmin):
 
 
 @admin.register(PasswordGroup)
-class PasswordGroupAdmin(admin.ModelAdmin):
+class PasswordGroupAdmin(ModelAdmin):
     """Управление иерархией групп паролей."""
     list_display = ('name', 'owner', 'parent_group_link', 'passwords_count')
     list_filter = ('owner', 'parent_group')
@@ -83,7 +84,7 @@ class PasswordGroupAdmin(admin.ModelAdmin):
         return super().get_queryset(request).annotate(passwords_count=Count('passwords'))
 
 
-class SharedPasswordInline(admin.TabularInline):
+class SharedPasswordInline(TabularInline):
     """Встроенная панель управления общим доступом внутри записи пароля."""
     model = SharedPassword
     fields = ('shared_with', 'permissions')
@@ -94,7 +95,7 @@ class SharedPasswordInline(admin.TabularInline):
 
 
 @admin.register(EncryptedPassword)
-class EncryptedPasswordAdmin(admin.ModelAdmin):
+class EncryptedPasswordAdmin(ModelAdmin):
     """Основная панель управления учетными данными."""
     list_display = ('login', 'resource_type', 'owner', 'group', 'url_short', 'created_at', 'is_shared_badge')
     list_filter = ('resource_type', 'owner', 'group', 'created_at')
@@ -136,7 +137,7 @@ class EncryptedPasswordAdmin(admin.ModelAdmin):
 
 
 @admin.register(PasswordHistory)
-class PasswordHistoryAdmin(admin.ModelAdmin):
+class PasswordHistoryAdmin(ModelAdmin):
     """Аудит изменений паролей. Только чтение."""
     list_display = ('original_record', 'owner', 'login', 'url', 'changed_at')
     list_filter = ('owner', 'changed_at', 'original_record__resource_type')

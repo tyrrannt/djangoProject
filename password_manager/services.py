@@ -6,14 +6,12 @@
 шифрование/дешифрование, генерацию и административный доступ.
 """
 import hmac
-import hashlib
-from django.contrib.auth import get_user_model
-from typing import Optional
-from django.conf import settings
 from .models import UserKeyHash
 from .crypto import CryptoEngine
 from .generator import PasswordGenerator
 from decouple import config
+from cryptography.fernet import Fernet
+from core import logger
 
 
 class PasswordService:
@@ -76,26 +74,22 @@ class PasswordService:
 
     @classmethod
     def admin_decrypt(cls, ciphertext: str) -> str:
-        """
-        Дешифрование для администратора сайта.
-
-        NOTE: В Zero-Knowledge архитектуре админ не может расшифровать данные,
-        зашифрованные пользовательским ключом. Для соответствия ТЗ реализован
-        fallback через мастер-ключ. В production рекомендуется шифровать копию
-        пароля отдельным ключом администратора на этапе сохранения.
-        """
         master_key = config("PASSWORD_MANAGER_MASTER_KEY", default=None)
         if not master_key:
-            raise PermissionError(
-                "Административный доступ не настроен. "
-                "Укажите PASSWORD_MANAGER_MASTER_KEY в .env файле"
-            )
+            raise PermissionError("Мастер-ключ не найден в конфигурации.")
 
         try:
-            # Предполагается, что мастер-ключ уже валидный 32-байтовый base64url Fernet key
-            return CryptoEngine.decrypt(ciphertext, master_key, user_id=0)
-        except ValueError:
-            raise PermissionError("Мастер-ключ не подходит для расшифровки данной записи.")
+            # Убеждаемся, что ключ в байтах
+            key_bytes = master_key.encode() if isinstance(master_key, str) else master_key
+            f = Fernet(key_bytes)
+
+            # Если ciphertext — это TextField в Django, он может быть str
+            token = ciphertext.encode() if isinstance(ciphertext, str) else ciphertext
+            return f.decrypt(token).decode('utf-8')
+        except Exception as e:
+            # Логируем для себя, но пользователю отдаем общую ошибку
+            logger.error(f"Admin decryption failed: {str(e)}")
+            raise PermissionError("Не удалось расшифровать запись мастер-ключом.")
 
     @classmethod
     def encrypt_for_admin(cls, plaintext: str) -> str:

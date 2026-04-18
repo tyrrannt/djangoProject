@@ -52,7 +52,11 @@ class KeySetupRequiredMixin(LoginRequiredMixin):
     """
 
     def dispatch(self, request, *args, **kwargs):
-        # Проверяем наличие обратной связи OneToOne (related_name="encryption_key_hash")
+        # 1. Явная проверка аутентификации ДО любой логики
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        # 2. Проверяем наличие обратной связи OneToOne (related_name="encryption_key_hash")
         if not hasattr(request.user, 'encryption_key_hash'):
             messages.warning(
                 request,
@@ -74,21 +78,6 @@ class PasswordAccessMixin(LoginRequiredMixin):
     """
     permission_required = None  # Переопределяется в дочерних классах
     is_create_view = False  # Маркер для представлений создания
-
-    # def _check_access(self, obj) -> str:
-    #     """Возвращает уровень доступа: 'edit', 'read' или 'none'."""
-    #     user = self.request.user
-    #     if obj.owner == user:
-    #         return 'edit'
-    #
-    #     # OneToOneField вызывает RelatedObjectDoesNotExist, если связи нет
-    #     try:
-    #         shared = obj.shared_access
-    #         if user in shared.shared_with.all():
-    #             return shared.permissions.get(str(user.pk), 'read')
-    #     except EncryptedPassword.shared_access.RelatedObjectDoesNotExist:
-    #         pass
-    #     return 'none'
 
     def _check_access(self, obj) -> str:
         """Возвращает уровень доступа: 'edit', 'read' или 'none'."""
@@ -119,51 +108,36 @@ class PasswordAccessMixin(LoginRequiredMixin):
                 return None
         return None
 
-    # def dispatch(self, request, *args, **kwargs):
-    #     # Проверяем, является ли представление детальным (имеет get_object)
-    #     # и требуется ли проверка доступа к объекту
-    #     view_requires_object = hasattr(self, 'get_object') and not hasattr(self, 'is_create_view')
-    #
-    #     # Для CBV, работающих с одним объектом, вызываем проверку в dispatch
-    #     if view_requires_object:
-    #         try:
-    #             obj = self.get_object()
-    #             perm = self._check_access(obj)
-    #
-    #             if perm == 'none':
-    #                 raise PermissionDenied("У вас нет доступа к этой записи.")
-    #
-    #             if request.method in ('POST', 'PUT', 'DELETE') and perm != 'edit':
-    #                 raise PermissionDenied("Недостаточно прав для изменения записи. Требуется уровень 'edit'.")
-    #         except AttributeError:
-    #             # Если get_object вызывает ошибку из-за отсутствия pk, игнорируем
-    #             pass
-    #     return super().dispatch(request, *args, **kwargs)
     def dispatch(self, request, *args, **kwargs):
-        # Для представлений создания пропускаем проверку доступа к объекту
+        # 1. Явная проверка аутентификации ДО любой логики
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        # 2. Для представлений создания пропускаем проверку объекта
         if getattr(self, 'is_create_view', False):
             return super().dispatch(request, *args, **kwargs)
 
-        # Пытаемся получить объект для проверки доступа
-        obj = None
-        try:
-            if hasattr(self, 'get_object'):
-                obj = self.get_object()
-        except (AttributeError, Http404):
-            # Объект не найден или метод не реализован
-            pass
+        # 3. Проверка прав на существующий объект
+        obj = self.get_access_object()
 
         # Если объект найден, проверяем доступ
         if obj:
-            perm = self._check_access(obj)
+            access_level = self._check_access(obj)
 
-            if perm == 'none':
+            if access_level == 'none':
                 raise PermissionDenied("У вас нет доступа к этой записи.")
 
-            # Для методов изменения проверяем право edit
-            if request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and perm != 'edit':
-                raise PermissionDenied("Недостаточно прав для изменения записи. Требуется уровень 'edit'.")
+            # Для изменяющих HTTP-методов требуем право 'edit' или 'admin'
+            if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+                # Разрешаем POST только если это 'edit'/'admin'
+                # ИЛИ если это конкретное действие 'reveal' при наличии права 'read'
+                is_reveal_path = request.resolver_match.url_name == 'password_reveal'
 
+                if access_level not in ('edit', 'admin'):
+                    if not (access_level == 'read' and is_reveal_path):
+                        raise PermissionDenied("Недостаточно прав для изменения записи.")
+
+            # 4. Продолжение стандартного потока Django
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -316,17 +290,31 @@ class PasswordListView(PasswordAccessMixin, ListView):
         2. select_related для FK (владелец, группа).
         3. prefetch_related для ManyToMany (совладельцы) и JSON-прав.
         """
+        # user = self.request.user
+        # base_qs = EncryptedPassword.objects.select_related('owner', 'group')
+        #
+        # shared_qs = EncryptedPassword.objects.filter(
+        #     shared_access__shared_with=user
+        # ).select_related('owner', 'group')
+        #
+        # return (base_qs | shared_qs).distinct().prefetch_related(
+        #     'shared_access',
+        #     'shared_access__shared_with'
+        # ).order_by('-created_at')
         user = self.request.user
-        base_qs = EncryptedPassword.objects.select_related('owner', 'group')
+        # 1. Если админ - берем все, иначе только свои/общие
+        if user.is_superuser:
+            base_qs = EncryptedPassword.objects.all()
+        else:
+            base_qs = EncryptedPassword.objects.filter(
+                Q(owner=user) | Q(shared_access__shared_with=user)
+            )
 
-        shared_qs = EncryptedPassword.objects.filter(
-            shared_access__shared_with=user
-        ).select_related('owner', 'group')
-
-        return (base_qs | shared_qs).distinct().prefetch_related(
+        # 2. Оптимизация
+        return base_qs.select_related('owner', 'group').prefetch_related(
             'shared_access',
             'shared_access__shared_with'
-        ).order_by('-created_at')
+        ).distinct().order_by('-created_at')
 
 
 class PasswordCreateView(KeySetupRequiredMixin, PasswordAccessMixin, CreateView):
@@ -354,7 +342,7 @@ class PasswordCreateView(KeySetupRequiredMixin, PasswordAccessMixin, CreateView)
         return super().form_invalid(form)
 
 
-class PasswordUpdateView(PasswordAccessMixin, UpdateView):
+class PasswordUpdateView(PasswordAccessMixin, UserPassesTestMixin, UpdateView):
     model = EncryptedPassword
     form_class = EncryptedPasswordForm
     template_name = 'password_manager/password_form.html'
@@ -363,6 +351,9 @@ class PasswordUpdateView(PasswordAccessMixin, UpdateView):
     def get_queryset(self):
         # Доступ только для пользователей с правом 'edit'
         user = self.request.user
+        if user.is_superuser:
+            return EncryptedPassword.objects.all()
+
         return EncryptedPassword.objects.filter(
             Q(owner=user) | Q(shared_access__shared_with=user)
         ).distinct()
@@ -376,7 +367,9 @@ class PasswordUpdateView(PasswordAccessMixin, UpdateView):
     def test_func(self):
         """Проверяем, что пользователь является владельцем пароля."""
         password = self.get_object()
-        return password.owner == self.request.user
+        user = self.request.user
+
+        return password.owner == user
 
     def form_valid(self, form):
         messages.success(self.request, _('Пароль успешно обновлен.'))
@@ -661,53 +654,49 @@ class PasswordRevealView(PasswordAccessMixin, View):
         return get_object_or_404(EncryptedPassword, pk=self.kwargs.get('pk'))
 
     def post(self, request, *args, **kwargs):
-        # Получаем объект для доступа (используется в mixin)
         obj = self.get_object()
-
-        # Получаем парольную фразу из запроса
         passphrase = None
 
+        # 1. Извлечение фразы
         if request.content_type == 'application/json':
             try:
                 data = json.loads(request.body)
                 passphrase = data.get('passphrase')
             except json.JSONDecodeError:
-                return JsonResponse(
-                    {'error': 'Неверный формат JSON'},
-                    status=400
-                )
+                return JsonResponse({'error': 'Неверный формат JSON'}, status=400)
         else:
             passphrase = request.POST.get('passphrase')
 
-        if not passphrase:
-            return JsonResponse(
-                {'error': 'Ключевая фраза обязательна для заполнения.'},
-                status=400
-            )
-
-        # Проверяем ключевую фразу
+        # 2. Логика расшифровки
         try:
-            if not PasswordService.verify_passphrase(request.user, passphrase):
-                return JsonResponse(
-                    {'error': 'Неверная ключевая фраза.'},
-                    status=403
-                )
-        except Exception as e:
-            logger.error(f"Error verifying passphrase: {str(e)}")
-            return JsonResponse(
-                {'error': 'Ошибка проверки ключевой фразы.'},
-                status=500
-            )
+            if request.user.is_superuser:
+                # АДМИН: Фраза может быть любой (или пустой),
+                # так как используется системный MASTER_KEY
+                ciphertext = obj.admin_encrypted_copy or obj.encrypted_password
+                decrypted_password = PasswordService.admin_decrypt(ciphertext)
+            else:
+                # ПОЛЬЗОВАТЕЛЬ: Обязательная проверка фразы
+                if not passphrase:
+                    return JsonResponse({'error': 'Ключевая фраза обязательна.'}, status=400)
 
-        # Расшифровываем пароль
-        try:
-            decrypted_password = PasswordService.decrypt_with_passphrase(
-                obj.encrypted_password,
-                request.user,
-                passphrase
-            )
+                if not PasswordService.verify_passphrase(request.user, passphrase):
+                    return JsonResponse({'error': 'Неверная ключевая фраза.'}, status=403)
 
-            # Возвращаем расшифрованный пароль
+                if obj.owner == request.user:
+                    # Владелец расшифровывает свою запись
+                    decrypted_password = PasswordService.decrypt_with_passphrase(
+                        obj.encrypted_password, request.user, passphrase
+                    )
+                else:
+                    # ПОЛЬЗОВАТЕЛЬ С ОБЩИМ ДОСТУПОМ:
+                    # Так как запись зашифрована не его ключом, используем admin_encrypted_copy
+                    if obj.admin_encrypted_copy:
+                        decrypted_password = PasswordService.admin_decrypt(obj.admin_encrypted_copy)
+                    else:
+                        return JsonResponse(
+                            {'error': 'Доступ ограничен. Запись не подготовлена для совместной работы.'},
+                            status=400)
+
             return JsonResponse({
                 'success': True,
                 'password': decrypted_password,
@@ -716,14 +705,11 @@ class PasswordRevealView(PasswordAccessMixin, View):
                 'resource_type': obj.get_resource_type_display()
             })
 
+        except PermissionError as e:
+            # Ошибка, если MASTER_KEY не настроен в .env
+            return JsonResponse({'error': f'PermissionError - {str(e)}'}, status=500)
         except ValueError as e:
-            return JsonResponse(
-                {'error': str(e)},
-                status=400
-            )
+            return JsonResponse({'error': 'Ошибка дешифрования: неверный ключ или данные повреждены.'}, status=400)
         except Exception as e:
             logger.error(f"Error decrypting password: {str(e)}", exc_info=True)
-            return JsonResponse(
-                {'error': 'Ошибка расшифровки пароля.'},
-                status=500
-            )
+            return JsonResponse({'error': 'Ошибка расшифровки пароля.'}, status=500)

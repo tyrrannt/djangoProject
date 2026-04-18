@@ -53,6 +53,7 @@ def _run_mdb_table(table_name: str) -> list[dict]:
 
 
 # ─── Equipment ───────────────────────────────────────────────────────────────
+@login_required
 def equipment_list(request):
     qs = Equipment.objects.select_related("aircraft_type", "dest_lit").all()
     search = request.GET.get("q", "")
@@ -65,7 +66,8 @@ def equipment_list(request):
 
 def equipment_detail(request, pk):
     obj = get_object_or_404(Equipment.objects.select_related("aircraft_type", "dest_lit"), pk=pk)
-    return render(request, "ppequipment_app/equipment_detail.html", {"object": obj, "title": f"Оборудование #{obj.number}"})
+    return render(request, "ppequipment_app/equipment_detail.html",
+                  {"object": obj, "title": f"Оборудование #{obj.number}"})
 
 
 def equipment_create(request):
@@ -119,7 +121,8 @@ def verification_list(request):
 def verification_detail(request, slug):
     obj = get_object_or_404(Verification.objects.select_related("equipment", "location_ref", "contractor_status"),
                             slug=slug)
-    return render(request, "ppequipment_app/verification_detail.html", {"object": obj, "title": f"Сверка {obj.inventory_number}"})
+    return render(request, "ppequipment_app/verification_detail.html",
+                  {"object": obj, "title": f"Сверка {obj.inventory_number}"})
 
 
 def verification_create(request):
@@ -159,7 +162,8 @@ def verification_delete(request, slug):
 # ─── Location ────────────────────────────────────────────────────────────────
 def location_list(request):
     qs = Location.objects.select_related("equipment", "location_ref").all()
-    return render(request, "ppequipment_app/location_list.html", {"object_list": qs, "title": "Местоположения оборудования"})
+    return render(request, "ppequipment_app/location_list.html",
+                  {"object_list": qs, "title": "Местоположения оборудования"})
 
 
 def location_create(request):

@@ -150,7 +150,6 @@ class EncryptedPasswordForm(forms.ModelForm):
 
         # Проверяем, есть ли у пользователя сохраненная фраза
         has_saved_passphrase = hasattr(user, 'encryption_key_hash') and user.encryption_key_hash
-        print(has_saved_passphrase)
 
         if use_saved and has_saved_passphrase:
             # Если используем сохраненную фразу, но фраза не в сессии
@@ -298,6 +297,7 @@ class EncryptedPasswordForm(forms.ModelForm):
                 instance.save(update_fields=['created_at'])
 
         return instance
+
 
 class UserKeySetupForm(forms.Form):
     """Форма первичной настройки/смены ключевой фразы пользователя."""

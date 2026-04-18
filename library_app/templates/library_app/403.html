@@ -7,96 +7,100 @@
 {% endblock %}
 
 {% block content %}
-<style>
-    .error-container {
-        min-height: 80vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    <style>
+        .error-container {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    .error-card {
-        max-width: 800px;
-        width: 100%;
-        padding: 40px;
-        border-radius: 16px;
-        background: #ffffff;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-    }
+        .error-card {
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
 
-    .error-code {
-        font-size: 80px;
-        font-weight: 700;
-        color: #343a40;
-    }
+        .error-code {
+            font-size: 80px;
+            font-weight: 700;
+            color: #343a40;
+        }
 
-    .error-icon {
-        font-size: 60px;
-        color: #dc3545;
-        margin-left: 10px;
-    }
+        .error-icon {
+            font-size: 60px;
+            color: #dc3545;
+            margin-left: 10px;
+        }
 
-    .error-text {
-        font-size: 18px;
-        color: #6c757d;
-        margin-top: 10px;
-    }
+        .error-text {
+            font-size: 18px;
+            color: #6c757d;
+            margin-top: 10px;
+        }
 
-    .nav-links a {
-        display: block;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        border-radius: 10px;
-        text-decoration: none;
-        color: #343a40;
-        background: #f8f9fa;
-        transition: all 0.2s ease;
-    }
+        .nav-links a {
+            display: block;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #343a40;
+            background: #f8f9fa;
+            transition: all 0.2s ease;
+        }
 
-    .nav-links a:hover {
-        background: #e9ecef;
-        transform: translateX(4px);
-    }
+        .nav-links a:hover {
+            background: #e9ecef;
+            transform: translateX(4px);
+        }
 
-    .nav-links i {
-        margin-right: 8px;
-    }
-</style>
+        .nav-links i {
+            margin-right: 8px;
+        }
+    </style>
 
-<div class="error-container">
-    <div class="error-card text-center">
+    <div class="error-container">
+        <div class="error-card text-center">
 
-        <div>
-            <span class="error-code">403</span>
-            <i class="fas fa-lock error-icon"></i>
-        </div>
-
-        <p class="error-text">
-            У вас отсутствуют права доступа к данному действию
-        </p>
-
-        <hr class="my-4">
-
-        <div class="text-start">
-            <h5 class="mb-3">Куда перейти:</h5>
-
-            <div class="nav-links">
-                <a href="{% url 'customers_app:profile' user.pk %}">
-                    <i class="fas fa-stream"></i> Лента событий
-                </a>
-
-                <a href="{% url 'customers_app:staff' user.pk %}">
-                    <i class="fas fa-user"></i> Профиль пользователя
-                </a>
-
-                <a href="#">
-                    <i class="fas fa-question-circle"></i> Вопросы и ответы
-                </a>
+            <div>
+                <span class="error-code">403</span>
+                <i class="fas fa-lock error-icon"></i>
             </div>
-        </div>
 
+            <p class="error-text">
+                У вас отсутствуют права доступа к данному действию
+            </p>
+
+            <hr class="my-4">
+
+            <div class="text-start">
+                <h5 class="mb-3">Куда перейти:</h5>
+
+                <div class="nav-links">
+                    <a href="javascript:history.back()">
+                        <i class="fas fa-arrow-left"></i> Вернуться назад
+                    </a>
+                    
+                    <a href="{% url 'customers_app:profile' user.pk %}">
+                        <i class="fas fa-stream"></i> Лента событий
+                    </a>
+
+                    <a href="{% url 'customers_app:staff' user.pk %}">
+                        <i class="fas fa-user"></i> Профиль пользователя
+                    </a>
+
+                    <a href="{% url 'library_app:help_list' %}">
+                        <i class="fas fa-question-circle"></i> Вопросы и ответы
+                    </a>
+                </div>
+            </div>
+
+        </div>
     </div>
-</div>
 {% endblock %}
 
 
