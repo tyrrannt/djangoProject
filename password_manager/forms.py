@@ -32,17 +32,17 @@ class EncryptedPasswordForm(forms.ModelForm):
     Основная форма CRUD для записей паролей.
     Интегрирует поле ключевой фразы и сырого пароля для последующего шифрования.
     """
-    use_saved_passphrase = forms.BooleanField(
+    change_password = forms.BooleanField(
         widget=forms.CheckboxInput(attrs={
             'class': 'todo-check',
             'data-plugin-ios-switch': 'true',
-            'id': 'use_saved_passphrase',
-            'data-toggle': 'passphrase-toggle'
+            'id': 'changePasswordToggle',
+            'data-toggle': 'change_password-toggle'
         }),
-        label=_("Я помню свою ключевую фразу"),
+        label=_("Изменить пароль"),
         required=False,
         initial=True,
-        help_text=_("Если отмечено, фраза будет взята из вашего профиля. Снимите галочку, чтобы ввести фразу вручную.")
+        help_text=_("Включите, чтобы задать новый пароль или сгенерировать его.")
     )
     passphrase = forms.CharField(
         widget=forms.PasswordInput(attrs={
@@ -101,24 +101,6 @@ class EncryptedPasswordForm(forms.ModelForm):
             self.fields['group'].required = False
             self.fields['group'].empty_label = _('— Без группы —')
 
-            # Проверяем, есть ли у пользователя сохраненная ключевая фраза
-            has_saved_passphrase = hasattr(current_user, 'encryption_key_hash') and current_user.encryption_key_hash
-            if has_saved_passphrase:
-                # Если есть сохраненная фраза, по умолчанию используем её
-                self.fields['use_saved_passphrase'].initial = True
-                self.fields['passphrase'].required = False
-                self.fields['passphrase'].widget.attrs['placeholder'] = _(
-                    'Необязательно (будет использована сохраненная)')
-                self.fields['passphrase'].help_text = _("Оставьте пустым, если хотите использовать сохраненную фразу.")
-            else:
-                # Если нет сохраненной фразы, скрываем переключатель и требуем ввод
-                self.fields['use_saved_passphrase'].initial = False
-                self.fields['use_saved_passphrase'].widget = forms.HiddenInput()
-                self.fields['passphrase'].required = True
-                self.fields['passphrase'].help_text = _(
-                    "Установите ключевую фразу в настройках профиля или введите её здесь.")
-                messages.warning(self.request, "У вас не установлена ключевая фраза. Пожалуйста, введите её вручную.")
-
         # Обрабатываем selected_group, если он передан
         if self.data and self.data.get('selected_group'):
             selected_group_id = self.data.get('selected_group')
@@ -136,8 +118,8 @@ class EncryptedPasswordForm(forms.ModelForm):
 
     def clean_passphrase(self):
         """Проверяет корректность ключевой фразы пользователя."""
-        use_saved = self.cleaned_data.get('use_saved_passphrase', False)
         passphrase = self.cleaned_data.get('passphrase')
+        change_password = self.cleaned_data.get('change_password')
 
         # Получаем пользователя
         user = None
@@ -149,10 +131,7 @@ class EncryptedPasswordForm(forms.ModelForm):
         if not user:
             raise ValidationError(_("Пользователь не определен."))
 
-        # Проверяем, есть ли у пользователя сохраненная фраза
-        has_saved_passphrase = hasattr(user, 'encryption_key_hash') and user.encryption_key_hash
-
-        if use_saved and has_saved_passphrase:
+        if change_password:
             # Если используем сохраненную фразу, но фраза не в сессии
             # Требуем ввод для подтверждения (безопасность)
             if not passphrase:
@@ -163,19 +142,11 @@ class EncryptedPasswordForm(forms.ModelForm):
             # Проверяем фразу
             if not PasswordService.verify_passphrase(user, passphrase):
                 raise ValidationError(
-                    _("Неверная ключевая фраза.")
+                    _("Неверная ключевая фраза или она ещё не установлена в настройках профиля.")
                 )
 
             return passphrase
 
-        # Если не используем сохраненную, проверяем введенную
-        if not passphrase:
-            raise ValidationError(_("Пожалуйста, введите ключевую фразу."))
-
-        if not PasswordService.verify_passphrase(user, passphrase):
-            raise ValidationError(
-                _("Неверная ключевая фраза или она ещё не установлена в настройках профиля.")
-            )
         return passphrase
 
     def clean_raw_password(self):
@@ -252,6 +223,7 @@ class EncryptedPasswordForm(forms.ModelForm):
                     pass
 
         raw_password = self.cleaned_data['raw_password']
+        change_password = self.cleaned_data.get('change_password')
         is_update = instance.pk is not None
 
         old_record = None
@@ -262,54 +234,48 @@ class EncryptedPasswordForm(forms.ModelForm):
         passphrase = self.cleaned_data.get('passphrase')
 
         # Если всё ещё нет фразы, проверяем, можем ли мы использовать сохраненную
-        if not passphrase:
-            use_saved = self.cleaned_data.get('use_saved_passphrase', False)
-            has_saved_passphrase = hasattr(user, 'encryption_key_hash') and user.encryption_key_hash
-
-            if use_saved and has_saved_passphrase:
-                # У пользователя есть сохраненная фраза, но мы не можем её получить
-                # (хранится только хеш). Требуем ввод.
-                raise ValidationError({
-                    'passphrase': _(
-                        'Пожалуйста, введите ключевую фразу для шифрования. Она не сохранена в открытом виде.')
-                })
-            else:
-                raise ValidationError({
-                    'passphrase': _('Ключевая фраза обязательна для шифрования пароля.')
-                })
+        if change_password and not passphrase:
+            raise ValidationError({
+                'passphrase': _(
+                    'Пожалуйста, введите ключевую фразу для шифрования. Она не сохранена в открытом виде.')
+            })
 
         # Проверяем фразу (если ещё не проверяли)
-        if not PasswordService.verify_passphrase(user, passphrase):
+        if change_password and not PasswordService.verify_passphrase(user, passphrase):
             raise ValidationError({
                 'passphrase': _('Неверная ключевая фраза.')
             })
 
-        if raw_password:
-            # 1. Шифрование для пользователя
-            instance.encrypted_password = PasswordService.encrypt_with_passphrase(
-                raw_password, user, passphrase
-            )
-            # 2. Шифрование для администратора
-            instance.admin_encrypted_copy = PasswordService.encrypt_for_admin(raw_password)
+        if change_password:
+            if raw_password:
+                # 1. Шифрование для пользователя
+                instance.encrypted_password = PasswordService.encrypt_with_passphrase(
+                    raw_password, user, passphrase
+                )
+                # 2. Шифрование для администратора
+                instance.admin_encrypted_copy = PasswordService.encrypt_for_admin(raw_password)
 
+                if commit:
+                    instance.save()
+
+                    # 3. Ведение истории (только при обновлении)
+                    if old_record:
+                        PasswordHistory.objects.create(
+                            encrypted_password=old_record.encrypted_password,
+                            admin_encrypted_copy=old_record.admin_encrypted_copy,
+                            resource_type=old_record.resource_type,
+                            url=old_record.url,
+                            login=old_record.login,
+                            notes=old_record.notes,
+                            original_record=instance,
+                            owner=user
+                        )
+                        # 4. Обновление created_at согласно ТЗ
+                        instance.created_at = timezone.now()
+                        instance.save(update_fields=['created_at'])
+        else:
             if commit:
                 instance.save()
-
-                # 3. Ведение истории (только при обновлении)
-                if old_record:
-                    PasswordHistory.objects.create(
-                        encrypted_password=old_record.encrypted_password,
-                        admin_encrypted_copy=old_record.admin_encrypted_copy,
-                        resource_type=old_record.resource_type,
-                        url=old_record.url,
-                        login=old_record.login,
-                        notes=old_record.notes,
-                        original_record=instance,
-                        owner=user
-                    )
-                    # 4. Обновление created_at согласно ТЗ
-                    instance.created_at = timezone.now()
-                    instance.save(update_fields=['created_at'])
 
         return instance
 
