@@ -34,7 +34,8 @@ class EncryptedPasswordForm(forms.ModelForm):
     """
     use_saved_passphrase = forms.BooleanField(
         widget=forms.CheckboxInput(attrs={
-            'class': 'form-check-input',
+            'class': 'todo-check',
+            'data-plugin-ios-switch': 'true',
             'id': 'use_saved_passphrase',
             'data-toggle': 'passphrase-toggle'
         }),
