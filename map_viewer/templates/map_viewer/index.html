@@ -24,15 +24,17 @@
     const vvLng = 34.5655;
 
     // Инициализация карты на Вышнем Волочке
-    const map = L.map('map').setView([vvLat, vvLng], 8);
+    const lat = 57.5891;
+    const lng = 34.5655;
+
+    const map = L.map('map').setView([lat, lng], 8);
 
     {% if maps %}
         {% for m in maps %}
             L.tileLayer('/map/tile/{{ m.id }}/{z}/{x}/{y}/', {
                 maxZoom: 12,
                 minZoom: 5,
-                noWrap: true,
-                tms: false // Инверсия Y происходит в Django
+                noWrap: true
             }).addTo(map);
         {% endfor %}
     {% endif %}
