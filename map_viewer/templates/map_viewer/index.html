@@ -39,7 +39,7 @@
         {% for m in maps %}
             var layer_{{ m.id }} = L.tileLayer('/map/tile/{{ m.id }}/{z}/{x}/{y}/', {
                 maxZoom: 12,
-                minZoom: 5,
+                minZoom: 2,
                 tms: false, // важно! у тебя инверсия уже на backend
                 noWrap: true
             });
