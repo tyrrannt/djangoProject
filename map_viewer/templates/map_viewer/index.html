@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Карта | {{ user.username }}</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        #map { height: 90vh; width: 100%; background: #ccd; }
+        body { margin: 0; padding: 0; }
+        .header { padding: 10px; background: #fff; font-family: sans-serif; border-bottom: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <strong>Центр: Вышний Волочёк</strong> | Пользователь: {{ user.username }}
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Координаты города Вышний Волочёк
+    const vvLat = 57.5891;
+    const vvLng = 34.5655;
+
+    // Инициализация карты на Вышнем Волочке
+    const map = L.map('map').setView([vvLat, vvLng], 8);
+
+    {% if maps %}
+        {% for m in maps %}
+            L.tileLayer('/map/tile/{{ m.id }}/{z}/{x}/{y}/', {
+                maxZoom: 12,
+                minZoom: 5,
+                noWrap: true,
+                tms: false // Инверсия Y происходит в Django
+            }).addTo(map);
+        {% endfor %}
+    {% endif %}
+
+    // Маркер на Вышнем Волочке
+    L.marker([vvLat, vvLng]).addTo(map)
+        .bindPopup('Вышний Волочёк')
+        .openPopup();
+
+    // Отладка: смотрим в консоль браузера, какие X/Y запрашивает Leaflet
+    map.on('moveend', function() {
+        console.log("Центр карты:", map.getCenter());
+        console.log("Zoom:", map.getZoom());
+    });
+</script>
+</body>
+</html>

@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "ppequipment_app.apps.PpequipmentAppConfig",
     "tickets_app.apps.TicketsAppConfig",
     "password_manager.apps.PasswordManagerConfig",
+    "map_viewer.apps.MapViewerConfig",
     "widget_tweaks",
     "django_ckeditor_5",
     "channels",
@@ -1086,6 +1087,20 @@ UNFOLD = {
                         "icon": "vpn_key",
                         "link": reverse_lazy("admin:password_manager_userkeyhash_changelist"),
                     },
+                ],
+            },
+            # ==================== 14. Карты ====================
+            {
+                "title": _("Полетные карты"),
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Группы паролей"),
+                        "icon": "folder",
+                        "link": reverse_lazy("admin:map_viewer_mapsource_changelist"),
+                    },
+
                 ],
             },
         ],
