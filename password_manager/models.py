@@ -104,6 +104,7 @@ class EncryptedPassword(models.Model):
         choices=ResourceType.choices,
         default=ResourceType.WEBSITE
     )
+    title = models.CharField(_("Наименование"), max_length=255, blank=True, null=True)
     url = models.URLField(_("URL ресурса"), max_length=2048)
     login = models.CharField(_("Логин"), max_length=255)
     encrypted_password = models.TextField(_("Зашифрованный пароль"))
@@ -149,6 +150,7 @@ class PasswordHistory(models.Model):
     resource_type = models.CharField(
         _("Тип ресурса"), max_length=50, choices=ResourceType.choices
     )
+    title = models.CharField(_("Наименование"), max_length=255, blank=True, null=True)
     url = models.URLField(_("URL ресурса"), max_length=2048)
     login = models.CharField(_("Логин"), max_length=255)
     notes = models.TextField(_("Примечание"), blank=True, null=True)

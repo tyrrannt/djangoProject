@@ -1,5 +1,6 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
+{% load custom %}
 
 {% block title %}Управление доступом: {{ password_record.login }}{% endblock %}
 
@@ -33,17 +34,17 @@
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Пользователь</label>
-                            <select name="user_id" class="form-select" required>
+                            <select name="user_id" class="form-control form-control-modern" data-plugin-selectTwo="true" required>
                                 <option value="">Выберите пользователя...</option>
                                 {% for user in available_users %}
-                                    <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                                    <option value="{{ user.id }}">{{ user.title|default:user.username }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Уровень доступа</label>
-                            <select name="permission" class="form-select">
+                            <select name="permission" class="form-control form-control-modern" data-plugin-selectTwo="true">
                                 <option value="read">📖 Только чтение</option>
                                 <option value="edit">✏️ Чтение и редактирование</option>
                             </select>
@@ -70,7 +71,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-user me-2"></i>
-                                            <strong>{{ item.user.get_full_name|default:item.user.username }}</strong>
+                                            <strong>{{ item.user.title|FIO_format|default:item.user.username }}</strong>
                                             <br>
                                             <small class="text-muted">
                                                 {% if item.permission == 'read' %}
@@ -104,13 +105,13 @@
                                                 <input type="hidden" name="action" value="update">
                                                 <input type="hidden" name="user_id" value="{{ item.user.id }}">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title">Изменить права для {{ item.user.username }}</h5>
+                                                    <h5 class="modal-title">Изменить права для: {{ item.user.title }}</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body">
                                                     <div class="mb-3">
                                                         <label class="form-label">Уровень доступа</label>
-                                                        <select name="permission" class="form-select">
+                                                        <select name="permission" class="form-control form-control-modern" data-plugin-selectTwo="true">
                                                             <option value="read" {% if item.permission == 'read' %}selected{% endif %}>
                                                                 📖 Только чтение
                                                             </option>

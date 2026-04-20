@@ -68,14 +68,15 @@ class EncryptedPasswordForm(forms.ModelForm):
 
     class Meta:
         model = EncryptedPassword
-        fields = ['resource_type', 'url', 'login', 'group', 'notes']
+        fields = ['resource_type', 'url', 'login', 'group', 'notes', 'title']
         widgets = {
             'resource_type': forms.Select(attrs={'class': 'form-select'}),
             'url': forms.URLInput(attrs={
-                'class': 'form-control',
+                'class': 'form-control form-control-modern',
                 'placeholder': 'https://example.com',
                 'pattern': 'https?://.+'
             }),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
             'login': forms.TextInput(attrs={'class': 'form-control'}),
             'group': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -263,6 +264,7 @@ class EncryptedPasswordForm(forms.ModelForm):
                         PasswordHistory.objects.create(
                             encrypted_password=old_record.encrypted_password,
                             admin_encrypted_copy=old_record.admin_encrypted_copy,
+                            title=old_record.title,
                             resource_type=old_record.resource_type,
                             url=old_record.url,
                             login=old_record.login,
