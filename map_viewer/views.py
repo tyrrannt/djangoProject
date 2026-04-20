@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from .models import MapSource
 
 
-@login_required(login_url='/customers/login/')
+# @login_required(login_url='/customers/login/')
 def map_index(request):
     maps = MapSource.objects.filter(is_active=True)
     return render(request, 'map_viewer/index.html', {'maps': maps})
