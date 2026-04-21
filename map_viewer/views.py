@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
 
+@login_required(login_url='/users/login/')
 def map_index(request):
     maps = MapSource.objects.filter(is_active=True)
     return render(request, 'map_viewer/index.html', {'maps': maps})
