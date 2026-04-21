@@ -1,59 +1,51 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Карта | {{ user.username }}</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+{% load widget_tweaks %}
+
+{% block custom_css %}
+<link rel="stylesheet" href="{% static 'admin_templates/vendor/leaflet/leaflet.css' %}"/>
     <style>
         #map { height: 90vh; width: 100%; background: #ccd; }
         body { margin: 0; padding: 0; }
         .header { padding: 10px; background: #fff; font-family: sans-serif; border-bottom: 1px solid #ccc; }
     </style>
-</head>
-<body>
+{% endblock %}
 
+{% block custom_script %}
+
+{% endblock %}
+
+{% block title %}
+    Карта | {{ user.username }}
+{% endblock %}
+
+{% block content %}
+    <script src="{% static 'admin_templates/vendor/leaflet/leaflet-src.js' %}"></script>
 <div class="header">
     Пользователь: {{ user.username }}
 </div>
 
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-    // 1. ИНИЦИАЛИЗАЦИЯ КАРТЫ (обязательно)
-    var map = L.map('map', {
-        center: [55.5920, 37.4364], // Франкфурт
-        zoom: 8,
-        minZoom: 1,
-        maxZoom: 16
-    });
+    // Переключаем Leaflet в режим простых координат
+    const map = L.map('map', {
+        crs: L.CRS.Simple,
+        infinite: false // Карта не бесконечная
+    }).setView([0, 0], 8); // Начинаем с "нуля" наших данных
 
-    // 2. (опционально) базовый слой, чтобы не было пустоты
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'OSM'
-    }).addTo(map);
-
-    // 3. ТВОИ ТАЙЛЫ
     {% if maps %}
         {% for m in maps %}
-            var layer_{{ m.id }} = L.tileLayer('/map/tile/{{ m.id }}/{z}/{x}/{y}/', {
-                maxZoom: 16,
-                minZoom: 1,
-                tms: false, // важно! у тебя инверсия уже на backend
-                noWrap: true
-            });
-
-            layer_{{ m.id }}.addTo(map);
+            L.tileLayer('/map/tile/{{ m.id }}/{z}/{x}/{y}/', {
+                maxZoom: 12,
+                minZoom: 5,
+                noWrap: true,
+                tileSize: 256,
+                // Важно: в CRS.Simple инверсия Y не нужна в JS
+                tms: false
+            }).addTo(map);
         {% endfor %}
     {% endif %}
-
-    // 4. ОТЛАДКА
-    map.on('moveend', function() {
-        console.log("Центр:", map.getCenter());
-        console.log("Zoom:", map.getZoom());
-    });
 </script>
-
-</body>
-</html>
+{% endblock %}
