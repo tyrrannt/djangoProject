@@ -1,0 +1,648 @@
+<!-- flight_planning/templates/flight_planning/table.html -->
+{% load static %}
+{% load custom %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Планирование пилотов по МПД</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+
+        /* Основной контейнер */
+        .planning-container {
+            max-width: 100%;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* Навигация по месяцам */
+        .month-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .month-nav h2 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: #4a90e2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: #357abd;
+        }
+
+        /* Двухколоночный макет */
+        .main-layout {
+            display: flex;
+            gap: 0;
+        }
+
+        /* Контейнер таблицы с прокруткой */
+        .table-wrapper {
+            flex: 1;
+            overflow: auto;
+            max-height: calc(100vh - 120px);
+            position: relative;
+        }
+
+        /* Панель пилотов справа */
+        .pilots-panel {
+            width: 260px;
+            background: #f8f9fa;
+            border-left: 1px solid #e0e0e0;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: calc(100vh - 120px);
+        }
+
+        .pilots-panel h3 {
+            margin: 0 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4a90e2;
+            color: #333;
+        }
+
+        .pilot-item {
+            padding: 10px 12px;
+            margin: 8px 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .pilot-item:hover {
+            background: #e8f0fe;
+            border-color: #4a90e2;
+            transform: translateX(-2px);
+        }
+
+        .pilot-item:active {
+            cursor: grabbing;
+        }
+
+        /* Таблица */
+        .planning-table {
+            border-collapse: collapse;
+            width: max-content;
+            min-width: 100%;
+            font-size: 13px;
+        }
+
+        .planning-table th,
+        .planning-table td {
+            border: 1px solid #ddd;
+            padding: 10px 12px;
+            text-align: center;
+            min-width: 90px;
+        }
+
+        .planning-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #555;
+        }
+
+        /* Фиксация первого столбца */
+        .planning-table th:first-child,
+        .planning-table td:first-child {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 10;
+            font-weight: 600;
+            background: #fafafa;
+            text-align: left;
+            min-width: 180px;
+        }
+
+        .planning-table th:first-child {
+            background: #f0f0f0;
+            z-index: 20;
+        }
+
+        /* Фиксация первой строки */
+        .planning-table thead tr th {
+            position: sticky;
+            top: 0;
+            background: #f5f5f5;
+            z-index: 5;
+        }
+
+        .planning-table thead tr:first-child th:first-child {
+            z-index: 30;
+        }
+
+        /* Ячейки таблицы */
+        .plan-cell {
+            cursor: pointer;
+            transition: background 0.1s ease;
+            position: relative;
+        }
+
+        .plan-cell.selected {
+            background-color: #b3d9ff !important;
+        }
+
+        .plan-cell.assigned {
+            background-color: #d4edda;
+        }
+
+        .plan-cell.assigned:hover {
+            background-color: #c3e6cb;
+        }
+
+        .plan-cell.drag-over {
+            background-color: #ffe0b3;
+        }
+
+        .employee-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #28a745;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .employee-badge:hover {
+            background: #218838;
+        }
+
+        .weekend {
+            background-color: #fff3f0;
+        }
+
+        /* Модальное окно конфликта */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .conflict-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+            width: 450px;
+            max-width: 90%;
+        }
+
+        .conflict-modal .modal-header {
+            padding: 15px 20px;
+            background: #ff9800;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .conflict-modal .modal-body {
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .conflict-modal .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .conflict-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: #fff3e0;
+            border-left: 3px solid #ff9800;
+        }
+
+        .btn-confirm {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Информация о выделении */
+        .selection-info {
+            padding: 10px 20px;
+            background: #e9ecef;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+
+        .clear-selection {
+            color: #dc3545;
+            cursor: pointer;
+            margin-left: 15px;
+        }
+
+        .clear-selection:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+</head>
+<body>
+<div class="planning-container">
+    <!-- Навигация по месяцам -->
+    <div class="month-nav">
+        <div class="nav-buttons">
+            <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn">← {{ prev_month_name|default:"Предыдущий" }}</a>
+        </div>
+        <h2>{{ month_name|default:month }}/{{ year }}</h2>
+        <div class="nav-buttons">
+            <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn">Следующий →</a>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Контейнер таблицы -->
+        <div class="table-wrapper">
+            <table class="planning-table" id="planningTable">
+                <thead>
+                    <tr>
+                        <th>Место деятельности (МПД)</th>
+                        {% for date in dates %}
+                            <th>
+                                {{ date|date:"d.m" }}<br>
+                                <small>{{ date|date:"D" }}</small>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mpd in mpds %}
+                        <tr data-mpd-id="{{ mpd.id }}">
+                            <td class="mpd-name" title="{{ mpd.code|default:'' }}">
+                                {{ mpd.name }}
+                            </td>
+                            {% for date in dates %}
+                                {% with assignment=assignment_map|get_item:mpd.id|get_item:date.isoformat %}
+                                    <td class="plan-cell {% if assignment %}assigned{% endif %}"
+                                        data-date="{{ date.isoformat }}"
+                                        data-mpd-id="{{ mpd.id }}"
+                                        data-weekday="{{ date|date:'w' }}"
+                                        {% if assignment %}data-pilot-id="{{ assignment.pilot_id }}"{% endif %}>
+                                        {% if assignment %}
+                                            <span class="employee-badge" data-pilot-id="{{ assignment.pilot_id }}" data-assignment-id="{{ assignment.assignment_id }}">
+                                                {{ assignment.pilot_name|truncatechars:20 }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                {% endwith %}
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Панель пилотов -->
+        <div class="pilots-panel">
+            <h3>👨‍✈️ Пилоты</h3>
+            {% for pilot in pilots %}
+                <div class="pilot-item"
+                     data-pilot-id="{{ pilot.id }}"
+                     data-pilot-name="{{ pilot.get_full_name|default:pilot.username }}">
+                    {{ pilot.get_full_name|default:pilot.username }}
+                    {% if pilot.position %}
+                        <small style="color: #888; display: block;">{{ pilot.position }}</small>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <p style="color: #999;">Нет активных пилотов</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="selection-info" id="selectionInfo">
+        <span id="selectedCount">Выделено: 0 ячеек</span>
+        <span class="clear-selection" id="clearSelection" style="display:none;">✕ Очистить</span>
+    </div>
+</div>
+
+<!-- Модальное окно конфликта -->
+<div class="overlay" id="overlay"></div>
+<div class="conflict-modal" id="conflictModal">
+    <div class="modal-header">
+        <h3>⚠️ Конфликт назначений</h3>
+    </div>
+    <div class="modal-body" id="conflictList">
+        <p>Пилот уже назначен на следующие даты:</p>
+    </div>
+    <div class="modal-footer">
+        <button class="btn-cancel" id="cancelAction">Отмена</button>
+        <button class="btn-confirm" id="confirmReplace">Заменить (снять старые)</button>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script>
+// Получение CSRF токена
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+$(function() {
+    let selectedCells = [];
+    let startCell = null;
+    let mouseDown = false;
+    let isSelecting = false;
+    let dragPilot = null;
+
+    // Функции выделения
+    function clearSelection() {
+        $('.plan-cell').removeClass('selected');
+        selectedCells = [];
+        updateSelectionInfo();
+    }
+
+    function updateSelectionInfo() {
+        $('#selectedCount').text(`Выделено: ${selectedCells.length} ячеек`);
+        if (selectedCells.length > 0) {
+            $('#clearSelection').show();
+        } else {
+            $('#clearSelection').hide();
+        }
+    }
+
+    function getCellsInRange(start, end) {
+        const startRow = $(start).closest('tr').index();
+        const startCol = $(start).index();
+        const endRow = $(end).closest('tr').index();
+        const endCol = $(end).index();
+
+        const minRow = Math.min(startRow, endRow);
+        const maxRow = Math.max(startRow, endRow);
+        const minCol = Math.min(startCol, endCol);
+        const maxCol = Math.max(startCol, endCol);
+
+        const cells = [];
+        $('.planning-table tbody tr').each(function(rowIdx) {
+            if (rowIdx >= minRow && rowIdx <= maxRow) {
+                $(this).find('td.plan-cell').each(function(colIdx) {
+                    if (colIdx >= minCol && colIdx <= maxCol) {
+                        cells.push(this);
+                    }
+                });
+            }
+        });
+        return cells;
+    }
+
+    // Обработка выделения мышкой
+    $(document).on('mousedown', '.plan-cell', function(e) {
+        if (e.which !== 1) return;
+        e.preventDefault();
+        mouseDown = true;
+        isSelecting = true;
+        startCell = this;
+        clearSelection();
+        $(this).addClass('selected');
+        selectedCells.push(this);
+        updateSelectionInfo();
+    });
+
+    $(document).on('mouseenter', '.plan-cell', function() {
+        if (mouseDown && isSelecting && startCell && this !== startCell) {
+            const cells = getCellsInRange(startCell, this);
+            clearSelection();
+            cells.forEach(cell => {
+                $(cell).addClass('selected');
+                selectedCells.push(cell);
+            });
+            updateSelectionInfo();
+        }
+    });
+
+    $(document).on('mouseup', function() {
+        setTimeout(() => {
+            mouseDown = false;
+            isSelecting = false;
+            startCell = null;
+        }, 10);
+    });
+
+    // Очистка выделения
+    $('#clearSelection').on('click', function() {
+        clearSelection();
+    });
+
+    // Настройка drag-and-drop для пилотов
+    $('.pilot-item').draggable({
+        revert: 'invalid',
+        cursor: 'move',
+        helper: 'clone',
+        opacity: 0.7,
+        start: function(e, ui) {
+            dragPilot = {
+                id: $(this).data('pilot-id'),
+                name: $(this).data('pilot-name')
+            };
+        }
+    });
+
+    // Настройка droppable для ячеек
+    $('.plan-cell').droppable({
+        accept: '.pilot-item',
+        tolerance: 'pointer',
+        drop: function(e, ui) {
+            if (!dragPilot) return;
+
+            if (selectedCells.length === 0) {
+                alert('Сначала выделите диапазон дат (зажмите левую кнопку мыши и проведите по ячейкам)');
+                return;
+            }
+
+            // Проверяем, что все выделенные ячейки относятся к одному МПД
+            const mpdIds = [...new Set(selectedCells.map(cell => $(cell).data('mpd-id')))];
+            if (mpdIds.length > 1) {
+                alert('Нельзя назначить пилота на разные МПД одним действием');
+                return;
+            }
+
+            const mpdId = mpdIds[0];
+            const dates = selectedCells.map(cell => $(cell).data('date')).sort();
+            const startDate = dates[0];
+            const endDate = dates[dates.length - 1];
+
+            // Отправляем запрос
+            $.ajax({
+                url: '/flight/api/assign/',
+                method: 'POST',
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                data: JSON.stringify({
+                    pilot_id: dragPilot.id,
+                    mpd_id: mpdId,
+                    start_date: startDate,
+                    end_date: endDate
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        updateTableAfterAssignment(response);
+                        clearSelection();
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.status === 409) {
+                        const response = xhr.responseJSON;
+                        showConflictDialog(response, dragPilot, mpdId, startDate, endDate);
+                    } else {
+                        alert('Ошибка: ' + (xhr.responseJSON?.error || 'Неизвестная ошибка'));
+                    }
+                }
+            });
+        }
+    });
+
+    // Обновление таблицы после назначения
+    function updateTableAfterAssignment(response) {
+        for (let i = 0; i < response.assignments.length; i++) {
+            const assign = response.assignments[i];
+            const cell = $(`.plan-cell[data-date="${assign.date}"][data-mpd-id="${response.mpd_id}"]`);
+            cell.addClass('assigned');
+            cell.attr('data-pilot-id', response.pilot_id);
+            cell.html(`<span class="employee-badge" data-pilot-id="${response.pilot_id}" data-assignment-id="${assign.assignment_id}">${response.pilot_name}</span>`);
+        }
+    }
+
+    // Показ диалога конфликта
+    function showConflictDialog(conflictData, pilot, mpdId, startDate, endDate) {
+        const $modal = $('#conflictModal');
+        const $list = $('#conflictList');
+
+        $list.html('<p><strong>Пилот ' + pilot.name + '</strong> уже назначен на следующие даты:</p>');
+        conflictData.conflicts.forEach(conflict => {
+            $list.append(`<div class="conflict-item">📅 ${conflict.date}: ${conflict.old_mpd_name}</div>`);
+        });
+
+        $modal.show();
+        $('#overlay').show();
+
+        $('#confirmReplace').off('click').on('click', function() {
+            $.ajax({
+                url: '/flight/api/resolve-conflict/',
+                method: 'POST',
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                data: JSON.stringify({
+                    conflicts: conflictData.conflicts,
+                    pilot_id: pilot.id,
+                    mpd_id: mpdId,
+                    start_date: startDate,
+                    end_date: endDate
+                }),
+                contentType: 'application/json',
+                success: function(res) {
+                    if (res.status === 'success') {
+                        // Удаляем старые назначения из UI
+                        conflictData.conflicts.forEach(conf => {
+                            const oldCell = $(`.plan-cell[data-date="${conf.date}"][data-mpd-id="${conf.old_mpd_id}"]`);
+                            oldCell.removeClass('assigned');
+                            oldCell.removeAttr('data-pilot-id');
+                            oldCell.empty();
+                        });
+                        // Добавляем новые
+                        for (let i = 0; i < res.assignments.length; i++) {
+                            const assign = res.assignments[i];
+                            const cell = $(`.plan-cell[data-date="${assign.date}"][data-mpd-id="${mpdId}"]`);
+                            cell.addClass('assigned');
+                            cell.attr('data-pilot-id', pilot.id);
+                            cell.html(`<span class="employee-badge" data-pilot-id="${pilot.id}" data-assignment-id="${assign.assignment_id}">${pilot.name}</span>`);
+                        }
+                        clearSelection();
+                    }
+                },
+                complete: function() {
+                    $modal.hide();
+                    $('#overlay').hide();
+                }
+            });
+        });
+
+        $('#cancelAction').off('click').on('click', function() {
+            $modal.hide();
+            $('#overlay').hide();
+        });
+    }
+
+    // Подсветка выходных (воскресенье)
+    $('.plan-cell[data-weekday="0"]').addClass('weekend');
+});
+</script>
+</body>
+</html>

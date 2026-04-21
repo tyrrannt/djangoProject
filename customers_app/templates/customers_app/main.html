@@ -87,6 +87,10 @@
             }
         </style>
     {% endblock %}
+
+    {% block custom_top_script %}
+    {% endblock %}
+
     <!-- Head Libs -->
     <script src="{% static 'admin_templates/vendor/modernizr/modernizr.js' %}"></script>
 
@@ -705,7 +709,7 @@
                                     <span>Справка</span>
                                 </a>
                             </li>
-                        <li>
+                            <li>
                                 <a class="nav-link" href="{% url 'map_viewer:index' %}">
                                     <i class='bx bxs-help-circle' aria-hidden="true"></i>
                                     <span>Карты</span>

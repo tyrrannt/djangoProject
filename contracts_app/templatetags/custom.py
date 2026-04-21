@@ -11,6 +11,14 @@ from django.urls import reverse
 register = template.Library()
 
 
+@register.filter
+def get_item(dictionary, key):
+    """Получить значение из словаря по ключу"""
+    if dictionary is None:
+        return {}
+    return dictionary.get(key, {})
+
+
 @register.simple_tag
 def get_file_icon(file_extension):
     file_icons = {
@@ -310,9 +318,11 @@ def filename(value):
     except FileNotFoundError:
         return 'Файл отсутствует'
 
+
 @register.filter
 def get_key(dictionary, key):
     return dictionary.get(key, 0)
+
 
 @register.filter
 def get_url(obj, url_name):
@@ -326,6 +336,7 @@ def get_url(obj, url_name):
             pass
     return '#'
 
+
 @register.filter
 def index(list_, index):
     """Возвращает элемент списка по индексу."""
@@ -333,6 +344,7 @@ def index(list_, index):
         return list_[index]
     except (IndexError, TypeError):
         return ""
+
 
 @register.filter
 def div(value, arg):
@@ -342,6 +354,7 @@ def div(value, arg):
     except (ValueError, ZeroDivisionError):
         return 0
 
+
 @register.filter(name='get_trip_type_display')
 def get_trip_type_display(value):
     trip_types = {
@@ -349,6 +362,7 @@ def get_trip_type_display(value):
         '2': 'Командировка'
     }
     return trip_types.get(value, 'Неизвестный тип')
+
 
 register.filter("has_group", has_group)
 register.filter("multiply", multiply)

@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "tickets_app.apps.TicketsAppConfig",
     "password_manager.apps.PasswordManagerConfig",
     "map_viewer.apps.MapViewerConfig",
+    "flight_planning.apps.FlightPlanningConfig",
     "widget_tweaks",
     "django_ckeditor_5",
     "channels",

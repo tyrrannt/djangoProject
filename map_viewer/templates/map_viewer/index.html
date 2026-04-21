@@ -4,16 +4,31 @@
 {% load widget_tweaks %}
 
 {% block custom_css %}
-<link rel="stylesheet" href="{% static 'admin_templates/vendor/leaflet/leaflet.css' %}"/>
+    <link rel="stylesheet" href="{% static 'admin_templates/vendor/leaflet/leaflet.css' %}"/>
     <style>
-        #map { height: 90vh; width: 100%; background: #ccd; }
-        body { margin: 0; padding: 0; }
-        .header { padding: 10px; background: #fff; font-family: sans-serif; border-bottom: 1px solid #ccc; }
+        #map {
+            height: 90vh;
+            width: 100%;
+            background: #ccd;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            padding: 10px;
+            background: #fff;
+            font-family: sans-serif;
+            border-bottom: 1px solid #ccc;
+        }
     </style>
+
 {% endblock %}
 
-{% block custom_script %}
-
+{% block custom_top_script %}
+    <script src="{% static 'admin_templates/vendor/leaflet/leaflet-src.js' %}"></script>
 {% endblock %}
 
 {% block title %}
@@ -21,28 +36,27 @@
 {% endblock %}
 
 {% block content %}
-    <script src="{% static 'admin_templates/vendor/leaflet/leaflet-src.js' %}"></script>
+    <div class="col-lg-12">
+        <div id="map"></div>
+    </div>
+    <script>
+        // Переключаем Leaflet в режим простых координат
+        const map = L.map('map', {
+            crs: L.CRS.Simple,
+            infinite: false // Карта не бесконечная
+        }).setView([0, 0], 8); // Начинаем с "нуля" наших данных
 
-<div id="map"></div>
-
-<script>
-    // Переключаем Leaflet в режим простых координат
-    const map = L.map('map', {
-        crs: L.CRS.Simple,
-        infinite: false // Карта не бесконечная
-    }).setView([0, 0], 8); // Начинаем с "нуля" наших данных
-
-    {% if maps %}
-        {% for m in maps %}
-            L.tileLayer('/map/tile/{{ m.id }}/{z}/{x}/{y}/', {
-                maxZoom: 12,
-                minZoom: 5,
-                noWrap: true,
-                tileSize: 256,
-                // Важно: в CRS.Simple инверсия Y не нужна в JS
-                tms: false
-            }).addTo(map);
-        {% endfor %}
-    {% endif %}
-</script>
+        {% if maps %}
+            {% for m in maps %}
+                L.tileLayer('/map/tile/{{ m.id }}/{z}/{x}/{y}/', {
+                    maxZoom: 12,
+                    minZoom: 5,
+                    noWrap: true,
+                    tileSize: 256,
+                    // Важно: в CRS.Simple инверсия Y не нужна в JS
+                    tms: false
+                }).addTo(map);
+            {% endfor %}
+        {% endif %}
+    </script>
 {% endblock %}
