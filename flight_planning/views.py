@@ -35,7 +35,7 @@ def planning_table(request):
         month = timezone.now().month
 
     # Получаем все МПД
-    mpds = PlaceProductionActivity.objects.all().order_by('name')
+    mpds = PlaceProductionActivity.objects.filter(in_planning=True).order_by('name')
 
 
     # Создаём динамические условия Q

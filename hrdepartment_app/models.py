@@ -637,6 +637,7 @@ class PlaceProductionActivity(models.Model):
         blank=True,
         default="",
     )
+    in_planning = models.BooleanField(verbose_name='Используется в планировании', default=False)
 
     def __str__(self):
         return str(self.name)
