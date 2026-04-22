@@ -155,39 +155,7 @@
                 <div class="nano-content">
                     <nav id="menu" class="nav-main" role="navigation">
                         <ul class="nav nav-main">
-                            {% if user.is_superuser %}
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <i class='bx bx-shield-quarter' aria-hidden="true"></i>
-                                        <span>Чат</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        <li>
-                                            <a class="nav-link" href="{% url 'chat_app:room' room_name='shakirov' %}">
-                                                Shakirov
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'library_app:video_conference' room_name='shakirov' %}">
-                                                Видеоконференция
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'library_app:audio_conference' room_name='shakirov' %}">
-                                                Аудиоконференция
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'tasks_app:task-list' %}">
-                                                Планировщик
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                            {% endif %}
+
                             {% if user.is_superuser %}
                                 <li class="nav-parent">
                                     <a class="nav-link" href="#">
@@ -204,62 +172,7 @@
                                     </ul>
                                 </li>
                             {% endif %}
-                            {% if user.is_superuser %}
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <i class='bx bx-shield-quarter' aria-hidden="true"></i>
-                                        <span>Настройки</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        <li>
-                                            <a class="nav-link" href="{% url 'administration_app:property_list' %}">
-                                                Настройки портала
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link"
-                                               href="{% url 'hrdepartment_app:business_process_routes_list' %}">
-                                                Настройки бизнес процессов
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
-                                                (Устаревшее) Настройки бизнес процессов
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'customers_app:group_list' %}">
-                                                Группы
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'administration_app:json' %}">
-                                                Загрузка данных из файла
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'administration_app:monitoring' %}">
-                                                Мониторинг системы
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'administration_app:1c_odata_request' %}">
-                                                Генератор OData-запросов
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'password_manager:key_setup' %}">
-                                                Ключевая фраза
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'password_manager:password_list' %}">
-                                                Хранилище паролей
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                            {% endif %}
+
                             <li class="nav-parent">
                                 <a class="nav-link" href="#">
                                     <i class='bx bxs-report' aria-hidden="true"></i>
@@ -703,55 +616,160 @@
                                     </li>
                                 </ul>
                             </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'library_app:help_list' %}">
+
+
+                            <li class="nav-parent">
+                                <a class="nav-link" href="#">
                                     <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                    <span>Справка</span>
+                                    <span>Вспомогательные сервисы</span>
                                 </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'map_viewer:index' %}">
-                                    <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                    <span>Карты</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'tickets_app:list' %}">
-                                    <i class='bx bx-envelope' aria-hidden="true"></i>
-                                    <span>Добровольные сообщения</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a class="nav-link" href="{% url 'password_manager:password_list' %}">
-                                    <i class='bx bxs-key' aria-hidden="true"></i>
-                                    Хранилище паролей
-                                </a>
-                            </li>
-                            {% if user.is_superuser %}
-                                <li class="nav-parent">
-                                    <a class="nav-link" href="#">
-                                        <i class='bx bxs-help-circle' aria-hidden="true"></i>
-                                        <span>Конкурс</span>
-                                    </a>
-                                    <ul class="nav nav-children">
-                                        <li>
-                                            <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
-                                                Прием стихов
+                                <ul class="nav nav-children">
+                                    <li>
+                                        <a class="nav-link" href="{% url 'library_app:help_list' %}">
+                                            <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                                            <span>Справка</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'map_viewer:index' %}">
+                                            <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+                                            <span>Карты</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'tickets_app:list' %}">
+                                            <i class='bx bx-envelope' aria-hidden="true"></i>
+                                            <span>Добровольные сообщения</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="nav-link" href="{% url 'password_manager:password_list' %}">
+                                            <i class='bx bxs-key' aria-hidden="true"></i>
+                                            Хранилище паролей
+                                        </a>
+                                    </li>
+                                    {% if user.is_superuser %}
+                                         <li>
+                                        <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
+                                            <i class='bx bxs-key' aria-hidden="true"></i>
+                                            Планирование
+                                        </a>
+                                    </li>
+                                        <li class="nav-parent">
+                                            <a class="nav-link" href="#">
+                                                <i class='bx bx-shield-quarter' aria-hidden="true"></i>
+                                                <span>Настройки</span>
                                             </a>
+                                            <ul class="nav nav-children">
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'administration_app:property_list' %}">
+                                                        Настройки портала
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'hrdepartment_app:business_process_routes_list' %}">
+                                                        Настройки бизнес процессов
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'hrdepartment_app:bptrip_list' %}">
+                                                        (Устаревшее) Настройки бизнес процессов
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'customers_app:group_list' %}">
+                                                        Группы
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'administration_app:json' %}">
+                                                        Загрузка данных из файла
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'administration_app:monitoring' %}">
+                                                        Мониторинг системы
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'administration_app:1c_odata_request' %}">
+                                                        Генератор OData-запросов
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'password_manager:key_setup' %}">
+                                                        Ключевая фраза
+                                                    </a>
+                                                </li>
+                                            </ul>
                                         </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'library_app:vote' %}">
-                                                Голосование
+                                    {% endif %}
+                                    {% if user.is_superuser %}
+                                        <li class="nav-parent">
+                                            <a class="nav-link" href="#">
+                                                <i class="fa-regular fa-comment-dots" aria-hidden="true"></i>
+                                                <span>Чат</span>
                                             </a>
+                                            <ul class="nav nav-children">
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'chat_app:room' room_name='shakirov' %}">
+                                                        Shakirov
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'library_app:video_conference' room_name='shakirov' %}">
+                                                        Видеоконференция
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'library_app:audio_conference' room_name='shakirov' %}">
+                                                        Аудиоконференция
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link"
+                                                       href="{% url 'tasks_app:task-list' %}">
+                                                        Планировщик
+                                                    </a>
+                                                </li>
+                                            </ul>
                                         </li>
-                                        <li>
-                                            <a class="nav-link" href="{% url 'library_app:results' %}">
-                                                Результаты
+                                    {% endif %}
+                                    {% if user.is_superuser %}
+                                        <li class="nav-parent">
+                                            <a class="nav-link" href="#">
+                                                <i class='bx bxs-help-circle' aria-hidden="true"></i>
+                                                <span>Конкурс</span>
                                             </a>
+                                            <ul class="nav nav-children">
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'library_app:submit_poem' %}">
+                                                        Прием стихов
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'library_app:vote' %}">
+                                                        Голосование
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="nav-link" href="{% url 'library_app:results' %}">
+                                                        Результаты
+                                                    </a>
+                                                </li>
+                                            </ul>
                                         </li>
-                                    </ul>
-                                </li>
-                            {% endif %}
+                                    {% endif %}
+                                </ul>
+                            </li>
+
                         </ul>
                     </nav>
                     <hr class="separator"/>
@@ -1134,7 +1152,7 @@
 <script src="{% static 'admin_templates/vendor/magnific-popup/jquery.magnific-popup.js' %}"></script>
 <script src="{% static 'admin_templates/vendor/jquery-placeholder/jquery.placeholder.js' %}"></script>
 
-{% with my_list="tasks_app,customers_app"|split:"," %}
+{% with my_list="tasks_app,customers_app,flight_planning"|split:"," %}
     {% if request.resolver_match.app_name in my_list %}
         <script src="{% static 'admin_templates/vendor/jquery-ui/jquery-ui.js' %}"></script>
         <script src="{% static 'admin_templates/vendor/jqueryui-touch-punch/jquery.ui.touch-punch.js' %}"></script>

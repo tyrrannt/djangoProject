@@ -1,13 +1,10 @@
 <!-- flight_planning/templates/flight_planning/table.html -->
+{% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+{% load widget_tweaks %}
 
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Планирование пилотов по МПД</title>
+{% block custom_css %}
     <style>
         * {
             box-sizing: border-box;
@@ -211,8 +208,8 @@
             background-color: #fff3f0;
         }
 
-        /* Модальное окно конфликта */
-        .overlay {
+        /* Модальные окна - общие стили */
+        .modal-overlay {
             display: none;
             position: fixed;
             top: 0;
@@ -223,7 +220,7 @@
             z-index: 1000;
         }
 
-        .conflict-modal {
+        .modal-window {
             display: none;
             position: fixed;
             top: 50%;
@@ -237,20 +234,19 @@
             max-width: 90%;
         }
 
-        .conflict-modal .modal-header {
+        .modal-window .modal-header {
             padding: 15px 20px;
-            background: #ff9800;
-            color: white;
             border-radius: 8px 8px 0 0;
+            font-weight: bold;
         }
 
-        .conflict-modal .modal-body {
+        .modal-window .modal-body {
             padding: 20px;
             max-height: 300px;
             overflow-y: auto;
         }
 
-        .conflict-modal .modal-footer {
+        .modal-window .modal-footer {
             padding: 15px 20px;
             border-top: 1px solid #eee;
             display: flex;
@@ -258,29 +254,81 @@
             gap: 10px;
         }
 
+        .modal-window .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .modal-window .btn-primary {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .modal-window .btn-primary:hover {
+            background: #357abd;
+        }
+
+        .modal-window .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .modal-window .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .modal-window .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .modal-window .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .modal-window .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .modal-window .btn-warning:hover {
+            background: #e68900;
+        }
+
+        /* Специфичные модальные окна */
+        .conflict-modal .modal-header {
+            background: #ff9800;
+            color: white;
+        }
+
+        .error-modal .modal-header {
+            background: #dc3545;
+            color: white;
+        }
+
+        .success-modal .modal-header {
+            background: #28a745;
+            color: white;
+        }
+
+        .info-modal .modal-header {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .warning-modal .modal-header {
+            background: #ffc107;
+            color: #333;
+        }
+
         .conflict-item {
             padding: 8px;
             margin: 5px 0;
             background: #fff3e0;
             border-left: 3px solid #ff9800;
-        }
-
-        .btn-confirm {
-            background: #ff9800;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-cancel {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
         }
 
         /* Информация о выделении */
@@ -303,8 +351,13 @@
         }
     </style>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-</head>
-<body>
+{% endblock %}
+
+{% block title %}
+    Планирование пилотов по МПД
+{% endblock %}
+
+{% block content %}
 <div class="planning-container">
     <!-- Навигация по месяцам -->
     <div class="month-nav">
@@ -383,23 +436,39 @@
     </div>
 </div>
 
-<!-- Модальное окно конфликта -->
-<div class="overlay" id="overlay"></div>
-<div class="conflict-modal" id="conflictModal">
-    <div class="modal-header">
-        <h3>⚠️ Конфликт назначений</h3>
+<!-- Универсальное модальное окно -->
+<div class="modal-overlay" id="modalOverlay"></div>
+<div class="modal-window" id="modalWindow">
+    <div class="modal-header" id="modalHeader">
+        <span id="modalTitle">Заголовок</span>
     </div>
-    <div class="modal-body" id="conflictList">
-        <p>Пилот уже назначен на следующие даты:</p>
+    <div class="modal-body" id="modalBody">
+        Сообщение
     </div>
-    <div class="modal-footer">
-        <button class="btn-cancel" id="cancelAction">Отмена</button>
-        <button class="btn-confirm" id="confirmReplace">Заменить (снять старые)</button>
+    <div class="modal-footer" id="modalFooter">
+        <button class="btn btn-secondary" id="modalCancelBtn">Отмена</button>
+        <button class="btn btn-primary" id="modalConfirmBtn">OK</button>
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<!-- Специальное модальное окно для конфликта -->
+<div class="modal-overlay" id="conflictOverlay"></div>
+<div class="modal-window conflict-modal" id="conflictModalWindow">
+    <div class="modal-header">
+        <span>⚠️ Конфликт назначений</span>
+    </div>
+    <div class="modal-body" id="conflictModalBody">
+        <p>Пилот уже назначен на следующие даты:</p>
+        <div id="conflictList"></div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-secondary" id="conflictCancelBtn">Отмена</button>
+        <button class="btn btn-warning" id="conflictConfirmBtn">Заменить (снять старые)</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
 <script>
 // Получение CSRF токена
 function getCookie(name) {
@@ -417,12 +486,126 @@ function getCookie(name) {
     return cookieValue;
 }
 
+// Глобальные переменные для модальных окон
+let modalConfirmCallback = null;
+let modalCancelCallback = null;
+let conflictResolveCallback = null;
+
+// Функция показа универсального модального окна
+function showModal(options) {
+    const $overlay = $('#modalOverlay');
+    const $window = $('#modalWindow');
+    const $header = $('#modalHeader');
+    const $title = $('#modalTitle');
+    const $body = $('#modalBody');
+    const $footer = $('#modalFooter');
+    const $cancelBtn = $('#modalCancelBtn');
+    const $confirmBtn = $('#modalConfirmBtn');
+
+    // Устанавливаем тип окна
+    $header.removeClass('error-modal success-modal info-modal warning-modal');
+    if (options.type === 'error') {
+        $header.addClass('error-modal');
+    } else if (options.type === 'success') {
+        $header.addClass('success-modal');
+    } else if (options.type === 'info') {
+        $header.addClass('info-modal');
+    } else if (options.type === 'warning') {
+        $header.addClass('warning-modal');
+    }
+
+    $title.text(options.title || 'Информация');
+    $body.html(options.message || '');
+
+    // Настройка кнопок
+    if (options.showCancel === false) {
+        $cancelBtn.hide();
+    } else {
+        $cancelBtn.show();
+    }
+
+    if (options.showConfirm === false) {
+        $confirmBtn.hide();
+    } else {
+        $confirmBtn.show();
+        $confirmBtn.text(options.confirmText || 'OK');
+    }
+
+    // Устанавливаем колбэки
+    modalConfirmCallback = options.onConfirm || function() { closeModal(); };
+    modalCancelCallback = options.onCancel || function() { closeModal(); };
+
+    // Обработчики кнопок
+    $confirmBtn.off('click').on('click', function() {
+        if (modalConfirmCallback) modalConfirmCallback();
+        closeModal();
+    });
+
+    $cancelBtn.off('click').on('click', function() {
+        if (modalCancelCallback) modalCancelCallback();
+        closeModal();
+    });
+
+    // Закрытие по клику на overlay
+    $overlay.off('click').on('click', function() {
+        if (modalCancelCallback) modalCancelCallback();
+        closeModal();
+    });
+
+    $overlay.show();
+    $window.show();
+}
+
+function closeModal() {
+    $('#modalOverlay').hide();
+    $('#modalWindow').hide();
+    modalConfirmCallback = null;
+    modalCancelCallback = null;
+}
+
+// Функция показа модального окна конфликта
+function showConflictModal(conflictData, onConfirm) {
+    const $overlay = $('#conflictOverlay');
+    const $window = $('#conflictModalWindow');
+    const $list = $('#conflictList');
+
+    $list.html('');
+    conflictData.conflicts.forEach(conflict => {
+        $list.append(`<div class="conflict-item">📅 ${conflict.date}: ${conflict.old_mpd_name}</div>`);
+    });
+
+    conflictResolveCallback = onConfirm;
+
+    $('#conflictConfirmBtn').off('click').on('click', function() {
+        if (conflictResolveCallback) conflictResolveCallback();
+        closeConflictModal();
+    });
+
+    $('#conflictCancelBtn').off('click').on('click', function() {
+        closeConflictModal();
+    });
+
+    $overlay.off('click').on('click', function() {
+        closeConflictModal();
+    });
+
+    $overlay.show();
+    $window.show();
+}
+
+function closeConflictModal() {
+    $('#conflictOverlay').hide();
+    $('#conflictModalWindow').hide();
+    conflictResolveCallback = null;
+}
+
 $(function() {
     let selectedCells = [];
     let startCell = null;
     let mouseDown = false;
     let isSelecting = false;
     let dragPilot = null;
+    let pendingAssignment = null; // Для хранения данных назначения при конфликте
 
     // Функции выделения
     function clearSelection() {
@@ -497,12 +680,151 @@ $(function() {
         }, 10);
     });
 
-    // Очистка выделения
-    $('#clearSelection').on('click', function() {
-        clearSelection();
+    // Функция удаления назначений
+    function deleteSelectedAssignments() {
+        if (selectedCells.length === 0) {
+            showModal({
+                title: 'Нет выделения',
+                message: 'Нет выделенных ячеек для удаления',
+                type: 'warning',
+                showCancel: false
+            });
+            return;
+        }
+
+        const assignmentIds = [];
+        selectedCells.forEach(cell => {
+            const badge = $(cell).find('.employee-badge');
+            const assignmentId = badge.data('assignment-id');
+            if (assignmentId) {
+                assignmentIds.push(assignmentId);
+            }
+        });
+
+        if (assignmentIds.length === 0) {
+            showModal({
+                title: 'Нет назначений',
+                message: 'В выделенных ячейках нет назначений для удаления',
+                type: 'warning',
+                showCancel: false
+            });
+            return;
+        }
+
+        showModal({
+            title: 'Подтверждение удаления',
+            message: `Вы действительно хотите удалить назначения (${assignmentIds.length} шт.)?`,
+            type: 'warning',
+            confirmText: 'Удалить',
+            onConfirm: function() {
+                $.ajax({
+                    url: '/flight/api/remove/',
+                    method: 'POST',
+                    headers: {'X-CSRFToken': getCookie('csrftoken')},
+                    data: JSON.stringify({
+                        assignment_ids: assignmentIds
+                    }),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            selectedCells.forEach(cell => {
+                                $(cell).removeClass('assigned');
+                                $(cell).removeAttr('data-pilot-id');
+                                $(cell).empty();
+                            });
+                            clearSelection();
+                            showModal({
+                                title: 'Успешно',
+                                message: `Удалено назначений: ${response.deleted}`,
+                                type: 'success',
+                                showCancel: false
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        showModal({
+                            title: 'Ошибка',
+                            message: 'Ошибка при удалении: ' + (xhr.responseJSON?.error || 'Неизвестная ошибка'),
+                            type: 'error',
+                            showCancel: false
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    // Кнопка очистки
+    $('#clearSelection').off('click').on('click', function() {
+        deleteSelectedAssignments();
     });
 
-    // Настройка drag-and-drop для пилотов
+    // Удаление по клавише Delete
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Delete' && selectedCells.length > 0) {
+            e.preventDefault();
+            deleteSelectedAssignments();
+        }
+    });
+
+    // Правый клик для удаления одной ячейки
+    $(document).on('contextmenu', '.plan-cell', function(e) {
+        e.preventDefault();
+
+        const $cell = $(this);
+        if (!$cell.hasClass('selected')) {
+            clearSelection();
+            $cell.addClass('selected');
+            selectedCells = [$cell[0]];
+            updateSelectionInfo();
+        }
+
+        const assignmentId = $cell.find('.employee-badge').data('assignment-id');
+        if (assignmentId) {
+            showModal({
+                title: 'Подтверждение удаления',
+                message: 'Удалить назначение из этой ячейки?',
+                type: 'warning',
+                confirmText: 'Удалить',
+                onConfirm: function() {
+                    $.ajax({
+                        url: '/flight/api/remove/',
+                        method: 'POST',
+                        headers: {'X-CSRFToken': getCookie('csrftoken')},
+                        data: JSON.stringify({
+                            assignment_ids: [assignmentId]
+                        }),
+                        contentType: 'application/json',
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                $cell.removeClass('assigned');
+                                $cell.removeAttr('data-pilot-id');
+                                $cell.empty();
+                                clearSelection();
+                                showModal({
+                                    title: 'Успешно',
+                                    message: 'Назначение удалено',
+                                    type: 'success',
+                                    showCancel: false
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        } else {
+            showModal({
+                title: 'Нет назначения',
+                message: 'В этой ячейке нет назначения для удаления',
+                type: 'info',
+                showCancel: false
+            });
+        }
+
+        return false;
+    });
+
+    // Drag-and-drop для пилотов
     $('.pilot-item').draggable({
         revert: 'invalid',
         cursor: 'move',
@@ -516,7 +838,7 @@ $(function() {
         }
     });
 
-    // Настройка droppable для ячеек
+    // Droppable для ячеек
     $('.plan-cell').droppable({
         accept: '.pilot-item',
         tolerance: 'pointer',
@@ -524,14 +846,23 @@ $(function() {
             if (!dragPilot) return;
 
             if (selectedCells.length === 0) {
-                alert('Сначала выделите диапазон дат (зажмите левую кнопку мыши и проведите по ячейкам)');
+                showModal({
+                    title: 'Нет выделения',
+                    message: 'Сначала выделите диапазон дат (зажмите левую кнопку мыши и проведите по ячейкам)',
+                    type: 'warning',
+                    showCancel: false
+                });
                 return;
             }
 
-            // Проверяем, что все выделенные ячейки относятся к одному МПД
             const mpdIds = [...new Set(selectedCells.map(cell => $(cell).data('mpd-id')))];
             if (mpdIds.length > 1) {
-                alert('Нельзя назначить пилота на разные МПД одним действием');
+                showModal({
+                    title: 'Ошибка',
+                    message: 'Нельзя назначить пилота на разные МПД одним действием',
+                    type: 'error',
+                    showCancel: false
+                });
                 return;
             }
 
@@ -540,7 +871,15 @@ $(function() {
             const startDate = dates[0];
             const endDate = dates[dates.length - 1];
 
-            // Отправляем запрос
+            // Показываем индикатор загрузки
+            showModal({
+                title: 'Загрузка',
+                message: 'Отправка данных...',
+                type: 'info',
+                showCancel: false,
+                showConfirm: false
+            });
+
             $.ajax({
                 url: '/flight/api/assign/',
                 method: 'POST',
@@ -553,24 +892,106 @@ $(function() {
                 }),
                 contentType: 'application/json',
                 success: function(response) {
+                    closeModal();
                     if (response.status === 'success') {
                         updateTableAfterAssignment(response);
                         clearSelection();
+                        showModal({
+                            title: 'Успешно',
+                            message: `Пилот ${dragPilot.name} назначен на ${response.assignments.length} дней`,
+                            type: 'success',
+                            showCancel: false
+                        });
                     }
                 },
                 error: function(xhr) {
+                    closeModal();
                     if (xhr.status === 409) {
                         const response = xhr.responseJSON;
-                        showConflictDialog(response, dragPilot, mpdId, startDate, endDate);
+                        pendingAssignment = {
+                            pilot: dragPilot,
+                            mpdId: mpdId,
+                            startDate: startDate,
+                            endDate: endDate,
+                            conflictData: response
+                        };
+                        showConflictModal(response, function() {
+                            resolveConflict(pendingAssignment);
+                        });
                     } else {
-                        alert('Ошибка: ' + (xhr.responseJSON?.error || 'Неизвестная ошибка'));
+                        showModal({
+                            title: 'Ошибка',
+                            message: 'Ошибка: ' + (xhr.responseJSON?.error || 'Неизвестная ошибка'),
+                            type: 'error',
+                            showCancel: false
+                        });
                     }
                 }
             });
         }
     });
 
-    // Обновление таблицы после назначения
+    // Функция разрешения конфликта
+    function resolveConflict(assignment) {
+        showModal({
+            title: 'Загрузка',
+            message: 'Обработка конфликта...',
+            type: 'info',
+            showCancel: false,
+            showConfirm: false
+        });
+
+        $.ajax({
+            url: '/flight/api/resolve-conflict/',
+            method: 'POST',
+            headers: {'X-CSRFToken': getCookie('csrftoken')},
+            data: JSON.stringify({
+                conflicts: assignment.conflictData.conflicts,
+                pilot_id: assignment.pilot.id,
+                mpd_id: assignment.mpdId,
+                start_date: assignment.startDate,
+                end_date: assignment.endDate
+            }),
+            contentType: 'application/json',
+            success: function(res) {
+                closeModal();
+                if (res.status === 'success') {
+                    // Удаляем старые назначения из UI
+                    assignment.conflictData.conflicts.forEach(conf => {
+                        const oldCell = $(`.plan-cell[data-date="${conf.date}"][data-mpd-id="${conf.old_mpd_id}"]`);
+                        oldCell.removeClass('assigned');
+                        oldCell.removeAttr('data-pilot-id');
+                        oldCell.empty();
+                    });
+                    // Добавляем новые
+                    for (let i = 0; i < res.assignments.length; i++) {
+                        const assign = res.assignments[i];
+                        const cell = $(`.plan-cell[data-date="${assign.date}"][data-mpd-id="${assignment.mpdId}"]`);
+                        cell.addClass('assigned');
+                        cell.attr('data-pilot-id', assignment.pilot.id);
+                        cell.html(`<span class="employee-badge" data-pilot-id="${assignment.pilot.id}" data-assignment-id="${assign.assignment_id}">${assignment.pilot.name}</span>`);
+                    }
+                    clearSelection();
+                    showModal({
+                        title: 'Успешно',
+                        message: `Конфликт разрешен. Пилот ${assignment.pilot.name} назначен`,
+                        type: 'success',
+                        showCancel: false
+                    });
+                }
+            },
+            error: function(xhr) {
+                closeModal();
+                showModal({
+                    title: 'Ошибка',
+                    message: 'Ошибка при разрешении конфликта: ' + (xhr.responseJSON?.error || 'Неизвестная ошибка'),
+                    type: 'error',
+                    showCancel: false
+                });
+            }
+        });
+    }
+
     function updateTableAfterAssignment(response) {
         for (let i = 0; i < response.assignments.length; i++) {
             const assign = response.assignments[i];
@@ -581,68 +1002,8 @@ $(function() {
         }
     }
 
-    // Показ диалога конфликта
-    function showConflictDialog(conflictData, pilot, mpdId, startDate, endDate) {
-        const $modal = $('#conflictModal');
-        const $list = $('#conflictList');
-
-        $list.html('<p><strong>Пилот ' + pilot.name + '</strong> уже назначен на следующие даты:</p>');
-        conflictData.conflicts.forEach(conflict => {
-            $list.append(`<div class="conflict-item">📅 ${conflict.date}: ${conflict.old_mpd_name}</div>`);
-        });
-
-        $modal.show();
-        $('#overlay').show();
-
-        $('#confirmReplace').off('click').on('click', function() {
-            $.ajax({
-                url: '/flight/api/resolve-conflict/',
-                method: 'POST',
-                headers: {'X-CSRFToken': getCookie('csrftoken')},
-                data: JSON.stringify({
-                    conflicts: conflictData.conflicts,
-                    pilot_id: pilot.id,
-                    mpd_id: mpdId,
-                    start_date: startDate,
-                    end_date: endDate
-                }),
-                contentType: 'application/json',
-                success: function(res) {
-                    if (res.status === 'success') {
-                        // Удаляем старые назначения из UI
-                        conflictData.conflicts.forEach(conf => {
-                            const oldCell = $(`.plan-cell[data-date="${conf.date}"][data-mpd-id="${conf.old_mpd_id}"]`);
-                            oldCell.removeClass('assigned');
-                            oldCell.removeAttr('data-pilot-id');
-                            oldCell.empty();
-                        });
-                        // Добавляем новые
-                        for (let i = 0; i < res.assignments.length; i++) {
-                            const assign = res.assignments[i];
-                            const cell = $(`.plan-cell[data-date="${assign.date}"][data-mpd-id="${mpdId}"]`);
-                            cell.addClass('assigned');
-                            cell.attr('data-pilot-id', pilot.id);
-                            cell.html(`<span class="employee-badge" data-pilot-id="${pilot.id}" data-assignment-id="${assign.assignment_id}">${pilot.name}</span>`);
-                        }
-                        clearSelection();
-                    }
-                },
-                complete: function() {
-                    $modal.hide();
-                    $('#overlay').hide();
-                }
-            });
-        });
-
-        $('#cancelAction').off('click').on('click', function() {
-            $modal.hide();
-            $('#overlay').hide();
-        });
-    }
-
-    // Подсветка выходных (воскресенье)
+    // Подсветка выходных
     $('.plan-cell[data-weekday="0"]').addClass('weekend');
 });
 </script>
-</body>
-</html>
+{% endblock %}
