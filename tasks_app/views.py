@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 
 # Create your views here.
@@ -15,6 +16,7 @@ from tasks_app.forms import TaskForm
 from tasks_app.models import Task, Category, TaskFile
 
 
+@login_required
 @csrf_exempt
 def create_task_ajax(request):
     if request.method == 'POST':
@@ -54,6 +56,7 @@ def create_task_ajax(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
+@login_required
 @csrf_exempt
 def upload_files_ajax(request):
     if request.method == 'POST':

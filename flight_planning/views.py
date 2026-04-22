@@ -16,7 +16,7 @@ from hrdepartment_app.models import PlaceProductionActivity
 from .models import PilotAssignment
 
 # Вариант 2: Точное совпадение с названиями должностей
-ALLOWED_JOBS = ['командир', 'пилот', 'бортмеханик', 'Командир', 'Бортмеханик', 'инструктор']
+ALLOWED_JOBS = ['командир', 'пилот', 'бортмеханик', 'Командир', 'Бортмеханик', 'инструктор', 'Бортовой']
 
 @login_required
 def planning_table(request):
