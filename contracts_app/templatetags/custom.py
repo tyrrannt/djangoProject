@@ -18,12 +18,36 @@ def contains(value, arg):
         return False
     return arg.lower() in value.lower()
 
+
 @register.filter
 def get_item(dictionary, key):
     """Получить значение из словаря по ключу"""
     if dictionary is None:
         return {}
     return dictionary.get(key, {})
+
+
+@register.filter
+def get_job_name(user):
+    """Получить название должности пользователя"""
+    try:
+        if user.user_work_profile and user.user_work_profile.job:
+            return user.user_work_profile.job.name
+    except:
+        pass
+    return 'Должность не указана'
+
+
+@register.filter
+def is_commander(user):
+    """Проверить, является ли пользователь командиром"""
+    try:
+        if user.user_work_profile and user.user_work_profile.job:
+            job_name = user.user_work_profile.job.name.lower()
+            return 'командир' in job_name
+    except:
+        pass
+    return False
 
 
 @register.simple_tag
