@@ -1,3 +1,7 @@
+import os
+import uuid
+
+from dateutil.relativedelta import relativedelta
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -16,6 +20,7 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Task(models.Model):
     class Meta:
@@ -115,22 +120,41 @@ class Task(models.Model):
         return new_task
 
     def get_next_start_date(self):
-        if self.repeat == 'daily':
-            return self.start_date + timedelta(days=1)
-        elif self.repeat == 'weekly':
-            return self.start_date + timedelta(weeks=1)
-        elif self.repeat == 'monthly':
-            return self.start_date + timedelta(days=30)  # Упрощенный подход
-        return None
+        if not self.start_date:
+            return None
+
+        # Карта соответствия типов повторения и единиц измерения
+        repeat_units = {
+            'daily': {'days': 1},
+            'weekly': {'weeks': 1},
+            'monthly': {'months': 1},
+            'yearly': {'years': 1},
+        }
+
+        unit_args = repeat_units.get(self.repeat)
+        if not unit_args:
+            return None  # 'none' или 'custom' не обрабатываются автоматически
+
+        # Учитываем пользовательский интервал (в модели по умолчанию = 1)
+        interval = self.repeat_interval or 1
+
+        # Формируем корректный сдвиг даты через relativedelta
+        delta = relativedelta(**{k: v * interval for k, v in unit_args.items()})
+
+        return self.start_date + delta
 
     def get_next_end_date(self):
-        if self.repeat == 'daily':
-            return self.end_date + timedelta(days=1)
-        elif self.repeat == 'weekly':
-            return self.end_date + timedelta(weeks=1)
-        elif self.repeat == 'monthly':
-            return self.end_date + timedelta(days=30)  # Упрощенный подход
-        return None
+        if not self.end_date or not self.start_date:
+            return self.end_date  # или None, зависит от бизнес-логики
+
+        # Сохраняем разницу между стартом и окончанием
+        duration = self.end_date - self.start_date
+
+        next_start = self.get_next_start_date()
+        if next_start is None:
+            return None
+
+        return next_start + duration
 
     def generate_repeat_dates(self, end_date=None):
         if end_date is None:
@@ -161,10 +185,34 @@ class Task(models.Model):
         return reverse('tasks_app:task-update', args=[str(self.id)])
 
 
+# 🔹 Функция для динамического пути
+def get_task_file_path(instance, filename):
+    # Расширение файла (приводим к нижнему регистру)
+    ext = os.path.splitext(filename)[1].lower()
+    # Уникальное имя
+    new_name = f"{uuid.uuid4().hex}{ext}"
+
+    # Год/Месяц загрузки
+    date_path = timezone.now().strftime("%Y/%m")
+
+    # Username автора задачи (с безопасной проверкой)
+    username = "unknown"
+    if instance.task and instance.task.user:
+        username = getattr(instance.task.user, 'username', str(instance.task.user.id))
+
+    return f"task_files/{date_path}/{username}/{new_name}"
+
 class TaskFile(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='files')
-    file = models.FileField(upload_to='task_files/')
+    file = models.FileField(upload_to=get_task_file_path, verbose_name="Файл")
+    original_filename = models.CharField(max_length=255, blank=True, null=True, verbose_name="Оригинальное имя")
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.file.name
+        return self.original_filename or self.file.name
+
+    def delete(self, *args, **kwargs):
+        # Удаляем физический файл при удалении записи из БД
+        if self.file:
+            self.file.delete(save=False)
+        super().delete(*args, **kwargs)

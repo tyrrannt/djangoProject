@@ -1,14 +1,17 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 
 # Create your views here.
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from customers_app.models import DataBaseUser
@@ -17,63 +20,97 @@ from tasks_app.models import Task, Category, TaskFile
 
 
 @login_required
-@csrf_exempt
+@require_POST
 def create_task_ajax(request):
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        start_date_str = request.POST.get('start_date')
-        end_date_str = request.POST.get('end_date')
-        priority = request.POST.get('priority', 'primary')  # Получаем приоритет из запроса
-        shared_with = request.POST.getlist('shared_with[]')  # Получаем список пользователей
-        freq = request.POST.get('freq')
-        # Преобразуем строку в объект datetime
-        start_date = parse_datetime(start_date_str)
-        end_date = parse_datetime(end_date_str)
+    title = request.POST.get('title')
+    if not title:
+        return JsonResponse({'error': 'Title is required'}, status=400)
 
-        # Создаем задачу с параметрами по умолчанию
-        task = Task.objects.create(
-            user=request.user,
-            title=title,
-            start_date=start_date,
-            end_date=end_date,
-            priority=priority,  # Устанавливаем приоритет
-            repeat=freq,  # Устанавливаем повторение
-        )
+    start_date = parse_datetime(request.POST.get('start_date'))
+    end_date = parse_datetime(request.POST.get('end_date'))
 
-        # Добавляем пользователей, которым предоставлен доступ
-        if shared_with:
-            task.shared_with.set(shared_with)
+    # 1. Нормализуем часовые пояса: приводим обе даты к timezone-aware
+    if start_date and timezone.is_naive(start_date):
+        start_date = timezone.make_aware(start_date)
+    if end_date and timezone.is_naive(end_date):
+        end_date = timezone.make_aware(end_date)
 
-        # Возвращаем данные о созданной задаче
-        return JsonResponse({
-            'id': task.id,
-            'title': task.title,
-            'start_date': task.start_date.strftime('%Y-%m-%d'),
-            'end_date': task.end_date.strftime('%Y-%m-%d'),
-            'url': task.get_absolute_url(),
-            'color': task.priority  # Возвращаем цвет на основе приоритета
-        })
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    # 2. Безопасное сравнение
+    if start_date and end_date and end_date < start_date:
+        return JsonResponse({'error': 'Дата завершения не может быть раньше даты начала'}, status=400)
+
+    # Безопасное получение shared_with
+    shared_ids = request.POST.getlist('shared_with[]')
+    shared_users = DataBaseUser.objects.filter(id__in=shared_ids, is_active=True)
+
+    task = Task.objects.create(
+        user=request.user,
+        title=title,
+        start_date=start_date,
+        end_date=end_date,
+        priority=request.POST.get('priority', 'primary'),
+        repeat=request.POST.get('freq', 'none'),
+    )
+    if shared_users.exists():
+        task.shared_with.set(shared_users)
+
+    return JsonResponse({
+        'id': task.id,
+        'title': task.title,
+        'start_date': task.start_date.isoformat() if task.start_date else None,
+        'end_date': task.end_date.isoformat() if task.end_date else None,
+        'url': task.get_absolute_url(),
+        'color': task.priority
+    })
 
 
 @login_required
-@csrf_exempt
+@require_POST
 def upload_files_ajax(request):
-    if request.method == 'POST':
-        files = request.FILES.getlist('files')  # Получаем список файлов
-        task_id = request.POST.get('task_id')  # ID задачи (если нужно привязать файлы к задаче)
+    task_id = request.POST.get('task_id')
+    if not task_id:
+        return JsonResponse({'error': 'task_id required'}, status=400)
 
-        uploaded_files = []
-        for file in files:
-            task_file = TaskFile.objects.create(task_id=task_id, file=file)
-            uploaded_files.append({
-                'name': task_file.file.name,
-                'url': task_file.file.url,
-                'size': task_file.file.size
-            })
+    # Проверяем, что пользователь имеет доступ к задаче
+    task = get_object_or_404(Task, pk=task_id)
+    if task.user != request.user and not task.shared_with.filter(id=request.user.id).exists():
+        return JsonResponse({'error': 'Permission denied'}, status=403)
 
-        return JsonResponse({'files': uploaded_files})
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    files = request.FILES.getlist('files')
+    uploaded_files = []
+    for file in files:
+        task_file = TaskFile.objects.create(
+            task_id=task_id,
+            file=file,
+            original_filename=file.name  # ✅ Сохраняем исходное имя
+        )
+        uploaded_files.append({
+            'name': task_file.original_filename,  # ✅ Возвращаем оригинальное имя
+            'url': task_file.file.url,
+            'size': task_file.file.size
+        })
+    return JsonResponse({'files': uploaded_files})
+
+
+@login_required
+@require_POST
+def delete_file_ajax(request):
+    file_id = request.POST.get('file_id')
+    if not file_id:
+        return JsonResponse({'error': 'file_id обязателен'}, status=400)
+
+    task_file = get_object_or_404(TaskFile, pk=file_id)
+
+    # Проверка прав: владелец задачи или пользователь с доступом
+    if task_file.task.user != request.user and not task_file.task.shared_with.filter(id=request.user.id).exists():
+        return JsonResponse({'error': 'Нет прав на удаление'}, status=403)
+
+    # Удаляем физический файл с диска (save=False не сохраняет изменения в БД)
+    if task_file.file:
+        task_file.file.delete(save=False)
+
+    task_file.delete()
+    return JsonResponse({'status': 'ok'})
 
 
 class TaskListView(LoginRequiredMixin, ListView):
@@ -81,29 +118,26 @@ class TaskListView(LoginRequiredMixin, ListView):
     context_object_name = 'tasks'
 
     def get_queryset(self):
-        # Получаем задачи, созданные текущим пользователем
-        queryset = Task.objects.filter(user=self.request.user)
+        base_qs = Task.objects.filter(
+            Q(user=self.request.user) | Q(shared_with=self.request.user)
+        )
 
-        # Добавляем задачи, к которым текущий пользователь имеет доступ
-        queryset = queryset | Task.objects.filter(shared_with=self.request.user)
-
-        # Применяем фильтры
         category = self.request.GET.get('category')
         priority = self.request.GET.get('priority')
-        shared = self.request.GET.get('shared')  # Добавляем фильтр по доступу
+        shared = self.request.GET.get('shared')
 
         if category:
-            queryset = queryset.filter(category__name=category)
+            base_qs = base_qs.filter(category__name=category)
         if priority:
-            queryset = queryset.filter(priority=priority)
-
+            base_qs = base_qs.filter(priority=priority)
         # Фильтр по доступу
         if shared == 'my':
-            queryset = queryset.filter(user=self.request.user)  # Только задачи, созданные текущим пользователем
+            base_qs = base_qs.filter(user=self.request.user)  # Только задачи, созданные текущим пользователем
         elif shared == 'shared':
-            queryset = queryset.filter(shared_with=self.request.user)  # Только задачи, к которым есть доступ
+            base_qs = base_qs.filter(shared_with=self.request.user)  # Только задачи, к которым есть доступ
 
-        return queryset.distinct()  # Убираем дубликаты
+        # Оптимизация: убираем N+1
+        return base_qs.select_related('user', 'category').prefetch_related('files').distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -159,7 +193,7 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         task_id = form.instance.id
         files = self.request.FILES.getlist('files')
         for file in files:
-            TaskFile.objects.create(task_id=task_id, file=file)
+            TaskFile.objects.create(task_id=task_id, file=file, original_filename=file.name)
 
         # Создаем повторяющуюся задачу
         if form.cleaned_data['repeat'] != 'none':
@@ -197,7 +231,12 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
         task_id = form.instance.id
         files = self.request.FILES.getlist('files')
         for file in files:
-            TaskFile.objects.create(task_id=task_id, file=file)
+            TaskFile.objects.create(task_id=task_id, file=file, original_filename=file.name)
+
+        # Сохраняем выбранные дни недели, если есть
+        if form.cleaned_data.get('repeat_days'):
+            task.repeat_days = ','.join(form.cleaned_data['repeat_days'])
+            task.save()
 
         return super().form_valid(form)
 
