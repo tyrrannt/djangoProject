@@ -56,18 +56,26 @@ def planning_table(request):
     ).select_related('pilot', 'mpd')
 
     # Строим карту назначений для быстрого доступа в шаблоне
-    # Формат: assignment_map[mpd_id][date_str] = pilot_info
+    # ФОРМАТ: assignment_map[mpd_id][date_str] = [список назначений]
     assignment_map = {}
     for a in assignments:
         mpd_id = a.mpd_id
         date_str = a.date.isoformat()
+
+        # Инициализируем словарь для МПД если его нет
         if mpd_id not in assignment_map:
             assignment_map[mpd_id] = {}
-        assignment_map[mpd_id][date_str] = {
+
+        # Инициализируем список для даты если его нет
+        if date_str not in assignment_map[mpd_id]:
+            assignment_map[mpd_id][date_str] = []
+
+        # Добавляем назначение в список (а не перезаписываем!)
+        assignment_map[mpd_id][date_str].append({
             'pilot_id': a.pilot_id,
-            'pilot_name': a.pilot.get_full_name() or a.pilot.username,
+            'pilot_name': a.pilot.title or a.pilot.username,
             'assignment_id': a.id
-        }
+        })
 
     # Данные для навигации по месяцам
     prev_month_date = first_day - timedelta(days=1)
@@ -137,7 +145,7 @@ def assign_pilot_api(request):
         if start > end:
             return JsonResponse({'error': 'Start date must be before end date'}, status=400)
 
-        # Проверяем конфликты
+        # Проверяем конфликты (один пилот не может быть в двух МПД в один день)
         conflicts = []
         current = start
         while current <= end:
@@ -171,6 +179,7 @@ def assign_pilot_api(request):
         with transaction.atomic():
             current = start
             while current <= end:
+                # Проверяем, нет ли уже назначения (на случай, если пилот уже есть в этом МПД)
                 assignment, created = PilotAssignment.objects.get_or_create(
                     pilot=pilot,
                     date=current,
@@ -190,7 +199,7 @@ def assign_pilot_api(request):
             'assignments': assignments_created,
             'mpd_id': mpd_id,
             'pilot_id': pilot_id,
-            'pilot_name': pilot.get_full_name() or pilot.username
+            'pilot_name': pilot.title or pilot.username
         })
 
     except json.JSONDecodeError:

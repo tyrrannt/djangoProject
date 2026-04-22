@@ -56,7 +56,7 @@ class PilotAssignment(models.Model):
         verbose_name_plural = "Назначения пилотов"
 
     def __str__(self):
-        pilot_name = self.pilot.get_full_name() or self.pilot.username
+        pilot_name = self.pilot.title or self.pilot.username
         return f"{pilot_name} → {self.mpd.name} ({self.date})"
 
     def clean(self):
