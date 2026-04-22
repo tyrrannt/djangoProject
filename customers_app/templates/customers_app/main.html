@@ -648,7 +648,7 @@
                                             Хранилище паролей
                                         </a>
                                     </li>
-                                    {% if user.is_superuser %}
+                                    {% if user.is_staff %}
                                          <li>
                                         <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
                                             <i class='bx bxs-key' aria-hidden="true"></i>
