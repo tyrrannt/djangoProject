@@ -648,13 +648,15 @@
                                             Хранилище паролей
                                         </a>
                                     </li>
-                                    {% if user.is_staff %}
-                                         <li>
-                                        <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
-                                            <i class='bx bxs-key' aria-hidden="true"></i>
-                                            Планирование
-                                        </a>
-                                    </li>
+                                    {% if user|has_group:"Планирование" or user.is_superuser %}
+                                        <li>
+                                            <a class="nav-link" href="{% url 'flight_planning:planning_table' %}">
+                                                <i class='bx bxs-key' aria-hidden="true"></i>
+                                                Планирование
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    {% if user.is_superuser %}
                                         <li class="nav-parent">
                                             <a class="nav-link" href="#">
                                                 <i class='bx bx-shield-quarter' aria-hidden="true"></i>
