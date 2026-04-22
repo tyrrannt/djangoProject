@@ -1,6 +1,8 @@
 # flight_planning/views.py
 import json
 from datetime import datetime, timedelta
+
+from django.db.models import Q
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -13,6 +15,8 @@ from customers_app.models import DataBaseUser
 from hrdepartment_app.models import PlaceProductionActivity
 from .models import PilotAssignment
 
+# Вариант 2: Точное совпадение с названиями должностей
+ALLOWED_JOBS = ['командир', 'пилот', 'бортмеханик', 'Командир', 'Бортмеханик', 'инструктор']
 
 @login_required
 def planning_table(request):
@@ -33,8 +37,16 @@ def planning_table(request):
     # Получаем все МПД
     mpds = PlaceProductionActivity.objects.all().order_by('name')
 
+
+    # Создаём динамические условия Q
+    q_conditions = Q()
+    for keyword in ALLOWED_JOBS:
+        q_conditions |= Q(user_work_profile__job__name__icontains=keyword)
     # Получаем всех активных пилотов (пользователей)
-    pilots = DataBaseUser.objects.filter(is_active=True).order_by('last_name', 'first_name')
+    pilots = DataBaseUser.objects.filter(
+        is_active=True,
+        user_work_profile__isnull=False
+    ).filter(q_conditions).order_by('last_name', 'first_name').distinct()
 
     # Генерируем даты выбранного месяца
     first_day = datetime(year, month, 1).date()
@@ -56,24 +68,34 @@ def planning_table(request):
     ).select_related('pilot', 'mpd')
 
     # Строим карту назначений для быстрого доступа в шаблоне
-    # ФОРМАТ: assignment_map[mpd_id][date_str] = [список назначений]
     assignment_map = {}
     for a in assignments:
         mpd_id = a.mpd_id
         date_str = a.date.isoformat()
 
-        # Инициализируем словарь для МПД если его нет
         if mpd_id not in assignment_map:
             assignment_map[mpd_id] = {}
 
-        # Инициализируем список для даты если его нет
         if date_str not in assignment_map[mpd_id]:
             assignment_map[mpd_id][date_str] = []
 
-        # Добавляем назначение в список (а не перезаписываем!)
+        # Получаем должность пилота
+        job_name = None
+        is_commander = False
+        try:
+            # Проверяем наличие user_work_profile и job
+            if hasattr(a.pilot, 'user_work_profile') and a.pilot.user_work_profile:
+                if hasattr(a.pilot.user_work_profile, 'job') and a.pilot.user_work_profile.job:
+                    job_name = a.pilot.user_work_profile.job.name
+                    is_commander = job_name and 'командир' in job_name.lower()
+        except Exception as e:
+            print(f"Error getting job info for pilot {a.pilot_id}: {e}")
+
         assignment_map[mpd_id][date_str].append({
             'pilot_id': a.pilot_id,
             'pilot_name': a.pilot.title or a.pilot.username,
+            'pilot_job': job_name or 'Должность не указана',
+            'is_commander': is_commander,
             'assignment_id': a.id
         })
 
@@ -145,7 +167,7 @@ def assign_pilot_api(request):
         if start > end:
             return JsonResponse({'error': 'Start date must be before end date'}, status=400)
 
-        # Проверяем конфликты (один пилот не может быть в двух МПД в один день)
+        # Проверяем конфликты
         conflicts = []
         current = start
         while current <= end:
@@ -163,6 +185,17 @@ def assign_pilot_api(request):
                 })
             current += timedelta(days=1)
 
+        # Получаем информацию о должности пилота
+        job_name = None
+        is_commander = False
+        try:
+            if hasattr(pilot, 'user_work_profile') and pilot.user_work_profile:
+                if hasattr(pilot.user_work_profile, 'job') and pilot.user_work_profile.job:
+                    job_name = pilot.user_work_profile.job.name
+                    is_commander = job_name and 'командир' in job_name.lower()
+        except:
+            pass
+
         # Если есть конфликты, возвращаем их для подтверждения
         if conflicts:
             return JsonResponse({
@@ -179,7 +212,6 @@ def assign_pilot_api(request):
         with transaction.atomic():
             current = start
             while current <= end:
-                # Проверяем, нет ли уже назначения (на случай, если пилот уже есть в этом МПД)
                 assignment, created = PilotAssignment.objects.get_or_create(
                     pilot=pilot,
                     date=current,
@@ -199,7 +231,9 @@ def assign_pilot_api(request):
             'assignments': assignments_created,
             'mpd_id': mpd_id,
             'pilot_id': pilot_id,
-            'pilot_name': pilot.title or pilot.username
+            'pilot_name': pilot.title or pilot.username,
+            'pilot_job': job_name or 'Должность не указана',
+            'is_commander': is_commander
         })
 
     except json.JSONDecodeError:
@@ -295,5 +329,33 @@ def remove_assignments_api(request):
             'deleted': deleted_count
         })
 
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_pilot_job_info(request):
+    """
+    Получить должность пилота и статус командира
+    """
+    pilot_id = request.GET.get('pilot_id')
+    if not pilot_id:
+        return JsonResponse({'error': 'pilot_id required'}, status=400)
+
+    try:
+        pilot = get_object_or_404(DataBaseUser, id=pilot_id)
+        job_name = None
+        is_commander = False
+
+        if hasattr(pilot, 'user_work_profile') and pilot.user_work_profile:
+            if pilot.user_work_profile.job:
+                job_name = pilot.user_work_profile.job.name
+                is_commander = job_name and 'командир' in job_name.lower()
+
+        return JsonResponse({
+            'job_name': job_name or 'Должность не указана',
+            'is_commander': is_commander
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

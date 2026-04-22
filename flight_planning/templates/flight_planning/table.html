@@ -14,23 +14,24 @@
 {% endblock %}
 
 {% block content %}
-<div class="planning-container">
-    <!-- Навигация по месяцам -->
-    <div class="month-nav">
-        <div class="nav-buttons">
-            <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn">← {{ prev_month_name|default:"Предыдущий" }}</a>
+    <div class="planning-container">
+        <!-- Навигация по месяцам -->
+        <div class="month-nav">
+            <div class="nav-buttons">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}"
+                   class="nav-btn">← {{ prev_month_name|default:"Предыдущий" }}</a>
+            </div>
+            <h2>{{ month_name|default:month }}/{{ year }}</h2>
+            <div class="nav-buttons">
+                <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn">Следующий →</a>
+            </div>
         </div>
-        <h2>{{ month_name|default:month }}/{{ year }}</h2>
-        <div class="nav-buttons">
-            <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn">Следующий →</a>
-        </div>
-    </div>
 
-    <div class="main-layout">
-        <!-- Контейнер таблицы -->
-        <div class="table-wrapper">
-            <table class="planning-table" id="planningTable">
-                <thead>
+        <div class="main-layout">
+            <!-- Контейнер таблицы -->
+            <div class="table-wrapper">
+                <table class="planning-table" id="planningTable">
+                    <thead>
                     <tr>
                         <th>Место деятельности (МПД)</th>
                         {% for date in dates %}
@@ -40,9 +41,9 @@
                             </th>
                         {% endfor %}
                     </tr>
-                </thead>
-                <!-- Только изменённая часть tbody -->
-<tbody>
+                    </thead>
+                    <!-- Только изменённая часть tbody -->
+                    <tbody>
     {% for mpd in mpds %}
         <tr data-mpd-id="{{ mpd.id }}">
             <td class="mpd-name" title="{{ mpd.code|default:'' }}">
@@ -57,11 +58,13 @@
                         <div class="pilots-container" data-date="{{ date.isoformat }}" data-mpd-id="{{ mpd.id }}">
                             {% if assignments %}
                                 {% for assignment in assignments %}
-                                    <span class="employee-badge"
+                                    <span class="employee-badge {% if assignment.is_commander %}commander{% endif %}"
                                           data-pilot-id="{{ assignment.pilot_id }}"
                                           data-assignment-id="{{ assignment.assignment_id }}"
-                                          data-pilot-name="{{ assignment.pilot_name }}">
-                                        {{ assignment.pilot_name|truncatechars:15 }}
+                                          data-pilot-name="{{ assignment.pilot_name }}"
+                                          data-pilot-job="{{ assignment.pilot_job }}"
+                                          data-is-commander="{{ assignment.is_commander|yesno:'true,false' }}">
+                                        {{ assignment.pilot_name|FIO_format }}
                                     </span>
                                 {% endfor %}
                             {% endif %}
@@ -72,65 +75,74 @@
         </tr>
     {% endfor %}
 </tbody>
-            </table>
-        </div>
+                </table>
+            </div>
 
-        <!-- Панель пилотов -->
-        <div class="pilots-panel">
-            <h3>👨‍✈️ Пилоты</h3>
-            {% for pilot in pilots %}
+            <!-- Панель пилотов - обновлённая часть -->
+<div class="pilots-panel">
+    <h3>👨‍✈️ Пилоты</h3>
+    {% for pilot in pilots %}
+        {% with job_name=pilot.user_work_profile.job.name|default:"" %}
+            {% with is_commander=job_name|lower|contains:"командир" %}
                 <div class="pilot-item"
                      data-pilot-id="{{ pilot.id }}"
-                     data-pilot-name="{{ pilot.title|default:pilot.username|FIO_format }}">
+                     data-pilot-name="{{ pilot.title|default:pilot.username|FIO_format }}"
+                     data-pilot-job="{{ job_name }}"
+                     data-is-commander="{{ is_commander|yesno:"true,false" }}">
                     {{ pilot.title|default:pilot.username|FIO_format }}
-                    {% if pilot.position %}
-                        <small style="color: #888; display: block;">{{ pilot.position }}</small>
-                    {% endif %}
+                    <small style="color: #888; display: block;">
+                        {{ job_name|default:"Должность не указана" }}
+                        {% if is_commander %}
+                            <span style="color: #dc3545;"> ★ Командир</span>
+                        {% endif %}
+                    </small>
                 </div>
-            {% empty %}
-                <p style="color: #999;">Нет активных пилотов</p>
-            {% endfor %}
+            {% endwith %}
+        {% endwith %}
+    {% empty %}
+        <p style="color: #999;">Нет активных пилотов</p>
+    {% endfor %}
+</div>
+        </div>
+
+        <div class="selection-info" id="selectionInfo">
+            <span id="selectedCount">Выделено: 0 ячеек</span>
+            <span class="clear-selection" id="clearSelection" style="display:none;">✕ Очистить выделение</span>
         </div>
     </div>
 
-    <div class="selection-info" id="selectionInfo">
-        <span id="selectedCount">Выделено: 0 ячеек</span>
-        <span class="clear-selection" id="clearSelection" style="display:none;">✕ Очистить выделение</span>
+    <!-- Универсальное модальное окно -->
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal-window" id="modalWindow">
+        <div class="modal-header" id="modalHeader">
+            <span id="modalTitle">Заголовок</span>
+        </div>
+        <div class="modal-body" id="modalBody">
+            Сообщение
+        </div>
+        <div class="modal-footer" id="modalFooter">
+            <button class="btn btn-secondary" id="modalCancelBtn">Отмена</button>
+            <button class="btn btn-primary" id="modalConfirmBtn">OK</button>
+        </div>
     </div>
-</div>
 
-<!-- Универсальное модальное окно -->
-<div class="modal-overlay" id="modalOverlay"></div>
-<div class="modal-window" id="modalWindow">
-    <div class="modal-header" id="modalHeader">
-        <span id="modalTitle">Заголовок</span>
+    <!-- Специальное модальное окно для конфликта -->
+    <div class="modal-overlay" id="conflictOverlay"></div>
+    <div class="modal-window conflict-modal" id="conflictModalWindow">
+        <div class="modal-header">
+            <span>⚠️ Конфликт назначений</span>
+        </div>
+        <div class="modal-body" id="conflictModalBody">
+            <p>Пилот уже назначен на следующие даты:</p>
+            <div id="conflictList"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="conflictCancelBtn">Отмена</button>
+            <button class="btn btn-warning" id="conflictConfirmBtn">Заменить (снять старые)</button>
+        </div>
     </div>
-    <div class="modal-body" id="modalBody">
-        Сообщение
-    </div>
-    <div class="modal-footer" id="modalFooter">
-        <button class="btn btn-secondary" id="modalCancelBtn">Отмена</button>
-        <button class="btn btn-primary" id="modalConfirmBtn">OK</button>
-    </div>
-</div>
-
-<!-- Специальное модальное окно для конфликта -->
-<div class="modal-overlay" id="conflictOverlay"></div>
-<div class="modal-window conflict-modal" id="conflictModalWindow">
-    <div class="modal-header">
-        <span>⚠️ Конфликт назначений</span>
-    </div>
-    <div class="modal-body" id="conflictModalBody">
-        <p>Пилот уже назначен на следующие даты:</p>
-        <div id="conflictList"></div>
-    </div>
-    <div class="modal-footer">
-        <button class="btn btn-secondary" id="conflictCancelBtn">Отмена</button>
-        <button class="btn btn-warning" id="conflictConfirmBtn">Заменить (снять старые)</button>
-    </div>
-</div>
 {% endblock %}
 
 {% block custom_script %}
-<script src="{% static 'admin_templates/js/flight_planning.js' %}"></script>
+    <script src="{% static 'admin_templates/js/flight_planning.js' %}"></script>
 {% endblock %}

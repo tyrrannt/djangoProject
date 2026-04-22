@@ -12,6 +12,13 @@ register = template.Library()
 
 
 @register.filter
+def contains(value, arg):
+    """Проверяет, содержит ли строка подстроку (регистронезависимо)"""
+    if not value:
+        return False
+    return arg.lower() in value.lower()
+
+@register.filter
 def get_item(dictionary, key):
     """Получить значение из словаря по ключу"""
     if dictionary is None:
