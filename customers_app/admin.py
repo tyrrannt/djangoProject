@@ -10,6 +10,8 @@ from django.db.models import ForeignKey, OneToOneField
 from django.core.exceptions import FieldError
 import logging
 
+from hrdepartment_app.models import ApprovalOficialMemoProcess
+
 logger = logging.getLogger(__name__)
 
 from .models import (
@@ -34,7 +36,7 @@ from .models import (
     UserStats,
     Apartments, ApartmentBooking,
 )
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, TabularInline
 
 
 # Register your models here.
@@ -206,9 +208,130 @@ class ApartmentsAdmin(ModelAdmin):
 
     get_current_occupancy.short_description = "Свободно мест (сейчас)"
 
+
 @admin.register(ApartmentBooking)
 class ApartmentBookingAdmin(ModelAdmin):
-    pass
+    """
+    Админ-класс для модели бронирования квартир с использованием django-unfold
+    """
+
+    # Основные настройки
+    list_display = ['id', 'apartment', 'date_start', 'date_end', 'is_active', 'process_info']
+    list_display_links = ['id', 'apartment']
+    list_filter = ['is_active', 'apartment', 'date_start']
+    search_fields = ['apartment__address', 'apartment__name']  # Замените на реальные поля
+    list_per_page = 25
+    date_hierarchy = 'date_start'
+
+    # Поля для формы редактирования
+    fieldsets = [
+        ('Информация о бронировании', {
+            'fields': ['apartment', 'date_start', 'date_end', 'is_active'],
+            'description': 'Укажите квартиру и период бронирования'
+        }),
+        ('Связанный бизнес-процесс', {
+            'fields': ['process_link'],
+            'description': 'Бизнес-процесс, связанный с данным бронированием',
+            'classes': ['collapse'],
+        }),
+        ('Системная информация', {
+            'fields': ['date_created'],
+            'classes': ['collapse'],
+        }),
+    ]
+
+    # Поля только для чтения
+    readonly_fields = ['date_created', 'process_link']
+
+    # Отключаем inlines, так как OneToOneField не поддерживает стандартные inlines
+    # Вместо этого используем кастомные методы для отображения связанных данных
+
+    # Действия
+    actions = ['activate_bookings', 'deactivate_bookings']
+
+    # Настройки Unfold
+    compressed_fields = True
+    warn_unsaved_form = True
+
+    def get_queryset(self, request):
+        """Оптимизация запросов с select_related для связанных моделей"""
+        return super().get_queryset(request).select_related(
+            'apartment',
+            'process'
+        )
+
+    def process_info(self, obj):
+        """Отображение информации о бизнес-процессе в списке"""
+        if obj.process:
+            # Проверяем реальные поля модели ApprovalOficialMemoProcess
+            # Замените 'id' на реальные поля, которые есть в модели
+            process_id = obj.process.id
+
+            # Пример определения статуса - нужно адаптировать под реальную модель
+            # Если в модели есть поле 'status', используйте его:
+            # status = getattr(obj.process, 'status', 'Неизвестно')
+
+            # Показываем ID процесса
+            return format_html(
+                '<a href="{}">Процесс #{}</a>',
+                reverse('admin:hrdepartment_app_approvaloficialmemoprocess_change', args=[obj.process.id]),
+                process_id
+            )
+        return "Не привязан"
+
+    process_info.short_description = "Бизнес-процесс"
+
+    def process_link(self, obj):
+        """Ссылка на связанный процесс в форме редактирования"""
+        if obj.process:
+            from django.urls import reverse
+            from django.utils.html import format_html
+
+            return format_html(
+                '<a href="{}" target="_blank">{}</a>',
+                reverse('admin:hrdepartment_app_approvaloficialmemoprocess_change', args=[obj.process.pk]),
+                f"Просмотреть процесс #{obj.process.pk}"
+            )
+        return mark_safe('<span style="color: #666;">Не привязан</span>')
+
+    process_link.short_description = "Бизнес-процесс"
+
+    def activate_bookings(self, request, queryset):
+        """Активация выбранных бронирований"""
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f"Активировано {updated} бронирований.")
+
+    activate_bookings.short_description = "Активировать выбранные бронирования"
+
+    def deactivate_bookings(self, request, queryset):
+        """Деактивация выбранных бронирований"""
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f"Деактивировано {updated} бронирований.")
+
+    deactivate_bookings.short_description = "Деактивировать выбранные бронирования"
+
+    def save_model(self, request, obj, form, change):
+        """
+        Переопределение save_model для дополнительной логики
+        """
+        super().save_model(request, obj, form, change)
+
+    def get_fieldsets(self, request, obj=None):
+        """
+        Динамическое изменение fieldsets в зависимости от наличия объекта
+        """
+        fieldsets = super().get_fieldsets(request, obj)
+
+        if obj is None:  # При создании нового объекта
+            # Убираем process_link, так как процесса ещё нет
+            return [
+                (title, {'fields': [f for f in data['fields'] if f != 'process_link'],
+                         'description': data.get('description', ''),
+                         'classes': data.get('classes', [])})
+                for title, data in fieldsets
+            ]
+
+        return fieldsets
 
 @admin.register(Counteragent)
 class CounteragentAdmin(ModelAdmin):
