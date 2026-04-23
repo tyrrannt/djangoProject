@@ -127,7 +127,7 @@
                                 id: '{{ task.id }}',
                                 title: '{{ task.title|safe }}', // Используем иконку
                                 rrule: {{ task.rrule|safe }},  // Передаем rrule как строку
-                                url: '{{ task.url }}',
+                                url: '#',
                                 className: 'fc-event-{{ task.color }}'  // Используем приоритет как цвет
                             },
                         {% endfor %}

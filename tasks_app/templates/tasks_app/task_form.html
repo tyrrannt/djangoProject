@@ -2,30 +2,9 @@
 {% load static %}
 {% load custom %}
 {% load widget_tweaks %}
-{% load django_bootstrap5 %}
 
 {% block custom_css %}
     <style>
-        /* Гарантия: лейблы всегда сверху, без наложений */
-        .form-label {
-            display: block;
-            margin-bottom: 0.4rem;
-            font-weight: 500;
-            color: #343a40;
-        }
-
-        .form-control, .form-select {
-            min-height: 40px;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-        }
-
-        .form-check-label {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
         .form-card {
             border-radius: 12px;
             overflow: hidden;
@@ -364,13 +343,13 @@
                                 <h5><i class="fas fa-info-circle me-2"></i>Основная информация</h5>
                                 <div class="row g-3">
                                     <div class="col-md-8">
-                                        {% bootstrap_field form.title show_label=True layout='default' %}
+                                        {{ form.title }}
                                     </div>
                                     <div class="col-md-4">
-                                        {% bootstrap_field form.priority show_label=True layout='default' %}
+                                        {{ form.priority }}
                                     </div>
                                     <div class="col-12">
-                                        {% bootstrap_field form.description show_label=True layout='default' %}
+                                        {{ form.description }}
                                     </div>
                                 </div>
                             </div>
@@ -380,13 +359,13 @@
                                 <h5><i class="fas fa-calendar-alt me-2"></i>Сроки и категория</h5>
                                 <div class="row g-3">
                                     <div class="col-md-4">
-                                        {% bootstrap_field form.start_date show_label=True layout='default' %}
+                                        {{ form.start_date }}
                                     </div>
                                     <div class="col-md-4">
-                                        {% bootstrap_field form.end_date show_label=True layout='default' %}
+                                        {{ form.end_date }}
                                     </div>
                                     <div class="col-md-4">
-                                        {% bootstrap_field form.category show_label=True layout='default' %}
+                                        {{ form.category }}
                                     </div>
                                 </div>
                             </div>
@@ -396,16 +375,16 @@
                                 <h5><i class="fas fa-sync-alt me-2"></i>Настройки повторения</h5>
                                 <div class="row g-3 align-items-start">
                                     <div class="col-md-3">
-                                        {% bootstrap_field form.repeat show_label=True layout='default' %}
+                                        {{ form.repeat }}
                                     </div>
                                     <div class="col-md-2">
-                                        {% bootstrap_field form.repeat_interval show_label=True layout='default' %}
+                                        {{ form.repeat_interval }}
                                     </div>
                                     <div class="col-md-3">
-                                        {% bootstrap_field form.repeat_end_date show_label=True layout='default' %}
+                                        {{ form.repeat_end_date }}
                                     </div>
                                     <div class="col-md-4">
-                                        {% bootstrap_field form.repeat_days show_label=True layout='default' %}
+                                        {{ form.repeat_days }}
                                     </div>
                                 </div>
                             </div>
@@ -415,8 +394,7 @@
                                 <h5><i class="fas fa-users me-2"></i>Доступ и вложения</h5>
                                 <div class="row g-3">
                                     <div class="col-md-12">
-                                        <!-- Используем bootstrap_field вместо ручного вывода -->
-                                        {% bootstrap_field form.shared_with show_label=True layout='default' %}
+                                        {{ form.shared_with }}
                                         <small class="text-muted d-block mt-1">
                                             <i class="fas fa-shield-alt me-1"></i>
                                             Задачи с доступом будут отображаться у выбранных пользователей
@@ -439,8 +417,9 @@
                                                         <div>
                                                             <i class="fas fa-file text-primary me-2"></i>
                                                             <span>{{ document.original_filename|default:document.file.name|basename }}</span>
-                                                            {% if document.title %}
-                                                                <small class="text-muted ms-2">({{ document.title }})</small>{% endif %}
+                                                            {% if document.file.size %}
+                                                                <small class="text-muted ms-2">({{ document.file.size|filesizeformat }})</small>
+                                                            {% endif %}
                                                         </div>
                                                         <div class="d-flex gap-2">
                                                             <a href="{{ document.file.url }}" target="_blank"
@@ -536,5 +515,4 @@
             </div>
         </div>
     </div>
-    {% bootstrap_javascript %}
 {% endblock %}

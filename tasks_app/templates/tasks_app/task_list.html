@@ -5,8 +5,11 @@
 
 {% block title %}
     <title>{{ title }}</title>
+{% endblock %}
+
+{% block custom_css %}
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <style>
-        /* Добавьте в блок style */
         .external-event {
             cursor: grab;
             transition: all 0.2s ease;
@@ -28,19 +31,22 @@
             box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
         }
 
+        /* Цвета для событий календаря */
         .fc-event-primary {
-            background-color: #007bff;
-            border-color: #007bff;
+            background-color: #0d6efd;
+            border-color: #0d6efd;
         }
 
         .fc-event-warning {
             background-color: #ffc107;
             border-color: #ffc107;
+            color: #000;
         }
 
         .fc-event-info {
-            background-color: #17a2b8;
-            border-color: #17a2b8;
+            background-color: #0dcaf0;
+            border-color: #0dcaf0;
+            color: #000;
         }
 
         .fc-event-danger {
@@ -49,25 +55,37 @@
         }
 
         .fc-event-dark {
-            background-color: #343a40;
-            border-color: #343a40;
+            background-color: #212529;
+            border-color: #212529;
+        }
+
+        .fc-event-title {
+            white-space: normal;
+            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fc-daygrid-day-frame {
+            min-height: 80px;
+        }
+
+        .calendar-container {
+            min-height: 600px;
         }
     </style>
-{% endblock %}
-
-{% block custom_css %}
 {% endblock %}
 
 {% block content %}
     <!-- Фильтры -->
     <section class="card mb-4">
         <div class="card-body">
-            <h3>Фильтры</h3>
+            <h3 class="card-title mb-3">Фильтры задач</h3>
             <form method="get" class="mb-3">
-                <div class="row">
+                <div class="row g-3">
                     <div class="col-md-3">
-                        <label for="category">Категория:</label>
-                        <select name="category" id="category" class="form-control">
+                        <label for="category" class="form-label">Категория:</label>
+                        <select name="category" id="category" class="form-select">
                             <option value="">Все категории</option>
                             {% for category in categories %}
                                 <option value="{{ category.name }}"
@@ -78,8 +96,8 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label for="priority">Приоритет:</label>
-                        <select name="priority" id="priority" class="form-control">
+                        <label for="priority" class="form-label">Приоритет:</label>
+                        <select name="priority" id="priority" class="form-select">
                             <option value="">Все приоритеты</option>
                             {% for code, name in priorities %}
                                 <option value="{{ code }}" {% if code == request.GET.priority %}selected{% endif %}>
@@ -89,19 +107,21 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label for="shared">Доступ:</label>
-                        <select name="shared" id="shared" class="form-control">
+                        <label for="shared" class="form-label">Доступ:</label>
+                        <select name="shared" id="shared" class="form-select">
                             <option value="">Все задачи</option>
-                            <option value="my" {% if request.GET.shared == 'my' %}selected{% endif %}>Только мои
-                                задачи
+                            <option value="my" {% if request.GET.shared == 'my' %}selected{% endif %}>
+                                Только мои задачи
                             </option>
-                            <option value="shared" {% if request.GET.shared == 'shared' %}selected{% endif %}>Задачи, к
-                                которым у меня есть доступ
+                            <option value="shared" {% if request.GET.shared == 'shared' %}selected{% endif %}>
+                                Задачи с общим доступом
                             </option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary btn-block mt-4">Применить фильтры</button>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Применить фильтры
+                        </button>
                     </div>
                 </div>
             </form>
@@ -112,85 +132,95 @@
     <section class="card">
         <div class="card-body">
             <div class="row">
-                <div class="col-lg-10">
-                    <div id="calendar"></div>
+                <div class="col-lg-9">
+                    <div id="calendar" class="calendar-container"></div>
                 </div>
-                <div class="col-lg-2">
-                    <h4 class="font-weight-bold text-dark">Перетаскиваемые события</h4>
+                <div class="col-lg-3">
+                    <h4 class="font-weight-bold text-dark mb-3">
+                        <i class="fas fa-tasks me-2"></i>Быстрое создание
+                    </h4>
                     <hr/>
+
+                    <div class="d-grid gap-2 mb-4">
+                        <a href="{% url 'tasks_app:task-create' %}" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-2"></i>Создать задачу
+                        </a>
+                    </div>
+
+                    <h5 class="mb-3">
+                        <i class="fas fa-calendar-plus me-2"></i>Перетаскиваемые события
+                    </h5>
+
                     <div id="external-events">
-                        <div class="form-group">
-                            <h3 class="mb-4">Запланировать:</h3>
-                            <a href="{% url 'tasks_app:task-create' %}" class="btn btn-success mb-3 col-sm-12">Добавить
-                                задачу</a>
+                        <div class="external-event badge bg-primary w-100 mb-2 py-2"
+                             data-event='{"title": "Основное событие", "priority": "primary"}'>
+                            <i class="fas fa-star me-2"></i>Основное событие
                         </div>
-                        <div class="form-group">
-                            <h3 class="mb-4">Быстрое событие:</h3>
-                            <div class="external-event badge badge-primary col-sm-12"
-                                 data-event='{ "title": "Основное событие", "allDay": true, "className": "fc-event-primary", "priority": "primary" }'>
-                                Основное событие
-                            </div>
-                            <div class="external-event badge badge-warning col-sm-12"
-                                 data-event='{ "title": "Предупреждающее событие", "allDay": true, "className": "fc-event-warning", "priority": "warning" }'>
-                                Предупреждающее событие
-                            </div>
-                            <div class="external-event badge badge-info col-sm-12"
-                                 data-event='{ "title": "Информационное событие", "allDay": true, "className": "fc-event-info", "priority": "info" }'>
-                                Информационное событие
-                            </div>
-                            <div class="external-event badge badge-danger col-sm-12"
-                                 data-event='{ "title": "Опасное событие", "allDay": true, "className": "fc-event-danger", "priority": "danger" }'>
-                                Опасное событие
-                            </div>
-                            <div class="external-event badge badge-dark col-sm-12"
-                                 data-event='{ "title": "Темное событие", "allDay": true, "className": "fc-event-dark", "priority": "dark" }'>
-                                Темное событие
-                            </div>
+                        <div class="external-event badge bg-warning w-100 mb-2 py-2 text-dark"
+                             data-event='{"title": "Предупреждающее событие", "priority": "warning"}'>
+                            <i class="fas fa-exclamation-triangle me-2"></i>Предупреждающее событие
                         </div>
-                        <div class="form-group">
-                            <label for="shared_with">Доступ для:</label>
-                            <select name="shared_with" id="shared_with" class="form-select select2 form-control-modern"
-                                    multiple="multiple" data-plugin-multiselect
-                                    data-plugin-options='{ "maxHeight": 200 }' data-multiselect-toggle-all="true">
-                                {% for user in users %}
-                                    <option value="{{ user.id }}">{{ user.title | FIO_format }}</option>
-                                {% endfor %}
-                            </select>
+                        <div class="external-event badge bg-info w-100 mb-2 py-2 text-dark"
+                             data-event='{"title": "Информационное событие", "priority": "info"}'>
+                            <i class="fas fa-info-circle me-2"></i>Информационное событие
                         </div>
-                        <div>
-                            <div class="checkbox-custom checkbox-default ib">
-                                <input id="RemoveAfterDrop" type="checkbox"/>
-                                <label for="RemoveAfterDrop">удалить после переноса</label>
-                            </div>
+                        <div class="external-event badge bg-danger w-100 mb-2 py-2"
+                             data-event='{"title": "Опасное событие", "priority": "danger"}'>
+                            <i class="fas fa-exclamation-circle me-2"></i>Опасное событие
                         </div>
+                        <div class="external-event badge bg-dark w-100 mb-2 py-2"
+                             data-event='{"title": "Темное событие", "priority": "dark"}'>
+                            <i class="fas fa-moon me-2"></i>Темное событие
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label for="shared_with" class="form-label">
+                            <i class="fas fa-users me-2"></i>Доступ для:
+                        </label>
+                        <select name="shared_with" id="shared_with" class="form-select" multiple size="3">
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.title|FIO_format }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">CTRL+выбор для множественного доступа</small>
+                    </div>
+
+                    <div class="mt-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="RemoveAfterDrop">
+                        <label class="form-check-label" for="RemoveAfterDrop">
+                            <i class="fas fa-trash-alt me-1"></i>Удалить после переноса
+                        </label>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+
     <!-- Модальное окно для ввода заголовка события -->
     <div class="modal fade" id="eventTitleModal" tabindex="-1" aria-labelledby="eventTitleModalLabel"
          aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="eventTitleModalLabel">
                         <i class="fas fa-plus-circle me-2"></i>
                         Создание быстрого события
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="eventTitle" class="form-label">Название события <span
+                        <label for="eventTitle" class="form-label required">Название события <span
                                 class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="eventTitle"
-                               placeholder="Введите название события" maxlength="200">
+                        <input type="text" class="form-control" id="eventTitle" placeholder="Введите название события"
+                               maxlength="200">
                         <div class="invalid-feedback">Пожалуйста, введите название события</div>
                     </div>
                     <div class="mb-3">
                         <label for="eventPriority" class="form-label">Приоритет</label>
-                        <select class="form-control" id="eventPriority">
+                        <select class="form-select" id="eventPriority">
                             <option value="primary">Основной</option>
                             <option value="warning">Предупреждающий</option>
                             <option value="info">Информационный</option>
@@ -205,8 +235,8 @@
                         </div>
                         <div class="col-md-6">
                             <label for="eventTime" class="form-label">Время</label>
-                            <input type="time" class="form-control" id="eventTime" step="1">
-                            <small class="text-muted">Часы:Минуты:Секунды</small>
+                            <input type="time" class="form-control" id="eventTime" step="60">
+                            <small class="text-muted">Часы:Минуты</small>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -217,13 +247,30 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>
-                        Отмена
+                        <i class="fas fa-times me-1"></i>Отмена
                     </button>
                     <button type="button" class="btn btn-primary" id="saveEventBtn">
-                        <i class="fas fa-save me-1"></i>
-                        Создать событие
+                        <i class="fas fa-save me-1"></i>Создать событие
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно уведомлений -->
+    <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" id="notificationHeader">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle me-2" id="notificationIcon"></i>
+                        <span id="notificationTitle">Уведомление</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="notificationMessage"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Хорошо</button>
                 </div>
             </div>
         </div>
@@ -232,113 +279,244 @@
 
 {% block custom_script %}
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            {% for task in tasks %}
-                {% if task.due_date and task.due_date|date:"Y-m-d" == today %}
-                    toastr.warning('Задача "{{ task.title }}" скоро истекает!');
-                {% endif %}
-            {% endfor %}
-        });
-    </script>
-
-    <script>
         (function ($) {
             'use strict';
 
-            // Переменные для хранения данных перетаскивания
             var pendingDropInfo = null;
             var pendingEventData = null;
+            var calendarInstance = null;
 
-            // Функция для форматирования даты в YYYY-MM-DD
             function formatDate(date) {
                 var year = date.getFullYear();
                 var month = String(date.getMonth() + 1).padStart(2, '0');
                 var day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
+                return year + '-' + month + '-' + day;
             }
 
-            // Функция для форматирования времени в HH:MM:SS
-            function formatTimeWithSeconds(date) {
+            function formatTime(date) {
                 var hours = String(date.getHours()).padStart(2, '0');
                 var minutes = String(date.getMinutes()).padStart(2, '0');
-                var seconds = String(date.getSeconds()).padStart(2, '0');
-                return `${hours}:${minutes}:${seconds}`;
+                return hours + ':' + minutes;
             }
 
-            // Функция для парсинга времени с секундами
-            function parseTimeWithSeconds(timeStr) {
-                var parts = timeStr.split(':');
-                return {
-                    hours: parseInt(parts[0]) || 0,
-                    minutes: parseInt(parts[1]) || 0,
-                    seconds: parseInt(parts[2]) || 0
-                };
+            function showNotification(message, type) {
+                type = type || 'info';
+                var modal = new bootstrap.Modal(document.getElementById('notificationModal'));
+                var header = document.getElementById('notificationHeader');
+                var icon = document.getElementById('notificationIcon');
+                var title = document.getElementById('notificationTitle');
+                var messageEl = document.getElementById('notificationMessage');
+
+                header.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+
+                if (type === 'success') {
+                    header.classList.add('bg-success', 'text-white');
+                    icon.className = 'fas fa-check-circle me-2';
+                    title.textContent = 'Успешно';
+                } else if (type === 'error') {
+                    header.classList.add('bg-danger', 'text-white');
+                    icon.className = 'fas fa-exclamation-circle me-2';
+                    title.textContent = 'Ошибка';
+                } else if (type === 'warning') {
+                    header.classList.add('bg-warning');
+                    icon.className = 'fas fa-exclamation-triangle me-2';
+                    title.textContent = 'Предупреждение';
+                } else {
+                    header.classList.add('bg-info', 'text-white');
+                    icon.className = 'fas fa-info-circle me-2';
+                    title.textContent = 'Информация';
+                }
+
+                messageEl.textContent = message;
+                modal.show();
+
+                if (type === 'success') {
+                    setTimeout(function () {
+                        modal.hide();
+                    }, 3000);
+                }
             }
 
-            // Функция для инициализации перетаскивания событий
-            var initCalendarDragNDrop = function () {
-                var Draggable = FullCalendar.Draggable;
-
-                $('#external-events div.external-event').each(function () {
-                    new Draggable($(this)[0], {
-                        itemSelector: '.external-event',
-                        eventData: function (eventEl) {
-                            var eventObj = $(eventEl).data('event');
-                            return eventObj;
+            // Функция для получения CSRF токена из cookie
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
                         }
-                    });
-                });
-            };
+                    }
+                }
+                return cookieValue;
+            }
 
-            // Функция для создания события через AJAX
-            function createEvent(title, startDate, endDate, priority, sharedWith, calendarInstance, draggedEl) {
-                // Убеждаемся, что даты передаются с секундами
+// Функция для создания события через AJAX (ИСПРАВЛЕННАЯ)
+            function createEvent(title, startDate, endDate, priority, sharedWith, draggedEl) {
                 var startISO = startDate.toISOString();
                 var endISO = endDate.toISOString();
+
+                // Получаем CSRF токен правильно
+                var csrftoken = getCookie('csrftoken');
+
+                // Если нет в cookie, пробуем из мета-тега
+                if (!csrftoken) {
+                    var csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfMetaTag) {
+                        csrftoken = csrfMetaTag.getAttribute('content');
+                    }
+                }
+
+                console.log('CSRF Token:', csrftoken); // Для отладки
 
                 $.ajax({
                     url: "{% url 'tasks_app:task-create-ajax' %}",
                     type: "POST",
+                    headers: {
+                        'X-CSRFToken': csrftoken  // Важно: токен в заголовке!
+                    },
                     data: {
                         title: title,
                         start_date: startISO,
                         end_date: endISO,
                         priority: priority,
                         shared_with: sharedWith,
-                        freq: 'none',
-                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                        freq: 'none'
                     },
                     success: function (response) {
-                        calendarInstance.addEvent({
-                            id: response.id,
-                            title: response.title,
-                            start: response.start_date,
-                            end: response.end_date,
-                            url: response.url,
-                            color: response.color
-                        });
-                        toastr.success('Задача "' + title + '" создана!');
+                        console.log('Success:', response);
+                        if (response.error) {
+                            showNotification(response.error, 'error');
+                            return;
+                        }
 
-                        if ($('#RemoveAfterDrop').is(':checked') && draggedEl) {
+                        if (calendarInstance) {
+                            calendarInstance.addEvent({
+                                id: String(response.id),
+                                title: response.title,
+                                start: response.start_date,
+                                end: response.end_date,
+                                url: response.url,
+                                color: response.color
+                            });
+                        }
+
+                        showNotification('Задача "' + title + '" успешно создана!', 'success');
+
+                        var removeAfterDrop = document.getElementById('RemoveAfterDrop');
+                        if (removeAfterDrop && removeAfterDrop.checked && draggedEl && draggedEl.parentNode) {
                             draggedEl.parentNode.removeChild(draggedEl);
                         }
                     },
-                    error: function (xhr) {
-                        var errorMsg = xhr.responseJSON?.error || 'Ошибка при создании задачи';
-                        toastr.error(errorMsg);
+                    error: function (xhr, status, error) {
+                        console.error('AJAX Error:', xhr, status, error);
+                        var errorMsg = 'Ошибка при создании задачи';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMsg = xhr.responseJSON.error;
+                        } else if (xhr.status === 403) {
+                            errorMsg = 'Ошибка CSRF: обновите страницу и попробуйте снова';
+                        }
+                        showNotification(errorMsg, 'error');
                     }
                 });
             }
 
-            // Функция для инициализации календаря
-            var initCalendar = function () {
-                var $calendar = $('#calendar');
+            function initCalendarDragNDrop() {
+                if (typeof FullCalendar === 'undefined' || typeof FullCalendar.Draggable === 'undefined') {
+                    console.warn('FullCalendar.Draggable not available');
+                    return;
+                }
 
-                var $calendarInstance = new FullCalendar.Calendar($calendar[0], {
+                var Draggable = FullCalendar.Draggable;
+                var externalEvents = document.querySelectorAll('#external-events .external-event');
+
+                externalEvents.forEach(function (eventEl) {
+                    try {
+                        new Draggable(eventEl, {
+                            itemSelector: '.external-event',
+                            eventData: function (eventEl) {
+                                var eventObj = JSON.parse(eventEl.getAttribute('data-event') || '{}');
+                                return {
+                                    title: eventObj.title || 'Новое событие',
+                                    priority: eventObj.priority || 'primary'
+                                };
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('Failed to initialize draggable:', e);
+                    }
+                });
+            }
+
+            function initCalendar() {
+                var calendarEl = document.getElementById('calendar');
+                if (!calendarEl) {
+                    console.error('Calendar element not found');
+                    return;
+                }
+
+                var calendarEvents = [];
+
+                {% for task in repeat_tasks %}
+                    try {
+                        var eventData = {
+                            id: '{{ task.id|escapejs }}',
+                            title: '{{ task.title|escapejs }}',
+                            url: '{{ task.url|escapejs }}',
+                            color: '{{ task.color|escapejs }}',
+                        };
+
+                        // Добавляем className
+                        if ('{{ task.color|escapejs }}') {
+                            eventData.className = 'fc-event-{{ task.color|escapejs }}';
+                        }
+
+                        // Проверяем, есть ли start (обычная задача)
+                        {% if task.start %}
+                            eventData.start = '{{ task.start|escapejs }}';
+                            {% if task.end %}
+                                eventData.end = '{{ task.end|escapejs }}';
+                            {% endif %}
+                        {% endif %}
+
+                        // Проверяем, есть ли rrule (повторяющаяся задача)
+                        {% if task.rrule %}
+                            // task.rrule уже объект из Python, передаем как есть
+                            eventData.rrule = {{ task.rrule|safe }};
+                            console.log('Added recurring task:', eventData.id, eventData.rrule);
+                        {% endif %}
+
+                        calendarEvents.push(eventData);
+                    } catch (e) {
+                        console.error('Error parsing event:', e, '{{ task.id }}');
+                    }
+                {% empty %}
+                    console.log('No tasks found for calendar');
+                {% endfor %}
+
+                console.log('Loading ' + calendarEvents.length + ' events into calendar');
+                console.log('Events:', calendarEvents);
+
+                calendarInstance = new FullCalendar.Calendar(calendarEl, {
                     themeSystem: 'bootstrap',
                     locale: 'ru',
-                    eventDisplay: 'block',
                     initialView: 'dayGridMonth',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,dayGridWeek,timeGridDay'
+                    },
+                    buttonText: {
+                        today: 'Сегодня',
+                        month: 'Месяц',
+                        week: 'Неделя',
+                        day: 'День'
+                    },
+                    editable: true,
+                    droppable: true,
+                    eventDisplay: 'block',
                     eventOrder: ['start', 'priority'],
                     slotDuration: '01:00:00',
                     slotLabelInterval: '01:00:00',
@@ -346,66 +524,65 @@
                         hour: '2-digit',
                         minute: '2-digit',
                         omitZeroMinute: false,
-                        meridiem: 'short'
+                        meridiem: false
                     },
                     allDaySlot: false,
-                    headerToolbar: {
-                        start: 'prev,next today',
-                        center: 'title',
-                        end: 'timeGridDay,dayGridWeek,dayGridMonth'
-                    },
-                    bootstrapFontAwesome: {
-                        close: 'fa-times',
-                        prev: 'fa-caret-left',
-                        next: 'fa-caret-right',
-                        prevYear: 'fa-angle-double-left',
-                        nextYear: 'fa-angle-double-right'
-                    },
-                    editable: true,
-                    droppable: true,
-                    drop: function (info) {
-                        // Сохраняем данные о перетаскивании
-                        pendingDropInfo = info;
-                        pendingEventData = $(info.draggedEl).data('event');
+                    slotMinTime: '08:00:00',
+                    slotMaxTime: '20:00:00',
 
-                        // Получаем дату из календаря (куда бросили)
+                    events: calendarEvents,
+
+                    drop: function (info) {
+                        console.log('Drop event:', info);
+
+                        pendingDropInfo = info;
+                        var draggedEl = info.draggedEl;
+                        if (draggedEl && draggedEl.getAttribute) {
+                            var eventDataAttr = draggedEl.getAttribute('data-event');
+                            if (eventDataAttr) {
+                                try {
+                                    pendingEventData = JSON.parse(eventDataAttr);
+                                } catch (e) {
+                                    pendingEventData = {title: 'Новое событие', priority: 'primary'};
+                                }
+                            }
+                        }
+
                         var droppedDate = info.date;
                         var now = new Date();
 
-                        // Если дата из календаря сегодняшняя - используем текущее время
-                        // Иначе - используем 09:00
                         var startDate = new Date(droppedDate);
                         if (formatDate(droppedDate) === formatDate(now)) {
-                            // Сегодня: берем текущее время с секундами
                             startDate.setHours(now.getHours());
                             startDate.setMinutes(now.getMinutes());
-                            startDate.setSeconds(now.getSeconds());
                         } else {
-                            // Другой день: ставим на 09:00:00
-                            startDate.setHours(9, 0, 0, 0);
+                            startDate.setHours(9, 0, 0);
                         }
 
-                        // Заполняем модальное окно
-                        $('#eventTitle').val(pendingEventData.title);
-                        $('#eventPriority').val(pendingEventData.priority);
-                        $('#eventDate').val(formatDate(startDate));
-                        $('#eventTime').val(formatTimeWithSeconds(startDate));  // Используем формат с секундами
-                        $('#eventDuration').val(1);
+                        var titleInput = document.getElementById('eventTitle');
+                        var prioritySelect = document.getElementById('eventPriority');
+                        var dateInput = document.getElementById('eventDate');
+                        var timeInput = document.getElementById('eventTime');
+                        var durationInput = document.getElementById('eventDuration');
+
+                        if (titleInput) titleInput.value = pendingEventData ? (pendingEventData.title || '') : '';
+                        if (prioritySelect) prioritySelect.value = pendingEventData ? (pendingEventData.priority || 'primary') : 'primary';
+                        if (dateInput) dateInput.value = formatDate(startDate);
+                        if (timeInput) timeInput.value = formatTime(startDate);
+                        if (durationInput) durationInput.value = '1';
 
                         var modal = new bootstrap.Modal(document.getElementById('eventTitleModal'));
                         modal.show();
                     },
-                    events: [
-                        {% for task in repeat_tasks %}
-                            {
-                                id: '{{ task.id }}',
-                                title: '{{ task.title|safe }}',
-                                rrule: {{ task.rrule|safe }},
-                                url: '{{ task.url }}',
-                                className: 'fc-event-{{ task.color }}'
-                            },
-                        {% endfor %}
-                    ],
+
+                    eventClick: function (info) {
+                        console.log('Event clicked:', info.event);
+                        if (info.event.url) {
+                            window.location.href = info.event.url;
+                            info.jsEvent.preventDefault();
+                        }
+                    },
+
                     eventContent: function (info) {
                         var title = info.event.title;
                         var div = document.createElement('div');
@@ -416,111 +593,123 @@
                         div.style.textOverflow = 'ellipsis';
                         div.innerHTML = title;
                         return {domNodes: [div]};
+                    },
+
+                    eventDidMount: function (info) {
+                        if (info.event.title && info.event.title.length > 30) {
+                            info.el.setAttribute('title', info.event.title);
+                        }
+                    },
+
+                    // Добавляем обработку ошибок
+                    eventReceive: function (info) {
+                        console.log('Event received:', info);
+                    },
+
+                    eventAdd: function (info) {
+                        console.log('Event added:', info);
                     }
                 });
 
-                $calendarInstance.render();
+                calendarInstance.render();
+                console.log('Calendar rendered successfully');
+            }
 
-                // Настройка кнопок календаря
-                var $calendarButtons = $calendar.find('.fc-header-right > span');
-                $calendarButtons
-                    .filter('.fc-button-prev, .fc-button-today, .fc-button-next')
-                    .wrapAll('<div class="btn-group mt-sm mr-md mb-sm ml-sm"></div>')
-                    .parent()
-                    .after('<br class="hidden"/>');
+            function initSaveEventButton() {
+                var saveBtn = document.getElementById('saveEventBtn');
+                if (!saveBtn) return;
 
-                $calendarButtons
-                    .not('.fc-button-prev, .fc-button-today, .fc-button-next')
-                    .wrapAll('<div class="btn-group mb-sm mt-sm"></div>');
+                saveBtn.addEventListener('click', function () {
+                    var title = document.getElementById('eventTitle');
+                    var priority = document.getElementById('eventPriority');
+                    var selectedDate = document.getElementById('eventDate');
+                    var selectedTime = document.getElementById('eventTime');
+                    var duration = document.getElementById('eventDuration');
+                    var sharedWith = document.getElementById('shared_with');
 
-                $calendarButtons
-                    .attr({'class': 'btn btn-sm btn-default'});
-
-                // Обработчик сохранения события
-                $('#saveEventBtn').off('click').on('click', function () {
-                    var title = $('#eventTitle').val().trim();
-                    var priority = $('#eventPriority').val();
-                    var selectedDate = $('#eventDate').val();
-                    var selectedTime = $('#eventTime').val();
-                    var duration = parseFloat($('#eventDuration').val()) || 1;
-
-                    if (!title) {
-                        $('#eventTitle').addClass('is-invalid');
-                        toastr.warning('Введите название события');
+                    if (!title || !title.value.trim()) {
+                        if (title) title.classList.add('is-invalid');
+                        showNotification('Введите название события', 'warning');
                         return;
                     }
-                    $('#eventTitle').removeClass('is-invalid');
+                    if (title) title.classList.remove('is-invalid');
 
-                    if (!selectedDate) {
-                        toastr.warning('Выберите дату');
+                    if (!selectedDate || !selectedDate.value) {
+                        showNotification('Выберите дату', 'warning');
                         return;
                     }
 
-                    // Формируем дату начала с секундами
-                    var startDate = new Date(selectedDate);
-
-                    // Валидация формата времени перед отправкой
-                    function validateTimeFormat(timeStr) {
-                        var pattern = /^([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$/;
-                        return pattern.test(timeStr);
+                    var startDate = new Date(selectedDate.value);
+                    if (selectedTime && selectedTime.value) {
+                        var timeParts = selectedTime.value.split(':');
+                        if (timeParts.length >= 2) {
+                            startDate.setHours(parseInt(timeParts[0]) || 0);
+                            startDate.setMinutes(parseInt(timeParts[1]) || 0);
+                            startDate.setSeconds(0);
+                        }
+                    } else {
+                        startDate.setHours(9, 0, 0);
                     }
 
-                    // В обработчике сохранения:
-                    if (selectedTime && !validateTimeFormat(selectedTime)) {
-                        toastr.warning('Неверный формат времени. Используйте HH:MM:SS');
-                        return;
-                    }
-
-                    // Формируем дату окончания (сохраняем секунды)
                     var endDate = new Date(startDate);
-                    var durationHours = Math.floor(duration);
-                    var durationMinutes = (duration % 1) * 60;
-                    endDate.setHours(startDate.getHours() + durationHours);
-                    endDate.setMinutes(startDate.getMinutes() + durationMinutes);
-                    // Секунды остаются те же
+                    var durationValue = duration ? parseFloat(duration.value) : 1;
+                    var durationHours = Math.floor(durationValue);
+                    var durationMinutes = (durationValue % 1) * 60;
+                    endDate.setHours(endDate.getHours() + durationHours);
+                    endDate.setMinutes(endDate.getMinutes() + durationMinutes);
 
-                    var sharedWith = $('#shared_with').val();
+                    var sharedWithValues = [];
+                    if (sharedWith && sharedWith.selectedOptions) {
+                        for (var i = 0; i < sharedWith.selectedOptions.length; i++) {
+                            sharedWithValues.push(sharedWith.selectedOptions[i].value);
+                        }
+                    }
 
                     createEvent(
-                        title,
+                        title.value.trim(),
                         startDate,
                         endDate,
-                        priority,
-                        sharedWith,
-                        $calendarInstance,
+                        priority ? priority.value : 'primary',
+                        sharedWithValues,
                         pendingDropInfo ? pendingDropInfo.draggedEl : null
                     );
 
-                    bootstrap.Modal.getInstance(document.getElementById('eventTitleModal')).hide();
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('eventTitleModal'));
+                    if (modal) modal.hide();
+
+                    if (title) title.value = '';
+                    if (selectedDate) selectedDate.value = '';
+                    if (selectedTime) selectedTime.value = '';
+                    if (duration) duration.value = '1';
 
                     pendingDropInfo = null;
                     pendingEventData = null;
-                    $('#eventTitle').val('');
-                    $('#eventDate').val('');
-                    $('#eventTime').val('');
-                    $('#eventDuration').val(1);
                 });
-            };
+            }
 
-            // Инициализация
-            $(function () {
+            $(document).ready(function () {
+                console.log('Initializing calendar...');
                 initCalendar();
-
-                // Установка текущей даты и времени при открытии модального окна (опционально)
-                $('#eventTitleModal').on('show.bs.modal', function () {
-                    var now = new Date();
-                    if (!$('#eventDate').val()) {
-                        $('#eventDate').val(formatDate(now));
-                    }
-                    if (!$('#eventTime').val()) {
-                        $('#eventTime').val(formatTimeWithSeconds(now));  // С секундами
-                    }
-                });
-
                 initCalendarDragNDrop();
+                initSaveEventButton();
+
+                var modalElement = document.getElementById('eventTitleModal');
+                if (modalElement) {
+                    modalElement.addEventListener('show.bs.modal', function () {
+                        var now = new Date();
+                        var dateInput = document.getElementById('eventDate');
+                        var timeInput = document.getElementById('eventTime');
+
+                        if (dateInput && !dateInput.value) {
+                            dateInput.value = formatDate(now);
+                        }
+                        if (timeInput && !timeInput.value) {
+                            timeInput.value = formatTime(now);
+                        }
+                    });
+                }
             });
 
-        }).apply(this, [jQuery]);
+        })(jQuery);
     </script>
-
 {% endblock %}

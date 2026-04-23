@@ -16,7 +16,7 @@ class TaskForm(forms.ModelForm):
             ('5', 'Суббота'),
             ('6', 'Воскресенье'),
         ],
-        widget=forms.CheckboxSelectMultiple,
+        # widget=forms.CheckboxSelectMultiple,
         required=False,
     )
 
@@ -26,6 +26,7 @@ class TaskForm(forms.ModelForm):
         widgets = {
             'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'repeat_end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'shared_with': forms.SelectMultiple(attrs={
                 'class': 'form-control',
                 'id': 'id_shared_with',
@@ -39,8 +40,21 @@ class TaskForm(forms.ModelForm):
         self.fields['shared_with'].queryset = DataBaseUser.objects.filter(is_active=True).order_by('last_name')
         self.fields['shared_with'].label = "Пользователи с доступом"
         self.fields['shared_with'].help_text = "Выберите пользователей, которые смогут видеть эту задачу"
-        # for field in self.fields:
-        #     make_custom_field(self.fields[field])
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+        # ✅ ДОБАВЛЕНО: преобразование repeat_days из строки в список для редактирования
+        if self.instance and self.instance.pk and self.instance.repeat_days:
+            if self.instance.repeat_days and self.instance.repeat_days not in ('', '[]', 'null', 'None'):
+                try:
+                    if self.instance.repeat_days.startswith('['):
+                        import json
+                        self.initial['repeat_days'] = json.loads(self.instance.repeat_days)
+                    else:
+                        self.initial['repeat_days'] = [d.strip() for d in self.instance.repeat_days.split(',') if
+                                                       d.strip()]
+                except (ValueError, json.JSONDecodeError):
+                    self.initial['repeat_days'] = []
 
     def clean(self):
         cleaned_data = super().clean()
@@ -48,4 +62,10 @@ class TaskForm(forms.ModelForm):
         end = cleaned_data.get('end_date')
         if start and end and end < start:
             self.add_error('end_date', 'Дата завершения не может быть раньше даты начала.')
+
+        # ✅ ДОБАВЛЕНО: очистка repeat_days
+        repeat_days = cleaned_data.get('repeat_days')
+        if repeat_days == '[]' or repeat_days == []:
+            cleaned_data['repeat_days'] = None
+
         return cleaned_data

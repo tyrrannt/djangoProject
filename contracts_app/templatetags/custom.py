@@ -12,6 +12,13 @@ register = template.Library()
 
 
 @register.filter
+def split(value, arg):
+    """Разделяет строку по разделителю"""
+    if not value:
+        return []
+    return value.split(arg)
+
+@register.filter
 def contains(value, arg):
     """Проверяет, содержит ли строка подстроку (регистронезависимо)"""
     if not value:
