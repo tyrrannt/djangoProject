@@ -682,6 +682,11 @@ UNFOLD = {
                         "icon": "apartment",
                         "link": reverse_lazy("admin:customers_app_apartments_changelist"),
                     },
+                    {
+                        "title": _("Бронирование квартир"),
+                        "icon": "apartment",
+                        "link": reverse_lazy("admin:customers_app_apartmentbooking_changelist"),
+                    },
 
                 ],
             },

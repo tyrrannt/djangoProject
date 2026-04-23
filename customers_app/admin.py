@@ -206,6 +206,9 @@ class ApartmentsAdmin(ModelAdmin):
 
     get_current_occupancy.short_description = "Свободно мест (сейчас)"
 
+@admin.register(ApartmentBooking)
+class ApartmentBookingAdmin(ModelAdmin):
+    pass
 
 @admin.register(Counteragent)
 class CounteragentAdmin(ModelAdmin):

@@ -24,17 +24,34 @@ class TaskFileInline(TabularInline):
     """Встроенный интерфейс для управления файлами прямо в задаче."""
     model = TaskFile
     extra = 0
-    fields = ('file', 'original_filename_display', 'uploaded_at')
-    readonly_fields = ('uploaded_at',)
+    # Используем readonly поля для отображения информации
+    fields = ('file', 'display_filename', 'uploaded_at', 'display_file_size')
+    readonly_fields = ('display_filename', 'uploaded_at', 'display_file_size')
     can_delete = True
 
     def get_queryset(self, request):
         return super().get_queryset(request).order_by('-uploaded_at')
 
     @admin.display(description='Оригинальное имя')
-    def original_filename_display(self, obj):
-        # Безопасный fallback, если миграция ещё не применена
-        return getattr(obj, 'original_filename', None) or obj.file.name.split('/')[-1]
+    def display_filename(self, obj):
+        """Отображает оригинальное имя файла со ссылкой"""
+        filename = getattr(obj, 'original_filename', None) or obj.file.name.split('/')[-1]
+        if obj.file and obj.file.url:
+            return format_html('<a href="{}" target="_blank" style="font-weight: 500;">📎 {}</a>',
+                             obj.file.url, filename)
+        return filename
+
+    @admin.display(description='Размер')
+    def display_file_size(self, obj):
+        """Отображает размер файла"""
+        if not obj.file or not obj.file.size:
+            return '—'
+        size = obj.file.size
+        if size < 1024:
+            return f"{size} Б"
+        elif size < 1024**2:
+            return f"{size/1024:.1f} КБ"
+        return f"{size/1024**2:.1f} МБ"
 
 
 @admin.register(Task)
@@ -46,10 +63,9 @@ class TaskAdmin(ModelAdmin):
     list_select_related = ('user', 'category')
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
-    save_as = True  # Кнопка "Сохранить как новую"
+    save_as = True
     actions = ['mark_completed', 'mark_incomplete']
 
-    # 🧩 Структура формы редактирования
     fieldsets = (
         ('Основная информация', {
             'fields': ('title', 'description', 'user', 'category', 'priority', 'completed')
@@ -59,7 +75,7 @@ class TaskAdmin(ModelAdmin):
         }),
         ('Повторение', {
             'fields': ('repeat', 'repeat_interval', 'repeat_days', 'repeat_end_date'),
-            'classes': ('collapse',)  # Сворачивается по умолчанию для экономии места
+            'classes': ('collapse',)
         }),
         ('Доступ', {
             'fields': ('shared_with',),
@@ -67,11 +83,10 @@ class TaskAdmin(ModelAdmin):
         }),
     )
     readonly_fields = ('created_at',)
-    filter_horizontal = ('shared_with',)  # Удобный виджет M2M
+    filter_horizontal = ('shared_with',)
     inlines = [TaskFileInline]
 
     def get_queryset(self, request):
-        # Аннотация для быстрого подсчёта файлов без N+1
         return super().get_queryset(request).annotate(files_count=Count('files', distinct=True))
 
     @admin.display(description='Приоритет', ordering='priority')
@@ -104,13 +119,13 @@ class TaskAdmin(ModelAdmin):
 
 @admin.register(TaskFile)
 class TaskFileAdmin(ModelAdmin):
-    list_display = ('task_title', 'original_filename_display', 'uploaded_at', 'file_size')
+    list_display = ('task_title', 'display_filename', 'uploaded_at', 'display_file_size')
     list_filter = ('uploaded_at',)
     search_fields = ('task__title', 'original_filename', 'file')
     list_select_related = ('task',)
     ordering = ('-uploaded_at',)
     date_hierarchy = 'uploaded_at'
-    readonly_fields = ('uploaded_at', 'file_size')
+    readonly_fields = ('uploaded_at', 'display_file_size', 'display_filename')
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('task')
@@ -120,11 +135,14 @@ class TaskFileAdmin(ModelAdmin):
         return obj.task.title if obj.task else '—'
 
     @admin.display(description='Оригинальное имя')
-    def original_filename_display(self, obj):
-        return getattr(obj, 'original_filename', None) or obj.file.name.split('/')[-1]
+    def display_filename(self, obj):
+        filename = getattr(obj, 'original_filename', None) or obj.file.name.split('/')[-1]
+        if obj.file and obj.file.url:
+            return format_html('<a href="{}" target="_blank">📎 {}</a>', obj.file.url, filename)
+        return filename
 
     @admin.display(description='Размер файла')
-    def file_size(self, obj):
+    def display_file_size(self, obj):
         if not obj.file or not obj.file.size:
             return '—'
         size = obj.file.size
