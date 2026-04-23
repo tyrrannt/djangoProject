@@ -10,6 +10,8 @@ from django.db.models import ForeignKey, OneToOneField
 from django.core.exceptions import FieldError
 import logging
 
+from django.utils.safestring import mark_safe
+
 from hrdepartment_app.models import ApprovalOficialMemoProcess
 
 logger = logging.getLogger(__name__)
@@ -199,7 +201,6 @@ class ApartmentBookingInline(admin.TabularInline):
 
 @admin.register(Apartments)
 class ApartmentsAdmin(ModelAdmin):
-    inlines = [ApartmentBookingInline]
     list_display = ['title', 'place', 'beds_number', 'get_current_occupancy']
 
     def get_current_occupancy(self, obj):
