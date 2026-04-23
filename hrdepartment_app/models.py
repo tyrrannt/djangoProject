@@ -1008,6 +1008,7 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
     )
     email_send = models.BooleanField(verbose_name="Письмо отправлено", default=False)
     cancellation = models.BooleanField(verbose_name="Отмена", default=False)
+    check_apart = models.BooleanField(verbose_name="Не проверять квартиру", default=True)
     reason_cancellation = models.ForeignKey(
         ReasonForCancellation,
         verbose_name="Причина отмены",

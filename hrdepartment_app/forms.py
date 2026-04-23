@@ -463,7 +463,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             {"class": "mobileToggle"}
         )
         # Если есть экземпляр, подгружаем данные
-        if self.instance.pk and self.instance.document:
+        if self.instance.pk and self.instance.document and self.instance.check_apart:
             doc = self.instance.document
             first_mpd = doc.place_production_activity.first()
 
@@ -561,7 +561,7 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             validation_applies = document.period_from >= VALIDATION_START_DATE
 
         # Если выбрана квартира, должно быть указано конкретное жилье
-        if validation_applies and accommodation == "1" and location_selected and not apartment:
+        if validation_applies and accommodation == "1" and location_selected and self.instance.check_apart and not apartment:
             raise ValidationError("При выборе проживания в квартире необходимо указать конкретную квартиру.")
 
         # Проверка доступности квартиры на период (исключая текущий процесс)
