@@ -196,12 +196,30 @@
          * id_document_order_type - Личный состав; id_employee - Кирюшкина Ирина Алексеевна
          */
         function ChangeSelect() {
-            $('#id_access').val(4).change();
-            $('#id_document_order_type').val(2).change();
+            $('#id_access').val(4).trigger('change');
+            $('#id_document_order_type').val(2).trigger('change');
+
             var text = 'Кирюшкина Ирина Алексеевна';
-            var index = $('#id_employee option:contains(' + text + ')').val();
-            $('#id_employee').val(index).change();
-        };
+            var $employeeSelect = $('#id_employee');
+
+            var option = $employeeSelect.find('option:contains("' + text + '")');
+
+            if (option.length) {
+                var value = option.val();
+
+                // Полная перезагрузка Select2
+                $employeeSelect.val(value);
+                $employeeSelect.trigger('change');
+                $employeeSelect.trigger('change.select2');
+
+                // Обновляем через API Select2
+                if ($employeeSelect.data('select2')) {
+                    $employeeSelect.select2('trigger', 'select', {
+                        data: {id: value, text: option.text()}
+                    });
+                }
+            }
+        }
 
         /**
          * DocumentsDateChange - отправляет на сервер значение даты документа, и получает последний номер приказа
