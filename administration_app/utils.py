@@ -926,6 +926,13 @@ def make_custom_field(f: forms.Field):
             "data-date-language": "ru",
             "data-plugin-options": '{"orientation": "bottom", "format": "dd.mm.yyyy", "todayBtn": true, "clearBtn": true}',
         }),
+        (forms.DateTimeField, {
+            "class": "form-control form-control-modern",
+            "data-plugin-datetimepicker": "true",
+            "type": "datetime-local",  # HTML5 тип для даты+времени
+            "data-date-language": "ru",
+            "data-plugin-options": '{"format": "dd.mm.yyyy hh:ii", "autoclose": true, "todayBtn": true, "minuteStep": 1}',
+        }),
         (forms.BooleanField, {
             "class": "todo-check",
             "data-plugin-ios-switch": "true",

@@ -8,16 +8,17 @@ from .models import Category, Task, TaskFile
 
 @admin.register(Category)
 class CategoryAdmin(ModelAdmin):
-    list_display = ('name', 'task_count')
-    search_fields = ('name',)
-    ordering = ('name',)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).annotate(task_count=Count('tasks'))
-
-    @admin.display(description='Количество задач', ordering='task_count')
-    def task_count(self, obj):
-        return obj.task_count
+    pass
+    # list_display = ('name', 'task_count')
+    # search_fields = ('name',)
+    # ordering = ('name',)
+    #
+    # def get_queryset(self, request):
+    #     return super().get_queryset(request).annotate(task_count=Count('tasks'))
+    #
+    # @admin.display(description='Количество задач', ordering='task_count')
+    # def task_count(self, obj):
+    #     return obj.task_count
 
 
 class TaskFileInline(TabularInline):
