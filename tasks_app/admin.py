@@ -62,7 +62,7 @@ class TaskAdmin(ModelAdmin):
     list_filter = ('priority', 'completed', 'category', 'user', 'repeat', 'created_at')
     search_fields = ('title', 'description', 'user__username', 'user__first_name', 'user__last_name')
     list_select_related = ('user', 'category')
-    date_hierarchy = 'created_at'
+    # date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     save_as = True
     actions = ['mark_completed', 'mark_incomplete']
