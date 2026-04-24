@@ -1,7 +1,5 @@
 # tasks_app/views.py
-import datetime
 import os
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -12,7 +10,6 @@ from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 
@@ -250,12 +247,11 @@ class TaskListView(LoginRequiredMixin, ListView):
         before = ''
         after = ''
         if task.completed:
-            after = '<i class="fa-regular fa-square-check"></i>'
-        elif task.end_date > datetime.today():
+            after = '<i class="fa-solid fa-check-double"></i>'
+        elif task.end_date and task.end_date > timezone.now():
             after = '<i class="fa-solid fa-hourglass-half"></i>'
         else:
             after = '<i class="fa-solid fa-xmark"></i>'
-
 
         if task.user != self.request.user:
             before = f'<i class="fas fa-user-friends"></i>'
@@ -269,7 +265,7 @@ class TaskListView(LoginRequiredMixin, ListView):
             before = f'<i class="fas fa-exclamation-circle"></i>'
         elif task.priority == 'dark':
             before = f'<i class="fas fa-moon"></i>'
-        return f'{before} {task.title} {after}'
+        return f'{after} {before} {task.title} '
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
