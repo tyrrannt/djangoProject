@@ -3,461 +3,203 @@
 {% load custom %}
 
 {% block title %}
-    <title>{{ task.title }} - Детали задачи</title>
+    <title>{{ task.title }} - Детали задачи | Портал</title>
 {% endblock %}
 
 {% block custom_css %}
+    {# Небольшие кастомные стили только для специфических элементов, не переопределяя Porto #}
     <style>
-        .task-detail-card {
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .task-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 2rem;
-            color: white;
-        }
-
-        .task-header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            word-break: break-word;
-        }
-
-        .priority-badge {
-            display: inline-block;
-            padding: 0.25rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .priority-primary {
-            background-color: #0d6efd;
-            color: white;
-        }
-
-        .priority-warning {
-            background-color: #ffc107;
-            color: #000;
-        }
-
-        .priority-info {
-            background-color: #0dcaf0;
-            color: #000;
-        }
-
-        .priority-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .priority-dark {
-            background-color: #212529;
-            color: white;
-        }
-
-        .info-section {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #0d6efd;
-        }
-
-        .info-section h5 {
-            margin-bottom: 1rem;
-            color: #343a40;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #6c757d;
-            margin-bottom: 0.25rem;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-value {
-            font-size: 1rem;
-            color: #212529;
-            margin-bottom: 0.75rem;
-        }
-
-        .files-section {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 1.5rem;
-        }
-
+        /* Стили для файлов - минималистичные, в духе Porto */
         .file-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 1rem;
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            background-color: #fff;
         }
 
         .file-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .file-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex: 1;
+            background-color: #f8f9fa;
+            border-color: #cbd5e1;
+            transform: translateX(2px);
         }
 
         .file-icon {
-            font-size: 1.5rem;
-            width: 40px;
+            width: 2.5rem;
             text-align: center;
-        }
-
-        .file-details {
-            flex: 1;
-        }
-
-        .file-name {
-            font-weight: 500;
-            color: #212529;
-            word-break: break-all;
-        }
-
-        .file-meta {
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin-top: 0.25rem;
-        }
-
-        .action-buttons {
-            position: sticky;
-            top: 20px;
-        }
-
-        .btn-action {
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-action:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .status-completed {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-
-        .status-overdue {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .share-avatars {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .share-avatar {
-            background: #e9ecef;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .share-avatar i {
-            font-size: 0.8rem;
+            font-size: 1.25rem;
         }
 
         .description-text {
             white-space: pre-wrap;
-            word-wrap: break-word;
+            word-break: break-word;
             line-height: 1.6;
             color: #495057;
         }
 
-        hr {
-            margin: 1.5rem 0;
+        /* Адаптив для мобильных устройств */
+        @media (max-width: 768px) {
+            .btn-action {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .action-buttons .d-grid {
+                gap: 0.5rem;
+            }
+
+            .share-avatars {
+                justify-content: center;
+            }
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <div class="container py-4">
-        <div class="row">
-            <!-- Основная информация -->
-            <div class="col-lg-8">
-                <div class="card task-detail-card">
-                    <!-- Заголовок -->
-                    <div class="task-header">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h1>
-                                    <i class="fas fa-tasks me-2"></i>
-                                    {{ task.title }}
-                                </h1>
-                                <div class="mt-3">
-                                    <span class="priority-badge priority-{{ task.priority }}">
-                                        <i class="fas
-                                            {% if task.priority == 'primary' %}fa-star
-                                            {% elif task.priority == 'warning' %}fa-exclamation-triangle
-                                            {% elif task.priority == 'info' %}fa-info-circle
-                                            {% elif task.priority == 'danger' %}fa-exclamation-circle
-                                            {% elif task.priority == 'dark' %}fa-moon
-                                            {% else %}fa-flag{% endif %} me-1"></i>
-                                        {{ task.get_priority_display }}
-                                    </span>
+    <div class="container-fluid py-3">
 
-                                    <span class="status-badge ms-2
-                                        {% if task.completed %}status-completed
-                                        {% elif task.end_date and task.end_date < now %}status-overdue
-                                        {% else %}status-pending{% endif %}">
-                                        <i class="fas
-                                            {% if task.completed %}fa-check-circle
-                                            {% elif task.end_date and task.end_date < now %}fa-exclamation-triangle
-                                            {% else %}fa-clock{% endif %} me-1"></i>
-                                        {% if task.completed %}
-                                            Выполнена
-                                        {% elif task.end_date and task.end_date < now %}
-                                            Просрочена
-                                        {% else %}
-                                            В процессе
-                                        {% endif %}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <small class="opacity-75">
-                                    <i class="fas fa-calendar-alt me-1"></i>
-                                    Создана: {{ task.created_at|date:"d.m.Y H:i" }}
-                                </small>
-                            </div>
+        {# Хлебные крошки (Porto стиль) #}
+        <div class="row mb-3">
+            <div class="col-12">
+                <h1 class="page-header h3 mb-0">
+                    <i class="fas fa-tasks text-primary me-2"></i> {{ task.title|truncatechars:60 }}
+                </h1>
+                <div class="breadcrumb-wrapper">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'customers_app:profile' user.pk %}">Главная</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'tasks_app:task-list' %}">Задачи</a></li>
+                        <li class="breadcrumb-item active">{{ task.title|truncatechars:40 }}</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            {# ОСНОВНАЯ ИНФОРМАЦИЯ (левая колонка) #}
+            <div class="col-lg-8">
+                <div class="card card-body-modern mb-4">
+                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center flex-wrap">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2 text-primary"></i>Основная информация
+                        </h4>
+                        <div class="mt-2 mt-sm-0">
+                            {# Бейджи статуса и приоритета (Porto style) #}
+                            <span class="badge {% if task.completed %}badge-success{% elif task.end_date and task.end_date < now %}badge-danger{% else %}badge-warning{% endif %} me-1 fs-6">
+                                <i class="fas {% if task.completed %}fa-check-circle{% elif task.end_date and task.end_date < now %}fa-exclamation-triangle{% else %}fa-clock{% endif %} me-1"></i>
+                                {% if task.completed %}Выполнена{% elif task.end_date and task.end_date < now %}
+                                    Просрочена{% else %}В процессе{% endif %}
+                            </span>
+                            <span class="badge bg-{{ task.priority }} fs-6">
+                                <i class="fas
+                                    {% if task.priority == 'primary' %}fa-star
+                                    {% elif task.priority == 'warning' %}fa-exclamation-triangle
+                                    {% elif task.priority == 'info' %}fa-info-circle
+                                    {% elif task.priority == 'danger' %}fa-exclamation-circle
+                                    {% else %}fa-flag{% endif %} me-1"></i>
+                                {{ task.get_priority_display }}
+                            </span>
                         </div>
                     </div>
-
-                    <div class="card-body p-4">
-                        <!-- Описание -->
-                        {% if task.description %}
-                            <div class="info-section">
-                                <h5>
-                                    <i class="fas fa-align-left text-primary"></i>
-                                    Описание задачи
-                                </h5>
-                                <div class="description-text">
-                                    {{ task.description|linebreaks|default:"Нет описания" }}
+                    <div class="card-body">
+                        {# Описание #}
+                        <div class="form-group row mb-3">
+                            <label class="col-lg-3 col-form-label fw-bold">Описание:</label>
+                            <div class="col-lg-9">
+                                <div class="description-text p-3 bg-light rounded">
+                                    {{ task.description|linebreaks|default:"<em class='text-muted'>Нет описания</em>" }}
                                 </div>
-                            </div>
-                        {% endif %}
-
-                        <!-- Информация о сроках -->
-                        <div class="info-section">
-                            <h5>
-                                <i class="fas fa-calendar-alt text-primary"></i>
-                                Сроки выполнения
-                            </h5>
-                            <div class="row">
-                                {% if task.start_date %}
-                                    <div class="col-md-6">
-                                        <div class="info-label">
-                                            <i class="fas fa-play me-1"></i>Дата начала
-                                        </div>
-                                        <div class="info-value">
-                                            {{ task.start_date|date:"d.m.Y H:i" }}
-                                        </div>
-                                    </div>
-                                {% endif %}
-
-                                {% if task.end_date %}
-                                    <div class="col-md-6">
-                                        <div class="info-label">
-                                            <i class="fas fa-flag-checkered me-1"></i>Дата завершения
-                                        </div>
-                                        <div class="info-value">
-                                            {{ task.end_date|date:"d.m.Y H:i" }}
-                                            {% if not task.completed and task.end_date %}
-                                                {% if task.end_date < now %}
-                                                    <span class="text-danger ms-2">
-                                                        <i class="fas fa-exclamation-circle"></i> Просрочена
-                                                    </span>
-                                                {% else %}
-                                                    <span class="text-success ms-2">
-                                                        <i class="fas fa-hourglass-half"></i>
-                                                        Осталось: {{ task.end_date|timeuntil }}
-                                                    </span>
-                                                {% endif %}
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% endif %}
                             </div>
                         </div>
-
-                        <!-- Категория -->
-                        {% if task.category %}
-                            <div class="info-section">
-                                <h5>
-                                    <i class="fas fa-tags text-primary"></i>
-                                    Категория
-                                </h5>
-                                <div class="info-value">
-                                    <span class="badge bg-secondary">
-                                        <i class="fas fa-folder me-1"></i>
-                                        {{ task.category.name }}
-                                    </span>
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        <!-- Повторение -->
-                        {% if task.repeat != 'none' %}
-                            <div class="info-section">
-                                <h5>
-                                    <i class="fas fa-sync-alt text-primary"></i>
-                                    Настройки повторения
-                                </h5>
+                        <hr>
+                        {# Сроки #}
+                        <div class="form-group row mb-3">
+                            <label class="col-lg-3 col-form-label fw-bold">Сроки:</label>
+                            <div class="col-lg-9">
                                 <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="info-label">
-                                            <i class="fas fa-clock me-1"></i>Периодичность
-                                        </div>
-                                        <div class="info-value">
-                                            {% if task.repeat == 'daily' %}
-                                                <i class="fas fa-calendar-day me-1"></i>Ежедневно
-                                            {% elif task.repeat == 'weekly' %}
-                                                <i class="fas fa-calendar-week me-1"></i>Еженедельно
-                                            {% elif task.repeat == 'monthly' %}
-                                                <i class="fas fa-calendar-alt me-1"></i>Ежемесячно
-                                            {% elif task.repeat == 'yearly' %}
-                                                <i class="fas fa-calendar me-1"></i>Ежегодно
-                                            {% endif %}
-                                            {% if task.repeat_interval > 1 %}
-                                                (каждые {{ task.repeat_interval }}
-                                                {% if task.repeat == 'daily' %}дней
-                                                {% elif task.repeat == 'weekly' %}недель
-                                                {% elif task.repeat == 'monthly' %}месяцев
-                                                {% elif task.repeat == 'yearly' %}лет
-                                                {% endif %})
-                                            {% endif %}
-                                        </div>
+                                    <div class="col-md-6 mb-2">
+                                        <i class="fas fa-play text-muted me-1"></i> Начало:
+                                        <strong>{{ task.start_date|date:"d.m.Y H:i"|default:"—" }}</strong>
                                     </div>
-
+                                    <div class="col-md-6 mb-2">
+                                        <i class="fas fa-flag-checkered text-muted me-1"></i> Завершение:
+                                        <strong>{{ task.end_date|date:"d.m.Y H:i"|default:"—" }}</strong>
+                                        {% if task.end_date and not task.completed %}
+                                            {% if task.end_date < now %}
+                                                <span class="text-danger ms-2"><i class="fas fa-exclamation-circle"></i> Просрочена</span>
+                                            {% else %}
+                                                <span class="text-success ms-2"><i class="fas fa-hourglass-half"></i> Осталось: {{ task.end_date|timeuntil }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        {# Категория и повторение #}
+                        <div class="form-group row mb-3">
+                            <label class="col-lg-3 col-form-label fw-bold">Категория:</label>
+                            <div class="col-lg-9">
+                                <span class="badge badge-dark bg-secondary"><i
+                                        class="fas fa-folder me-1"></i> {{ task.category.name|default:"Без категории" }}</span>
+                            </div>
+                        </div>
+                        {% if task.repeat != 'none' %}
+                            <hr>
+                            <div class="form-group row mb-3">
+                                <label class="col-lg-3 col-form-label fw-bold">Повторение:</label>
+                                <div class="col-lg-9">
+                                    <span class="badge badge-info me-2">
+                                        <i class="fas fa-sync-alt me-1"></i>
+                                        {% if task.repeat == 'daily' %}Ежедневно
+                                        {% elif task.repeat == 'weekly' %}Еженедельно
+                                        {% elif task.repeat == 'monthly' %}Ежемесячно
+                                        {% elif task.repeat == 'yearly' %}Ежегодно
+                                        {% endif %}
+                                        {% if task.repeat_interval > 1 %} (каждые {{ task.repeat_interval }}
+                                            {% if task.repeat == 'daily' %}дней{% elif task.repeat == 'weekly' %}недель
+                                            {% elif task.repeat == 'monthly' %}месяцев{% elif task.repeat == 'yearly' %}
+                                                лет{% endif %}){% endif %}
+                                    </span>
                                     {% if task.repeat_days %}
-                                        <div class="col-md-6">
-                                            <div class="info-label">
-                                                <i class="fas fa-calendar-week me-1"></i>Дни недели
-                                            </div>
-                                            <div class="info-value">
-                                                {% load custom %}
-                                                {% with days=task.repeat_days|split:',' %}
-                                                    {% for day in days %}
-                                                        <span class="badge bg-info me-1">
-                                                            {% if day == '0' %}Пн
-                                                            {% elif day == '1' %}Вт
-                                                            {% elif day == '2' %}Ср
-                                                            {% elif day == '3' %}Чт
-                                                            {% elif day == '4' %}Пт
-                                                            {% elif day == '5' %}Сб
-                                                            {% elif day == '6' %}Вс
-                                                            {% endif %}
-                                                        </span>
-                                                    {% endfor %}
-                                                {% endwith %}
-                                            </div>
-                                        </div>
-                                    {% endif %}
-
-                                    {% if task.repeat_end_date %}
-                                        <div class="col-12">
-                                            <div class="info-label">
-                                                <i class="fas fa-stop me-1"></i>Дата окончания повторения
-                                            </div>
-                                            <div class="info-value">
-                                                {{ task.repeat_end_date|date:"d.m.Y H:i" }}
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        <!-- Общий доступ -->
-                        {% if task.shared_with.exists %}
-                            <div class="info-section">
-                                <h5>
-                                    <i class="fas fa-users text-primary"></i>
-                                    Общий доступ
-                                </h5>
-                                <div class="share-avatars">
-                                    {% for user in task.shared_with.all %}
-                                        <span class="share-avatar">
-                                            <i class="fas fa-user-circle"></i>
-                                            {{ user.get_full_name|default:user.username }}
+                                        <span class="text-muted ms-2">
+                                            <i class="fas fa-calendar-week me-1"></i> Дни:
+                                            {% with days=task.repeat_days|split:',' %}
+                                                {% for day in days %}
+                                                    <span class="badge bg-light text-dark me-1">
+                                                        {% if day == '0' %}Пн{% elif day == '1' %}
+                                                            Вт{% elif day == '2' %}Ср{% elif day == '3' %}
+                                                            Чт{% elif day == '4' %}Пт{% elif day == '5' %}
+                                                            Сб{% elif day == '6' %}Вс{% endif %}
+                                                    </span>
+                                                {% endfor %}
+                                            {% endwith %}
                                         </span>
-                                    {% endfor %}
+                                    {% endif %}
+                                    {% if task.repeat_end_date %}
+                                        <div class="mt-2 text-muted"><i class="fas fa-stop me-1"></i> Действует
+                                            до: {{ task.repeat_end_date|date:"d.m.Y" }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endif %}
-
-                        <!-- Информация о создателе -->
-                        <div class="info-section">
-                            <h5>
-                                <i class="fas fa-user text-primary"></i>
-                                Информация о создателе
-                            </h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="info-label">
-                                        <i class="fas fa-user me-1"></i>Автор
+                        <hr>
+                        {# Доступ #}
+                        <div class="form-group row mb-3">
+                            <label class="col-lg-3 col-form-label fw-bold">Доступ:</label>
+                            <div class="col-lg-9">
+                                {% if task.shared_with.exists %}
+                                    <div class="share-avatars d-flex flex-wrap gap-2">
+                                        {% for user in task.shared_with.all %}
+                                            <span class="badge badge-secondary bg-light text-dark border">
+                                                <i class="fas fa-user-circle me-1"></i> {{ user.get_full_name|default:user.username }}
+                                            </span>
+                                        {% endfor %}
                                     </div>
-                                    <div class="info-value">
-                                        <i class="fas fa-user-circle me-1"></i>
-                                        {{ task.user.get_full_name|default:task.user.username }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="info-label">
-                                        <i class="fas fa-clock me-1"></i>Последнее обновление
-                                    </div>
-                                    <div class="info-value">
-                                        {{ task.updated_at|default:task.created_at|date:"d.m.Y H:i" }}
-                                    </div>
+                                {% else %}
+                                    <span class="text-muted">Только владелец</span>
+                                {% endif %}
+                                <div class="mt-2 small text-muted">
+                                    <i class="fas fa-user me-1"></i>
+                                    Создал: {{ task.user.get_full_name|default:task.user.username }}
                                 </div>
                             </div>
                         </div>
@@ -465,214 +207,166 @@
                 </div>
             </div>
 
-            <!-- Боковая панель с действиями и файлами -->
+            {# БОКОВАЯ ПАНЕЛЬ (правая колонка) #}
             <div class="col-lg-4">
-                <div class="action-buttons">
-                    <!-- Кнопки действий -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title mb-3">
-                                <i class="fas fa-cogs me-2"></i>
-                                Действия
-                            </h5>
-                            <div class="d-grid gap-2">
-                                {% if can_edit %}
-                                    <a href="{% url 'tasks_app:task-update' task.pk %}"
-                                       class="btn btn-primary btn-action">
-                                        <i class="fas fa-edit me-2"></i>
-                                        Редактировать задачу
-                                    </a>
-                                    <button type="button" class="btn btn-danger btn-action"
-                                            data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
-                                        <i class="fas fa-trash-alt me-2"></i>
-                                        Удалить задачу
-                                    </button>
-                                {% else %}
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        У вас есть только доступ на чтение этой задачи
-                                    </div>
-                                {% endif %}
-                                <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary btn-action">
-                                    <i class="fas fa-arrow-left me-2"></i>
-                                    Вернуться к списку
+                {# Блок действий (Porto стиль) #}
+                <div class="card card-body-modern mb-4">
+                    <div class="card-header bg-transparent">
+                        <h4 class="card-title mb-0"><i class="fas fa-cogs me-2 text-primary"></i>Действия</h4>
+                    </div>
+                    <div class="card-body action-buttons">
+                        <div class="d-grid gap-2">
+                            {% if can_edit %}
+                                <a href="{% url 'tasks_app:task-update' task.pk %}" class="btn btn-primary btn-action">
+                                    <i class="fas fa-edit me-2"></i> Редактировать
                                 </a>
+                                <button type="button" class="btn btn-danger btn-action" data-bs-toggle="modal"
+                                        data-bs-target="#deleteTaskModal">
+                                    <i class="fas fa-trash-alt me-2"></i> Удалить
+                                </button>
+                            {% else %}
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i> У вас доступ только на чтение.
+                                </div>
+                            {% endif %}
+                            <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary btn-action">
+                                <i class="fas fa-arrow-left me-2"></i> К списку задач
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {# Статус выполнения (только для владельца) #}
+                {% if can_edit %}
+                    <div class="card card-body-modern mb-4">
+                        <div class="card-header bg-transparent">
+                            <h4 class="card-title mb-0"><i class="fas fa-check-circle me-2 text-primary"></i>Статус</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="completedSwitch"
+                                       data-task-id="{{ task.pk }}"
+                                       data-url="{% url 'tasks_app:task-status-update' task.pk %}"
+                                       {% if task.completed %}checked{% endif %}>
+                                <label class="form-check-label" for="completedSwitch">
+                                    {% if task.completed %}
+                                        <span class="text-success"><i class="fas fa-check-circle"></i> Задача выполнена</span>
+                                        else }
+                                        <span class="text-warning"><i
+                                                class="fas fa-hourglass-half"></i> В процессе</span>
+                                    {% endif %}
+                                </label>
                             </div>
                         </div>
                     </div>
+                {% endif %}
 
-                    <!-- Статус переключатель -->
-                    {% if can_edit %}
-                        <div class="card mb-4">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3">
-                                    <i class="fas fa-check-circle me-2"></i>
-                                    Статус выполнения
-                                </h5>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox"
-                                           id="completedSwitch" name="completed"
-                                           {% if task.completed %}checked{% endif %}
-                                           data-task-id="{{ task.pk }}"
-                                           data-url="{% url 'tasks_app:task-status-update' task.pk %}"
-                                           style="width: 3rem; height: 1.5rem;">
-                                    <label class="form-check-label ms-2" for="completedSwitch">
-                                        {% if task.completed %}
-                                            <span class="text-success">
-                            <i class="fas fa-check-circle"></i> Задача выполнена
-                        </span>
-                                        {% else %}
-                                            <span class="text-warning">
-                            <i class="fas fa-hourglass-half"></i> В процессе выполнения
-                        </span>
-                                        {% endif %}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    <!-- Файлы -->
-                    <div class="card">
-                        <div class="card-body files-section">
-                            <h5 class="card-title mb-3">
-                                <i class="fas fa-paperclip me-2"></i>
-                                Вложения
-                                <span class="badge bg-secondary ms-2">{{ task.files.count }}</span>
-                            </h5>
-
-                            {% if task.files.exists %}
-                                <div class="files-list">
-                                    {% for file in task.files.all %}
-                                        <div class="file-item">
-                                            <div class="file-info">
-                                                <div class="file-icon">
-                                                    {% with file.original_filename|lower as filename %}
-                                                        {% if 'pdf' in filename %}
-                                                            <i class="fas fa-file-pdf text-danger"></i>
-                                                        {% elif 'jpg' in filename or 'jpeg' in filename or 'png' in filename or 'gif' in filename %}
-                                                            <i class="fas fa-file-image text-success"></i>
-                                                        {% elif 'doc' in filename %}
-                                                            <i class="fas fa-file-word text-primary"></i>
-                                                        {% elif 'xls' in filename %}
-                                                            <i class="fas fa-file-excel text-success"></i>
-                                                        {% elif 'zip' in filename or 'rar' in filename %}
-                                                            <i class="fas fa-file-archive text-warning"></i>
-                                                        {% else %}
-                                                            <i class="fas fa-file-alt text-secondary"></i>
-                                                        {% endif %}
-                                                    {% endwith %}
-                                                </div>
-                                                <div class="file-details">
-                                                    <div class="file-name">
-                                                        {{ file.original_filename|default:file.file.name|basename }}
-                                                    </div>
-                                                    <div class="file-meta">
-                                                        <i class="fas fa-calendar-alt me-1"></i>
-                                                        {{ file.uploaded_at|date:"d.m.Y H:i" }}
-                                                        {% if file.file.size %}
-                                                            <span class="mx-1">•</span>
-                                                            <i class="fas fa-database me-1"></i>
-                                                            {{ file.file.size|filesizeformat }}
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="file-actions">
-                                                <a href="{{ file.file.url }}" target="_blank"
-                                                   class="btn btn-sm btn-outline-primary"
-                                                   title="Скачать файл">
-                                                    <i class="fas fa-download"></i>
-                                                </a>
-                                                {% if can_edit %}
-                                                    <button type="button"
-                                                            class="btn btn-sm btn-outline-danger delete-file-btn"
-                                                            data-file-id="{{ file.id }}"
-                                                            data-file-name="{{ file.original_filename|default:file.file.name|basename }}"
-                                                            title="Удалить файл">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
+                {# Файлы (стилизовано под Porto) #}
+                <div class="card card-body-modern">
+                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0"><i class="fas fa-paperclip me-2 text-primary"></i>Вложения</h4>
+                        <span class="badge badge-dark">{{ task.files.count }}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if task.files.exists %}
+                            <div class="list-group list-group-flush">
+                                {% for file in task.files.all %}
+                                    <div class="list-group-item file-item d-flex align-items-center p-3">
+                                        <div class="file-icon me-3">
+                                            {% with file.original_filename|lower as filename %}
+                                                {% if 'pdf' in filename %}
+                                                    <i class="fas fa-file-pdf text-danger fa-lg"></i>
+                                                {% elif 'jpg' in filename or 'jpeg' in filename or 'png' in filename %}
+                                                    <i class="fas fa-file-image text-success fa-lg"></i>
+                                                {% elif 'doc' in filename %}
+                                                    <i class="fas fa-file-word text-primary fa-lg"></i>
+                                                {% elif 'xls' in filename %}
+                                                    <i class="fas fa-file-excel text-success fa-lg"></i>
+                                                {% elif 'zip' in filename or 'rar' in filename %}
+                                                    <i class="fas fa-file-archive text-warning fa-lg"></i>
+                                                {% else %}
+                                                    <i class="fas fa-file-alt text-secondary fa-lg"></i>
                                                 {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold">{{ file.original_filename|default:file.file.name|truncatechars:30 }}</div>
+                                            <div class="small text-muted">
+                                                <i class="fas fa-calendar-alt me-1"></i> {{ file.uploaded_at|date:"d.m.Y H:i" }}
+                                                {% if file.file.size %} • {{ file.file.size|filesizeformat }}{% endif %}
                                             </div>
                                         </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="text-center py-4 text-muted">
-                                    <i class="fas fa-paperclip fa-3x mb-3 opacity-25"></i>
-                                    <p>Нет прикрепленных файлов</p>
-                                </div>
-                            {% endif %}
-                        </div>
+                                        <div class="ms-2">
+                                            <a href="{{ file.file.url }}" target="_blank"
+                                               class="btn btn-sm btn-outline-primary" title="Скачать">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% if can_edit %}
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger delete-file-btn ms-1"
+                                                        data-file-id="{{ file.id }}"
+                                                        data-file-name="{{ file.original_filename|default:file.file.name|basename }}"
+                                                        title="Удалить">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-paperclip fa-3x mb-3 opacity-25"></i>
+                                <p>Нет прикрепленных файлов</p>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно подтверждения удаления задачи -->
+    {# Модальные окна (Porto стиль) #}
     {% if can_edit %}
+        <!-- Модалка удаления задачи -->
         <div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Подтверждение удаления
+                        <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Подтверждение удаления
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <p>Вы действительно хотите удалить задачу <strong>"{{ task.title }}"</strong>?</p>
-                        <p class="text-danger mb-0">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Это действие невозможно отменить. Все прикрепленные файлы также будут удалены.
-                        </p>
+                        <p class="text-danger mb-0"><i class="fas fa-info-circle me-1"></i> Это действие невозможно
+                            отменить. Все прикрепленные файлы также будут удалены.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>
-                            Отмена
-                        </button>
-                        <form method="post" action="{% url 'tasks_app:task-delete' task.pk %}" style="display: inline;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <form method="post" action="{% url 'tasks_app:task-delete' task.pk %}" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-trash-alt me-1"></i>
-                                Да, удалить
-                            </button>
+                            <button type="submit" class="btn btn-danger">Да, удалить</button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Модальное окно для удаления файла -->
+        <!-- Модалка удаления файла -->
         <div class="modal fade" id="deleteFileModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-trash-alt me-2"></i>
-                            Подтверждение удаления файла
-                        </h5>
+                        <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Удаление файла</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                        <p>Вы действительно хотите удалить файл <strong id="deleteFileName"></strong>?</p>
-                        <p class="text-danger mb-0">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Это действие невозможно отменить.
-                        </p>
+                    <div class="modal-body" id="deleteFileMessage">
+                        <p>Удалить файл <strong id="deleteFileName"></strong>?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>
-                            Отмена
-                        </button>
-                        <button type="button" class="btn btn-danger" id="confirmDeleteFileBtn">
-                            <i class="fas fa-trash-alt me-1"></i>
-                            Удалить
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteFileBtn">Удалить</button>
                     </div>
                 </div>
             </div>
@@ -683,7 +377,7 @@
 {% block custom_script %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Получение CSRF токена
+            // --- CSRF токен (функция) ---
             function getCSRFToken() {
                 let cookieValue = null;
                 if (document.cookie && document.cookie !== '') {
@@ -699,19 +393,17 @@
                 return cookieValue;
             }
 
-            // Переключение статуса выполнения через AJAX
+            // --- Переключение статуса (AJAX) ---
             const statusSwitch = document.getElementById('completedSwitch');
             if (statusSwitch) {
                 statusSwitch.addEventListener('change', async function () {
-                    const taskId = this.dataset.taskId;
-                    const url = this.dataset.url;
                     const isCompleted = this.checked;
-                    const label = this.nextElementSibling;
+                    const url = this.dataset.url;
+                    const originalLabel = this.nextElementSibling.innerHTML;
 
-                    // Показываем индикатор загрузки
-                    const originalLabel = label.innerHTML;
-                    label.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+                    // Индикатор загрузки
                     this.disabled = true;
+                    this.nextElementSibling.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
 
                     try {
                         const response = await fetch(url, {
@@ -723,161 +415,120 @@
                             },
                             body: `completed=${isCompleted}`
                         });
-
                         const data = await response.json();
 
                         if (data.status === 'ok') {
-                            // Обновляем статус задачи на странице
+                            // Обновляем UI
                             if (isCompleted) {
-                                label.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> Задача выполнена</span>';
-                                // Обновляем статус-бейдж в заголовке
-                                const statusBadge = document.querySelector('.status-badge');
+                                this.nextElementSibling.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> Задача выполнена</span>';
+                                // Можно обновить бейдж статуса в заголовке
+                                const statusBadge = document.querySelector('.card-header .badge:first-child');
                                 if (statusBadge) {
-                                    statusBadge.className = 'status-badge status-completed';
+                                    statusBadge.className = 'badge badge-success me-1 fs-6';
                                     statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Выполнена';
                                 }
                             } else {
-                                label.innerHTML = '<span class="text-warning"><i class="fas fa-hourglass-half"></i> В процессе выполнения</span>';
-                                // Обновляем статус-бейдж в заголовке
-                                const statusBadge = document.querySelector('.status-badge');
+                                this.nextElementSibling.innerHTML = '<span class="text-warning"><i class="fas fa-hourglass-half"></i> В процессе</span>';
+                                const statusBadge = document.querySelector('.card-header .badge:first-child');
                                 if (statusBadge) {
-                                    // Проверяем, не просрочена ли задача
-                                    const endDate = new Date('{{ task.end_date|date:"c"|default:"" }}');
-                                    const now = new Date();
-                                    if (endDate && endDate < now) {
-                                        statusBadge.className = 'status-badge status-overdue';
-                                        statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Просрочена';
-                                    } else {
-                                        statusBadge.className = 'status-badge status-pending';
-                                        statusBadge.innerHTML = '<i class="fas fa-clock me-1"></i> В процессе';
-                                    }
+                                    statusBadge.className = 'badge badge-warning me-1 fs-6';
+                                    statusBadge.innerHTML = '<i class="fas fa-clock me-1"></i> В процессе';
                                 }
                             }
-
-                            // Показываем уведомление об успехе
-                            showNotification('Статус задачи обновлен', 'success');
+                            toastr.success('Статус задачи обновлен');
                         } else {
-                            // Возвращаем переключатель в исходное состояние
                             this.checked = !isCompleted;
-                            label.innerHTML = originalLabel;
-                            showNotification(data.error || 'Ошибка при обновлении статуса', 'error');
+                            this.nextElementSibling.innerHTML = originalLabel;
+                            toastr.error(data.error || 'Ошибка обновления статуса');
                         }
                     } catch (error) {
-                        console.error('Error:', error);
-                        // Возвращаем переключатель в исходное состояние
+                        console.error(error);
                         this.checked = !isCompleted;
-                        label.innerHTML = originalLabel;
-                        showNotification('Ошибка соединения с сервером', 'error');
+                        this.nextElementSibling.innerHTML = originalLabel;
+                        toastr.error('Ошибка соединения');
                     } finally {
                         this.disabled = false;
                     }
                 });
             }
 
-            // Функция для показа уведомлений (простая версия)
-            function showNotification(message, type) {
-                // Создаем временное уведомление
-                const notification = document.createElement('div');
-                notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed top-0 end-0 m-3`;
-                notification.style.zIndex = '9999';
-                notification.style.minWidth = '300px';
-                notification.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
-                        <span>${message}</span>
-                        <button type="button" class="btn-close ms-3" data-bs-dismiss="alert"></button>
-                    </div>
-                `;
-                document.body.appendChild(notification);
-                setTimeout(() => {
-                    notification.remove();
-                }, 3000);
-            }
-
-            // Удаление файлов (остается без изменений)
+            // --- Удаление файлов (AJAX) ---
             {% if can_edit %}
                 let currentFileId = null;
+                let currentFileItem = null;
 
-                function bindDeleteFileButtons() {
+                function bindDeleteButtons() {
                     document.querySelectorAll('.delete-file-btn').forEach(btn => {
                         btn.removeEventListener('click', btn._listener);
-                        const listener = function (e) {
+                        const listener = (e) => {
                             e.preventDefault();
-                            currentFileId = this.dataset.fileId;
-                            const fileName = this.dataset.fileName;
-                            document.getElementById('deleteFileName').textContent = fileName;
-                            const modal = new bootstrap.Modal(document.getElementById('deleteFileModal'));
-                            modal.show();
+                            currentFileId = btn.dataset.fileId;
+                            currentFileItem = btn.closest('.list-group-item');
+                            const fileName = btn.dataset.fileName;
+                            document.getElementById('deleteFileName').innerHTML = fileName;
+                            new bootstrap.Modal(document.getElementById('deleteFileModal')).show();
                         };
                         btn.addEventListener('click', listener);
                         btn._listener = listener;
                     });
                 }
 
-                const confirmDeleteBtn = document.getElementById('confirmDeleteFileBtn');
-                if (confirmDeleteBtn) {
-                    confirmDeleteBtn.addEventListener('click', async function () {
-                        if (!currentFileId) return;
+                document.getElementById('confirmDeleteFileBtn')?.addEventListener('click', async function () {
+                    if (!currentFileId) return;
 
-                        const confirmBtn = this;
-                        const originalText = confirmBtn.innerHTML;
-                        confirmBtn.disabled = true;
-                        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Удаление...';
+                    const btn = this;
+                    const originalHtml = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Удаление...';
 
-                        try {
-                            const response = await fetch("{% url 'tasks_app:delete-file-ajax' %}", {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRFToken': getCSRFToken(),
-                                    'Content-Type': 'application/x-www-form-urlencoded',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: `file_id=${currentFileId}`
-                            });
-                            const data = await response.json();
+                    try {
+                        const response = await fetch("{% url 'tasks_app:delete-file-ajax' %}", {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': getCSRFToken(),
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: `file_id=${currentFileId}`
+                        });
+                        const data = await response.json();
 
-                            if (data.status === 'ok') {
-                                const fileItem = document.querySelector(`.delete-file-btn[data-file-id="${currentFileId}"]`).closest('.file-item');
-                                if (fileItem) {
-                                    fileItem.style.transition = 'all 0.3s ease';
-                                    fileItem.style.opacity = '0';
-                                    fileItem.style.transform = 'translateX(20px)';
-                                    setTimeout(() => {
-                                        fileItem.remove();
-                                        // Обновляем счетчик файлов
-                                        const fileCount = document.querySelectorAll('.file-item').length;
-                                        const badge = document.querySelector('.files-section .badge');
-                                        if (badge) badge.textContent = fileCount;
-
-                                        // Если файлов нет, показываем сообщение
-                                        if (fileCount === 0) {
-                                            const filesList = document.querySelector('.files-list');
-                                            if (filesList && !filesList.querySelector('.no-files-message')) {
-                                                filesList.insertAdjacentHTML('afterend',
-                                                    '<div class="text-center py-4 text-muted no-files-message"><i class="fas fa-paperclip fa-3x mb-3 opacity-25"></i><p>Нет прикрепленных файлов</p></div>');
-                                                filesList.remove();
-                                            }
-                                        }
-                                    }, 300);
+                        if (data.status === 'ok') {
+                            if (currentFileItem) {
+                                currentFileItem.style.transition = 'opacity 0.2s';
+                                currentFileItem.style.opacity = '0';
+                                setTimeout(() => currentFileItem.remove(), 200);
+                                // Обновить счетчик файлов
+                                const badge = document.querySelector('.card .badge-dark');
+                                if (badge) {
+                                    const currentCount = parseInt(badge.innerText) || 0;
+                                    badge.innerText = currentCount - 1;
                                 }
-                                showNotification('Файл успешно удален', 'success');
-                            } else {
-                                showNotification(data.error || 'Ошибка при удалении файла', 'error');
+                                if (document.querySelectorAll('.list-group-item').length === 1 && document.querySelector('.file-item') === null) {
+                                    // Если файлов не осталось, показать сообщение
+                                    const container = document.querySelector('.card-body.p-0');
+                                    if (container) {
+                                        container.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-paperclip fa-3x mb-3 opacity-25"></i><p>Нет прикрепленных файлов</p></div>';
+                                    }
+                                }
+                                toastr.success('Файл удален');
                             }
-                        } catch (err) {
-                            console.error(err);
-                            showNotification('Ошибка соединения с сервером', 'error');
-                        } finally {
-                            confirmBtn.disabled = false;
-                            confirmBtn.innerHTML = originalText;
-                            currentFileId = null;
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteFileModal'));
-                            if (modal) modal.hide();
+                        } else {
+                            toastr.error(data.error || 'Ошибка удаления файла');
                         }
-                    });
-                }
+                    } catch (err) {
+                        console.error(err);
+                        toastr.error('Ошибка соединения');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = originalHtml;
+                        bootstrap.Modal.getInstance(document.getElementById('deleteFileModal')).hide();
+                        currentFileId = null;
+                        currentFileItem = null;
+                    }
+                });
 
-                bindDeleteFileButtons();
+                bindDeleteButtons();
             {% endif %}
         });
     </script>
