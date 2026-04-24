@@ -1,4 +1,5 @@
 # tasks_app/views.py
+import datetime
 import os
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -246,19 +247,29 @@ class TaskListView(LoginRequiredMixin, ListView):
         """
         Возвращает название задачи с иконкой в зависимости от приоритета.
         """
+        before = ''
+        after = ''
+        if task.completed:
+            after = '<i class="fa-regular fa-square-check"></i>'
+        elif task.end_date > datetime.today():
+            after = '<i class="fa-solid fa-hourglass-half"></i>'
+        else:
+            after = '<i class="fa-solid fa-xmark"></i>'
+
+
         if task.user != self.request.user:
-            return f'<i class="fas fa-user-friends"></i> {task.title}'
+            before = f'<i class="fas fa-user-friends"></i>'
         if task.priority == 'primary':
-            return f'<i class="fas fa-star"></i> {task.title}'
+            before = f'<i class="fas fa-star"></i>'
         elif task.priority == 'warning':
-            return f'<i class="fas fa-exclamation-triangle"></i> {task.title}'
+            before = f'<i class="fas fa-exclamation-triangle"></i>'
         elif task.priority == 'info':
-            return f'<i class="fas fa-info-circle"></i> {task.title}'
+            before = f'<i class="fas fa-info-circle"></i>'
         elif task.priority == 'danger':
-            return f'<i class="fas fa-exclamation-circle"></i> {task.title}'
+            before = f'<i class="fas fa-exclamation-circle"></i>'
         elif task.priority == 'dark':
-            return f'<i class="fas fa-moon"></i> {task.title}'
-        return task.title
+            before = f'<i class="fas fa-moon"></i>'
+        return f'{before} {task.title} {after}'
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
