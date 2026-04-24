@@ -20,8 +20,8 @@ from tasks_app.forms import TaskForm
 from tasks_app.models import Task, Category, TaskFile
 
 # Константы для валидации файлов
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.zip']
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 10 MB
+ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.zip', 'rar']
 
 
 @login_required
