@@ -371,351 +371,344 @@
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0">
-                <section class="card">
-                    {% include 'customers_app/block_personal_info.html' %}
-                    <h1 id="app"></h1>
-                    {% include 'customers_app/block_statistics.html' %}
-                </section>
-                {% if user.is_superuser %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0">
+            <section class="card">
+                {% include 'customers_app/block_personal_info.html' %}
+                <h1 id="app"></h1>
+                {% include 'customers_app/block_statistics.html' %}
+            </section>
+        </div>
+        <div class="col-lg-8">
 
-                {% endif %}
-            </div>
-            <div class="col-lg-8">
-
-                <div class="tabs">
-                    <ul class="nav nav-tabs tabs-primary">
-                        <li class="nav-item active">
-                            <button class="nav-link" data-bs-target="#tasks" data-bs-toggle="tab">Планировщик событий
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Лента событий
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">Расчетный
-                                листок
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#reportcard" data-bs-toggle="tab">Учет рабочего
-                                времени
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#vacation" data-bs-toggle="tab">Отпуск
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-target="#sout" data-bs-toggle="tab">СОУТ
-                            </button>
-                        </li>
-                    </ul>
-                    <div class="tab-content">
-                        <div id="tasks" class="tab-pane active">
-                            <div class="p-3">
-                                <div id="calendar"></div>
-                            </div>
+            <div class="tabs">
+                <ul class="nav nav-tabs tabs-primary">
+                    <li class="nav-item active">
+                        <button class="nav-link" data-bs-target="#tasks" data-bs-toggle="tab">Планировщик событий
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Лента событий
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">Расчетный
+                            листок
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#reportcard" data-bs-toggle="tab">Учет рабочего
+                            времени
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#vacation" data-bs-toggle="tab">Отпуск
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#sout" data-bs-toggle="tab">СОУТ
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div id="tasks" class="tab-pane active">
+                        <div class="p-3">
+                            <div id="calendar"></div>
                         </div>
-                        <div id="overview" class="tab-pane">
-                            <div class="p-3">
-                                <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3
+                    </div>
+                    <div id="overview" class="tab-pane">
+                        <div class="p-3">
+                            <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3
                                                 align-items-left font-weight-semibold line-height-1">
-                                    <i class='bx bx-list-plus text-4 me-2'></i> Добавить</a>
-                                <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
-                                <div class="timeline timeline-simple mt-3 mb-3">
-                                    <div class="tm-body">
-
-                                        <ol class="tm-items">
-
-                                            {# ToDo: Доработать вывод постов#}
-                                            {% for item in post_high %}
-                                                {% if item.allowed_placed %}
-                                                    <li>
-                                                        <div class="tm-box">
-                                                            <p class="text-muted mb-0">123</p>
-                                                            {% if item.post_date_start %}
-                                                                <p class="text-muted mb-0">{{ item.post_date_start }}</p>
-                                                            {% else %}
-                                                                <p class="text-muted mb-0">{{ item.creation_date }}</p>
-                                                            {% endif %}
-                                                            <p>{{ item.post_description | safe }}</p>
-                                                            <p class="text-danger mb-0">
-                                                                Ответственный: {{ item.responsible }}</p>
-                                                            {% if user == item.responsible %}
-                                                                <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
-                                                            {% endif %}
-                                                        </div>
-                                                    </li>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </ol>
-                                        <div class="tm-title">
-                                            <h5 class="m-0 pt-2 pb-2 text-dark font-weight-semibold text-uppercase">
-                                                {% now "d - m - Y г." %}</h5>
-                                        </div>
-                                        <ol class="tm-items">
-                                            {# ToDo: Доработать вывод постов#}
-                                            {% for item in post_low %}
-                                                {% if item.allowed_placed %}
-                                                    <li>
-                                                        <div class="tm-box">
-                                                            {% if item.post_date_start %}
-                                                                <p class="text-muted mb-0">{{ item.post_date_start }}</p>
-                                                            {% else %}
-                                                                <p class="text-muted mb-0">{{ item.creation_date }}</p>
-                                                            {% endif %}
-                                                            <p>{{ item.post_description | safe }}</p>
-                                                            <p class="text-danger mb-0">
-                                                                Ответственный: {{ item.responsible }}</p>
-                                                            {% if user == item.responsible %}
-                                                                <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
-                                                            {% endif %}
-                                                        </div>
-                                                    </li>
-                                                {% endif %}
-                                            {% endfor %}
-                                        </ol>
+                                <i class='bx bx-list-plus text-4 me-2'></i> Добавить</a>
+                            <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
+                            <div class="timeline timeline-simple mt-3 mb-3">
+                                <div class="tm-body">
+                                    <ol class="tm-items">
+                                        {% for item in post_high %}
+                                            {% if item.allowed_placed %}
+                                                <li>
+                                                    <div class="tm-box">
+                                                        <p class="text-muted mb-0">123</p>
+                                                        {% if item.post_date_start %}
+                                                            <p class="text-muted mb-0">{{ item.post_date_start }}</p>
+                                                        {% else %}
+                                                            <p class="text-muted mb-0">{{ item.creation_date }}</p>
+                                                        {% endif %}
+                                                        <p>{{ item.post_description | safe }}</p>
+                                                        <p class="text-danger mb-0">
+                                                            Ответственный: {{ item.responsible }}</p>
+                                                        {% if user == item.responsible %}
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
+                                                        {% endif %}
+                                                    </div>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ol>
+                                    <div class="tm-title">
+                                        <h5 class="m-0 pt-2 pb-2 text-dark font-weight-semibold text-uppercase">
+                                            {% now "d - m - Y г." %}</h5>
                                     </div>
-                                </div>
-                            </div>
-
-                        </div>
-                        <div id="calculation" class="tab-pane">
-                            <div class="p-3">
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <select class="form-control select-style-1 filter-by" name="filter_month"
-                                                id="id_filter_month">
-                                            {% for key, value in month_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_month == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <select class="form-control select-style-1 filter-by" name="filter_year"
-                                                id="id_filter_year">
-                                            {% for key, value in year_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_year == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <input class="form-control" type="password" id="id_pxmx" value="">
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-                                        <button class="btn btn-outline-primary" style="width: 100%"
-                                                onclick="filter_date()"><i class='bx bxs-file-find text-4 me-2'></i>
-                                            Сформировать
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="row">
-
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-sm-12">
-                                            <div id="id_accrued">
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <hr>
-                                    <div class="row">
-                                        <div class="col-sm-12">
-                                            <div id="id_withheld">
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <hr>
-                                    <div class="row">
-                                        <div class="col-sm-12">
-                                            <div id="id_paid">
-
-                                            </div>
-                                        </div>
-                                    </div>
-
+                                    <ol class="tm-items">
+                                        {% for item in post_low %}
+                                            {% if item.allowed_placed %}
+                                                <li>
+                                                    <div class="tm-box">
+                                                        {% if item.post_date_start %}
+                                                            <p class="text-muted mb-0">{{ item.post_date_start }}</p>
+                                                        {% else %}
+                                                            <p class="text-muted mb-0">{{ item.creation_date }}</p>
+                                                        {% endif %}
+                                                        <p>{{ item.post_description | safe }}</p>
+                                                        <p class="text-danger mb-0">
+                                                            Ответственный: {{ item.responsible }}</p>
+                                                        {% if user == item.responsible %}
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
+                                                        {% endif %}
+                                                    </div>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ol>
                                 </div>
                             </div>
                         </div>
-                        <div id="reportcard" class="tab-pane">
-                            <div class="p-3">
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <select class="form-control select-style-1 filter-by" name="report_month"
-                                                id="id_report_month">
-                                            {% for key, value in month_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_month == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <select class="form-control select-style-1 filter-by" name="report_year"
-                                                id="id_report_year">
-                                            {% for key, value in year_dict.items %}
-                                                <option value="{{ key }}"
-                                                        {% if current_year == key %}selected{% endif %}> {{ value }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-outline-primary" style="width: 100%"
-                                                onclick="report_date()">
-                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
-                                        </button>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-outline-info" style="width: 100%"
-                                                onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">
-                                            <i class='bx bxs-book-content text-4 me-2'></i> Журнал
-                                        </button>
-                                    </div>
+
+                    </div>
+                    <div id="calculation" class="tab-pane">
+                        <div class="p-3">
+                            <div class="row">
+                                <div class="col-sm-12 col-md-6 col-lg-3">
+                                    <select class="form-control select-style-1 filter-by" name="filter_month"
+                                            id="id_filter_month">
+                                        {% for key, value in month_dict.items %}
+                                            <option value="{{ key }}"
+                                                    {% if current_month == key %}selected{% endif %}> {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
-                                <style>
-                                    /* Применяем к таблице с id="my_table_id" */
-                                    #my_table_id {
-                                        width: 100%; /* Таблица занимает всю доступную ширину */
-                                        border-collapse: collapse; /* Убираем отступы между ячейками */
-                                    }
+                                <div class="col-sm-12 col-md-6 col-lg-3">
+                                    <select class="form-control select-style-1 filter-by" name="filter_year"
+                                            id="id_filter_year">
+                                        {% for key, value in year_dict.items %}
+                                            <option value="{{ key }}"
+                                                    {% if current_year == key %}selected{% endif %}> {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3">
+                                    <input class="form-control" type="password" id="id_pxmx" value="">
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3">
+                                    <button class="btn btn-outline-primary" style="width: 100%"
+                                            onclick="filter_date()"><i class='bx bxs-file-find text-4 me-2'></i>
+                                        Сформировать
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="row">
 
-                                    /* Выравниваем содержимое всех ячеек по правому краю */
-                                    #my_table_id th,
-                                    #my_table_id td {
-                                        text-align: right;
-                                        tab-size: 14px;
-                                        padding: 8px; /* Добавляем отступы внутри ячеек */
-                                    }
-
-                                    /* Выравниваем заголовки по левому краю */
-                                    #my_table_id th {
-                                        text-align: right;
-                                    }
-
-                                    /* Дополнительные стили для итоговой строки */
-                                    /* Выделяем последнюю строку жирным шрифтом и добавляем жирную рамку */
-                                    #my_table_id tr:last-child td {
-                                        font-weight: bold;
-                                        border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
-                                    }
-
-                                    #my_table_id tr:first-child td {
-                                        border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
-                                    }
-
-                                    /* Стили для выделения текста в зависимости от значения */
-                                    .positive {
-                                        font-weight: bold;
-                                        color: #116500;
-                                    }
-
-                                    .negative {
-                                        font-weight: bold;
-                                        color: red;
-                                    }
-
-                                    /* Стили для строк с определенными значениями в колонке "Тип" */
-                                    .type-В {
-                                        color: #0a001f;
-                                    }
-
-                                    .type-П {
-                                        font-weight: bold;
-                                        color: #0b7a00; /* Другой цвет фона */
-                                    }
-                                </style>
+                                </div>
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <div id="id_report" class="table-responsive">
+                                        <div id="id_accrued">
 
                                         </div>
                                     </div>
                                 </div>
                                 <hr>
-                            </div>
-                        </div>
-                        <div id="sout" class="tab-pane">
-                            <div class="p-3">
-                                <div class="row">
-                                    <h4>Тут будет размещаться специальная оценка условий труда.</h4>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3">
-
-                                    </div>
-                                </div>
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <div id="id_report" class="table-responsive">
+                                        <div id="id_withheld">
 
                                         </div>
                                     </div>
                                 </div>
                                 <hr>
-
-                            </div>
-                        </div>
-                        <div id="vacation" class="tab-pane">
-                            <div class="p-3">
-                                <h5>Данные пока могут содержать не точную информацию. Раздел в разработке!</h5>
-                                <div class="row">
-                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <h4>Выберите дату:</h4>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <input class="form-control form-control-modern" type="date" min="2023-01-01"
-                                               id="id_vacation_date" name="vacation_date"/>
-                                    </div>
-                                    <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                        <button class="btn btn-outline-primary" style="width: 100%"
-                                                onclick="report_vacation()">
-                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="row">
-
-                                    <div class="col-sm-12" id="id_days">
-
-                                    </div>
-
-                                </div>
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <div id="id_report" class="table-responsive">
+                                        <div id="id_paid">
 
                                         </div>
                                     </div>
                                 </div>
-                                <hr>
 
                             </div>
                         </div>
                     </div>
+                    <div id="reportcard" class="tab-pane">
+                        <div class="p-3">
+                            <div class="row">
+                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                    <select class="form-control select-style-1 filter-by" name="report_month"
+                                            id="id_report_month">
+                                        {% for key, value in month_dict.items %}
+                                            <option value="{{ key }}"
+                                                    {% if current_month == key %}selected{% endif %}> {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                    <select class="form-control select-style-1 filter-by" name="report_year"
+                                            id="id_report_year">
+                                        {% for key, value in year_dict.items %}
+                                            <option value="{{ key }}"
+                                                    {% if current_year == key %}selected{% endif %}> {{ value }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                    <button class="btn btn-outline-primary" style="width: 100%"
+                                            onclick="report_date()">
+                                        <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
+                                    </button>
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                    <button class="btn btn-outline-info" style="width: 100%"
+                                            onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">
+                                        <i class='bx bxs-book-content text-4 me-2'></i> Журнал
+                                    </button>
+                                </div>
+                            </div>
+                            <style>
+                                /* Применяем к таблице с id="my_table_id" */
+                                #my_table_id {
+                                    width: 100%; /* Таблица занимает всю доступную ширину */
+                                    border-collapse: collapse; /* Убираем отступы между ячейками */
+                                }
+
+                                /* Выравниваем содержимое всех ячеек по правому краю */
+                                #my_table_id th,
+                                #my_table_id td {
+                                    text-align: right;
+                                    tab-size: 14px;
+                                    padding: 8px; /* Добавляем отступы внутри ячеек */
+                                }
+
+                                /* Выравниваем заголовки по левому краю */
+                                #my_table_id th {
+                                    text-align: right;
+                                }
+
+                                /* Дополнительные стили для итоговой строки */
+                                /* Выделяем последнюю строку жирным шрифтом и добавляем жирную рамку */
+                                #my_table_id tr:last-child td {
+                                    font-weight: bold;
+                                    border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
+                                }
+
+                                #my_table_id tr:first-child td {
+                                    border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
+                                }
+
+                                /* Стили для выделения текста в зависимости от значения */
+                                .positive {
+                                    font-weight: bold;
+                                    color: #116500;
+                                }
+
+                                .negative {
+                                    font-weight: bold;
+                                    color: red;
+                                }
+
+                                /* Стили для строк с определенными значениями в колонке "Тип" */
+                                .type-В {
+                                    color: #0a001f;
+                                }
+
+                                .type-П {
+                                    font-weight: bold;
+                                    color: #0b7a00; /* Другой цвет фона */
+                                }
+                            </style>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div id="id_report" class="table-responsive">
+
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                        </div>
+                    </div>
+                    <div id="sout" class="tab-pane">
+                        <div class="p-3">
+                            <div class="row">
+                                <h4>Тут будет размещаться специальная оценка условий труда.</h4>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12 col-md-6 col-lg-3">
+
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3">
+
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3">
+
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div id="id_report" class="table-responsive">
+
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+
+                        </div>
+                    </div>
+                    <div id="vacation" class="tab-pane">
+                        <div class="p-3">
+                            <h5>Данные пока могут содержать не точную информацию. Раздел в разработке!</h5>
+                            <div class="row">
+                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                    <h4>Выберите дату:</h4>
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                    <input class="form-control form-control-modern" type="date" min="2023-01-01"
+                                           id="id_vacation_date" name="vacation_date"/>
+                                </div>
+                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
+                                    <button class="btn btn-outline-primary" style="width: 100%"
+                                            onclick="report_vacation()">
+                                        <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row">
+
+                                <div class="col-sm-12" id="id_days">
+
+                                </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div id="id_report" class="table-responsive">
+
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+
+                        </div>
+                    </div>
                 </div>
             </div>
-
-
         </div>
-        <!-- end: page -->
+
+
+    </div>
+    <!-- end: page -->
     <script type="text/javascript">
         function filter_date() {
             current_year = $("#id_filter_year").val();
