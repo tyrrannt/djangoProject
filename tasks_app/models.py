@@ -179,7 +179,7 @@ class Task(models.Model):
         return next_task
 
     def get_absolute_url(self):
-        return reverse('tasks_app:task-update', args=[str(self.id)])
+        return reverse('tasks_app:task-detail', args=[str(self.id)])
 
 
 # 🔹 Функция для динамического пути

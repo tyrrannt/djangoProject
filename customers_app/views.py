@@ -474,7 +474,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                         'dtstart': item.start_date.isoformat(),
                         'until': item.start_date.isoformat(),
                     },
-                    'url': reverse('tasks_app:task-update', args=[item.pk]),
+                    'url': reverse('tasks_app:task-detail', args=[item.pk]),
                     'color': item.priority,
                 })
 

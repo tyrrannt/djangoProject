@@ -5,318 +5,40 @@
 
 {% block custom_css %}
     <style>
-        .form-card {
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .form-section {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 1px solid #dee2e6;
-        }
-
-        .form-section h5 {
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #0d6efd;
-            color: #343a40;
-            font-weight: 600;
-        }
-
+        /* Минимальные кастомные стили только для специфических элементов Porto */
         .dropzone-area {
-            border: 2px dashed #adb5bd;
-            border-radius: 10px;
-            padding: 2rem;
-            text-align: center;
-            background: #fff;
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
             cursor: pointer;
         }
-
-        .dropzone-area:hover, .dropzone-area.drag-over {
-            border-color: #0d6efd;
-            background: #e7f1ff;
+        .dropzone-area:hover {
+            background-color: #f8f9fa;
+            border-color: #0d6efd !important;
         }
-
+        .dropzone-area.drag-over {
+            background-color: #e7f1ff;
+            border-color: #0d6efd !important;
+        }
         .file-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.6rem 1rem;
-            background: #fff;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
         }
-
-        .btn-custom {
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
+        .file-item:hover {
+            background-color: #f8f9fa;
+            border-color: #cbd5e1;
+        }
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+        /* Адаптив для мобильных */
+        @media (max-width: 768px) {
+            .btn-custom {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+            .d-flex.justify-content-end {
+                flex-direction: column;
+            }
         }
     </style>
-{% endblock %}
-
-{% block custom_script %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // 1. Инициализация мультиселекта
-            const sharedWithField = document.getElementById('id_shared_with');
-            if (sharedWithField) {
-                if (typeof $.fn.select2 !== 'undefined') {
-                    $(sharedWithField).select2({
-                        placeholder: 'Выберите пользователей',
-                        width: '100%',
-                        allowClear: true,
-                        language: 'ru'
-                    });
-                } else if (typeof $.fn.multiselect !== 'undefined') {
-                    $(sharedWithField).multiselect({
-                        includeSelectAllOption: true,
-                        enableCaseInsensitiveFiltering: true,
-                        buttonWidth: '100%',
-                        maxHeight: 300,
-                        nonSelectedText: 'Выберите пользователей',
-                        allSelectedText: 'Все выбраны',
-                        nSelectedText: 'выбрано',
-                        selectAllText: 'Выбрать всех',
-                        filterPlaceholder: 'Поиск...'
-                    });
-                } else {
-                    sharedWithField.setAttribute('size', '5');
-                    sharedWithField.classList.add('form-control');
-                    console.warn('Neither Select2 nor Bootstrap Multiselect found. Using native multiselect.');
-                }
-            }
-
-            // 2. Логика удаления файлов с модальным окном
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            let currentFileId = null;
-            let currentFileItem = null;
-            let currentFileName = '';
-
-            function showNotification(message, type = 'success') {
-                const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
-                const header = document.getElementById('notificationHeader');
-                const icon = document.getElementById('notificationIcon');
-                const title = document.getElementById('notificationTitle');
-                const messageEl = document.getElementById('notificationMessage');
-
-                header.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
-
-                if (type === 'success') {
-                    header.classList.add('bg-success', 'text-white');
-                    icon.className = 'fas fa-check-circle me-2';
-                    title.textContent = 'Успешно';
-                } else if (type === 'error') {
-                    header.classList.add('bg-danger', 'text-white');
-                    icon.className = 'fas fa-exclamation-circle me-2';
-                    title.textContent = 'Ошибка';
-                } else if (type === 'warning') {
-                    header.classList.add('bg-warning');
-                    icon.className = 'fas fa-exclamation-triangle me-2';
-                    title.textContent = 'Предупреждение';
-                } else {
-                    header.classList.add('bg-info', 'text-white');
-                    icon.className = 'fas fa-info-circle me-2';
-                    title.textContent = 'Информация';
-                }
-
-                messageEl.textContent = message;
-                modal.show();
-
-                if (type === 'success') {
-                    setTimeout(() => {
-                        modal.hide();
-                    }, 3000);
-                }
-            }
-
-            // Обработчики для кнопок удаления
-            function bindDeleteButtons() {
-                document.querySelectorAll('.delete-file-btn').forEach(btn => {
-                    // Удаляем старый обработчик, чтобы не было дублирования
-                    btn.removeEventListener('click', btn._listener);
-
-                    const listener = function (e) {
-                        e.preventDefault();
-                        currentFileId = this.dataset.fileId;
-                        currentFileItem = this.closest('.file-item');
-
-                        const fileNameSpan = currentFileItem.querySelector('span');
-                        currentFileName = fileNameSpan ? fileNameSpan.textContent : 'файл';
-
-                        document.getElementById('deleteFileName').innerHTML =
-                            `<strong>${currentFileName}</strong>`;
-
-                        const deleteModal = new bootstrap.Modal(document.getElementById('deleteFileModal'));
-                        deleteModal.show();
-                    };
-
-                    btn.addEventListener('click', listener);
-                    btn._listener = listener;
-                });
-            }
-
-            // Обработчик подтверждения удаления
-            document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
-                if (!currentFileId) return;
-
-                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteFileModal'));
-                deleteModal.hide();
-
-                const confirmBtn = this;
-                const originalText = confirmBtn.innerHTML;
-                confirmBtn.disabled = true;
-                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Удаление...';
-
-                try {
-                    const response = await fetch("{% url 'tasks_app:delete-file-ajax' %}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': csrfToken,
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `file_id=${currentFileId}`
-                    });
-                    const data = await response.json();
-
-                    if (data.status === 'ok') {
-                        currentFileItem.style.transition = 'all 0.3s ease';
-                        currentFileItem.style.opacity = '0';
-                        currentFileItem.style.transform = 'translateX(20px)';
-
-                        setTimeout(() => {
-                            if (currentFileItem && currentFileItem.remove) {
-                                currentFileItem.remove();
-                            }
-                            showNotification(`Файл "${currentFileName}" успешно удален`, 'success');
-                        }, 300);
-                    } else {
-                        showNotification(data.error || 'Ошибка при удалении файла', 'error');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showNotification('Ошибка соединения с сервером. Пожалуйста, попробуйте позже.', 'error');
-                } finally {
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerHTML = originalText;
-                    currentFileId = null;
-                    currentFileItem = null;
-                }
-            });
-
-            // 3. Логика загрузки файлов (drag & drop) - ИСПРАВЛЕННАЯ ВЕРСИЯ
-            const dropzone = document.getElementById('dropzone');
-            const fileInput = document.getElementById('id_files');
-            const fileList = document.getElementById('file-list');
-
-            if (dropzone && fileInput) {
-                dropzone.addEventListener('click', () => fileInput.click());
-
-                ['dragenter', 'dragover'].forEach(evt =>
-                    dropzone.addEventListener(evt, e => {
-                        e.preventDefault();
-                        dropzone.classList.add('drag-over');
-                    })
-                );
-                ['dragleave', 'drop'].forEach(evt =>
-                    dropzone.addEventListener(evt, e => {
-                        e.preventDefault();
-                        dropzone.classList.remove('drag-over');
-                    })
-                );
-
-                // Функция для экранирования HTML
-                function escapeHtml(str) {
-                    return str.replace(/[&<>]/g, function (m) {
-                        if (m === '&') return '&amp;';
-                        if (m === '<') return '&lt;';
-                        if (m === '>') return '&gt;';
-                        return m;
-                    });
-                }
-
-                // Функция для добавления нового файла в список
-                function addNewFileToList(file) {
-                    // Проверяем, не добавлен ли уже этот файл
-                    const isAlreadyAdded = Array.from(fileList.querySelectorAll('.file-item span')).some(
-                        span => span.textContent === file.name
-                    );
-
-                    if (isAlreadyAdded) return;
-
-                    const div = document.createElement('div');
-                    div.className = 'file-item new-file';
-                    div.innerHTML = `
-                    <div>
-                        <i class="fas fa-file text-primary me-2"></i>
-                        <span>${escapeHtml(file.name)}</span>
-                        <small class="text-muted ms-2">(${(file.size / 1024).toFixed(1)} KB)</small>
-                        <span class="badge bg-warning ms-2">новый</span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-new-file" title="Удалить">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-
-                    // Добавляем обработчик для удаления из списка
-                    const removeBtn = div.querySelector('.remove-new-file');
-                    removeBtn.addEventListener('click', () => {
-                        div.remove();
-                        // Удаляем файл из fileInput.files
-                        const dt = new DataTransfer();
-                        const currentFiles = Array.from(fileInput.files);
-                        const index = currentFiles.findIndex(f => f.name === file.name && f.size === file.size);
-                        if (index !== -1) {
-                            currentFiles.splice(index, 1);
-                            currentFiles.forEach(f => dt.items.add(f));
-                            fileInput.files = dt.files;
-                        }
-                    });
-
-                    fileList.appendChild(div);
-                }
-
-                // Обработчик выбора файлов через кнопку
-                fileInput.addEventListener('change', function () {
-                    Array.from(this.files).forEach(file => {
-                        addNewFileToList(file);
-                    });
-                });
-
-                // Обработчик drop для перетаскивания
-                dropzone.addEventListener('drop', function (e) {
-                    e.preventDefault();
-                    dropzone.classList.remove('drag-over');
-
-                    const files = Array.from(e.dataTransfer.files);
-                    if (files.length === 0) return;
-
-                    // Добавляем файлы в input
-                    const dt = new DataTransfer();
-                    const currentFiles = Array.from(fileInput.files);
-                    currentFiles.forEach(f => dt.items.add(f));
-                    files.forEach(f => dt.items.add(f));
-                    fileInput.files = dt.files;
-
-                    // Добавляем файлы в список
-                    files.forEach(file => {
-                        addNewFileToList(file);
-                    });
-                });
-            }
-
-            // Привязываем обработчики для существующих кнопок удаления
-            bindDeleteButtons();
-
-            // Для динамически добавляемых файлов (новых) - они не требуют обработчика delete-file-btn
-            // так как у них своя кнопка remove-new-file
-        });
-    </script>
 {% endblock %}
 
 {% block title %}
@@ -324,195 +46,432 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container py-4">
-        <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-9">
-                <div class="card shadow-sm border-0 form-card">
-                    <div class="card-header bg-primary text-white py-3">
-                        <h3 class="mb-0 fs-5">
-                            <i class="fas {% if object %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
-                            {% if object %}Редактировать задачу{% else %}Добавить новую задачу{% endif %}
-                        </h3>
-                    </div>
-                    <div class="card-body p-4">
-                        <form method="POST" enctype="multipart/form-data" id="task-form" novalidate>
-                            {% csrf_token %}
+<div class="container-fluid py-3">
+    <div class="row">
+        <div class="col-12">
+            <!-- Форма -->
+            <div class="card card-body-modern">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="task-form" novalidate>
+                        {% csrf_token %}
 
-                            <!-- Основная информация -->
-                            <div class="form-section">
-                                <h5><i class="fas fa-info-circle me-2"></i>Основная информация</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-8">
-                                        {{ form.title }}
-                                    </div>
-                                    <div class="col-md-4">
-                                        {{ form.priority }}
-                                    </div>
-                                    <div class="col-12">
-                                        {{ form.description }}
-                                    </div>
+                        <!-- Основная информация -->
+                        <div class="form-section">
+                            <h5 class="mb-3 pb-2 border-bottom">
+                                <i class="fas fa-info-circle text-primary me-2"></i>Основная информация
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold">{{ form.title.label }}</label>
+                                    {{ form.title }}
+                                    {% if form.title.help_text %}
+                                        <div class="form-text">{{ form.title.help_text }}</div>
+                                    {% endif %}
+                                    {{ form.title.errors }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">{{ form.priority.label }}</label>
+                                    {{ form.priority }}
+                                    {{ form.priority.errors }}
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">{{ form.description.label }}</label>
+                                    {{ form.description }}
+                                    {{ form.description.errors }}
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Даты и категория -->
-                            <div class="form-section">
-                                <h5><i class="fas fa-calendar-alt me-2"></i>Сроки и категория</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        {{ form.start_date }}
-                                    </div>
-                                    <div class="col-md-4">
-                                        {{ form.end_date }}
-                                    </div>
-                                    <div class="col-md-4">
-                                        {{ form.category }}
-                                    </div>
+                        <!-- Сроки и категория -->
+                        <div class="form-section">
+                            <h5 class="mb-3 pb-2 border-bottom">
+                                <i class="fas fa-calendar-alt text-primary me-2"></i>Сроки и категория
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">{{ form.start_date.label }}</label>
+                                    {{ form.start_date }}
+                                    {{ form.start_date.errors }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">{{ form.end_date.label }}</label>
+                                    {{ form.end_date }}
+                                    {{ form.end_date.errors }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">{{ form.category.label }}</label>
+                                    {{ form.category }}
+                                    {{ form.category.errors }}
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Повторение -->
-                            <div class="form-section">
-                                <h5><i class="fas fa-sync-alt me-2"></i>Настройки повторения</h5>
-                                <div class="row g-3 align-items-start">
-                                    <div class="col-md-3">
-                                        {{ form.repeat }}
-                                    </div>
-                                    <div class="col-md-2">
-                                        {{ form.repeat_interval }}
-                                    </div>
-                                    <div class="col-md-3">
-                                        {{ form.repeat_end_date }}
-                                    </div>
-                                    <div class="col-md-4">
-                                        {{ form.repeat_days }}
-                                    </div>
+                        <!-- Настройки повторения -->
+                        <div class="form-section">
+                            <h5 class="mb-3 pb-2 border-bottom">
+                                <i class="fas fa-sync-alt text-primary me-2"></i>Настройки повторения
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">{{ form.repeat.label }}</label>
+                                    {{ form.repeat }}
+                                    {{ form.repeat.errors }}
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fw-semibold">{{ form.repeat_interval.label }}</label>
+                                    {{ form.repeat_interval }}
+                                    {{ form.repeat_interval.errors }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">{{ form.repeat_end_date.label }}</label>
+                                    {{ form.repeat_end_date }}
+                                    {{ form.repeat_end_date.errors }}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">{{ form.repeat_days.label }}</label>
+                                    {{ form.repeat_days }}
+                                    {{ form.repeat_days.errors }}
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Доступ и файлы -->
-                            <div class="form-section">
-                                <h5><i class="fas fa-users me-2"></i>Доступ и вложения</h5>
-                                <div class="row g-3">
-                                    <div class="col-md-12">
-                                        {{ form.shared_with }}
-                                        <small class="text-muted d-block mt-1">
-                                            <i class="fas fa-shield-alt me-1"></i>
-                                            Задачи с доступом будут отображаться у выбранных пользователей
-                                        </small>
+                        <!-- Доступ и вложения -->
+                        <div class="form-section">
+                            <h5 class="mb-3 pb-2 border-bottom">
+                                <i class="fas fa-users text-primary me-2"></i>Доступ и вложения
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">{{ form.shared_with.label }}</label>
+                                    {{ form.shared_with }}
+                                    <div class="form-text">
+                                        <i class="fas fa-shield-alt me-1"></i>
+                                        {{ form.shared_with.help_text }}
                                     </div>
-                                    <!-- 2. Блок файлов с кнопками удаления -->
-                                    <div class="col-md-12">
-                                        <div class="dropzone-area" id="dropzone">
-                                            <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                            <p class="mb-1 fw-bold">Перетащите файлы сюда или нажмите для выбора</p>
-                                            <small class="text-muted">Поддерживаются любые типы файлов • Макс.
-                                                10MB</small>
-                                            <input type="file" name="files" multiple class="d-none" id="id_files">
-                                        </div>
+                                    {{ form.shared_with.errors }}
+                                </div>
 
-                                        <div id="file-list" class="mt-3">
-                                            {% if form.instance.id and form.instance.files.exists %}
-                                                {% for document in form.instance.files.all %}
-                                                    <div class="file-item" data-file-id="{{ document.id }}">
+                                <!-- Блок загрузки файлов -->
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Вложения</label>
+                                    <div class="dropzone-area border border-2 border-dashed rounded p-4 text-center" id="dropzone">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                        <p class="mb-1 fw-bold">Перетащите файлы сюда или нажмите для выбора</p>
+                                        <small class="text-muted">Поддерживаются любые типы файлов • Макс. 10MB на файл</small>
+                                        <input type="file" name="files" multiple class="d-none" id="id_files">
+                                    </div>
+
+                                    <!-- Список уже загруженных файлов -->
+                                    <div id="file-list" class="mt-3">
+                                        {% if form.instance.id and form.instance.files.exists %}
+                                            {% for document in form.instance.files.all %}
+                                                <div class="file-item d-flex align-items-center justify-content-between p-3 bg-light border rounded mb-2" data-file-id="{{ document.id }}">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <i class="fas fa-file-alt text-primary fa-lg"></i>
                                                         <div>
-                                                            <i class="fas fa-file text-primary me-2"></i>
-                                                            <span>{{ document.original_filename|default:document.file.name|basename }}</span>
-                                                            {% if document.file.size %}
-                                                                <small class="text-muted ms-2">({{ document.file.size|filesizeformat }})</small>
-                                                            {% endif %}
-                                                        </div>
-                                                        <div class="d-flex gap-2">
-                                                            <a href="{{ document.file.url }}" target="_blank"
-                                                               class="btn btn-sm btn-outline-primary" title="Скачать">
-                                                                <i class="fas fa-download"></i>
-                                                            </a>
-                                                            <button type="button"
-                                                                    class="btn btn-sm btn-outline-danger delete-file-btn"
-                                                                    data-file-id="{{ document.id }}"
-                                                                    title="Удалить файл">
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
+                                                            <div class="fw-semibold">{{ document.original_filename|default:document.file.name|basename }}</div>
+                                                            <div class="small text-muted">
+                                                                {% if document.file.size %}{{ document.file.size|filesizeformat }}{% endif %}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                {% endfor %}
-                                            {% endif %}
-                                        </div>
+                                                    <div class="d-flex gap-2">
+                                                        <a href="{{ document.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Скачать">
+                                                            <i class="fas fa-download"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger delete-file-btn" data-file-id="{{ document.id }}" title="Удалить файл">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
                                     </div>
-
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Кнопки -->
-                            <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
-                                <a href="{% url 'tasks_app:task-list' %}" class="btn btn-outline-secondary btn-custom">
-                                    <i class="fas fa-times me-2"></i>Отмена
-                                </a>
-                                <button type="submit" class="btn btn-primary btn-custom px-4">
-                                    <i class="fas fa-save me-2"></i>Сохранить
-                                </button>
-                            </div>
-                        </form>
+                        <!-- Кнопки формы -->
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a href="{% url 'tasks_app:task-list' %}" class="btn btn-secondary btn-custom">
+                                <i class="fas fa-times me-2"></i>Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-custom px-4">
+                                <i class="fas fa-save me-2"></i>Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления файла -->
+<div class="modal fade" id="deleteFileModal" tabindex="-1" aria-labelledby="deleteFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteFileModalLabel">
+                    <i class="fas fa-trash-alt me-2"></i>Подтверждение удаления
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы действительно хотите удалить файл <strong id="deleteFileName"></strong>?</p>
+                <p class="text-danger mb-0"><i class="fas fa-exclamation-triangle me-1"></i> Это действие невозможно отменить.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Отмена
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash-alt me-1"></i>Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно уведомлений (Porto стиль) -->
+<div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="notificationHeader">
+                <h5 class="modal-title" id="notificationModalLabel">
+                    <i class="fas fa-info-circle me-2" id="notificationIcon"></i>
+                    <span id="notificationTitle">Уведомление</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body" id="notificationMessage">Сообщение</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Хорошо</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Инициализация Select2 для мультиселекта (Porto стиль)
+        const sharedWithField = document.getElementById('id_shared_with');
+        if (sharedWithField && typeof $.fn.select2 !== 'undefined') {
+            $(sharedWithField).select2({
+                placeholder: 'Выберите пользователей',
+                width: '100%',
+                allowClear: true,
+                language: 'ru',
+                theme: 'bootstrap-5'
+            });
+        } else if (sharedWithField && typeof $.fn.multiselect !== 'undefined') {
+            $(sharedWithField).multiselect({
+                includeSelectAllOption: true,
+                enableCaseInsensitiveFiltering: true,
+                buttonWidth: '100%',
+                maxHeight: 300,
+                nonSelectedText: 'Выберите пользователей',
+                allSelectedText: 'Все выбраны',
+                nSelectedText: 'выбрано',
+                selectAllText: 'Выбрать всех',
+                filterPlaceholder: 'Поиск...'
+            });
+        } else if (sharedWithField) {
+            sharedWithField.setAttribute('size', '5');
+            sharedWithField.classList.add('form-select');
+        }
+
+        // 2. Удаление файлов
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        let currentFileId = null;
+        let currentFileItem = null;
+        let currentFileName = '';
+
+        function showNotification(message, type = 'success') {
+            // Используем toastr если доступен, иначе модалку
+            if (typeof toastr !== 'undefined') {
+                if (type === 'success') toastr.success(message);
+                else if (type === 'error') toastr.error(message);
+                else if (type === 'warning') toastr.warning(message);
+                else toastr.info(message);
+                return;
+            }
+            // Fallback на модальное окно
+            const modal = new bootstrap.Modal(document.getElementById('notificationModal'));
+            const header = document.getElementById('notificationHeader');
+            const icon = document.getElementById('notificationIcon');
+            const title = document.getElementById('notificationTitle');
+            const messageEl = document.getElementById('notificationMessage');
+
+            header.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+            if (type === 'success') {
+                header.classList.add('bg-success', 'text-white');
+                icon.className = 'fas fa-check-circle me-2';
+                title.textContent = 'Успешно';
+            } else if (type === 'error') {
+                header.classList.add('bg-danger', 'text-white');
+                icon.className = 'fas fa-exclamation-circle me-2';
+                title.textContent = 'Ошибка';
+            } else if (type === 'warning') {
+                header.classList.add('bg-warning');
+                icon.className = 'fas fa-exclamation-triangle me-2';
+                title.textContent = 'Предупреждение';
+            } else {
+                header.classList.add('bg-info', 'text-white');
+                icon.className = 'fas fa-info-circle me-2';
+                title.textContent = 'Информация';
+            }
+            messageEl.textContent = message;
+            modal.show();
+            if (type === 'success') {
+                setTimeout(() => modal.hide(), 3000);
+            }
+        }
+
+        function bindDeleteButtons() {
+            document.querySelectorAll('.delete-file-btn').forEach(btn => {
+                btn.removeEventListener('click', btn._listener);
+                const listener = function(e) {
+                    e.preventDefault();
+                    currentFileId = this.dataset.fileId;
+                    currentFileItem = this.closest('.file-item');
+                    const fileNameSpan = currentFileItem.querySelector('.fw-semibold');
+                    currentFileName = fileNameSpan ? fileNameSpan.textContent : 'файл';
+                    document.getElementById('deleteFileName').innerHTML = `<strong>${currentFileName}</strong>`;
+                    const deleteModal = new bootstrap.Modal(document.getElementById('deleteFileModal'));
+                    deleteModal.show();
+                };
+                btn.addEventListener('click', listener);
+                btn._listener = listener;
+            });
+        }
+
+        document.getElementById('confirmDeleteBtn')?.addEventListener('click', async function() {
+            if (!currentFileId) return;
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteFileModal'));
+            deleteModal.hide();
+            const confirmBtn = this;
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Удаление...';
+
+            try {
+                const response = await fetch("{% url 'tasks_app:delete-file-ajax' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `file_id=${currentFileId}`
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    if (currentFileItem) {
+                        currentFileItem.style.transition = 'all 0.3s ease';
+                        currentFileItem.style.opacity = '0';
+                        currentFileItem.style.transform = 'translateX(20px)';
+                        setTimeout(() => currentFileItem.remove(), 300);
+                    }
+                    showNotification(`Файл "${currentFileName}" удален`, 'success');
+                } else {
+                    showNotification(data.error || 'Ошибка удаления файла', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showNotification('Ошибка соединения с сервером', 'error');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+                currentFileId = null;
+                currentFileItem = null;
+            }
+        });
+
+        // 3. Drag & Drop загрузка файлов
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('id_files');
+        const fileList = document.getElementById('file-list');
+
+        if (dropzone && fileInput) {
+            dropzone.addEventListener('click', () => fileInput.click());
+            ['dragenter', 'dragover'].forEach(evt =>
+                dropzone.addEventListener(evt, e => {
+                    e.preventDefault();
+                    dropzone.classList.add('drag-over');
+                })
+            );
+            ['dragleave', 'drop'].forEach(evt =>
+                dropzone.addEventListener(evt, e => {
+                    e.preventDefault();
+                    dropzone.classList.remove('drag-over');
+                })
+            );
+
+            function escapeHtml(str) {
+                return str.replace(/[&<>]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    return m;
+                });
+            }
+
+            function addNewFileToList(file) {
+                const isAlreadyAdded = Array.from(fileList.querySelectorAll('.fw-semibold')).some(
+                    span => span.textContent === file.name
+                );
+                if (isAlreadyAdded) return;
+
+                const div = document.createElement('div');
+                div.className = 'file-item d-flex align-items-center justify-content-between p-3 bg-light border rounded mb-2 new-file';
+                div.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fas fa-file-alt text-primary fa-lg"></i>
+                        <div>
+                            <div class="fw-semibold">${escapeHtml(file.name)}</div>
+                            <div class="small text-muted">${(file.size / 1024).toFixed(1)} KB • <span class="badge bg-warning">новый</span></div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Модальное окно подтверждения удаления файла -->
-    <div class="modal fade" id="deleteFileModal" tabindex="-1" aria-labelledby="deleteFileModalLabel"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteFileModalLabel">
-                        <i class="fas fa-trash-alt text-danger me-2"></i>
-                        Подтверждение удаления
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Вы действительно хотите удалить этот файл?</p>
-                    <p class="text-muted small" id="deleteFileName"></p>
-                    <p class="text-danger mb-0">
-                        <i class="fas fa-exclamation-triangle me-1"></i>
-                        Это действие невозможно отменить.
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>
-                        Отмена
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-new-file" title="Удалить">
+                        <i class="fas fa-times"></i>
                     </button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                        <i class="fas fa-trash-alt me-1"></i>
-                        Удалить
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+                `;
+                const removeBtn = div.querySelector('.remove-new-file');
+                removeBtn.addEventListener('click', () => {
+                    div.remove();
+                    const dt = new DataTransfer();
+                    const currentFiles = Array.from(fileInput.files);
+                    const index = currentFiles.findIndex(f => f.name === file.name && f.size === file.size);
+                    if (index !== -1) {
+                        currentFiles.splice(index, 1);
+                        currentFiles.forEach(f => dt.items.add(f));
+                        fileInput.files = dt.files;
+                    }
+                });
+                fileList.appendChild(div);
+            }
 
-    <!-- Модальное окно уведомления об успехе/ошибке -->
-    <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header" id="notificationHeader">
-                    <h5 class="modal-title" id="notificationModalLabel">
-                        <i class="fas fa-info-circle me-2" id="notificationIcon"></i>
-                        <span id="notificationTitle">Уведомление</span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                </div>
-                <div class="modal-body" id="notificationMessage">
-                    Сообщение
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                        <i class="fas fa-check me-1"></i>
-                        Хорошо
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+            fileInput.addEventListener('change', function() {
+                Array.from(this.files).forEach(file => addNewFileToList(file));
+            });
+
+            dropzone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length === 0) return;
+                const dt = new DataTransfer();
+                const currentFiles = Array.from(fileInput.files);
+                currentFiles.forEach(f => dt.items.add(f));
+                files.forEach(f => dt.items.add(f));
+                fileInput.files = dt.files;
+                files.forEach(file => addNewFileToList(file));
+            });
+        }
+
+        bindDeleteButtons();
+    });
+</script>
 {% endblock %}

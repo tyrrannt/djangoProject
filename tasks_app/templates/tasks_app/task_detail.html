@@ -57,22 +57,6 @@
 {% block content %}
     <div class="container-fluid py-3">
 
-        {# Хлебные крошки (Porto стиль) #}
-        <div class="row mb-3">
-            <div class="col-12">
-                <h1 class="page-header h3 mb-0">
-                    <i class="fas fa-tasks text-primary me-2"></i> {{ task.title|truncatechars:60 }}
-                </h1>
-                <div class="breadcrumb-wrapper">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{% url 'customers_app:profile' user.pk %}">Главная</a></li>
-                        <li class="breadcrumb-item"><a href="{% url 'tasks_app:task-list' %}">Задачи</a></li>
-                        <li class="breadcrumb-item active">{{ task.title|truncatechars:40 }}</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-
         <div class="row">
             {# ОСНОВНАЯ ИНФОРМАЦИЯ (левая колонка) #}
             <div class="col-lg-8">
@@ -251,7 +235,7 @@
                                 <label class="form-check-label" for="completedSwitch">
                                     {% if task.completed %}
                                         <span class="text-success"><i class="fas fa-check-circle"></i> Задача выполнена</span>
-                                        else }
+                                        {% else %}
                                         <span class="text-warning"><i
                                                 class="fas fa-hourglass-half"></i> В процессе</span>
                                     {% endif %}
