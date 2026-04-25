@@ -1,6 +1,7 @@
 {% extends 'customers_app/main.html' %}
 {% load static %}
 {% load custom %}
+
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/select2/css/select2.css' %}"/>
     <link rel="stylesheet"
@@ -10,13 +11,171 @@
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/basic.css' %}"/>
     <link rel="stylesheet" href="{% static 'admin_templates/vendor/dropzone/dropzone.css' %}"/>
+
+    <style>
+        /* ============================================
+         СТИЛИ ДЛЯ СТРАНИЦЫ ИЗМЕНЕНИЯ АВАТАРА
+        ============================================ */
+
+        /* Превью аватара */
+        .avatar-preview {
+            transition: all 0.3s ease;
+            border: 3px solid #e9ecef;
+            cursor: pointer;
+        }
+
+        .avatar-preview:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: #0d6efd;
+        }
+
+        /* Зона для перетаскивания файла */
+        .dropzone-avatar {
+            border: 2px dashed #dee2e6;
+            border-radius: 16px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+
+        .dropzone-avatar:hover {
+            border-color: #0d6efd;
+            background: #f8f9fa;
+        }
+
+        .dropzone-avatar.drag-over {
+            border-color: #0d6efd;
+            background: #e7f1ff;
+        }
+
+        /* Адаптация для мобильных */
+        @media (max-width: 768px) {
+            .avatar-preview {
+                max-width: 150px !important;
+                margin: 0 auto;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .action-buttons .row {
+                gap: 0.5rem;
+            }
+        }
+
+        /* Анимация загрузки */
+        .btn-loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Стили для сообщений об ошибках */
+        .error-message {
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+    </style>
 {% endblock %}
 
 {% block custom_script %}
     <script src="{% static 'admin_templates/vendor/bootstrap-tagsinput/bootstrap-tagsinput.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/select2/js/select2.js' %}"></script>
-    <script src="{% static 'admin_templates/vendor/pdfjs/pdf.js' %}"></script>
     <script src="{% static 'admin_templates/vendor/bootstrapv5-multiselect/js/bootstrap-multiselect.js' %}"></script>
+
+    <script>
+        // ============================================
+        // СКРИПТ ДЛЯ ПРЕВЬЮ АВАТАРА И DRAG & DROP
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const avatarInput = document.getElementById('id_avatar');
+            const avatarPreview = document.getElementById('avatarPreview');
+            const dropzone = document.getElementById('dropzoneAvatar');
+            const form = document.querySelector('form');
+            const submitBtn = document.querySelector('button[type="submit"]');
+
+            // Превью выбранного изображения
+            if (avatarInput) {
+                avatarInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            if (avatarPreview) {
+                                avatarPreview.src = event.target.result;
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            // Drag & Drop для загрузки аватара
+            if (dropzone && avatarInput) {
+                dropzone.addEventListener('click', () => avatarInput.click());
+
+                ['dragenter', 'dragover'].forEach(evt => {
+                    dropzone.addEventListener(evt, e => {
+                        e.preventDefault();
+                        dropzone.classList.add('drag-over');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(evt => {
+                    dropzone.addEventListener(evt, e => {
+                        e.preventDefault();
+                        dropzone.classList.remove('drag-over');
+                    });
+                });
+
+                dropzone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].type.startsWith('image/')) {
+                        avatarInput.files = files;
+                        // Триггерим событие change для обновления превью
+                        const changeEvent = new Event('change', { bubbles: true });
+                        avatarInput.dispatchEvent(changeEvent);
+                    } else {
+                        toastr.error('Пожалуйста, выберите изображение');
+                    }
+                });
+            }
+
+            // Анимация загрузки при отправке формы
+            if (form && submitBtn) {
+                form.addEventListener('submit', function() {
+                    submitBtn.classList.add('btn-loading');
+                    const originalHtml = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="bx bx-loader-circle me-2"></i> Сохранение...';
+
+                    // Восстанавливаем кнопку через 5 секунд (на случай ошибки)
+                    setTimeout(() => {
+                        submitBtn.classList.remove('btn-loading');
+                        submitBtn.innerHTML = originalHtml;
+                    }, 5000);
+                });
+            }
+        });
+
+        // Подтверждение удаления аватара
+        function confirmDelete() {
+            if (confirm('Вы действительно хотите удалить фото профиля? Это действие нельзя отменить.')) {
+                window.location.href = "#";
+            }
+        }
+    </script>
 {% endblock %}
 
 {% block title %}
@@ -24,50 +183,165 @@
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="{% url 'customers_app:avatar_update' object.pk %}"
-              method="post" prefix="main" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col">
-                    <div class="form-group row align-items-center pb-3">
-                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Фото</label>
-                        <div class="col-lg-7 col-xl-6">
-                            <input type="file" class="form-control form-control-modern"
-                                   name="avatar" id="id_avatar" placeholder="Данные отсутствуют..."/>
+<div class="container-fluid py-3">
+    <!-- Хлебные крошки -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1 class="page-header h3 mb-0">
+                <i class="fas fa-user-circle text-primary me-2"></i>{{ title }}
+            </h1>
+            <div class="breadcrumb-wrapper">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'customers_app:profile' user.pk %}">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'customers_app:staff_list' %}">Сотрудники</a></li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'customers_app:staff' object.pk %}">{{ object.get_full_name|default:object.username }}</a>
+                    </li>
+                    <li class="breadcrumb-item active">Смена аватара</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <form class="ecommerce-form" action="{% url 'customers_app:avatar_update' object.pk %}"
+                  method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-image me-2"></i> Изменение фото профиля
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- ============================================
+                             ТЕКУЩИЙ АВАТАР С ПРЕВЬЮ
+                        ============================================ -->
+                        <div class="row mb-4">
+                            <div class="col-12 text-center">
+                                <div class="mb-3">
+                                    <img id="avatarPreview"
+                                         src="{% if object.avatar %}{{ object.avatar.url }}?v={{ object.updated_at.timestamp }}{% else %}{% static 'admin_templates/img/!logged-user.jpg' %}{% endif %}"
+                                         alt="{{ object.username }}"
+                                         class="avatar-preview rounded-circle img-fluid"
+                                         style="width: 180px; height: 180px; object-fit: cover;">
+                                </div>
+                                <h5 class="mb-1">{{ object.get_full_name|default:object.username }}</h5>
+                                <p class="text-muted small">{{ object.user_work_profile.job|default:"Сотрудник" }}</p>
+                            </div>
+                        </div>
+
+                        <!-- ============================================
+                             ЗОНА ЗАГРУЗКИ ФАЙЛА (DROPZONE)
+                        ============================================ -->
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-cloud-upload-alt me-2 text-primary"></i>Новое фото
+                            </label>
+                            <div id="dropzoneAvatar" class="dropzone-avatar p-5 text-center">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <p class="mb-1 fw-semibold">Перетащите изображение сюда или нажмите для выбора</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Поддерживаются форматы: JPG, PNG, GIF. Максимальный размер: 5MB
+                                </small>
+                                <input type="file" class="d-none" name="avatar" id="id_avatar" accept="image/*"/>
+                            </div>
+                            {% if form.avatar.errors %}
+                                <div class="invalid-feedback d-block">{{ form.avatar.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ============================================
+                             ИНФОРМАЦИОННОЕ СООБЩЕНИЕ
+                        ============================================ -->
+                        <div class="alert alert-info d-flex align-items-center mt-3" role="alert">
+                            <i class="fas fa-lightbulb fa-2x me-3"></i>
+                            <div>
+                                <strong class="d-block">Рекомендации по загрузке фото:</strong>
+                                <small>Используйте качественное фото в деловом стиле. Изображение будет автоматически обрезано до квадрата 180x180 пикселей.</small>
+                            </div>
                         </div>
                     </div>
 
-                </div>
-            </div>
-            <div class="row action-buttons">
-                <div class="col-12 col-md-auto">
-                    <button type="submit" prefix="main"
-                            class="btn btn-outline-success btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1"
-                            data-loading-text="Loading...">
-                        <i class="bx bx-save text-4 me-2"></i> Сохранить
-                    </button>
-
-                </div>
-                <div class="col-12 col-md-auto px-md-0 mt-3 mt-md-0">
-                    <a href="{% url 'customers_app:staff_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть </a>
-                </div>
-                {% if user.is_staff or user.is_superuser %}
-                    <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 ms-auto">
-                        <a href="#"
-                           class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                           align-items-center font-weight-semibold line-height-1">
-                            <i class="bx bx-trash text-4 me-2"></i> Удалить
-                        </a>
+                    <!-- ============================================
+                         КНОПКИ ДЕЙСТВИЙ
+                    ============================================ -->
+                    <div class="card-footer bg-transparent">
+                        <div class="row g-2">
+                            <div class="col-12 col-md-auto">
+                                <button type="submit" class="btn btn-success btn-px-4 py-3 w-100 w-md-auto">
+                                    <i class="bx bx-save text-4 me-2"></i> Сохранить
+                                </button>
+                            </div>
+                            <div class="col-12 col-md-auto">
+                                <a href="{% url 'customers_app:staff' object.pk %}"
+                                   class="btn btn-secondary btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1">
+                                    <i class='bx bx-arrow-back text-4 me-2'></i> Отмена
+                                </a>
+                            </div>
+                            {% if user.is_staff or user.is_superuser %}
+                                <div class="col-12 col-md-auto ms-md-auto">
+                                    <button type="button"
+                                            onclick="confirmDelete()"
+                                            class="btn btn-outline-danger btn-px-4 py-3 w-100 w-md-auto">
+                                        <i class="bx bx-trash text-4 me-2"></i> Удалить фото
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
-                {% endif %}
-            </div>
-        </form>
-        <!-- end: page -->
-    <!-- end: page -->
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
+<!-- Модальное окно подтверждения удаления (более безопасный вариант) -->
+<div class="modal fade" id="deleteAvatarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Подтверждение удаления
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы действительно хотите удалить фото профиля?</p>
+                <p class="text-muted small mb-0">Вместо фото будет установлено изображение по умолчанию.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <a href="#" class="btn btn-danger">Да, удалить</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Дополнительные стили для адаптивности кнопок */
+    @media (max-width: 768px) {
+        .w-md-auto {
+            width: 100% !important;
+        }
+        .btn-px-4 {
+            justify-content: center;
+        }
+        .card-footer .row > [class*="col-"] {
+            margin-bottom: 0.5rem;
+        }
+        .card-footer .row > [class*="col-"]:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .w-md-auto {
+            width: auto !important;
+        }
+    }
+</style>
 {% endblock %}

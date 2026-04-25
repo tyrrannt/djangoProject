@@ -6,228 +6,433 @@
     {{ title }}
 {% endblock %}
 
-{% block content %}
-        <!-- start: page -->
-        <div class="row">
-            <div class="col">
+{% block custom_css %}
+    <style>
+        /* ============================================
+         СТИЛИ ДЛЯ ТАБЛИЦЫ СОТРУДНИКОВ
+         Адаптация под PortoAdmin и мобильные устройства
+        ============================================ */
 
-                <div class="card card-modern">
-                    <div class="card-body">
-                        <div class="datatables-header-footer-wrapper">
-                            <div class="datatable-header">
-                                <div class="row align-items-center mb-3">
-                                    {% if user.is_staff %}
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:staff_list' %}?update=0"
-                                               class="btn btn-outline-info btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-sync text-4 me-2'></i> Синхронизация с 1С </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:staff_list' %}?update=1"
-                                               class="btn btn-outline-success btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-cloud-upload text-4 me-2'></i> Обновить рабочие данные
-                                            </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:staff_list' %}?update=2"
-                                               class="btn btn-outline-success btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-cloud-upload text-4 me-2'></i> Обновить персональные
-                                                данные </a>
-                                        </div>
-                                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                                            <a href="{% url 'customers_app:staff_list' %}?update=3"
-                                               class="btn btn-outline-danger btn-px-4 py-3 d-flex
-                                                align-items-center font-weight-semibold line-height-1">
-                                                <i class='bx bx-hide text-4 me-2'></i> Скрыть уволенных </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
+        /* Стили для фильтров в заголовке таблицы */
+        .dataTables_wrapper thead input {
+            width: 100%;
+            padding: 6px 8px;
+            box-sizing: border-box;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .dataTables_wrapper thead input:focus {
+            border-color: #0d6efd;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
+        }
+
+        /* Стили для строк таблицы */
+        .table-ecommerce-simple tbody tr {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .table-ecommerce-simple tbody tr:hover {
+            background-color: #f0f7ff !important;
+            transform: translateX(2px);
+        }
+
+        /* Адаптация для мобильных устройств */
+        @media (max-width: 768px) {
+            .dataTables_wrapper {
+                overflow-x: auto;
+            }
+
+            .datatable-header .row > [class*="col-"] {
+                margin-bottom: 0.75rem;
+            }
+
+            .datatable-header .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .datatable-footer .row {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .datatable-footer .col-md-auto,
+            .datatable-footer .col-lg-auto {
+                width: 100%;
+                text-align: center;
+            }
+
+            .bulk-action-container {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .bulk-action-container .d-grid {
+                width: 100%;
+            }
+
+            .bulk-action-container select,
+            .bulk-action-container .btn {
+                width: 100%;
+            }
+        }
+
+        /* Для планшетов */
+        @media (min-width: 769px) and (max-width: 992px) {
+            .datatable-header .btn {
+                font-size: 0.8rem;
+                padding: 0.6rem 1rem;
+            }
+        }
+
+        /* Стили для пагинации */
+        .pagination-wrapper .paginate_button {
+            margin: 0 2px;
+        }
+
+        .pagination-wrapper .paginate_button.current {
+            background: #0d6efd;
+            color: white;
+            border-radius: 6px;
+        }
+
+        /* Стили для результатов поиска */
+        .results-info-wrapper {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        /* Анимация загрузки */
+        .dataTables_processing {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Стили для бейджей */
+        .badge-telegram {
+            background: #26A5E4;
+            color: white;
+        }
+
+        /* Кнопки действий */
+        .action-buttons-group {
+            gap: 0.5rem;
+        }
+
+        /* Улучшение скролла на мобильных */
+        .dataTables_scroll {
+            overflow-x: auto;
+        }
+
+        /* Стили для выбора количества записей */
+        .dataTables_length select {
+            border-radius: 8px;
+            padding: 0.25rem 1.5rem 0.25rem 0.5rem;
+            border-color: #dee2e6;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <!-- Хлебные крошки -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1 class="page-header h3 mb-0">
+                <i class="fas fa-users text-primary me-2"></i>{{ title }}
+            </h1>
+            <div class="breadcrumb-wrapper">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'customers_app:profile' user.pk %}">Главная</a></li>
+                    <li class="breadcrumb-item active">Список сотрудников</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная карточка с таблицей -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+
+                        <!-- ============================================
+                             ВЕРХНЯЯ ПАНЕЛЬ С КНОПКАМИ ДЕЙСТВИЙ
+                             Адаптирована для мобильных устройств
+                        ============================================ -->
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3 g-2">
+                                {% if user.is_staff %}
+                                    <div class="col-12 col-lg-auto">
+                                        <a href="{% url 'customers_app:staff_list' %}?update=0"
+                                           class="btn btn-outline-info btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100 w-lg-auto">
+                                            <i class='bx bx-sync text-4 me-2'></i> Синхронизация с 1С
+                                        </a>
+                                    </div>
+                                    <div class="col-12 col-lg-auto">
+                                        <a href="{% url 'customers_app:staff_list' %}?update=1"
+                                           class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100 w-lg-auto">
+                                            <i class='bx bx-cloud-upload text-4 me-2'></i> Обновить рабочие данные
+                                        </a>
+                                    </div>
+                                    <div class="col-12 col-lg-auto">
+                                        <a href="{% url 'customers_app:staff_list' %}?update=2"
+                                           class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100 w-lg-auto">
+                                            <i class='bx bx-cloud-upload text-4 me-2'></i> Обновить персональные данные
+                                        </a>
+                                    </div>
+                                    <div class="col-12 col-lg-auto">
+                                        <a href="{% url 'customers_app:staff_list' %}?update=3"
+                                           class="btn btn-outline-danger btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100 w-lg-auto">
+                                            <i class='bx bx-hide text-4 me-2'></i> Скрыть уволенных
+                                        </a>
+                                    </div>
+                                {% endif %}
                             </div>
-                            <style>
-                                thead input {
-                                    width: 100%;
-                                    padding: 3px;
-                                    box-sizing: border-box;
-                                    border-radius: 10px;
-                                    border-color: #ff7300;
-                                    color: #003994;
-                                }
-                            </style>
-                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                                   style="min-width: 750px;">
+                        </div>
+
+                        <!-- ============================================
+                             ТАБЛИЦА СОТРУДНИКОВ С ПОИСКОМ ПО КАЖДОМУ СТОЛБЦУ
+                        ============================================ -->
+                        <div class="table-responsive">
+                            <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list">
                                 <thead>
-                                <tr>
-                                    <th width="4%">ТН</th>
-                                    <th width="20%">ФИО</th>
-                                    <th width="19%">Подразделение</th>
-                                    <th width="20%">Должность</th>
-                                    <th width="12%">Телефон</th>
-                                    <th width="10%">Email</th>
-                                    {% if user|has_group:"password" %}
-                                        <th width="10%">Pass</th>
-                                        <th width="10%">Telegram</th>
-                                        <th width="10%">Права</th>
-                                    {% endif %}
-                                </tr>
+                                    <tr>
+                                        <th width="4%">ТН</th>
+                                        <th width="20%">ФИО</th>
+                                        <th width="19%">Подразделение</th>
+                                        <th width="20%">Должность</th>
+                                        <th width="12%">Телефон</th>
+                                        <th width="10%">Email</th>
+                                        {% if user|has_group:"password" %}
+                                            <th width="10%">Pass</th>
+                                            <th width="10%">Telegram</th>
+                                            <th width="10%">Права</th>
+                                        {% endif %}
+                                    </tr>
                                 </thead>
                             </table>
-                            <hr class="solid mt-5 opacity-4">
-                            <div class="datatable-footer">
-                                <div class="row align-items-center justify-content-between mt-3">
-                                    <div class="col-md-auto order-1 mb-3 mb-lg-0">
-                                        <div class="d-flex align-items-stretch">
-                                            <div class="d-grid gap-3 d-md-flex justify-content-md-end me-4">
-                                                <select class="form-control select-style-1 bulk-action"
-                                                        name="bulk-action" style="min-width: 170px;">
-                                                    <option value="" selected>Редактировать</option>
-                                                    <option value="delete">Удалить</option>
-                                                </select>
-                                                <a href="#"
-                                                   class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3">Применить</a>
-                                            </div>
-                                        </div>
+                        </div>
+
+                        <hr class="solid mt-4 opacity-4">
+
+                        <!-- ============================================
+                             НИЖНЯЯ ПАНЕЛЬ: МАССОВЫЕ ОПЕРАЦИИ, ПАГИНАЦИЯ
+                             Адаптирована для мобильных устройств
+                        ============================================ -->
+                        <div class="datatable-footer">
+                            <div class="row align-items-center justify-content-between mt-3 g-3">
+                                <!-- Левая часть: массовые операции -->
+                                <div class="col-md-auto order-1 order-md-1">
+                                    <div class="d-flex flex-column flex-sm-row align-items-stretch gap-3 bulk-action-container">
+                                        <select class="form-control select-style-1 bulk-action" name="bulk-action" style="min-width: 170px;">
+                                            <option value="" selected>Выберите действие</option>
+                                            <option value="delete">Удалить выбранные</option>
+                                            <option value="export">Экспорт в Excel</option>
+                                            <option value="email">Отправить Email</option>
+                                        </select>
+                                        <a href="#" class="bulk-action-apply btn btn-light btn-px-4 py-3 border font-weight-semibold text-color-dark text-3 d-flex align-items-center justify-content-center">
+                                            <i class="bx bx-check-circle me-2"></i> Применить
+                                        </a>
                                     </div>
-                                    <div class="col-lg-auto text-center order-3 order-lg-2">
-                                        <div class="results-info-wrapper"></div>
-                                    </div>
-                                    <div class="col-lg-auto order-2 order-lg-3 mb-3 mb-lg-0">
-                                        <div class="pagination-wrapper"></div>
-                                    </div>
+                                </div>
+
+                                <!-- Центр: информация о результатах -->
+                                <div class="col-lg-auto text-center order-3 order-md-2">
+                                    <div class="results-info-wrapper"></div>
+                                </div>
+
+                                <!-- Правая часть: пагинация -->
+                                <div class="col-lg-auto order-2 order-md-3">
+                                    <div class="pagination-wrapper d-flex justify-content-center justify-content-lg-end"></div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
+                    </div>
                 </div>
             </div>
         </div>
-        <!-- end: page -->
-    {#    <script type="text/javascript">#}
-    {#        function portal_paginator() {#}
-    {#            paginator_by = document.getElementById("portal_paginator").value;#}
-    {#            $.ajax({#}
-    {#                type: "GET",#}
-    {#                url: '{% url 'customers_app:staff_list' %}',#}
-    {#                data: {#}
-    {#                    "result": paginator_by,#}
-    {#                },#}
-    {#                dataType: "json",#}
-    {#                success: function (data) {#}
-    {#                    // any process in data#}
-    {#                    alert("success");#}
-    {#                },#}
-    {#                failure: function () {#}
-    {#                    alert("failure");#}
-    {#                }#}
-    {#            });#}
-    {#        };#}
-    {##}
-    {#        function field_sorted() {#}
-    {#            item_sorted = document.getElementById("field_sorted").value;#}
-    {#            $.ajax({#}
-    {#                type: "GET",#}
-    {#                url: '{% url 'customers_app:staff_list' %}',#}
-    {#                data: {#}
-    {#                    "sort_item": item_sorted,#}
-    {#                },#}
-    {#                dataType: "json",#}
-    {#                success: function (data) {#}
-    {#                    // any process in data#}
-    {#                    alert("success");#}
-    {#                },#}
-    {#                failure: function () {#}
-    {#                    alert("failure");#}
-    {#                }#}
-    {#            });#}
-    {##}
-    {#        };#}
-    {#    </script>#}
+    </div>
+</div>
 {% endblock %}
 
 {% block custom_script %}
-    <script>
-        $(document).ready(function () {
-            $('#datatable-ecommerce-list thead th').each(function () {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
-            });
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
-                            $('input', this.header()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
-                        });
-                },
-                "ordering": false,
-                "scrollX": true,
-                "sDom": 'T<"clear">lrtip',
-                "ajax": "{% url 'customers_app:staff_list' %}",
-                "language": {
-                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
-                },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
-                    $(nRow).attr("href", id + '/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
-                    });
-                },
-                "columns": [
-                    {"data": "number"},
-                    {"data": "person"},
-                    {"data": "division"},
-                    {"data": "job"},
-                    {"data": "phone"},
-                    {"data": "email"},
-                    {%  if user|has_group:"password"  %}
-                        {"data": "password"},
-                        {"data": "telegram_id"},
-                        {"data": "rules"},
-                    {% endif %}
-                ],
-                "pageLength": 25, // Устанавливаем 25 элементов на странице по умолчанию
-                "createdRow": function (row, data, dataIndex) {
-                    // Генерируем цвет на основе текста в колонке "division"
-                    // var division = data.division;
-                    // var color = getColorFromText(division);
+<script>
+    $(document).ready(function () {
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ FILTER INPUTS В ЗАГОЛОВКЕ ТАБЛИЦЫ
+        // ============================================
+        $('#datatable-ecommerce-list thead th').each(function (index) {
+            var title = $(this).text();
+            // Пропускаем последние колонки с паролями и правами на мобильных
+            var isMobile = window.innerWidth <= 768;
+            var skipColumns = [];
 
-                    // Устанавливаем цвет текста для всей строки
-                    // $(row).css('color', color);
-
-                    // Добавляем класс fs-6 ко всем ячейкам строки
-                    $(row).find('td').addClass('fs-6 text-dark');
+            {% if user|has_group:"password" %}
+                if (isMobile && (index >= 6)) {
+                    $(this).html('');
+                    return;
                 }
-            });
+            {% endif %}
+
+            $(this).html('<input type="text" placeholder="Фильтр: ' + title + '" class="form-control form-control-sm" />');
         });
 
-        // Функция для генерации цвета на основе текста
-        // function getColorFromText(text) {
-            // Используем хэш-функцию для преобразования текста в число
-            // var hash = 0;
-            // for (var i = 0; i < text.length; i++) {
-            //     hash = text.charCodeAt(i) + ((hash << 5) - hash);
-            // }
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ DATATABLES
+        // ============================================
+        var table = $('#datatable-ecommerce-list').DataTable({
+            "initComplete": function () {
+                // Применяем поиск по каждому столбцу
+                this.api().columns().every(function () {
+                    var that = this;
+                    $('input', this.header()).on('keyup change clear', function () {
+                        if (that.search() !== this.value) {
+                            that.search(this.value).draw();
+                        }
+                    });
+                });
+            },
+            "ordering": true,
+            "order": [[1, "asc"]], // Сортировка по ФИО по умолчанию
+            "scrollX": true,
+            "scrollCollapse": true,
+            "sDom": '<"top"l>rt<"bottom"ip>', // Упрощенный DOM для лучшей адаптации
+            "ajax": {
+                "url": "{% url 'customers_app:staff_list' %}",
+                "dataSrc": function (json) {
+                    return json.data || json;
+                }
+            },
+            "language": {
+                "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}",
+                "search": "Поиск:",
+                "lengthMenu": "Показать _MENU_ записей",
+                "info": "Показано _START_ - _END_ из _TOTAL_",
+                "infoEmpty": "Нет записей",
+                "zeroRecords": "Ничего не найдено"
+            },
+            "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                var id = aData['pk'];
+                $(nRow).attr("data-id", id);
+                $(nRow).css('cursor', 'pointer');
+                $(nRow).off('click').on('click', function (e) {
+                    // Игнорируем клик, если был выбран чекбокс
+                    if ($(e.target).is('input[type="checkbox"]')) {
+                        return;
+                    }
+                    window.location = "{% url 'customers_app:staff' 0 %}".replace('0', id);
+                });
+                return nRow;
+            },
+            "columns": [
+                {"data": "number"},
+                {"data": "person"},
+                {"data": "division"},
+                {"data": "job"},
+                {"data": "phone"},
+                {"data": "email"},
+                {% if user|has_group:"password" %}
+                    {
+                        "data": "password",
+                        "render": function(data) {
+                            if (!data || data === '') return '<span class="text-muted">—</span>';
+                            return '<i class="bx bx-key text-warning" title="Пароль установлен"></i>';
+                        }
+                    },
+                    {
+                        "data": "telegram_id",
+                        "render": function(data) {
+                            if (!data || data === '') return '<span class="text-muted">—</span>';
+                            return '<span class="badge badge-telegram"><i class="bx bxl-telegram me-1"></i>' + data + '</span>';
+                        }
+                    },
+                    {"data": "rules"}
+                {% endif %}
+            ],
+            "pageLength": 25,
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Все"]],
+            "createdRow": function (row, data, dataIndex) {
+                $(row).find('td').addClass('fs-6 text-dark align-middle py-2');
 
-            // Преобразуем хэш в цвет в формате HEX
-            // var color = '#';
-            // for (var i = 0; i < 3; i++) {
-            //     var value = (hash >> (i * 8)) & 0xFF;
-            //     color += ('00' + value.toString(16)).substr(-2);
-            // }
+                // Добавляем класс для строк с уволенными сотрудниками (если есть признак)
+                if (data.is_dismissed === true) {
+                    $(row).addClass('table-secondary opacity-75');
+                }
+            },
+            "drawCallback": function() {
+                // Обновляем информацию о результатах
+                var info = this.api().page.info();
+                $('.results-info-wrapper').html(
+                    '<span class="text-muted">Всего сотрудников: <strong>' + info.recordsTotal + '</strong></span>'
+                );
+            }
+        });
 
-            // return color;
-        // }
-    </script>
+        // ============================================
+        // ОБРАБОТКА МАССОВЫХ ОПЕРАЦИЙ
+        // ============================================
+        $('.bulk-action-apply').on('click', function(e) {
+            e.preventDefault();
+            var action = $('.bulk-action').val();
+            if (!action) {
+                toastr.warning('Выберите действие');
+                return;
+            }
+
+            // Получаем выбранные строки (если добавить чекбоксы)
+            // Здесь можно реализовать массовое удаление/экспорт
+
+            if (action === 'delete') {
+                if (confirm('Вы действительно хотите удалить выбранных сотрудников?')) {
+                    toastr.info('Функция массового удаления в разработке');
+                }
+            } else if (action === 'export') {
+                toastr.info('Экспорт данных в разработке');
+            } else if (action === 'email') {
+                toastr.info('Массовая рассылка в разработке');
+            }
+        });
+
+        // ============================================
+        // АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
+        // ============================================
+        function adaptForMobile() {
+            var isMobile = window.innerWidth <= 768;
+            var dataTableContainer = $('#datatable-ecommerce-list_wrapper');
+
+            if (isMobile) {
+                dataTableContainer.addClass('mobile-view');
+                // Уменьшаем количество отображаемых колонок на мобильных
+                // (можно реализовать responsive extension)
+            } else {
+                dataTableContainer.removeClass('mobile-view');
+            }
+        }
+
+        $(window).on('resize', function() {
+            adaptForMobile();
+        });
+
+        adaptForMobile();
+
+        // ============================================
+        // ПОДСВЕТКА СТРОКИ ПРИ НАВЕДЕНИИ
+        // ============================================
+        $('#datatable-ecommerce-list tbody').on('mouseenter', 'tr', function() {
+            $(this).addClass('bg-light');
+        }).on('mouseleave', 'tr', function() {
+            $(this).removeClass('bg-light');
+        });
+    });
+</script>
 {% endblock %}
