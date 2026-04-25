@@ -6,16 +6,146 @@
     {{ title }}
 {% endblock %}
 
+<!-- ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ PortoAdmin -->
+{% block custom_css %}
+    <style>
+        /* ============================================
+           КАСТОМНЫЕ СТИЛИ ДЛЯ ДАШБОРДА
+           Не переопределяют базовые стили PortoAdmin
+        ============================================ */
+
+        /* Улучшение отображения календаря на мобильных устройствах */
+        @media (max-width: 768px) {
+            .fc-header-toolbar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .fc-header-toolbar .fc-toolbar-chunk {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 0.5rem;
+            }
+
+            .fc-toolbar-title {
+                font-size: 1.2rem !important;
+            }
+
+            .fc-daygrid-day-number {
+                font-size: 0.8rem !important;
+            }
+
+            .fc-event-title {
+                font-size: 0.7rem !important;
+            }
+
+            .calendar-container {
+                min-height: 400px;
+            }
+
+            /* Улучшение отображения вкладок на мобильных */
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .nav-tabs .nav-item {
+                white-space: nowrap;
+            }
+
+            /* Адаптация боковой панели с个人信息 */
+            .personal-info-card {
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Стили для хронологии (лента событий) */
+        .timeline-simple .tm-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .timeline-simple .tm-items li {
+            position: relative;
+            padding: 0 0 1.5rem 1.5rem;
+            border-left: 2px solid #e9ecef;
+        }
+
+        .timeline-simple .tm-items li:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-simple .tm-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .timeline-simple .tm-box:hover {
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Стили для таблиц отчетов */
+        .report-table-wrapper {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .report-table-wrapper table {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: collapse;
+        }
+
+        .report-table-wrapper th,
+        .report-table-wrapper td {
+            padding: 0.75rem;
+            text-align: right;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .report-table-wrapper th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        /* Стили для форм в табах */
+        .filter-form {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Адаптация для планшетов */
+        @media (max-width: 992px) {
+            .sidebar-info {
+                margin-bottom: 1.5rem;
+            }
+        }
+    </style>
+{% endblock %}
+
 {% block custom_script %}
+    <!-- СКРИПТЫ ДЛЯ КАЛЕНДАРЯ И УВЕДОМЛЕНИЙ -->
     <script>
+        // Уведомление о просроченных задачах
         document.addEventListener('DOMContentLoaded', function () {
             {% for task in tasks %}
                 {% if task.due_date and task.due_date|date:"Y-m-d" == today %}
-                    toastr.warning('Задача "{{ task.title }}" скоро истекает!');
+                    if (typeof toastr !== 'undefined') {
+                        toastr.warning('Задача "{{ task.title }}" скоро истекает!');
+                    }
                 {% endif %}
             {% endfor %}
         });
     </script>
+
+    <!-- ПОЛНЫЙ СКРИПТ КАЛЕНДАРЯ -->
     <script>
         (function ($) {
             'use strict';
@@ -39,7 +169,6 @@
 
             function showNotification(message, type) {
                 type = type || 'info';
-                // Используем toastr если доступен
                 if (typeof toastr !== 'undefined') {
                     if (type === 'success') toastr.success(message);
                     else if (type === 'error') toastr.error(message);
@@ -47,38 +176,8 @@
                     else toastr.info(message);
                     return;
                 }
-                // Fallback на модальное окно
-                var modal = new bootstrap.Modal(document.getElementById('notificationModal'));
-                var header = document.getElementById('notificationHeader');
-                var icon = document.getElementById('notificationIcon');
-                var title = document.getElementById('notificationTitle');
-                var messageEl = document.getElementById('notificationMessage');
-
-                header.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
-                if (type === 'success') {
-                    header.classList.add('bg-success', 'text-white');
-                    icon.className = 'fas fa-check-circle me-2';
-                    title.textContent = 'Успешно';
-                } else if (type === 'error') {
-                    header.classList.add('bg-danger', 'text-white');
-                    icon.className = 'fas fa-exclamation-circle me-2';
-                    title.textContent = 'Ошибка';
-                } else if (type === 'warning') {
-                    header.classList.add('bg-warning');
-                    icon.className = 'fas fa-exclamation-triangle me-2';
-                    title.textContent = 'Предупреждение';
-                } else {
-                    header.classList.add('bg-info', 'text-white');
-                    icon.className = 'fas fa-info-circle me-2';
-                    title.textContent = 'Информация';
-                }
-                messageEl.textContent = message;
-                modal.show();
-                if (type === 'success') {
-                    setTimeout(function () {
-                        modal.hide();
-                    }, 3000);
-                }
+                // Fallback для уведомлений
+                alert(message);
             }
 
             function getCookie(name) {
@@ -368,347 +467,8 @@
             });
         })(jQuery);
     </script>
-{% endblock %}
 
-{% block content %}
-    <!-- start: page -->
-    <div class="row">
-        <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0">
-            <section class="card">
-                {% include 'customers_app/block_personal_info.html' %}
-                <h1 id="app"></h1>
-                {% include 'customers_app/block_statistics.html' %}
-            </section>
-        </div>
-        <div class="col-lg-8">
-
-            <div class="tabs">
-                <ul class="nav nav-tabs tabs-primary">
-                    <li class="nav-item active">
-                        <button class="nav-link" data-bs-target="#tasks" data-bs-toggle="tab">Планировщик событий
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">Лента событий
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">Расчетный
-                            листок
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#reportcard" data-bs-toggle="tab">Учет рабочего
-                            времени
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#vacation" data-bs-toggle="tab">Отпуск
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-target="#sout" data-bs-toggle="tab">СОУТ
-                        </button>
-                    </li>
-                </ul>
-                <div class="tab-content">
-                    <div id="tasks" class="tab-pane active">
-                        <div class="p-3">
-                            <div id="calendar"></div>
-                        </div>
-                    </div>
-                    <div id="overview" class="tab-pane">
-                        <div class="p-3">
-                            <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3
-                                                align-items-left font-weight-semibold line-height-1">
-                                <i class='bx bx-list-plus text-4 me-2'></i> Добавить</a>
-                            <h4 class="mb-3 pt-4 font-weight-semibold text-dark">Хронология</h4>
-                            <div class="timeline timeline-simple mt-3 mb-3">
-                                <div class="tm-body">
-                                    <ol class="tm-items">
-                                        {% for item in post_high %}
-                                            {% if item.allowed_placed %}
-                                                <li>
-                                                    <div class="tm-box">
-                                                        <p class="text-muted mb-0">123</p>
-                                                        {% if item.post_date_start %}
-                                                            <p class="text-muted mb-0">{{ item.post_date_start }}</p>
-                                                        {% else %}
-                                                            <p class="text-muted mb-0">{{ item.creation_date }}</p>
-                                                        {% endif %}
-                                                        <p>{{ item.post_description | safe }}</p>
-                                                        <p class="text-danger mb-0">
-                                                            Ответственный: {{ item.responsible }}</p>
-                                                        {% if user == item.responsible %}
-                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
-                                                        {% endif %}
-                                                    </div>
-                                                </li>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </ol>
-                                    <div class="tm-title">
-                                        <h5 class="m-0 pt-2 pb-2 text-dark font-weight-semibold text-uppercase">
-                                            {% now "d - m - Y г." %}</h5>
-                                    </div>
-                                    <ol class="tm-items">
-                                        {% for item in post_low %}
-                                            {% if item.allowed_placed %}
-                                                <li>
-                                                    <div class="tm-box">
-                                                        {% if item.post_date_start %}
-                                                            <p class="text-muted mb-0">{{ item.post_date_start }}</p>
-                                                        {% else %}
-                                                            <p class="text-muted mb-0">{{ item.creation_date }}</p>
-                                                        {% endif %}
-                                                        <p>{{ item.post_description | safe }}</p>
-                                                        <p class="text-danger mb-0">
-                                                            Ответственный: {{ item.responsible }}</p>
-                                                        {% if user == item.responsible %}
-                                                            <a href="{% url 'customers_app:post_update' item.pk %}">Изменить</a>
-                                                        {% endif %}
-                                                    </div>
-                                                </li>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </ol>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                    <div id="calculation" class="tab-pane">
-                        <div class="p-3">
-                            <div class="row">
-                                <div class="col-sm-12 col-md-6 col-lg-3">
-                                    <select class="form-control select-style-1 filter-by" name="filter_month"
-                                            id="id_filter_month">
-                                        {% for key, value in month_dict.items %}
-                                            <option value="{{ key }}"
-                                                    {% if current_month == key %}selected{% endif %}> {{ value }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3">
-                                    <select class="form-control select-style-1 filter-by" name="filter_year"
-                                            id="id_filter_year">
-                                        {% for key, value in year_dict.items %}
-                                            <option value="{{ key }}"
-                                                    {% if current_year == key %}selected{% endif %}> {{ value }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3">
-                                    <input class="form-control" type="password" id="id_pxmx" value="">
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3">
-                                    <button class="btn btn-outline-primary" style="width: 100%"
-                                            onclick="filter_date()"><i class='bx bxs-file-find text-4 me-2'></i>
-                                        Сформировать
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="row">
-
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <div id="id_accrued">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr>
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <div id="id_withheld">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr>
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <div id="id_paid">
-
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                    <div id="reportcard" class="tab-pane">
-                        <div class="p-3">
-                            <div class="row">
-                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                    <select class="form-control select-style-1 filter-by" name="report_month"
-                                            id="id_report_month">
-                                        {% for key, value in month_dict.items %}
-                                            <option value="{{ key }}"
-                                                    {% if current_month == key %}selected{% endif %}> {{ value }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                    <select class="form-control select-style-1 filter-by" name="report_year"
-                                            id="id_report_year">
-                                        {% for key, value in year_dict.items %}
-                                            <option value="{{ key }}"
-                                                    {% if current_year == key %}selected{% endif %}> {{ value }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                    <button class="btn btn-outline-primary" style="width: 100%"
-                                            onclick="report_date()">
-                                        <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
-                                    </button>
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                    <button class="btn btn-outline-info" style="width: 100%"
-                                            onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">
-                                        <i class='bx bxs-book-content text-4 me-2'></i> Журнал
-                                    </button>
-                                </div>
-                            </div>
-                            <style>
-                                /* Применяем к таблице с id="my_table_id" */
-                                #my_table_id {
-                                    width: 100%; /* Таблица занимает всю доступную ширину */
-                                    border-collapse: collapse; /* Убираем отступы между ячейками */
-                                }
-
-                                /* Выравниваем содержимое всех ячеек по правому краю */
-                                #my_table_id th,
-                                #my_table_id td {
-                                    text-align: right;
-                                    tab-size: 14px;
-                                    padding: 8px; /* Добавляем отступы внутри ячеек */
-                                }
-
-                                /* Выравниваем заголовки по левому краю */
-                                #my_table_id th {
-                                    text-align: right;
-                                }
-
-                                /* Дополнительные стили для итоговой строки */
-                                /* Выделяем последнюю строку жирным шрифтом и добавляем жирную рамку */
-                                #my_table_id tr:last-child td {
-                                    font-weight: bold;
-                                    border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
-                                }
-
-                                #my_table_id tr:first-child td {
-                                    border-top: 2px solid black; /* Жирная рамка вокруг последней строки */
-                                }
-
-                                /* Стили для выделения текста в зависимости от значения */
-                                .positive {
-                                    font-weight: bold;
-                                    color: #116500;
-                                }
-
-                                .negative {
-                                    font-weight: bold;
-                                    color: red;
-                                }
-
-                                /* Стили для строк с определенными значениями в колонке "Тип" */
-                                .type-В {
-                                    color: #0a001f;
-                                }
-
-                                .type-П {
-                                    font-weight: bold;
-                                    color: #0b7a00; /* Другой цвет фона */
-                                }
-                            </style>
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div id="id_report" class="table-responsive">
-
-                                    </div>
-                                </div>
-                            </div>
-                            <hr>
-                        </div>
-                    </div>
-                    <div id="sout" class="tab-pane">
-                        <div class="p-3">
-                            <div class="row">
-                                <h4>Тут будет размещаться специальная оценка условий труда.</h4>
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-12 col-md-6 col-lg-3">
-
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3">
-
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3">
-
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div id="id_report" class="table-responsive">
-
-                                    </div>
-                                </div>
-                            </div>
-                            <hr>
-
-                        </div>
-                    </div>
-                    <div id="vacation" class="tab-pane">
-                        <div class="p-3">
-                            <h5>Данные пока могут содержать не точную информацию. Раздел в разработке!</h5>
-                            <div class="row">
-                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                    <h4>Выберите дату:</h4>
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                    <input class="form-control form-control-modern" type="date" min="2023-01-01"
-                                           id="id_vacation_date" name="vacation_date"/>
-                                </div>
-                                <div class="col-sm-12 col-md-6 col-lg-3 mb-1">
-                                    <button class="btn btn-outline-primary" style="width: 100%"
-                                            onclick="report_vacation()">
-                                        <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="row">
-
-                                <div class="col-sm-12" id="id_days">
-
-                                </div>
-
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div id="id_report" class="table-responsive">
-
-                                    </div>
-                                </div>
-                            </div>
-                            <hr>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-    </div>
-    <!-- end: page -->
+    <!-- СКРИПТЫ ДЛЯ ВКЛАДКИ "РАСЧЕТНЫЙ ЛИСТОК" -->
     <script type="text/javascript">
         function filter_date() {
             current_year = $("#id_filter_year").val();
@@ -740,24 +500,23 @@
                 }
             });
         }
+    </script>
 
+    <!-- СКРИПТЫ ДЛЯ ВКЛАДКИ "УЧЕТ РАБОЧЕГО ВРЕМЕНИ" -->
+    <script type="text/javascript">
         function applyStyles() {
             const table = document.getElementById('my_table_id');
-            if (!table) return; // Прекращаем выполнение, если таблицы нет
+            if (!table) return;
             const rows = table.getElementsByTagName('tr');
 
-            for (let i = 1; i < rows.length; i++) { // Начинаем с 1, чтобы пропустить заголовок
+            for (let i = 1; i < rows.length; i++) {
                 const cells = rows[i].getElementsByTagName('td');
-                const valueCell = cells[2]; // Предполагаем, что значение находится в третьей ячейке
-                const typeCell = cells[3]; // Предполагаем, что значение "Тип" находится в четвертой ячейке
+                const valueCell = cells[2];
+                const typeCell = cells[3];
 
                 if (valueCell) {
                     const value = valueCell.textContent.trim();
-
-                    // Очищаем предыдущие классы
                     rows[i].classList.remove('positive', 'negative');
-
-                    // Применяем класс в зависимости от значения
                     if (value.startsWith('-')) {
                         rows[i].classList.add('negative');
                     } else {
@@ -767,11 +526,7 @@
 
                 if (typeCell) {
                     const type = typeCell.textContent.trim();
-
-                    // Очищаем предыдущие классы
                     rows[i].classList.remove('type-В', 'type-П');
-
-                    // Применяем класс в зависимости от значения "Тип"
                     if (type === 'Выходной') {
                         rows[i].classList.remove('positive', 'negative');
                         rows[i].classList.add('type-В', 'table-secondary');
@@ -797,7 +552,6 @@
                 success: function (data) {
                     var ref = $('#id_report').html('');
                     var ref = $('#id_report').html(data);
-
                     if (data === 'ok') {
                         console.log("success");
                     }
@@ -808,7 +562,10 @@
                 }
             });
         }
+    </script>
 
+    <!-- СКРИПТЫ ДЛЯ ВКЛАДКИ "ОТПУСК" -->
+    <script type="text/javascript">
         function report_vacation() {
             vacation_date = $("#id_vacation_date").val();
             $.ajax({
@@ -821,7 +578,6 @@
                 success: function (data) {
                     var ref = $('#id_days').html('');
                     var ref = $('#id_days').html(data);
-
                     if (data === 'ok') {
                         console.log("success");
                     }
@@ -832,4 +588,396 @@
             });
         }
     </script>
+{% endblock %}
+
+<!-- ОСНОВНОЙ КОНТЕНТ СТРАНИЦЫ -->
+{% block content %}
+    <div class="row">
+        <!-- ============================================
+             ЛЕВАЯ КОЛОНКА: ПЕРСОНАЛЬНАЯ ИНФОРМАЦИЯ И СТАТИСТИКА
+             Адаптирована для PortoAdmin с сохранением структуры
+        ============================================ -->
+        <div class="col-lg-4 col-xl-3 mb-4 mb-xl-0 sidebar-info">
+            <section class="card personal-info-card">
+                <!-- Блок с персональной информацией пользователя -->
+                {% include 'customers_app/block_personal_info.html' %}
+
+                <!-- Место для динамического приложения (оставлено как есть) -->
+                <h1 id="app"></h1>
+
+                <!-- Блок со статистикой пользователя -->
+                {% include 'customers_app/block_statistics.html' %}
+            </section>
+        </div>
+
+        <!-- ============================================
+             ПРАВАЯ КОЛОНКА: ОСНОВНОЙ КОНТЕНТ С ВКЛАДКАМИ
+             Вкладки: Планировщик, Лента событий, Расчетный листок,
+                      Учет рабочего времени, Отпуск, СОУТ
+        ============================================ -->
+        <div class="col-lg-8 col-xl-9">
+            <div class="tabs">
+                <!-- НАВИГАЦИЯ ПО ВКЛАДКАМ (PortoAdmin стиль) -->
+                <ul class="nav nav-tabs tabs-primary">
+                    <li class="nav-item active">
+                        <button class="nav-link" data-bs-target="#tasks" data-bs-toggle="tab">
+                            <i class="fas fa-calendar-alt me-2"></i>Планировщик событий
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">
+                            <i class="fas fa-stream me-2"></i>Лента событий
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#calculation" data-bs-toggle="tab">
+                            <i class="fas fa-calculator me-2"></i>Расчетный листок
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#reportcard" data-bs-toggle="tab">
+                            <i class="fas fa-clock me-2"></i>Учет рабочего времени
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#vacation" data-bs-toggle="tab">
+                            <i class="fas fa-umbrella-beach me-2"></i>Отпуск
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#sout" data-bs-toggle="tab">
+                            <i class="fas fa-chart-line me-2"></i>СОУТ
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- ============================================
+                     ВКЛАДКА 1: ПЛАНИРОВЩИК СОБЫТИЙ (КАЛЕНДАРЬ ЗАДАЧ)
+                     Адаптирован для мобильных устройств
+                ============================================ -->
+                <div class="tab-content">
+                    <div id="tasks" class="tab-pane active">
+                        <div class="p-3">
+                            <!-- Контейнер для календаря -->
+                            <div id="calendar" class="calendar-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================
+                         ВКЛАДКА 2: ЛЕНТА СОБЫТИЙ (ХРОНОЛОГИЯ)
+                         Отображение постов и мероприятий
+                    ============================================ -->
+                    <div id="overview" class="tab-pane">
+                        <div class="p-3">
+                            <!-- Кнопка добавления нового поста -->
+                            <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3 align-items-left font-weight-semibold line-height-1 mb-4">
+                                <i class='bx bx-list-plus text-4 me-2'></i> Добавить событие
+                            </a>
+
+                            <h4 class="mb-3 font-weight-semibold text-dark">
+                                <i class="fas fa-history me-2 text-primary"></i>Хронология событий
+                            </h4>
+
+                            <!-- Временная шкала (PortoAdmin стиль) -->
+                            <div class="timeline timeline-simple mt-3 mb-3">
+                                <div class="tm-body">
+                                    <!-- Будущие события (high priority) -->
+                                    <ol class="tm-items">
+                                        {% for item in post_high %}
+                                            {% if item.allowed_placed %}
+                                                <li>
+                                                    <div class="tm-box">
+                                                        <p class="text-muted mb-0">
+                                                            <i class="fas fa-tag me-1"></i>ID: {{ item.id }}
+                                                        </p>
+                                                        {% if item.post_date_start %}
+                                                            <p class="text-muted mb-0">
+                                                                <i class="fas fa-calendar-alt me-1"></i>{{ item.post_date_start }}
+                                                            </p>
+                                                        {% else %}
+                                                            <p class="text-muted mb-0">
+                                                                <i class="fas fa-calendar-plus me-1"></i>{{ item.creation_date }}
+                                                            </p>
+                                                        {% endif %}
+                                                        <p class="mt-2">{{ item.post_description | safe }}</p>
+                                                        <p class="text-danger mb-0">
+                                                            <i class="fas fa-user-check me-1"></i>Ответственный: {{ item.responsible }}
+                                                        </p>
+                                                        {% if user == item.responsible %}
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}" class="btn btn-sm btn-outline-primary mt-2">
+                                                                <i class="fas fa-edit me-1"></i>Изменить
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ol>
+
+                                    <!-- Разделитель "Сегодня" -->
+                                    <div class="tm-title">
+                                        <h5 class="m-0 pt-2 pb-2 text-dark font-weight-semibold text-uppercase">
+                                            <i class="fas fa-calendar-day me-2 text-primary"></i>{% now "d - m - Y г." %}
+                                        </h5>
+                                    </div>
+
+                                    <!-- Прошедшие события (low priority) -->
+                                    <ol class="tm-items">
+                                        {% for item in post_low %}
+                                            {% if item.allowed_placed %}
+                                                <li>
+                                                    <div class="tm-box">
+                                                        {% if item.post_date_start %}
+                                                            <p class="text-muted mb-0">
+                                                                <i class="fas fa-calendar-alt me-1"></i>{{ item.post_date_start }}
+                                                            </p>
+                                                        {% else %}
+                                                            <p class="text-muted mb-0">
+                                                                <i class="fas fa-calendar-plus me-1"></i>{{ item.creation_date }}
+                                                            </p>
+                                                        {% endif %}
+                                                        <p class="mt-2">{{ item.post_description | safe }}</p>
+                                                        <p class="text-danger mb-0">
+                                                            <i class="fas fa-user-check me-1"></i>Ответственный: {{ item.responsible }}
+                                                        </p>
+                                                        {% if user == item.responsible %}
+                                                            <a href="{% url 'customers_app:post_update' item.pk %}" class="btn btn-sm btn-outline-primary mt-2">
+                                                                <i class="fas fa-edit me-1"></i>Изменить
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================
+                         ВКЛАДКА 3: РАСЧЕТНЫЙ ЛИСТОК
+                         Фильтр по месяцу и году, отображение начислений/удержаний
+                    ============================================ -->
+                    <div id="calculation" class="tab-pane">
+                        <div class="p-3">
+                            <!-- Форма фильтрации (PortoAdmin стиль) -->
+                            <div class="filter-form">
+                                <div class="row g-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
+                                        <label class="form-label fw-semibold">Месяц</label>
+                                        <select class="form-control select-style-1" name="filter_month" id="id_filter_month">
+                                            {% for key, value in month_dict.items %}
+                                                <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
+                                                    {{ value }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
+                                        <label class="form-label fw-semibold">Год</label>
+                                        <select class="form-control select-style-1" name="filter_year" id="id_filter_year">
+                                            {% for key, value in year_dict.items %}
+                                                <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
+                                                    {{ value }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
+                                        <label class="form-label fw-semibold">Пароль (опционально)</label>
+                                        <input class="form-control" type="password" id="id_pxmx" placeholder="Введите пароль">
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 col-lg-3 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100" onclick="filter_date()">
+                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Результаты: Начисления -->
+                            <div class="mt-4">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-plus-circle text-success me-2"></i>Начисления
+                                </h5>
+                                <div id="id_accrued" class="table-responsive"></div>
+                            </div>
+
+                            <!-- Результаты: Удержания -->
+                            <div class="mt-4">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-minus-circle text-danger me-2"></i>Удержания
+                                </h5>
+                                <div id="id_withheld" class="table-responsive"></div>
+                            </div>
+
+                            <!-- Результаты: Выплачено -->
+                            <div class="mt-4">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-ruble-sign text-primary me-2"></i>К выплате
+                                </h5>
+                                <div id="id_paid" class="table-responsive"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================
+                         ВКЛАДКА 4: УЧЕТ РАБОЧЕГО ВРЕМЕНИ
+                         Табель учета рабочего времени с фильтрацией
+                    ============================================ -->
+                    <div id="reportcard" class="tab-pane">
+                        <div class="p-3">
+                            <!-- Форма фильтрации -->
+                            <div class="filter-form">
+                                <div class="row g-3">
+                                    <div class="col-sm-12 col-md-6 col-lg-4">
+                                        <label class="form-label fw-semibold">Месяц</label>
+                                        <select class="form-control select-style-1" name="report_month" id="id_report_month">
+                                            {% for key, value in month_dict.items %}
+                                                <option value="{{ key }}" {% if current_month == key %}selected{% endif %}>
+                                                    {{ value }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 col-lg-4">
+                                        <label class="form-label fw-semibold">Год</label>
+                                        <select class="form-control select-style-1" name="report_year" id="id_report_year">
+                                            {% for key, value in year_dict.items %}
+                                                <option value="{{ key }}" {% if current_year == key %}selected{% endif %}>
+                                                    {{ value }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 col-lg-4 d-flex gap-2">
+                                        <button class="btn btn-primary flex-grow-1" onclick="report_date()">
+                                            <i class='bx bxs-file-find text-4 me-2'></i> Сформировать
+                                        </button>
+                                        <button class="btn btn-info" onclick="window.location.href='{% url 'hrdepartment_app:reportcard_list' %}';">
+                                            <i class='bx bxs-book-content text-4 me-2'></i> Журнал
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Результат: Таблица с табелем -->
+                            <div class="report-table-wrapper">
+                                <div id="id_report"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================
+                         ВКЛАДКА 5: ОТПУСК
+                         Калькулятор дней отпуска
+                    ============================================ -->
+                    <div id="vacation" class="tab-pane">
+                        <div class="p-3">
+                            <div class="alert alert-info mb-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Данные пока могут содержать не точную информацию. Раздел в разработке!
+                            </div>
+
+                            <!-- Форма для расчета отпуска -->
+                            <div class="filter-form">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-sm-12 col-md-6 col-lg-4">
+                                        <label class="form-label fw-semibold">Выберите дату начала отпуска:</label>
+                                        <input class="form-control form-control-modern" type="date" min="2023-01-01" id="id_vacation_date" name="vacation_date"/>
+                                    </div>
+                                    <div class="col-sm-12 col-md-6 col-lg-3">
+                                        <button class="btn btn-primary w-100" onclick="report_vacation()">
+                                            <i class='bx bxs-file-find text-4 me-2'></i> Рассчитать
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Результат: количество дней отпуска -->
+                            <div class="mt-4">
+                                <div id="id_days" class="alert alert-success text-center">
+                                    <i class="fas fa-calendar-check me-2"></i>
+                                    Результат расчета появится здесь
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================
+                         ВКЛАДКА 6: СОУТ (Специальная оценка условий труда)
+                         Заглушка для будущего функционала
+                    ============================================ -->
+                    <div id="sout" class="tab-pane">
+                        <div class="p-3">
+                            <div class="text-center py-5">
+                                <i class="fas fa-chart-line fa-4x text-muted mb-3 opacity-25"></i>
+                                <h4 class="text-muted">Раздел находится в разработке</h4>
+                                <p class="text-muted">Здесь будет размещаться специальная оценка условий труда.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         МОДАЛЬНОЕ ОКНО ДЛЯ БЫСТРОГО СОЗДАНИЯ ЗАДАЧИ
+         Используется в календаре при перетаскивании событий
+    ============================================ -->
+    <div class="modal fade" id="eventTitleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle me-2"></i>Создание быстрого события
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="eventTitle" class="form-label fw-semibold required">Название события <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="eventTitle" placeholder="Введите название события" maxlength="200">
+                        <div class="invalid-feedback">Пожалуйста, введите название события</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="eventPriority" class="form-label fw-semibold">Приоритет</label>
+                        <select class="form-select" id="eventPriority">
+                            <option value="primary">Основной</option>
+                            <option value="warning">Предупреждающий</option>
+                            <option value="info">Информационный</option>
+                            <option value="danger">Опасный</option>
+                            <option value="dark">Темный</option>
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="eventDate" class="form-label fw-semibold">Дата</label>
+                            <input type="date" class="form-control" id="eventDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="eventTime" class="form-label fw-semibold">Время</label>
+                            <input type="time" class="form-control" id="eventTime" step="60">
+                            <div class="form-text">Часы:Минуты</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="eventDuration" class="form-label fw-semibold">Длительность (часы)</label>
+                        <input type="number" class="form-control" id="eventDuration" value="1" min="0.5" step="0.5">
+                        <div class="form-text">Продолжительность события в часах</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Отмена
+                    </button>
+                    <button type="button" class="btn btn-primary" id="saveEventBtn">
+                        <i class="fas fa-save me-1"></i>Создать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
