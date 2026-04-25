@@ -25,376 +25,397 @@
 {% endblock %}
 
 {% block content %}
-        <!-- start: page -->
-        <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
-            {% if pass_change %}
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <strong>{{ pass_change }}</strong>.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
-                            aria-label="Close"></button>
-                </div>
-            {% endif %}
-            <div class="row">
-                <div class="col">
-                    <section class="card card-modern card-big-info">
-                        <div class="card-body">
-                            <div class="tabs-modern row" style="min-height: 490px;">
-                                <div class="col-lg-2-5 col-xl-1-5">
-                                    <div class="nav flex-column" id="tab" role="tablist" aria-orientation="vertical">
-                                        <div class="thumb-info mb-3">
-                                            {% if object.avatar %}
-                                                <img src="{{ object.avatar.url }}?v={{ object.updated_at.timestamp }}" class="rounded img-fluid"
-                                                     alt="{{ object.username }}">
-                                            {% else %}
-                                                <img src="{% static 'admin_templates/img/!logged-user.jpg' %}"
-                                                     class="rounded img-fluid"
-                                                     alt="{{ object.username }}">
-                                            {% endif %}
-                                            <div class="thumb-info-title">
-                                                <span class="thumb-info-inner">{{ object.last_name }} {{ object.first_name }}: {{ birthday_difference }}</span>
-                                                <span class="thumb-info-type">{{ object.user_work_profile.job }}<br>Стаж: {{ employment_difference }}</span>
+    <!-- start: page -->
+    <form class="ecommerce-form action-buttons-fixed" action="#" method="post">
+        {% if pass_change %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>{{ pass_change }}</strong>.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"
+                        aria-label="Close"></button>
+            </div>
+        {% endif %}
+        <div class="row">
+            <div class="col">
+                <section class="card card-modern card-big-info">
+                    <div class="card-body">
+                        <div class="tabs-modern row" style="min-height: 490px;">
+                            <div class="col-lg-3 col-xl-2 mb-4 mb-lg-0">
+                                <div class="nav flex-column nav-tabs-modern" id="tab" role="tablist"
+                                     aria-orientation="vertical">
+                                    <div class="thumb-info mb-3">
+                                        {% if object.avatar %}
+                                            <img src="{{ object.avatar.url }}?v={{ object.updated_at.timestamp }}"
+                                                 class="rounded img-fluid"
+                                                 alt="{{ object.username }}">
+                                        {% else %}
+                                            <img src="{% static 'admin_templates/img/!logged-user.jpg' %}"
+                                                 class="rounded img-fluid"
+                                                 alt="{{ object.username }}">
+                                        {% endif %}
+                                    <div class="thumb-info-title">
+                                                <span class="thumb-info-inner d-block text-truncate">Возраст: {{ birthday_difference }}</span>
+                                                <span class="thumb-info-type">Стаж: {{ employment_difference }}</span>
+                                            </div>
+                                    </div>
+                                    <!-- Навигация по вкладкам -->
+                                    <a class="nav-link active" id="general-tab" data-bs-toggle="pill"
+                                       data-bs-target="#general" role="tab" aria-controls="general"
+                                       aria-selected="true">
+                                        <i class="bx bx-cog me-2"></i> Личные данные
+                                    </a>
+                                    <a class="nav-link" id="usage-restriction-tab" data-bs-toggle="pill"
+                                       data-bs-target="#usage-restriction" role="tab"
+                                       aria-controls="usage-restriction" aria-selected="false">
+                                        <i class="bx bx-block me-2"></i> Контактные данные
+                                    </a>
+                                    <a class="nav-link" id="personal-profile-tab" data-bs-toggle="pill"
+                                       data-bs-target="#personal-profile" role="tab"
+                                       aria-controls="personal-profile" aria-selected="false">
+                                        <i class="bx bxs-user-check me-2"></i> Личный профиль
+                                    </a>
+                                    <a class="nav-link" id="usage-limits-tab" data-bs-toggle="pill"
+                                       data-bs-target="#usage-limits" role="tab" aria-controls="usage-limits"
+                                       aria-selected="false">
+                                        <i class="bx bxs-buildings me-2"></i> Рабочий профиль
+                                    </a>
+                                </div>
+
+                            </div>
+                            <div class="col-lg-9 col-xl-10">
+                                <div class="tab-content" id="tabContent">
+                                    <!-- ВКЛАДКА 1: ЛИЧНЫЕ ДАННЫЕ -->
+                                    <div class="tab-pane fade show active" id="general" role="tabpanel"
+                                         aria-labelledby="general-tab">
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Фамилия</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       value="{{ object.last_name|empty_item }}" name="last_name"
+                                                       id="id_last_name"/>
                                             </div>
                                         </div>
-                                        <a class="nav-link active" id="general-tab" data-bs-toggle="pill"
-                                           data-bs-target="#general" role="tab" aria-controls="general"
-                                           aria-selected="true"><i class="bx bx-cog me-2"></i> Личные данные</a>
-                                        <a class="nav-link" id="usage-restriction-tab" data-bs-toggle="pill"
-                                           data-bs-target="#usage-restriction" role="tab"
-                                           aria-controls="usage-restriction" aria-selected="false"><i
-                                                class="bx bx-block me-2"></i> Контактные данные</a>
-                                        <a class="nav-link" id="personal-profile-tab" data-bs-toggle="pill"
-                                           data-bs-target="#personal-profile" role="tab"
-                                           aria-controls="personal-profile"
-                                           aria-selected="false"><i class="bx bxs-user-check me-2"></i> Личный
-                                            профиль</a>
-                                        <a class="nav-link" id="usage-limits-tab" data-bs-toggle="pill"
-                                           data-bs-target="#usage-limits" role="tab" aria-controls="usage-limits"
-                                           aria-selected="false"><i class="bx bxs-buildings me-2"></i> Рабочий
-                                            профиль</a>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Имя</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       value="{{ object.first_name|empty_item }}" name="first_name"
+                                                       id="id_first_name"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Отчество</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       value="{{ object.surname|empty_item }}" name="surname"
+                                                       id="id_surname"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">День
+                                                рождения</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="birthday" id="id_birthday"
+                                                       placeholder="Данные отсутствуют..."
+                                                       value="{{ object.birthday|empty_item }}"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Пол</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="gender" id="id_gender"
+                                                       value="{{ object.get_gender_display|empty_item }}"
+                                                       placeholder="Данные отсутствуют..."/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Код
+                                                привязки Telegram</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="person_ref_key" id="id_person_ref_key"
+                                                       value="{{ object.person_ref_key }}"
+                                                       placeholder="Данные отсутствуют..."/>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                </div>
-                                <div class="col-lg-3-5 col-xl-4-5">
-                                    <div class="tab-content" id="tabContent">
-                                        <div class="tab-pane fade show active" id="general" role="tabpanel"
-                                             aria-labelledby="general-tab">
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Фамилия</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           value="{{ object.last_name|empty_item }}" name="last_name"
-                                                           id="id_last_name"/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Имя</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           value="{{ object.first_name|empty_item }}" name="first_name"
-                                                           id="id_first_name"/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Отчество</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           value="{{ object.surname|empty_item }}" name="surname"
-                                                           id="id_surname"/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">День
-                                                    рождения</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="birthday" id="id_birthday"
-                                                           placeholder="Данные отсутствуют..."
-                                                           value="{{ object.birthday|empty_item }}"/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Пол</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="gender" id="id_gender"
-                                                           value="{{ object.get_gender_display|empty_item }}"
-                                                           placeholder="Данные отсутствуют..."/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Код
-                                                    привязки Telegram</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="person_ref_key" id="id_person_ref_key"
-                                                           value="{{ object.person_ref_key }}"
-                                                           placeholder="Данные отсутствуют..."/>
-                                                </div>
+                                    <!-- ВКЛАДКА 2: КОНТАКТНЫЕ ДАННЫЕ -->
+                                    <div class="tab-pane fade" id="usage-restriction" role="tabpanel"
+                                         aria-labelledby="usage-restriction-tab">
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Тип
+                                                пользователя</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="type_users" id="id_type_users"
+                                                       value="{{ object.get_type_users_display|empty_item }}"
+                                                       placeholder="Данные отсутствуют..."/>
                                             </div>
                                         </div>
-                                        <div class="tab-pane fade" id="usage-restriction" role="tabpanel"
-                                             aria-labelledby="usage-restriction-tab">
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Тип
-                                                    пользователя</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="type_users" id="id_type_users"
-                                                           value="{{ object.get_type_users_display|empty_item }}"
-                                                           placeholder="Данные отсутствуют..."/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Адрес</label>
-                                                <div class="col-lg-7 col-xl-6">
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Адрес</label>
+                                            <div class="col-lg-7 col-xl-6">
                                                     <textarea type="text" class="form-control form-control-modern"
                                                               disabled name="address" id="id_address"
-                                                              rows="3">{{ object.address|empty_item }}
+                                                              rows="3"
+                                                              style="resize: none;">{{ object.address|empty_item }}
                                                     </textarea>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Email</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="email" class="form-control form-control-modern"
-                                                           disabled
-                                                           name="email" id="id_email"
-                                                           value="{{ object.email|empty_item }}"/>
-                                                </div>
-                                            </div>
-                                            {% if user|has_group:"password" %}
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Логин:</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        <input type="text" class="form-control form-control-modern" disabled
-                                                               name="username" id="id_username"
-                                                               value="{{ object.username }}"/>
-                                                    </div>
-                                                </div>
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Внутренний пароль:</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        <div class="input-group">
-                                                            <input type="password" class="form-control form-control-modern" disabled
-                                                                   name="work_email_password" id="id_work_email_password"
-                                                                   value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
-                                                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_work_email_password">
-                                                                <i class="fas fa-eye"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="form-group row align-items-center pb-3">
-                                                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Внешний пароль:</label>
-                                                    <div class="col-lg-7 col-xl-6">
-                                                        <div class="input-group">
-                                                            <input type="password" class="form-control form-control-modern" disabled
-                                                                   name="work_application_password" id="id_work_application_password"
-                                                                   value="{{ object.user_work_profile.work_application_password|empty_item }}"/>
-                                                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_work_application_password">
-                                                                <i class="fas fa-eye"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            {% endif %}
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Номер
-                                                    телефона</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern"
-                                                           disabled
-                                                           name="personal_phone" id="id_personal_phone"
-                                                           value="{{ object.personal_phone|empty_item }}"/>
-                                                </div>
                                             </div>
                                         </div>
-                                        <div class="tab-pane fade" id="personal-profile" role="tabpanel"
-                                             aria-labelledby="personal-profile-tab">
-                                            <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Гражданство</label>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Email</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="email" class="form-control form-control-modern" disabled
+                                                       name="email" id="id_email"
+                                                       value="{{ object.email|empty_item }}"/>
+                                            </div>
+                                        </div>
+                                        {% if user|has_group:"password" %}
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Логин:</label>
                                                 <div class="col-lg-7 col-xl-6">
                                                     <input type="text" class="form-control form-control-modern" disabled
-                                                           name="citizenship" id="id_citizenship"
-                                                           value="{{ object.user_profile.citizenship|empty_item }}"
-                                                           placeholder="Данные отсутствуют..."/>
+                                                           name="username" id="id_username"
+                                                           value="{{ object.username }}"/>
                                                 </div>
                                             </div>
-                                            <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Паспорт</label>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Внутренний
+                                                    пароль:</label>
                                                 <div class="col-lg-7 col-xl-6">
-                                                    <textarea type="text" class="form-control form-control-modern"
-                                                              disabled
-                                                              name="passport" rows="4"
-                                                              id="id_passport">{{ object.user_profile.passport|empty_item }}</textarea>
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control form-control-modern"
+                                                               disabled
+                                                               name="work_email_password" id="id_work_email_password"
+                                                               value="{{ object.user_work_profile.work_email_password|empty_item }}"/>
+                                                        <button class="btn btn-outline-secondary toggle-password"
+                                                                type="button" data-target="id_work_email_password">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row align-items-center pb-3">
+                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Внешний
+                                                    пароль:</label>
+                                                <div class="col-lg-7 col-xl-6">
+                                                    <div class="input-group">
+                                                        <input type="password" class="form-control form-control-modern"
+                                                               disabled
+                                                               name="work_application_password"
+                                                               id="id_work_application_password"
+                                                               value="{{ object.user_work_profile.work_application_password|empty_item }}"/>
+                                                        <button class="btn btn-outline-secondary toggle-password"
+                                                                type="button"
+                                                                data-target="id_work_application_password">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Номер
+                                                телефона</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="personal_phone" id="id_personal_phone"
+                                                       value="{{ object.personal_phone|empty_item }}"/>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">СНИЛС</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="snils" id="id_snils"
-                                                           value="{{ object.user_profile.snils|empty_item }}"
-                                                           placeholder="Данные отсутствуют..."/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Полис
-                                                    ОМС</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="oms" id="id_oms"
-                                                           value="{{ object.user_profile.oms|empty_item }}"/>
-                                                </div>
-                                            </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">ИНН</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="inn" id="id_inn"
-                                                           value="{{ object.user_profile.inn|empty_item }}"/>
-                                                </div>
+                                    <!-- ВКЛАДКА 3: ЛИЧНЫЙ ПРОФИЛЬ -->
+                                    <div class="tab-pane fade" id="personal-profile" role="tabpanel"
+                                         aria-labelledby="personal-profile-tab">
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Гражданство</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="citizenship" id="id_citizenship"
+                                                       value="{{ object.user_profile.citizenship|empty_item }}"
+                                                       placeholder="Данные отсутствуют..."/>
                                             </div>
                                         </div>
-                                        <div class="tab-pane fade" id="usage-limits" role="tabpanel"
-                                             aria-labelledby="usage-limits-tab">
-                                            <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Дата
-                                                    приема на работу</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="date_of_employment" id="id_date_of_employment"
-                                                           value="{{ object.user_work_profile.date_of_employment|empty_item }}"
-                                                           placeholder="Данные отсутствуют..."/>
-                                                </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Паспорт</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                    <textarea type="text" class="form-control form-control-modern"
+                                                              disabled name="passport" rows="4"
+                                                              id="id_passport"
+                                                              style="resize: none;">{{ object.user_profile.passport|empty_item }}</textarea>
                                             </div>
-                                            <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Подразделение</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="divisions" id="id_divisions"
-                                                           value="{{ object.user_work_profile.divisions|empty_item }}"
-                                                           placeholder="Данные отсутствуют..."/>
-                                                </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">СНИЛС</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="snils" id="id_snils"
+                                                       value="{{ object.user_profile.snils|empty_item }}"
+                                                       placeholder="Данные отсутствуют..."/>
                                             </div>
-                                            <div class="form-group row align-items-center  pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Должность</label>
-                                                <div class="col-lg-7 col-xl-6 d-flex align-items-center">
-                                                    <input type="text" class="form-control form-control-modern mr-2"
-                                                           disabled
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Полис
+                                                ОМС</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="oms" id="id_oms"
+                                                       value="{{ object.user_profile.oms|empty_item }}"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">ИНН</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="inn" id="id_inn"
+                                                       value="{{ object.user_profile.inn|empty_item }}"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- ВКЛАДКА 4: РАБОЧИЙ ПРОФИЛЬ -->
+                                    <div class="tab-pane fade" id="usage-limits" role="tabpanel"
+                                         aria-labelledby="usage-limits-tab">
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Дата
+                                                приема на работу</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="date_of_employment" id="id_date_of_employment"
+                                                       value="{{ object.user_work_profile.date_of_employment|empty_item }}"
+                                                       placeholder="Данные отсутствуют..."/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Подразделение</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="divisions" id="id_divisions"
+                                                       value="{{ object.user_work_profile.divisions|empty_item }}"
+                                                       placeholder="Данные отсутствуют..."/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Должность</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control form-control-modern" disabled
                                                            name="job" id="id_job"
                                                            value="{{ object.user_work_profile.job|empty_item }}"
                                                            placeholder="Данные отсутствуют..."/>
                                                     {% if perms.customers_app.change_jobs or user.is_superuser %}
-                                                    <a href="{% url 'customers_app:jobs_update' object.user_work_profile.job.pk %}">
-                                                        <i class='bx bxs-edit h4 mb-0'></i>
-                                                    </a>
+                                                        <a href="{% url 'customers_app:jobs_update' object.user_work_profile.job.pk %}"
+                                                           class="btn btn-outline-secondary edit-icon-link">
+                                                            <i class='bx bxs-edit h4 mb-0'></i>
+                                                        </a>
                                                     {% endif %}
                                                 </div>
                                             </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Внутренний
-                                                    номер телефона</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern" disabled
-                                                           name="internal_phone" id="id_internal_phone"
-                                                           value="{{ object.user_work_profile.internal_phone|empty_item }}"/>
-                                                </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Внутренний
+                                                номер телефона</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="internal_phone" id="id_internal_phone"
+                                                       value="{{ object.user_work_profile.internal_phone|empty_item }}"/>
                                             </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время
-                                                    прихода</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="time" class="form-control form-control-modern" disabled
-                                                           name="personal_work_schedule_start"
-                                                           id="id_personal_work_schedule_start"
-                                                           value="{{ object.user_work_profile.personal_work_schedule_start | time:"H:i" }}"/>
-                                                </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Время
+                                                прихода</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="time" class="form-control form-control-modern" disabled
+                                                       name="personal_work_schedule_start"
+                                                       id="id_personal_work_schedule_start"
+                                                       value="{{ object.user_work_profile.personal_work_schedule_start|time:"H:i" }}"/>
                                             </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Время
-                                                    ухода</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="time" class="form-control form-control-modern" disabled
-                                                           name="personal_work_schedule_end"
-                                                           id="id_personal_work_schedule_end"
-                                                           value="{{ object.user_work_profile.personal_work_schedule_end | time:"H:i" }}"/>
-                                                </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Время
+                                                ухода</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="time" class="form-control form-control-modern" disabled
+                                                       name="personal_work_schedule_end"
+                                                       id="id_personal_work_schedule_end"
+                                                       value="{{ object.user_work_profile.personal_work_schedule_end|time:"H:i" }}"/>
                                             </div>
-                                            <div class="form-group row align-items-center pb-3">
-                                                <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Права
-                                                    доступа</label>
-                                                <div class="col-lg-7 col-xl-6">
-                                                    <input type="text" class="form-control form-control-modern"
-                                                           disabled name="user_access" id="id_user_access"
-                                                           value="{{ object.user_access.name }}"/>
-                                                </div>
+                                        </div>
+                                        <div class="form-group row align-items-center pb-3">
+                                            <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-2 mb-lg-0 fw-semibold">Права
+                                                доступа</label>
+                                            <div class="col-lg-7 col-xl-6">
+                                                <input type="text" class="form-control form-control-modern" disabled
+                                                       name="user_access" id="id_user_access"
+                                                       value="{{ object.user_access.name }}"/>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </section>
-                </div>
+                    </div>
+                </section>
             </div>
-            <div class="row action-buttons mt-3 g-2">
-                {% if user.is_staff or user.is_superuser %}
-                    <div class="col-12 col-md-auto">
-                        <a href="{% url 'customers_app:staff_update' object.pk %}"
-                           class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                            <i class="bx bx-edit text-4 me-2"></i> Изменить
-                        </a>
-                    </div>
-                {% endif %}
-
-                {% if user|has_group:"password" %}
-                    <div class="col-12 col-md-auto">
-                        <a href="{% url 'customers_app:staff' object.pk %}?update=0"
-                           class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                            <i class="bx bx-key text-4 me-2"></i> Изменить пароль
-                        </a>
-                    </div>
-                    <div class="col-12 col-md-auto">
-                        <a href="{% url 'customers_app:generate_employee_file' object.pk %}"
-                           class="btn btn-outline-info btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                            <i class="bx bx-printer text-4 me-2"></i> Данные для печати
-                        </a>
-                    </div>
-                {% endif %}
-
+        </div>
+        <div class="row action-buttons mt-3 g-2">
+            {% if user.is_staff or user.is_superuser %}
                 <div class="col-12 col-md-auto">
-                    <a href="{% url 'customers_app:generate_config_file' %}"
+                    <a href="{% url 'customers_app:staff_update' object.pk %}"
+                       class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                        <i class="bx bx-edit text-4 me-2"></i> Изменить
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if user|has_group:"password" %}
+                <div class="col-12 col-md-auto">
+                    <a href="{% url 'customers_app:staff' object.pk %}?update=0"
+                       class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                        <i class="bx bx-key text-4 me-2"></i> Изменить пароль
+                    </a>
+                </div>
+                <div class="col-12 col-md-auto">
+                    <a href="{% url 'customers_app:generate_employee_file' object.pk %}"
                        class="btn btn-outline-info btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                        <i class="bx bx-download text-4 me-2"></i> Скачать конфигурацию
+                        <i class="bx bx-printer text-4 me-2"></i> Данные для печати
                     </a>
                 </div>
+            {% endif %}
 
-                <div class="col-12 col-md-auto">
-                    <a href="{% url 'customers_app:avatar_update' object.pk %}"
-                       class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                        <i class="bx bx-image text-4 me-2"></i> Изменить фото
-                    </a>
-                </div>
-
-                <div class="col-12 col-md-auto">
-                    <a href="{% url 'customers_app:passphrase_update' object.pk %}"
-                       class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                        <i class="bx bx-lock text-4 me-2"></i> Кодовое слово
-                    </a>
-                </div>
-
-                <div class="col-12 col-md-auto">
-                    <a href="{% url 'customers_app:staff_list' %}"
-                       class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
-                        <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
-                    </a>
-                </div>
+            <div class="col-12 col-md-auto">
+                <a href="{% url 'customers_app:generate_config_file' %}"
+                   class="btn btn-outline-info btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                    <i class="bx bx-download text-4 me-2"></i> Скачать конфигурацию
+                </a>
             </div>
-        </form>
-        <!-- end: page -->
+
+            <div class="col-12 col-md-auto">
+                <a href="{% url 'customers_app:avatar_update' object.pk %}"
+                   class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                    <i class="bx bx-image text-4 me-2"></i> Изменить фото
+                </a>
+            </div>
+
+            <div class="col-12 col-md-auto">
+                <a href="{% url 'customers_app:passphrase_update' object.pk %}"
+                   class="btn btn-outline-success btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                    <i class="bx bx-lock text-4 me-2"></i> Кодовое слово
+                </a>
+            </div>
+
+            <div class="col-12 col-md-auto">
+                <a href="{% url 'customers_app:staff_list' %}"
+                   class="btn btn-outline-dark btn-px-4 py-3 d-flex align-items-center justify-content-center font-weight-semibold line-height-1 w-100">
+                    <i class='bx bx-log-out-circle text-4 me-2'></i> Закрыть
+                </a>
+            </div>
+        </div>
+    </form>
+    <!-- end: page -->
     <!-- end: page -->
     <!-- ============================================
          СКРИПТ ДЛЯ ПОКАЗА/СКРЫТИЯ ПАРОЛЕЙ
@@ -402,7 +423,7 @@
     ============================================ -->
     <script>
         document.querySelectorAll('.toggle-password').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 const targetId = this.dataset.target;
                 const input = document.getElementById(targetId);
                 if (input) {
