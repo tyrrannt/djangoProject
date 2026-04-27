@@ -348,7 +348,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 item.post_date_end,
                 datetime.datetime.min.time(),
                 tzinfo=datetime.timezone.utc
-            ) + datetime.timedelta(days=1)  # +1 день для FullCalendar
+            )
 
             event_data = {
                 'id': f'post_{item.id}',  # Уникальный ID с префиксом
