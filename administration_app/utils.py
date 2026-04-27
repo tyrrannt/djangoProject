@@ -27,6 +27,7 @@ from django.db.models import Q
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
 
 from administration_app.models import PortalProperty
 from customers_app.models import DataBaseUser, HistoryChange, DataBaseUserWorkProfile
@@ -1841,3 +1842,63 @@ def get_today_data_delta(dtstart, trigger):
             return f"{delta.years} {get_year_suffix(delta.years)}"
         case _:
             raise ValueError("Недопустимое значение триггера. Ожидается 0 или 1.")
+
+
+from tasks_app.models import Task
+from customers_app.models import Posts
+
+
+def get_task_title_with_icon(self, task):
+    """
+    Возвращает название задачи/поста с иконкой в зависимости от типа и приоритета.
+    """
+
+    # Проверка на объект Task
+    if isinstance(task, Task):
+        before = ''
+        after = ''
+
+        # Иконка статуса (справа)
+        if task.completed:
+            after = '<i class="fa-solid fa-check-double text-success"></i>'
+        elif task.end_date and task.end_date < timezone.now():
+            after = '<i class="fa-solid fa-xmark text-danger"></i>'
+        elif task.end_date and task.end_date > timezone.now():
+            after = '<i class="fa-solid fa-hourglass-half text-warning"></i>'
+        else:
+            after = '<i class="fa-solid fa-clock text-muted"></i>'
+
+        # Иконка приоритета (слева)
+        if task.priority == 'primary':
+            before = '<i class="fas fa-star text-primary"></i>'
+        elif task.priority == 'warning':
+            before = '<i class="fas fa-exclamation-triangle text-warning"></i>'
+        elif task.priority == 'info':
+            before = '<i class="fas fa-info-circle text-info"></i>'
+        elif task.priority == 'danger':
+            before = '<i class="fas fa-exclamation-circle text-danger"></i>'
+        elif task.priority == 'dark':
+            before = '<i class="fas fa-moon text-dark"></i>'
+        elif task.user != self.request.user:
+            before = '<i class="fas fa-user-friends text-secondary"></i>'
+        else:
+            before = '<i class="fas fa-tasks text-muted"></i>'
+
+        return f'{before} {task.title} {after}'
+
+    # Проверка на объект Posts
+    elif isinstance(task, Posts):
+        if "День рождения" in task.post_title:
+            return f'<i class="fas fa-birthday-cake text-danger"></i> {task.post_title}'
+        elif "праздник" in task.post_title.lower() or "holiday" in task.post_title.lower():
+            return f'<i class="fas fa-gift text-primary"></i> {task.post_title}'
+        elif "собрание" in task.post_title.lower() or "meeting" in task.post_title.lower():
+            return f'<i class="fas fa-users text-info"></i> {task.post_title}'
+        elif "тренинг" in task.post_title.lower() or "training" in task.post_title.lower():
+            return f'<i class="fas fa-chalkboard-user text-success"></i> {task.post_title}'
+        else:
+            return f'<i class="fas fa-calendar-alt text-muted"></i> {task.post_title}'
+
+    # Если тип неизвестен, возвращаем просто заголовок
+    else:
+        return getattr(task, 'title', str(task))

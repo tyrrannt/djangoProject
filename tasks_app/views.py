@@ -13,6 +13,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 
+from administration_app.utils import get_task_title_with_icon
 from customers_app.models import DataBaseUser
 from tasks_app.forms import TaskForm
 from tasks_app.models import Task, Category, TaskFile
@@ -179,7 +180,7 @@ class TaskListView(LoginRequiredMixin, ListView):
             # Базовые поля для всех событий
             event_data = {
                 'id': str(task.id),
-                'title': self.get_task_title_with_icon(task),
+                'title': get_task_title_with_icon(self, task),
                 'url': reverse('tasks_app:task-detail', args=[task.pk]),
                 'color': task.priority,
                 'className': f'fc-event-{task.priority}',
@@ -240,32 +241,7 @@ class TaskListView(LoginRequiredMixin, ListView):
 
         return context
 
-    def get_task_title_with_icon(self, task):
-        """
-        Возвращает название задачи с иконкой в зависимости от приоритета.
-        """
-        before = ''
-        after = ''
-        if task.completed:
-            after = '<i class="fa-solid fa-check-double"></i>'
-        elif task.end_date and task.end_date > timezone.now():
-            after = '<i class="fa-solid fa-hourglass-half"></i>'
-        else:
-            after = '<i class="fa-solid fa-xmark"></i>'
 
-        if task.user != self.request.user:
-            before = f'<i class="fas fa-user-friends"></i>'
-        if task.priority == 'primary':
-            before = f'<i class="fas fa-star"></i>'
-        elif task.priority == 'warning':
-            before = f'<i class="fas fa-exclamation-triangle"></i>'
-        elif task.priority == 'info':
-            before = f'<i class="fas fa-info-circle"></i>'
-        elif task.priority == 'danger':
-            before = f'<i class="fas fa-exclamation-circle"></i>'
-        elif task.priority == 'dark':
-            before = f'<i class="fas fa-moon"></i>'
-        return f'{after} {before} {task.title} '
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):
