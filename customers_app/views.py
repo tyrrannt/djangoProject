@@ -282,103 +282,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
             qs = qs.filter(pk=self.request.user.pk)
         return qs
 
-    # def get_context_data(self, **kwargs):
-    #     context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
-    #     user_obj = self.object  # DetailView уже его получил
-    #     today = datetime.datetime.today()
-    #     try:
-    #         division_pk = user_obj.user_work_profile.divisions.pk
-    #
-    #         posts = Posts.objects.filter(
-    #             post_date_end__gte=today,
-    #             post_divisions__pk=division_pk
-    #         ).order_by('-post_date_start')
-    #
-    #         context['post_high'] = posts.filter(post_date_start__gt=today)
-    #         context['post_low'] = posts.filter(post_date_start__lte=today)
-    #
-    #     except Exception as ex:
-    #         logger.debug(f'{user_obj}, нет подразделения: {ex}')
-    #
-    #     portal = PortalProperty.objects.only("portal_name").last()
-    #
-    #     month_dict, year_dict = get_year_interval(2020)
-    #     # ===== counts (оставляем, но компактно) =====
-    #     context.update({
-    #         'title': f'{portal.portal_name} // Профиль {format_name_initials(user_obj)}',
-    #         'sp': OfficialMemo.objects.filter(cancellation=False).count(),
-    #         'spf': OfficialMemo.objects.filter(cancellation=True).count(),
-    #         'bp': ApprovalOficialMemoProcess.objects.filter(cancellation=False).count(),
-    #         'bpf': ApprovalOficialMemoProcess.objects.filter(cancellation=True).count(),
-    #         'current_year': today.year,
-    #         'current_month': str(today.month),
-    #         'year_dict': year_dict,
-    #         'month_dict': month_dict,
-    #         'contract': Contract.objects.filter(
-    #             parent_category=None,
-    #             allowed_placed=True,
-    #             type_of_document__type_document='Договор'
-    #         ).count(),
-    #     })
-    #
-    #     get_profile_fill(self, context, user_obj)
-    #
-    #     # ===== Tasks + Posts (без N+1) =====
-    #     posts_qs = Posts.objects.only(
-    #         "id", "post_title", "post_date_start", "post_date_end"
-    #     )
-    #
-    #     tasks_qs = Task.objects.select_related("user").prefetch_related(
-    #         "shared_with"
-    #     ).only(
-    #         "id", "title", "priority", "start_date", "user"
-    #     )
-    #
-    #     repeat_tasks = []
-    #
-    #     # --- Posts ---
-    #     for item in posts_qs:
-    #         start = datetime.datetime.combine(
-    #             item.post_date_start,
-    #             datetime.datetime.min.time(),
-    #             tzinfo=datetime.timezone.utc
-    #         )
-    #         end = datetime.datetime.combine(
-    #             item.post_date_end,
-    #             datetime.datetime.min.time(),
-    #             tzinfo=datetime.timezone.utc
-    #         )
-    #
-    #         repeat_tasks.append({
-    #             'title': get_task_title_with_icon(self, item),
-    #             'rrule': {
-    #                 'freq': 'daily',
-    #                 'dtstart': start.isoformat(),
-    #                 'until': end.isoformat(),
-    #             },
-    #             'url': reverse('customers_app:post', args=[item.pk]),
-    #             'color': 'info',
-    #         })
-    #
-    #     # --- Tasks ---
-    #     current_user = self.request.user
-    #
-    #     for item in tasks_qs:
-    #         if item.user_id == current_user.id or current_user in item.shared_with.all():
-    #             repeat_tasks.append({
-    #                 'title': get_task_title_with_icon(self, item),
-    #                 'rrule': {
-    #                     'freq': 'daily',
-    #                     'dtstart': item.start_date.isoformat(),
-    #                     'until': item.start_date.isoformat(),
-    #                 },
-    #                 'url': reverse('tasks_app:task-detail', args=[item.pk]),
-    #                 'color': item.priority,
-    #             })
-    #
-    #     context['repeat_tasks'] = repeat_tasks
-    #
-    #     return context
+
 
     def get_context_data(self, **kwargs):
         context = super(DataBaseUserProfileDetail, self).get_context_data(**kwargs)
@@ -429,9 +333,7 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
         current_user = self.request.user
 
         # ----- 1. ПОСТЫ (мероприятия) -----
-        posts_qs = Posts.objects.filter(
-            post_date_end__gte=today
-        ).only(
+        posts_qs = Posts.objects.only(
             "id", "post_title", "post_date_start", "post_date_end"
         )
 
