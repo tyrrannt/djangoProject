@@ -138,7 +138,7 @@ ASGI_APPLICATION = "djangoProject.asgi.application"
 if not config("DEVELOPMENT", default=False, cast=bool):
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.mysql",
+            "ENGINE": config("DATABASE_ENGINE"),
             "NAME": config("DATABASE_NAME"),
             "HOST": config("DATABASE_HOST"),
             "USER": config("DATABASE_USERNAME"),
@@ -148,7 +148,7 @@ if not config("DEVELOPMENT", default=False, cast=bool):
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
+            "ENGINE": config("DATABASE_ENGINE"),
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
