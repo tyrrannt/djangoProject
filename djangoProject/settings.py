@@ -41,7 +41,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.spl
 
 USE_X_FORWARDED_FOR = True
 
-CSRF_TRUSTED_ORIGINS = ["https://corp.barkol.ru", "http://192.168.10.12"]
+CSRF_TRUSTED_ORIGINS = ["https://corp.barkol.ru", "http://192.168.10.12", "http://192.168.10.3"]
 
 # Application definition
 
