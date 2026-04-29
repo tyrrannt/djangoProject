@@ -4,37 +4,38 @@
 {% block title %}<title>{{ title }}</title>{% endblock %}
 
 {% block page_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">
-        <i class="fas fa-{% if 'создание' in title|lower or 'добавление' in title|lower %}plus-circle{% else %}edit{% endif %} me-2 text-primary"></i>{{ title }}
-    </h2>
-</div>
-
-<div class="card">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Форма сверки</h5>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fas fa-{% if 'создание' in title|lower or 'добавление' in title|lower %}plus-circle{% else %}edit{% endif %} me-2 text-primary"></i>{{ title }}
+        </h2>
     </div>
-    <div class="card-body">
-        <form method="post" novalidate>
-            {% csrf_token %}
 
-            <div class="row">
-                {% for field in form %}
-                    <div class="col-md-6 mb-3">
-                        {{ field }}
-                    </div>
-                {% endfor %}
-            </div>
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Форма сверки</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
 
-            <div class="mt-4">
-                <button type="submit" class="btn btn-success me-2">
-                    <i class="fas fa-save me-1"></i>Сохранить
-                </button>
-                <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary">
-                    <i class="fas fa-times me-1"></i>Отмена
-                </a>
-            </div>
-        </form>
+                <div class="row">
+                    {% for field in form %}
+                        <div class="col-md-6 mb-3">
+                            {{ field.label_tag }}
+                            {{ field }}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success me-2">
+                        <i class="fas fa-save me-1"></i>Сохранить
+                    </button>
+                    <a href="{% url 'ppequipment_app:verification_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i>Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 {% endblock %}

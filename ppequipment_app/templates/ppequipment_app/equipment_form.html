@@ -21,6 +21,7 @@
             <div class="row">
                 {% for field in form %}
                     <div class="col-md-6 mb-3">
+                        {{ field.label_tag }}
                         {{ field }}
                     </div>
                 {% endfor %}

@@ -11,9 +11,11 @@
         </div>
         <div class="card-body p-2">
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <a href="{% url 'ppequipment_app:index' %}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-home me-1"></i>Главная
-                </a>
+                {% if user.is_superuser %}
+                    <a href="{% url 'ppequipment_app:index' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-home me-1"></i>Главная
+                    </a>
+                {% endif %}
                 <a href="{% url 'ppequipment_app:equipment_list' %}" class="btn btn-outline-primary btn-sm">
                     <i class="fas fa-box me-1"></i>Оборудование
                 </a>
@@ -48,9 +50,11 @@
                         </a></li>
                     </ul>
                 </div>
-                <a href="{% url 'ppequipment_app:import_mdb' %}" class="btn btn-outline-success btn-sm">
-                    <i class="fas fa-file-import me-1"></i>Импорт из MDB
-                </a>
+                {% if user.is_superuser %}
+                    <a href="{% url 'ppequipment_app:import_mdb' %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-file-import me-1"></i>Импорт из MDB
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>
