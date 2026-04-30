@@ -1,6 +1,7 @@
 # views.py
 import io
 import os
+from time import strptime
 
 import openpyxl
 from django.conf import settings
@@ -9,7 +10,6 @@ from django.views.generic import TemplateView
 from datetime import datetime
 
 import csv
-import datetime
 from calendar import monthrange
 from collections import defaultdict
 from io import StringIO, BytesIO
@@ -329,8 +329,8 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         users_list = [
             person.person_id
             for person in OfficialMemo.objects.filter(
-                Q(period_from__lte=datetime.datetime.today())
-                & Q(period_for__gte=datetime.datetime.today())
+                Q(period_from__lte=datetime.today())
+                & Q(period_for__gte=datetime.today())
             )
         ]
         # Выбираем из базы тех сотрудников, которые содержатся в списке users_list и исключаем из него суперпользователя
@@ -383,12 +383,12 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 html["employee"] = division
                 return JsonResponse(html)
         if employee and period_from:
-            check_date = datetime.datetime.strptime(period_from, "%Y-%m-%d")
+            check_date = datetime.strptime(period_from, "%Y-%m-%d")
             filters = OfficialMemo.objects.filter(
                 Q(person__pk=employee) & Q(period_for__gte=check_date)
             ).exclude(cancellation=True)
             try:
-                filter_string = datetime.datetime.strptime(
+                filter_string = datetime.strptime(
                     "1900-01-01", "%Y-%m-%d"
                 ).date()
                 for item in filters:
@@ -408,9 +408,9 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
         interval = request.GET.get("interval", None)
         if interval:
-            request_day = datetime.datetime.strptime(interval, "%Y-%m-%d").day
-            request_month = datetime.datetime.strptime(interval, "%Y-%m-%d").month
-            request_year = datetime.datetime.strptime(interval, "%Y-%m-%d").year
+            request_day = datetime.strptime(interval, "%Y-%m-%d").day
+            request_month = datetime.strptime(interval, "%Y-%m-%d").month
+            request_year = datetime.strptime(interval, "%Y-%m-%d").year
             current_days = monthrange(request_year, request_month)[1]
             if request_month < 12:
                 next_days = monthrange(request_year, request_month + 1)[1]
@@ -420,10 +420,10 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                 next_days = monthrange(request_year + 1, 1)[1]
                 next_month = 1
                 next_year = request_year + 1
-            min_date = datetime.datetime.strptime(interval, "%Y-%m-%d")
+            min_date = datetime.strptime(interval, "%Y-%m-%d")
             if request_day == current_days:
                 if request_month == 11:
-                    max_date = datetime.datetime.strptime(
+                    max_date = datetime.strptime(
                         f'{next_year + 1}-{"01"}-{"01"}', "%Y-%m-%d"
                     )
                     dict_obj = [
@@ -431,7 +431,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                         max_date.strftime("%Y-%m-%d"),
                     ]
                 else:
-                    max_date = datetime.datetime.strptime(
+                    max_date = datetime.strptime(
                         f'{next_year}-{next_month + 1}-{"01"}', "%Y-%m-%d"
                     )
                     dict_obj = [
@@ -439,7 +439,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                         max_date.strftime("%Y-%m-%d"),
                     ]
             else:
-                max_date = datetime.datetime.strptime(
+                max_date = datetime.strptime(
                     f'{next_year}-{next_month}-{"01"}', "%Y-%m-%d"
                 )
                 dict_obj = [
@@ -519,7 +519,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         )
         filter_string = {
             "pk": 0,
-            "period": datetime.datetime.strptime("1900-01-01", "%Y-%m-%d").date(),
+            "period": datetime.strptime("1900-01-01", "%Y-%m-%d").date(),
         }
         # Проходимся по выборке в цикле
         for item in filters:
@@ -647,7 +647,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                         if get_order_obj != "":
                             # ToDo: Сделать обработку отправки письма
                             send_mail_change(1, get_obj, message)
-                            if get_obj.period_for < datetime.datetime.now().date():
+                            if get_obj.period_for < datetime.now().date():
                                 get_bpmemo_obj.location_selected = False
                                 get_bpmemo_obj.accommodation = ""
                                 get_obj.accommodation = ""
@@ -710,12 +710,12 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                     memo_obj_list.update({item.get_title(): item.pk})
                 return JsonResponse(memo_obj_list)
         if employee and period_from:
-            check_date = datetime.datetime.strptime(period_from, "%Y-%m-%d")
+            check_date = datetime.strptime(period_from, "%Y-%m-%d")
             filters = OfficialMemo.objects.filter(
                 Q(person__pk=employee) & Q(period_for__gte=check_date)
             ).exclude(cancelation=True)
             try:
-                filter_string = datetime.datetime.strptime(
+                filter_string = datetime.strptime(
                     "1900-01-01", "%Y-%m-%d"
                 ).date()
                 for item in filters:
@@ -732,9 +732,9 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
         interval = request.GET.get("interval", None)
         period_for_value = request.GET.get("pfv", None)
         if interval:
-            request_day = datetime.datetime.strptime(interval, "%Y-%m-%d").day
-            request_month = datetime.datetime.strptime(interval, "%Y-%m-%d").month
-            request_year = datetime.datetime.strptime(interval, "%Y-%m-%d").year
+            request_day = datetime.strptime(interval, "%Y-%m-%d").day
+            request_month = datetime.strptime(interval, "%Y-%m-%d").month
+            request_year = datetime.strptime(interval, "%Y-%m-%d").year
             current_days = monthrange(request_year, request_month)[1]
 
             if request_month < 12:
@@ -745,10 +745,10 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                 next_days = monthrange(request_year + 1, 1)[1]
                 next_month = 1
                 next_year = request_year + 1
-            min_date = datetime.datetime.strptime(interval, "%Y-%m-%d")
+            min_date = datetime.strptime(interval, "%Y-%m-%d")
             if request_day == current_days:
                 if request_month == 11:
-                    max_date = datetime.datetime.strptime(
+                    max_date = datetime.strptime(
                         f'{next_year + 1}-{"01"}-{"01"}', "%Y-%m-%d"
                     )
                     dict_obj = [
@@ -756,7 +756,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                         max_date.strftime("%Y-%m-%d"),
                     ]
                 else:
-                    max_date = datetime.datetime.strptime(
+                    max_date = datetime.strptime(
                         f'{next_year}-{next_month + 1}-{"01"}', "%Y-%m-%d"
                     )
                     dict_obj = [
@@ -764,14 +764,14 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                         max_date.strftime("%Y-%m-%d"),
                     ]
             else:
-                max_date = datetime.datetime.strptime(
+                max_date = datetime.strptime(
                     f'{next_year}-{next_month}-{"01"}', "%Y-%m-%d"
                 )
                 dict_obj = [
                     min_date.strftime("%Y-%m-%d"),
                     max_date.strftime("%Y-%m-%d"),
                 ]
-            if datetime.datetime.strptime(period_for_value, "%Y-%m-%d") > max_date:
+            if datetime.strptime(period_for_value, "%Y-%m-%d") > max_date:
                 # period_for_value = max_date
                 dict_obj.append(max_date)
             else:
@@ -1675,8 +1675,8 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
 
             else:
                 start_date = datetime.date(
-                    year=datetime.datetime.today().year,
-                    month=datetime.datetime.today().month,
+                    year=datetime.today().year,
+                    month=datetime.today().month,
                     day=1,
                 )
                 end_date = start_date + relativedelta(day=31)
@@ -1746,7 +1746,7 @@ class ExpenseReportView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["title"] = 'Отчет по затратам на командировки'
         # Получаем параметры фильтрации
-        year = self.request.GET.get('year', datetime.datetime.now().year)
+        year = self.request.GET.get('year', datetime.now().year)
         month = self.request.GET.get('month', None)
         job_type = self.request.GET.get('job_type', None)
         employee_id = self.request.GET.get('employee_id', None)
@@ -1957,7 +1957,7 @@ class ExportExpenseReportView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         # Получаем параметры фильтрации (те же что и в основном view)
-        year = request.GET.get('year', datetime.datetime.now().year)
+        year = request.GET.get('year', datetime.now().year)
         month = request.GET.get('month', None)
         job_type = request.GET.get('job_type', None)
         employee_id = request.GET.get('employee_id', None)
@@ -2299,10 +2299,10 @@ class ReportApprovalOficialMemoProcessList(
             from calendar import monthrange
 
             days = monthrange(current_year, current_month)[1]
-            date_start = datetime.datetime.strptime(
+            date_start = datetime.strptime(
                 f"{current_year}-{current_month}-01", "%Y-%m-%d"
             )
-            date_end = datetime.datetime.strptime(
+            date_end = datetime.strptime(
                 f"{current_year}-{current_month}-{days}", "%Y-%m-%d"
             )
             current_person_list = current_person.split("&")
@@ -2517,15 +2517,15 @@ class ReportApprovalOficialMemoProcessList(
             current_year = int(self.request.GET.get("CY"))
             current_month = int(self.request.GET.get("CM"))
         else:
-            current_year = datetime.datetime.now().year
-            current_month = datetime.datetime.now().month
+            current_year = datetime.now().year
+            current_month = datetime.now().month
         from calendar import monthrange
 
         days = monthrange(current_year, current_month)[1]
-        date_start = datetime.datetime.strptime(
+        date_start = datetime.strptime(
             f"{current_year}-{current_month}-01", "%Y-%m-%d"
         )
-        date_end = datetime.datetime.strptime(
+        date_end = datetime.strptime(
             f"{current_year}-{current_month}-{days}", "%Y-%m-%d"
         )
 
@@ -2818,7 +2818,7 @@ class DocumentsOrderList(PermissionRequiredMixin, LoginRequiredMixin, ListView):
         #     else:
         #         documents_order_list = (
         #             DocumentsOrder.objects.filter(
-        #                 Q(cancellation=False) & Q(validity_period_end__gte=datetime.datetime.now()))
+        #                 Q(cancellation=False) & Q(validity_period_end__gte=datetime.now()))
         #         )
         #
         #     data = [
@@ -2861,20 +2861,20 @@ class DocumentsOrderAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView)
         if document_foundation:
             memo_obj = OfficialMemo.objects.get(pk=document_foundation)
             dict_obj = {
-                "period_from": datetime.datetime.strftime(
+                "period_from": datetime.strftime(
                     memo_obj.period_from, "%Y-%m-%d"
                 ),
-                "period_for": datetime.datetime.strftime(
+                "period_for": datetime.strftime(
                     memo_obj.period_for, "%Y-%m-%d"
                 ),
-                "document_date": datetime.datetime.strftime(
-                    datetime.datetime.today(), "%Y-%m-%d"
+                "document_date": datetime.strftime(
+                    datetime.today(), "%Y-%m-%d"
                 ),
             }
             return JsonResponse(dict_obj, safe=False)
         document_date = request.GET.get("document_date", None)
         if document_date:
-            document_date = datetime.datetime.strptime(document_date, "%Y-%m-%d")
+            document_date = datetime.strptime(document_date, "%Y-%m-%d")
             order_list = [
                 item.document_number
                 for item in DocumentsOrder.objects.filter(document_date=document_date)
@@ -2964,21 +2964,21 @@ class DocumentsOrderUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateVi
         if document_foundation:
             memo_obj = OfficialMemo.objects.get(pk=document_foundation)
             dict_obj = {
-                "period_from": datetime.datetime.strftime(
+                "period_from": datetime.strftime(
                     memo_obj.period_from, "%Y-%m-%d"
                 ),
-                "period_for": datetime.datetime.strftime(
+                "period_for": datetime.strftime(
                     memo_obj.period_for, "%Y-%m-%d"
                 ),
-                "document_date": datetime.datetime.strftime(
-                    datetime.datetime.today(), "%Y-%m-%d"
+                "document_date": datetime.strftime(
+                    datetime.today(), "%Y-%m-%d"
                 ),
             }
 
             return JsonResponse(dict_obj, safe=False)
         document_date = request.GET.get("document_date", None)
         if document_date:
-            document_date = datetime.datetime.strptime(document_date, "%Y-%m-%d")
+            document_date = datetime.strptime(document_date, "%Y-%m-%d")
             order_list = [
                 item.document_number
                 for item in DocumentsOrder.objects.filter(document_date=document_date)
@@ -3165,8 +3165,8 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
                 )
             else:
                 start_date = datetime.date(
-                    year=datetime.datetime.today().year,
-                    month=datetime.datetime.today().month,
+                    year=datetime.today().year,
+                    month=datetime.today().month,
                     day=1,
                 )
                 end_date = start_date + relativedelta(day=31)
@@ -3226,8 +3226,8 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
                 query &= Q(report_card_day__in=search_interval)
             else:
                 start_date = datetime.date(
-                    year=datetime.datetime.today().year,
-                    month=datetime.datetime.today().month,
+                    year=datetime.today().year,
+                    month=datetime.today().month,
                     day=1,
                 )
                 end_date = start_date + relativedelta(day=31)
@@ -3264,7 +3264,7 @@ class ReportCardDetailYearXLS(View):
         if year:
             report_year = int(year)
         else:
-            report_year = datetime.datetime.now().year
+            report_year = datetime.now().year
         print(year)
         df = get_year_report(report_year=report_year, html_mode=False)
         # Создание Excel-файла
@@ -3296,7 +3296,7 @@ class ReportCardDetailYear(LoginRequiredMixin, ListView):
         if year:
             report_year = int(year)
         else:
-            report_year = datetime.datetime.now().year
+            report_year = datetime.now().year
         # Получить уникальные годы как список чисел
         years = sorted(
             set(ReportCard.objects.values_list('report_card_day__year', flat=True)),
@@ -3327,9 +3327,9 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         year = self.request.GET.get("report_year", None)
 
         if month and year:
-            current_day = datetime.datetime(int(year), int(month), 1)
+            current_day = datetime(int(year), int(month), 1)
         else:
-            current_day = datetime.datetime.today() + relativedelta(day=1)
+            current_day = datetime.today() + relativedelta(day=1)
 
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
@@ -3404,8 +3404,8 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
         context["norm_day"] = norm_time.number_working_days
         context["holidays"] = norm_time.number_days_off_and_holidays
         context["last_day"] = last_day
-        context["current_year"] = datetime.datetime.today().year
-        context["current_month"] = str(datetime.datetime.today().month)
+        context["current_year"] = datetime.today().year
+        context["current_month"] = str(datetime.today().month)
         context["tabel_month"] = first_day
         context["title"] = f"Табель учета рабочего времени (факт)"
         return context
@@ -3430,9 +3430,9 @@ class ReportCardDetailIAS(LoginRequiredMixin, ListView):
         year = self.request.GET.get("report_year", None)
 
         if month and year:
-            current_day = datetime.datetime(int(year), int(month), 1)
+            current_day = datetime(int(year), int(month), 1)
         else:
-            current_day = datetime.datetime.today() + relativedelta(day=1)
+            current_day = datetime.today() + relativedelta(day=1)
 
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
@@ -3470,8 +3470,8 @@ class ReportCardDetailIAS(LoginRequiredMixin, ListView):
         context["norm_day"] = norm_time.number_working_days
         context["holidays"] = norm_time.number_days_off_and_holidays
         context["last_day"] = last_day
-        context["current_year"] = datetime.datetime.today().year
-        context["current_month"] = str(datetime.datetime.today().month)
+        context["current_year"] = datetime.today().year
+        context["current_month"] = str(datetime.today().month)
         context["tabel_month"] = first_day
         context["title"] = f"Табель учета рабочего времени (факт)"
         return context
@@ -3496,9 +3496,9 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         year = self.request.GET.get("report_year", None)
 
         if month and year:
-            current_day = datetime.datetime(int(year), int(month), 1)
+            current_day = datetime(int(year), int(month), 1)
         else:
-            current_day = datetime.datetime.today() + relativedelta(day=1)
+            current_day = datetime.today() + relativedelta(day=1)
 
         first_day = current_day + relativedelta(day=1)
         last_day = current_day + relativedelta(day=31)
@@ -3572,8 +3572,8 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
         context["norm_day"] = norm_time.number_working_days
         context["holidays"] = norm_time.number_days_off_and_holidays
         context["last_day"] = last_day
-        context["current_year"] = datetime.datetime.today().year
-        context["current_month"] = str(datetime.datetime.today().month)
+        context["current_year"] = datetime.today().year
+        context["current_month"] = str(datetime.today().month)
         context["tabel_month"] = first_day
         context["title"] = f"Табель учета рабочего времени"
         return context
@@ -3596,7 +3596,7 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
                 self.request.user.user_work_profile.personal_work_schedule_end
             )
 
-            if datetime.datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
+            if datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
                 personal_end = datetime.timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
                 )
@@ -3605,10 +3605,10 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
                     hours=personal_end.hour, minutes=personal_end.minute
                 ) + datetime.timedelta(hours=2)
             result = [
-                datetime.datetime.strptime(str(personal_start), "%H:%M:%S")
+                datetime.strptime(str(personal_start), "%H:%M:%S")
                 .time()
                 .strftime("%H:%M"),
-                datetime.datetime.strptime(str(personal_end), "%H:%M:%S")
+                datetime.strptime(str(personal_end), "%H:%M:%S")
                 .time()
                 .strftime("%H:%M"),
             ]
@@ -3629,14 +3629,14 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
             for item in search_report:
                 start_time.append(item.start_time.strftime("%H:%M"))
                 end_time.append(item.end_time.strftime("%H:%M"))
-                first_date1 = datetime.datetime(
+                first_date1 = datetime(
                     year=dt.year,
                     month=dt.month,
                     day=dt.day,
                     hour=item.start_time.hour,
                     minute=item.start_time.minute,
                 )
-                first_date2 = datetime.datetime(
+                first_date2 = datetime(
                     year=dt.year,
                     month=dt.month,
                     day=dt.day,
@@ -3646,14 +3646,14 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
                 search_interval = list(
                     rrule.rrule(rrule.MINUTELY, dtstart=first_date1, until=first_date2)
                 )
-            first_date3 = datetime.datetime(
+            first_date3 = datetime(
                 year=dt.year,
                 month=dt.month,
                 day=dt.day,
                 hour=form.cleaned_data.get("start_time").hour,
                 minute=form.cleaned_data.get("start_time").minute,
             )
-            first_date4 = datetime.datetime(
+            first_date4 = datetime(
                 year=dt.year,
                 month=dt.month,
                 day=dt.day,
@@ -3694,8 +3694,8 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         user_obj = self.get_object()
         if self.request.user.is_superuser:
-            context["min"] = datetime.datetime(1, 1, 1, 1, 0).strftime("%H:%M")
-            context["max"] = datetime.datetime(1, 1, 1, 23, 0).strftime("%H:%M")
+            context["min"] = datetime(1, 1, 1, 1, 0).strftime("%H:%M")
+            context["max"] = datetime(1, 1, 1, 23, 0).strftime("%H:%M")
         else:
             context[
                 "min"
@@ -3722,7 +3722,7 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
                 self.request.user.user_work_profile.personal_work_schedule_end
             )
 
-            if datetime.datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
+            if datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
                 personal_end = datetime.timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
                 )
@@ -3731,10 +3731,10 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
                     hours=personal_end.hour, minutes=personal_end.minute
                 ) + datetime.timedelta(hours=2)
             result = [
-                datetime.datetime.strptime(str(personal_start), "%H:%M:%S")
+                datetime.strptime(str(personal_start), "%H:%M:%S")
                 .time()
                 .strftime("%H:%M"),
-                datetime.datetime.strptime(str(personal_end), "%H:%M:%S")
+                datetime.strptime(str(personal_end), "%H:%M:%S")
                 .time()
                 .strftime("%H:%M"),
             ]
@@ -4378,7 +4378,7 @@ class CreatingTeamAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
         if document_type:
             html = {"replaceable_document": ""}
             if document_type == "1":
-                check_data = datetime.datetime.today() + relativedelta(months=-2)
+                check_data = datetime.today() + relativedelta(months=-2)
                 team_list = CreatingTeam.objects.filter(
                     Q(date_end__gte=check_data) &
                     Q(agreed=True) &
@@ -5049,7 +5049,7 @@ def unacknowledge_document(request):
     ).first()
 
     if acknowledgment:
-        if acknowledgment.acknowledgment_date.date() == datetime.datetime.today().date():
+        if acknowledgment.acknowledgment_date.date() == datetime.today().date():
             acknowledgment.delete()
             return JsonResponse({'success': True})
         else:
@@ -5062,7 +5062,7 @@ def unacknowledge_document(request):
 def seasonality_report(request):
     # Получение выбранного года
     selected_year = request.GET.get("year")
-    current_year = datetime.datetime.now().year
+    current_year = datetime.now().year
     years = list(range(current_year - 5, current_year + 2))
 
     selected_year = int(selected_year) if selected_year and selected_year.isdigit() else current_year
@@ -5176,7 +5176,7 @@ def seasonality_report(request):
 # def seasonality_report(request):
 #     # Получение выбранного года из GET-параметров
 #     selected_year = request.GET.get("year")
-#     current_year = datetime.datetime.now().year
+#     current_year = datetime.now().year
 #
 #     # Определение списка доступных лет
 #     years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
@@ -5220,7 +5220,7 @@ def export_seasonality_data(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
     if not selected_year or not selected_year.isdigit():
-        selected_year = datetime.datetime.now().year
+        selected_year = datetime.now().year
     else:
         selected_year = int(selected_year)
 
@@ -5398,7 +5398,7 @@ def employee_absence_details(request, username):
 def weekday_analysis(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
-    current_year = datetime.datetime.now().year
+    current_year = datetime.now().year
 
     # Определение списка доступных лет
     years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
@@ -5447,7 +5447,7 @@ def weekday_analysis(request):
 def time_distribution(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
-    current_year = datetime.datetime.now().year
+    current_year = datetime.now().year
 
     # Определение списка доступных лет
     years = list(range(current_year - 5, current_year + 1))  # Последние 5 лет + текущий год
@@ -5494,7 +5494,7 @@ def export_time_distribution(request):
     # Получение выбранного года из GET-параметров
     selected_year = request.GET.get("year")
     if not selected_year or not selected_year.isdigit():
-        selected_year = datetime.datetime.now().year
+        selected_year = datetime.now().year
     else:
         selected_year = int(selected_year)
 
