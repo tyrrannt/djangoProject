@@ -2081,6 +2081,9 @@ def order_doc(obj_model: DocumentsOrder, filepath: str, filename: str, request):
 
 @receiver(post_save, sender=DocumentsOrder)
 def rename_order_file_name(sender, instance: DocumentsOrder, **kwargs):
+    # Добавь эту строку в самое начало функции:
+    if kwargs.get('raw'):
+        return  # Пропускаем выполнение при загрузке фикстур
     if not instance.cancellation and not instance.custom_file:
         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
 
