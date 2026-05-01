@@ -41,7 +41,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.spl
 
 USE_X_FORWARDED_FOR = True
 
-CSRF_TRUSTED_ORIGINS = ["https://corp.barkol.ru", "http://192.168.10.12", "http://192.168.10.3"]
+CSRF_TRUSTED_ORIGINS = ["https://corp.barkol.ru", "https://reserv.barkol.ru"]
 
 # Application definition
 
@@ -393,6 +393,9 @@ WEBHOOK_SSL_CERTIFICATE = pathlib.Path.joinpath(
 WEBHOOK_SSL_PRIVATE = pathlib.Path.joinpath(
     BASE_DIR, config("KEY_PEM_PATH")
 )  # Путь к приватному ключу
+
+# Доверяем прокси-серверу NPM
+TRUSTED_PROXIES = config("TRUSTED_PROXIES")
 
 # Устанавливаем SESSION_COOKIE_SECURE в True, чтобы сессионные куки передавались только по HTTPS
 SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", default=False, cast=bool)
