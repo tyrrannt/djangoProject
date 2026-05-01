@@ -1452,7 +1452,10 @@ def hr_accepted(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=ApprovalOficialMemoProcess)
-def create_report(sender, instance: ApprovalOficialMemoProcess, **kwargs):
+def create_report(sender, instance: ApprovalOficialMemoProcess, raw=False, **kwargs):
+    # Защита: выходим, если это загрузка фикстур (loaddata)
+    if raw:
+        return
     change_approval_status(instance)
     type_of = ["Служебная квартира", "Гостиница"]
     if (instance.submit_for_approval and not instance.document_not_agreed and not instance.email_send):
@@ -3709,7 +3712,6 @@ class StudentAgreement(models.Model):
         verbose_name = "Ученический договор"
         verbose_name_plural = "Ученические договоры"
         ordering = ['-student_agreement_date__year', '-student_agreement_number']
-
 
     # Реквизиты договоров
     student_agreement_number = models.CharField(
