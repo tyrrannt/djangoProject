@@ -6,6 +6,7 @@ from django.apps import apps
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import ForeignKey, Q
@@ -626,6 +627,126 @@ class ApartmentBooking(models.Model):
 
         if overlapping.exists():
             raise ValidationError("На выбранный период в этой квартире нет свободных мест.")
+
+
+class BiometricConsent(models.Model):
+    """
+    Согласие на обработку биометрических персональных данных
+    """
+
+    class Meta:
+        verbose_name = "Согласие на обработку биометрии"
+        verbose_name_plural = "Согласия на обработку биометрии"
+        ordering = ['-consent_date']
+        constraints = [
+            models.UniqueConstraint(fields=['consent_number'], name='unique_consent_number')
+        ]
+        indexes = [
+            # Ускоряет поиск last_consent__endswith
+            models.Index(fields=['consent_number']),
+        ]
+
+    # Связь с сотрудником (привязка к пользователю)
+    employee = models.ForeignKey(
+        'DataBaseUser',
+        verbose_name="Сотрудник",
+        on_delete=models.CASCADE,
+        related_name='biometric_consents',
+        help_text="Сотрудник, давший согласие"
+    )
+
+    # Основные реквизиты документа
+    consent_number = models.CharField(
+        verbose_name="Номер согласия",
+        max_length=50,
+        unique=True,
+        help_text="Уникальный номер документа"
+    )
+    consent_date = models.DateField(
+        verbose_name="Дата подписания",
+        help_text="Дата, когда подписано согласие"
+    )
+
+    # Данные сотрудника на момент подписания
+    employee_full_name = models.CharField(
+        verbose_name="ФИО сотрудника",
+        max_length=150,
+        help_text="ФИО на момент подписания согласия"
+    )
+    employee_position = models.CharField(
+        verbose_name="Должность",
+        max_length=200,
+        blank=True,
+        help_text="Должность на момент подписания"
+    )
+
+    # Шаблон согласия (какая версия использовалась)
+    consent_template = models.CharField(
+        verbose_name="Шаблон согласия",
+        max_length=100,
+        default="Стандартный шаблон",
+        help_text="Название или версия шаблона согласия"
+    )
+
+    # Комментарий
+    comment = models.TextField(
+        verbose_name="Комментарий",
+        blank=True,
+        help_text="Дополнительная информация"
+    )
+
+    # Скан документа с подписью
+    scanned_copy = models.FileField(
+        verbose_name="Скан согласия с подписью",
+        upload_to='biometric_consents/%Y/%m/%d/',
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])],
+        help_text="Загрузите скан подписанного согласия (PDF, JPG, PNG)"
+    )
+
+    # Автоматические поля
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания записи",
+        auto_now_add=True
+    )
+    updated_at = models.DateTimeField(
+        verbose_name="Дата обновления",
+        auto_now=True
+    )
+    created_by = models.ForeignKey(
+        'DataBaseUser',
+        verbose_name="Кто создал запись",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_consents'
+    )
+
+    # Статус (если нужно отслеживать отзывы)
+    is_active = models.BooleanField(
+        verbose_name="Действует",
+        default=True,
+        help_text="Отметьте, если согласие не отозвано"
+    )
+    revocation_date = models.DateField(
+        verbose_name="Дата отзыва",
+        null=True,
+        blank=True,
+        help_text="Дата, когда сотрудник отозвал согласие"
+    )
+
+    def save(self, *args, **kwargs):
+        # Автоматически подставляем ФИО и должность из профиля сотрудника
+        if not self.pk and not self.employee_full_name:
+            self.employee_full_name = self.employee.get_title()
+
+        if not self.employee_position and self.employee.user_work_profile:
+            if self.employee.user_work_profile.job:
+                self.employee_position = str(self.employee.user_work_profile.job)
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Согласие №{self.consent_number} от {self.consent_date} - {self.employee_full_name}"
 
 
 class RoleType(models.TextChoices):

@@ -591,6 +591,11 @@ UNFOLD = {
                         "link": reverse_lazy("admin:customers_app_databaseuser_changelist"),
                     },
                     {
+                        "title": _("Согласия на ПД и БД"),
+                        "icon": "people",
+                        "link": reverse_lazy("admin:customers_app_biometricconsent_changelist"),
+                    },
+                    {
                         "title": _("Должности"),
                         "icon": "work",
                         "link": reverse_lazy("admin:customers_app_job_changelist"),
@@ -1157,6 +1162,7 @@ UNFOLD = {
                 "contracts_app.companyproperty",
 
                 "customers_app.databaseuser",
+                "customers_app.biometricconsent",
                 "customers_app.job",
                 "customers_app.division",
                 "customers_app.counteragent",

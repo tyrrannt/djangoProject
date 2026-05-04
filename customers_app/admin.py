@@ -36,7 +36,7 @@ from .models import (
     VacationSchedule,
     CounteragentDocuments,
     UserStats,
-    Apartments, ApartmentBooking,
+    Apartments, ApartmentBooking, BiometricConsent,
 )
 from unfold.admin import ModelAdmin, TabularInline
 
@@ -638,3 +638,50 @@ class CounteragentAdmin(ModelAdmin):
         return self.merge_duplicates(request, queryset)
 
     merge_duplicates_with_diagnosis.short_description = "Объединить с диагностикой"
+
+
+@admin.register(BiometricConsent)
+class BiometricConsentAdmin(ModelAdmin):
+    list_display = ['consent_number', 'employee_link', 'consent_date', 'consent_template', 'is_active',
+                    'scanned_copy_link']
+    list_filter = ['is_active', 'consent_date', 'consent_template']
+    search_fields = ['consent_number', 'employee__last_name', 'employee__first_name', 'employee_full_name']
+    date_hierarchy = 'consent_date'
+    readonly_fields = ['created_at', 'updated_at', 'created_by']
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('employee', 'consent_number', 'consent_date', 'consent_template')
+        }),
+        ('Данные сотрудника на момент подписания', {
+            'fields': ('employee_full_name', 'employee_position')
+        }),
+        ('Документ', {
+            'fields': ('scanned_copy', 'comment')
+        }),
+        ('Статус согласия', {
+            'fields': ('is_active', 'revocation_date')
+        }),
+        ('Служебная информация', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+
+    def employee_link(self, obj):
+        url = reverse('admin:yourapp_databaseuser_change', args=[obj.employee.id])
+        return format_html('<a href="{}">{}</a>', url, obj.employee_full_name)
+
+    employee_link.short_description = 'Сотрудник'
+
+    def scanned_copy_link(self, obj):
+        if obj.scanned_copy:
+            return format_html('<a href="{}" target="_blank">Открыть скан</a>', obj.scanned_copy.url)
+        return "Файл не загружен"
+
+    scanned_copy_link.short_description = 'Скан документа'
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # при создании
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
