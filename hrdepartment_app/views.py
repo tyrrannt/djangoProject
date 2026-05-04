@@ -7,7 +7,7 @@ import openpyxl
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.generic import TemplateView
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
 import csv
 from calendar import monthrange
@@ -1622,7 +1622,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
             if request.session["current_month"] and request.session["current_year"]:
-                start_date = datetime.date(
+                start_date = date(
                     year=int(request.session["current_year"]),
                     month=int(request.session["current_month"]),
                     day=1,
@@ -1674,7 +1674,7 @@ class ApprovalOficialMemoProcessReportList(LoginRequiredMixin, ListView):
                     )
 
             else:
-                start_date = datetime.date(
+                start_date = date(
                     year=datetime.today().year,
                     month=datetime.today().month,
                     day=1,
@@ -2586,7 +2586,7 @@ class ReportApprovalOficialMemoProcessList(
             else:
                 dict_obj[format_name_initials(str(item.document.person))] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
-                    curent_day = date_start + datetime.timedelta(days_count)
+                    curent_day = date_start + timedelta(days_count)
                     # print(list_obj, days_count, date_end, date_start)
                     if item.hr_accepted:
                         if (
@@ -3088,7 +3088,7 @@ class ReportCardList(LoginRequiredMixin, ListView):
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
             if request.session["current_month"] and request.session["current_year"]:
-                start_date = datetime.date(
+                start_date = date(
                     year=int(request.session["current_year"]),
                     month=int(request.session["current_month"]),
                     day=1,
@@ -3147,7 +3147,7 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
             # else:
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
             if request.session["current_month"] and request.session["current_year"]:
-                start_date = datetime.date(
+                start_date = date(
                     year=int(request.session["current_year"]),
                     month=int(request.session["current_month"]),
                     day=1,
@@ -3164,7 +3164,7 @@ class ReportCardListManual(LoginRequiredMixin, ListView):
                     .reverse()
                 )
             else:
-                start_date = datetime.date(
+                start_date = date(
                     year=datetime.today().year,
                     month=datetime.today().month,
                     day=1,
@@ -3214,7 +3214,7 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
             #     reportcard_list = ReportCard.objects.filter(employee=self.request.user).select_related('employee')
             query = Q()
             if request.session["current_month"] and request.session["current_year"]:
-                start_date = datetime.date(
+                start_date = date(
                     year=int(request.session["current_year"]),
                     month=int(request.session["current_month"]),
                     day=1,
@@ -3225,7 +3225,7 @@ class ReportCardListAdmin(LoginRequiredMixin, ListView):
                 )
                 query &= Q(report_card_day__in=search_interval)
             else:
-                start_date = datetime.date(
+                start_date = date(
                     year=datetime.today().year,
                     month=datetime.today().month,
                     day=1,

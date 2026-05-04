@@ -644,6 +644,7 @@ class DataBaseUser(AbstractUser):
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
         ordering = ["last_name"]
+        indexes = [models.Index(fields=['title'])]
 
     type_of = [
         ("natural_person", "физическое лицо"),
@@ -741,6 +742,25 @@ class DataBaseUser(AbstractUser):
     employment_contract_date = models.DateField(
         verbose_name="Дата трудового договора", blank=True, null=True
     )
+
+    def save(self, *args, **kwargs):
+        """
+        Автоматически генерирует поле `title` из непустых частей ФИО.
+        Упорядочивание: last_name first_name surname.
+        Если все части пустые — валидация запрещает сохранение.
+        """
+        name_parts = [
+            self.last_name or '',
+            self.first_name or '',
+            self.surname or ''
+        ]
+        new_title = ' '.join(filter(None, name_parts)).strip()
+
+        if not new_title:
+            raise ValidationError("Необходимо указать хотя бы одно имя (фамилию, имя или отчество).")
+
+        self.title = new_title
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
@@ -842,10 +862,10 @@ def change_filename(sender, instance, **kwargs):
     5. Вызывает функцию «переименовать» с полученным именем файла, путем, «экземпляром» и пустой строкой в качестве параметров.
 
     """
-    new_title = f"{empty_item(instance.last_name)} {empty_item(instance.first_name)} {empty_item(instance.surname)}"
-    if instance.title != new_title:
-        instance.title = new_title
-        instance.save()
+    # new_title = f"{empty_item(instance.last_name)} {empty_item(instance.first_name)} {empty_item(instance.surname)}"
+    # if instance.title != new_title:
+    #     instance.title = new_title
+    #     instance.save()
     try:
         # Получаем имя сохраненного файла
         file_name = pathlib.Path(instance.avatar.name).name
