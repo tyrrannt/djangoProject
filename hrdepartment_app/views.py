@@ -3846,7 +3846,7 @@ class ProvisionsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         previous = Provisions.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
         try:
-            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+            context['outdated'] = self.object.validity_period_end < datetime.today()
         except TypeError:
             context['outdated'] = False
         context["title"] = f"{self.get_object()}"
@@ -3989,7 +3989,7 @@ class BriefingsDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         previous = Briefings.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
         try:
-            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+            context['outdated'] = self.object.validity_period_end < datetime.today()
         except TypeError:
             context['outdated'] = False
         context["title"] = f"{self.get_object()}"
@@ -4150,7 +4150,7 @@ class OperationalDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView)
         previous = Operational.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
         try:
-            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+            context['outdated'] = self.object.validity_period_end < datetime.today()
         except TypeError:
             context['outdated'] = False
         context["title"] = f"{self.get_object()}"
@@ -6008,7 +6008,7 @@ class LaborProtectionDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailV
         previous = LaborProtection.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
         try:
-            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+            context['outdated'] = self.object.validity_period_end < datetime.today()
         except TypeError:
             context['outdated'] = False
         context["title"] = f"{self.get_object()}"
@@ -6162,7 +6162,7 @@ class LaborProtectionInstructionsDetail(PermissionRequiredMixin, LoginRequiredMi
         previous = LaborProtectionInstructions.objects.filter(parent_document=document_id).values_list('pk').last()
         context['previous'] = previous[0] if previous else False
         try:
-            context['outdated'] = self.object.validity_period_end < datetime.date.today()
+            context['outdated'] = self.object.validity_period_end < datetime.today()
         except TypeError:
             context['outdated'] = False
         context["title"] = f"{self.get_object()}"
