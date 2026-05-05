@@ -399,7 +399,7 @@ class OfficialMemoAdd(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
                     f"За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}"
                 )
             if filters.count() > 0:
-                # html = filter_string + datetime.timedelta(days=1)
+                # html = filter_string + timedelta(days=1)
                 label = "Внимание, в заданный интервал имеются другие СЗ:"
                 for item in filters:
                     label += " " + str(item) + ";"
@@ -726,7 +726,7 @@ class OfficialMemoUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
                     f"За заданный период СП не найдены. Пользователь {self.request.user.username}, {AttributeError}"
                 )
             if filters.count() > 0:
-                html = filter_string + datetime.timedelta(days=1)
+                html = filter_string + timedelta(days=1)
                 return JsonResponse(html, safe=False)
         # Согласно приказу, ограничиваем последним днем предыдущего и первым днем следующего месяцев
         interval = request.GET.get("interval", None)
@@ -2347,7 +2347,7 @@ class ReportApprovalOficialMemoProcessList(
                     dict_obj[person] = []
                 for days_count in range(0, (date_end - date_start).days + 1):
                     place, place_short = "", ""
-                    curent_day = date_start + datetime.timedelta(days_count)
+                    curent_day = date_start + timedelta(days_count)
                     if selected_record.filter(
                             report_card_day=curent_day.date()
                     ).exists():
@@ -2567,7 +2567,7 @@ class ReportApprovalOficialMemoProcessList(
             if person in dict_obj:
                 list_obj = dict_obj[person]
                 for days_count in range(0, (date_end - date_start).days + 1):
-                    curent_day = date_start + datetime.timedelta(days_count)
+                    curent_day = date_start + timedelta(days_count)
                     if item.hr_accepted:
                         if (
                                 item.start_date_trip
@@ -3384,7 +3384,7 @@ class ReportCardDetailFact(LoginRequiredMixin, ListView):
             all_dict[users_obj_set[user_obj]] = {
                 "dict_count": data_dict,
                 "days_count": all_days_count,  # days_count,
-                "time_count_day": datetime.timedelta(seconds=total_score).days,
+                "time_count_day": timedelta(seconds=total_score).days,
                 # time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
                 "time_count_hour": time_count_hour,
                 # (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
@@ -3553,7 +3553,7 @@ class ReportCardDetail(LoginRequiredMixin, ListView):
             all_dict[users_obj_set[user_obj]] = {
                 "dict_count": data_dict,
                 "days_count": all_days_count,  # days_count,
-                "time_count_day": datetime.timedelta(seconds=total_score).days,
+                "time_count_day": timedelta(seconds=total_score).days,
                 # time_count.days, # Итого отмечено часов за месяц # Итого отмечено дней за месяц
                 "time_count_hour": time_count_hour,
                 # (time_count.total_seconds() / 3600),# Итого отмечено часов за месяц
@@ -3589,21 +3589,21 @@ class ReportCardAdd(LoginRequiredMixin, CreateView):
             personal_start = (
                 self.request.user.user_work_profile.personal_work_schedule_start
             )
-            personal_start = datetime.timedelta(
+            personal_start = timedelta(
                 hours=personal_start.hour, minutes=personal_start.minute
-            ) - datetime.timedelta(hours=3)
+            ) - timedelta(hours=3)
             personal_end = (
                 self.request.user.user_work_profile.personal_work_schedule_end
             )
 
             if datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
-                personal_end = datetime.timedelta(
+                personal_end = timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
                 )
             else:
-                personal_end = datetime.timedelta(
+                personal_end = timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
-                ) + datetime.timedelta(hours=2)
+                ) + timedelta(hours=2)
             result = [
                 datetime.strptime(str(personal_start), "%H:%M:%S")
                 .time()
@@ -3715,21 +3715,21 @@ class ReportCardUpdate(LoginRequiredMixin, UpdateView):
             personal_start = (
                 self.request.user.user_work_profile.personal_work_schedule_start
             )
-            personal_start = datetime.timedelta(
+            personal_start = timedelta(
                 hours=personal_start.hour, minutes=personal_start.minute
-            ) - datetime.timedelta(hours=3)
+            ) - timedelta(hours=3)
             personal_end = (
                 self.request.user.user_work_profile.personal_work_schedule_end
             )
 
             if datetime.strptime(interval, "%Y-%m-%d").weekday() == 4:
-                personal_end = datetime.timedelta(
+                personal_end = timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
                 )
             else:
-                personal_end = datetime.timedelta(
+                personal_end = timedelta(
                     hours=personal_end.hour, minutes=personal_end.minute
-                ) + datetime.timedelta(hours=2)
+                ) + timedelta(hours=2)
             result = [
                 datetime.strptime(str(personal_start), "%H:%M:%S")
                 .time()
@@ -5805,7 +5805,7 @@ def get_extension_data(request):
     if extension_id:
         try:
             memo = OfficialMemo.objects.get(pk=extension_id)
-            new_start_date = memo.period_for + datetime.timedelta(days=1)
+            new_start_date = memo.period_for + timedelta(days=1)
             response_data = {
                 "period_from": new_start_date.strftime("%Y-%m-%d"),
                 "place_production_activity": list(memo.place_production_activity.values_list("pk", flat=True)),
