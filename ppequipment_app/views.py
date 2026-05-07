@@ -16,6 +16,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.http import HttpResponse
+
+from administration_app.utils import format_name_initials
 from .models import (
     Equipment, Location, Verification, VerificationDate,
     DestLit, LocationRef, AircraftType, ContractorStatus,
@@ -336,6 +338,7 @@ def dest_lit_update(request, pk):
     return _crud_create_update(request, DestLit, DestLitForm, "ppequipment_app/ref_form.html", obj=obj,
                                title="Редактировать Назн-лит")
 
+
 @login_required
 @permission_required('ppequipment_app.delete_destlit', raise_exception=True)
 def dest_lit_delete(request, pk):
@@ -361,6 +364,7 @@ def location_ref_update(request, pk):
     obj = get_object_or_404(LocationRef, pk=pk)
     return _crud_create_update(request, LocationRef, LocationRefForm, "ppequipment_app/ref_form.html", obj=obj,
                                title="Редактировать местоположение")
+
 
 @login_required
 @permission_required('ppequipment_app.delete_locationref', raise_exception=True)
@@ -389,6 +393,7 @@ def aircraft_type_update(request, pk):
     return _crud_create_update(request, AircraftType, AircraftTypeForm, "ppequipment_app/ref_form.html", obj=obj,
                                title="Редактировать тип ВС")
 
+
 @login_required
 @permission_required('ppequipment_app.delete_aircrafttype', raise_exception=True)
 def aircraft_type_delete(request, pk):
@@ -415,6 +420,7 @@ def contractor_status_update(request, pk):
     obj = get_object_or_404(ContractorStatus, pk=pk)
     return _crud_create_update(request, ContractorStatus, ContractorStatusForm, "ppequipment_app/ref_form.html",
                                obj=obj, title="Редактировать статус контр-раб")
+
 
 @login_required
 @permission_required('ppequipment_app.delete_contractorstatus', raise_exception=True)
@@ -673,16 +679,13 @@ def generate_verification_qr(request, slug):
     # Формируем данные для QR-кода
     qr_data = f"""СВЕРОЧНАЯ ЭТИКЕТКА
 Инв. №: {verification.inventory_number}
-Оборудование: {verification.equipment.name if verification.equipment else "—"}
-Тип ВС: {verification.equipment.aircraft_type if verification.equipment and verification.equipment.aircraft_type else "—"}
-Назн-лит: {verification.equipment.dest_lit if verification.equipment and verification.equipment.dest_lit else "—"}
+ПТД: {verification.equipment.name if verification.equipment else "—"}
 Местоположение: {verification.location_ref if verification.location_ref else "—"}
 Статус: {verification.contractor_status if verification.contractor_status else "—"}
 Последняя сверка: {verification.last_verification_date.strftime('%d.%m.%Y') if verification.last_verification_date else "—"}
-№ ВС: {verification.vs_number if verification.vs_number else "—"}
-Дата оконч.: {verification.end_date.strftime('%d.%m.%Y') if verification.end_date else "—"}
+Ответственный: {format_name_initials(verification.verification_date.verification_responsible.title)}
 Примечание: {verification.notes if verification.notes else "—"}
-Уничтожен: {"Да" if verification.is_destroyed else "Нет"}"""
+"""
 
     # Создаём QR-код
     qr = qrcode.QRCode(

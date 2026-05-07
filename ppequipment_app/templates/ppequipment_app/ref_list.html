@@ -2,13 +2,13 @@
 {% load static %}
 
 {% block title %}
-    <title>
+
         {% if request.resolver_match.url_name == 'dest_lit_list' %}Назначения-лит
         {% elif request.resolver_match.url_name == 'location_ref_list' %}Местоположения (справочник)
         {% elif request.resolver_match.url_name == 'aircraft_type_list' %}Типы ВС
         {% elif request.resolver_match.url_name == 'contractor_status_list' %}Статусы контр-раб
         {% else %}Справочник{% endif %}
-    </title>
+
 {% endblock %}
 
 {% block breadcrumb_title %}

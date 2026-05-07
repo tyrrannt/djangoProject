@@ -2,7 +2,7 @@
 {% load static %}
 {% load custom %}
 
-{% block title %}<title>Печать сверочных этикеток</title>{% endblock %}
+{% block title %}Печать сверочных этикеток{% endblock %}
 
 {% block breadcrumb_title %}Печать этикеток{% endblock %}
 
@@ -197,7 +197,7 @@
             <div class="label-card-wrapper">
                 <!-- QR-код слева -->
                 <div class="label-qr">
-                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}" alt="QR-код">
+                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}?v={{ object.updated_at|date:"U"|default:"0" }}" alt="QR-код">
                 </div>
 
                 <!-- Этикетка справа -->
@@ -216,7 +216,6 @@
                     <div class="label-row">
                         <span class="label-value">{{ label.verification_date.verification_responsible.user_work_profile.job.name }}</span>
                         <span class="label-label">{{ label.verification_date.verification_responsible | FIO_format }}</span>
-
                     </div>
                     <div class="label-row">
                         <span class="label-value">{{ label.verification_date.verification_date|date:"d.m.Y" }}</span>
