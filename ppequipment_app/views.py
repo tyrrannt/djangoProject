@@ -55,19 +55,19 @@ def _run_mdb_table(table_name: str) -> list[dict]:
 # ─── Equipment ───────────────────────────────────────────────────────────────
 @login_required
 def equipment_list(request):
-    qs = Equipment.objects.select_related("aircraft_type", "dest_lit").all()
+    qs = Equipment.objects.select_related("aircraft_type", "dest_lit").exclude(locations__location_ref__name='АРХИВ')
     search = request.GET.get("q", "")
     if search:
         qs = qs.filter(Q(name__icontains=search) | Q(number__icontains=search))
     return render(request, "ppequipment_app/equipment_list.html", {
-        "object_list": qs, "search": search, "title": "Оборудование",
+        "object_list": qs, "search": search, "title": "Производственно техническая документация",
     })
 
 
 def equipment_detail(request, pk):
     obj = get_object_or_404(Equipment.objects.select_related("aircraft_type", "dest_lit"), pk=pk)
     return render(request, "ppequipment_app/equipment_detail.html",
-                  {"object": obj, "title": f"Оборудование #{obj.number}"})
+                  {"object": obj, "title": f"Производственно техническая документация #{obj.number}"})
 
 
 def equipment_create(request):
@@ -75,11 +75,11 @@ def equipment_create(request):
         form = EquipmentForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Оборудование создано")
+            messages.success(request, "ПТД создано")
             return redirect("ppequipment_app:equipment_list")
     else:
         form = EquipmentForm()
-    return render(request, "ppequipment_app/equipment_form.html", {"form": form, "title": "Создать оборудование"})
+    return render(request, "ppequipment_app/equipment_form.html", {"form": form, "title": "Создать ПТД"})
 
 
 def equipment_update(request, pk):
@@ -88,18 +88,18 @@ def equipment_update(request, pk):
         form = EquipmentForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
-            messages.success(request, "Оборудование обновлено")
+            messages.success(request, "ПТД обновлено")
             return redirect("ppequipment_app:equipment_list")
     else:
         form = EquipmentForm(instance=obj)
-    return render(request, "ppequipment_app/equipment_form.html", {"form": form, "title": "Редактировать оборудование"})
+    return render(request, "ppequipment_app/equipment_form.html", {"form": form, "title": "Редактировать ПТД"})
 
 
 def equipment_delete(request, pk):
     obj = get_object_or_404(Equipment, pk=pk)
     if request.method == "POST":
         obj.delete()
-        messages.success(request, "Оборудование удалено")
+        messages.success(request, "ПТД удалено")
         return redirect("ppequipment_app:equipment_list")
     return render(request, "ppequipment_app/confirm_delete.html", {"object": obj})
 

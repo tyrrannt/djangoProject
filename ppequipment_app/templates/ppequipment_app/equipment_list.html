@@ -1,15 +1,15 @@
 {% extends "ppequipment_app/base.html" %}
 {% load static %}
 
-{% block title %}<title>{{ title|default:"Оборудование" }}</title>{% endblock %}
+{% block title %}<title>{{ title|default:"Производственно техническая документация" }}</title>{% endblock %}
 
 {% block page_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">
-        <i class="fas fa-box me-2 text-primary"></i>{{ title|default:"Оборудование" }}
+        <i class="fas fa-box me-2 text-primary"></i>{{ title|default:"Производственно техническая документация" }}
     </h2>
     <a href="{% url 'ppequipment_app:equipment_create' %}" class="btn btn-success">
-        <i class="fas fa-plus me-1"></i>Добавить оборудование
+        <i class="fas fa-plus me-1"></i>Добавить ПТД
     </a>
 </div>
 
@@ -41,7 +41,6 @@
                 <th style="width: 60px;">№</th>
                 <th>Наименование</th>
                 <th>Тип ВС</th>
-                <th style="width: 100px;">Приоритет</th>
                 <th>Назн-лит</th>
                 <th style="width: 200px;">Действия</th>
             </tr>
@@ -56,15 +55,6 @@
                 </td>
                 <td>{{ obj.name|truncatechars:60 }}</td>
                 <td><span class="badge bg-info">{{ obj.aircraft_type|default:"—" }}</span></td>
-                <td>
-                    {% if obj.priority %}
-                        <span class="badge bg-{% if obj.priority > 5 %}danger{% elif obj.priority > 3 %}warning{% else %}success{% endif %}">
-                            {{ obj.priority }}
-                        </span>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
                 <td>{{ obj.dest_lit|default:"—" }}</td>
                 <td>
                     <div class="btn-group btn-group-sm" role="group">

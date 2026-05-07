@@ -89,8 +89,8 @@ class Equipment(models.Model):
 
     class Meta:
         db_table = "ppequipment_equipment"
-        verbose_name = "Оборудование"
-        verbose_name_plural = "Оборудование"
+        verbose_name = "Производственно техническая документация"
+        verbose_name_plural = "Производственно техническая документация"
         ordering = ["number"]
         indexes = [models.Index(fields=["number"], name="equip_number_idx")]
 
@@ -105,7 +105,7 @@ class Location(models.Model):
         on_delete=models.CASCADE,
         related_name="locations",
         db_column="номер",
-        verbose_name="Оборудование",
+        verbose_name="ПТД",
     )
     location_ref = models.ForeignKey(
         LocationRef,
@@ -116,8 +116,8 @@ class Location(models.Model):
 
     class Meta:
         db_table = "ppequipment_location"
-        verbose_name = "Местоположение оборудования"
-        verbose_name_plural = "Местоположения оборудования"
+        verbose_name = "Местоположение ПТД"
+        verbose_name_plural = "Местоположения ПТД"
         constraints = [
             models.UniqueConstraint(fields=["equipment", "location_ref"], name="uq_equip_location")
         ]
@@ -141,7 +141,7 @@ class Verification(models.Model):
         on_delete=models.CASCADE,
         related_name="verifications",
         db_column="номер",
-        verbose_name="Оборудование",
+        verbose_name="ПТД",
         blank=True, null=True,
     )
     inventory_number = models.CharField("Инвентарный №", max_length=50, primary_key=True)

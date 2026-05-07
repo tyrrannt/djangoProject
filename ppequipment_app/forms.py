@@ -12,7 +12,7 @@ class EquipmentForm(forms.ModelForm):
         fields = ["name", "aircraft_type", "edition", "issue", "approved_by",
                   "approval_date", "priority", "dest_lit"]
         widgets = {
-            "approval_date": forms.DateInput(attrs={"type": "date"}),
+            # "approval_date": forms.DateInput(attrs={"type": "date"}),
             "name": forms.Textarea(attrs={"rows": 2}),
             "edition": forms.Textarea(attrs={"rows": 2}),
             "approved_by": forms.Textarea(attrs={"rows": 2}),
@@ -42,11 +42,11 @@ class VerificationForm(forms.ModelForm):
 
     class Meta:
         model = Verification
-        fields = ["location_ref", "equipment", "contractor_status",
+        fields = ["location_ref", "equipment", "contractor_status", 'inventory_number',
                   "last_verification_date", "notes", "vs_number", "end_date", "is_destroyed"]
         widgets = {
-            "last_verification_date": forms.DateInput(attrs={"type": "date"}),
-            "end_date": forms.DateInput(attrs={"type": "date"}),
+            # "last_verification_date": forms.DateInput(attrs={"type": "date"}),
+            # "end_date": forms.DateInput(attrs={"type": "date"}),
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
@@ -62,9 +62,9 @@ class VerificationDateForm(forms.ModelForm):
     class Meta:
         model = VerificationDate
         fields = ["verification_date"]
-        widgets = {
-            "verification_date": forms.DateInput(attrs={"type": "date"}),
-        }
+        # widgets = {
+        #     "verification_date": forms.DateInput(attrs={"type": "date"}),
+        # }
 
     def __init__(self, *args, **kwargs):
         super(VerificationDateForm, self).__init__(*args, **kwargs)
