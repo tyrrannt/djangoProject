@@ -42,7 +42,7 @@ class VerificationForm(forms.ModelForm):
 
     class Meta:
         model = Verification
-        fields = ["location_ref", "equipment", "contractor_status", 'inventory_number',
+        fields = ["location_ref", "equipment", "contractor_status", 'inventory_number', "verification_date",
                   "last_verification_date", "notes", "vs_number", "end_date", "is_destroyed"]
         widgets = {
             # "last_verification_date": forms.DateInput(attrs={"type": "date"}),
@@ -61,7 +61,7 @@ class VerificationDateForm(forms.ModelForm):
 
     class Meta:
         model = VerificationDate
-        fields = ["verification_date"]
+        fields = ["verification_date", "verification_responsible"]
         # widgets = {
         #     "verification_date": forms.DateInput(attrs={"type": "date"}),
         # }

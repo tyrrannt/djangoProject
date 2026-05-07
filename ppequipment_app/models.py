@@ -152,6 +152,13 @@ class Verification(models.Model):
         verbose_name="Контр-раб",
         blank=True, null=True,
     )
+    verification_date = models.ForeignKey(
+        "ppequipment_app.VerificationDate",
+        on_delete=models.SET_NULL,
+        related_name="verifications_date",
+        verbose_name="Дата сверки",
+        blank=True, null=True,
+    )
     last_verification_date = models.DateField("Последняя сверка", blank=True, null=True)
     notes = models.TextField("Примечание", blank=True, null=True)
     vs_number = models.CharField("№ ВС", max_length=5, blank=True, null=True)
@@ -196,6 +203,8 @@ class Verification(models.Model):
 class VerificationDate(models.Model):
     """Даты сверок (таблица «Таблица дата сверки»)"""
     verification_date = models.DateField("Дата сверки", blank=True, null=True)
+    verification_responsible = models.ForeignKey('customers_app.DataBaseUser', on_delete=models.SET_NULL, blank=True, null=True)
+
 
     class Meta:
         db_table = "ppequipment_verification_date"
