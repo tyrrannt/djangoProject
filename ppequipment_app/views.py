@@ -11,7 +11,7 @@ from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers import CircleModuleDrawer
 from PIL import Image, ImageDraw, ImageFont
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
@@ -54,6 +54,7 @@ def _run_mdb_table(table_name: str) -> list[dict]:
 
 # ─── Equipment ───────────────────────────────────────────────────────────────
 @login_required
+@permission_required('ppequipment_app.view_equipment', raise_exception=True)
 def equipment_list(request):
     qs = Equipment.objects.select_related("aircraft_type", "dest_lit").exclude(locations__location_ref__name='АРХИВ')
     search = request.GET.get("q", "")
@@ -64,12 +65,16 @@ def equipment_list(request):
     })
 
 
+@login_required
+@permission_required('ppequipment_app.view_equipment', raise_exception=True)
 def equipment_detail(request, pk):
     obj = get_object_or_404(Equipment.objects.select_related("aircraft_type", "dest_lit"), pk=pk)
     return render(request, "ppequipment_app/equipment_detail.html",
                   {"object": obj, "title": f"Производственно техническая документация #{obj.number}"})
 
 
+@login_required
+@permission_required('ppequipment_app.add_equipment', raise_exception=True)
 def equipment_create(request):
     if request.method == "POST":
         form = EquipmentForm(request.POST)
@@ -82,6 +87,8 @@ def equipment_create(request):
     return render(request, "ppequipment_app/equipment_form.html", {"form": form, "title": "Создать ПТД"})
 
 
+@login_required
+@permission_required('ppequipment_app.change_equipment', raise_exception=True)
 def equipment_update(request, pk):
     obj = get_object_or_404(Equipment, pk=pk)
     if request.method == "POST":
@@ -95,6 +102,8 @@ def equipment_update(request, pk):
     return render(request, "ppequipment_app/equipment_form.html", {"form": form, "title": "Редактировать ПТД"})
 
 
+@login_required
+@permission_required('ppequipment_app.delete_equipment', raise_exception=True)
 def equipment_delete(request, pk):
     obj = get_object_or_404(Equipment, pk=pk)
     if request.method == "POST":
@@ -105,6 +114,8 @@ def equipment_delete(request, pk):
 
 
 # ─── Verification ────────────────────────────────────────────────────────────
+@login_required
+@permission_required('ppequipment_app.view_verification', raise_exception=True)
 def verification_list(request):
     qs = Verification.objects.select_related("equipment", "location_ref", "contractor_status").all()
     search = request.GET.get("q", "")
@@ -118,6 +129,8 @@ def verification_list(request):
     })
 
 
+@login_required
+@permission_required('ppequipment_app.view_verification', raise_exception=True)
 def verification_detail(request, slug):
     obj = get_object_or_404(Verification.objects.select_related("equipment", "location_ref", "contractor_status"),
                             slug=slug)
@@ -125,6 +138,8 @@ def verification_detail(request, slug):
                   {"object": obj, "title": f"Сверка {obj.inventory_number}"})
 
 
+@login_required
+@permission_required('ppequipment_app.add_verification', raise_exception=True)
 def verification_create(request):
     if request.method == "POST":
         form = VerificationForm(request.POST)
@@ -137,6 +152,8 @@ def verification_create(request):
     return render(request, "ppequipment_app/verification_form.html", {"form": form, "title": "Создать сверку"})
 
 
+@login_required
+@permission_required('ppequipment_app.change_verification', raise_exception=True)
 def verification_update(request, slug):
     obj = get_object_or_404(Verification, slug=slug)
     if request.method == "POST":
@@ -150,6 +167,8 @@ def verification_update(request, slug):
     return render(request, "ppequipment_app/verification_form.html", {"form": form, "title": "Редактировать сверку"})
 
 
+@login_required
+@permission_required('ppequipment_app.delete_verification', raise_exception=True)
 def verification_delete(request, slug):
     obj = get_object_or_404(Verification, slug=slug)
     if request.method == "POST":
@@ -160,12 +179,16 @@ def verification_delete(request, slug):
 
 
 # ─── Location ────────────────────────────────────────────────────────────────
+@login_required
+@permission_required('ppequipment_app.view_location', raise_exception=True)
 def location_list(request):
     qs = Location.objects.select_related("equipment", "location_ref").all()
     return render(request, "ppequipment_app/location_list.html",
                   {"object_list": qs, "title": "Местоположения оборудования"})
 
 
+@login_required
+@permission_required('ppequipment_app.add_location', raise_exception=True)
 def location_create(request):
     if request.method == "POST":
         form = LocationForm(request.POST)
@@ -178,6 +201,8 @@ def location_create(request):
     return render(request, "ppequipment_app/location_form.html", {"form": form, "title": "Создать местоположение"})
 
 
+@login_required
+@permission_required('ppequipment_app.change_location', raise_exception=True)
 def location_update(request, pk):
     obj = get_object_or_404(Location, pk=pk)
     if request.method == "POST":
@@ -192,6 +217,8 @@ def location_update(request, pk):
                   {"form": form, "title": "Редактировать местоположение"})
 
 
+@login_required
+@permission_required('ppequipment_app.delete_location', raise_exception=True)
 def location_delete(request, pk):
     obj = get_object_or_404(Location, pk=pk)
     if request.method == "POST":
@@ -202,11 +229,15 @@ def location_delete(request, pk):
 
 
 # ─── VerificationDate ────────────────────────────────────────────────────────
+@login_required
+@permission_required('ppequipment_app.view_verificationdate', raise_exception=True)
 def verification_date_list(request):
     qs = VerificationDate.objects.all().order_by("-verification_date")
     return render(request, "ppequipment_app/verificationdate_list.html", {"object_list": qs, "title": "Даты сверок"})
 
 
+@login_required
+@permission_required('ppequipment_app.add_verificationdate', raise_exception=True)
 def verification_date_create(request):
     if request.method == "POST":
         form = VerificationDateForm(request.POST)
@@ -219,6 +250,8 @@ def verification_date_create(request):
     return render(request, "ppequipment_app/verificationdate_form.html", {"form": form, "title": "Создать дату сверки"})
 
 
+@login_required
+@permission_required('ppequipment_app.change_verificationdate', raise_exception=True)
 def verification_date_update(request, pk):
     obj = get_object_or_404(VerificationDate, pk=pk)
     if request.method == "POST":
@@ -233,6 +266,8 @@ def verification_date_update(request, pk):
                   {"form": form, "title": "Редактировать дату сверки"})
 
 
+@login_required
+@permission_required('ppequipment_app.delete_verificationdate', raise_exception=True)
 def verification_date_delete(request, pk):
     obj = get_object_or_404(VerificationDate, pk=pk)
     if request.method == "POST":
@@ -244,6 +279,11 @@ def verification_date_delete(request, pk):
 
 # ─── Справочники CRUD ────────────────────────────────────────────────────────
 def _crud_list(request, model, template, context_name, search_fields=None):
+    """Список для справочников - доступ только авторизованным"""
+    if not request.user.is_authenticated:
+        messages.error(request, "Необходимо авторизоваться для просмотра")
+        return redirect('customers_app:login')
+
     qs = model.objects.all()
     search = request.GET.get("q", "")
     if search and search_fields:
@@ -255,6 +295,22 @@ def _crud_list(request, model, template, context_name, search_fields=None):
 
 
 def _crud_create_update(request, model, form_class, template, obj=None, title=""):
+    """Создание/обновление для справочников - проверка прав внутри"""
+    if not request.user.is_authenticated:
+        messages.error(request, "Необходимо авторизоваться")
+        return redirect('customers_app:login')
+
+    # Определяем имя модели для проверки прав
+    model_name = model._meta.model_name
+    is_edit = obj is not None
+
+    if is_edit and not request.user.has_perm(f'ppequipment_app.change_{model_name}'):
+        messages.error(request, f"У вас нет прав на изменение {model._meta.verbose_name}")
+        return redirect(f'ppequipment_app:{model_name}_list')
+    elif not is_edit and not request.user.has_perm(f'ppequipment_app.add_{model_name}'):
+        messages.error(request, f"У вас нет прав на создание {model._meta.verbose_name}")
+        return redirect(f'ppequipment_app:{model_name}_list')
+
     if request.method == "POST":
         form = form_class(request.POST, instance=obj)
         if form.is_valid():
@@ -280,7 +336,8 @@ def dest_lit_update(request, pk):
     return _crud_create_update(request, DestLit, DestLitForm, "ppequipment_app/ref_form.html", obj=obj,
                                title="Редактировать Назн-лит")
 
-
+@login_required
+@permission_required('ppequipment_app.delete_destlit', raise_exception=True)
 def dest_lit_delete(request, pk):
     obj = get_object_or_404(DestLit, pk=pk)
     if request.method == "POST":
@@ -305,7 +362,8 @@ def location_ref_update(request, pk):
     return _crud_create_update(request, LocationRef, LocationRefForm, "ppequipment_app/ref_form.html", obj=obj,
                                title="Редактировать местоположение")
 
-
+@login_required
+@permission_required('ppequipment_app.delete_locationref', raise_exception=True)
 def location_ref_delete(request, pk):
     obj = get_object_or_404(LocationRef, pk=pk)
     if request.method == "POST":
@@ -331,7 +389,8 @@ def aircraft_type_update(request, pk):
     return _crud_create_update(request, AircraftType, AircraftTypeForm, "ppequipment_app/ref_form.html", obj=obj,
                                title="Редактировать тип ВС")
 
-
+@login_required
+@permission_required('ppequipment_app.delete_aircrafttype', raise_exception=True)
 def aircraft_type_delete(request, pk):
     obj = get_object_or_404(AircraftType, pk=pk)
     if request.method == "POST":
@@ -357,7 +416,8 @@ def contractor_status_update(request, pk):
     return _crud_create_update(request, ContractorStatus, ContractorStatusForm, "ppequipment_app/ref_form.html",
                                obj=obj, title="Редактировать статус контр-раб")
 
-
+@login_required
+@permission_required('ppequipment_app.delete_contractorstatus', raise_exception=True)
 def contractor_status_delete(request, pk):
     obj = get_object_or_404(ContractorStatus, pk=pk)
     if request.method == "POST":
