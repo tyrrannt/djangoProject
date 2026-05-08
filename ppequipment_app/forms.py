@@ -29,12 +29,50 @@ class LocationForm(forms.ModelForm):
 
     class Meta:
         model = Location
-        fields = ["equipment", "location_ref"]
+        fields = ["equipment", "location_ref", "location_date"]
 
     def __init__(self, *args, **kwargs):
         super(LocationForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+
+class BulkLocationMoveForm(forms.Form):
+    """Форма для массового перемещения оборудования"""
+    equipment_ids = forms.ModelMultipleChoiceField(
+        queryset=Equipment.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Выберите оборудование"
+    )
+    new_location = forms.ModelChoiceField(
+        queryset=LocationRef.objects.all(),
+        required=True,
+        label="Новое местоположение",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    location_date = forms.DateField(
+        required=False,
+        label="Дата перемещения",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Исключаем оборудование, уже находящееся в архиве
+        archived_equipment_ids = Location.objects.filter(
+            location_ref__name='АРХИВ'
+        ).values_list('equipment_id', flat=True)
+
+        self.fields['equipment_ids'].queryset = Equipment.objects.exclude(
+            pk__in=archived_equipment_ids
+        ).order_by('number')
+
+    def clean_equipment_ids(self):
+        equipment_ids = self.cleaned_data.get('equipment_ids')
+        if not equipment_ids:
+            raise forms.ValidationError("Выберите хотя бы одно оборудование")
+        return equipment_ids
 
 
 class VerificationForm(forms.ModelForm):

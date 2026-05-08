@@ -23,6 +23,7 @@ urlpatterns = [
     # Местоположения
     path('locations/', views.location_list, name='location_list'),
     path('locations/create/', views.location_create, name='location_create'),
+    path('location/bulk-move/', views.bulk_location_move, name='bulk_location_move'),
     path('locations/<int:pk>/update/', views.location_update, name='location_update'),
     path('locations/<int:pk>/delete/', views.location_delete, name='location_delete'),
 

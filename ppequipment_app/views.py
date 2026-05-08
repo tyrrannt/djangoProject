@@ -7,6 +7,8 @@ from datetime import datetime
 from io import BytesIO
 
 import qrcode
+from django.db import transaction
+from django.utils import timezone
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers import CircleModuleDrawer
 from PIL import Image, ImageDraw, ImageFont
@@ -15,7 +17,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 from administration_app.utils import format_name_initials
 from .models import (
@@ -25,7 +27,7 @@ from .models import (
 from .forms import (
     EquipmentForm, LocationForm, VerificationForm, VerificationDateForm,
     DestLitForm, LocationRefForm, AircraftTypeForm, ContractorStatusForm,
-    VerificationLabelForm,
+    VerificationLabelForm, BulkLocationMoveForm,
 )
 
 MDB_FILE = os.path.join(os.path.dirname(__file__), "inventory.mdb")
@@ -119,7 +121,13 @@ def equipment_delete(request, pk):
 @login_required
 @permission_required('ppequipment_app.view_verification', raise_exception=True)
 def verification_list(request):
-    qs = Verification.objects.select_related("equipment", "location_ref", "contractor_status").all()
+    archived_equipment = Location.objects.filter(
+        location_ref__name='АРХИВ'
+    ).values_list('equipment_id', flat=True)
+
+    qs = Verification.objects.select_related("equipment", "location_ref", "contractor_status").exclude(
+        equipment__in=archived_equipment
+    ).all()
     search = request.GET.get("q", "")
     if search:
         qs = qs.filter(
@@ -184,9 +192,16 @@ def verification_delete(request, slug):
 @login_required
 @permission_required('ppequipment_app.view_location', raise_exception=True)
 def location_list(request):
-    qs = Location.objects.select_related("equipment", "location_ref").all()
+    # Исключаем все оборудования, у которых есть хотя бы одно местоположение "АРХИВ"
+    archived_equipment = Location.objects.filter(
+        location_ref__name='АРХИВ'
+    ).values_list('equipment_id', flat=True)
+
+    qs = Location.objects.select_related("equipment", "location_ref").exclude(
+        equipment_id__in=archived_equipment
+    ).all()
     return render(request, "ppequipment_app/location_list.html",
-                  {"object_list": qs, "title": "Местоположения оборудования"})
+                  {"object_list": qs, "title": "Местоположения ПТД"})
 
 
 @login_required
@@ -201,6 +216,104 @@ def location_create(request):
     else:
         form = LocationForm()
     return render(request, "ppequipment_app/location_form.html", {"form": form, "title": "Создать местоположение"})
+
+
+@login_required
+@permission_required('ppequipment_app.change_location', raise_exception=True)
+# views.py
+@login_required
+@permission_required('ppequipment_app.change_location', raise_exception=True)
+def bulk_location_move(request):
+    """Массовое перемещение оборудования"""
+    if request.method == "POST":
+        form = BulkLocationMoveForm(request.POST)
+        if form.is_valid():
+            equipment_ids = form.cleaned_data['equipment_ids']
+            new_location = form.cleaned_data['new_location']
+            location_date = form.cleaned_data.get('location_date')
+
+            moved_count = 0
+            errors = []
+
+            with transaction.atomic():
+                for equipment in equipment_ids:
+                    try:
+                        # Проверяем, есть ли уже такая связь
+                        location, created = Location.objects.update_or_create(
+                            equipment=equipment,
+                            location_ref=new_location,
+                            defaults={'location_date': location_date or timezone.now().date()}
+                        )
+
+                        if created:
+                            moved_count += 1
+
+                    except Exception as e:
+                        errors.append(f"{equipment.number}: {str(e)}")
+
+            if errors:
+                messages.warning(request, f"Перемещено {moved_count} позиций. Ошибки: {', '.join(errors[:5])}")
+            else:
+                messages.success(request, f"Успешно перемещено {moved_count} позиций в '{new_location.name}'")
+
+            return redirect("ppequipment_app:location_list")
+        else:
+            # Если форма не валидна, выводим ошибки
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = BulkLocationMoveForm()
+
+    return render(request, "ppequipment_app/bulk_location_move.html", {
+        "form": form,
+        "title": "Массовое перемещение оборудования"
+    })
+
+@login_required
+@permission_required('ppequipment_app.view_equipment', raise_exception=True)
+def search_equipment_ajax(request):
+    """AJAX поиск оборудования для массового перемещения"""
+    search = request.GET.get('q', '')
+    page = int(request.GET.get('page', 1))
+    page_size = 20
+
+    equipment_list = Equipment.objects.select_related('dest_lit', 'aircraft_type')
+
+    # Исключаем оборудование в архиве
+    archived_equipment_ids = Location.objects.filter(
+        location_ref__name='АРХИВ'
+    ).values_list('equipment_id', flat=True)
+
+    equipment_list = equipment_list.exclude(id__in=archived_equipment_ids)
+
+    if search:
+        equipment_list = equipment_list.filter(
+            Q(number__icontains=search) |
+            Q(name__icontains=search)
+        )
+
+    total = equipment_list.count()
+    start = (page - 1) * page_size
+    equipment_list = equipment_list[start:start + page_size]
+
+    data = {
+        'results': [
+            {
+                'id': eq.id,
+                'number': eq.number,
+                'name': eq.name,
+                'dest_lit': str(eq.dest_lit) if eq.dest_lit else '',
+                'aircraft_type': str(eq.aircraft_type) if eq.aircraft_type else ''
+            }
+            for eq in equipment_list
+        ],
+        'total': total,
+        'page': page,
+        'has_next': start + page_size < total
+    }
+
+    return JsonResponse(data)
 
 
 @login_required
@@ -677,15 +790,13 @@ def generate_verification_qr(request, slug):
     )
 
     # Формируем данные для QR-кода
-    qr_data = f"""СВЕРОЧНАЯ ЭТИКЕТКА
-Инв. №: {verification.inventory_number}
+    qr_data = f"""Инв. №: {verification.inventory_number}
 ПТД: {verification.equipment.name if verification.equipment else "—"}
 Местоположение: {verification.location_ref if verification.location_ref else "—"}
 Статус: {verification.contractor_status if verification.contractor_status else "—"}
-Последняя сверка: {verification.last_verification_date.strftime('%d.%m.%Y') if verification.last_verification_date else "—"}
+Последняя сверка: {verification.verification_date.verification_date.strftime('%d.%m.%Y') if verification.verification_date.verification_date else "—"}
 Ответственный: {format_name_initials(verification.verification_date.verification_responsible.title)}
-Примечание: {verification.notes if verification.notes else "—"}
-"""
+Примечание: {verification.notes if verification.notes else "—"}"""
 
     # Создаём QR-код
     qr = qrcode.QRCode(

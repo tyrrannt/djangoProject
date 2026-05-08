@@ -113,6 +113,7 @@ class Location(models.Model):
         related_name="location_entries",
         verbose_name="Местоположение",
     )
+    location_date = models.DateField(verbose_name="Дата перемещения", blank=True, null=True)
 
     class Meta:
         db_table = "ppequipment_location"

@@ -1,0 +1,264 @@
+<!-- templates/ppequipment_app/bulk_location_move.html -->
+{% extends "ppequipment_app/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" id="bulkMoveForm">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.new_location.id_for_label }}">Новое местоположение:</label>
+                                    {{ form.new_location }}
+                                    {% if form.new_location.errors %}
+                                        <div class="text-danger">{{ form.new_location.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="{{ form.location_date.id_for_label }}">Дата перемещения (опционально):</label>
+                                    {{ form.location_date }}
+                                    {% if form.location_date.errors %}
+                                        <div class="text-danger">{{ form.location_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Выберите оборудование</h4>
+                                        <div class="row mt-2">
+                                            <div class="col-md-6">
+                                                <input type="text" id="searchInput" class="form-control"
+                                                       placeholder="Поиск по номеру или названию...">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button type="button" id="selectAllBtn" class="btn btn-secondary w-100">
+                                                    Выбрать все
+                                                </button>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button type="button" id="clearAllBtn" class="btn btn-secondary w-100">
+                                                    Очистить
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% if form.equipment_ids.errors %}
+                                            <div class="text-danger mt-2">{{ form.equipment_ids.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                                        <div id="equipmentList">
+                                            {{ form.equipment_ids }}
+                                        </div>
+                                        <div id="noResults" style="display: none;" class="text-center text-muted p-3">
+                                            Оборудование не найдено
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    Переместить выбранное (0)
+                                </button>
+                                <a href="{% url 'ppequipment_app:location_list' %}" class="btn btn-secondary">
+                                    Отмена
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Получаем все чекбоксы после того, как Django их отрендерил
+    const form = document.getElementById('bulkMoveForm');
+    let allCheckboxes = [];
+    let submitBtn = document.getElementById('submitBtn');
+
+    function updateCheckboxes() {
+        allCheckboxes = Array.from(document.querySelectorAll('input[name="equipment_ids"]'));
+        updateSelectedCount();
+
+        // Добавляем обработчики к чекбоксам
+        allCheckboxes.forEach(checkbox => {
+            checkbox.removeEventListener('change', updateSelectedCount);
+            checkbox.addEventListener('change', updateSelectedCount);
+        });
+    }
+
+    function updateSelectedCount() {
+        const selected = allCheckboxes.filter(cb => cb.checked).length;
+        if (submitBtn) {
+            submitBtn.textContent = `Переместить выбранное (${selected})`;
+        }
+    }
+
+    function enhanceCheckboxes() {
+        // Улучшаем отображение чекбоксов
+        const checkboxes = document.querySelectorAll('input[name="equipment_ids"]');
+        checkboxes.forEach(checkbox => {
+            // Находим родительский label, который создает Django
+            const label = checkbox.closest('label');
+            if (label && !label.classList.contains('enhanced')) {
+                label.classList.add('list-group-item', 'equipment-row', 'enhanced');
+
+                // Получаем ID оборудования из value
+                const equipmentId = checkbox.value;
+
+                // Находим данные оборудования через data-атрибуты или через текст
+                const labelText = label.textContent;
+
+                // Стилизуем
+                label.style.cursor = 'pointer';
+                label.style.marginBottom = '5px';
+                label.style.border = '1px solid #dee2e6';
+                label.style.borderRadius = '0.25rem';
+                label.style.padding = '0.75rem 1.25rem';
+
+                checkbox.style.marginRight = '10px';
+            }
+        });
+    }
+
+    // Поиск и фильтрация
+    const searchInput = document.getElementById('searchInput');
+    const noResults = document.getElementById('noResults');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+
+    function filterEquipment() {
+        if (!searchInput) return;
+
+        const searchTerm = searchInput.value.toLowerCase();
+        let hasVisible = false;
+
+        const rows = document.querySelectorAll('.equipment-row');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                row.style.display = '';
+                hasVisible = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (noResults) {
+            noResults.style.display = hasVisible ? 'none' : 'block';
+        }
+    }
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            const visibleRows = document.querySelectorAll('.equipment-row[style=""]');
+            if (visibleRows.length === 0) {
+                // Если нет явно видимых, то фильтруем по display != none
+                allCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('.equipment-row');
+                    if (row && row.style.display !== 'none') {
+                        checkbox.checked = true;
+                    }
+                });
+            } else {
+                visibleRows.forEach(row => {
+                    const checkbox = row.querySelector('input[name="equipment_ids"]');
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+            updateSelectedCount();
+        });
+    }
+
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', function() {
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(filterEquipment, 300);
+        });
+    }
+
+    // Инициализация через MutationObserver для отслеживания появления чекбоксов
+    const observer = new MutationObserver(function(mutations) {
+        updateCheckboxes();
+        enhanceCheckboxes();
+    });
+
+    observer.observe(document.getElementById('equipmentList'), {
+        childList: true,
+        subtree: true
+    });
+
+    // Первоначальная инициализация
+    setTimeout(function() {
+        updateCheckboxes();
+        enhanceCheckboxes();
+        filterEquipment();
+    }, 100);
+});
+</script>
+
+<style>
+.equipment-row {
+    transition: background-color 0.2s;
+}
+
+.equipment-row:hover {
+    background-color: #f8f9fa;
+}
+
+.equipment-row input[type="checkbox"] {
+    transform: scale(1.1);
+}
+
+#equipmentList ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#equipmentList li {
+    list-style: none;
+}
+</style>
+{% endblock %}
