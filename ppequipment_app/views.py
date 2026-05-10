@@ -220,9 +220,6 @@ def location_create(request):
 
 @login_required
 @permission_required('ppequipment_app.change_location', raise_exception=True)
-# views.py
-@login_required
-@permission_required('ppequipment_app.change_location', raise_exception=True)
 def bulk_location_move(request):
     """Массовое перемещение оборудования"""
     if request.method == "POST":
@@ -267,8 +264,9 @@ def bulk_location_move(request):
 
     return render(request, "ppequipment_app/bulk_location_move.html", {
         "form": form,
-        "title": "Массовое перемещение оборудования"
+        "title": "Массовое перемещение ПТД"
     })
+
 
 @login_required
 @permission_required('ppequipment_app.view_equipment', raise_exception=True)
