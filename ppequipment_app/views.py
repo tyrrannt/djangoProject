@@ -786,14 +786,24 @@ def generate_verification_qr(request, slug):
         ),
         slug=slug,
     )
+    try:
+        vd = verification.verification_date.verification_date.strftime('%d.%m.%Y')
+    except Exception as e:
+        vd = 'отсутствует'
+
+    try:
+        vr = format_name_initials(verification.verification_date.verification_responsible.title)
+    except Exception as e:
+        vr = 'неизвестен'
+
 
     # Формируем данные для QR-кода
     qr_data = f"""Инв. №: {verification.inventory_number}
 ПТД: {verification.equipment.name if verification.equipment else "—"}
 Местоположение: {verification.location_ref if verification.location_ref else "—"}
 Статус: {verification.contractor_status if verification.contractor_status else "—"}
-Последняя сверка: {verification.verification_date.verification_date.strftime('%d.%m.%Y') if verification.verification_date.verification_date else "—"}
-Ответственный: {format_name_initials(verification.verification_date.verification_responsible.title)}
+Последняя сверка: {vd}
+Ответственный: {vr}
 Примечание: {verification.notes if verification.notes else "—"}"""
 
     # Создаём QR-код

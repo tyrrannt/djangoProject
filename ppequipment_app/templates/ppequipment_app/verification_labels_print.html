@@ -208,8 +208,10 @@
             <div class="label-card-wrapper">
                 <!-- QR-код слева -->
                 <div class="label-qr">
-                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}?v={{ object.updated_at|date:"U"|default:"0" }}"
+                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}"
                          alt="QR-код">
+{#                    <img src="{% url 'ppequipment_app:verification_qr' label.slug %}?v={{ object.updated_at|date:"U"|default:"0" }}"#}
+{#                         alt="QR-код">#}
                 </div>
 
                 <!-- Этикетка справа -->
