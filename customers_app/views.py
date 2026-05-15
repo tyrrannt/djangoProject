@@ -17,12 +17,13 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction, OperationalError
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q, F, ForeignKey, Count
 from django.http import JsonResponse, QueryDict, HttpResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
-from django.views.generic import DetailView, UpdateView, CreateView, ListView, TemplateView
+from django.views.generic import DetailView, UpdateView, CreateView, ListView, TemplateView, DeleteView
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers import CircleModuleDrawer
 from rest_framework import viewsets
@@ -38,13 +39,14 @@ from customers_app.customers_util import get_database_user_work_profile, get_dat
     get_settlement_sheet, get_vacation_days
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments, \
-    UserStats, Apartments
+    UserStats, Apartments, BiometricConsent
 from customers_app.models import DataBaseUserProfile as UserProfile
 from customers_app.forms import DataBaseUserLoginForm, DataBaseUserRegisterForm, PostsAddForm, \
     CounteragentUpdateForm, StaffUpdateForm, DivisionsAddForm, DivisionsUpdateForm, JobsAddForm, JobsUpdateForm, \
     CounteragentAddForm, PostsUpdateForm, GroupAddForm, GroupUpdateForm, ChangePassPraseUpdateForm, \
-    ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm
-from django.contrib import auth
+    ChangeAvatarUpdateForm, CounteragentDocumentsAddForm, CounteragentDocumentsUpdateForm, BiometricConsentFilterForm, \
+    BiometricConsentForm
+from django.contrib import auth, messages
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
 
@@ -2419,7 +2421,264 @@ def _export_report_csv(apartments_data, date_start, date_end):
         ])
 
     return response
+
+############## Согласия на ПНД и БД #############################
+
+class BiometricConsentListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    """
+    Список всех согласий на биометрию
+    """
+    model = BiometricConsent
+    context_object_name = 'consents'
+    paginate_by = 20
+    permission_required = 'customers_app.view_biometricconsent'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Фильтрация по сотруднику
+        employee_id = self.request.GET.get('employee_id')
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+
+        # Фильтрация по статусу
+        is_active = self.request.GET.get('is_active')
+        if is_active in ['True', 'False']:
+            queryset = queryset.filter(is_active=is_active == 'True')
+
+        # Поиск по номеру или ФИО
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(consent_number__icontains=search) |
+                Q(employee_full_name__icontains=search) |
+                Q(employee__last_name__icontains=search) |
+                Q(employee__first_name__icontains=search)
+            )
+
+        # Сортировка
+        order_by = self.request.GET.get('order_by', '-consent_date')
+        if order_by:
+            queryset = queryset.order_by(order_by)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filter_form'] = BiometricConsentFilterForm(self.request.GET)
+
+        # Передаем ID сотрудника для фильтрации в шаблоне
+        employee_id = self.request.GET.get('employee_id')
+        if employee_id:
+            context['current_employee'] = get_object_or_404(
+                DataBaseUser,
+                id=employee_id
+            )
+
+        return context
+
+
+class BiometricConsentDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    """
+    Просмотр деталей согласия
+    """
+    model = BiometricConsent
+    context_object_name = 'consent'
+    permission_required = 'customers_app.view_biometricconsent'
+
+
+class BiometricConsentCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    """
+    Создание нового согласия
+    """
+    model = BiometricConsent
+    form_class = BiometricConsentForm
+    permission_required = 'customers_app.add_biometricconsent'
+
+    def get_initial(self):
+        initial = super().get_initial()
+
+        # Если передан ID сотрудника в GET параметре
+        employee_id = self.request.GET.get('employee_id')
+        if employee_id:
+            try:
+                employee = DataBaseUser.objects.get(id=employee_id)
+                initial['employee'] = employee
+                initial['employee_full_name'] = employee.get_title()
+
+                # Подставляем должность, если есть
+                if employee.user_work_profile and employee.user_work_profile.job:
+                    initial['employee_position'] = str(employee.user_work_profile.job)
+            except DataBaseUser.DoesNotExist:
+                pass
+
+        return initial
+
+    def form_valid(self, form):
+        # Автоматически устанавливаем создателя
+        form.instance.created_by = self.request.user
+
+        # Генерация номера согласия, если не заполнен
+        if not form.instance.consent_number:
+            form.instance.consent_number = self.generate_consent_number()
+
+        response = super().form_valid(form)
+        messages.success(self.request, f'Согласие №{form.instance.consent_number} успешно создано')
+        return response
+
+    def generate_consent_number(self):
+        """
+        Генерация уникального номера согласия
+        Формат: БС-ГГГГММДД-XXX
+        """
+        from datetime import datetime
+
+        date_str = datetime.now().strftime('%Y%m%d')
+        prefix = f"БС-{date_str}"
+
+        # Находим последний номер с таким префиксом
+        last_consent = BiometricConsent.objects.filter(
+            consent_number__startswith=prefix
+        ).order_by('-consent_number').first()
+
+        if last_consent:
+            last_num = int(last_consent.consent_number.split('-')[-1])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}-{new_num:03d}"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Создание согласия на биометрию'
+        context['button_text'] = 'Создать'
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('customers_app:biometric_consent_detail', kwargs={'pk': self.object.pk})
+
+
+class BiometricConsentUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """
+    Редактирование согласия
+    """
+    model = BiometricConsent
+    form_class = BiometricConsentForm
+    permission_required = 'customers_app.change_biometricconsent'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        # Обновляем ФИО и должность, если они не были изменены вручную
+        if not form.cleaned_data.get('employee_full_name'):
+            form.instance.employee_full_name = form.instance.employee.get_title()
+
+        if not form.cleaned_data.get('employee_position') and form.instance.employee.user_work_profile:
+            if form.instance.employee.user_work_profile.job:
+                form.instance.employee_position = str(form.instance.employee.user_work_profile.job)
+
+        form.instance.save()
+        messages.success(self.request, f'Согласие №{form.instance.consent_number} успешно обновлено')
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Редактирование согласия на биометрию'
+        context['button_text'] = 'Сохранить'
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('customers_app:biometric_consent_detail', kwargs={'pk': self.object.pk})
+
+
+class BiometricConsentDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    """
+    Удаление согласия
+    """
+    model = BiometricConsent
+    permission_required = 'customers_app.delete_biometricconsent'
+    success_url = reverse_lazy('customers_app:biometric_consent_list')
+
+    def delete(self, request, *args, **kwargs):
+        consent = self.get_object()
+        consent_number = consent.consent_number
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f'Согласие №{consent_number} успешно удалено')
+        return response
+
+
+class EmployeeBiometricConsentsListView(BiometricConsentListView):
+    """
+    Список согласий конкретного сотрудника (для встраивания в профиль)
+    """
+    template_name = 'customers_app/employee_consents_list.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.employee = get_object_or_404(DataBaseUser, id=kwargs.get('employee_id'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return super().get_queryset().filter(employee=self.employee)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['employee'] = self.employee
+        return context
+
+
+class BiometricConsentRevokeView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    """
+    Отзыв согласия (специальное действие)
+    """
+    model = BiometricConsent
+    fields = ['revocation_date']
+    template_name = 'customers_app/revoke_form.html'
+    permission_required = 'customers_app.change_biometricconsent'
+
+    def get_initial(self):
+        initial = super().get_initial()
+        from datetime import date
+        initial['revocation_date'] = date.today()
+        return initial
+
+    def form_valid(self, form):
+        form.instance.is_active = False
+        if not form.instance.revocation_date:
+            from datetime import date
+            form.instance.revocation_date = date.today()
+
+        response = super().form_valid(form)
+        messages.success(self.request, f'Согласие №{form.instance.consent_number} отозвано')
+        return response
+
+    def get_success_url(self):
+        return reverse_lazy('customers_app:biometric_consent_detail', kwargs={'pk': self.object.pk})
+
+
+class ApiGetEmployeeConsentStatusView(LoginRequiredMixin, View):
+    """
+    API для получения статуса согласия сотрудника (для AJAX)
+    """
+
+    def get(self, request, employee_id):
+        try:
+            employee = DataBaseUser.objects.get(id=employee_id)
+            last_active_consent = employee.biometric_consents.filter(
+                is_active=True
+            ).first()
+
+            return JsonResponse({
+                'has_active_consent': bool(last_active_consent),
+                'consent_number': last_active_consent.consent_number if last_active_consent else None,
+                'consent_date': last_active_consent.consent_date if last_active_consent else None,
+            })
+        except DataBaseUser.DoesNotExist:
+            return JsonResponse({'error': 'Сотрудник не найден'}, status=404)
+
+
 # ----------------------------------------- DRF -----------------------------------------
 class DataBaseUserViewSet(viewsets.ModelViewSet):
     queryset = DataBaseUser.objects.all()
     serializer_class = DataBaseUserSerializer
+

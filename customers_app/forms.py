@@ -19,7 +19,7 @@ from .models import (
     Groups,
     HarmfulWorkingConditions,
     AccessLevel,
-    Affiliation, CounteragentDocuments,
+    Affiliation, CounteragentDocuments, BiometricConsent,
 )
 from django import forms
 
@@ -496,3 +496,70 @@ class CounteragentDocumentsUpdateForm(forms.ModelForm):
         super(CounteragentDocumentsUpdateForm, self).__init__(*args, **kwargs)
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+
+class BiometricConsentForm(forms.ModelForm):
+    class Meta:
+        model = BiometricConsent
+        fields = [
+            'employee',
+            'consent_number',
+            'consent_date',
+            'employee_full_name',
+            'employee_position',
+            'comment',
+            'scanned_copy',
+            'is_active',
+            'revocation_date',
+        ]
+        widgets = {
+            'consent_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'revocation_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
+            'employee_full_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'employee_position': forms.TextInput(attrs={'class': 'form-control'}),
+            'consent_number': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Добавляем классы Bootstrap
+        for field_name, field in self.fields.items():
+            if field.widget.__class__.__name__ != 'CheckboxInput':
+                field.widget.attrs['class'] = field.widget.attrs.get('class', 'form-control')
+
+        # Если это редактирование, блокируем изменение сотрудника
+        if self.instance and self.instance.pk:
+            self.fields['employee'].widget.attrs['disabled'] = True
+            self.fields['consent_number'].widget.attrs['readonly'] = True
+
+    # def clean(self):
+    #     cleaned_data = super().clean()
+    #     is_active = cleaned_data.get('is_active')
+    #     revocation_date = cleaned_data.get('revocation_date')
+    #
+    #     # Если согласие активно, дата отзыва должна быть пустой
+    #     if is_active and revocation_date:
+    #         raise ValidationError('У активного согласия не может быть даты отзыва')
+    #
+    #     # Если согласие не активно, проверяем дату отзыва
+    #     if not is_active and not revocation_date:
+    #         raise ValidationError('Для отозванного согласия необходимо указать дату отзыва')
+    #
+    #     return cleaned_data
+
+
+class BiometricConsentFilterForm(forms.Form):
+    """
+    Форма фильтрации списка согласий
+    """
+    is_active = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Все'), ('True', 'Действует'), ('False', 'Отозвано')],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Поиск по номеру или ФИО...'})
+    )

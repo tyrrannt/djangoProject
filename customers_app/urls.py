@@ -2,7 +2,9 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
-from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView
+from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
+    BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
+    BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -96,6 +98,24 @@ urlpatterns = [
     path('get_leaderboard/', views.get_leaderboard, name='get_leaderboard'),
     path('inactive_users/', views.inactive_users_report, name='inactive_users_report'),
     path('apartments-usage-report/', ApartmentsUsageReportView.as_view(), name='apartments_usage_report'),
+
+    # Стандартные CRUD
+    path('biometric/', BiometricConsentListView.as_view(), name='biometric_consent_list'),
+    path('biometric/<int:pk>/', BiometricConsentDetailView.as_view(), name='biometric_consent_detail'),
+    path('biometric/create/', BiometricConsentCreateView.as_view(), name='biometric_consent_create'),
+    path('biometric/<int:pk>/edit/', BiometricConsentUpdateView.as_view(), name='biometric_consent_edit'),
+    path('biometric/<int:pk>/delete/', BiometricConsentDeleteView.as_view(), name='biometric_consent_delete'),
+
+    # Специальные действия
+    path('biometric/<int:pk>/revoke/', BiometricConsentRevokeView.as_view(), name='biometric_consent_revoke'),
+
+    # Фильтрация по сотруднику
+    path('biometric/employee/<int:employee_id>/', EmployeeBiometricConsentsListView.as_view(), name='biometric_consent_employee_consents'),
+
+    # API
+    path('api/employee/<int:employee_id>/consent-status/', ApiGetEmployeeConsentStatusView.as_view(),
+         name='api_consent_status'),
+
     # path(
     #     "password/<int:pk>/update/",
     #     views.ChangeAvatarUpdate.as_view(),

@@ -1,0 +1,67 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Отзыв согласия
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-12">
+                                    <h2 class="mb-0 text-warning">Отзыв согласия</h2>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <form method="post" class="mt-4">
+                            {% csrf_token %}
+                            
+                            <div class="alert alert-warning">
+                                <i class="fas fa-info-circle"></i>
+                                Вы собираетесь отозвать согласие на обработку биометрических данных.
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label>Номер согласия:</label>
+                                <p class="fw-bold">{{ object.consent_number }}</p>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label>Сотрудник:</label>
+                                <p class="fw-bold">{{ object.employee_full_name }}</p>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ form.revocation_date.id_for_label }}">Дата отзыва *</label>
+                                {{ form.revocation_date }}
+                                {% if form.revocation_date.errors %}
+                                    <div class="text-danger">{{ form.revocation_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-12 text-end">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-ban"></i> Отозвать согласие
+                                    </button>
+                                    <a href="{% url 'customers_app:biometric_consent_detail' object.pk %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Отмена
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}

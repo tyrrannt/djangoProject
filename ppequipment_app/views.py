@@ -7,6 +7,7 @@ from datetime import datetime
 from io import BytesIO
 
 import qrcode
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db import transaction
 from django.utils import timezone
 from qrcode.image.styledpil import StyledPilImage
@@ -832,3 +833,6 @@ def generate_verification_qr(request, slug):
     response = HttpResponse(buffer, content_type="image/png")
     response["Cache-Control"] = "public, max-age=86400"
     return response
+
+
+

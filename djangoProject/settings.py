@@ -695,7 +695,11 @@ UNFOLD = {
                         "icon": "apartment",
                         "link": reverse_lazy("admin:customers_app_apartmentbooking_changelist"),
                     },
-
+                    {
+                        "title": _("Согласия на обработку ПД и БД"),
+                        "icon": "apartment",
+                        "link": reverse_lazy("admin:customers_app_biometricconsent_changelist"),
+                    },
                 ],
             },
 

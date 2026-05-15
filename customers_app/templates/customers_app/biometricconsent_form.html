@@ -1,0 +1,171 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-12 col-md-6">
+                                    <h2 class="mb-0">{{ title }}</h2>
+                                </div>
+                                <div class="col-12 col-md-6 text-end">
+                                    <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Назад
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <form method="post" enctype="multipart/form-data" class="mt-4">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in form.non_field_errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.employee.id_for_label }}">Сотрудник *</label>
+                                        {{ form.employee }}
+                                        {% if form.employee.errors %}
+                                            <div class="text-danger">{{ form.employee.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.consent_number.id_for_label }}">Номер согласия *</label>
+                                        {{ form.consent_number }}
+                                        {% if form.consent_number.errors %}
+                                            <div class="text-danger">{{ form.consent_number.errors }}</div>
+                                        {% endif %}
+                                        {% if not form.consent_number.value %}
+                                            <small class="text-muted">Оставьте пустым для автоматической генерации</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.consent_date.id_for_label }}">Дата подписания *</label>
+                                        {{ form.consent_date }}
+                                        {% if form.consent_date.errors %}
+                                            <div class="text-danger">{{ form.consent_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.employee_full_name.id_for_label }}">ФИО сотрудника *</label>
+                                        {{ form.employee_full_name }}
+                                        {% if form.employee_full_name.errors %}
+                                            <div class="text-danger">{{ form.employee_full_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.employee_position.id_for_label }}">Должность</label>
+                                        {{ form.employee_position }}
+                                        {% if form.employee_position.errors %}
+                                            <div class="text-danger">{{ form.employee_position.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.comment.id_for_label }}">Комментарий</label>
+                                        {{ form.comment }}
+                                        {% if form.comment.errors %}
+                                            <div class="text-danger">{{ form.comment.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.scanned_copy.id_for_label }}">Скан согласия *</label>
+                                        {{ form.scanned_copy }}
+                                        {% if form.scanned_copy.errors %}
+                                            <div class="text-danger">{{ form.scanned_copy.errors }}</div>
+                                        {% endif %}
+                                        <small class="text-muted">Допустимые форматы: PDF, JPG, JPEG, PNG</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if object.pk %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.is_active }}
+                                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                            Действует
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.revocation_date.id_for_label }}">Дата отзыва</label>
+                                        {{ form.revocation_date }}
+                                        {% if form.revocation_date.errors %}
+                                            <div class="text-danger">{{ form.revocation_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="row mt-4">
+                                <div class="col-12 text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> {{ button_text }}
+                                    </button>
+                                    <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Отмена
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .form-control:focus {
+            border-color: #ff7300;
+            box-shadow: 0 0 0 0.2rem rgba(255, 115, 0, 0.25);
+        }
+    </style>
+{% endblock %}

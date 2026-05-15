@@ -1,0 +1,240 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Согласия на обработку биометрии
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-12 col-md-6">
+                                    <h2 class="mb-0">Согласия на обработку биометрии</h2>
+                                </div>
+                                <div class="col-12 col-md-6 text-end">
+                                    <a href="{% url 'customers_app:biometric_consent_create' %}{% if request.GET.employee_id %}?employee_id={{ request.GET.employee_id }}{% endif %}"
+                                       class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Добавить согласие
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Форма фильтрации -->
+                            <div class="row align-items-center mb-3">
+                                <div class="col-12">
+                                    <form method="get" class="row g-3">
+                                        <div class="col-md-3">
+                                            {{ filter_form.search }}
+                                        </div>
+                                        <div class="col-md-2">
+                                            {{ filter_form.is_active }}
+                                        </div>
+                                        {% if request.GET.employee_id %}
+                                            <div class="col-md-3">
+                                                <input type="hidden" name="employee_id" value="{{ request.GET.employee_id }}">
+                                            </div>
+                                        {% endif %}
+                                        <div class="col-md-2">
+                                            <button type="submit" class="btn btn-secondary w-100">
+                                                <i class="fas fa-filter"></i> Фильтр
+                                            </button>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-light w-100">
+                                                <i class="fas fa-undo"></i> Сброс
+                                            </a>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <style>
+                            thead input {
+                                width: 100%;
+                                padding: 3px;
+                                box-sizing: border-box;
+                                border-radius: 10px;
+                                border-color: #ff7300;
+                                color: #003994;
+                            }
+                            .status-badge {
+                                padding: 5px 10px;
+                                border-radius: 20px;
+                                font-size: 12px;
+                                font-weight: 500;
+                            }
+                            .status-active {
+                                background-color: #d4edda;
+                                color: #155724;
+                            }
+                            .status-inactive {
+                                background-color: #f8d7da;
+                                color: #721c24;
+                            }
+                        </style>
+                        
+                        <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
+                               style="min-width: 750px;">
+                            <thead>
+                                <tr>
+                                    <th>№ согласия</th>
+                                    <th>Сотрудник</th>
+                                    <th>Дата подписания</th>
+                                    <th>Должность</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                                <tr>
+                                    <th><input type="text" placeholder="Поиск по №" id="filter-number" class="form-control-sm"></th>
+                                    <th><input type="text" placeholder="Поиск по ФИО" id="filter-name" class="form-control-sm"></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consent in consents %}
+                                <tr>
+                                    <td>{{ consent.consent_number }}</td>
+                                    <td>
+                                        <a href="{% url 'customers_app:biometric_consent_employee_consents' consent.employee.pk %}">
+                                            {{ consent.employee_full_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ consent.consent_date|date:"d.m.Y" }}</td>
+                                    <td>{{ consent.employee_position|default:"—" }}</td>
+                                    <td>
+                                        {% if consent.is_active %}
+                                            <span class="status-badge status-active">
+                                                <i class="fas fa-check-circle"></i> Действует
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge status-inactive">
+                                                <i class="fas fa-times-circle"></i> Отозвано
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="actions">
+                                        <a href="{% url 'customers_app:biometric_consent_detail' consent.pk %}"
+                                           class="btn btn-sm btn-primary" title="Просмотр">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'customers_app:biometric_consent_edit' consent.pk %}"
+                                           class="btn btn-sm btn-warning" title="Редактировать">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if consent.is_active %}
+                                        <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}"
+                                           class="btn btn-sm btn-danger" title="Отозвать">
+                                            <i class="fas fa-ban"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'customers_app:biometric_consent_delete' consent.pk %}"
+                                           class="btn btn-sm btn-dark" title="Удалить">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Нет данных</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        
+                        <!-- Пагинация -->
+                        {% if is_paginated %}
+                        <div class="datatable-footer mt-3">
+                            <div class="row">
+                                <div class="col-12">
+                                    <nav>
+                                        <ul class="pagination justify-content-center">
+                                            {% if page_obj.has_previous %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-double-left"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-left"></i>
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                            
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                                            </li>
+                                            
+                                            {% if page_obj.has_next %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-right"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-double-right"></i>
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .actions .btn {
+            margin: 0 2px;
+        }
+        .table th {
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        // Клиентская фильтрация
+        $(document).ready(function() {
+            $('#filter-number, #filter-name').on('keyup', function() {
+                var filterNumber = $('#filter-number').val().toLowerCase();
+                var filterName = $('#filter-name').val().toLowerCase();
+                
+                $('tbody tr').each(function() {
+                    var number = $(this).find('td').eq(0).text().toLowerCase();
+                    var name = $(this).find('td').eq(1).text().toLowerCase();
+                    
+                    var matchesNumber = filterNumber === '' || number.indexOf(filterNumber) > -1;
+                    var matchesName = filterName === '' || name.indexOf(filterName) > -1;
+                    
+                    if (matchesNumber && matchesName) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

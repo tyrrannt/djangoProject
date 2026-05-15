@@ -629,6 +629,34 @@ class ApartmentBooking(models.Model):
             raise ValidationError("На выбранный период в этой квартире нет свободных мест.")
 
 
+def get_biometric_consent_upload_path(instance, filename):
+    """
+    Генерирует путь для сохранения файла скана согласия:
+    media/docs/BC/YYYY/MM/DD/<UUID>.<ext>
+
+    Args:
+        instance: Экземпляр модели, содержащий FileField.
+        filename (str): Оригинальное имя файла.
+
+    Returns:
+        str: Относительный путь для сохранения файла.
+    """
+    # Извлекаем расширение с помощью pathlib — более надёжно
+    ext = pathlib.Path(filename).suffix.lower()
+
+    # Генерируем уникальное имя
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+
+    # Определяем дату: из поля или текущая
+    upload_date = instance.consent_date or timezone.now().date()
+    if isinstance(upload_date, datetime.datetime):
+        upload_date = upload_date.date()
+
+    date_path = upload_date.strftime("%Y/%m/%d")
+
+    return f"docs/BC/{date_path}/{unique_name}"
+
+
 class BiometricConsent(models.Model):
     """
     Согласие на обработку биометрических персональных данных
@@ -680,14 +708,6 @@ class BiometricConsent(models.Model):
         help_text="Должность на момент подписания"
     )
 
-    # Шаблон согласия (какая версия использовалась)
-    consent_template = models.CharField(
-        verbose_name="Шаблон согласия",
-        max_length=100,
-        default="Стандартный шаблон",
-        help_text="Название или версия шаблона согласия"
-    )
-
     # Комментарий
     comment = models.TextField(
         verbose_name="Комментарий",
@@ -698,7 +718,7 @@ class BiometricConsent(models.Model):
     # Скан документа с подписью
     scanned_copy = models.FileField(
         verbose_name="Скан согласия с подписью",
-        upload_to='biometric_consents/%Y/%m/%d/',
+        upload_to=get_biometric_consent_upload_path,
         validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])],
         help_text="Загрузите скан подписанного согласия (PDF, JPG, PNG)"
     )

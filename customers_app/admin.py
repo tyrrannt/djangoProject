@@ -642,16 +642,16 @@ class CounteragentAdmin(ModelAdmin):
 
 @admin.register(BiometricConsent)
 class BiometricConsentAdmin(ModelAdmin):
-    list_display = ['consent_number', 'employee_link', 'consent_date', 'consent_template', 'is_active',
+    list_display = ['consent_number', 'employee_link', 'consent_date',  'is_active',
                     'scanned_copy_link']
-    list_filter = ['is_active', 'consent_date', 'consent_template']
+    list_filter = ['is_active', 'consent_date',]
     search_fields = ['consent_number', 'employee__last_name', 'employee__first_name', 'employee_full_name']
     date_hierarchy = 'consent_date'
     readonly_fields = ['created_at', 'updated_at', 'created_by']
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('employee', 'consent_number', 'consent_date', 'consent_template')
+            'fields': ('employee', 'consent_number', 'consent_date', )
         }),
         ('Данные сотрудника на момент подписания', {
             'fields': ('employee_full_name', 'employee_position')
@@ -669,7 +669,7 @@ class BiometricConsentAdmin(ModelAdmin):
     )
 
     def employee_link(self, obj):
-        url = reverse('admin:yourapp_databaseuser_change', args=[obj.employee.id])
+        url = reverse('admin:customers_app_databaseuser_change', args=[obj.employee.id])
         return format_html('<a href="{}">{}</a>', url, obj.employee_full_name)
 
     employee_link.short_description = 'Сотрудник'

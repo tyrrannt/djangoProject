@@ -1,0 +1,159 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Согласие №{{ consent.consent_number }}
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-12 col-md-6">
+                                    <h2 class="mb-0">Согласие №{{ consent.consent_number }}</h2>
+                                </div>
+                                <div class="col-12 col-md-6 text-end">
+                                    <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Назад
+                                    </a>
+                                    <a href="{% url 'customers_app:biometric_consent_edit' consent.pk %}" class="btn btn-warning">
+                                        <i class="fas fa-edit"></i> Редактировать
+                                    </a>
+                                    {% if consent.is_active %}
+                                    <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}" class="btn btn-danger">
+                                        <i class="fas fa-ban"></i> Отозвать
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th style="width: 40%;">Номер согласия:</th>
+                                        <td>{{ consent.consent_number }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Дата подписания:</th>
+                                        <td>{{ consent.consent_date|date:"d.m.Y" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Сотрудник:</th>
+                                        <td>
+                                            <a href="{% url 'customers_app:staff' consent.employee.pk %}">
+                                                {{ consent.employee_full_name }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Должность:</th>
+                                        <td>{{ consent.employee_position|default:"—" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Статус:</th>
+                                        <td>
+                                            {% if consent.is_active %}
+                                                <span class="badge bg-success">Действует</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Отозвано</span>
+                                                {% if consent.revocation_date %}
+                                                    ({{ consent.revocation_date|date:"d.m.Y" }})
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th style="width: 40%;">Шаблон согласия:</th>
+                                        <td>{{ consent.consent_template }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Создано:</th>
+                                        <td>{{ consent.created_at|date:"d.m.Y H:i" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Кем создано:</th>
+                                        <td>{{ consent.created_by.get_title|default:"—" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Обновлено:</th>
+                                        <td>{{ consent.updated_at|date:"d.m.Y H:i" }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Комментарий</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {{ consent.comment|default:"<p class='text-muted'>Нет комментариев</p>"|safe|linebreaks }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Скан согласия</h5>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        {% if consent.scanned_copy %}
+                                            <div class="mb-3">
+                                                {% if consent.scanned_copy.url|lower|slice:"-4:" == ".pdf" %}
+                                                    <i class="fas fa-file-pdf fa-4x text-danger"></i>
+                                                {% elif consent.scanned_copy.url|lower|slice:"-4:" in ".jpg,.png" %}
+                                                    <img src="{{ consent.scanned_copy.url }}" 
+                                                         alt="Скан согласия" 
+                                                         style="max-width: 100%; max-height: 500px; cursor: pointer;"
+                                                         onclick="window.open(this.src)">
+                                                {% else %}
+                                                    <i class="fas fa-file fa-4x"></i>
+                                                {% endif %}
+                                            </div>
+                                            <a href="{{ consent.scanned_copy.url }}" class="btn btn-primary" target="_blank">
+                                                <i class="fas fa-download"></i> Скачать файл
+                                            </a>
+                                        {% else %}
+                                            <p class="text-muted">Файл не загружен</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .table-bordered th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .badge {
+            font-size: 14px;
+            padding: 5px 10px;
+        }
+    </style>
+{% endblock %}

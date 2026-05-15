@@ -1,0 +1,291 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+{% load custom %}
+
+{% block title %}
+    Согласия на биометрию - {{ employee.get_title }}
+{% endblock %}
+
+{% block content %}
+    <!-- start: page -->
+    <div class="row">
+        <div class="col">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="datatables-header-footer-wrapper">
+                        <div class="datatable-header">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-12 col-md-6">
+                                    <h2 class="mb-0">
+                                        Согласия на обработку биометрии
+                                        <small class="text-muted">({{ employee.get_title }})</small>
+                                    </h2>
+                                </div>
+                                <div class="col-12 col-md-6 text-end">
+                                    <a href="{% url 'customers_app:staff' employee.pk %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Назад к профилю
+                                    </a>
+                                    <a href="{% url 'customers_app:biometric_consent_create' %}?employee_id={{ employee.pk }}"
+                                       class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Добавить согласие
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Информация о сотруднике -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <strong><i class="fas fa-user"></i> ФИО:</strong> {{ employee.get_title }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong><i class="fas fa-briefcase"></i> Должность:</strong> 
+                                                {{ employee.user_work_profile.job|default:"—" }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong><i class="fas fa-building"></i> Подразделение:</strong> 
+                                                {{ employee.user_work_profile.divisions|default:"—" }}
+                                            </div>
+                                            <div class="col-md-2">
+                                                <strong><i class="fas fa-id-card"></i> Табельный номер:</strong> 
+                                                {{ employee.service_number|default:"—" }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Фильтр по статусу -->
+                            <div class="row align-items-center mb-3">
+                                <div class="col-12">
+                                    <form method="get" class="row g-3">
+                                        <div class="col-md-3">
+                                            <select name="is_active" class="form-control">
+                                                <option value="">Все статусы</option>
+                                                <option value="True" {% if request.GET.is_active == 'True' %}selected{% endif %}>Действует</option>
+                                                <option value="False" {% if request.GET.is_active == 'False' %}selected{% endif %}>Отозвано</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="text" name="search" class="form-control" 
+                                                   placeholder="Поиск по номеру..." 
+                                                   value="{{ request.GET.search|default:'' }}">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="submit" class="btn btn-secondary w-100">
+                                                <i class="fas fa-filter"></i> Фильтр
+                                            </button>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <a href="{% url 'customers_app:biometric_consent_employee_consents' employee.pk %}"
+                                               class="btn btn-light w-100">
+                                                <i class="fas fa-undo"></i> Сброс
+                                            </a>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <style>
+                            .status-badge {
+                                padding: 5px 10px;
+                                border-radius: 20px;
+                                font-size: 12px;
+                                font-weight: 500;
+                                display: inline-block;
+                            }
+                            .status-active {
+                                background-color: #d4edda;
+                                color: #155724;
+                            }
+                            .status-inactive {
+                                background-color: #f8d7da;
+                                color: #721c24;
+                            }
+                            .consent-card {
+                                transition: transform 0.2s;
+                                margin-bottom: 20px;
+                            }
+                            .consent-card:hover {
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                            }
+                        </style>
+                        
+                        <!-- Карточки согласий (для наглядности) -->
+                        <div class="row mt-3">
+                            {% for consent in consents %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card consent-card">
+                                    <div class="card-header {% if consent.is_active %}bg-success text-white{% else %}bg-secondary text-white{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>{{ consent.consent_number }}</strong>
+                                            {% if consent.is_active %}
+                                                <span class="badge bg-light text-success">Действует</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-danger">Отозвано</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-1">
+                                            <i class="fas fa-calendar-alt text-muted"></i> 
+                                            <strong>Дата подписания:</strong> {{ consent.consent_date|date:"d.m.Y" }}
+                                        </p>
+                                        <p class="mb-1">
+                                            <i class="fas fa-briefcase text-muted"></i> 
+                                            <strong>Должность:</strong> {{ consent.employee_position|default:"—" }}
+                                        </p>
+                                        <p class="mb-3">
+                                            <i class="fas fa-file-alt text-muted"></i> 
+                                            <strong>Шаблон:</strong> {{ consent.consent_template }}
+                                        </p>
+                                        
+                                        {% if consent.comment %}
+                                            <hr>
+                                            <p class="text-muted small">
+                                                <i class="fas fa-comment"></i> {{ consent.comment|truncatechars:60 }}
+                                            </p>
+                                        {% endif %}
+                                        
+                                        {% if consent.scanned_copy %}
+                                            <hr>
+                                            <div class="text-center">
+                                                <a href="{{ consent.scanned_copy.url }}" class="btn btn-sm btn-info" target="_blank">
+                                                    <i class="fas fa-file-pdf"></i> Смотреть скан
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-footer text-end">
+                                        <a href="{% url 'customers_app:biometric_consent_detail' consent.pk %}"
+                                           class="btn btn-sm btn-primary" title="Просмотр">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'customers_app:biometric_consent_edit' consent.pk %}"
+                                           class="btn btn-sm btn-warning" title="Редактировать">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if consent.is_active %}
+                                        <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}"
+                                           class="btn btn-sm btn-danger" title="Отозвать">
+                                            <i class="fas fa-ban"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info text-center">
+                                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                    <h5>Нет данных</h5>
+                                    <p>У сотрудника {{ employee.get_title }} пока нет ни одного согласия на обработку биометрии.</p>
+                                    <a href="{% url 'customers_app:biometric_consent_create' %}?employee_id={{ employee.pk }}"
+                                       class="btn btn-primary mt-2">
+                                        <i class="fas fa-plus"></i> Добавить согласие
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Пагинация -->
+                        {% if is_paginated %}
+                        <div class="datatable-footer mt-4">
+                            <div class="row">
+                                <div class="col-12">
+                                    <nav>
+                                        <ul class="pagination justify-content-center">
+                                            {% if page_obj.has_previous %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-double-left"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-left"></i>
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                            
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                                            </li>
+                                            
+                                            {% if page_obj.has_next %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-right"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                        <i class="fas fa-angle-double-right"></i>
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end: page -->
+{% endblock %}
+
+{% block custom_css %}
+    <style>
+        .consent-card .card-header {
+            font-size: 1rem;
+        }
+        .consent-card .card-footer {
+            background-color: #f8f9fa;
+        }
+        .consent-card .btn {
+            margin: 0 3px;
+        }
+        .alert-info a {
+            text-decoration: none;
+        }
+    </style>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        // Автообновление информации о статусе согласия (опционально)
+        $(document).ready(function() {
+            function updateConsentStatus() {
+                $.ajax({
+                    url: '{% url "customers_app:api_consent_status" employee.pk %}',
+                    type: 'GET',
+                    success: function(data) {
+                        if (data.has_active_consent) {
+                            $('#consent-status-indicator')
+                                .removeClass('bg-danger')
+                                .addClass('bg-success')
+                                .html('<i class="fas fa-check-circle"></i> Согласие имеется');
+                        } else {
+                            $('#consent-status-indicator')
+                                .removeClass('bg-success')
+                                .addClass('bg-danger')
+                                .html('<i class="fas fa-times-circle"></i> Согласие отсутствует');
+                        }
+                    }
+                });
+            }
+            
+            // Обновляем каждые 30 секунд (если нужно)
+            // setInterval(updateConsentStatus, 30000);
+        });
+    </script>
+{% endblock %}
