@@ -1189,9 +1189,10 @@ def get_sender_credentials(sender, division: int) -> Tuple[str, str]:
     # Для других подразделений — берём из настроек
     if division in EMAIL_CONFIGS:
         user_key, pass_key = EMAIL_CONFIGS[division]
+
         try:
-            user = getattr(settings, user_key)
-            password = getattr(settings, pass_key)
+            user = user_key
+            password = pass_key
             return user, password
         except AttributeError:
             logger.error(f"Missing email config for division {division}: {user_key}, {pass_key}")
