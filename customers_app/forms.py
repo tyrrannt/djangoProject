@@ -7,6 +7,7 @@ from django.contrib.auth.forms import (
 )
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django_ckeditor_5.widgets import CKEditor5Widget
 
 from administration_app.utils import make_custom_field
@@ -520,6 +521,24 @@ class BiometricConsentForm(forms.ModelForm):
 
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+        # поля которые не обязательны при валидации формы
+        self.fields['comment'].required = False
+        self.fields['consent_number'].required = False
+        self.fields['employee_full_name'].required = False
+        self.fields['scanned_copy'].required = False
+        self.fields['revocation_date'].required = False
+
+        # Ограничиваем выбор только активными пользователями
+        if self.instance.pk:
+            # При редактировании сохраняем текущего сотрудника в списке,
+            # даже если его позже деактивировали (иначе форма упадёт с ошибкой валидации)
+            self.fields['employee'].queryset = DataBaseUser.objects.filter(
+                Q(is_active=True) | Q(pk=self.instance.employee_id)
+            )
+        else:
+            # При создании показываем только активных
+            self.fields['employee'].queryset = DataBaseUser.objects.filter(is_active=True)
 
         # Если это редактирование, блокируем изменение сотрудника
         if self.instance and self.instance.pk:

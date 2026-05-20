@@ -19,21 +19,24 @@
                                     <h2 class="mb-0">Согласие №: {{ consent.consent_number }}</h2>
                                 </div>
                                 <div class="col-12 col-md-6 text-end">
-                                    <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-secondary">
+                                    <a href="{% url 'customers_app:biometric_consent_list' %}"
+                                       class="btn btn-secondary">
                                         <i class="fas fa-arrow-left"></i> Назад
                                     </a>
-                                    <a href="{% url 'customers_app:biometric_consent_edit' consent.pk %}" class="btn btn-warning">
+                                    <a href="{% url 'customers_app:biometric_consent_edit' consent.pk %}"
+                                       class="btn btn-warning">
                                         <i class="fas fa-edit"></i> Редактировать
                                     </a>
                                     {% if consent.is_active %}
-                                    <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}" class="btn btn-danger">
-                                        <i class="fas fa-ban"></i> Отозвать
-                                    </a>
+                                        <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}"
+                                           class="btn btn-danger">
+                                            <i class="fas fa-ban"></i> Отозвать
+                                        </a>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row mt-4">
                             <div class="col-md-6">
                                 <table class="table table-bordered">
@@ -93,7 +96,7 @@
                                 </table>
                             </div>
                         </div>
-                        
+
                         <div class="row mt-3">
                             <div class="col-12">
                                 <div class="card">
@@ -106,7 +109,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row mt-3">
                             <div class="col-12">
                                 <div class="card">
@@ -119,17 +122,30 @@
                                                 {% if consent.scanned_copy.url|lower|slice:"-4:" == ".pdf" %}
                                                     <i class="fas fa-file-pdf fa-4x text-danger"></i>
                                                 {% elif consent.scanned_copy.url|lower|slice:"-4:" in ".jpg,.png" %}
-                                                    <img src="{{ consent.scanned_copy.url }}" 
-                                                         alt="Скан согласия" 
+                                                    <img src="{{ consent.scanned_copy.url }}"
+                                                         alt="Скан согласия"
                                                          style="max-width: 100%; max-height: 500px; cursor: pointer;"
                                                          onclick="window.open(this.src)">
                                                 {% else %}
                                                     <i class="fas fa-file fa-4x"></i>
                                                 {% endif %}
                                             </div>
-                                            <a href="{{ consent.scanned_copy.url }}" class="btn btn-primary" target="_blank">
+                                            <a href="{{ consent.scanned_copy.url }}" class="btn btn-primary"
+                                               target="_blank">
                                                 <i class="fas fa-download"></i> Скачать файл
                                             </a>
+
+                                            <div class="message-attachments">
+                                                <a href="javascript:void(0)"
+                                                   class="message-attachment"
+                                                   data-bs-toggle="modal"
+                                                   data-bs-target="#attachmentModal"
+                                                   data-file-url="{{ consent.scanned_copy.url }}"
+                                                   data-file-name="{{ consent.scanned_copy }}">
+                                                    <i class='bx bx-paperclip'></i> {{ consent.scanned_copy }}
+                                                </a>
+                                            </div>
+
                                         {% else %}
                                             <p class="text-muted">Файл не загружен</p>
                                         {% endif %}
@@ -143,6 +159,105 @@
         </div>
     </div>
     <!-- end: page -->
+
+    <!-- Модальное окно для просмотра вложений -->
+    <div class="modal fade" id="attachmentModal" tabindex="-1" aria-labelledby="attachmentModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="attachmentModalLabel">Просмотр вложения</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImagePreview" class="attachment-preview" style="display: none;" alt="Предпросмотр">
+                    <div id="modalPdfContainer" style="display: none;">
+                        <iframe id="modalPdfPreview" class="pdf-preview"></iframe>
+                        <div class="pdf-fallback" style="display: none;">
+                            <p><i class='bx bx-file'></i> PDF файл не может быть отображён в браузере.</p>
+                            <a id="modalPdfDownload" href="#" class="btn btn-primary" download>
+                                <i class='bx bx-download'></i> Скачать PDF
+                            </a>
+                        </div>
+                    </div>
+                    <div id="modalFileContainer" style="display: none;">
+                        <p><i class='bx bx-file-blank'></i> <span id="modalFileName"></span></p>
+                        <a id="modalFileDownload" href="#" class="btn btn-primary" download>
+                            <i class='bx bx-download'></i> Скачать файл
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a id="modalDownloadLink" href="#" class="btn btn-outline-secondary btn-sm" download>
+                        <i class='bx bx-download'></i> Скачать
+                    </a>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const attachmentModal = document.getElementById('attachmentModal');
+            if (!attachmentModal) return;
+
+            const modalImagePreview = document.getElementById('modalImagePreview');
+            const modalPdfContainer = document.getElementById('modalPdfContainer');
+            const modalPdfPreview = document.getElementById('modalPdfPreview');
+            const modalPdfFallback = modalPdfContainer.querySelector('.pdf-fallback');
+            const modalFileContainer = document.getElementById('modalFileContainer');
+            const modalFileName = document.getElementById('modalFileName');
+            const modalFileDownload = document.getElementById('modalFileDownload');
+            const modalDownloadLink = document.getElementById('modalDownloadLink');
+            const modalPdfDownload = document.getElementById('modalPdfDownload');
+            const modalTitle = document.getElementById('attachmentModalLabel');
+
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            const pdfExtension = '.pdf';
+
+            attachmentModal.addEventListener('show.bs.modal', function (event) {
+                const trigger = event.relatedTarget;
+                const fileUrl = trigger.getAttribute('data-file-url');
+                const fileName = trigger.getAttribute('data-file-name');
+
+                const extension = '.' + fileName.split('.').pop().toLowerCase();
+
+                modalImagePreview.style.display = 'none';
+                modalPdfContainer.style.display = 'none';
+                modalPdfPreview.style.display = 'none';
+                modalPdfFallback.style.display = 'none';
+                modalFileContainer.style.display = 'none';
+
+                modalTitle.textContent = fileName;
+                modalDownloadLink.href = fileUrl;
+
+                if (imageExtensions.includes(extension)) {
+                    modalImagePreview.src = fileUrl;
+                    modalImagePreview.style.display = 'block';
+                } else if (extension === pdfExtension) {
+                    modalPdfContainer.style.display = 'block';
+                    modalPdfPreview.src = fileUrl;
+                    modalPdfPreview.style.display = 'block';
+                    modalPdfDownload.href = fileUrl;
+
+                    modalPdfPreview.onerror = function () {
+                        modalPdfPreview.style.display = 'none';
+                        modalPdfFallback.style.display = 'block';
+                    };
+                } else {
+                    modalFileContainer.style.display = 'block';
+                    modalFileName.textContent = fileName;
+                    modalFileDownload.href = fileUrl;
+                }
+            });
+
+            attachmentModal.addEventListener('hidden.bs.modal', function () {
+                modalImagePreview.src = '';
+                modalPdfPreview.src = '';
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block custom_css %}
@@ -151,6 +266,7 @@
             background-color: #f8f9fa;
             font-weight: 600;
         }
+
         .badge {
             font-size: 14px;
             padding: 5px 10px;
