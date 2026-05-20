@@ -267,6 +267,23 @@
                                        class="btn btn-warning">
                                         <i class="fas fa-edit"></i> Редактировать
                                     </a>
+
+
+                                    <!-- НОВАЯ КНОПКА ГЕНЕРАЦИИ ДОКУМЕНТА -->
+                                    {% if has_template %}
+                                        <a href="{% url 'customers_app:generate_document' consent.pk %}"
+                                           class="btn btn-success"
+                                           title="Сгенерировать документ из шаблона">
+                                            <i class="fas fa-file-alt"></i> Сформировать документ
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-secondary"
+                                                disabled
+                                                title="Для этого типа согласия не настроен шаблон документа">
+                                            <i class="fas fa-file-alt"></i> Нет шаблона
+                                        </button>
+                                    {% endif %}
+
                                     {% if consent.is_active %}
                                         <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}"
                                            class="btn btn-danger">
@@ -379,10 +396,6 @@
                                                     </a>
                                                 </div>
                                             </div>
-                                            <a href="{{ consent.scanned_copy.url }}" class="btn btn-primary"
-                                               target="_blank">
-                                                <i class="fas fa-download"></i> Скачать файл
-                                            </a>
                                         {% else %}
                                             <p class="text-muted">Файл не загружен</p>
                                         {% endif %}

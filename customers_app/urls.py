@@ -4,7 +4,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
     BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
-    BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView
+    BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView, \
+    GenerateConsentDocumentView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -111,6 +112,7 @@ urlpatterns = [
 
     # Фильтрация по сотруднику
     path('biometric/employee/<int:employee_id>/', EmployeeBiometricConsentsListView.as_view(), name='biometric_consent_employee_consents'),
+    path('<int:pk>/generate/', GenerateConsentDocumentView.as_view(), name='generate_document'),
 
     # API
     path('api/employee/<int:employee_id>/consent-status/', ApiGetEmployeeConsentStatusView.as_view(),

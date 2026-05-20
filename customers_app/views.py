@@ -21,7 +21,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q, F, ForeignKey, Count
-from django.http import JsonResponse, QueryDict, HttpResponse
+from django.http import JsonResponse, QueryDict, HttpResponse, FileResponse
 from django.shortcuts import render, HttpResponseRedirect, redirect, get_object_or_404
 from django.views.generic import DetailView, UpdateView, CreateView, ListView, TemplateView, DeleteView
 from qrcode.image.styledpil import StyledPilImage
@@ -29,6 +29,7 @@ from qrcode.image.styles.moduledrawers import CircleModuleDrawer
 from rest_framework import viewsets
 
 from administration_app.models import PortalProperty
+from administration_app.services import TemplateService
 from administration_app.utils import boolean_return, get_jsons_data, \
     change_session_context, format_name_initials, get_year_interval, get_client_ip, adjust_time, \
     process_group, process_group_interval, seconds_to_hhmm, get_active_user, get_today_data_delta, \
@@ -36,7 +37,7 @@ from administration_app.utils import boolean_return, get_jsons_data, \
 from contracts_app.models import TypeDocuments, Contract
 from contracts_app.templatetags.custom import FIO_format
 from customers_app.customers_util import get_database_user_work_profile, get_database_user, get_identity_documents, \
-    get_settlement_sheet, get_vacation_days
+    get_settlement_sheet, get_vacation_days, prepare_consent_context
 from customers_app.models import DataBaseUser, Posts, Counteragent, Division, Job, AccessLevel, \
     DataBaseUserWorkProfile, Citizenships, IdentityDocuments, HarmfulWorkingConditions, Groups, CounteragentDocuments, \
     UserStats, Apartments, BiometricConsent
@@ -2486,6 +2487,50 @@ class BiometricConsentDetailView(LoginRequiredMixin, PermissionRequiredMixin, De
     context_object_name = 'consent'
     permission_required = 'customers_app.view_biometricconsent'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Проверяем, есть ли шаблон для генерации
+        context['has_template'] = self.object.consent_type and self.object.consent_type.template
+        return context
+
+
+
+class GenerateConsentDocumentView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'customers_app.view_biometricconsent'
+
+    def get(self, request, pk):
+        consent = get_object_or_404(BiometricConsent, pk=pk)
+
+        if not consent.consent_type or not consent.consent_type.template:
+            messages.error(request, 'Для этого согласия не настроен шаблон документа')
+            return redirect('biometric_consent:detail', pk=consent.pk)
+
+        template = consent.consent_type.template
+        context = prepare_consent_context(consent)
+
+        try:
+            # Используем TemplateService
+            if template.template_type == 'word':
+                buffer = TemplateService.render_word_template(template.unique_code, context)
+                file_extension = 'docx'
+                content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            else:
+                buffer = TemplateService.render_excel_template(template.unique_code, context)
+                file_extension = 'xlsx'
+                content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+            filename = f"Согласие_{consent.consent_number}_{datetime.datetime.now().strftime('%Y%m%d')}.{file_extension}"
+
+            return FileResponse(
+                buffer,
+                as_attachment=True,
+                filename=filename,
+                content_type=content_type
+            )
+
+        except Exception as e:
+            messages.error(request, f'Ошибка при генерации документа: {str(e)}')
+            return redirect('biometric_consent:detail', pk=consent.pk)
 
 class BiometricConsentCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """

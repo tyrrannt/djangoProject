@@ -18,27 +18,28 @@
                                 <div class="col-12 col-md-6">
                                     <h2 class="mb-0">Согласия на обработку биометрии</h2>
                                 </div>
-                                <div class="col-12 col-md-6 text-end">
-                                    <a href="{% url 'customers_app:biometric_consent_create' %}{% if request.GET.employee_id %}?employee_id={{ request.GET.employee_id }}{% endif %}"
-                                       class="btn btn-primary">
-                                        <i class="fas fa-plus"></i> Добавить согласие
-                                    </a>
-                                </div>
+
                             </div>
-                            
+
                             <!-- Форма фильтрации -->
                             <div class="row align-items-center mb-3">
                                 <div class="col-12">
                                     <form method="get" class="row g-3">
                                         <div class="col-md-3">
-                                            {{ filter_form.search }}
+                                            <a href="
+                                                    {% url 'customers_app:biometric_consent_create' %}{% if request.GET.employee_id %}?employee_id={{ request.GET.employee_id }}{% endif %}"
+                                               class="btn btn-primary">
+                                                <i class="fas fa-plus"></i> Добавить согласие
+                                            </a>
                                         </div>
+                                        
                                         <div class="col-md-2">
                                             {{ filter_form.is_active }}
                                         </div>
                                         {% if request.GET.employee_id %}
                                             <div class="col-md-3">
-                                                <input type="hidden" name="employee_id" value="{{ request.GET.employee_id }}">
+                                                <input type="hidden" name="employee_id"
+                                                       value="{{ request.GET.employee_id }}">
                                             </div>
                                         {% endif %}
                                         <div class="col-md-2">
@@ -47,7 +48,8 @@
                                             </button>
                                         </div>
                                         <div class="col-md-2">
-                                            <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-light w-100">
+                                            <a href="{% url 'customers_app:biometric_consent_list' %}"
+                                               class="btn btn-light w-100">
                                                 <i class="fas fa-undo"></i> Сброс
                                             </a>
                                         </div>
@@ -55,7 +57,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <style>
                             thead input {
                                 width: 100%;
@@ -65,44 +67,49 @@
                                 border-color: #ff7300;
                                 color: #003994;
                             }
+
                             .status-badge {
                                 padding: 5px 10px;
                                 border-radius: 20px;
                                 font-size: 12px;
                                 font-weight: 500;
                             }
+
                             .status-active {
                                 background-color: #d4edda;
                                 color: #155724;
                             }
+
                             .status-inactive {
                                 background-color: #f8d7da;
                                 color: #721c24;
                             }
                         </style>
-                        
+
                         <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
                                style="min-width: 750px;">
                             <thead>
-                                <tr>
-                                    <th>№ согласия</th>
-                                    <th>Сотрудник</th>
-                                    <th>Дата подписания</th>
-                                    <th>Должность</th>
-                                    <th>Статус</th>
-                                    <th>Действия</th>
-                                </tr>
-                                <tr>
-                                    <th><input type="text" placeholder="Поиск по №" id="filter-number" class="form-control-sm"></th>
-                                    <th><input type="text" placeholder="Поиск по ФИО" id="filter-name" class="form-control-sm"></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                    <th></th>
-                                </tr>
+                            <tr>
+                                <th>№ согласия</th>
+                                <th>Сотрудник</th>
+                                <th>Дата подписания</th>
+                                <th>Должность</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                            <tr>
+                                <th><input type="text" placeholder="Поиск по №" id="filter-number"
+                                           class="form-control-sm"></th>
+                                <th><input type="text" placeholder="Поиск по ФИО" id="filter-name"
+                                           class="form-control-sm"></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {% for consent in consents %}
+                            {% for consent in consents %}
                                 <tr>
                                     <td>{{ consent.consent_number }}</td>
                                     <td>
@@ -133,10 +140,10 @@
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         {% if consent.is_active %}
-                                        <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}"
-                                           class="btn btn-sm btn-danger" title="Отозвать">
-                                            <i class="fas fa-ban"></i>
-                                        </a>
+                                            <a href="{% url 'customers_app:biometric_consent_revoke' consent.pk %}"
+                                               class="btn btn-sm btn-danger" title="Отозвать">
+                                                <i class="fas fa-ban"></i>
+                                            </a>
                                         {% endif %}
                                         <a href="{% url 'customers_app:biometric_consent_delete' consent.pk %}"
                                            class="btn btn-sm btn-dark" title="Удалить">
@@ -144,55 +151,59 @@
                                         </a>
                                     </td>
                                 </tr>
-                                {% empty %}
+                            {% empty %}
                                 <tr>
                                     <td colspan="6" class="text-center">Нет данных</td>
                                 </tr>
-                                {% endfor %}
+                            {% endfor %}
                             </tbody>
                         </table>
-                        
+
                         <!-- Пагинация -->
                         {% if is_paginated %}
-                        <div class="datatable-footer mt-3">
-                            <div class="row">
-                                <div class="col-12">
-                                    <nav>
-                                        <ul class="pagination justify-content-center">
-                                            {% if page_obj.has_previous %}
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                                        <i class="fas fa-angle-double-left"></i>
-                                                    </a>
+                            <div class="datatable-footer mt-3">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <nav>
+                                            <ul class="pagination justify-content-center">
+                                                {% if page_obj.has_previous %}
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="?page=1
+                                                                {% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                            <i class="fas fa-angle-double-left"></i>
+                                                        </a>
+                                                    </li>
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="?page=
+                                                                {{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                            <i class="fas fa-angle-left"></i>
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
                                                 </li>
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                                        <i class="fas fa-angle-left"></i>
-                                                    </a>
-                                                </li>
-                                            {% endif %}
-                                            
-                                            <li class="page-item active">
-                                                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-                                            </li>
-                                            
-                                            {% if page_obj.has_next %}
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                                        <i class="fas fa-angle-right"></i>
-                                                    </a>
-                                                </li>
-                                                <li class="page-item">
-                                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                                        <i class="fas fa-angle-double-right"></i>
-                                                    </a>
-                                                </li>
-                                            {% endif %}
-                                        </ul>
-                                    </nav>
+
+                                                {% if page_obj.has_next %}
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="?page=
+                                                                {{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                            <i class="fas fa-angle-right"></i>
+                                                        </a>
+                                                    </li>
+                                                    <li class="page-item">
+                                                        <a class="page-link" href="?page=
+                                                                {{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                                            <i class="fas fa-angle-double-right"></i>
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+                                            </ul>
+                                        </nav>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -207,6 +218,7 @@
         .actions .btn {
             margin: 0 2px;
         }
+
         .table th {
             font-weight: 600;
         }
@@ -216,18 +228,18 @@
 {% block custom_script %}
     <script>
         // Клиентская фильтрация
-        $(document).ready(function() {
-            $('#filter-number, #filter-name').on('keyup', function() {
+        $(document).ready(function () {
+            $('#filter-number, #filter-name').on('keyup', function () {
                 var filterNumber = $('#filter-number').val().toLowerCase();
                 var filterName = $('#filter-name').val().toLowerCase();
-                
-                $('tbody tr').each(function() {
+
+                $('tbody tr').each(function () {
                     var number = $(this).find('td').eq(0).text().toLowerCase();
                     var name = $(this).find('td').eq(1).text().toLowerCase();
-                    
+
                     var matchesNumber = filterNumber === '' || number.indexOf(filterNumber) > -1;
                     var matchesName = filterName === '' || name.indexOf(filterName) > -1;
-                    
+
                     if (matchesNumber && matchesName) {
                         $(this).show();
                     } else {

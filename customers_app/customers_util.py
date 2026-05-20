@@ -744,3 +744,84 @@ def get_vacation_days(self, dates):
     ]
     # print(((len(dates) - 1) * (28 / 12)), days)
     return round(((len(dates) - 1) * (28 / 12)) - days)
+
+
+def prepare_consent_context(consent):
+    """
+    Подготовка контекста данных для заполнения шаблона согласия
+    """
+    from datetime import datetime
+
+    # Основные данные сотрудника
+    employee = consent.employee
+
+    # Форматирование дат
+    consent_date_str = consent.consent_date.strftime('%d.%m.%Y') if consent.consent_date else ''
+
+    # Получаем данные из рабочих профилей
+    work_profile = employee.user_work_profile
+    personal_profile = employee.user_profile
+
+    # Формируем контекст
+    context = {
+        # Данные согласия
+        'consent_number': consent.consent_number,
+        'consent_date': consent_date_str,
+        'consent_date_full': consent.consent_date.strftime('%d %B %Y') if consent.consent_date else '',
+
+        # Тип согласия
+        'consent_type_name': consent.consent_type.name if consent.consent_type else '',
+        'consent_type_description': consent.consent_type.description if consent.consent_type else '',
+
+        # Данные сотрудника
+        'employee_full_name': consent.employee_full_name,
+        'employee_last_name': employee.last_name or '',
+        'employee_first_name': employee.first_name or '',
+        'employee_surname': employee.surname or '',
+        'employee_position': consent.employee_position,
+        'employee_service_number': employee.service_number or '',
+
+        # Паспортные данные (если есть)
+        'passport_series': '',
+        'passport_number': '',
+        'passport_issued_by': '',
+        'passport_issue_date': '',
+
+        # Адрес
+        'employee_address': consent.employee.address or '',
+
+        # Контактные данные
+        'employee_phone': employee.personal_phone or '',
+        'employee_email': employee.email or '',
+
+        # Рабочие данные
+        'department': str(work_profile.divisions) if work_profile and work_profile.divisions else '',
+        'internal_phone': work_profile.internal_phone if work_profile else '',
+
+        # СНИЛС, ИНН, ОМС
+        'snils': personal_profile.snils if personal_profile else '',
+        'inn': personal_profile.inn if personal_profile else '',
+        'oms': personal_profile.oms if personal_profile else '',
+
+        # Комментарий
+        'comment': consent.comment or '',
+
+        # Текущая дата
+        'current_date': datetime.now().strftime('%d.%m.%Y'),
+        'current_date_full': datetime.now().strftime('%d %B %Y'),
+    }
+
+    # Заполняем паспортные данные, если есть
+    if personal_profile and personal_profile.passport:
+        passport = personal_profile.passport
+        context.update({
+            'passport_series': getattr(passport, 'series', ''),
+            'passport_number': getattr(passport, 'number', ''),
+            'passport_issued_by': getattr(passport, 'issued_by_whom', ''),
+            'passport_issue_date': getattr(passport, 'date_of_issue', '').strftime('%d.%m.%Y') if getattr(passport,
+                                                                                                       'date_of_issue',
+                                                                                                       None) else '',
+            'passport_issue_code': getattr(passport, 'division_code', ''),
+        })
+
+    return context
