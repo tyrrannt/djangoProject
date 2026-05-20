@@ -6,6 +6,246 @@
     Согласие №{{ consent.consent_number }}
 {% endblock %}
 
+{% block custom_css %}
+
+    <style>
+        .table-bordered th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .badge {
+            font-size: 14px;
+            padding: 5px 10px;
+        }
+
+        .breadcrumb-item a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .breadcrumb-item a:hover {
+            color: #2d41b0;
+            text-decoration: underline;
+        }
+
+
+        .ticket-header-card .card-body {
+            padding: 28px 32px;
+            color: #0d0d0e;
+        }
+
+        .ticket-meta-item i {
+            font-size: 1rem;
+        }
+
+
+        .info-card-header i {
+            font-size: 1.2rem;
+            color: var(--accent-primary);
+        }
+
+
+        .ticket-description-card .card-body {
+            padding: 24px 28px;
+        }
+
+
+        .attachment-item i {
+            font-size: 1.1rem;
+        }
+
+
+        .appeal-list li {
+            margin-bottom: 6px;
+        }
+
+        .appeal-list a {
+            color: #b02a37;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .appeal-list a:hover {
+            color: #842029;
+            text-decoration: underline;
+        }
+
+        .messages-header h5 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: #374151;
+            font-size: 1.1rem;
+        }
+
+
+        .message-item.is-responsible .sender-avatar {
+            background: linear-gradient(135deg, var(--accent-success), #059669);
+        }
+
+        .message-item.is-internal .sender-avatar {
+            background: linear-gradient(135deg, var(--accent-warning), #d97706);
+            color: #1a1a1a;
+        }
+
+        .message-item.is-author .sender-role {
+            color: var(--accent-primary);
+        }
+
+        .message-item.is-responsible .sender-role {
+            color: #059669;
+        }
+
+        .message-attachments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .message-attachment {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f0f4ff;
+            border: 1px solid #dbe4ff;
+            border-radius: 6px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .message-attachment:hover {
+            background: #e0e7ff;
+            color: #2d41b0;
+        }
+
+        .empty-messages i {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .empty-messages p {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+
+        .message-form-header i {
+            font-size: 1.2rem;
+            color: var(--accent-primary);
+        }
+
+        .message-form-header h5 {
+            margin: 0;
+            font-weight: 700;
+            color: #374151;
+        }
+
+
+        .message-form-body textarea {
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: vertical;
+        }
+
+        .message-form-body textarea:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+            outline: none;
+        }
+
+        .message-form-body .form-select {
+            border: 2px solid #e5e7eb;
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .message-form-body .form-select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+            outline: none;
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            border: 2px dashed #d1d5db;
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            width: 100%;
+            text-align: center;
+            transition: border-color 0.2s, background 0.2s;
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper input[type="file"]:hover {
+            border-color: var(--accent-primary);
+            background: #f8faff;
+        }
+
+        .locked-card i {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+
+        /* Модальное окно */
+        .modal-body .attachment-preview {
+            max-width: 100%;
+            max-height: 70vh;
+            display: block;
+            margin: 0 auto;
+            border-radius: var(--radius-sm);
+        }
+
+        .modal-body .pdf-preview {
+            width: 100%;
+            height: 70vh;
+            border: none;
+        }
+
+        .modal-body .pdf-fallback {
+            text-align: center;
+            padding: 2rem;
+        }
+
+
+        /* ===== Мобильные стили ===== */
+        @media (max-width: 768px) {
+            .ticket-header-card .card-body {
+                padding: 20px 18px;
+            }
+
+
+            .ticket-description-card .card-body {
+                padding: 18px 16px;
+            }
+
+        }
+
+        @media (max-width: 480px) {
+            .ticket-header-card .card-body {
+                padding: 16px 14px;
+            }
+        }
+    </style>
+{% endblock %}
+
+
 {% block content %}
     <!-- start: page -->
     <div class="row">
@@ -258,18 +498,4 @@
             });
         });
     </script>
-{% endblock %}
-
-{% block custom_css %}
-    <style>
-        .table-bordered th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-        }
-
-        .badge {
-            font-size: 14px;
-            padding: 5px 10px;
-        }
-    </style>
 {% endblock %}
