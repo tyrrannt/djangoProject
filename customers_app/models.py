@@ -16,6 +16,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django_ckeditor_5.fields import CKEditor5Field
 
+from administration_app.models import TemplateDocument
 from contracts_app.templatetags.custom import empty_item
 from djangoProject.settings import BASE_DIR
 from django.contrib.auth.models import Group, Permission
@@ -657,6 +658,101 @@ def get_biometric_consent_upload_path(instance, filename):
     return f"docs/BC/{date_path}/{unique_name}"
 
 
+class ConsentType(models.Model):
+    """
+    Тип согласия на обработку биометрических данных
+    """
+
+    class Meta:
+        verbose_name = "Тип согласия"
+        verbose_name_plural = "Типы согласий"
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['code', 'is_active']),
+        ]
+
+    # Основная информация
+    name = models.CharField(
+        verbose_name="Наименование типа согласия",
+        max_length=200,
+        help_text="Например: Стандартное согласие, Расширенное согласие и т.д."
+    )
+    code = models.SlugField(
+        verbose_name="Кодовое обозначение",
+        max_length=50,
+        unique=True,
+        help_text="Уникальный код типа согласия (например: standard, extended)"
+    )
+
+    # Связь с шаблоном документа
+    template = models.ForeignKey(
+        'administration_app.TemplateDocument',
+        verbose_name="Шаблон документа",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='consent_types',
+        help_text="Шаблон согласия для этого типа"
+    )
+
+    # Описание
+    description = models.TextField(
+        verbose_name="Описание",
+        blank=True,
+        help_text="Описание типа согласия"
+    )
+
+    # Статус
+    is_active = models.BooleanField(
+        verbose_name="Активен",
+        default=True,
+        help_text="Отметьте, если этот тип согласия используется"
+    )
+
+    # Сортировка
+    sort_order = models.PositiveIntegerField(
+        verbose_name="Порядок сортировки",
+        default=0,
+        help_text="Чем меньше число, тем выше в списке"
+    )
+
+    # Автоматические поля
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        auto_now_add=True
+    )
+    updated_at = models.DateTimeField(
+        verbose_name="Дата обновления",
+        auto_now=True
+    )
+    created_by = models.ForeignKey(
+        'DataBaseUser',
+        verbose_name="Кто создал",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_consent_types'
+    )
+
+    def __str__(self):
+        return self.name
+
+    # def get_active_template(self):
+    #     """
+    #     Получить актуальный шаблон документа для этого типа согласия
+    #     """
+    #     if self.template:
+    #         return TemplateDocument.get_active_template(self.template.unique_code)
+    #     return None
+
+    def save(self, *args, **kwargs):
+        # Автоматическая генерация code из name, если не указан
+        if not self.code and self.name:
+            from django.utils.text import slugify
+            self.code = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
 class BiometricConsent(models.Model):
     """
     Согласие на обработку биометрических персональных данных
@@ -681,6 +777,17 @@ class BiometricConsent(models.Model):
         on_delete=models.CASCADE,
         related_name='biometric_consents',
         help_text="Сотрудник, давший согласие"
+    )
+
+    # НОВОЕ ПОЛЕ: Тип согласия
+    consent_type = models.ForeignKey(
+        'ConsentType',
+        verbose_name="Тип согласия",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='biometric_consents',
+        help_text="Тип согласия на обработку биометрии"
     )
 
     # Основные реквизиты документа

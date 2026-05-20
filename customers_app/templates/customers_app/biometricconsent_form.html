@@ -47,6 +47,20 @@
                                         {% endif %}
                                     </div>
                                 </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ form.consent_type.id_for_label }}">Тип согласия *</label>
+                                        {{ form.consent_type }}
+                                        {% if form.consent_type.errors %}
+                                            <div class="text-danger">{{ form.consent_type.errors }}</div>
+                                        {% endif %}
+                                        {% if not form.consent_type.value %}
+                                            <small class="text-muted">Оставьте пустым для автоматической генерации</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
                                 <div class="col-md-6">
                                     <div class="form-group mb-3">
                                         <label for="{{ form.consent_number.id_for_label }}">Номер согласия *</label>

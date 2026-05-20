@@ -16,7 +16,7 @@
                         <div class="datatable-header">
                             <div class="row align-items-center mb-3">
                                 <div class="col-12 col-md-6">
-                                    <h2 class="mb-0">Согласие №{{ consent.consent_number }}</h2>
+                                    <h2 class="mb-0">Согласие №: {{ consent.consent_number }}</h2>
                                 </div>
                                 <div class="col-12 col-md-6 text-end">
                                     <a href="{% url 'customers_app:biometric_consent_list' %}" class="btn btn-secondary">
@@ -76,7 +76,7 @@
                                 <table class="table table-bordered">
                                     <tr>
                                         <th style="width: 40%;">Шаблон согласия:</th>
-                                        <td>{{ consent.consent_template }}</td>
+                                        <td>{{ consent.consent_type.template }}</td>
                                     </tr>
                                     <tr>
                                         <th>Создано:</th>

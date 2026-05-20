@@ -503,6 +503,7 @@ class BiometricConsentForm(forms.ModelForm):
         model = BiometricConsent
         fields = [
             'employee',
+            'consent_type',
             'consent_number',
             'consent_date',
             'employee_full_name',
@@ -512,26 +513,17 @@ class BiometricConsentForm(forms.ModelForm):
             'is_active',
             'revocation_date',
         ]
-        widgets = {
-            'consent_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'revocation_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'comment': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
-            'employee_full_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'employee_position': forms.TextInput(attrs={'class': 'form-control'}),
-            'consent_number': forms.TextInput(attrs={'class': 'form-control'}),
-        }
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Добавляем классы Bootstrap
-        for field_name, field in self.fields.items():
-            if field.widget.__class__.__name__ != 'CheckboxInput':
-                field.widget.attrs['class'] = field.widget.attrs.get('class', 'form-control')
+        for field in self.fields:
+            make_custom_field(self.fields[field])
 
         # Если это редактирование, блокируем изменение сотрудника
         if self.instance and self.instance.pk:
-            self.fields['employee'].widget.attrs['disabled'] = True
+            self.fields['employee'].widget.attrs['readonly'] = True
             self.fields['consent_number'].widget.attrs['readonly'] = True
 
     # def clean(self):

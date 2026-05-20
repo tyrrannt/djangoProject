@@ -36,7 +36,7 @@ from .models import (
     VacationSchedule,
     CounteragentDocuments,
     UserStats,
-    Apartments, ApartmentBooking, BiometricConsent,
+    Apartments, ApartmentBooking, BiometricConsent, ConsentType,
 )
 from unfold.admin import ModelAdmin, TabularInline
 
@@ -642,16 +642,16 @@ class CounteragentAdmin(ModelAdmin):
 
 @admin.register(BiometricConsent)
 class BiometricConsentAdmin(ModelAdmin):
-    list_display = ['consent_number', 'employee_link', 'consent_date',  'is_active',
+    list_display = ['consent_number', 'employee_link', 'consent_type', 'consent_date',  'is_active',
                     'scanned_copy_link']
-    list_filter = ['is_active', 'consent_date',]
+    list_filter = ['is_active', 'consent_type', 'consent_date',]
     search_fields = ['consent_number', 'employee__last_name', 'employee__first_name', 'employee_full_name']
     date_hierarchy = 'consent_date'
     readonly_fields = ['created_at', 'updated_at', 'created_by']
 
     fieldsets = (
         ('Основная информация', {
-            'fields': ('employee', 'consent_number', 'consent_date', )
+            'fields': ('employee', 'consent_type', 'consent_number', 'consent_date', )
         }),
         ('Данные сотрудника на момент подписания', {
             'fields': ('employee_full_name', 'employee_position')
@@ -683,5 +683,51 @@ class BiometricConsentAdmin(ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if not change:  # при создании
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(ConsentType)
+class ConsentTypeAdmin(ModelAdmin):
+    list_display = ['name', 'code', 'template_link', 'is_active', 'sort_order', 'consents_count']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['name', 'code', 'description']
+    list_editable = ['sort_order', 'is_active']
+    readonly_fields = ['created_at', 'updated_at']
+
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'code', 'description', 'is_active')
+        }),
+        ('Шаблон документа', {
+            'fields': ('template',),
+            'description': 'Выберите шаблон документа для этого типа согласия'
+        }),
+        ('Настройки отображения', {
+            'fields': ('sort_order',)
+        }),
+        ('Служебная информация', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+
+    def template_link(self, obj):
+        if obj.template:
+            url = reverse('admin:administration_app_templatedocument_change', args=[obj.template.id])
+            return format_html('<a href="{}">{}</a>', url, obj.template.name)
+        return "Не указан"
+
+    template_link.short_description = 'Шаблон'
+
+    def consents_count(self, obj):
+        count = obj.biometric_consents.count()
+        url = reverse('admin:customers_app_biometricconsent_changelist') + f'?consent_type__id={obj.id}'
+        return format_html('<a href="{}">{} согласий</a>', url, count)
+
+    consents_count.short_description = 'Используется'
+
+    def save_model(self, request, obj, form, change):
+        if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)

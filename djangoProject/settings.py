@@ -518,6 +518,11 @@ UNFOLD = {
                         "icon": "notifications",
                         "link": reverse_lazy("admin:administration_app_notification_changelist"),
                     },
+{
+                        "title": _("Шаблоны документов"),
+                        "icon": "data_thresholding",
+                        "link": reverse_lazy("admin:administration_app_templatedocument_changelist"),
+                    },
                 ],
             },
 
@@ -692,13 +697,18 @@ UNFOLD = {
                     },
                     {
                         "title": _("Бронирование квартир"),
-                        "icon": "apartment",
+                        "icon": "domain_add",
                         "link": reverse_lazy("admin:customers_app_apartmentbooking_changelist"),
                     },
                     {
                         "title": _("Согласия на обработку ПД и БД"),
-                        "icon": "apartment",
+                        "icon": "fingerprint",
                         "link": reverse_lazy("admin:customers_app_biometricconsent_changelist"),
+                    },
+                    {
+                        "title": _("Тип согласий"),
+                        "icon": "tab_inactive",
+                        "link": reverse_lazy("admin:customers_app_consenttype_changelist"),
                     },
                 ],
             },
@@ -1002,7 +1012,7 @@ UNFOLD = {
                 "items": [
                     {
                         "title": _("Чаты"),
-                        "icon": "telegram",
+                        "icon": "chat",
                         "link": reverse_lazy("admin:telegram_app_chatid_changelist"),
                     },
                     {
