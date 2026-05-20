@@ -359,33 +359,30 @@
                                     <div class="card-body text-center">
                                         {% if consent.scanned_copy %}
                                             <div class="mb-3">
-                                                {% if consent.scanned_copy.url|lower|slice:"-4:" == ".pdf" %}
-                                                    <i class="fas fa-file-pdf fa-4x text-danger"></i>
-                                                {% elif consent.scanned_copy.url|lower|slice:"-4:" in ".jpg,.png" %}
-                                                    <img src="{{ consent.scanned_copy.url }}"
-                                                         alt="Скан согласия"
-                                                         style="max-width: 100%; max-height: 500px; cursor: pointer;"
-                                                         onclick="window.open(this.src)">
-                                                {% else %}
-                                                    <i class="fas fa-file fa-4x"></i>
-                                                {% endif %}
+                                                <div class="message-attachments">
+                                                    <a href="javascript:void(0)"
+                                                       class="message-attachment"
+                                                       data-bs-toggle="modal"
+                                                       data-bs-target="#attachmentModal"
+                                                       data-file-url="{{ consent.scanned_copy.url }}"
+                                                       data-file-name="{{ consent.scanned_copy }}">
+                                                        {% if consent.scanned_copy.url|lower|slice:"-4:" == ".pdf" %}
+                                                            <i class="fas fa-file-pdf fa-4x text-danger"></i>
+                                                        {% elif consent.scanned_copy.url|lower|slice:"-4:" in ".jpg,.png" %}
+                                                            <img src="{{ consent.scanned_copy.url }}"
+                                                                 alt="Скан согласия"
+                                                                 style="max-width: 100%; max-height: 500px; cursor: pointer;"
+                                                                 onclick="window.open(this.src)">
+                                                        {% else %}
+                                                            <i class="fas fa-file fa-4x"></i>
+                                                        {% endif %}
+                                                    </a>
+                                                </div>
                                             </div>
                                             <a href="{{ consent.scanned_copy.url }}" class="btn btn-primary"
                                                target="_blank">
                                                 <i class="fas fa-download"></i> Скачать файл
                                             </a>
-
-                                            <div class="message-attachments">
-                                                <a href="javascript:void(0)"
-                                                   class="message-attachment"
-                                                   data-bs-toggle="modal"
-                                                   data-bs-target="#attachmentModal"
-                                                   data-file-url="{{ consent.scanned_copy.url }}"
-                                                   data-file-name="{{ consent.scanned_copy }}">
-                                                    <i class='bx bx-paperclip'></i> {{ consent.scanned_copy }}
-                                                </a>
-                                            </div>
-
                                         {% else %}
                                             <p class="text-muted">Файл не загружен</p>
                                         {% endif %}
