@@ -1,0 +1,28 @@
+{% block content %}
+<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <h2 style="color: #007bff;">Уведомление о задаче: {{ task.title }}</h2>
+    <p>Здравствуйте!</p>
+    <p>Вам предоставлен доступ к задаче <strong>"{{ task.title }}"</strong>.</p>
+    
+    {% if task.description %}
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 5px solid #007bff; margin: 20px 0;">
+        <strong>Описание:</strong><br>
+        {{ task.description|linebreaksbr }}
+    </div>
+    {% endif %}
+
+    <p>
+        <strong>Приоритет:</strong> {{ task.get_priority_display }}<br>
+        <strong>Срок:</strong> {% if task.end_date %}{{ task.end_date|date:"d.m.Y H:i" }}{% else %}Не указан{% endif %}
+    </p>
+
+    <p style="margin-top: 30px;">
+        <a href="{{ task_url }}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Перейти к задаче</a>
+    </p>
+    
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
+    <p style="font-size: 0.8em; color: #777;">
+        Это автоматическое уведомление. Пожалуйста, не отвечайте на него.
+    </p>
+</div>
+{% endblock %}

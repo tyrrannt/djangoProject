@@ -1,11 +1,13 @@
 # tasks_app/views.py
 import os
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -13,7 +15,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 
-from administration_app.utils import get_task_title_with_icon
+from administration_app.utils import get_task_title_with_icon, send_notification
 from customers_app.models import DataBaseUser
 from tasks_app.forms import TaskForm
 from tasks_app.models import Task, Category, TaskFile
@@ -337,6 +339,55 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['can_edit'] = self.object.user == self.request.user
         return context
+
+    def post(self, request, *args, **kwargs):
+        """
+        Обработка отправки уведомлений сотрудникам, имеющим доступ к задаче.
+        """
+        task = self.get_object()
+
+        # Только автор может отправлять уведомления всем
+        if task.user != request.user:
+            messages.error(request, "Только автор задачи может отправлять уведомления.")
+            return redirect('tasks_app:task-detail', pk=task.pk)
+
+        # Проверка наличия профиля и пароля почты
+        if not hasattr(request.user, 'user_work_profile') or not request.user.user_work_profile.work_email_password:
+            messages.error(request,
+                           "У вас не настроен пароль для отправки почты в рабочем профиле. Обратитесь к администратору.")
+            return redirect('tasks_app:task-detail', pk=task.pk)
+
+        shared_users = task.shared_with.all()
+        if not shared_users:
+            messages.warning(request, "Нет сотрудников, которым открыт доступ к этой задаче.")
+            return redirect('tasks_app:task-detail', pk=task.pk)
+
+        success_count = 0
+        task_url = request.build_absolute_uri(reverse('tasks_app:task-detail', args=[task.pk]))
+
+        for user in shared_users:
+            if user.email:
+                result = send_notification(
+                    sender=request.user,
+                    recipient=user,
+                    subject=f"Уведомление о задаче: {task.title}",
+                    template='tasks_app/emails/task_notification.html',
+                    context={
+                        'task': task,
+                        'task_url': task_url,
+                        'user': user
+                    },
+                    division=0  # Отправка от имени пользователя
+                )
+                if result:
+                    success_count += 1
+
+        if success_count > 0:
+            messages.success(request, f"Уведомления успешно отправлены ({success_count}).")
+        else:
+            messages.error(request, "Не удалось отправить уведомления. Проверьте настройки почты.")
+
+        return redirect('tasks_app:task-detail', pk=task.pk)
 
 
 # tasks_app/views.py

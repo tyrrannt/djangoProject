@@ -3,7 +3,7 @@
 {% load custom %}
 
 {% block title %}
-    <title>{{ task.title }} - Детали задачи | Портал</title>
+    Детали задачи
 {% endblock %}
 
 {% block custom_css %}
@@ -56,6 +56,14 @@
 
 {% block content %}
     <div class="container-fluid py-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
 
         <div class="row">
             {# ОСНОВНАЯ ИНФОРМАЦИЯ (левая колонка) #}
@@ -204,6 +212,14 @@
                                 <a href="{% url 'tasks_app:task-update' task.pk %}" class="btn btn-primary btn-action">
                                     <i class="fas fa-edit me-2"></i> Редактировать
                                 </a>
+                                {% if task.shared_with.all %}
+                                    <form method="post" action="{% url 'tasks_app:task-detail' task.pk %}" class="d-grid">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-info btn-action text-white">
+                                            <i class="fas fa-paper-plane me-2"></i> Отправить уведомления
+                                        </button>
+                                    </form>
+                                {% endif %}
                                 <button type="button" class="btn btn-danger btn-action" data-bs-toggle="modal"
                                         data-bs-target="#deleteTaskModal">
                                     <i class="fas fa-trash-alt me-2"></i> Удалить
