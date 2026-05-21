@@ -5,42 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Уведомление о задаче</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f7fc; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f7fc; padding: 30px 0;">
+<body style="margin: 0; padding: 0; background-color: #eef2f5; font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #eef2f5; padding: 40px 0;">
         <tr>
             <td align="center">
-                <!-- Основной контейнер письма -->
-                <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); overflow: hidden;">
-
-                    <!-- Шапка с градиентом -->
+                <!-- Основной контейнер -->
+                <table width="100%" max-width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); overflow: hidden;">
+                    
+                    <!-- Строгая шапка -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 32px 30px; text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 12px;">📋</div>
-                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.3px;">Новая задача</h1>
-                            <p style="color: #e0e7ff; margin: 10px 0 0; font-size: 16px;">Вам назначена задача в системе</p>
+                        <td style="background-color: #1a3a5c; padding: 28px 30px; border-bottom: 3px solid #2c6e9e;">
+                            <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 500; letter-spacing: normal;">Уведомление о задаче</h2>
+                            <p style="color: #b9d4f0; margin: 8px 0 0; font-size: 14px;">№ {{ task.id|default:"---" }} · Служебная информация</p>
                         </td>
                     </tr>
 
-                    <!-- Тело письма -->
+                    <!-- Тело -->
                     <tr>
-                        <td style="padding: 40px 30px;">
-                            <!-- Приветствие -->
-                            <p style="font-size: 16px; color: #1e293b; margin-top: 0; margin-bottom: 8px;">Здравствуйте!</p>
-                            <p style="font-size: 16px; color: #334155; margin-top: 0; margin-bottom: 24px;">
-                                Вам предоставлен доступ к задаче
-                                <strong style="color: #4f46e5; font-weight: 600;">“{{ task.title }}”</strong>.
+                        <td style="padding: 32px 30px 28px;">
+                            <!-- Обращение -->
+                            <p style="font-size: 15px; color: #2d3e4f; margin-top: 0; margin-bottom: 22px; line-height: 1.5;">
+                                В соответствии с рабочим процессом Вам предоставлен доступ к задаче 
+                                <strong style="color: #1a5d8c;">«{{ task.title }}»</strong>.
                             </p>
 
-                            <!-- Карточка описания (если есть) -->
+                            <!-- Описание задачи (строгая рамка) -->
                             {% if task.description %}
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 28px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px; border-left: 3px solid #2c6e9e; background-color: #f9fbfd;">
                                 <tr>
-                                    <td style="padding: 20px;">
-                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                                            <span style="font-size: 18px;">📄</span>
-                                            <strong style="color: #0f172a; font-size: 15px;">Описание задачи</strong>
-                                        </div>
-                                        <div style="color: #334155; font-size: 15px; line-height: 1.6;">
+                                    <td style="padding: 14px 18px;">
+                                        <div style="font-size: 13px; color: #4a627a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Описание задачи</div>
+                                        <div style="color: #2c3e4e; font-size: 14px; line-height: 1.6;">
                                             {{ task.description|linebreaksbr }}
                                         </div>
                                     </td>
@@ -48,68 +43,44 @@
                             </table>
                             {% endif %}
 
-                            <!-- Блок с деталями (приоритет и срок) -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                            <!-- Таблица с параметрами -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 28px; border-collapse: collapse;">
                                 <tr>
-                                    <td style="background-color: #f1f5f9; border-radius: 16px; padding: 16px 20px;">
-                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                            <tr>
-                                                <td style="padding-bottom: 12px;">
-                                                    <table width="100%" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td width="50%" style="vertical-align: top;">
-                                                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                                                    <span style="font-size: 16px;">⚡</span>
-                                                                    <span style="color: #475569; font-size: 13px; font-weight: 500;">ПРИОРИТЕТ</span>
-                                                                </div>
-                                                                <div style="font-weight: 600; font-size: 16px; color: #1e293b;">
-                                                                    {{ task.get_priority_display }}
-                                                                </div>
-                                                            </td>
-                                                            <td width="50%" style="vertical-align: top;">
-                                                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                                                    <span style="font-size: 16px;">📅</span>
-                                                                    <span style="color: #475569; font-size: 13px; font-weight: 500;">СРОК</span>
-                                                                </div>
-                                                                <div style="font-weight: 600; font-size: 16px; color: #1e293b;">
-                                                                    {% if task.end_date %}
-                                                                        {{ task.end_date|date:"d.m.Y" }}
-                                                                        <span style="font-size: 14px; font-weight: normal; color: #64748b;">
-                                                                            в {{ task.end_date|date:"H:i" }}
-                                                                        </span>
-                                                                    {% else %}
-                                                                        <span style="color: #94a3b8;">Не указан</span>
-                                                                    {% endif %}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <td width="50%" style="padding: 10px 12px 10px 0; border-bottom: 1px solid #e2e8f0;">
+                                        <div style="font-size: 12px; color: #5a6e7c; text-transform: uppercase; margin-bottom: 4px;">Приоритет</div>
+                                        <div style="font-size: 16px; font-weight: 500; color: #1e2f3c;">
+                                            {{ task.get_priority_display }}
+                                        </div>
+                                    </td>
+                                    <td width="50%" style="padding: 10px 0 10px 12px; border-bottom: 1px solid #e2e8f0;">
+                                        <div style="font-size: 12px; color: #5a6e7c; text-transform: uppercase; margin-bottom: 4px;">Срок исполнения</div>
+                                        <div style="font-size: 16px; font-weight: 500; color: #1e2f3c;">
+                                            {% if task.end_date %}
+                                                {{ task.end_date|date:"d.m.Y" }}
+                                                <span style="font-size: 13px; font-weight: normal; color: #5c6f87;">в {{ task.end_date|date:"H:i" }}</span>
+                                            {% else %}
+                                                <span style="color: #8c9aa8;">не установлен</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- Кнопка действия -->
+                            <!-- Статус (контрольная точка) -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f7fa; border-radius: 6px; margin-bottom: 30px;">
+                                <tr>
+                                    <td style="padding: 12px 18px;">
+                                        <div style="font-size: 13px; color: #1a5d8c;">📌 Требуется действие</div>
+                                        <div style="font-size: 14px; color: #2d4f6e; margin-top: 4px;">Ознакомьтесь с задачей и выполните необходимые действия в установленный срок.</div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Кнопка в официальном стиле -->
                             <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
-                                    <td align="center" style="padding-bottom: 16px;">
-                                        <a href="{{ task_url }}" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 40px; box-shadow: 0 4px 8px rgba(79, 70, 229, 0.25); transition: all 0.2s ease;">Перейти к задаче →</a>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Подсказка (если надо) -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 32px; background-color: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 12px;">
-                                <tr>
-                                    <td style="padding: 12px 16px;">
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-size: 16px;">💡</span>
-                                            <span style="font-size: 13px; color: #92400e;">
-                                                Нажмите на кнопку выше, чтобы открыть задачу и начать работу.
-                                            </span>
-                                        </div>
+                                    <td align="left" style="padding-top: 8px;">
+                                        <a href="{{ task_url }}" style="display: inline-block; background-color: #2c6e9e; color: #ffffff; text-decoration: none; font-weight: 500; font-size: 14px; padding: 10px 24px; border-radius: 4px; border: 1px solid #235b82; letter-spacing: 0.3px;">Перейти к карточке задачи →</a>
                                     </td>
                                 </tr>
                             </table>
@@ -118,13 +89,21 @@
 
                     <!-- Подвал -->
                     <tr>
-                        <td style="background-color: #f8fafc; padding: 24px 30px; border-top: 1px solid #e2e8f0; text-align: center;">
-                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
-                                ⚡ Это автоматическое уведомление. Пожалуйста, не отвечайте на него.
-                            </p>
-                            <p style="margin: 12px 0 0; font-size: 12px; color: #cbd5e1;">
-                                Система управления задачами
-                            </p>
+                        <td style="background-color: #f8fafc; padding: 20px 30px; border-top: 1px solid #e0e8ef;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td style="font-size: 12px; color: #8a9ab0; line-height: 1.5;">
+                                        Это сообщение сгенерировано автоматически в корпоративной системе управления задачами.<br>
+                                        Пожалуйста, не отвечайте на него.
+                                    </td>
+                                </tr>
+                                <tr style="height: 12px;"><td></td></tr>
+                                <tr>
+                                    <td style="font-size: 11px; color: #a6b6cc;">
+                                        © {{ task.created_at|date:"Y"|default:"2025" }} Система управления задачами
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
