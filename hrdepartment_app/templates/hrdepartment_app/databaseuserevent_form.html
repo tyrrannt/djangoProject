@@ -18,12 +18,14 @@
                     Отметка: {{ object.person }} {% if object.pk %} — редактирование {% else %} создание {% endif %}
                 </h4>
 
-                <div class="row mb-3">
-                    <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Сотрудник</label>
-                    <div class="col-lg-7 col-xl-6">
-                        {{ form.person|attr:"class:form-control form-control-modern" }}
+                {% if object.pk %}
+                    <div class="row mb-3">
+                        <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Сотрудник</label>
+                        <div class="col-lg-7 col-xl-6">
+                            {{ form.person|attr:"class:form-control form-control-modern" }}
+                        </div>
                     </div>
-                </div>
+                {% endif %}
 
                 <div class="row mb-3">
                     <label class="col-lg-5 col-xl-3 control-label text-lg-end mb-0">Дата отметки</label>

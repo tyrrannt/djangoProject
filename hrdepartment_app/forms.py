@@ -1842,7 +1842,6 @@ class DataBaseUserEventAddForm(forms.ModelForm):
     class Meta:
         model = DataBaseUserEvent
         fields = (
-            "person",
             "date_marks",
             "place",
             "checked",
@@ -1854,9 +1853,11 @@ class DataBaseUserEventAddForm(forms.ModelForm):
         :param args:
         :param kwargs: Содержит словарь, в котором содержится текущий пользователь
         """
-        self.user = kwargs.pop("user")
+        self.user_id = kwargs.pop("user")  # Сохраняем ID пользователя
         super(DataBaseUserEventAddForm, self).__init__(*args, **kwargs)
-        self.fields["person"].queryset = DataBaseUser.objects.filter(pk=self.user)
+
+        # Получаем объект пользователя
+        self.user = DataBaseUser.objects.get(pk=self.user_id)
 
         self.fields["checked"].widget.attrs.update(
             {"class": "todo-check", "data-plugin-ios-switch": True}
@@ -1866,6 +1867,13 @@ class DataBaseUserEventAddForm(forms.ModelForm):
         )
         for field in self.fields:
             make_custom_field(self.fields[field])
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.person = self.user
+        if commit:
+            instance.save()
+        return instance
 
 
 class DataBaseUserEventUpdateForm(forms.ModelForm):
