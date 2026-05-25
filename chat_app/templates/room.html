@@ -172,7 +172,10 @@
                     wrapper.appendChild(remoteVideo);
                     remoteVideosContainer.appendChild(wrapper);
                 }
-                remoteVideo.srcObject = event.streams[0];
+                
+                if (remoteVideo.srcObject !== event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                }
             };
 
             if (localStream) {
@@ -187,7 +190,10 @@
             if (signal.type === 'new-peer') {
                 // Кто-то новый зашел, создаем оффер
                 const pc = createPeerConnection(fromUser);
-                const offer = await pc.createOffer();
+                const offer = await pc.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: true
+                });
                 await pc.setLocalDescription(offer);
                 chatSocket.send(JSON.stringify({
                     'type': 'signal',
@@ -200,7 +206,10 @@
 
                 await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
                 if (signal.sdp.type === 'offer') {
-                    const answer = await pc.createAnswer();
+                    const answer = await pc.createAnswer({
+                        offerToReceiveAudio: true,
+                        offerToReceiveVideo: true
+                    });
                     await pc.setLocalDescription(answer);
                     chatSocket.send(JSON.stringify({
                         'type': 'signal',
