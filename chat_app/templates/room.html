@@ -86,6 +86,7 @@
         import ColorHash from '{% static 'admin_templates/vendor/color-hash/dist/esm.js' %}';
 
         const roomName = "{{ room_name }}";
+        const currentUsername = "{{ request.user.username }}";
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const chatSocket = new WebSocket(
             protocol + window.location.host + '/ws/chat/' + roomName + '/'
@@ -99,7 +100,7 @@
         const stopCallButton = document.getElementById('stop-call');
 
         let localStream;
-        let peerConnections = {}; // username -> RTCPeerConnection
+        let peerConnections = {}; // username -> { pc, makingOffer, ignoreOffer }
         const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
 
         chatSocket.onmessage = function (event) {
@@ -130,8 +131,6 @@
                 startAudioButton.disabled = true;
                 stopCallButton.disabled = false;
 
-                // Уведомляем других о начале звонка, отправляя пустой сигнал или просто ждем их инициативы
-                // В данной реализации мы будем инициаторами для всех существующих участников
                 chatSocket.send(JSON.stringify({
                     'type': 'signal',
                     'signal': {'type': 'new-peer'}
@@ -144,7 +143,18 @@
         }
 
         function createPeerConnection(remoteUsername) {
+            console.log(`Creating PeerConnection for ${remoteUsername}`);
             const pc = new RTCPeerConnection(configuration);
+            
+            // Логика "вежливого" участника для разрешения коллизий (Glare)
+            const polite = currentUsername < remoteUsername;
+
+            const pcData = {
+                pc: pc,
+                makingOffer: false,
+                ignoreOffer: false,
+                polite: polite
+            };
 
             pc.onicecandidate = event => {
                 if (event.candidate) {
@@ -157,6 +167,7 @@
             };
 
             pc.ontrack = event => {
+                console.log(`Received remote track from ${remoteUsername}:`, event.track.kind);
                 let remoteVideo = document.getElementById(`video-${remoteUsername}`);
                 if (!remoteVideo) {
                     const wrapper = document.createElement('div');
@@ -178,57 +189,78 @@
                 }
             };
 
+            pc.onnegotiationneeded = async () => {
+                try {
+                    pcData.makingOffer = true;
+                    await pc.setLocalDescription();
+                    chatSocket.send(JSON.stringify({
+                        'type': 'signal',
+                        'signal': {'sdp': pc.localDescription},
+                        'target': remoteUsername
+                    }));
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    pcData.makingOffer = false;
+                }
+            };
+
             if (localStream) {
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             }
 
-            peerConnections[remoteUsername] = pc;
-            return pc;
+            peerConnections[remoteUsername] = pcData;
+            return pcData;
         }
 
         async function handleSignal(fromUser, signal) {
-            if (signal.type === 'new-peer') {
-                // Кто-то новый зашел, создаем оффер
-                const pc = createPeerConnection(fromUser);
-                const offer = await pc.createOffer({
-                    offerToReceiveAudio: true,
-                    offerToReceiveVideo: true
-                });
-                await pc.setLocalDescription(offer);
-                chatSocket.send(JSON.stringify({
-                    'type': 'signal',
-                    'signal': {'sdp': pc.localDescription},
-                    'target': fromUser
-                }));
-            } else if (signal.sdp) {
-                let pc = peerConnections[fromUser];
-                if (!pc) pc = createPeerConnection(fromUser);
+            try {
+                let pcData = peerConnections[fromUser];
 
-                await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-                if (signal.sdp.type === 'offer') {
-                    const answer = await pc.createAnswer({
-                        offerToReceiveAudio: true,
-                        offerToReceiveVideo: true
-                    });
-                    await pc.setLocalDescription(answer);
-                    chatSocket.send(JSON.stringify({
-                        'type': 'signal',
-                        'signal': {'sdp': pc.localDescription},
-                        'target': fromUser
-                    }));
+                if (signal.type === 'new-peer') {
+                    if (!pcData) createPeerConnection(fromUser);
+                    return;
                 }
-            } else if (signal.candidate) {
-                const pc = peerConnections[fromUser];
-                if (pc) {
-                    await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+
+                if (signal.sdp) {
+                    if (!pcData) pcData = createPeerConnection(fromUser);
+                    const pc = pcData.pc;
+
+                    const offerCollision = (signal.sdp.type === "offer") &&
+                        (pcData.makingOffer || pc.signalingState !== "stable");
+
+                    pcData.ignoreOffer = !pcData.polite && offerCollision;
+                    if (pcData.ignoreOffer) {
+                        console.log(`Ignoring offer from ${fromUser} due to collision`);
+                        return;
+                    }
+
+                    await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                    if (signal.sdp.type === "offer") {
+                        await pc.setLocalDescription();
+                        chatSocket.send(JSON.stringify({
+                            'type': 'signal',
+                            'signal': {'sdp': pc.localDescription},
+                            'target': fromUser
+                        }));
+                    }
+                } else if (signal.candidate) {
+                    if (!pcData) pcData = createPeerConnection(fromUser);
+                    try {
+                        await pcData.pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                    } catch (err) {
+                        if (!pcData.ignoreOffer) throw err;
+                    }
+                } else if (signal.type === 'bye') {
+                    if (pcData) {
+                        pcData.pc.close();
+                        delete peerConnections[fromUser];
+                        const video = document.getElementById(`video-${fromUser}`);
+                        if (video) video.parentElement.remove();
+                    }
                 }
-            } else if (signal.type === 'bye') {
-                if (peerConnections[fromUser]) {
-                    peerConnections[fromUser].close();
-                    delete peerConnections[fromUser];
-                    const video = document.getElementById(`video-${fromUser}`);
-                    if (video) video.parentElement.remove();
-                }
+            } catch (err) {
+                console.error(err);
             }
         }
 
