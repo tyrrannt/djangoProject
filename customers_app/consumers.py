@@ -204,21 +204,33 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # Получение сообщения от WebSocket
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-        username = self.scope['user'].username  # Получаем имя пользователя
+        message_type = text_data_json.get('type', 'chat_message')
 
-        # # Сохранение сообщения в базе данных
-        # await self.save_message(username, message)
+        if message_type == 'chat_message':
+            message = text_data_json['message']
+            username = self.scope['user'].username  # Получаем имя пользователя
 
-        # Отправка сообщения в группу
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message,
-                'username': username,
-            }
-        )
+            # Отправка сообщения в группу
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': message,
+                    'username': username,
+                }
+            )
+        elif message_type == 'signal':
+            # Пересылка сигналов WebRTC (offer, answer, ice candidates)
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'send_signal',
+                    'signal': text_data_json['signal'],
+                    'target': text_data_json.get('target'),
+                    'sender_channel_name': self.channel_name,
+                    'username': self.scope['user'].username
+                }
+            )
 
     # Получение сообщения от группы
     async def chat_message(self, event):
@@ -227,9 +239,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # Отправка сообщения в WebSocket
         await self.send(text_data=json.dumps({
+            'type': 'chat_message',
             'message': message,
             'username': username,
         }))
+
+    async def send_signal(self, event):
+        # Отправляем сигнал всем, кроме отправителя
+        if self.channel_name != event['sender_channel_name']:
+            target = event.get('target')
+            # Если указан target, проверяем, что он совпадает с текущим пользователем
+            if target and target != self.scope['user'].username:
+                return
+
+            await self.send(text_data=json.dumps({
+                'type': 'signal',
+                'signal': event['signal'],
+                'username': event['username']
+            }))
 
     # Получение уведомления от группы
     async def user_notification(self, event):

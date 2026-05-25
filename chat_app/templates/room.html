@@ -8,8 +8,6 @@
 
 {% block custom_css %}
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
-    {#    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@latest/index.js"></script>#}
-    {#    <script src="https://cdn.jsdelivr.net/npm/color-hash@2.0.0/dist/color-hash.min.js"></script>#}
     <style>
         .message {
             padding: 6px 12px;
@@ -27,34 +25,87 @@
             margin-bottom: 8px;
             font-size: 14px;
         }
+
+        #video-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        video {
+            width: 100%;
+            background-color: #000;
+            border-radius: 8px;
+        }
+
+        .local-video {
+            border: 2px solid #007bff;
+        }
+
+        .remote-video {
+            border: 2px solid #28a745;
+        }
     </style>
 {% endblock %}
 
 {% block content %}
-        <h1>Chat Room: {{ room_name }}</h1>
-        <div id="chat-log" class="border rounded p-2 mb-3 bg-light"
-             style="max-width: 100%; height: 400px; overflow-y: auto;"></div>
+    <div class="row">
+        <div class="col-md-8">
+            <h1>Chat Room: {{ room_name }}</h1>
 
-        <div class="input-group mb-3" style="max-width: 600px;">
-            <input id="chat-message-input" type="text" class="form-control" placeholder="Введите сообщение...">
-            <button id="chat-message-submit" class="btn btn-primary" type="button">Отправить</button>
+            <div id="video-container">
+                <div class="video-wrapper">
+                    <label>Вы</label>
+                    <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+                </div>
+                <div id="remote-videos-container"></div>
+            </div>
+
+            <div id="chat-log" class="border rounded p-2 mb-3 bg-light"
+                 style="max-width: 100%; height: 400px; overflow-y: auto;"></div>
+
+            <div class="input-group mb-3" style="max-width: 600px;">
+                <input id="chat-message-input" type="text" class="form-control" placeholder="Введите сообщение...">
+                <button id="chat-message-submit" class="btn btn-primary" type="button">Отправить</button>
+            </div>
+
+            <div class="btn-group mb-3">
+                <button id="start-video" class="btn btn-success"><i class="fas fa-video"></i> Видео</button>
+                <button id="start-audio" class="btn btn-info"><i class="fas fa-microphone"></i> Аудио</button>
+                <button id="stop-call" class="btn btn-danger" disabled><i class="fas fa-phone-slash"></i> Завершить
+                </button>
+            </div>
+
+            <emoji-picker id="emoji-picker" class="d-block mt-2"></emoji-picker>
         </div>
+    </div>
 
-        <emoji-picker id="emoji-picker" class="mt-2"></emoji-picker>
 
+    <script type="module">
+        import ColorHash from '{% static 'admin_templates/vendor/color-hash/dist/esm.js' %}';
 
-        <script type="module">
-            import ColorHash from '{% static 'admin_templates/vendor/color-hash/dist/esm.js' %}';
+        const roomName = "{{ room_name }}";
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const chatSocket = new WebSocket(
+            protocol + window.location.host + '/ws/chat/' + roomName + '/'
+        );
 
-            const roomName = "{{ room_name }}";
-            const chatSocket = new WebSocket(
-                'wss://' + window.location.host + '/ws/chat/' + roomName + '/'
-            );
+        const colorHash = new ColorHash();
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideosContainer = document.getElementById('remote-videos-container');
+        const startVideoButton = document.getElementById('start-video');
+        const startAudioButton = document.getElementById('start-audio');
+        const stopCallButton = document.getElementById('stop-call');
 
-            const colorHash = new ColorHash();
+        let localStream;
+        let peerConnections = {}; // username -> RTCPeerConnection
+        const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
 
-            chatSocket.onmessage = function (event) {
-                const data = JSON.parse(event.data);
+        chatSocket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'chat_message' || !data.type) {
                 const message = data.username + ': ' + data.message;
                 const messageDiv = document.createElement('div');
                 if (data.username === 'Система') {
@@ -66,32 +117,162 @@
                 messageDiv.textContent = message;
                 document.querySelector('#chat-log').appendChild(messageDiv);
                 document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
-            };
+            } else if (data.type === 'signal') {
+                handleSignal(data.username, data.signal);
+            }
+        };
 
-            chatSocket.onclose = function (event) {
-                console.error('Chat socket closed unexpectedly');
-            };
+        async function startCall(video) {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({video: video, audio: true});
+                localVideo.srcObject = localStream;
+                startVideoButton.disabled = true;
+                startAudioButton.disabled = true;
+                stopCallButton.disabled = false;
 
-            document.querySelector('#chat-message-input').focus();
-            document.querySelector('#chat-message-input').onkeyup = function (e) {
-                if (e.keyCode === 13) {  // Enter key
-                    document.querySelector('#chat-message-submit').click();
+                // Уведомляем других о начале звонка, отправляя пустой сигнал или просто ждем их инициативы
+                // В данной реализации мы будем инициаторами для всех существующих участников
+                chatSocket.send(JSON.stringify({
+                    'type': 'signal',
+                    'signal': {'type': 'new-peer'}
+                }));
+
+            } catch (e) {
+                console.error('Error accessing media devices.', e);
+                alert('Не удалось получить доступ к камере или микрофону');
+            }
+        }
+
+        function createPeerConnection(remoteUsername) {
+            const pc = new RTCPeerConnection(configuration);
+
+            pc.onicecandidate = event => {
+                if (event.candidate) {
+                    chatSocket.send(JSON.stringify({
+                        'type': 'signal',
+                        'signal': {'candidate': event.candidate},
+                        'target': remoteUsername
+                    }));
                 }
             };
 
-            document.querySelector('#chat-message-submit').onclick = function (e) {
-                const messageInputDom = document.querySelector('#chat-message-input');
-                const message = messageInputDom.value.trim();
-                if (message !== "") {
-                    chatSocket.send(JSON.stringify({'message': message}));
-                    messageInputDom.value = '';
+            pc.ontrack = event => {
+                let remoteVideo = document.getElementById(`video-${remoteUsername}`);
+                if (!remoteVideo) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'video-wrapper';
+                    const label = document.createElement('label');
+                    label.textContent = remoteUsername;
+                    remoteVideo = document.createElement('video');
+                    remoteVideo.id = `video-${remoteUsername}`;
+                    remoteVideo.className = 'remote-video';
+                    remoteVideo.autoplay = true;
+                    remoteVideo.playsinline = true;
+                    wrapper.appendChild(label);
+                    wrapper.appendChild(remoteVideo);
+                    remoteVideosContainer.appendChild(wrapper);
                 }
+                remoteVideo.srcObject = event.streams[0];
             };
 
-            const emojiPicker = document.querySelector('#emoji-picker');
-            emojiPicker.addEventListener('emoji-click', event => {
-                const messageInputDom = document.querySelector('#chat-message-input');
-                messageInputDom.value += event.detail.unicode;
-            });
-        </script>
+            if (localStream) {
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            }
+
+            peerConnections[remoteUsername] = pc;
+            return pc;
+        }
+
+        async function handleSignal(fromUser, signal) {
+            if (signal.type === 'new-peer') {
+                // Кто-то новый зашел, создаем оффер
+                const pc = createPeerConnection(fromUser);
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                chatSocket.send(JSON.stringify({
+                    'type': 'signal',
+                    'signal': {'sdp': pc.localDescription},
+                    'target': fromUser
+                }));
+            } else if (signal.sdp) {
+                let pc = peerConnections[fromUser];
+                if (!pc) pc = createPeerConnection(fromUser);
+
+                await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                if (signal.sdp.type === 'offer') {
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    chatSocket.send(JSON.stringify({
+                        'type': 'signal',
+                        'signal': {'sdp': pc.localDescription},
+                        'target': fromUser
+                    }));
+                }
+            } else if (signal.candidate) {
+                const pc = peerConnections[fromUser];
+                if (pc) {
+                    await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                }
+            } else if (signal.type === 'bye') {
+                if (peerConnections[fromUser]) {
+                    peerConnections[fromUser].close();
+                    delete peerConnections[fromUser];
+                    const video = document.getElementById(`video-${fromUser}`);
+                    if (video) video.parentElement.remove();
+                }
+            }
+        }
+
+        startVideoButton.onclick = () => startCall(true);
+        startAudioButton.onclick = () => startCall(false);
+
+        stopCallButton.onclick = () => {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localVideo.srcObject = null;
+            }
+            chatSocket.send(JSON.stringify({
+                'type': 'signal',
+                'signal': {'type': 'bye'}
+            }));
+            for (let user in peerConnections) {
+                peerConnections[user].close();
+                const video = document.getElementById(`video-${user}`);
+                if (video) video.parentElement.remove();
+            }
+            peerConnections = {};
+            startVideoButton.disabled = false;
+            startAudioButton.disabled = false;
+            stopCallButton.disabled = true;
+        };
+
+        chatSocket.onclose = function (event) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function (e) {
+            if (e.keyCode === 13) {  // Enter key
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function (e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value.trim();
+            if (message !== "") {
+                chatSocket.send(JSON.stringify({
+                    'type': 'chat_message',
+                    'message': message
+                }));
+                messageInputDom.value = '';
+            }
+        };
+
+        const emojiPicker = document.querySelector('#emoji-picker');
+        emojiPicker.addEventListener('emoji-click', event => {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            messageInputDom.value += event.detail.unicode;
+        });
+    </script>
 {% endblock %}
