@@ -248,8 +248,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Отправляем сигнал всем, кроме отправителя
         if self.channel_name != event['sender_channel_name']:
             target = event.get('target')
+            current_username = self.scope['user'].username
+            
+            print(f"DEBUG WebRTC: From {event['username']} to {target}. Current user: {current_username}")
+
             # Если указан target, проверяем, что он совпадает с текущим пользователем
-            if target and target != self.scope['user'].username:
+            if target and target != current_username:
                 return
 
             await self.send(text_data=json.dumps({

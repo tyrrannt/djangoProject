@@ -131,6 +131,7 @@
                 startAudioButton.disabled = true;
                 stopCallButton.disabled = false;
 
+                // Важно: здесь НЕ должно быть target, так как мы оповещаем ВСЕХ в комнате
                 chatSocket.send(JSON.stringify({
                     'type': 'signal',
                     'signal': {'type': 'new-peer'}
@@ -277,7 +278,7 @@
                 'signal': {'type': 'bye'}
             }));
             for (let user in peerConnections) {
-                peerConnections[user].close();
+                peerConnections[user].pc.close();
                 const video = document.getElementById(`video-${user}`);
                 if (video) video.parentElement.remove();
             }
