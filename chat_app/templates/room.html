@@ -120,6 +120,7 @@
                 document.querySelector('#chat-log').appendChild(messageDiv);
                 document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
             } else if (data.type === 'signal') {
+                console.log(`DEBUG: Signal from ${data.username} (ID: ${data.user_id})`, data.signal);
                 handleSignal(data.user_id, data.username, data.signal);
             }
         };
@@ -132,12 +133,13 @@
                 startAudioButton.disabled = true;
                 stopCallButton.disabled = false;
 
-                // Добавляем треки во все существующие соединения (если они были созданы до включения камеры)
+                // Добавляем треки во все существующие соединения
                 for (let userId in peerConnections) {
                     const pc = peerConnections[userId].pc;
                     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
                 }
 
+                // Оповещаем всех о готовности
                 chatSocket.send(JSON.stringify({
                     'type': 'signal',
                     'signal': {'type': 'new-peer'}
@@ -150,11 +152,12 @@
         }
 
         function createPeerConnection(remoteUserId, remoteUsername) {
-            console.log(`Creating PeerConnection for ${remoteUsername} (${remoteUserId})`);
+            const rId = parseInt(remoteUserId);
+            if (peerConnections[rId]) return peerConnections[rId];
+
+            console.log(`Creating PeerConnection for ${remoteUsername} (ID: ${rId})`);
             const pc = new RTCPeerConnection(configuration);
-            
-            // Логика "вежливого" участника для разрешения коллизий (Glare) на основе числового ID
-            const polite = currentUserId < parseInt(remoteUserId);
+            const polite = currentUserId < rId;
 
             const pcData = {
                 pc: pc,
@@ -168,21 +171,21 @@
                     chatSocket.send(JSON.stringify({
                         'type': 'signal',
                         'signal': {'candidate': event.candidate},
-                        'target_id': remoteUserId
+                        'target_id': rId
                     }));
                 }
             };
 
             pc.ontrack = event => {
-                console.log(`Received remote track from ${remoteUsername}:`, event.track.kind);
-                let remoteVideo = document.getElementById(`video-${remoteUserId}`);
+                console.log(`Received track ${event.track.kind} from ${remoteUsername}`);
+                let remoteVideo = document.getElementById(`video-${rId}`);
                 if (!remoteVideo) {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'video-wrapper';
                     const label = document.createElement('label');
                     label.textContent = remoteUsername;
                     remoteVideo = document.createElement('video');
-                    remoteVideo.id = `video-${remoteUserId}`;
+                    remoteVideo.id = `video-${rId}`;
                     remoteVideo.className = 'remote-video';
                     remoteVideo.autoplay = true;
                     remoteVideo.playsinline = true;
@@ -203,10 +206,10 @@
                     chatSocket.send(JSON.stringify({
                         'type': 'signal',
                         'signal': {'sdp': pc.localDescription},
-                        'target_id': remoteUserId
+                        'target_id': rId
                     }));
                 } catch (err) {
-                    console.error(err);
+                    console.error(`Negotiation error with ${remoteUsername}:`, err);
                 } finally {
                     pcData.makingOffer = false;
                 }
@@ -216,21 +219,25 @@
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             }
 
-            peerConnections[remoteUserId] = pcData;
+            peerConnections[rId] = pcData;
             return pcData;
         }
 
         async function handleSignal(fromUserId, fromUsername, signal) {
+            const fId = parseInt(fromUserId);
+            if (fId === currentUserId) return; // Игнорируем свои же сигналы
+
             try {
-                let pcData = peerConnections[fromUserId];
+                let pcData = peerConnections[fId];
 
                 if (signal.type === 'new-peer') {
-                    if (!pcData) createPeerConnection(fromUserId, fromUsername);
+                    console.log(`New peer event from ${fromUsername}`);
+                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
                     return;
                 }
 
                 if (signal.sdp) {
-                    if (!pcData) pcData = createPeerConnection(fromUserId, fromUsername);
+                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
                     const pc = pcData.pc;
 
                     const offerCollision = (signal.sdp.type === "offer") &&
@@ -238,7 +245,7 @@
 
                     pcData.ignoreOffer = !pcData.polite && offerCollision;
                     if (pcData.ignoreOffer) {
-                        console.log(`Ignoring offer from ${fromUsername} due to collision`);
+                        console.log(`Collision: ignoring offer from ${fromUsername}`);
                         return;
                     }
 
@@ -248,11 +255,11 @@
                         chatSocket.send(JSON.stringify({
                             'type': 'signal',
                             'signal': {'sdp': pc.localDescription},
-                            'target_id': fromUserId
+                            'target_id': fId
                         }));
                     }
                 } else if (signal.candidate) {
-                    if (!pcData) pcData = createPeerConnection(fromUserId, fromUsername);
+                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
                     try {
                         await pcData.pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
                     } catch (err) {
@@ -261,13 +268,13 @@
                 } else if (signal.type === 'bye') {
                     if (pcData) {
                         pcData.pc.close();
-                        delete peerConnections[fromUserId];
-                        const video = document.getElementById(`video-${fromUserId}`);
+                        delete peerConnections[fId];
+                        const video = document.getElementById(`video-${fId}`);
                         if (video) video.parentElement.remove();
                     }
                 }
             } catch (err) {
-                console.error(err);
+                console.error(`Signal handling error from ${fromUsername}:`, err);
             }
         }
 
