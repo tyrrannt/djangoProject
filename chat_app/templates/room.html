@@ -86,6 +86,7 @@
         import ColorHash from '{% static 'admin_templates/vendor/color-hash/dist/esm.js' %}';
 
         const roomName = "{{ room_name }}";
+        const currentUserId = parseInt("{{ request.user.pk }}");
         const currentUsername = "{{ request.user.username }}";
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const chatSocket = new WebSocket(
@@ -100,7 +101,7 @@
         const stopCallButton = document.getElementById('stop-call');
 
         let localStream;
-        let peerConnections = {}; // username -> { pc, makingOffer, ignoreOffer }
+        let peerConnections = {}; // userId -> { pc, makingOffer, ignoreOffer, polite }
         const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
 
         chatSocket.onmessage = function (event) {
@@ -119,7 +120,7 @@
                 document.querySelector('#chat-log').appendChild(messageDiv);
                 document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
             } else if (data.type === 'signal') {
-                handleSignal(data.username, data.signal);
+                handleSignal(data.user_id, data.username, data.signal);
             }
         };
 
@@ -131,7 +132,12 @@
                 startAudioButton.disabled = true;
                 stopCallButton.disabled = false;
 
-                // Важно: здесь НЕ должно быть target, так как мы оповещаем ВСЕХ в комнате
+                // Добавляем треки во все существующие соединения (если они были созданы до включения камеры)
+                for (let userId in peerConnections) {
+                    const pc = peerConnections[userId].pc;
+                    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+                }
+
                 chatSocket.send(JSON.stringify({
                     'type': 'signal',
                     'signal': {'type': 'new-peer'}
@@ -143,12 +149,12 @@
             }
         }
 
-        function createPeerConnection(remoteUsername) {
-            console.log(`Creating PeerConnection for ${remoteUsername}`);
+        function createPeerConnection(remoteUserId, remoteUsername) {
+            console.log(`Creating PeerConnection for ${remoteUsername} (${remoteUserId})`);
             const pc = new RTCPeerConnection(configuration);
             
-            // Логика "вежливого" участника для разрешения коллизий (Glare)
-            const polite = currentUsername < remoteUsername;
+            // Логика "вежливого" участника для разрешения коллизий (Glare) на основе числового ID
+            const polite = currentUserId < parseInt(remoteUserId);
 
             const pcData = {
                 pc: pc,
@@ -162,21 +168,21 @@
                     chatSocket.send(JSON.stringify({
                         'type': 'signal',
                         'signal': {'candidate': event.candidate},
-                        'target': remoteUsername
+                        'target_id': remoteUserId
                     }));
                 }
             };
 
             pc.ontrack = event => {
                 console.log(`Received remote track from ${remoteUsername}:`, event.track.kind);
-                let remoteVideo = document.getElementById(`video-${remoteUsername}`);
+                let remoteVideo = document.getElementById(`video-${remoteUserId}`);
                 if (!remoteVideo) {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'video-wrapper';
                     const label = document.createElement('label');
                     label.textContent = remoteUsername;
                     remoteVideo = document.createElement('video');
-                    remoteVideo.id = `video-${remoteUsername}`;
+                    remoteVideo.id = `video-${remoteUserId}`;
                     remoteVideo.className = 'remote-video';
                     remoteVideo.autoplay = true;
                     remoteVideo.playsinline = true;
@@ -197,7 +203,7 @@
                     chatSocket.send(JSON.stringify({
                         'type': 'signal',
                         'signal': {'sdp': pc.localDescription},
-                        'target': remoteUsername
+                        'target_id': remoteUserId
                     }));
                 } catch (err) {
                     console.error(err);
@@ -210,21 +216,21 @@
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             }
 
-            peerConnections[remoteUsername] = pcData;
+            peerConnections[remoteUserId] = pcData;
             return pcData;
         }
 
-        async function handleSignal(fromUser, signal) {
+        async function handleSignal(fromUserId, fromUsername, signal) {
             try {
-                let pcData = peerConnections[fromUser];
+                let pcData = peerConnections[fromUserId];
 
                 if (signal.type === 'new-peer') {
-                    if (!pcData) createPeerConnection(fromUser);
+                    if (!pcData) createPeerConnection(fromUserId, fromUsername);
                     return;
                 }
 
                 if (signal.sdp) {
-                    if (!pcData) pcData = createPeerConnection(fromUser);
+                    if (!pcData) pcData = createPeerConnection(fromUserId, fromUsername);
                     const pc = pcData.pc;
 
                     const offerCollision = (signal.sdp.type === "offer") &&
@@ -232,7 +238,7 @@
 
                     pcData.ignoreOffer = !pcData.polite && offerCollision;
                     if (pcData.ignoreOffer) {
-                        console.log(`Ignoring offer from ${fromUser} due to collision`);
+                        console.log(`Ignoring offer from ${fromUsername} due to collision`);
                         return;
                     }
 
@@ -242,11 +248,11 @@
                         chatSocket.send(JSON.stringify({
                             'type': 'signal',
                             'signal': {'sdp': pc.localDescription},
-                            'target': fromUser
+                            'target_id': fromUserId
                         }));
                     }
                 } else if (signal.candidate) {
-                    if (!pcData) pcData = createPeerConnection(fromUser);
+                    if (!pcData) pcData = createPeerConnection(fromUserId, fromUsername);
                     try {
                         await pcData.pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
                     } catch (err) {
@@ -255,8 +261,8 @@
                 } else if (signal.type === 'bye') {
                     if (pcData) {
                         pcData.pc.close();
-                        delete peerConnections[fromUser];
-                        const video = document.getElementById(`video-${fromUser}`);
+                        delete peerConnections[fromUserId];
+                        const video = document.getElementById(`video-${fromUserId}`);
                         if (video) video.parentElement.remove();
                     }
                 }

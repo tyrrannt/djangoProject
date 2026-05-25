@@ -205,10 +205,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message_type = text_data_json.get('type', 'chat_message')
+        user = self.scope['user']
 
         if message_type == 'chat_message':
             message = text_data_json['message']
-            username = self.scope['user'].username  # Получаем имя пользователя
+            username = user.username
 
             # Отправка сообщения в группу
             await self.channel_layer.group_send(
@@ -217,6 +218,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'type': 'chat_message',
                     'message': message,
                     'username': username,
+                    'user_id': user.pk,
                 }
             )
         elif message_type == 'signal':
@@ -226,39 +228,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'send_signal',
                     'signal': text_data_json['signal'],
-                    'target': text_data_json.get('target'),
+                    'target_id': text_data_json.get('target_id'),
                     'sender_channel_name': self.channel_name,
-                    'username': self.scope['user'].username
+                    'user_id': user.pk,
+                    'username': user.username
                 }
             )
 
     # Получение сообщения от группы
     async def chat_message(self, event):
-        message = event['message']
-        username = event['username']
-
-        # Отправка сообщения в WebSocket
         await self.send(text_data=json.dumps({
             'type': 'chat_message',
-            'message': message,
-            'username': username,
+            'message': event['message'],
+            'username': event['username'],
+            'user_id': event.get('user_id'),
         }))
 
     async def send_signal(self, event):
         # Отправляем сигнал всем, кроме отправителя
         if self.channel_name != event['sender_channel_name']:
-            target = event.get('target')
-            current_username = self.scope['user'].username
+            target_id = event.get('target_id')
+            current_user_id = self.scope['user'].pk
             
-            print(f"DEBUG WebRTC: From {event['username']} to {target}. Current user: {current_username}")
-
-            # Если указан target, проверяем, что он совпадает с текущим пользователем
-            if target and target != current_username:
+            # Если указан target_id, проверяем, что он совпадает с текущим пользователем
+            if target_id and int(target_id) != current_user_id:
                 return
 
             await self.send(text_data=json.dumps({
                 'type': 'signal',
                 'signal': event['signal'],
+                'user_id': event['user_id'],
                 'username': event['username']
             }))
 
