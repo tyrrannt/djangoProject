@@ -1,0 +1,87 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'admin_templates/css/flight_planning.css' %}"/>
+    <style>
+        .schedule-list {
+            margin-top: 20px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .schedule-list th, .schedule-list td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .schedule-list th {
+            background-color: #f4f4f4;
+        }
+        .schedule-list tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .schedule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .nav-link {
+            text-decoration: none;
+            padding: 8px 16px;
+            background-color: #001830;
+            color: white;
+            border-radius: 4px;
+        }
+        .nav-link:hover {
+            background-color: #0056b3;
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    Мой график планирования
+{% endblock %}
+
+{% block content %}
+    <div class="planning-container">
+        <div class="schedule-header">
+            <div>
+                <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-link">← Предыдущий месяц</a>
+            </div>
+            <h2>Мой график: {{ month_name|default:month }}/{{ year }}</h2>
+            <div>
+                <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-link">Следующий месяц →</a>
+            </div>
+        </div>
+
+        {% if assignments %}
+            <table class="schedule-list">
+                <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>День недели</th>
+                    <th>Место деятельности (МПД)</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for assignment in assignments %}
+                    <tr>
+                        <td>{{ assignment.date|date:"d.m.Y" }}</td>
+                        <td>{{ assignment.date|date:"l" }}</td>
+                        <td>{{ assignment.mpd.name }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div style="text-align: center; margin-top: 50px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <p>На выбранный месяц назначений не найдено.</p>
+            </div>
+        {% endif %}
+        
+        <div style="margin-top: 30px;">
+            <a href="{% url 'flight_planning:planning_table' %}" style="color: #6c757d;">Вернуться к общему планированию</a>
+        </div>
+    </div>
+{% endblock %}

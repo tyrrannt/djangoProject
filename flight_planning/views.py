@@ -14,9 +14,103 @@ from django.contrib.auth.decorators import login_required
 from customers_app.models import DataBaseUser
 from hrdepartment_app.models import PlaceProductionActivity
 from .models import PilotAssignment
+from .selectors import get_pilot_assignments_for_month
 
 # Вариант 2: Точное совпадение с названиями должностей
 ALLOWED_JOBS = ['командир', 'пилот', 'бортмеханик', 'Командир', 'Бортмеханик', 'инструктор', 'Бортовой']
+
+@login_required
+def my_schedule_view(request):
+    """
+    Отображает страницу личного графика для текущего пилота.
+
+    Args:
+        request: Объект HttpRequest.
+
+    Returns:
+        Объект HttpResponse с отрендеренным шаблоном.
+    """
+    year = request.GET.get('year', timezone.now().year)
+    month = request.GET.get('month', timezone.now().month)
+
+    try:
+        year = int(year)
+        month = int(month)
+    except ValueError:
+        year = timezone.now().year
+        month = timezone.now().month
+
+    assignments = get_pilot_assignments_for_month(
+        pilot_id=request.user.id,
+        year=year,
+        month=month
+    )
+
+    # Генерируем даты выбранного месяца для навигации
+    first_day = datetime(year, month, 1).date()
+    prev_month_date = first_day - timedelta(days=1)
+    if month == 12:
+        next_month_date = datetime(year + 1, 1, 1).date()
+    else:
+        next_month_date = datetime(year, month + 1, 1).date()
+
+    context = {
+        'assignments': assignments,
+        'year': year,
+        'month': month,
+        'prev_year': prev_month_date.year,
+        'prev_month': prev_month_date.month,
+        'next_year': next_month_date.year,
+        'next_month': next_month_date.month,
+        'month_name': first_day.strftime('%B %Y'),
+    }
+
+    return render(request, 'flight_planning/my_schedule.html', context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_my_assignments_api(request):
+    """
+    Возвращает назначения текущего пользователя за указанный месяц в формате JSON.
+
+    Args:
+        request: Объект HttpRequest с параметрами year и month.
+
+    Returns:
+        JsonResponse со списком назначений.
+    """
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+
+    if not year or not month:
+        now = timezone.now()
+        year = now.year
+        month = now.month
+
+    try:
+        year = int(year)
+        month = int(month)
+    except ValueError:
+        return JsonResponse({'error': 'Invalid year or month'}, status=400)
+
+    assignments = get_pilot_assignments_for_month(
+        pilot_id=request.user.id,
+        year=year,
+        month=month
+    )
+
+    data = [
+        {
+            'id': a.id,
+            'date': a.date.isoformat(),
+            'mpd_id': a.mpd_id,
+            'mpd_name': a.mpd.name
+        }
+        for a in assignments
+    ]
+
+    return JsonResponse({'assignments': data})
 
 @login_required
 def planning_table(request):

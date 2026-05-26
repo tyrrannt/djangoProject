@@ -1733,7 +1733,6 @@ class JobsList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(JobsList, self).get_context_data(**kwargs)
         context['title'] = f'Должности'
-        change_session_context(context, self)
         return context
 
 

@@ -18,6 +18,7 @@
         <!-- Навигация по месяцам -->
         <div class="month-nav">
             <div class="nav-buttons">
+                <a href="{% url 'flight_planning:my_schedule' %}" class="nav-btn" style="background-color: #28a745; margin-right: 10px;">Мой график</a>
                 <a href="?year={{ prev_year }}&month={{ prev_month }}"
                    class="nav-btn">← {{ prev_month_name|default:"Предыдущий" }}</a>
             </div>
