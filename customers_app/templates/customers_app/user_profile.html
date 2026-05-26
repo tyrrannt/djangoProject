@@ -673,7 +673,7 @@
                             {% if grouped_schedule %}
                                 <div class="mb-4">
                                     <h5 class="font-weight-semibold text-dark mb-3">
-                                        <i class="fas fa-calendar-alt me-2 text-success"></i>Мой график на {{ today|date:"F Y" }}
+                                        <i class="fas fa-calendar-alt me-2 text-success"></i>Мой график на:  {% now "F Y" %}
                                     </h5>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-striped border">
@@ -681,7 +681,7 @@
                                             <tr>
                                                 <th>Период</th>
                                                 <th>Дней</th>
-                                                <th>Место деятельности / Статус</th>
+                                                <th>МПД / Статус</th>
                                             </tr>
                                             </thead>
                                             <tbody>
