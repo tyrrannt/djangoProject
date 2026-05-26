@@ -46,6 +46,8 @@ def my_schedule_view(request):
         month=month
     )
 
+    grouped_schedule = get_grouped_pilot_schedule(list(assignments), year, month)
+
     # Генерируем даты выбранного месяца для навигации
     first_day = datetime(year, month, 1).date()
     prev_month_date = first_day - timedelta(days=1)
@@ -55,7 +57,7 @@ def my_schedule_view(request):
         next_month_date = datetime(year, month + 1, 1).date()
 
     context = {
-        'assignments': assignments,
+        'grouped_schedule': grouped_schedule,
         'year': year,
         'month': month,
         'prev_year': prev_month_date.year,

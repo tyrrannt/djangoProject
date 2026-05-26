@@ -29,7 +29,7 @@
         .nav-link {
             text-decoration: none;
             padding: 8px 16px;
-            background-color: #001830;
+            background-color: #007bff;
             color: white;
             border-radius: 4px;
         }
@@ -55,21 +55,34 @@
             </div>
         </div>
 
-        {% if assignments %}
+        {% if grouped_schedule %}
             <table class="schedule-list">
                 <thead>
                 <tr>
-                    <th>Дата</th>
-                    <th>День недели</th>
-                    <th>Место деятельности (МПД)</th>
+                    <th>Период</th>
+                    <th>Дней</th>
+                    <th>Место деятельности (МПД) / Статус</th>
                 </tr>
                 </thead>
                 <tbody>
-                {% for assignment in assignments %}
-                    <tr>
-                        <td>{{ assignment.date|date:"d.m.Y" }}</td>
-                        <td>{{ assignment.date|date:"l" }}</td>
-                        <td>{{ assignment.mpd.name }}</td>
+                {% for item in grouped_schedule %}
+                    <tr {% if item.is_gap %}style="color: #999; font-style: italic; background-color: #fcfcfc;"{% endif %}>
+                        <td>
+                            {% if item.start_date == item.end_date %}
+                                {{ item.start_date|date:"d" }}
+                            {% else %}
+                                {{ item.start_date|date:"d" }}-{{ item.end_date|date:"d" }}
+                            {% endif %}
+                            {{ item.start_date|date:"E" }}
+                        </td>
+                        <td>{{ item.days_count }}</td>
+                        <td>
+                            {% if item.is_gap %}
+                                <span style="color: #6c757d;">— {{ item.mpd_name }} —</span>
+                            {% else %}
+                                <strong>{{ item.mpd_name }}</strong>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
                 </tbody>
