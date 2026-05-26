@@ -678,6 +678,53 @@
                                 <i class="fas fa-history me-2 text-primary"></i>Хронология событий
                             </h4>
 
+                            <!-- График планирования (для пилотов) -->
+                            {% if grouped_schedule %}
+                                <div class="mb-4">
+                                    <h5 class="font-weight-semibold text-dark mb-3">
+                                        <i class="fas fa-calendar-alt me-2 text-success"></i>Мой график на {{ today|date:"F Y" }}
+                                    </h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped border">
+                                            <thead class="bg-light">
+                                            <tr>
+                                                <th>Период</th>
+                                                <th>Дней</th>
+                                                <th>Место деятельности / Статус</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for item in grouped_schedule %}
+                                                <tr {% if item.is_gap %}class="text-muted italic" style="background-color: #fcfcfc;"{% endif %}>
+                                                    <td>
+                                                        {% if item.start_date == item.end_date %}
+                                                            {{ item.start_date|date:"d" }}
+                                                        {% else %}
+                                                            {{ item.start_date|date:"d" }}-{{ item.end_date|date:"d" }}
+                                                        {% endif %}
+                                                        {{ item.start_date|date:"E" }}
+                                                    </td>
+                                                    <td>{{ item.days_count }}</td>
+                                                    <td>
+                                                        {% if item.is_gap %}
+                                                            <span class="text-muted">— {{ item.mpd_name }} —</span>
+                                                        {% else %}
+                                                            <span class="fw-bold">{{ item.mpd_name }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-end">
+                                        <a href="{% url 'flight_planning:my_schedule' %}" class="btn btn-xs btn-outline-info">
+                                            Подробный график
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+
                             <!-- Временная шкала (PortoAdmin стиль) -->
                             <div class="timeline timeline-simple mt-3 mb-3">
                                 <div class="tm-body">

@@ -328,6 +328,19 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
 
         get_profile_fill(self, context, user_obj)
 
+        # ----- 3. ГРАФИК ПЛАНИРОВАНИЯ (для пилотов) -----
+        from flight_planning.selectors import get_pilot_assignments_for_month
+        from flight_planning.services import get_grouped_pilot_schedule
+        try:
+            assignments = get_pilot_assignments_for_month(
+                pilot_id=user_obj.id,
+                year=today.year,
+                month=today.month
+            )
+            context['grouped_schedule'] = get_grouped_pilot_schedule(list(assignments), today.year, today.month)
+        except Exception as e:
+            logger.debug(f"Error getting pilot schedule for {user_obj}: {e}")
+
         # ============================================
         # КАЛЕНДАРНЫЕ СОБЫТИЯ: ЗАДАЧИ + ПОСТЫ
         # Унифицированный формат для FullCalendar
