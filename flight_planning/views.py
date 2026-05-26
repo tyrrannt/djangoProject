@@ -15,6 +15,7 @@ from customers_app.models import DataBaseUser
 from hrdepartment_app.models import PlaceProductionActivity
 from .models import PilotAssignment
 from .selectors import get_pilot_assignments_for_month
+from .services import get_grouped_pilot_schedule
 
 # Вариант 2: Точное совпадение с названиями должностей
 ALLOWED_JOBS = ['командир', 'пилот', 'бортмеханик', 'Командир', 'Бортмеханик', 'инструктор', 'Бортовой']
