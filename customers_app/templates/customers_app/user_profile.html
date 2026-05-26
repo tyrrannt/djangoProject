@@ -625,6 +625,11 @@
                         </button>
                     </li>
                     <li class="nav-item">
+                        <button class="nav-link" data-bs-target="#graff" data-bs-toggle="tab">
+                            <i class="fa-solid fa-helicopter me-2"></i>Мой график
+                        </button>
+                    </li>
+                    <li class="nav-item">
                         <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">
                             <i class="fas fa-stream me-2"></i>Лента событий
                         </button>
@@ -644,7 +649,7 @@
                             <i class="fas fa-umbrella-beach me-2"></i>Отпуск
                         </button>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" disabled="true">
                         <button class="nav-link" data-bs-target="#sout" data-bs-toggle="tab">
                             <i class="fas fa-chart-line me-2"></i>СОУТ
                         </button>
@@ -662,16 +667,9 @@
                             <div id="calendar" class="calendar-container"></div>
                         </div>
                     </div>
-
-                    <!-- ============================================
-                         ВКЛАДКА 2: ЛЕНТА СОБЫТИЙ (ХРОНОЛОГИЯ)
-                         Отображение постов и мероприятий
-                    ============================================ -->
-                    <div id="overview" class="tab-pane">
+                    <div id="graff" class="tab-pane">
                         <div class="p-3">
-
-
-                            <!-- График планирования (для пилотов) -->
+                             <!-- График планирования (для пилотов) -->
                             {% if grouped_schedule %}
                                 <div class="mb-4">
                                     <h5 class="font-weight-semibold text-dark mb-3">
@@ -717,6 +715,18 @@
                                     </div>
                                 </div>
                             {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- ============================================
+                         ВКЛАДКА 2: ЛЕНТА СОБЫТИЙ (ХРОНОЛОГИЯ)
+                         Отображение постов и мероприятий
+                    ============================================ -->
+                    <div id="overview" class="tab-pane">
+                        <div class="p-3">
+
+
+
 
                         <!-- Кнопка добавления нового поста -->
                             <a href="{% url 'customers_app:post_add' %}" class="btn btn-outline-primary btn-px-4 py-3 align-items-left font-weight-semibold line-height-1 mb-4">
