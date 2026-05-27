@@ -624,11 +624,13 @@
                             <i class="fas fa-calendar-alt me-2"></i>Планировщик событий
                         </button>
                     </li>
+                    {% if grouped_schedule %}
                     <li class="nav-item">
                         <button class="nav-link" data-bs-target="#graff" data-bs-toggle="tab">
                             <i class="fa-solid fa-helicopter me-2"></i>Мой график
                         </button>
                     </li>
+                    {% endif %}
                     <li class="nav-item">
                         <button class="nav-link" data-bs-target="#overview" data-bs-toggle="tab">
                             <i class="fas fa-stream me-2"></i>Лента событий

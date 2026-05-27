@@ -337,10 +337,15 @@ class DataBaseUserProfileDetail(LoginRequiredMixin, DetailView):
                 year=today.year,
                 month=today.month
             )
-            context['grouped_schedule'] = get_grouped_pilot_schedule(list(assignments), today.year, today.month)
+            grouped_schedule = get_grouped_pilot_schedule(list(assignments), today.year, today.month)
+            if len(grouped_schedule) > 1:
+                context['grouped_schedule'] = grouped_schedule
+            elif grouped_schedule[0]['mpd_name'] != 'Пропуск':
+                context['grouped_schedule'] = grouped_schedule
+            else:
+                context['grouped_schedule'] = None
         except Exception as e:
             logger.debug(f"Error getting pilot schedule for {user_obj}: {e}")
-
         # ============================================
         # КАЛЕНДАРНЫЕ СОБЫТИЯ: ЗАДАЧИ + ПОСТЫ
         # Унифицированный формат для FullCalendar
