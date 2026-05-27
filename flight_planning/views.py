@@ -179,12 +179,16 @@ def planning_table(request):
         # Получаем должность пилота
         job_name = None
         is_commander = False
+        is_instructor = False
         try:
             # Проверяем наличие user_work_profile и job
             if hasattr(a.pilot, 'user_work_profile') and a.pilot.user_work_profile:
                 if hasattr(a.pilot.user_work_profile, 'job') and a.pilot.user_work_profile.job:
                     job_name = a.pilot.user_work_profile.job.name
-                    is_commander = job_name and 'командир' in job_name.lower()
+                    if job_name:
+                        job_lower = job_name.lower()
+                        is_commander = 'командир' in job_lower
+                        is_instructor = 'пилот-инструктор' in job_lower
         except Exception as e:
             print(f"Error getting job info for pilot {a.pilot_id}: {e}")
 
@@ -193,6 +197,7 @@ def planning_table(request):
             'pilot_name': a.pilot.title or a.pilot.username,
             'pilot_job': job_name or 'Должность не указана',
             'is_commander': is_commander,
+            'is_instructor': is_instructor,
             'assignment_id': a.id
         })
 
@@ -285,11 +290,15 @@ def assign_pilot_api(request):
         # Получаем информацию о должности пилота
         job_name = None
         is_commander = False
+        is_instructor = False
         try:
             if hasattr(pilot, 'user_work_profile') and pilot.user_work_profile:
                 if hasattr(pilot.user_work_profile, 'job') and pilot.user_work_profile.job:
                     job_name = pilot.user_work_profile.job.name
-                    is_commander = job_name and 'командир' in job_name.lower()
+                    if job_name:
+                        job_lower = job_name.lower()
+                        is_commander = 'командир' in job_lower
+                        is_instructor = 'пилот-инструктор' in job_lower
         except:
             pass
 
@@ -330,7 +339,8 @@ def assign_pilot_api(request):
             'pilot_id': pilot_id,
             'pilot_name': pilot.title or pilot.username,
             'pilot_job': job_name or 'Должность не указана',
-            'is_commander': is_commander
+            'is_commander': is_commander,
+            'is_instructor': is_instructor
         })
 
     except json.JSONDecodeError:
@@ -434,7 +444,7 @@ def remove_assignments_api(request):
 @require_http_methods(["GET"])
 def get_pilot_job_info(request):
     """
-    Получить должность пилота и статус командира
+    Получить должность пилота и статус командира/инструктора
     """
     pilot_id = request.GET.get('pilot_id')
     if not pilot_id:
@@ -444,15 +454,20 @@ def get_pilot_job_info(request):
         pilot = get_object_or_404(DataBaseUser, id=pilot_id)
         job_name = None
         is_commander = False
+        is_instructor = False
 
         if hasattr(pilot, 'user_work_profile') and pilot.user_work_profile:
             if pilot.user_work_profile.job:
                 job_name = pilot.user_work_profile.job.name
-                is_commander = job_name and 'командир' in job_name.lower()
+                if job_name:
+                    job_lower = job_name.lower()
+                    is_commander = 'командир' in job_lower
+                    is_instructor = 'пилот-инструктор' in job_lower
 
         return JsonResponse({
             'job_name': job_name or 'Должность не указана',
-            'is_commander': is_commander
+            'is_commander': is_commander,
+            'is_instructor': is_instructor
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
