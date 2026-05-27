@@ -17,6 +17,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 import library_app.views as library_views
 
@@ -27,6 +28,12 @@ handler500 = library_views.show_500
 urlpatterns = [
     path('', include('library_app.urls')),
     path('bklproxmoxadmin/', admin.site.urls),
+
+    # API Schema & UI
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
     path('users/', include('customers_app.urls')),
     path('contracts/', include('contracts_app.urls')),
     path('hr/', include('hrdepartment_app.urls')),

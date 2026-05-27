@@ -1,10 +1,20 @@
 # tasks_app/urls.py
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import TaskListView, TaskCreateView, TaskUpdateView, TaskDeleteView, TaskDetailView, create_task_ajax, \
     upload_files_ajax, delete_file_ajax, TaskStatusUpdateView
+from . import api_views
 
 app_name = 'tasks_app'
+
+router = DefaultRouter()
+router.register(r'tasks', api_views.TaskViewSet, basename='api_task')
+router.register(r'categories', api_views.CategoryViewSet, basename='api_category')
+
 urlpatterns = [
+    # REST API v1
+    path('api/v1/', include(router.urls)),
+
     path('', TaskListView.as_view(), name='task-list'),
     path('create/', TaskCreateView.as_view(), name='task-create'),
     path('<int:pk>/', TaskDetailView.as_view(), name='task-detail'),  # ✅ ДОБАВЛЕНО

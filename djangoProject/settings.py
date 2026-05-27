@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "chat_app.apps.ChatAppConfig",
     "django_bootstrap5",  # Если используем django-bootstrap5
     "rest_framework",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -217,6 +218,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = pathlib.Path.joinpath(BASE_DIR, "media")
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',  # или AllowAny, если нужно открытое API
     ],
@@ -225,6 +227,14 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         # 'rest_framework.authentication.TokenAuthentication',  # если используете токены
     ],
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Portal Mobile API',
+    'DESCRIPTION': 'REST API для мобильного приложения (Android/iOS)',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
 }
 
 customColorPalette = [
