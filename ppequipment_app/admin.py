@@ -185,7 +185,7 @@ class VerificationAdmin(ModelAdmin):
     list_display = ["inventory_number", "equipment", "location_ref", "slug",
                     "contractor_status", "last_verification_date", "is_destroyed"]
     list_filter = ["is_destroyed", "contractor_status", "last_verification_date"]
-    search_fields = ["inventory_number", "equipment__name", "location_ref__name"]
+    search_fields = ["inventory_number", "equipment__name", "location_ref__name", "slug"]
     date_hierarchy = "last_verification_date"
 
 
