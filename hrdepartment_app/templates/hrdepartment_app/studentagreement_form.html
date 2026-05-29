@@ -103,9 +103,12 @@
                 const initialUnitIds = unitField.val() || [];
 
                 // Сбрасываем поля
-                programField.empty().append('<option value="">---------</option>').prop('disabled', true);
-                contractField.empty().append('<option value="">---------</option>').prop('disabled', true);
+                programField.empty().append('<option value="">---------</option>').prop('disabled', true).trigger('change');
+                contractField.empty().append('<option value="">---------</option>').prop('disabled', true).trigger('change');
                 unitField.empty().prop('disabled', true);
+                if (typeof unitField.multiselect === 'function') {
+                    unitField.multiselect('rebuild');
+                }
 
                 updateContractViewButton();
                 updateAddUnitButton(null, null);
@@ -122,12 +125,14 @@
                                 $.each(data.programs, function (index, program) {
                                     programField.append(new Option(program.name, program.id));
                                 });
-                                programField.prop('disabled', false);
+                                programField.prop('disabled', false).trigger('change');
 
                                 if (currentProgramId) {
                                     // 🔥 ПЕРЕДАЕМ initialUnitIds через триггер
                                     programField.val(currentProgramId).trigger('change', [initialUnitIds]);
                                 }
+                            } else {
+                                programField.trigger('change');
                             }
                         }
                     });
@@ -141,13 +146,13 @@
                                 $.each(data.contracts, function (index, contract) {
                                     contractField.append(new Option(contract.name, contract.id));
                                 });
-                                contractField.prop('disabled', false);
+                                contractField.prop('disabled', false).trigger('change');
                                 if (currentContractId) {
-                                    contractField.val(currentContractId);
+                                    contractField.val(currentContractId).trigger('change');
                                     updateContractViewButton();
                                 }
                             } else {
-                                contractField.append(new Option('Нет договоров типа "Обучение"', ''));
+                                contractField.append(new Option('Нет договоров типа "Обучение"', '')).trigger('change');
                             }
                         }
                     });
@@ -167,6 +172,9 @@
                 const currentUnitIds = passedUnitIds || unitField.val() || [];
 
                 unitField.empty().prop('disabled', true);
+                if (typeof unitField.multiselect === 'function') {
+                    unitField.multiselect('rebuild');
+                }
                 updateAddUnitButton(programId, programName);
 
                 if (programId) {
@@ -185,8 +193,18 @@
                                     unitField.val(currentUnitIds);
                                     console.log('Модули восстановлены:', currentUnitIds);
                                 }
+                                
+                                // 🔥 ОБЯЗАТЕЛЬНО: уведомляем плагины об изменениях
+                                unitField.trigger('change');
+                                if (typeof unitField.multiselect === 'function') {
+                                    unitField.multiselect('rebuild');
+                                }
                             } else {
                                 console.log('Нет модулей для этой программы');
+                                unitField.trigger('change');
+                                if (typeof unitField.multiselect === 'function') {
+                                    unitField.multiselect('rebuild');
+                                }
                             }
                         }
                     });
@@ -354,7 +372,10 @@
                             if (!currentValues.includes(response.id)) {
                                 currentValues.push(response.id);
                             }
-                            unitField.val(currentValues);
+                            unitField.val(currentValues).trigger('change');
+                            if (typeof unitField.multiselect === 'function') {
+                                unitField.multiselect('rebuild');
+                            }
                             $('#addUnitModal').modal('hide');
                             $('#id_unit_name').val('');
                             $('#id_unit_name_short').val('');
