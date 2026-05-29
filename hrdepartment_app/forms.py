@@ -2165,9 +2165,8 @@ class StudentAgreementForm(forms.ModelForm):
         fields = "__all__"
         widgets = {
             'training_unit': forms.SelectMultiple(attrs={
-                'data-plugin-selecttwo': 'true',
                 'id': 'id_training_unit',
-                'multiple': 'multiple',  # Явное указание
+                'multiple': 'multiple',
             }),
         }
 
