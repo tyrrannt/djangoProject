@@ -204,7 +204,7 @@ class Verification(models.Model):
 class VerificationDate(models.Model):
     """Даты сверок (таблица «Таблица дата сверки»)"""
     verification_date = models.DateField("Дата сверки", blank=True, null=True)
-    verification_responsible = models.ForeignKey('customers_app.DataBaseUser', on_delete=models.SET_NULL, blank=True, null=True)
+    verification_responsible = models.ForeignKey('customers_app.DataBaseUser', verbose_name="Ответственный за проверку",on_delete=models.SET_NULL, blank=True, null=True)
 
 
     class Meta:

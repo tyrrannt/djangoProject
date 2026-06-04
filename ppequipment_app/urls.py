@@ -16,8 +16,10 @@ urlpatterns = [
     # Сверки
     path('verifications/', views.verification_list, name='verification_list'),
     path('verifications/create/', views.verification_create, name='verification_create'),
+    path('verifications/bulk-update/', views.bulk_verification_update, name='bulk_verification_update'),
     path('verifications/<slug:slug>/', views.verification_detail, name='verification_detail'),
     path('verifications/<slug:slug>/update/', views.verification_update, name='verification_update'),
+
     path('verifications/<slug:slug>/delete/', views.verification_delete, name='verification_delete'),
 
     # Местоположения

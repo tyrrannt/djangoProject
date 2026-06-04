@@ -156,6 +156,40 @@ class ContractorStatusForm(forms.ModelForm):
             make_custom_field(self.fields[field])
 
 
+class BulkVerificationUpdateForm(forms.Form):
+    """Форма для массового обновления даты сверки"""
+    location_ref = forms.ModelMultipleChoiceField(
+        queryset=LocationRef.objects.all().order_by("name"),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": 8}),
+        label="Местоположение",
+        required=False,
+    )
+    contractor_status = forms.ModelMultipleChoiceField(
+        queryset=ContractorStatus.objects.all().order_by("name"),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": 8}),
+        label="Статус контр-раб",
+        required=False,
+    )
+    current_verification_date = forms.ModelChoiceField(
+        queryset=VerificationDate.objects.all().order_by("-verification_date"),
+        widget=forms.Select,
+        label="Текущая дата сверки (фильтр)",
+        required=False,
+        empty_label="Все даты",
+    )
+    new_verification_date = forms.ModelChoiceField(
+        queryset=VerificationDate.objects.all().order_by("-verification_date"),
+        widget=forms.Select,
+        label="Новая дата сверки (для обновления)",
+        required=True,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(BulkVerificationUpdateForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])
+
+
 class VerificationLabelForm(forms.Form):
     """Форма для выбора условий печати свёрочных этикеток"""
     verification_date = forms.ModelChoiceField(

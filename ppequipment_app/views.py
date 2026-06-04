@@ -28,7 +28,7 @@ from .models import (
 from .forms import (
     EquipmentForm, LocationForm, VerificationForm, VerificationDateForm,
     DestLitForm, LocationRefForm, AircraftTypeForm, ContractorStatusForm,
-    VerificationLabelForm, BulkLocationMoveForm,
+    VerificationLabelForm, BulkLocationMoveForm, BulkVerificationUpdateForm,
 )
 
 MDB_FILE = os.path.join(os.path.dirname(__file__), "inventory.mdb")
@@ -266,6 +266,47 @@ def bulk_location_move(request):
     return render(request, "ppequipment_app/bulk_location_move.html", {
         "form": form,
         "title": "Массовое перемещение ПТД"
+    })
+
+
+@login_required
+@permission_required('ppequipment_app.change_verification', raise_exception=True)
+def bulk_verification_update(request):
+    """Массовое обновление даты сверки"""
+    if request.method == "POST":
+        form = BulkVerificationUpdateForm(request.POST)
+        if form.is_valid():
+            new_v_date_obj = form.cleaned_data['new_verification_date']
+
+            # Собираем фильтры
+            qs = Verification.objects.all()
+
+            location_refs = form.cleaned_data.get('location_ref')
+            if location_refs:
+                qs = qs.filter(location_ref__in=location_refs)
+
+            contractor_statuses = form.cleaned_data.get('contractor_status')
+            if contractor_statuses:
+                qs = qs.filter(contractor_status__in=contractor_statuses)
+
+            current_v_date = form.cleaned_data.get('current_verification_date')
+            if current_v_date:
+                qs = qs.filter(verification_date=current_v_date)
+
+            # Обновляем
+            count = qs.update(
+                verification_date=new_v_date_obj,
+                last_verification_date=new_v_date_obj.verification_date
+            )
+
+            messages.success(request, f"Успешно обновлено {count} записей сверки.")
+            return redirect("ppequipment_app:verification_list")
+    else:
+        form = BulkVerificationUpdateForm()
+
+    return render(request, "ppequipment_app/bulk_verification_update.html", {
+        "form": form,
+        "title": "Массовое обновление даты сверки"
     })
 
 
