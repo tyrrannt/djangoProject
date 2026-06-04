@@ -2752,9 +2752,9 @@ class ApartmentOccupancyReportView(LoginRequiredMixin, TemplateView):
         date_str = self.request.GET.get('date')
         try:
             selected_date = datetime.datetime.strptime(date_str,
-                                                       '%Y-%m-%d').date() if date_str else timezone.now().date()
+                                                       '%Y-%m-%d').date() if date_str else datetime.datetime.now().date()
         except (ValueError, TypeError):
-            selected_date = timezone.now().date()
+            selected_date = datetime.datetime.now().date()
 
         apartments = Apartments.objects.select_related('place').prefetch_related('bookings').all()
 
