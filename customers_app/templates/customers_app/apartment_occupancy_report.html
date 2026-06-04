@@ -1,0 +1,145 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Отчет занятости квартир на дату{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Отчет занятости квартир</h1>
+        <div class="text-muted">
+            на <strong>{{ selected_date|date:"d.m.Y" }}</strong>
+        </div>
+    </div>
+
+    <!-- Фильтр по дате -->
+    <form method="get" class="card p-3 mb-4 shadow-sm">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="id_date" class="form-label fw-bold">Выберите дату для проверки</label>
+                <input type="date" name="date" id="id_date" 
+                       class="form-control" value="{{ selected_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-calendar-check"></i> Показать отчет
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'customers_app:apartment_occupancy_report' %}" class="btn btn-outline-secondary w-100">
+                    На сегодня
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Сводная информация -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Всего мест</h6>
+                    <p class="h2 mb-0">{{ total_beds }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Занято</h6>
+                    <p class="h2 mb-0 text-danger">{{ total_occupied }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Свободно</h6>
+                    <p class="h2 mb-0 text-success">{{ total_free }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-2">Общая загруженность</h6>
+                    <p class="h2 mb-0 {% if avg_occupancy > 80 %}text-danger{% elif avg_occupancy > 50 %}text-warning{% else %}text-success{% endif %}">
+                        {{ avg_occupancy|floatformat:1 }}%
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Квартира / Адрес</th>
+                            <th>Место</th>
+                            <th class="text-center">Всего мест</th>
+                            <th class="text-center">Свободно</th>
+                            <th>Ближайшее освобождение</th>
+                            <th class="text-center">Освободится мест</th>
+                            <th>Текущие жильцы</th>
+                            <th style="width: 150px;">Загруженность</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in report_data %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">{{ item.apartment.title|default:"Без названия" }}</div>
+                                <small class="text-muted">{{ item.apartment.address|default:"—" }}</small>
+                            </td>
+                            <td>{{ item.apartment.place.name|default:"—" }}</td>
+                            <td class="text-center">{{ item.total_beds }}</td>
+                            <td class="text-center">
+                                <span class="badge {% if item.free_beds > 0 %}bg-success{% else %}bg-danger{% endif %} fs-6">
+                                    {{ item.free_beds }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if item.closest_release_date %}
+                                    {{ item.closest_release_date|date:"d.m.Y" }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if item.release_count > 0 %}
+                                    <span class="badge bg-info text-dark">{{ item.release_count }}</span>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ item.current_guests }}">
+                                    {{ item.current_guests }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar {% if item.occupancy_rate > 80 %}bg-danger{% elif item.occupancy_rate > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" style="width: {{ item.occupancy_rate }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ item.occupancy_rate|floatformat:0 }}%</small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <p class="text-muted mb-0">Квартиры не найдены</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

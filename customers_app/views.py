@@ -2739,6 +2739,87 @@ class ApiGetEmployeeConsentStatusView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'Сотрудник не найден'}, status=404)
 
 
+class ApartmentOccupancyReportView(LoginRequiredMixin, TemplateView):
+    """
+    Отчет занятости квартир на выбранную дату.
+    """
+    template_name = 'customers_app/apartment_occupancy_report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Получаем выбранную дату из запроса, по умолчанию - сегодня
+        date_str = self.request.GET.get('date')
+        try:
+            selected_date = datetime.datetime.strptime(date_str,
+                                                       '%Y-%m-%d').date() if date_str else timezone.now().date()
+        except (ValueError, TypeError):
+            selected_date = timezone.now().date()
+
+        apartments = Apartments.objects.select_related('place').prefetch_related('bookings').all()
+
+        report_data = []
+        total_beds = 0
+        total_occupied = 0
+
+        for apt in apartments:
+            # Бронирования, активные на выбранную дату
+            active_bookings = apt.bookings.filter(
+                is_active=True,
+                date_start__lte=selected_date,
+                date_end__gt=selected_date
+            )
+
+            occupied_count = active_bookings.count()
+            free_beds = max(0, apt.beds_number - occupied_count)
+
+            # Ближайшая дата освобождения (дата окончания бронирования, которая > выбранной даты)
+            next_release = apt.bookings.filter(
+                is_active=True,
+                date_end__gt=selected_date
+            ).order_by('date_end').first()
+
+            closest_release_date = next_release.date_end if next_release else None
+
+            # Количество освобождаемых мест на эту дату
+            release_count = 0
+            if closest_release_date:
+                release_count = apt.bookings.filter(
+                    is_active=True,
+                    date_end=closest_release_date
+                ).count()
+
+            # Информационные дополнения: текущие жильцы
+            current_guests = []
+            for b in active_bookings:
+                if b.process and b.process.document and b.process.document.person:
+                    current_guests.append(b.process.document.person.get_title())
+
+            report_data.append({
+                'apartment': apt,
+                'total_beds': apt.beds_number,
+                'occupied_count': occupied_count,
+                'free_beds': free_beds,
+                'closest_release_date': closest_release_date,
+                'release_count': release_count,
+                'current_guests': ", ".join(current_guests) if current_guests else "—",
+                'occupancy_rate': (occupied_count / apt.beds_number * 100) if apt.beds_number > 0 else 0
+            })
+
+            total_beds += apt.beds_number
+            total_occupied += occupied_count
+
+        context.update({
+            'report_data': report_data,
+            'selected_date': selected_date,
+            'total_beds': total_beds,
+            'total_occupied': total_occupied,
+            'total_free': total_beds - total_occupied,
+            'avg_occupancy': (total_occupied / total_beds * 100) if total_beds > 0 else 0
+        })
+        return context
+
+
 # ----------------------------------------- DRF -----------------------------------------
 class DataBaseUserViewSet(viewsets.ModelViewSet):
     queryset = DataBaseUser.objects.all()
