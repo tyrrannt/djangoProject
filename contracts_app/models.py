@@ -53,7 +53,6 @@ def contract_directory_path(instance, filename):
     return f'contracts/{inn}/{instance.contract_counteragent.kpp}/{filename}'
 
 
-
 class TypeDocuments(models.Model):
     class Meta:
         verbose_name = 'Тип документа'
@@ -229,17 +228,6 @@ class ContractModel(models.Model):
     def get_absolute_url(self):
         return reverse('contracts_app:detail', kwargs={'pk': self.pk})
 
-    # def save(
-    #         self, force_insert=False, force_update=False, using=None, update_fields=None
-    # ):
-    #     ext = self.doc_file.name.split('.')[-1]
-    #     uid = '0' * (7 - len(str(self.pk))) + str(self.pk)
-    #
-    #     filename = f'{self.type_of_document.file_name_prefix}-{self.contract_counteragent.inn}-' \
-    #                f'{self.contract_counteragent.kpp}-{self.date_conclusion}-{uid}.{ext}'
-    #     self.doc_file.name = filename
-    #     return super(ContractModel, self).save(force_insert=False, force_update=False, using=None, update_fields=None)
-
 
 class Contract(ContractModel):
     """
@@ -280,9 +268,9 @@ class Contract(ContractModel):
                 'actuality': False,
             }
 
-
     def __init__(self, *args, **kwargs):
         super(Contract, self).__init__(*args, **kwargs)
+
 
 @receiver(pre_save, sender=Contract)
 def delete_old_file_on_change(sender, instance, **kwargs):
@@ -334,52 +322,3 @@ class Posts(models.Model):
     post_description = models.TextField(verbose_name='Текст заметки', blank=True)
     responsible_person = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Ответственное лицо',
                                            on_delete=models.SET_NULL, null=True)
-
-# class Hotel(models.Model):
-#     """
-#         Модель Hotel - введена для возможности ведения квартир.
-#     """
-#
-#     class Meta:
-#         verbose_name = 'Квартира'
-#         verbose_name_plural = 'Квартиры'
-#
-#     contract_number = models.ForeignKey(Contract, verbose_name='Номер договора', on_delete=models.CASCADE)
-#     name = models.CharField(verbose_name='Наименование', max_length=150, default='')
-#     place_production_activity = models.ForeignKey(PlaceProductionActivity, verbose_name='Наименование точки',
-#                                                   on_delete=models.SET_NULL, null=True, related_name='place_production')
-#     address = models.CharField(verbose_name='Адрес', max_length=250, default='', blank=True)
-#     container = models.BigIntegerField(verbose_name='Количество мест', default=0)
-#
-#     def __str__(self):
-#         return f'{self.name}'
-
-
-# @receiver(post_save, sender=Contract)
-# def rename_file_name(sender, instance, **kwargs):
-#     try:
-#         # Получаем имя сохраненного файла
-#         file_name = pathlib.Path(instance.doc_file.name).name
-#         # Получаем путь к файлу
-#         path_name = pathlib.Path(instance.doc_file.name).parent
-#         # Получаем расширение файла
-#         ext = file_name.split('.')[-1]
-#         # Формируем уникальное окончание файла. Длинна в 7 символов. В окончании номер записи: рк, спереди дополняющие нули
-#         uid = f'{instance.pk:07}'
-#         if instance.contract_counteragent.inn == '':
-#             inn = f'{instance.contract_counteragent.pk:010}'
-#         else:
-#             inn = instance.contract_counteragent.inn
-#         filename = f'{instance.type_of_document.file_name_prefix}-{inn}-' \
-#                    f'{instance.contract_counteragent.kpp}-{instance.date_conclusion}-{uid}.{ext}'
-#         if file_name:
-#             pathlib.Path.rename(pathlib.Path.joinpath(BASE_DIR, 'media', path_name, file_name),
-#                                 pathlib.Path.joinpath(BASE_DIR, 'media', path_name, filename))
-#
-#         instance.doc_file = f'contracts/{inn}/' \
-#                             f'{instance.contract_counteragent.kpp}/{filename}'
-#         if file_name != filename:
-#             instance.save()
-#     except Exception as _ex:
-#         # print(_ex)
-#         pass

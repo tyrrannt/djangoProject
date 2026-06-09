@@ -3651,6 +3651,9 @@ class TrainingUnit(models.Model):
     class Meta:
         verbose_name = "Модуль"
         verbose_name_plural = "Модули"
+        unique_together = (
+            ('program_units', 'unit_name_short'),
+        )
 
     unit_name_short = models.CharField(
         verbose_name="Краткое наименование",
@@ -3873,6 +3876,7 @@ class StudentAgreement(models.Model):
             "document_date_sort": self.student_agreement_date.isoformat(),
             "full_name": format_name_initials(self.full_name),
             "training_center_name": self.training_center_name.short_name,
+            "counteragent_contract": self.counteragent_contract.contract_number if self.counteragent_contract else "",
             "active": self.full_name.is_active,
             "group": self.full_name.user_work_profile.job.get_type_of_job_display(),
             "remaining_work_period": self.get_remaining_work_period(),  # Новое поле
