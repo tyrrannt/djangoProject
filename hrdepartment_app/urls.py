@@ -27,7 +27,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     LaborProtectionUpdate, LaborProtectionInstructionsDelete, LaborProtectionInstructionsUpdate, \
     LaborProtectionInstructionsDetail, LaborProtectionInstructionsAdd, LaborProtectionInstructionsList, \
     ExpenseReportView, ExportExpenseReportView, StudentAgreementListView, StudentAgreementCreateView, \
-    StudentAgreementDetailView, StudentAgreementUpdateView, StudentAgreementDeleteView, generate_student_agreement
+    StudentAgreementDetailView, StudentAgreementUpdateView, StudentAgreementDeleteView, generate_student_agreement, \
+    PoaListView, PoaCreateView, PoaDetailView, PoaUpdateView, PoaMarkReceivedView
 
 app_name = 'hrdepartment_app'
 
@@ -168,6 +169,14 @@ urlpatterns = [
     path('student_agreement/<int:pk>/download/', generate_student_agreement, name='download_agreement'),
     path('training-debt-report/', views.training_debt_report, name='training_debt_report'),
     path('training-debt-report/export/', views.export_training_debt_excel, name='export_training_debt_excel'),
+
+    # Доверенности
+    path('poa/', PoaListView.as_view(), name='poa_list'),
+    path('poa/add/', PoaCreateView.as_view(), name='poa_add'),
+    path('poa/<int:pk>/', PoaDetailView.as_view(), name='poa_detail'),
+    path('poa/<int:pk>/update/', PoaUpdateView.as_view(), name='poa_update'),
+    path('poa/<int:pk>/mark_received/', PoaMarkReceivedView.as_view(), name='poa_mark_received'),
+
     # AJAX эндпоинты для каскадных списков
     path('ajax/load-contracts/', views.ajax_load_contracts, name='ajax_load_contracts'),
     path('ajax/load-programs/', views.load_programs, name='ajax_load_programs'),

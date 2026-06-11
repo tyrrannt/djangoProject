@@ -29,7 +29,7 @@ from hrdepartment_app.models import (
     ReportCard,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, Briefings,
     Operational, DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions,
-    StudentAgreement, TrainingProgram, TrainingUnit,
+    StudentAgreement, TrainingProgram, TrainingUnit, PowerOfAttorney,
 )
 
 # Дата начала применения валидации
@@ -2304,3 +2304,29 @@ class TrainingUnitQuickForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['unit_name'].required = True
+
+
+class PowerOfAttorneyForm(forms.ModelForm):
+    """
+    Форма для создания и редактирования доверенностей.
+    """
+    class Meta:
+        model = PowerOfAttorney
+        fields = (
+            'number', 'issue_date', 'expiry_date',
+            'initiator_name', 'initiator_position',
+            'grantee_name', 'grantee_position',
+            'organization_target', 'cancellation_date', 'document'
+        )
+        widgets = {
+            'issue_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'expiry_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'cancellation_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'number': forms.TextInput(attrs={'class': 'form-control'}),
+            'initiator_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'initiator_position': forms.TextInput(attrs={'class': 'form-control'}),
+            'grantee_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'grantee_position': forms.TextInput(attrs={'class': 'form-control'}),
+            'organization_target': forms.TextInput(attrs={'class': 'form-control'}),
+            'document': forms.FileInput(attrs={'class': 'form-control'}),
+        }

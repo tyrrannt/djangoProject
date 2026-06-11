@@ -3933,3 +3933,115 @@ class StudentAgreement(models.Model):
         )
 
         return debt, remaining_days
+
+class PowerOfAttorney(models.Model):
+    """
+    Модель для учета выданных доверенностей.
+    """
+    class Meta:
+        verbose_name = "Доверенность"
+        verbose_name_plural = "Доверенности"
+        ordering = ['-issue_date', '-number']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['number', 'issue_date'],
+                name='unique_poa_number_per_date'
+            )
+        ]
+
+    number = models.CharField(
+        verbose_name="Номер доверенности",
+        max_length=50,
+        help_text="Уникальный номер доверенности"
+    )
+    issue_date = models.DateField(
+        verbose_name="Дата выдачи",
+        default=datetime.date.today
+    )
+    expiry_date = models.DateField(
+        verbose_name="Дата окончания действия"
+    )
+    initiator_name = models.CharField(
+        verbose_name="ФИО инициатора",
+        max_length=255
+    )
+    initiator_position = models.CharField(
+        verbose_name="Должность инициатора",
+        max_length=255
+    )
+    grantee_name = models.CharField(
+        verbose_name="ФИО поверенного",
+        max_length=255
+    )
+    grantee_position = models.CharField(
+        verbose_name="Должность поверенного",
+        max_length=255
+    )
+    organization_target = models.CharField(
+        verbose_name="Организация/Орган",
+        max_length=255,
+        help_text="Наименование организации, для которой выдана доверенность"
+    )
+    cancellation_date = models.DateField(
+        verbose_name="Дата отмены",
+        null=True,
+        blank=True,
+        help_text="Заполняется в случае досрочного отзыва"
+    )
+    document = models.FileField(
+        verbose_name="Скан документа",
+        upload_to=custom_upload_to,
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])]
+    )
+
+    # Отметка о получении
+    is_received = models.BooleanField(
+        verbose_name="Получена подпись",
+        default=False
+    )
+    received_at = models.DateTimeField(
+        verbose_name="Дата и время получения",
+        null=True,
+        blank=True
+    )
+    received_by_user = models.ForeignKey(
+        'customers_app.DataBaseUser',
+        verbose_name="Кто зафиксировал получение",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='received_poas'
+    )
+
+    executor = models.ForeignKey(
+        'customers_app.DataBaseUser',
+        verbose_name="Исполнитель",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="poa_executor"
+    )
+    date_entry = models.DateField(
+        verbose_name="Дата ввода информации", auto_now_add=True
+    )
+
+    prefix_attr_document = "POA"
+
+    def __str__(self):
+        return f"Доверенность №{self.number} от {self.issue_date}"
+
+    def get_absolute_url(self):
+        return reverse('hrdepartment_app:poa_detail', kwargs={'pk': self.pk})
+
+    def clean(self):
+        super().clean()
+        if self.number and self.issue_date:
+            exists = PowerOfAttorney.objects.filter(
+                number=self.number,
+                issue_date__year=self.issue_date.year
+            ).exclude(pk=self.pk).exists()
+            if exists:
+                raise ValidationError({
+                    'number': f"Доверенность с номером {self.number} уже существует в {self.issue_date.year} году."
+                })

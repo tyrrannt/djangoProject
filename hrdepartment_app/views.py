@@ -87,7 +87,7 @@ from hrdepartment_app.forms import (
     DataBaseUserEventAddForm, DataBaseUserEventUpdateForm, BusinessProcessRoutesAddForm,
     BusinessProcessRoutesUpdateForm, LaborProtectionAddForm, LaborProtectionUpdateForm,
     LaborProtectionInstructionsUpdateForm, LaborProtectionInstructionsAddForm, StudentAgreementForm,
-    TrainingProgramQuickForm, TrainingUnitQuickForm, TrainingDebtReportForm,
+    TrainingProgramQuickForm, TrainingUnitQuickForm, TrainingDebtReportForm, PowerOfAttorneyForm,
 )
 from hrdepartment_app.hrdepartment_util import (
     get_medical_documents,
@@ -110,7 +110,7 @@ from hrdepartment_app.models import (
     ProductionCalendar,
     Provisions, GuidanceDocuments, CreatingTeam, TimeSheet, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
     DataBaseUserEvent, BusinessProcessRoutes, LaborProtection, LaborProtectionInstructions, StudentAgreement,
-    TrainingProgram, TrainingUnit,
+    TrainingProgram, TrainingUnit, PowerOfAttorney,
 )
 from hrdepartment_app.tasks import send_mail_notification, get_year_report
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -6861,3 +6861,53 @@ def ajax_create_unit(request):
             'success': False,
             'errors': {'error': str(e)}
         }, status=400)
+
+
+class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = PowerOfAttorney
+    template_name = 'hrdepartment_app/poa_list.html'
+    context_object_name = 'poas'
+    permission_required = 'hrdepartment_app.view_powerofattorney'
+
+    def get_queryset(self):
+        return PowerOfAttorney.objects.all().order_by('-issue_date', '-number')
+
+
+class PoaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = PowerOfAttorney
+    template_name = 'hrdepartment_app/poa_detail.html'
+    context_object_name = 'poa'
+    permission_required = 'hrdepartment_app.view_powerofattorney'
+
+
+class PoaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = PowerOfAttorney
+    form_class = PowerOfAttorneyForm
+    template_name = 'hrdepartment_app/poa_form.html'
+    permission_required = 'hrdepartment_app.add_powerofattorney'
+    success_url = reverse_lazy('hrdepartment_app:poa_list')
+
+    def form_valid(self, form):
+        form.instance.executor = self.request.user
+        return super().form_valid(form)
+
+
+class PoaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = PowerOfAttorney
+    form_class = PowerOfAttorneyForm
+    template_name = 'hrdepartment_app/poa_form.html'
+    permission_required = 'hrdepartment_app.change_powerofattorney'
+    success_url = reverse_lazy('hrdepartment_app:poa_list')
+
+
+class PoaMarkReceivedView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'hrdepartment_app.change_powerofattorney'
+
+    def post(self, request, pk):
+        poa = get_object_or_404(PowerOfAttorney, pk=pk)
+        if not poa.is_received:
+            poa.is_received = True
+            poa.received_at = timezone.now()
+            poa.received_by_user = request.user
+            poa.save()
+        return redirect('hrdepartment_app:poa_detail', pk=pk)

@@ -1,0 +1,64 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}
+    Доверенность №{{ poa.number }}
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h4 class="card-title">Детали доверенности №{{ poa.number }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Номер:</strong> {{ poa.number }}</p>
+                            <p><strong>Дата выдачи:</strong> {{ poa.issue_date|date:"d.m.Y" }}</p>
+                            <p><strong>Дата окончания:</strong> {{ poa.expiry_date|date:"d.m.Y" }}</p>
+                            {% if poa.cancellation_date %}
+                                <p class="text-danger"><strong>Дата отмены:</strong> {{ poa.cancellation_date|date:"d.m.Y" }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Инициатор:</strong> {{ poa.initiator_name }} ({{ poa.initiator_position }})</p>
+                            <p><strong>Поверенный:</strong> {{ poa.grantee_name }} ({{ poa.grantee_position }})</p>
+                            <p><strong>Цель:</strong> {{ poa.organization_target }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Статус получения</h5>
+                            {% if poa.is_received %}
+                                <p class="text-success"><i class="bx bx-check-circle"></i> Получена подпись</p>
+                                <p><strong>Дата получения:</strong> {{ poa.received_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>Зафиксировал:</strong> {{ poa.received_by_user }}</p>
+                            {% else %}
+                                <p class="text-warning"><i class="bx bx-time"></i> Ожидает подписи</p>
+                                <form action="{% url 'hrdepartment_app:poa_mark_received' poa.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm">Отметить как полученную</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Документ</h5>
+                            {% if poa.document %}
+                                <a href="{{ poa.document.url }}" target="_blank" class="btn btn-outline-primary"><i class="bx bx-file"></i> Просмотреть скан</a>
+                            {% else %}
+                                <p class="text-muted">Скан не загружен</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'hrdepartment_app:poa_update' poa.pk %}" class="btn btn-primary">Редактировать</a>
+                    <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-default">К списку</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

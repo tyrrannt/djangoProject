@@ -14,7 +14,7 @@ from hrdepartment_app.models import (
     WeekendDay, ProductionCalendar, TypesUserworktime, Instructions, Provisions,
     CreatingTeam, TimeSheet, OperationalWork, PeriodicWork, OutfitCard, DocumentAcknowledgment, Briefings, Operational,
     DataBaseUserEvent, LaborProtection, BusinessProcessRoutes, GuidanceDocuments, LaborProtectionInstructions,
-    TrainingUnit, TrainingProgram, StudentAgreement,
+    TrainingUnit, TrainingProgram, StudentAgreement, PowerOfAttorney,
 )
 from unfold.admin import ModelAdmin
 
@@ -63,6 +63,14 @@ class DocumentAcknowledgmentAdmin(ModelAdmin):
 @admin.register(DataBaseUserEvent)
 class DataBaseUserEventAdmin(ModelAdmin):
     pass
+
+
+@admin.register(PowerOfAttorney)
+class PowerOfAttorneyAdmin(ModelAdmin):
+    list_display = ('number', 'issue_date', 'expiry_date', 'grantee_name', 'is_received')
+    list_filter = ('issue_date', 'is_received')
+    search_fields = ('number', 'grantee_name', 'initiator_name')
+    readonly_fields = ('received_at', 'received_by_user')
 
 
 class DateRangeFilter(SimpleListFilter):
