@@ -6911,3 +6911,8 @@ class PoaMarkReceivedView(LoginRequiredMixin, PermissionRequiredMixin, View):
             poa.received_by_user = request.user
             poa.save()
         return redirect('hrdepartment_app:poa_detail', pk=pk)
+
+class PoaMarkReceivedDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
+    model = PowerOfAttorney
+    success_url = reverse_lazy('hrdepartment_app:poa_list')
+    permission_required = "hrdepartment_app.delete_powerofattorney"

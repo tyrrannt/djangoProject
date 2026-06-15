@@ -99,8 +99,6 @@ def custom_upload_to(instance, filename):
     # 5. Дата
     datefield = getattr(instance, 'date_entry', datetime.date.today())
     year = datefield.year if isinstance(datefield, datetime.date) else datetime.date.today().year
-    if DEBUG:
-        print(datefield)
     # 6. Имя файла
     custom_name = f"{prefix}-{uid}-{datefield}-{prefix_file}-{user_uid}.{ext}"
 

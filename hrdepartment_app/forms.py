@@ -33,7 +33,8 @@ from hrdepartment_app.models import (
 )
 
 # Дата начала применения валидации
-VALIDATION_START_DATE = datetime.datetime.strptime(config("VALIDATION_START_DATE", default="2026-04-01"), "%Y-%m-%d").date()
+VALIDATION_START_DATE = datetime.datetime.strptime(config("VALIDATION_START_DATE", default="2026-04-01"),
+                                                   "%Y-%m-%d").date()
 
 
 def present_or_future_date(value):
@@ -135,7 +136,7 @@ class OfficialMemoAddForm(forms.ModelForm):
         )
         self.fields["place_production_activity"].widget.attrs.update(
             {"class": "form-control form-control-modern",
-            "data-plugin-selectTwo": "true",}
+             "data-plugin-selectTwo": "true", }
         )
         excluded_fields = ['place_production_activity', ]  # список полей для исключения
 
@@ -521,7 +522,6 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
         d1 = str(cleaned_data.get("document"))
         document = cleaned_data.get("document")
         originals_received = cleaned_data.get("originals_received")
-
 
         if not person_agreement and document_not_agreed:
             # Сохраняем только если оба поля действительны.
@@ -2158,7 +2158,6 @@ class LaborProtectionInstructionsUpdateForm(forms.ModelForm):
             make_custom_field(self.fields[field])
 
 
-
 class StudentAgreementForm(forms.ModelForm):
     class Meta:
         model = StudentAgreement
@@ -2289,6 +2288,7 @@ class TrainingProgramQuickForm(forms.ModelForm):
 
 class TrainingUnitQuickForm(forms.ModelForm):
     """Мини-форма для быстрого создания модуля в модальном окне"""
+
     class Meta:
         model = TrainingUnit
         fields = ['unit_name', 'program_units']
@@ -2310,6 +2310,7 @@ class PowerOfAttorneyForm(forms.ModelForm):
     """
     Форма для создания и редактирования доверенностей.
     """
+
     class Meta:
         model = PowerOfAttorney
         fields = (
@@ -2317,10 +2318,8 @@ class PowerOfAttorneyForm(forms.ModelForm):
             'initiator_name_user', 'grantee_name_user',
             'organization', 'cancellation_date', 'scan_file'
         )
-        widgets = {
-            'issue_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'expiry_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'cancellation_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'number': forms.TextInput(attrs={'class': 'form-control'}),
-            'scan_file': forms.FileInput(attrs={'class': 'form-control'}),
-        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            make_custom_field(self.fields[field])

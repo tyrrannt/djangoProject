@@ -6,66 +6,96 @@
 {% endblock %}
 
 {% block content %}
-    <form class="ecommerce-form action-buttons-fixed" action="#" method="post" enctype="multipart/form-data">
+<div class="container-fluid py-4">
+    <form class="ecommerce-form" action="#" method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="col-lg-12">
-            <h4 class="font-weight-bold text-dark">{% if object %}Редактирование{% else %}Создание{% endif %} доверенности</h4>
 
-            <div class="card card-modern">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label>Номер доверенности</label>
-                            {{ form.number }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Дата выдачи</label>
-                            {{ form.issue_date }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label>Дата окончания</label>
-                            {{ form.expiry_date }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label>ФИО инициатора</label>
-                            {{ form.initiator_name_user }}
+        <div class="row justify-content-center">
+            <!-- Ограничиваем ширину формы для удобства чтения на больших экранах -->
+            <div class="col-lg-10 col-xl-8">
+
+                <!-- Заголовок формы -->
+                <div class="d-flex align-items-center mb-4">
+                    <h4 class="mb-0 text-dark fw-bold">
+                        {% if object %}Редактирование{% else %}Создание{% endif %} доверенности
+                    </h4>
+                    <hr class="flex-grow-1 ms-3 text-secondary opacity-25">
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+
+                        <!-- Блок 1: Основные реквизиты -->
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small ls-1">Основные реквизиты</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-secondary">Номер доверенности</label>
+                                {{ form.number }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-secondary">Дата выдачи</label>
+                                {{ form.issue_date }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-secondary">Дата окончания</label>
+                                {{ form.expiry_date }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-secondary">Дата отмены</label>
+                                {{ form.cancellation_date }}
+                            </div>
                         </div>
 
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label>ФИО поверенного</label>
-                            {{ form.grantee_name_user }}
+                        <!-- Блок 2: Стороны -->
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small ls-1">Стороны доверенности</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-secondary">ФИО инициатора</label>
+                                {{ form.initiator_name_user }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-secondary">ФИО поверенного</label>
+                                {{ form.grantee_name_user }}
+                            </div>
                         </div>
 
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label>Организация/Орган</label>
-                            {{ form.organization }}
+                        <!-- Блок 3: Организация и файлы -->
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small ls-1">Организация и документы</h6>
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold text-secondary">Организация / Орган</label>
+                                {{ form.organization }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-secondary">Скан документа</label>
+                                {{ form.scan_file }}
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label>Дата отмены (если есть)</label>
-                            {{ form.cancellation_date }}
-                        </div>
-                        <div class="col-md-8 mb-3">
-                            <label>Скан документа</label>
-                            {{ form.scan_file }}
-                        </div>
+
                     </div>
                 </div>
-            </div>
-            
-            <div class="row mt-4">
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
-                    <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-default">Отмена</a>
+
+                <!-- Кнопки действий -->
+                <div class="row mt-4">
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            Сохранить
+                        </button>
+                        <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary px-4">
+                            Отмена
+                        </a>
+                    {% if object %}
+                        {% if user.is_superuser or request.user == object.executor %}{# Проверка прав #}
+                        <a href="{% url 'hrdepartment_app:poa_delete' object.pk %}" class="btn btn-danger px-4">
+                            Удалить
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                    </div>
                 </div>
+
             </div>
         </div>
     </form>
+</div>
 {% endblock %}
