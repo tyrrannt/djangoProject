@@ -201,6 +201,7 @@ def contract_directory_path(instance, filename):
 def poa_directory_path_scan(instance, filename):
     return custom_upload_to(instance, filename)
 
+
 def jds_directory_path(instance, filename):
     return custom_upload_to(instance, filename)
 
@@ -1684,6 +1685,7 @@ def create_report(sender, instance: ApprovalOficialMemoProcess, raw=False, **kwa
             logger.debug(f"Failed to send email. {_ex}")
 
 
+# Более не используется
 class BusinessProcessDirection(models.Model):
     type_of = [("1", "Служебная поездка"), ("2", "Приказы о старших бригадах")]
 
@@ -1736,6 +1738,7 @@ class BusinessProcessRoutes(models.Model):
          Допустимые значения:
          - ("1", "Служебная поездка")
          - ("2", "Приказы о старших бригадах")
+         - ("3", "Доверенности")
 
      business_process_type : CharField
          Тип бизнес-процесса. Определяет категорию маршрута.
@@ -1743,7 +1746,7 @@ class BusinessProcessRoutes(models.Model):
          - choices=BUSINESS_PROCESS_TYPES
          - blank=True
          - default=""
-         Примеры: "1" — служебная поездка, "2" — приказ о бригаде.
+         Примеры: "1" — служебная поездка, "2" — приказ о бригаде, "3" - доверенности.
 
      person_executor : ManyToManyField
          Исполнители бизнес-процесса — сотрудники, отвечающие за выполнение основных действий.
@@ -1797,6 +1800,7 @@ class BusinessProcessRoutes(models.Model):
     BUSINESS_PROCESS_TYPES = [
         ("1", "Служебная поездка"),
         ("2", "Приказы о старших бригадах"),
+        ("3", "Доверенности"),
     ]
     """
     Список допустимых типов бизнес-процессов.
@@ -1829,7 +1833,7 @@ class BusinessProcessRoutes(models.Model):
 
     person_clerk = models.ManyToManyField(
         DataBaseUser,
-        verbose_name="Делопроизводитель",
+        verbose_name="Делопроизводитель/Инициатор",
         related_name="bp_person_clerk",
         blank=True,
     )
@@ -3937,10 +3941,12 @@ class StudentAgreement(models.Model):
 
         return debt, remaining_days
 
+
 class PowerOfAttorney(models.Model):
     """
     Модель для учета выданных доверенностей.
     """
+
     class Meta:
         verbose_name = "Доверенность"
         verbose_name_plural = "Доверенности"
@@ -3972,7 +3978,6 @@ class PowerOfAttorney(models.Model):
         verbose_name="Дата окончания действия"
     )
 
-
     initiator_name_user = models.ForeignKey(
         'customers_app.DataBaseUser',
         verbose_name="ФИО инициатора",
@@ -3981,7 +3986,6 @@ class PowerOfAttorney(models.Model):
         blank=True,
         related_name='initiator_poas'
     )
-
 
     grantee_name_user = models.ForeignKey(
         'customers_app.DataBaseUser',
@@ -4045,9 +4049,6 @@ class PowerOfAttorney(models.Model):
     date_entry = models.DateField(
         verbose_name="Дата ввода информации", auto_now_add=True
     )
-
-
-
 
     def __str__(self):
         return f"Доверенность №{self.number} от {self.issue_date}"

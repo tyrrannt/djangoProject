@@ -1521,7 +1521,7 @@ class ApprovalOficialMemoProcessUpdate(
         """
         order = request.POST.get("order")
         accommodation = request.POST.get("accommodation")
-        apartment =  request.POST.get("apartment")
+        apartment = request.POST.get("apartment")
         change_status = 0
         document = OfficialMemo.objects.get(pk=self.get_object().document.pk)
         if document.order != order:
@@ -6279,7 +6279,8 @@ class StudentAgreementListView(PermissionRequiredMixin, LoginRequiredMixin, List
     def get(self, request, *args, **kwargs):
         query = Q()
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            search_list = ['student_agreement_number', 'student_agreement_date', 'full_name__title', 'training_center_name__short_name',
+            search_list = ['student_agreement_number', 'student_agreement_date', 'full_name__title',
+                           'training_center_name__short_name',
                            "full_name__user_work_profile__job__type_of_job", None, "training_cost", "signed"]
             context = ajax_search(request, self, search_list, StudentAgreement, query, triger=3)
             return JsonResponse(context, safe=False)
@@ -6328,7 +6329,6 @@ def generate_student_agreement(request, pk):
                 remotely = ' без отрыва от работы.'
                 terms = 'В течение всего срока обучения Работнику выплачивается заработная плата в полном объёме, согласно штатному расписанию и условиям трудового договора.'
 
-
         context = {
             # Реквизиты договора
             'student_agreement_number': agreement.student_agreement_number,
@@ -6362,7 +6362,6 @@ def generate_student_agreement(request, pk):
             'form_education': agreement.get_form_education_display(),
             'remotely': remotely,
             'terms': terms,
-
 
             # Модули
             'modules_text': modules_text,
@@ -6737,6 +6736,7 @@ def export_training_debt_excel(request):
     wb.save(response)
     return response
 
+
 def load_programs(request):
     """Возвращает программы обучения для выбранного учебного центра."""
     center_id = request.GET.get('center_id')
@@ -6905,12 +6905,13 @@ class PoaMarkReceivedView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
     def post(self, request, pk):
         poa = get_object_or_404(PowerOfAttorney, pk=pk)
-        if not poa.is_received:
+        if not poa.is_received and request.user == poa.grantee_name_user:
             poa.is_received = True
             poa.received_at = timezone.now()
             poa.received_by_user = request.user
             poa.save()
         return redirect('hrdepartment_app:poa_detail', pk=pk)
+
 
 class PoaMarkReceivedDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = PowerOfAttorney

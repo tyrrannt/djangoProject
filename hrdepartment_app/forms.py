@@ -2310,6 +2310,15 @@ class PowerOfAttorneyForm(forms.ModelForm):
     """
     Форма для создания и редактирования доверенностей.
     """
+    initiator_name_user = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True),
+        label='ФИО инициатора',
+    )
+
+    grantee_name_user = forms.ModelChoiceField(
+        queryset=DataBaseUser.objects.filter(is_active=True),
+        label='ФИО поверенного',
+    )
 
     class Meta:
         model = PowerOfAttorney
@@ -2321,5 +2330,22 @@ class PowerOfAttorneyForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Получаем всех пользователей, которые есть в person_clerk для типа процесса "3" (Доверенности)
+        # Предполагается, что существует только один активный маршрут для доверенностей
+        # Если может быть несколько, используйте values_list('person_clerk__id', flat=True) и distinct()
+        business_route = BusinessProcessRoutes.objects.filter(
+            business_process_type="3"
+        ).first()  # Или используйте .last() или другой метод получения нужного маршрута
+
+        if business_route:
+            # Фильтруем queryset для initiator_name_user
+            filtered_users = business_route.person_clerk.filter(is_active=True)
+            self.fields['initiator_name_user'].queryset = filtered_users
+        else:
+            # Если маршрут не найден, можно вернуть пустой queryset или оставить всех
+            self.fields['initiator_name_user'].queryset = DataBaseUser.objects.none()
+
+        # Применяем кастомную стилизацию ко всем полям
         for field in self.fields:
             make_custom_field(self.fields[field])

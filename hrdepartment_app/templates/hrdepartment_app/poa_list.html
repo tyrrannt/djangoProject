@@ -37,8 +37,8 @@
                                     <td><a href="{% url 'hrdepartment_app:poa_detail' poa.pk %}">{{ poa.number }}</a></td>
                                     <td>{{ poa.issue_date|date:"d.m.Y" }}</td>
                                     <td>{{ poa.expiry_date|date:"d.m.Y" }}</td>
-                                    <td>{{ poa.grantee_name }}</td>
-                                    <td>{{ poa.organization_target }}</td>
+                                    <td>{{ poa.grantee_name_user }}</td>
+                                    <td>{{ poa.organization }}</td>
                                     <td>
                                         {% if poa.is_received %}
                                             <span class="badge bg-success">Получена</span>

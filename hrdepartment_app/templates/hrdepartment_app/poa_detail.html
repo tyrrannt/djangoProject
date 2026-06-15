@@ -101,7 +101,7 @@
                                                 Дата: {{ poa.received_at|date:"d.m.Y H:i" }}</div>
                                             <div class="text-muted small">Зафиксировал: {{ poa.received_by_user }}</div>
                                         {% else %}
-                                            {% if user == grantee_name_user or user.is_superuser %}
+                                            {% if user == poa.grantee_name_user or user.is_superuser %}
                                                 <form action="{% url 'hrdepartment_app:poa_mark_received' poa.pk %}"
                                                       method="post" class="mt-2">
                                                     {% csrf_token %}
@@ -142,9 +142,11 @@
                     <!-- Футер с действиями -->
                     <div class="card-footer bg-white border-top-0 pt-0 pb-4 px-4">
                         <div class="d-flex gap-2">
+                            {% if user == poa.executor or user.is_superuser %}
                             <a href="{% url 'hrdepartment_app:poa_update' poa.pk %}" class="btn btn-primary">
                                 <i class="bx bx-edit"></i> Редактировать
                             </a>
+                            {% endif %}
                             <a href="{% url 'hrdepartment_app:poa_list' %}" class="btn btn-outline-secondary">
                                 Назад к списку
                             </a>
