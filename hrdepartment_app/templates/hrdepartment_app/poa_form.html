@@ -30,27 +30,21 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label>ФИО инициатора</label>
-                            {{ form.initiator_name }}
+                            {{ form.initiator_name_user }}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label>Должность инициатора</label>
-                            {{ form.initiator_position }}
-                        </div>
+
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label>ФИО поверенного</label>
-                            {{ form.grantee_name }}
+                            {{ form.grantee_name_user }}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label>Должность поверенного</label>
-                            {{ form.grantee_position }}
-                        </div>
+
                     </div>
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <label>Организация/Орган</label>
-                            {{ form.organization_target }}
+                            {{ form.organization }}
                         </div>
                     </div>
                     <div class="row">
@@ -60,7 +54,7 @@
                         </div>
                         <div class="col-md-8 mb-3">
                             <label>Скан документа</label>
-                            {{ form.document }}
+                            {{ form.scan_file }}
                         </div>
                     </div>
                 </div>

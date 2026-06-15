@@ -42,7 +42,7 @@ from customers_app.models import (
     HistoryChange,
     Affiliation,
 )
-from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL
+from djangoProject.settings import BASE_DIR, EMAIL_HOST_USER, MEDIA_URL, DEBUG
 from library_app.models import DocumentForm
 from telegram_app.models import TelegramNotification, ChatID
 from msoffice2pdf import convert
@@ -70,6 +70,7 @@ def custom_upload_to(instance, filename):
         value = getattr(instance, f.name)
         if hasattr(value, 'name') and value and filename == os.path.basename(value.name):
             field_name = f.name
+
             break
 
     # 2. Если файл уже существует — вернуть старое имя
@@ -98,7 +99,8 @@ def custom_upload_to(instance, filename):
     # 5. Дата
     datefield = getattr(instance, 'date_entry', datetime.date.today())
     year = datefield.year if isinstance(datefield, datetime.date) else datetime.date.today().year
-
+    if DEBUG:
+        print(datefield)
     # 6. Имя файла
     custom_name = f"{prefix}-{uid}-{datefield}-{prefix_file}-{user_uid}.{ext}"
 
@@ -198,6 +200,8 @@ def contract_directory_path(instance, filename):
 #     except Exception as _ex:
 #         logger.error(f"Ошибка при переименовании файла {_ex}")
 
+def poa_directory_path_scan(instance, filename):
+    return custom_upload_to(instance, filename)
 
 def jds_directory_path(instance, filename):
     return custom_upload_to(instance, filename)
@@ -3950,6 +3954,13 @@ class PowerOfAttorney(models.Model):
             )
         ]
 
+    prefix_attr_document = "POA"
+    prefix_file_doc_file = "DRAFT"
+    prefix_ext_doc_file = "docx"
+    prefix_attr_scan_file = "POA"
+    prefix_file_scan_file = "SCAN"
+    prefix_ext_scan_file = "pdf"
+
     number = models.CharField(
         verbose_name="Номер доверенности",
         max_length=50,
@@ -3998,9 +4009,10 @@ class PowerOfAttorney(models.Model):
         blank=True,
         help_text="Заполняется в случае досрочного отзыва"
     )
-    document = models.FileField(
+
+    scan_file = models.FileField(
         verbose_name="Скан документа",
-        upload_to=custom_upload_to,
+        upload_to=poa_directory_path_scan,
         null=True,
         blank=True,
         validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])]
@@ -4036,7 +4048,8 @@ class PowerOfAttorney(models.Model):
         verbose_name="Дата ввода информации", auto_now_add=True
     )
 
-    prefix_attr_document = "POA"
+
+
 
     def __str__(self):
         return f"Доверенность №{self.number} от {self.issue_date}"
