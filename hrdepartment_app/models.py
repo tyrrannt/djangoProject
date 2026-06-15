@@ -472,6 +472,7 @@ def Med(obj_model, filepath, filename_pmo, filename_po, request):
             f"Ошибка заполнения файла {filename_pmo}: {DataBaseUser.objects.get(pk=request)} {_ex}"
         )
         context = {}
+        context2 = {}
     doc.render(context)
     doc2.render(context2)
     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
