@@ -3962,27 +3962,36 @@ class PowerOfAttorney(models.Model):
     expiry_date = models.DateField(
         verbose_name="Дата окончания действия"
     )
-    initiator_name = models.CharField(
+
+
+    initiator_name_user = models.ForeignKey(
+        'customers_app.DataBaseUser',
         verbose_name="ФИО инициатора",
-        max_length=255
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='initiator_poas'
     )
-    initiator_position = models.CharField(
-        verbose_name="Должность инициатора",
-        max_length=255
-    )
-    grantee_name = models.CharField(
+
+
+    grantee_name_user = models.ForeignKey(
+        'customers_app.DataBaseUser',
         verbose_name="ФИО поверенного",
-        max_length=255
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='grantee_poas'
     )
-    grantee_position = models.CharField(
-        verbose_name="Должность поверенного",
-        max_length=255
-    )
-    organization_target = models.CharField(
+
+    organization = models.ForeignKey(
+        'customers_app.Counteragent',
         verbose_name="Организация/Орган",
-        max_length=255,
-        help_text="Наименование организации, для которой выдана доверенность"
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='organization_poas'
     )
+
     cancellation_date = models.DateField(
         verbose_name="Дата отмены",
         null=True,

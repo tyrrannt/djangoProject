@@ -67,9 +67,9 @@ class DataBaseUserEventAdmin(ModelAdmin):
 
 @admin.register(PowerOfAttorney)
 class PowerOfAttorneyAdmin(ModelAdmin):
-    list_display = ('number', 'issue_date', 'expiry_date', 'grantee_name', 'is_received')
+    list_display = ('number', 'issue_date', 'expiry_date', 'is_received')
     list_filter = ('issue_date', 'is_received')
-    search_fields = ('number', 'grantee_name', 'initiator_name')
+    search_fields = ('number', )
     readonly_fields = ('received_at', 'received_by_user')
 
 

@@ -2314,19 +2314,13 @@ class PowerOfAttorneyForm(forms.ModelForm):
         model = PowerOfAttorney
         fields = (
             'number', 'issue_date', 'expiry_date',
-            'initiator_name', 'initiator_position',
-            'grantee_name', 'grantee_position',
-            'organization_target', 'cancellation_date', 'document'
+            'initiator_name_user', 'grantee_name_user',
+            'organization', 'cancellation_date', 'document'
         )
         widgets = {
             'issue_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'expiry_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'cancellation_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'number': forms.TextInput(attrs={'class': 'form-control'}),
-            'initiator_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'initiator_position': forms.TextInput(attrs={'class': 'form-control'}),
-            'grantee_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'grantee_position': forms.TextInput(attrs={'class': 'form-control'}),
-            'organization_target': forms.TextInput(attrs={'class': 'form-control'}),
             'document': forms.FileInput(attrs={'class': 'form-control'}),
         }
