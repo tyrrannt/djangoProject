@@ -6870,7 +6870,34 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'hrdepartment_app.view_powerofattorney'
 
     def get_queryset(self):
-        return PowerOfAttorney.objects.all().order_by('-issue_date', '-number')
+        qs = PowerOfAttorney.objects.all()
+        routes = BusinessProcessRoutes.objects.filter(
+            business_process_type=3
+        )
+
+        persons_full = set()
+        persons = set()
+
+        persons_full.update(
+            routes.values_list("person_executor", flat=True)
+        )
+        persons_full.update(
+            routes.values_list("person_agreement", flat=True)
+        )
+        persons.update(
+            routes.values_list("person_clerk", flat=True)
+        )
+
+        persons_full.discard(None)
+        persons.discard(None)
+
+        if self.request.user.is_superuser or self.request.user in persons_full:
+            return qs
+        elif self.request.user in persons:
+            qs.filter(initiator_name_user__in=persons).order_by('-issue_date', '-number')
+        else:
+            qs.filter(grantee_name_user=self.request.user).order_by('-issue_date', '-number')
+        return qs
 
 
 class PoaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -6900,8 +6927,8 @@ class PoaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     success_url = reverse_lazy('hrdepartment_app:poa_list')
 
 
-class PoaMarkReceivedView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = 'hrdepartment_app.change_powerofattorney'
+class PoaMarkReceivedView(LoginRequiredMixin, View):
+    success_url = reverse_lazy('hrdepartment_app:poa_list')
 
     def post(self, request, pk):
         poa = get_object_or_404(PowerOfAttorney, pk=pk)
