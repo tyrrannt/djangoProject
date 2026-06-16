@@ -93,13 +93,13 @@
                                     </div>
                                     <div class="flex-grow-1">
                                         <div class="fw-bold mb-1">
-                                            {% if poa.is_received %}Подпись получена{% else %}Ожидает получения
-                                                подписи{% endif %}
+                                            {% if poa.is_received %}Доверенность получена уполномоченным лицом{% else %}Ожидает получения
+                                                {% endif %}
                                         </div>
                                         {% if poa.is_received %}
                                             <div class="text-muted mb-1">
                                                 Дата: {{ poa.received_at|date:"d.m.Y H:i" }}</div>
-                                            <div class="text-muted">Зафиксировал: {{ poa.received_by_user }}</div>
+                                            <div class="text-muted">Подтвердил получение: {{ poa.received_by_user }}</div>
                                         {% else %}
                                             {% if user == poa.grantee_name_user or user.is_superuser %}
                                                 <form action="{% url 'hrdepartment_app:poa_mark_received' poa.pk %}"
