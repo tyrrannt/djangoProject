@@ -6870,7 +6870,7 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'hrdepartment_app.view_powerofattorney'
 
     def get_queryset(self):
-        qs = PowerOfAttorney.objects.all()
+        qs = PowerOfAttorney.objects.all().order_by('-issue_date', '-number')
         routes = BusinessProcessRoutes.objects.filter(
             business_process_type=3
         )
@@ -6891,12 +6891,12 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         persons_full.discard(None)
         persons.discard(None)
 
-        if self.request.user.is_superuser or self.request.user in persons_full:
+        if self.request.user.pk in persons_full:
             return qs
-        elif self.request.user in persons:
-            return qs.filter(initiator_name_user__in=persons).order_by('-issue_date', '-number')
+        elif self.request.user.pk in persons:
+            return qs.filter(initiator_name_user__in=persons)
         else:
-            return qs.filter(grantee_name_user=self.request.user).order_by('-issue_date', '-number')
+            return qs.filter(grantee_name_user=self.request.user)
 
 
 class PoaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
