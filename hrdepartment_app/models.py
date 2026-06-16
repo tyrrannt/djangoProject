@@ -4056,6 +4056,19 @@ class PowerOfAttorney(models.Model):
     def get_absolute_url(self):
         return reverse('hrdepartment_app:poa_detail', kwargs={'pk': self.pk})
 
+    def get_data(self):
+
+        return {
+            "pk": self.pk,
+            "number": self.number,
+            "issue_date": f"{self.issue_date:%d.%m.%Y} г.",
+            "expiry_date": f"{self.expiry_date:%d.%m.%Y} г.",
+            "grantee_name_user": format_name_initials(self.grantee_name_user.title),
+            "organization": str(self.organization.short_name),
+            "is_received": "Получена" if self.is_received else "Ожидает",
+
+        }
+
     def clean(self):
         super().clean()
         if self.number and self.issue_date:

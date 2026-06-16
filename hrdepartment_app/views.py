@@ -6869,6 +6869,20 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'poas'
     permission_required = 'hrdepartment_app.view_powerofattorney'
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super(PoaListView, self).get_context_data(**kwargs)
+        context["title"] = f"Доверенности"
+        return context
+
+    def get(self, request, *args, **kwargs):
+        query = Q()
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            search_list = ['number', 'issue_date', 'expiry_date',
+                           'grantee_name_user__title', "organization__short_name", "is_received"]
+            context = ajax_search(request, self, search_list, PowerOfAttorney, query, triger=3)
+            return JsonResponse(context, safe=False)
+        return super(PoaListView, self).get(request, *args, **kwargs)
+
     def get_queryset(self):
         qs = PowerOfAttorney.objects.all().order_by('-issue_date', '-number')
         routes = BusinessProcessRoutes.objects.filter(
@@ -6891,7 +6905,7 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         persons_full.discard(None)
         persons.discard(None)
 
-        if self.request.user.pk in persons_full:
+        if self.request.user.pk in persons_full or self.request.user.is_superuser:
             return qs
         elif self.request.user.pk in persons:
             return qs.filter(initiator_name_user__in=persons)
