@@ -6892,17 +6892,11 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         persons.discard(None)
 
         if self.request.user.is_superuser or self.request.user in persons_full:
-            print("1")
             return qs
         elif self.request.user in persons:
-            print("2")
             return qs.filter(initiator_name_user__in=persons).order_by('-issue_date', '-number')
         else:
-            print("3")
             return qs.filter(grantee_name_user=self.request.user).order_by('-issue_date', '-number')
-
-
-
 
 
 class PoaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
