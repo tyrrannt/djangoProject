@@ -4064,7 +4064,7 @@ class PowerOfAttorney(models.Model):
             "issue_date": f"{self.issue_date:%d.%m.%Y} г.",
             "expiry_date": f"{self.expiry_date:%d.%m.%Y} г.",
             "grantee_name_user": format_name_initials(self.grantee_name_user.title),
-            "organization": str(self.organization.short_name),
+            "organization": str(self.organization.short_name) if self.organization else "",
             "is_received": "Получена" if self.is_received else "Ожидает",
 
         }
