@@ -33,62 +33,62 @@
                     <div class="card-body p-4">
 
                         <!-- Блок 1: Основные реквизиты -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small">Основные реквизиты</h6>
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3">Основные реквизиты</h6>
                         <div class="row g-4 mb-4">
                             <div class="col-md-3">
-                                <div class="text-muted small mb-1">Номер</div>
-                                <div class="fw-bold text-dark fs-5">{{ poa.number }}</div>
+                                <div class="text-muted mb-1">Номер</div>
+                                <div class="fw-bold text-dark fs-5 fs-4">{{ poa.number }}</div>
                             </div>
                             <div class="col-md-3">
-                                <div class="text-muted small mb-1">Дата выдачи</div>
-                                <div class="fw-bold text-dark">{{ poa.issue_date|date:"d.m.Y" }}</div>
+                                <div class="text-muted mb-1">Дата выдачи</div>
+                                <div class="fw-bold text-dark fs-5">{{ poa.issue_date|date:"d.m.Y" }}</div>
                             </div>
                             <div class="col-md-3">
-                                <div class="text-muted small mb-1">Дата окончания</div>
-                                <div class="fw-bold text-dark">{{ poa.expiry_date|date:"d.m.Y" }}</div>
+                                <div class="text-muted mb-1">Дата окончания</div>
+                                <div class="fw-bold text-dark fs-5">{{ poa.expiry_date|date:"d.m.Y" }}</div>
                             </div>
                             <div class="col-md-3">
-                                <div class="text-muted small mb-1">Дата отмены</div>
+                                <div class="text-muted mb-1">Дата отмены</div>
                                 <div class="fw-bold {% if poa.cancellation_date %}text-danger{% else %}text-muted{% endif %}">
                                     {{ poa.cancellation_date|date:"d.m.Y"|default:"—" }}
                                 </div>
-                            </div it>
+                            </div>
                         </div>
 
                         <hr class="text-secondary opacity-25 my-4">
 
                         <!-- Блок 2: Стороны -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small">Стороны доверенности</h6>
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3">Стороны доверенности</h6>
                         <div class="row g-4 mb-4">
                             <div class="col-md-6">
-                                <div class="text-muted small mb-1">Инициатор</div>
-                                <div class="fw-bold text-dark">{{ poa.initiator_name_user }}</div>
-                                <div class="text-secondary small">{{ poa.initiator_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
+                                <div class="text-muted mb-1">Инициатор</div>
+                                <div class="fw-bold text-dark fs-5">{{ poa.initiator_name_user }}</div>
+                                <div class="text-secondary">{{ poa.initiator_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
                             </div>
                             <div class="col-md-6">
-                                <div class="text-muted small mb-1">Поверенный</div>
-                                <div class="fw-bold text-dark">{{ poa.grantee_name_user }}</div>
-                                <div class="text-secondary small">{{ poa.grantee_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
+                                <div class="text-muted mb-1">Поверенный</div>
+                                <div class="fw-bold text-dark fs-5">{{ poa.grantee_name_user }}</div>
+                                <div class="text-secondary">{{ poa.grantee_name_user.user_work_profile.job|default:"Должность не указана" }}</div>
                             </div>
                             <div class="col-12">
-                                <div class="text-muted small mb-1">Организация / Цель</div>
-                                <div class="fw-bold text-dark">{{ poa.organization|default:"Не указана" }}</div>
+                                <div class="text-muted mb-1">Организация / Цель</div>
+                                <div class="fw-bold text-dark fs-5">{{ poa.organization|default:"Не указана" }}</div>
                             </div>
                         </div>
 
                         <hr class="text-secondary opacity-25 my-4">
 
                         <!-- Блок 3: Статус и Документы -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small">Статус исполнения и документы</h6>
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3">Статус исполнения и документы</h6>
                         <div class="row g-4">
                             <!-- Статус получения -->
                             <div class="col-md-6">
                                 <div class="d-flex align-items-start p-3 rounded {% if poa.is_received %}bg-white bg-opacity-10{% else %}bg-warning bg-opacity-10{% endif %}">
                                     <div class="me-3 mt-1">
                                         {% if poa.is_received %}
-                                            <i class="bx bx-check-circle text-success" style="font-size: 1.5rem;"></i>
+                                            <i class="bx bx-check-circle text-success" style="font-size: 2rem;"></i>
                                         {% else %}
-                                            <i class="bx bx-time text-warning" style="font-size: 1.5rem;"></i>
+                                            <i class="bx bx-time text-warning" style="font-size: 2rem;"></i>
                                         {% endif %}
                                     </div>
                                     <div class="flex-grow-1">
@@ -97,9 +97,9 @@
                                                 подписи{% endif %}
                                         </div>
                                         {% if poa.is_received %}
-                                            <div class="text-muted small mb-1">
+                                            <div class="text-muted mb-1">
                                                 Дата: {{ poa.received_at|date:"d.m.Y H:i" }}</div>
-                                            <div class="text-muted small">Зафиксировал: {{ poa.received_by_user }}</div>
+                                            <div class="text-muted">Зафиксировал: {{ poa.received_by_user }}</div>
                                         {% else %}
                                             {% if user == poa.grantee_name_user or user.is_superuser %}
                                                 <form action="{% url 'hrdepartment_app:poa_mark_received' poa.pk %}"
@@ -119,7 +119,7 @@
                             <div class="col-md-6">
                                 <div class="d-flex align-items-start p-3 rounded bg-light">
                                     <div class="me-3 mt-1">
-                                        <i class="bx bx-file text-primary" style="font-size: 1.5rem;"></i>
+                                        <i class="bx bx-file text-primary" style="font-size: 2rem;"></i>
                                     </div>
                                     <div class="flex-grow-1">
                                         <div class="fw-bold mb-1">Скан документа</div>
@@ -130,7 +130,7 @@
                                                 <i class="bx bx-show"></i> Просмотреть / Скачать
                                             </a>
                                         {% else %}
-                                            <span class="text-muted small fst-italic">Файл не загружен</span>
+                                            <span class="text-muted fst-italic">Файл не загружен</span>
                                         {% endif %}
                                     </div>
                                 </div>

@@ -26,48 +26,48 @@
                     <div class="card-body p-4">
 
                         <!-- Блок 1: Основные реквизиты -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small ls-1">Основные реквизиты</h6>
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3 ls-1">Основные реквизиты</h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold text-secondary">Номер доверенности</label>
+                                <label class="form-label fw-bold text-secondary">Номер доверенности</label>
                                 {{ form.number }}
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold text-secondary">Дата выдачи</label>
+                                <label class="form-label fw-bold text-secondary">Дата выдачи</label>
                                 {{ form.issue_date }}
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold text-secondary">Дата окончания</label>
+                                <label class="form-label fw-bold text-secondary">Дата окончания</label>
                                 {{ form.expiry_date }}
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold text-secondary">Дата отмены</label>
+                                <label class="form-label fw-bold text-secondary">Дата отмены</label>
                                 {{ form.cancellation_date }}
                             </div>
                         </div>
 
                         <!-- Блок 2: Стороны -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small ls-1">Стороны доверенности</h6>
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3 ls-1">Стороны доверенности</h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-secondary">ФИО инициатора</label>
+                                <label class="form-label fw-bold text-secondary">ФИО инициатора</label>
                                 {{ form.initiator_name_user }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-secondary">ФИО поверенного</label>
+                                <label class="form-label fw-bold text-secondary">ФИО поверенного</label>
                                 {{ form.grantee_name_user }}
                             </div>
                         </div>
 
                         <!-- Блок 3: Организация и файлы -->
-                        <h6 class="text-uppercase text-muted fw-semibold mb-3 small ls-1">Организация и документы</h6>
+                        <h6 class="text-uppercase text-muted fw-semibold mb-3 ls-1">Организация и документы</h6>
                         <div class="row g-3">
                             <div class="col-md-8">
-                                <label class="form-label small fw-bold text-secondary">Организация / Орган</label>
+                                <label class="form-label fw-bold text-secondary">Организация / Орган</label>
                                 {{ form.organization }}
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold text-secondary">Скан документа</label>
+                                <label class="form-label fw-bold text-secondary">Скан документа</label>
                                 {{ form.scan_file }}
                             </div>
                         </div>
