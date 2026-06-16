@@ -6919,6 +6919,12 @@ class PoaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = 'hrdepartment_app.add_powerofattorney'
     success_url = reverse_lazy('hrdepartment_app:poa_list')
 
+    def has_permission(self):
+        return BusinessProcessRoutes.objects.filter(
+            business_process_type=3,
+            person_executor=self.request.user
+        ).exists()
+
     def form_valid(self, form):
         form.instance.executor = self.request.user
         return super().form_valid(form)
@@ -6930,6 +6936,12 @@ class PoaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     template_name = 'hrdepartment_app/poa_form.html'
     permission_required = 'hrdepartment_app.change_powerofattorney'
     success_url = reverse_lazy('hrdepartment_app:poa_list')
+
+    def has_permission(self):
+        return BusinessProcessRoutes.objects.filter(
+            business_process_type=3,
+            person_executor=self.request.user
+        ).exists()
 
 
 class PoaMarkReceivedView(LoginRequiredMixin, View):
@@ -6949,3 +6961,9 @@ class PoaMarkReceivedDeleteView(PermissionRequiredMixin, LoginRequiredMixin, Del
     model = PowerOfAttorney
     success_url = reverse_lazy('hrdepartment_app:poa_list')
     permission_required = "hrdepartment_app.delete_powerofattorney"
+
+    def has_permission(self):
+        return BusinessProcessRoutes.objects.filter(
+            business_process_type=3,
+            person_executor=self.request.user
+        ).exists()
