@@ -6,96 +6,362 @@
 {% endblock %}
 
 {% block content %}
-    <div class="row">
-        <div class="col">
-            <div class="card card-modern">
-                <div class="card-body">
-                    <div class="row align-items-center mb-3">
-                        <div class="col-12 col-lg-auto mb-3 mb-lg-0">
-                            <a href="{% url 'hrdepartment_app:poa_add' %}" class="btn btn-outline-primary py-2">
-                                <i class='bx bx-list-plus me-2'></i> Добавить доверенность
-                            </a>
-                        </div>
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+
+                    <!-- Заголовок и кнопка добавления -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0 text-dark fw-bold">
+                            <i class="bx bx-file me-2 text-primary"></i>Доверенности
+                        </h4>
+                        <a href="{% url 'hrdepartment_app:poa_add' %}" class="btn btn-primary">
+                            <i class="bx bx-plus-circle me-2"></i> Добавить доверенность
+                        </a>
                     </div>
 
+                    <!-- Таблица -->
                     <div class="table-responsive">
-                        <style>
-                            thead input {
-                                width: 100%;
-                                padding: 3px;
-                                box-sizing: border-box;
-                                border-radius: 10px;
-                                border-color: #ff7300;
-                                color: #003994;
-                            }
-                        </style>
-                        <table class="table table-ecommerce-simple table-striped mb-0" id="datatable-ecommerce-list"
-                               style="min-width: 750px;">
+                        <table class="table table-hover align-middle mb-0" id="datatable-ecommerce-list" style="min-width: 750px;">
                             <thead>
-                            <tr>
-                                <th>Номер</th>
-                                <th>Дата выдачи</th>
-                                <th>Окончание</th>
-                                <th>Поверенный</th>
-                                <th>Организация</th>
-                                <th>Статус</th>
-                            </tr>
+                                <tr class="border-bottom border-2">
+                                    <th class="text-uppercase text-muted fw-semibold small py-3">
+                                        <i class="bx bx-hash me-1"></i> Номер
+                                    </th>
+                                    <th class="text-uppercase text-muted fw-semibold small py-3">
+                                        <i class="bx bx-calendar me-1"></i> Дата выдачи
+                                    </th>
+                                    <th class="text-uppercase text-muted fw-semibold small py-3">
+                                        <i class="bx bx-calendar-x me-1"></i> Окончание
+                                    </th>
+                                    <th class="text-uppercase text-muted fw-semibold small py-3">
+                                        <i class="bx bx-user me-1"></i> Поверенный
+                                    </th>
+                                    <th class="text-uppercase text-muted fw-semibold small py-3">
+                                        <i class="bx bx-building me-1"></i> Организация
+                                    </th>
+                                    <th class="text-uppercase text-muted fw-semibold small py-3 text-center">
+                                        <i class="bx bx-check-shield me-1"></i> Статус
+                                    </th>
+                                </tr>
+                                <tr id="filter-row">
+                                    <th><input type="text" placeholder="Поиск..." class="form-control form-control-sm" /></th>
+                                    <th><input type="text" placeholder="Поиск..." class="form-control form-control-sm" /></th>
+                                    <th><input type="text" placeholder="Поиск..." class="form-control form-control-sm" /></th>
+                                    <th><input type="text" placeholder="Поиск..." class="form-control form-control-sm" /></th>
+                                    <th><input type="text" placeholder="Поиск..." class="form-control form-control-sm" /></th>
+                                    <th><input type="text" placeholder="Поиск..." class="form-control form-control-sm" /></th>
+                                </tr>
                             </thead>
-
+                            <tbody>
+                                <!-- Данные загружаются через DataTables -->
+                            </tbody>
                         </table>
                     </div>
+
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+<style>
+    /* Стили для таблицы */
+    #datatable-ecommerce-list {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #datatable-ecommerce-list thead {
+        background-color: #f8f9fa;
+    }
+
+    #datatable-ecommerce-list thead th {
+        border-bottom: 2px solid #dee2e6 !important;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    #datatable-ecommerce-list tbody tr {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    #datatable-ecommerce-list tbody tr:hover {
+        background-color: #f8f9fa !important;
+        transform: translateX(2px);
+    }
+
+    #datatable-ecommerce-list tbody td {
+        padding: 1rem 0.75rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    /* Стили для ячеек */
+    .poa-number {
+        font-weight: 700;
+        color: #0d6efd;
+        font-size: 1rem;
+    }
+
+    .poa-date {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .poa-name {
+        font-weight: 500;
+        color: #212529;
+    }
+
+    .poa-organization {
+        color: #495057;
+        font-size: 0.9rem;
+    }
+
+    /* Визуализация даты окончания */
+    .expiry-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.9rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+    .expiry-normal {
+        color: #6c757d;
+        background-color: transparent;
+    }
+
+    .expiry-warning {
+        color: #856404;
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+
+    .expiry-danger {
+        color: #842029;
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+
+    .expiry-icon {
+        font-size: 1rem;
+    }
+
+    /* Бейджи статусов */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        gap: 0.3rem;
+    }
+
+    .status-received {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+    }
+
+    .status-pending {
+        background-color: rgba(255, 193, 7, 0.15);
+        color: #856404;
+    }
+
+    .status-cancelled {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+
+    /* Поля поиска */
+    #filter-row input {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+    #filter-row input:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        outline: none;
+    }
+
+    /* DataTables overrides */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0;
+        font-size: 0.9rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 6px !important;
+        margin: 0 2px !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: #0d6efd !important;
+        color: white !important;
+        border: 1px solid #0d6efd !important;
+    }
+</style>
 {% endblock %}
+
 {% block custom_script %}
-    <script>
-        $(document).ready(function () {
-            $('#datatable-ecommerce-list thead th').each(function () {
-                var title = $(this).text();
-                $(this).html('<input type="text" placeholder="' + title + '" class="fs-6" />');
-            });
-            var table = $('#datatable-ecommerce-list').DataTable({
-                "initComplete": function () {
-                    // Apply the search
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var that = this;
-                            $('input', this.header()).on('keyup change clear', function () {
-                                if (that.search() !== this.value) {
-                                    that.search(this.value).draw();
-                                }
-                            });
+<script>
+    $(document).ready(function () {
+        var table = $('#datatable-ecommerce-list').DataTable({
+            "scrollX": true,
+            "ajax": "{% url 'hrdepartment_app:poa_list' %}",
+            "language": {
+                "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
+            },
+            "order": [[0, "desc"]],
+            "pageLength": 25,
+            "columns": [
+                {
+                    "data": "number",
+                    "render": function(data, type, row) {
+                        return '<span class="poa-number">' + data + '</span>';
+                    }
+                },
+                {
+                    "data": "issue_date",
+                    "render": function(data, type, row) {
+                        return '<span class="poa-date">' + formatDate(data) + '</span>';
+                    }
+                },
+                {
+                    "data": "expiry_date",
+                    "render": function(data, type, row) {
+                        return renderExpiryDate(data, row);
+                    }
+                },
+                {
+                    "data": "grantee_name_user",
+                    "render": function(data, type, row) {
+                        return '<span class="poa-name">' + (data || '—') + '</span>';
+                    }
+                },
+                {
+                    "data": "organization",
+                    "render": function(data, type, row) {
+                        return '<span class="poa-organization">' + (data || '—') + '</span>';
+                    }
+                },
+                {
+                    "data": "is_received",
+                    "render": function(data, type, row) {
+                        // Проверяем статус
+                        if (row.cancellation_date) {
+                            return '<div class="text-center"><span class="status-badge status-cancelled"><i class="bx bx-x-circle"></i> Отменена</span></div>';
+                        } else if (data) {
+                            return '<div class="text-center"><span class="status-badge status-received"><i class="bx bx-check-circle"></i> Получена</span></div>';
+                        } else {
+                            return '<div class="text-center"><span class="status-badge status-pending"><i class="bx bx-time"></i> Ожидает</span></div>';
+                        }
+                    },
+                    "orderable": false
+                }
+            ],
+            "initComplete": function() {
+                // Применяем поиск по колонкам
+                this.api()
+                    .columns()
+                    .every(function() {
+                        var that = this;
+                        $('input', this.header()).on('keyup change clear', function() {
+                            if (that.search() !== this.value) {
+                                that.search(this.value).draw();
+                            }
                         });
-                },
-                "scrollX": true,
-                "sDom": 'T<"clear">lrtip',
-                "ajax": "{% url 'hrdepartment_app:poa_list' %}",
-                "language": {
-                    "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
-                },
-                "fnRowCallback": function (nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                    var id = aData['pk'];
-                    $(nRow).attr("href", id + '/');
-                    $(nRow).css('cursor', 'pointer');
-                    $(nRow).click(function () {
-                        window.location = $(this).attr('href');
-                        return false;
                     });
-                },
-                "columns": [
-
-                    {"data": "number"},
-                    {"data": "issue_date"},
-                    {"data": "expiry_date"},
-                    {"data": "grantee_name_user"},
-                    {"data": "organization"},
-                    {"data": "is_received"},
-
-                ],
-            });
+            },
+            "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                var id = aData['pk'];
+                $(nRow).attr("href", id + '/');
+                $(nRow).css('cursor', 'pointer');
+                $(nRow).click(function() {
+                    window.location = $(this).attr('href');
+                    return false;
+                });
+            }
         });
-    </script>
+
+        // Функция форматирования даты
+        function formatDate(dateString) {
+            if (!dateString) return '—';
+            var date = new Date(dateString);
+            var day = ('0' + date.getDate()).slice(-2);
+            var month = ('0' + (date.getMonth() + 1)).slice(-2);
+            var year = date.getFullYear();
+            return day + '.' + month + '.' + year;
+        }
+
+        // Функция визуализации даты окончания
+        function renderExpiryDate(dateString, row) {
+            if (!dateString) {
+                return '<span class="poa-date">—</span>';
+            }
+
+            var expiryDate = new Date(dateString);
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Разница в днях
+            var diffTime = expiryDate - today;
+            var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            var formattedDate = formatDate(dateString);
+            var icon = '';
+            var cssClass = 'expiry-normal';
+            var tooltip = '';
+
+            // Если доверенность отменена, не показываем предупреждения
+            if (row.cancellation_date) {
+                return '<span class="expiry-date expiry-normal">' + formattedDate + '</span>';
+            }
+
+            // Просрочена
+            if (diffDays < 0) {
+                cssClass = 'expiry-danger';
+                icon = '<i class="bx bx-error expiry-icon"></i>';
+                tooltip = 'Просрочена ' + Math.abs(diffDays) + ' дн.';
+            }
+            // Истекает в течение 30 дней
+            else if (diffDays <= 30) {
+                cssClass = 'expiry-warning';
+                icon = '<i class="bx bx-error expiry-icon"></i>';
+                if (diffDays === 0) {
+                    tooltip = 'Истекает сегодня';
+                } else if (diffDays === 1) {
+                    tooltip = 'Истекает завтра';
+                } else {
+                    tooltip = 'Истекает через ' + diffDays + ' дн.';
+                }
+            }
+            // Нормальный срок
+            else {
+                tooltip = 'Действительна еще ' + diffDays + ' дн.';
+            }
+
+            return '<span class="expiry-date ' + cssClass + '" title="' + tooltip + '" data-bs-toggle="tooltip">' +
+                   icon + formattedDate + '</span>';
+        }
+
+        // Инициализация tooltip для Bootstrap 5
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
 {% endblock %}
