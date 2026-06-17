@@ -133,7 +133,8 @@ def verification_list(request):
     if search:
         qs = qs.filter(
             Q(inventory_number__icontains=search) |
-            Q(equipment__name__icontains=search)
+            Q(equipment__name__icontains=search) |
+            Q(location_ref__name__icontains=search)
         )
     return render(request, "ppequipment_app/verification_list.html", {
         "object_list": qs, "search": search, "title": "Сверки",
