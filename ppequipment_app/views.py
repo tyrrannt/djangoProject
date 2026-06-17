@@ -9,6 +9,7 @@ from io import BytesIO
 import qrcode
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers import CircleModuleDrawer
@@ -136,6 +137,10 @@ def verification_list(request):
             Q(equipment__name__icontains=search) |
             Q(location_ref__name__icontains=search)
         )
+
+    # Сохраняем параметры фильтрации в сессии
+    request.session['verification_filters'] = request.GET.urlencode()
+
     return render(request, "ppequipment_app/verification_list.html", {
         "object_list": qs, "search": search, "title": "Сверки",
     })
@@ -173,10 +178,21 @@ def verification_update(request, slug):
         if form.is_valid():
             form.save()
             messages.success(request, "Сверка обновлена")
-            return redirect("ppequipment_app:verification_list")
+            # Получаем сохраненные фильтры из сессии
+            filters = request.session.get('verification_filters', '')
+
+            # Формируем URL для возврата
+            if filters:
+                return redirect(f"{reverse('ppequipment_app:verification_list')}?{filters}")
+            else:
+                return redirect("ppequipment_app:verification_list")
     else:
         form = VerificationForm(instance=obj)
-    return render(request, "ppequipment_app/verification_form.html", {"form": form, "title": "Редактировать сверку"})
+    return render(request, "ppequipment_app/verification_form.html", {
+        "form": form,
+        "title": "Редактировать сверку",
+        "return_url": request.META.get('HTTP_REFERER', reverse('ppequipment_app:verification_list'))
+    })
 
 
 @login_required
