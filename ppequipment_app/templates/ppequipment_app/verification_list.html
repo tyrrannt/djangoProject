@@ -60,7 +60,7 @@
                         {{ obj.inventory_number }}
                     </a>
                 </td>
-                <td>{{ obj.equipment.name|truncatechars:30|default:"—" }}</td>
+                <td>{{ obj.equipment.name|default:"—" }}</td>
                 <td>
                     <i class="fas fa-map-pin me-1 text-info"></i>{{ obj.location_ref|default:"—" }}
                 </td>
