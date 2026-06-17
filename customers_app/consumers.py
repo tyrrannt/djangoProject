@@ -3,10 +3,12 @@ import os
 from asyncio import sleep
 import psutil
 
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 
 from django.contrib.auth.models import AnonymousUser
+from chat_app.models import Message
 
 from contracts_app.templatetags.custom import FIO_format
 
@@ -108,53 +110,6 @@ class PrivateMessageConsumer(AsyncWebsocketConsumer):
         }))
 
 
-# class ChatConsumer(AsyncWebsocketConsumer):
-#     async def connect(self):
-#         self.room_name = self.scope['url_route']['kwargs']['room_name']
-#         self.room_group_name = 'chat_%s' % self.room_name
-#
-#         # Присоединение к группе
-#         await self.channel_layer.group_add(
-#             self.room_group_name,
-#             self.channel_name
-#         )
-#
-#         await self.accept()
-#
-#     async def disconnect(self, close_code):
-#         # Покидание группы
-#         await self.channel_layer.group_discard(
-#             self.room_group_name,
-#             self.channel_name
-#         )
-#
-#     # Получение сообщения от WebSocket
-#     async def receive(self, text_data):
-#         text_data_json = json.loads(text_data)
-#         message = text_data_json['message']
-#         username = FIO_format(self.scope['user'].title)  # Получаем имя пользователя)
-#
-#         # Отправка сообщения в группу
-#         await self.channel_layer.group_send(
-#             self.room_group_name,
-#             {
-#                 'type': 'chat_message',
-#                 'message': message,
-#                 'username': username,
-#             }
-#         )
-#
-#     # Получение сообщения от группы
-#     async def chat_message(self, event):
-#         message = event['message']
-#         username = event['username']
-#
-#         # Отправка сообщения в WebSocket
-#         await self.send(text_data=json.dumps({
-#             'message': message,
-#             'username': username,
-#         }))
-
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         if self.scope["user"] == AnonymousUser():
@@ -171,6 +126,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             await self.accept()
 
+            # Загрузка истории чата
+            await self.load_chat_history()
+
             # Отправка уведомления о подключении пользователя
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -180,9 +138,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'username': 'Система',
                 }
             )
-
-            # # Загрузка истории чата
-            # await self.load_chat_history()
 
     async def disconnect(self, close_code):
         # Отправка уведомления об отключении пользователя
@@ -210,6 +165,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if message_type == 'chat_message':
             message = text_data_json['message']
             username = user.username
+
+            # Сохранение сообщения в БД
+            await self.save_message(username, self.room_name, message)
 
             # Отправка сообщения в группу
             await self.channel_layer.group_send(
@@ -249,7 +207,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if self.channel_name != event['sender_channel_name']:
             target_id = event.get('target_id')
             current_user_id = self.scope['user'].pk
-            
+
             # Если указан target_id, проверяем, что он совпадает с текущим пользователем
             if target_id and int(target_id) != current_user_id:
                 return
@@ -272,18 +230,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'username': username,
         }))
 
-    # @database_sync_to_async
-    # def save_message(self, username, message):
-    #     Message.objects.create(room_name=self.room_name, username=username, message=message)
-    #
-    # @database_sync_to_async
-    # def load_chat_history(self):
-    #     messages = Message.objects.filter(room_name=self.room_name).order_by('timestamp')
-    #     for message in messages:
-    #         self.send(text_data=json.dumps({
-    #             'message': message.message,
-    #             'username': message.username,
-    #         }))
+    async def load_chat_history(self):
+        """Загрузка последних 50 сообщений из истории."""
+        messages = await self.get_messages()
+        for msg in messages:
+            await self.send(text_data=json.dumps({
+                'type': 'chat_message',
+                'message': msg['message'],
+                'username': msg['username'],
+                'timestamp': msg['timestamp'].strftime('%d.%m.%Y %H:%M:%S')
+            }))
+
+    @database_sync_to_async
+    def get_messages(self):
+        return list(Message.objects.filter(room_name=self.room_name).order_by('timestamp')[:50].values('username', 'message', 'timestamp'))
+
+    @database_sync_to_async
+    def save_message(self, username, room_name, message):
+        Message.objects.create(username=username, room_name=room_name, message=message)
 
 
 def converter(x):
@@ -355,25 +319,35 @@ class VideoConferenceConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         signal = text_data_json['signal']
-        user_id = text_data_json['user_id']
+        user_id = self.scope['user'].pk
+        username = self.scope['user'].username
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'send_signal',
                 'signal': signal,
-                'user_id': user_id
+                'target_id': text_data_json.get('target_id'),
+                'sender_channel_name': self.channel_name,
+                'user_id': user_id,
+                'username': username
             }
         )
 
     async def send_signal(self, event):
-        signal = event['signal']
-        user_id = event['user_id']
+        if self.channel_name != event['sender_channel_name']:
+            target_id = event.get('target_id')
+            current_user_id = self.scope['user'].pk
 
-        await self.send(text_data=json.dumps({
-            'signal': signal,
-            'user_id': user_id
-        }))
+            if target_id and int(target_id) != current_user_id:
+                return
+
+            await self.send(text_data=json.dumps({
+                'type': 'signal',
+                'signal': event['signal'],
+                'user_id': event['user_id'],
+                'username': event['username']
+            }))
 
 
 class AudioConferenceConsumer(AsyncWebsocketConsumer):
@@ -387,38 +361,42 @@ class AudioConferenceConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
-        print(f'WebSocket connected to room {self.room_name}')
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
-        print(f'WebSocket disconnected from room {self.room_name}')
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         signal = text_data_json['signal']
-        user_id = text_data_json['user_id']
-
-        print(f'Received signal from user {user_id}')
+        user_id = self.scope['user'].pk
+        username = self.scope['user'].username
 
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'send_signal',
                 'signal': signal,
-                'user_id': user_id
+                'target_id': text_data_json.get('target_id'),
+                'sender_channel_name': self.channel_name,
+                'user_id': user_id,
+                'username': username
             }
         )
 
     async def send_signal(self, event):
-        signal = event['signal']
-        user_id = event['user_id']
+        if self.channel_name != event['sender_channel_name']:
+            target_id = event.get('target_id')
+            current_user_id = self.scope['user'].pk
 
-        print(f'Sending signal to user {user_id}')
+            if target_id and int(target_id) != current_user_id:
+                return
 
-        await self.send(text_data=json.dumps({
-            'signal': signal,
-            'user_id': user_id
-        }))
+            await self.send(text_data=json.dumps({
+                'type': 'signal',
+                'signal': event['signal'],
+                'user_id': event['user_id'],
+                'username': event['username']
+            }))

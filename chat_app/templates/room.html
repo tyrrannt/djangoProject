@@ -108,17 +108,32 @@
             const data = JSON.parse(event.data);
 
             if (data.type === 'chat_message' || !data.type) {
-                const message = data.username + ': ' + data.message;
+                const messageLog = document.querySelector('#chat-log');
                 const messageDiv = document.createElement('div');
+                messageDiv.className = 'mb-2';
+                
+                const timeSpan = document.createElement('small');
+                timeSpan.className = 'text-muted me-2';
+                timeSpan.textContent = data.timestamp ? `[${data.timestamp}]` : `[${new Date().toLocaleTimeString()}]`;
+
+                const userSpan = document.createElement('strong');
                 if (data.username === 'Система') {
-                    messageDiv.className = 'notification';
+                    userSpan.className = 'notification';
                 } else {
-                    messageDiv.className = 'message';
-                    messageDiv.style.color = colorHash.hex(data.username);
+                    userSpan.style.color = colorHash.hex(data.username);
                 }
-                messageDiv.textContent = message;
-                document.querySelector('#chat-log').appendChild(messageDiv);
-                document.querySelector('#chat-log').scrollTop = document.querySelector('#chat-log').scrollHeight;
+                userSpan.textContent = data.username + ': ';
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'message';
+                textSpan.textContent = data.message;
+
+                messageDiv.appendChild(timeSpan);
+                messageDiv.appendChild(userSpan);
+                messageDiv.appendChild(textSpan);
+                
+                messageLog.appendChild(messageDiv);
+                messageLog.scrollTop = messageLog.scrollHeight;
             } else if (data.type === 'signal') {
                 console.log(`DEBUG: Signal from ${data.username} (ID: ${data.user_id})`, data.signal);
                 handleSignal(data.user_id, data.username, data.signal);
