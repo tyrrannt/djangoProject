@@ -10,74 +10,171 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
     <style>
         .message {
-            padding: 6px 12px;
-            margin-bottom: 6px;
-            border-radius: 6px;
-            background-color: #f8f9fa;
+            padding: 8px 15px;
+            margin-bottom: 8px;
+            border-radius: 15px;
+            background-color: #e9ecef;
             display: inline-block;
-            max-width: 80%;
+            max-width: 85%;
             word-break: break-word;
+            font-size: 0.95rem;
         }
 
         .notification {
-            color: gray;
+            color: #6c757d;
             font-style: italic;
-            margin-bottom: 8px;
-            font-size: 14px;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            text-align: center;
         }
 
         #video-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+            gap: 15px;
             margin-bottom: 20px;
+        }
+
+        #remote-videos-container {
+            display: contents;
         }
 
         video {
             width: 100%;
-            background-color: #000;
-            border-radius: 8px;
+            aspect-ratio: 16/9;
+            background-color: #212529;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .local-video {
-            border: 2px solid #007bff;
+            border: 3px solid #0d6efd;
         }
 
         .remote-video {
-            border: 2px solid #28a745;
+            border: 3px solid #198754;
+        }
+
+        .video-wrapper {
+            position: relative;
+        }
+
+        .video-wrapper label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #chat-log::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-log::-webkit-scrollbar-thumb {
+            background-color: #dee2e6;
+            border-radius: 10px;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom: 3px solid #0d6efd;
+            background: transparent;
+        }
+
+        @media (max-width: 768px) {
+            #video-container {
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+                gap: 8px;
+            }
+            .message {
+                max-width: 90%;
+                font-size: 0.9rem;
+            }
+            #chat-log {
+                height: calc(100vh - 350px) !important;
+            }
+        }
+        
+        emoji-picker {
+            width: 100%;
+            max-width: 100%;
+            height: 300px;
         }
     </style>
 {% endblock %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-md-8">
-            <h1>Chat Room: {{ room_name }}</h1>
+    <div class="container-fluid p-0 p-md-3">
+        <div class="card shadow-sm border-0 overflow-hidden mx-auto" style="max-width: 1000px;">
+            <div class="card-header bg-white border-bottom-0 p-0">
+                <ul class="nav nav-tabs nav-fill" id="chatTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active py-3" id="video-tab" data-bs-toggle="tab" data-bs-target="#video-pane" type="button" role="tab" aria-controls="video-pane" aria-selected="true">
+                            <i class="fas fa-video me-2"></i>Видео
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link py-3" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat-pane" type="button" role="tab" aria-controls="chat-pane" aria-selected="false">
+                            <i class="fas fa-comments me-2"></i>Чат
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body p-0">
+                <div class="tab-content" id="chatTabsContent">
+                    <!-- Видео Панель -->
+                    <div class="tab-pane fade show active p-3" id="video-pane" role="tabpanel" aria-labelledby="video-tab">
+                        <div id="video-container">
+                            <div class="video-wrapper">
+                                <label>Вы</label>
+                                <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+                            </div>
+                            <div id="remote-videos-container"></div>
+                        </div>
 
-            <div id="video-container">
-                <div class="video-wrapper">
-                    <label>Вы</label>
-                    <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+                        <div class="d-flex justify-content-center gap-2 mb-3">
+                            <button id="start-video" class="btn btn-outline-success rounded-pill px-4" title="Включить видео"><i class="fas fa-video"></i></button>
+                            <button id="start-audio" class="btn btn-outline-info rounded-pill px-4 text-dark" title="Включить аудио"><i class="fas fa-microphone"></i></button>
+                            <button id="stop-call" class="btn btn-danger rounded-pill px-4" disabled title="Завершить вызов"><i class="fas fa-phone-slash"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Чат Панель -->
+                    <div class="tab-pane fade p-3" id="chat-pane" role="tabpanel" aria-labelledby="chat-tab">
+                        <div id="chat-log" class="border rounded p-3 mb-3 bg-light shadow-sm"
+                             style="height: 400px; overflow-y: auto;"></div>
+
+                        <div class="input-group mb-3 shadow-sm">
+                            <input id="chat-message-input" type="text" class="form-control border-end-0" placeholder="Напишите сообщение...">
+                            <button id="chat-message-submit" class="btn btn-primary px-4" type="button">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+
+                        <div class="collapse" id="emojiCollapse">
+                            <div class="d-flex justify-content-center mb-3">
+                                <emoji-picker id="emoji-picker" class="light shadow-sm"></emoji-picker>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary w-100 mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#emojiCollapse">
+                            <i class="far fa-smile"></i> Смайлы
+                        </button>
+                    </div>
                 </div>
-                <div id="remote-videos-container"></div>
             </div>
-
-            <div id="chat-log" class="border rounded p-2 mb-3 bg-light"
-                 style="max-width: 100%; height: 400px; overflow-y: auto;"></div>
-
-            <div class="input-group mb-3" style="max-width: 600px;">
-                <input id="chat-message-input" type="text" class="form-control" placeholder="Введите сообщение...">
-                <button id="chat-message-submit" class="btn btn-primary" type="button">Отправить</button>
-            </div>
-
-            <div class="btn-group mb-3">
-                <button id="start-video" class="btn btn-success"><i class="fas fa-video"></i> Видео</button>
-                <button id="start-audio" class="btn btn-info"><i class="fas fa-microphone"></i> Аудио</button>
-                <button id="stop-call" class="btn btn-danger" disabled><i class="fas fa-phone-slash"></i> Завершить
-                </button>
-            </div>
-
-            <emoji-picker id="emoji-picker" class="d-block mt-2"></emoji-picker>
         </div>
     </div>
 
