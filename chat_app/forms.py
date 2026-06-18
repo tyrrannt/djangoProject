@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
+from administration_app.utils import make_custom_field
+
 User = get_user_model()
 
 class CreateRoomForm(forms.Form):
@@ -12,5 +14,8 @@ class CreateRoomForm(forms.Form):
     users = forms.ModelMultipleChoiceField(
         queryset=User.objects.filter(is_active=True),
         label="Пригласить участников",
-        widget=forms.SelectMultiple(attrs={'class': 'form-control select2'})
     )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            make_custom_field(field)
