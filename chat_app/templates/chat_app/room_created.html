@@ -1,0 +1,64 @@
+{% extends 'customers_app/main.html' %}
+
+{% block title %}Приглашения отправлены{% endblock %}
+
+{% block content %}
+<div class="container mt-4 text-center">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width: 600px;">
+        <div class="card-body p-5">
+            <div class="mb-4">
+                <i class="fas fa-check-circle text-success fa-5x"></i>
+            </div>
+            <h3>Комната "{{ room_name }}" создана!</h3>
+            <p class="text-muted">Приглашения отправлены следующим участникам:</p>
+            <ul class="list-unstyled mb-4">
+                {% for user in invited_users %}
+                    <li><span class="badge bg-light text-dark border p-2 mb-1">{{ user.get_full_name|default:user.username }}</span></li>
+                {% endfor %}
+            </ul>
+            
+            <div class="alert alert-info py-3 mb-4">
+                Участники получат уведомление в системе со ссылкой на вход.
+            </div>
+
+            <a href="{% url 'chat_app:room' room_name %}" class="btn btn-primary btn-lg px-5 rounded-pill">
+                Войти в комнату <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Используем существующий механизм private_socket из main.html (если он там есть)
+        // Если нет - создаем временное подключение для рассылки приглашений.
+        // В нашем проекте private_socket инициализируется в main.html
+        
+        const roomUrl = "{{ room_url }}";
+        const roomName = "{{ room_name }}";
+        const invitedUsers = [
+            {% for user in invited_users %}
+                {{ user.pk }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        function sendInvites() {
+            if (window.private_socket && window.private_socket.readyState === WebSocket.OPEN) {
+                invitedUsers.forEach(userId => {
+                    window.private_socket.send(JSON.stringify({
+                        type: "private_message",
+                        to: userId,
+                        message: `Приглашаю вас в чат: ${roomName}. Ссылка: ${roomUrl}`
+                    }));
+                });
+                console.log("Invites sent via private_socket");
+            } else {
+                // Ждем немного если сокет еще не готов
+                setTimeout(sendInvites, 500);
+            }
+        }
+
+        sendInvites();
+    });
+</script>
+{% endblock %}

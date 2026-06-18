@@ -1,0 +1,51 @@
+{% extends 'customers_app/main.html' %}
+{% load static %}
+
+{% block title %}Создание комнаты{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Создать новую комнату</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="create-room-form">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold">{{ form.room_name.label }}</label>
+                            {{ form.room_name }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold">{{ form.users.label }}</label>
+                            {{ form.users }}
+                            <small class="text-muted d-block mt-1">Выберите одного или нескольких коллег</small>
+                        </div>
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Создать и пригласить
+                            </button>
+                            <a href="{% url 'chat_app:index' %}" class="btn btn-outline-secondary">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_script %}
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            placeholder: "Начните вводить имя...",
+            allowClear: true,
+            width: '100%',
+            theme: 'bootstrap-5'
+        });
+    });
+</script>
+{% endblock %}

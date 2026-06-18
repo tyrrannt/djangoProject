@@ -9,6 +9,7 @@ import json
 
 from django.contrib.auth.models import AnonymousUser
 from chat_app.models import Message
+from administration_app.utils import transliterate
 
 from contracts_app.templatetags.custom import FIO_format
 
@@ -116,7 +117,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
         else:
             self.room_name = self.scope['url_route']['kwargs']['room_name']
-            self.room_group_name = 'chat_%s' % self.room_name
+            self.room_group_name = ('chat_%s' % transliterate(self.room_name))[:100]
 
             # Присоединение к группе
             await self.channel_layer.group_add(
