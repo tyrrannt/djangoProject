@@ -194,7 +194,9 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Выберите сотрудников:</label>
-                        <select id="invite-users-select" class="form-control select2" multiple="multiple" style="width: 100%;">
+                        <select id="invite-users-select" class="form-control form-control-modern" multiple="multiple"
+                                data-plugin-multiselect="true"
+                                data-plugin-options='{ "maxHeight": 300, "includeSelectAllOption": true, "enableCaseInsensitiveFiltering": true, "buttonWidth": "100%" }'>
                             {% for user in all_users %}
                                 <option value="{{ user.pk }}">{{ user.get_full_name|default:user.username }}</option>
                             {% endfor %}
@@ -478,14 +480,14 @@
 {% block custom_script %}
     <script>
         $(document).ready(function() {
-            // Инициализация Select2 при открытии модального окна
+            // Инициализация Multiselect при открытии модального окна
             $('#inviteModal').on('shown.bs.modal', function () {
-                $('#invite-users-select').select2({
-                    dropdownParent: $('#inviteModal'),
-                    placeholder: "Поиск сотрудников...",
-                    allowClear: true,
-                    theme: 'bootstrap-5'
-                });
+                var $select = $('#invite-users-select');
+                if ($.isFunction($.fn.themePluginMultiSelect)) {
+                    $select.themePluginMultiSelect($select.data('plugin-options'));
+                } else if ($.isFunction($.fn.multiselect)) {
+                    $select.multiselect('rebuild');
+                }
             });
 
             $('#send-invites-btn').click(function() {
@@ -523,7 +525,14 @@
                         }
                         
                         bootstrap.Modal.getInstance(document.getElementById('inviteModal')).hide();
-                        $('#invite-users-select').val(null).trigger('change');
+                        
+                        // Сброс мультиселекта
+                        if ($.isFunction($.fn.multiselect)) {
+                            $('#invite-users-select').multiselect('deselectAll', false);
+                            $('#invite-users-select').multiselect('updateButtonText');
+                        } else {
+                            $('#invite-users-select').val(null);
+                        }
                     } else if (socket && socket.readyState === WebSocket.CONNECTING && attempts < 10) {
                         // Если сокет еще подключается, подождем немного
                         setTimeout(() => performSend(attempts + 1), 300);
