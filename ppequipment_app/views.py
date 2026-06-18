@@ -67,7 +67,7 @@ def equipment_list(request):
     if search:
         qs = qs.filter(Q(name__icontains=search) | Q(number__icontains=search))
     return render(request, "ppequipment_app/equipment_list.html", {
-        "object_list": qs, "search": search, "title": "Производственно техническая документация",
+        "object_list": qs, "search": search, "title": "Производственно-техническая документация",
     })
 
 
@@ -76,7 +76,7 @@ def equipment_list(request):
 def equipment_detail(request, pk):
     obj = get_object_or_404(Equipment.objects.select_related("aircraft_type", "dest_lit"), pk=pk)
     return render(request, "ppequipment_app/equipment_detail.html",
-                  {"object": obj, "title": f"Производственно техническая документация #{obj.number}"})
+                  {"object": obj, "title": f"Производственно-техническая документация #{obj.number}"})
 
 
 @login_required

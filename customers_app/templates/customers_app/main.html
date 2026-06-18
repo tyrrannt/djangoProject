@@ -730,31 +730,10 @@
                                     {% endif %}
                                     {% if user.is_superuser %}
                                         <li class="nav-parent">
-                                            <a class="nav-link" href="#">
+                                            <a class="nav-link" href="{% url 'chat_app:index' %}">
                                                 <i class="fa-regular fa-comment-dots" aria-hidden="true"></i>
                                                 <span>Чат</span>
                                             </a>
-                                            <ul class="nav nav-children">
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'chat_app:index' %}">
-                                                        Shakirov
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'library_app:video_conference' room_name='shakirov' %}">
-                                                        Видеоконференция
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="nav-link"
-                                                       href="{% url 'library_app:audio_conference' room_name='shakirov' %}">
-                                                        Аудиоконференция
-                                                    </a>
-                                                </li>
-
-                                            </ul>
                                         </li>
                                     {% endif %}
                                     {% if user.is_superuser %}

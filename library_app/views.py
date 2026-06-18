@@ -291,16 +291,6 @@ def results(request):
     return render(request, 'library_app/results.html', {'grouped_poems': grouped_poems, 'users_vote': users_vote})
 
 
-@login_required
-def video_conference(request, room_name):
-    return render(request, 'library_app/video_conference.html', {'room_name': room_name})
-
-
-@login_required
-def audio_conference(request, room_name):
-    return render(request, 'library_app/audio_conference.html', {'room_name': room_name})
-
-
 class CompanyEventListView(LoginRequiredMixin, ListView):
     model = CompanyEvent
     context_object_name = 'events'

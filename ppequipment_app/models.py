@@ -89,8 +89,8 @@ class Equipment(models.Model):
 
     class Meta:
         db_table = "ppequipment_equipment"
-        verbose_name = "Производственно техническая документация"
-        verbose_name_plural = "Производственно техническая документация"
+        verbose_name = "Производственно-техническая документация"
+        verbose_name_plural = "Производственно-техническая документация"
         ordering = ["number"]
         indexes = [models.Index(fields=["number"], name="equip_number_idx")]
 
