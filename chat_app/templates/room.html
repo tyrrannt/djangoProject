@@ -497,35 +497,42 @@
 
                 const roomUrl = window.location.href;
                 const roomName = "{{ room_name }}";
-                const socket = window.private_socket;
-
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    selectedUsers.forEach(userId => {
-                        const payload = {
-                            type: "private_message",
-                            to: userId,
-                            message: `Вас приглашают присоединиться к чату: <strong>${roomName}</strong>. <br><a href="${roomUrl}" class="btn btn-xs btn-primary mt-1">Присоединиться</a>`
-                        };
-                        socket.send(JSON.stringify(payload));
-                    });
+                
+                function performSend(attempts = 0) {
+                    const socket = window.private_socket;
                     
-                    // Показываем уведомление об успехе
-                    if (typeof PNotify !== 'undefined') {
-                        new PNotify({
-                            title: 'Успешно',
-                            text: 'Приглашения отправлены',
-                            type: 'success',
-                            styling: 'bootstrap3'
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        selectedUsers.forEach(userId => {
+                            const payload = {
+                                type: "private_message",
+                                to: userId,
+                                message: `Вас приглашают присоединиться к чату: <strong>${roomName}</strong>. <br><a href="${roomUrl}" class="btn btn-xs btn-primary mt-1">Присоединиться</a>`
+                            };
+                            socket.send(JSON.stringify(payload));
                         });
+                        
+                        if (typeof PNotify !== 'undefined') {
+                            new PNotify({
+                                title: 'Успешно',
+                                text: 'Приглашения отправлены',
+                                type: 'success',
+                                styling: 'bootstrap3'
+                            });
+                        } else {
+                            alert('Приглашения отправлены!');
+                        }
+                        
+                        bootstrap.Modal.getInstance(document.getElementById('inviteModal')).hide();
+                        $('#invite-users-select').val(null).trigger('change');
+                    } else if (socket && socket.readyState === WebSocket.CONNECTING && attempts < 10) {
+                        // Если сокет еще подключается, подождем немного
+                        setTimeout(() => performSend(attempts + 1), 300);
                     } else {
-                        alert('Приглашения отправлены!');
+                        alert('Ошибка: Соединение для отправки уведомлений не установлено. Проверьте статус сети.');
                     }
-                    
-                    bootstrap.Modal.getInstance(document.getElementById('inviteModal')).hide();
-                    $('#invite-users-select').val(null).trigger('change');
-                } else {
-                    alert('Ошибка: Соединение для отправки уведомлений не установлено');
                 }
+
+                performSend();
             });
         });
     </script>

@@ -729,7 +729,7 @@
                                         </li>
                                     {% endif %}
                                     {% if user.is_superuser %}
-                                        <li class="nav-parent">
+                                        <li>
                                             <a class="nav-link" href="{% url 'chat_app:index' %}">
                                                 <i class="fa-regular fa-comment-dots" aria-hidden="true"></i>
                                                 <span>Чат</span>
@@ -907,11 +907,12 @@
                                                     });
 
                                                     // --- Online users WebSocket ---
-                                                    const online_users_url = "wss://corp.barkol.ru/ws/online_users/";
+                                                    const ws_protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                                                    const online_users_url = ws_protocol + window.location.host + "/ws/online_users/";
                                                     const socket_online_users = new WebSocket(online_users_url);
 
                                                     // --- Private messages WebSocket ---
-                                                    window.private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
+                                                    window.private_socket = new WebSocket(ws_protocol + window.location.host + "/ws/private/");
 
                                                     // --- Получение личных сообщений ---
                                                     window.private_socket.onmessage = function (event) {
