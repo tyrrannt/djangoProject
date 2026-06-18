@@ -37,6 +37,8 @@ def index(request):
 
 @login_required
 def room(request, room_name):
+    all_users = User.objects.filter(is_active=True).exclude(pk=request.user.pk)
     return render(request, 'room.html', {
-        'room_name': room_name
+        'room_name': room_name,
+        'all_users': all_users
     })

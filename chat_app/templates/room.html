@@ -119,18 +119,23 @@
     <div class="container-fluid p-0 p-md-3">
         <div class="card shadow-sm border-0 overflow-hidden mx-auto" style="max-width: 1000px;">
             <div class="card-header bg-white border-bottom-0 p-0">
-                <ul class="nav nav-tabs nav-fill" id="chatTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active py-3" id="video-tab" data-bs-toggle="tab" data-bs-target="#video-pane" type="button" role="tab" aria-controls="video-pane" aria-selected="true">
-                            <i class="fas fa-video me-2"></i>Видео
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link py-3" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat-pane" type="button" role="tab" aria-controls="chat-pane" aria-selected="false">
-                            <i class="fas fa-comments me-2"></i>Чат
-                        </button>
-                    </li>
-                </ul>
+                <div class="d-flex align-items-center pr-3">
+                    <ul class="nav nav-tabs nav-fill flex-grow-1" id="chatTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-3" id="video-tab" data-bs-toggle="tab" data-bs-target="#video-pane" type="button" role="tab" aria-controls="video-pane" aria-selected="true">
+                                <i class="fas fa-video me-2"></i>Видео
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-3" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat-pane" type="button" role="tab" aria-controls="chat-pane" aria-selected="false">
+                                <i class="fas fa-comments me-2"></i>Чат
+                            </button>
+                        </li>
+                    </ul>
+                    <button class="btn btn-light border-start rounded-0 py-3 px-4" data-bs-toggle="modal" data-bs-target="#inviteModal" title="Пригласить участников">
+                        <i class="fas fa-user-plus text-primary"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="card-body p-0">
@@ -173,6 +178,32 @@
                             <i class="far fa-smile"></i> Смайлы
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно приглашения -->
+    <div class="modal fade" id="inviteModal" tabindex="-1" aria-labelledby="inviteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="inviteModalLabel">Пригласить участников</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Выберите сотрудников:</label>
+                        <select id="invite-users-select" class="form-control select2" multiple="multiple" style="width: 100%;">
+                            {% for user in all_users %}
+                                <option value="{{ user.pk }}">{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" id="send-invites-btn" class="btn btn-primary">Отправить приглашения</button>
                 </div>
             </div>
         </div>
@@ -440,6 +471,62 @@
         emojiPicker.addEventListener('emoji-click', event => {
             const messageInputDom = document.querySelector('#chat-message-input');
             messageInputDom.value += event.detail.unicode;
+        });
+    </script>
+{% endblock %}
+
+{% block custom_script %}
+    <script>
+        $(document).ready(function() {
+            // Инициализация Select2 при открытии модального окна
+            $('#inviteModal').on('shown.bs.modal', function () {
+                $('#invite-users-select').select2({
+                    dropdownParent: $('#inviteModal'),
+                    placeholder: "Поиск сотрудников...",
+                    allowClear: true,
+                    theme: 'bootstrap-5'
+                });
+            });
+
+            $('#send-invites-btn').click(function() {
+                const selectedUsers = $('#invite-users-select').val();
+                if (!selectedUsers || selectedUsers.length === 0) {
+                    alert('Выберите хотя бы одного участника');
+                    return;
+                }
+
+                const roomUrl = window.location.href;
+                const roomName = "{{ room_name }}";
+                const socket = window.private_socket;
+
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    selectedUsers.forEach(userId => {
+                        const payload = {
+                            type: "private_message",
+                            to: userId,
+                            message: `Вас приглашают присоединиться к чату: <strong>${roomName}</strong>. <br><a href="${roomUrl}" class="btn btn-xs btn-primary mt-1">Присоединиться</a>`
+                        };
+                        socket.send(JSON.stringify(payload));
+                    });
+                    
+                    // Показываем уведомление об успехе
+                    if (typeof PNotify !== 'undefined') {
+                        new PNotify({
+                            title: 'Успешно',
+                            text: 'Приглашения отправлены',
+                            type: 'success',
+                            styling: 'bootstrap3'
+                        });
+                    } else {
+                        alert('Приглашения отправлены!');
+                    }
+                    
+                    bootstrap.Modal.getInstance(document.getElementById('inviteModal')).hide();
+                    $('#invite-users-select').val(null).trigger('change');
+                } else {
+                    alert('Ошибка: Соединение для отправки уведомлений не установлено');
+                }
+            });
         });
     </script>
 {% endblock %}
