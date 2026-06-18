@@ -30,10 +30,6 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Используем существующий механизм private_socket из main.html (если он там есть)
-        // Если нет - создаем временное подключение для рассылки приглашений.
-        // В нашем проекте private_socket инициализируется в main.html
-        
         const roomUrl = "{{ room_url }}";
         const roomName = "{{ room_name }}";
         const invitedUsers = [
@@ -42,19 +38,34 @@
             {% endfor %}
         ];
 
+        console.log("DEBUG: Room created, attempting to send invites to:", invitedUsers);
+
+        let attempts = 0;
+        const maxAttempts = 20;
+
         function sendInvites() {
-            if (window.private_socket && window.private_socket.readyState === WebSocket.OPEN) {
+            // Пытаемся найти private_socket, который инициализируется в main.html
+            const socket = window.private_socket;
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
                 invitedUsers.forEach(userId => {
-                    window.private_socket.send(JSON.stringify({
+                    const payload = {
                         type: "private_message",
                         to: userId,
-                        message: `Приглашаю вас в чат: ${roomName}. Ссылка: ${roomUrl}`
-                    }));
+                        message: `Приглашаю вас в чат: ${roomName}. <br><a href="${roomUrl}" class="btn btn-xs btn-primary mt-1">Войти в чат</a>`
+                    };
+                    socket.send(JSON.stringify(payload));
+                    console.log(`DEBUG: Invite sent to user ${userId}`);
                 });
-                console.log("Invites sent via private_socket");
+                console.log("DEBUG: All invites successfully sent");
             } else {
-                // Ждем немного если сокет еще не готов
-                setTimeout(sendInvites, 500);
+                attempts++;
+                if (attempts < maxAttempts) {
+                    console.log(`DEBUG: Socket not ready (state: ${socket ? socket.readyState : 'null'}), retrying... attempt ${attempts}`);
+                    setTimeout(sendInvites, 500);
+                } else {
+                    console.error("DEBUG: Failed to send invites: WebSocket connection timeout");
+                }
             }
         }
 

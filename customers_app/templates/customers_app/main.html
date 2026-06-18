@@ -874,6 +874,15 @@
                                                         document.getElementById("toastAreaCenter").insertAdjacentHTML('beforeend', toastHtml);
 
                                                         const toastElement = document.getElementById(toastId);
+                                                        
+                                                        // Обработка ссылок внутри toast если они есть
+                                                        const links = toastElement.querySelectorAll('a');
+                                                        links.forEach(link => {
+                                                            link.addEventListener('click', () => {
+                                                                const bsToast = bootstrap.Toast.getInstance(toastElement);
+                                                                if (bsToast) bsToast.hide();
+                                                            });
+                                                        });
 
                                                         const bsToast = new bootstrap.Toast(toastElement, {
                                                             autohide: false, // не закрывать автоматически
@@ -907,7 +916,7 @@
                                                         document.getElementById("modal-send").onclick = function () {
                                                             const msg = document.getElementById("modal-text").value.trim();
                                                             if (msg && selectedUserId) {
-                                                                private_socket.send(JSON.stringify({
+                                                                window.private_socket.send(JSON.stringify({
                                                                     type: "private_message",
                                                                     to: selectedUserId,
                                                                     message: msg
@@ -923,10 +932,10 @@
                                                     const socket_online_users = new WebSocket(online_users_url);
 
                                                     // --- Private messages WebSocket ---
-                                                    const private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
+                                                    window.private_socket = new WebSocket("wss://corp.barkol.ru/ws/private/");
 
                                                     // --- Получение личных сообщений ---
-                                                    private_socket.onmessage = function (event) {
+                                                    window.private_socket.onmessage = function (event) {
                                                         const data = JSON.parse(event.data);
 
                                                         if (data.type === "private_message") {
@@ -934,7 +943,7 @@
                                                         }
                                                     };
 
-                                                    private_socket.onclose = function () {
+                                                    window.private_socket.onclose = function () {
                                                         console.error("Private WebSocket закрыт");
                                                     };
 
