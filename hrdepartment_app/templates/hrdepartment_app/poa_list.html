@@ -220,6 +220,7 @@
     $(document).ready(function () {
         var table = $('#datatable-ecommerce-list').DataTable({
             "scrollX": true,
+            "serverSide": true,
             "ajax": "{% url 'hrdepartment_app:poa_list' %}",
             "language": {
                 "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
