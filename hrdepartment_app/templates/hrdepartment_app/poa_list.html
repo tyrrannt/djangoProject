@@ -224,7 +224,7 @@
             "language": {
                 "url": "{% static 'admin_templates/vendor/datatables/media/Russian.json' %}"
             },
-            "order": [[0, "desc"]],
+            "ordering": false,
             "pageLength": 25,
             "columns": [
                 {
@@ -269,7 +269,6 @@
                             return '<div class="text-center"><span class="status-badge status-pending"><i class="bx bx-time"></i> Ожидает</span></div>';
                         }
                     },
-                    "orderable": false
                 }
             ],
             "initComplete": function() {

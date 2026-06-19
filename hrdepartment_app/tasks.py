@@ -49,8 +49,7 @@ proxies = {
 # В tasks.py
 @app.task()
 def expire_old_bookings():
-    from datetime import date
-    today = date.today()
+    today = datetime.date.today()
     ApartmentBooking.objects.filter(
         date_end__lt=today,
         is_active=True
