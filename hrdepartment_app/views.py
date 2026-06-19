@@ -6869,48 +6869,79 @@ class PoaListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'poas'
     permission_required = 'hrdepartment_app.view_powerofattorney'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._user_roles = None
+
+    def get_user_roles(self):
+        """Кешируем роли пользователя"""
+        if self._user_roles is None:
+            routes = BusinessProcessRoutes.objects.filter(
+                business_process_type=3
+            ).values_list(
+                'person_executor', 'person_agreement', 'person_clerk'
+            )
+
+            # Используем генераторы для экономии памяти
+            executors_agreements = set()
+            clerks = set()
+
+            for executor, agreement, clerk in routes:
+                if executor:
+                    executors_agreements.add(executor)
+                if agreement:
+                    executors_agreements.add(agreement)
+                if clerk:
+                    clerks.add(clerk)
+
+            self._user_roles = {
+                'full_access': executors_agreements,
+                'limited_access': clerks
+            }
+
+        return self._user_roles
+
     def get_context_data(self, *, object_list=None, **kwargs):
-        context = super(PoaListView, self).get_context_data(**kwargs)
-        context["title"] = f"Доверенности"
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Доверенности"
         return context
 
     def get(self, request, *args, **kwargs):
-        query = Q()
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            search_list = ['number', 'issue_date', 'expiry_date',
-                           'grantee_name_user__title', "organization__short_name", "is_received"]
-            context = ajax_search(request, self, search_list, PowerOfAttorney, query, triger=3)
+            search_list = [
+                'number', 'issue_date', 'expiry_date',
+                'grantee_name_user__title', "organization__short_name",
+                "is_received"
+            ]
+            context = ajax_search(
+                request, self, search_list,
+                PowerOfAttorney, Q(), triger=3
+            )
             return JsonResponse(context, safe=False)
-        return super(PoaListView, self).get(request, *args, **kwargs)
+
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = PowerOfAttorney.objects.all().order_by('-issue_date', '-number')
-        routes = BusinessProcessRoutes.objects.filter(
-            business_process_type=3
-        )
+        user = self.request.user
 
-        persons_full = set()
-        persons = set()
-
-        persons_full.update(
-            routes.values_list("person_executor", flat=True)
-        )
-        persons_full.update(
-            routes.values_list("person_agreement", flat=True)
-        )
-        persons.update(
-            routes.values_list("person_clerk", flat=True)
-        )
-
-        persons_full.discard(None)
-        persons.discard(None)
-
-        if self.request.user.pk in persons_full or self.request.user.is_superuser:
+        if user.is_superuser:
             return qs
-        elif self.request.user.pk in persons:
+
+        roles = self.get_user_roles()
+
+        if user.pk in roles['full_access']:
+            return qs
+        elif user.pk in roles['limited_access']:
+            # Используем values_list для оптимизации
+            persons = BusinessProcessRoutes.objects.filter(
+                business_process_type=3
+            ).values_list('person_executor', flat=True).distinct()
+            # Убираем None
+            persons = [p for p in persons if p is not None]
             return qs.filter(initiator_name_user__in=persons)
         else:
-            return qs.filter(grantee_name_user=self.request.user)
+            return qs.filter(grantee_name_user=user)
 
 
 class PoaDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
