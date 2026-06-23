@@ -1313,11 +1313,10 @@ class StaffListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                         user.employment_contract_date = datetime.datetime.strptime(
                             data['value'][0].get('ТрудовойДоговорДата', '')[:10], "%Y-%m-%d"
                         )
+
                         user.save()
-                    except TypeError:
-                        pass
-                    except IndexError:
-                        pass
+                    except Exception as e:
+                        logger.error(f"Exception {e}")
                 if not get_active_user(user.ref_key):
                     user.is_active = False
                     user.save()
