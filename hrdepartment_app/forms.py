@@ -224,24 +224,86 @@ class OfficialMemoUpdateForm(forms.ModelForm):
         for field in self.fields:
             make_custom_field(self.fields[field])
 
+    # def clean(self):
+    #     """
+    #     Этот метод используется для проверки данных, введенных в OfficialMemoUpdateForm. Он проверяет, предшествует ли дата «period_from» дате «period_for».
+    #
+    #     :return: None
+    #     """
+    #     # user age must be above 18 to register
+    #     try:
+    #         if self.cleaned_data.get("period_for") < self.cleaned_data.get(
+    #                 "period_from"
+    #         ):
+    #             msg = "Дата начала не может быть больше даты окончания!"
+    #             self.add_error(None, msg)
+    #     except Exception as _ex:
+    #         logger.error(
+    #             f"Ошибка проверки времени: {self.cleaned_data.get('period_for')} {self.cleaned_data.get('period_from')} {_ex}"
+    #         )
+
     def clean(self):
-        """
-        Этот метод используется для проверки данных, введенных в OfficialMemoUpdateForm. Он проверяет, предшествует ли дата «period_from» дате «period_for».
+        """Этот метод используется для проверки данных, введенных в OfficialMemoUpdateForm.
 
-        :return: None
+        Он проверяет, предшествует ли дата «period_from» дате «period_for»,
+        а также проверяет отсутствие пересечений дат поездок для выбранного сотрудника.
         """
-        # user age must be above 18 to register
-        try:
-            if self.cleaned_data.get("period_for") < self.cleaned_data.get(
-                    "period_from"
-            ):
+        cleaned_data = super().clean()
+
+        period_from = cleaned_data.get("period_from")
+        period_for = cleaned_data.get("period_for")
+        person = cleaned_data.get("person")
+
+        # 1. Базовая проверка: Дата начала не может быть позже даты окончания
+        if period_from and period_for:
+            if period_for < period_from:
                 msg = "Дата начала не может быть больше даты окончания!"
-                self.add_error(None, msg)
-        except Exception as _ex:
-            logger.error(
-                f"Ошибка проверки времени: {self.cleaned_data.get('period_for')} {self.cleaned_data.get('period_from')} {_ex}"
-            )
+                self.add_error("period_from", msg)
 
+        # 2. Проверка пересечения дат для сотрудника
+        if person and period_from and period_for:
+            try:
+                # Строим запрос на пересечение интервалов:
+                # Существующая поездка начинается раньше или в день окончания новой
+                # И существующая поездка заканчивается позже или в день начала новой
+                overlapping_memos = OfficialMemo.objects.filter(
+                    person=person,
+                    cancellation=False,  # Исключаем отмененные записки, если нужно
+                    period_from__lte=period_for,
+                    period_for__gte=period_from,
+                )
+
+                # Если мы редактируем существующий документ (в kwargs передан instance),
+                # исключаем его из результатов поиска, чтобы он не пересекался сам с собой
+                if self.instance and self.instance.pk:
+                    overlapping_memos = overlapping_memos.exclude(
+                        pk=self.instance.pk
+                    )
+
+                # Если нашли хотя бы одно пересечение
+                if overlapping_memos.exists():
+                    # Возьмем первую попавшуюся для вывода информации в ошибке
+                    conflict_memo = overlapping_memos.first()
+                    conflict_start = conflict_memo.period_from.strftime("%d.%m.%Y")
+                    conflict_end = conflict_memo.period_for.strftime("%d.%m.%Y")
+
+                    msg = (
+                        f"Сотрудник уже находится в служебной поездке в этот период! "
+                        f"Обнаружено пересечение с документом от {conflict_start} по {conflict_end}. "
+                        f"Пожалуйста, сместите сроки новой поездки."
+                    )
+
+                    # Добавляем ошибку ко всей форме (non-field error)
+                    self.add_error(None, msg)
+
+            except Exception as _ex:
+                logger.error(
+                    f"Ошибка проверки пересечения дат: "
+                    f"сотрудник={person.id if person else None}, "
+                    f"с {period_from} по {period_for}. Ошибка: {_ex}"
+                )
+
+        return cleaned_data
 
 class OficialMemoCancelForm(forms.ModelForm):
     # reason_cancellation = forms.ModelChoiceField(queryset=ReasonForCancellation.objects.all(), required=False)
