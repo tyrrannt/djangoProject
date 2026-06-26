@@ -158,10 +158,14 @@ class OfficialMemoAddForm(forms.ModelForm):
         period_from = cleaned_data.get("period_from")
         period_for = cleaned_data.get("period_for")
         creation_retroactively = cleaned_data.get("creation_retroactively")
+        person = cleaned_data.get("person")
+
+        # 1. Сначала выполняем ваши базовые проверки типов и ретроспективного ввода
         match official_memo_type:
             case "1" | "3":
                 if not creation_retroactively:
-                    if period_from < self.date_difference(7) or period_for < self.date_difference(7):
+                    if (period_from and period_from < self.date_difference(7)) or (
+                            period_for and period_for < self.date_difference(7)):
                         raise forms.ValidationError(
                             f"Нельзя использовать прошедшую дату! Допустимый период 7 дней. "
                             f"Минимальная дата {self.date_difference(7).strftime('%d.%m.%Y')} г."
@@ -169,16 +173,45 @@ class OfficialMemoAddForm(forms.ModelForm):
                         )
             case "2":
                 if not document_extension:
-                    # Сохраняем только если оба поля действительны.
-                    raise ValidationError(
+                    raise forms.ValidationError(
                         "Ошибка создания документа. Для продления необходимо указать документ основания!!!"
                     )
                 if not creation_retroactively:
-                    if period_from < self.date_difference(7) or period_for < self.date_difference(7):
+                    if (period_from and period_from < self.date_difference(7)) or (
+                            period_for and period_for < self.date_difference(7)):
                         raise forms.ValidationError(
                             f"Нельзя использовать прошедшую дату! Допустимый период 7 дней. "
                             f"Минимальная дата {self.date_difference(7).strftime('%d.%m.%Y')} г."
-                            f"Если все же необходимо завести документ, то установите соответствующий переключатель!")
+                            f"Если все же необходимо завести документ, то установите соответствующий переключатель!"
+                        )
+
+        # 2. Проверка: Дата начала не должна быть больше даты окончания (базовый логический баг)
+        if period_from and period_for:
+            if period_for < period_from:
+                raise forms.ValidationError("Дата начала не может быть больше даты окончания!")
+
+        # 3. Проверка пересечения дат для сотрудника
+        if person and period_from and period_for:
+            # Ищем существующие активные поездки сотрудника, которые пересекаются по датам
+            overlapping_memos = OfficialMemo.objects.filter(
+                person=person,
+                cancellation=False,  # Исключаем отмененные служебные записки
+                period_from__lte=period_for,  # Существующая начинается раньше или в день окончания новой
+                period_for__gte=period_from  # Существующая заканчивается позже или в день начала новой
+            )
+
+            if overlapping_memos.exists():
+                conflict_memo = overlapping_memos.first()
+                conflict_start = conflict_memo.period_from.strftime("%d.%m.%Y")
+                conflict_end = conflict_memo.period_for.strftime("%d.%m.%Y")
+
+                raise forms.ValidationError(
+                    f"Сотрудник уже находится в служебной поездке в указанный период! "
+                    f"Обнаружено пересечение с документом от {conflict_start} по {conflict_end}. "
+                    f"Пожалуйста, сместите сроки новой поездки."
+                )
+
+        return cleaned_data
 
 
 class OfficialMemoUpdateForm(forms.ModelForm):
@@ -272,7 +305,7 @@ class OfficialMemoUpdateForm(forms.ModelForm):
                     period_from__lte=period_for,
                     period_for__gte=period_from,
                 )
-
+                print(person, period_for, period_from, overlapping_memos)
                 # Если мы редактируем существующий документ (в kwargs передан instance),
                 # исключаем его из результатов поиска, чтобы он не пересекался сам с собой
                 if self.instance and self.instance.pk:
