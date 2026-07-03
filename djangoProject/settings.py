@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "password_manager.apps.PasswordManagerConfig",
     "map_viewer.apps.MapViewerConfig",
     "flight_planning.apps.FlightPlanningConfig",
+    "finance_app.apps.FinanceAppConfig",
     "widget_tweaks",
     "django_ckeditor_5",
     "channels",

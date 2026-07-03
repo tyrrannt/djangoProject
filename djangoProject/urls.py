@@ -47,6 +47,7 @@ urlpatterns = [
     path('pass/', include('password_manager.urls')),
     path('map/', include('map_viewer.urls')),
     path('flight/', include('flight_planning.urls')),
+    path('finance/', include('finance_app.urls')),
     path('ckeditor5/', include('django_ckeditor_5.urls'), name="ck_editor_5_upload_file"),
     path('__debug__/', include('debug_toolbar.urls')),
     # path('api/', include('customers_app.urls')),  # API (если вы вынесли API в отдельный urls.py)

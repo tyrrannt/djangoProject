@@ -140,3 +140,6 @@ wheel==0.43.0
 xlrd==2.0.1
 yarl==1.9.4
 zope.interface==8.1.1
+drf-spectacular==0.29.0
+
+reportlab

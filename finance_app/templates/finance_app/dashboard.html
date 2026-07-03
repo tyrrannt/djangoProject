@@ -1,0 +1,423 @@
+{% extends "customers_app/main.html" %}
+{% load static %}
+
+{% block title %}Финансовый дашборд{% endblock %}
+
+{% block custom_css %}
+<style>
+    /* Премиальный дизайн финансового блока */
+    .finance-container {
+        padding: 24px;
+        background-color: #f8fafc;
+        min-height: 100vh;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Навигационные вкладки */
+    .finance-nav {
+        display: flex;
+        gap: 16px;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 24px;
+        padding-bottom: 8px;
+    }
+
+    .finance-nav-item {
+        font-size: 16px;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .finance-nav-item:hover {
+        color: #1e293b;
+        background-color: #f1f5f9;
+        text-decoration: none;
+    }
+
+    .finance-nav-item.active {
+        color: #1f497d;
+        background-color: #e2e8f0;
+        border-bottom: 3px solid #1f497d;
+        border-radius: 8px 8px 0 0;
+    }
+
+    /* Сетка карточек показателей */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .metric-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #1f497d, #3b82f6);
+    }
+
+    .metric-card.overdue::before {
+        background: linear-gradient(90deg, #ef4444, #b91c1c);
+    }
+
+    .metric-card.inflow::before {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    .metric-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748b;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .metric-subtext {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    /* Таблицы и списки */
+    .dashboard-tables {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+        .dashboard-tables {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .full-width-table {
+            grid-column: span 2;
+        }
+    }
+
+    .table-container {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+    }
+
+    .table-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .badge-count {
+        background-color: #f1f5f9;
+        color: #475569;
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 9999px;
+        font-weight: 600;
+    }
+
+    .badge-count.red {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .custom-table td {
+        padding: 16px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 14px;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .custom-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .custom-table tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .amount-text {
+        font-family: monospace;
+        font-weight: 700;
+        font-size: 15px;
+    }
+
+    .amount-text.green {
+        color: #10b981;
+    }
+
+    .amount-text.red {
+        color: #ef4444;
+    }
+
+    .badge-status {
+        display: inline-block;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 6px;
+        text-transform: uppercase;
+    }
+
+    .badge-status.red {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-status.green {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-status.blue {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="finance-container">
+    <!-- Навигационное меню -->
+    <div class="finance-nav" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 16px;">
+            <a href="{% url 'finance:dashboard' %}" class="finance-nav-item active">Дашборд</a>
+            <a href="{% url 'finance:calendar' %}" class="finance-nav-item">Платежный календарь</a>
+            <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item">Овердрафты</a>
+            <a href="{% url 'finance:key_rates' %}" class="finance-nav-item">Ключевая ставка ЦБ</a>
+            <a href="{% url 'finance:reports_list' %}" class="finance-nav-item">Отчеты</a>
+        </div>
+        <form method="get" style="display: flex; align-items: center; gap: 12px; margin: 0; padding-right: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="month_select" style="font-size: 14px; font-weight: 600; color: #475569; margin: 0;">Месяц:</label>
+                <select name="month" id="month_select" class="form-control" onchange="this.form.submit()" style="width: 140px; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; height: 36px;">
+                    <option value="">Все месяцы</option>
+                    {% for m_num, m_name in available_months %}
+                        <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="year_select" style="font-size: 14px; font-weight: 600; color: #475569; margin: 0;">Год:</label>
+                <select name="year" id="year_select" class="form-control" onchange="this.form.submit()" style="width: 100px; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; height: 36px;">
+                    {% for y in available_years %}
+                        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Раздел показателей -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-label">Общая сумма обязательств</div>
+            <div class="metric-value">{{ total_sum|floatformat:2 }} ₽</div>
+            <div class="metric-subtext">Активные обязательства и кредиты</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Кредиторская задолженность</div>
+            <div class="metric-value">{{ creditor_total_debt|floatformat:2 }} ₽</div>
+            <div class="metric-subtext">Обязательства перед банками и поставщиками</div>
+        </div>
+        <div class="metric-card inflow">
+            <div class="metric-label">Дебиторская задолженность</div>
+            <div class="metric-value">{{ debtor_total_debt|floatformat:2 }} ₽</div>
+            <div class="metric-subtext">Ожидаемые поступления от покупателей</div>
+        </div>
+        <div class="metric-card overdue">
+            <div class="metric-label">Просроченная задолженность</div>
+            <div class="metric-value text-danger">{{ overdue_total|floatformat:2 }} ₽</div>
+            <div class="metric-subtext">Просроченные платежи и кредиты</div>
+        </div>
+        <div class="metric-card overdue">
+            <div class="metric-label">Платежи {% if selected_month %}за выбранный период{% else %}за {{ selected_year }} год{% endif %}</div>
+            <div class="metric-value">{{ current_month_obligations|floatformat:2 }} ₽</div>
+            <div class="metric-subtext">Фактические списания</div>
+        </div>
+        <div class="metric-card inflow">
+            <div class="metric-label">Поступления {% if selected_month %}за выбранный период{% else %}за {{ selected_year }} год{% endif %}</div>
+            <div class="metric-value">{{ current_month_inflow|floatformat:2 }} ₽</div>
+            <div class="metric-subtext">Фактические поступления</div>
+        </div>
+    </div>
+
+    <!-- Раздел таблиц -->
+    <div class="dashboard-tables">
+        <!-- Ближайшие платежи -->
+        <div class="table-container">
+            <div class="table-title">
+                <span>Ближайшие платежи (Расходы)</span>
+                <span class="badge-count">{{ upcoming_payments|length }}</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Договор</th>
+                            <th>Контрагент</th>
+                            <th>Сумма</th>
+                            <th>Дней до платежа</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in upcoming_payments %}
+                        <tr>
+                            <td>{{ item.date|date:"d.m.Y" }}</td>
+                            <td><strong>{{ item.contract }}</strong> <small class="text-muted">({{ item.type }})</small></td>
+                            <td>{{ item.counteragent }}</td>
+                            <td class="amount-text">{{ item.amount|floatformat:2 }} ₽</td>
+                            <td>
+                                {% if item.days_to == 0 %}
+                                <span class="badge-status red">Сегодня</span>
+                                {% else %}
+                                <span>{{ item.days_to }} дн.</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Нет предстоящих платежей</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Ближайшие поступления -->
+        <div class="table-container">
+            <div class="table-title">
+                <span>Ближайшие поступления (Доходы)</span>
+                <span class="badge-count">{{ upcoming_inflows|length }}</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Договор</th>
+                            <th>Контрагент</th>
+                            <th>Сумма</th>
+                            <th>Дней до поступления</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in upcoming_inflows %}
+                        <tr>
+                            <td>{{ item.date|date:"d.m.Y" }}</td>
+                            <td><strong>{{ item.contract }}</strong></td>
+                            <td>{{ item.counteragent }}</td>
+                            <td class="amount-text green">{{ item.amount|floatformat:2 }} ₽</td>
+                            <td>
+                                {% if item.days_to == 0 %}
+                                <span class="badge-status green">Сегодня</span>
+                                {% else %}
+                                <span>{{ item.days_to }} дн.</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Нет ожидаемых поступлений</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Просрочки -->
+        <div class="table-container full-width-table">
+            <div class="table-title">
+                <span>Просроченные обязательства</span>
+                <span class="badge-count red">{{ overdue_obligations|length }}</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Контрагент</th>
+                            <th>Договор / Кредит</th>
+                            <th>Тип просрочки</th>
+                            <th>Сумма просрочки</th>
+                            <th>Количество дней просрочки</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in overdue_obligations %}
+                        <tr>
+                            <td>{{ item.counteragent }}</td>
+                            <td><strong>{{ item.contract }}</strong></td>
+                            <td><span class="badge-status red">{{ item.type }}</span></td>
+                            <td class="amount-text red">{{ item.amount|floatformat:2 }} ₽</td>
+                            <td><span class="text-danger font-weight-bold">{{ item.days_overdue }} дн.</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-success py-4">
+                                <i class="fas fa-check-circle mr-2"></i> Отлично! Просроченные обязательства отсутствуют.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

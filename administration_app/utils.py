@@ -284,6 +284,8 @@ def get_jsons_data(object_type: str, object_name: str, base_index: int, year=0) 
             f"{object_type}_{object_name}?$filter=year(Date) gt 2024&$format=application/json;odata=nometadata"
         )
     source_url = url
+    if settings.DEBUG:
+        print(source_url)
     try:
         if base_index == 0:
             response = requests.get(

@@ -21,6 +21,7 @@ from customers_app.models import DataBaseUser, Groups, Job, AccessLevel
 from hrdepartment_app.models import ReportCard
 from hrdepartment_app.tasks import get_sick_leave, birthday_telegram, upload_json, get_vacation, get_year_report, \
     save_report, send_email_notification, vacation_schedule_send, vacation_check, vacation_schedule
+from finance_app.tasks import check_overdraft_tranches_task
 
 from core import logger
 
@@ -507,6 +508,8 @@ class PortalPropertyList(LoginRequiredMixin, ListView):
             if request.GET.get('update') == '19':
                 user_id = request.GET.get('user_id')
                 vacation_schedule_send.delay(triger=0, user_id=user_id)
+            if request.GET.get('update') == '20':
+                check_overdraft_tranches_task.delay()
         return super().get(request, *args, **kwargs)
 
 

@@ -1,0 +1,317 @@
+{% extends "customers_app/main.html" %}
+{% load static %}
+
+{% block title %}Расчет овердрафта{% endblock %}
+
+{% block custom_css %}
+<style>
+    .finance-container {
+        padding: 24px;
+        background-color: #f8fafc;
+        min-height: 100vh;
+        font-family: 'Inter', sans-serif;
+    }
+    .finance-nav {
+        display: flex;
+        gap: 16px;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 24px;
+        padding-bottom: 8px;
+    }
+    .finance-nav-item {
+        font-size: 16px;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+    }
+    .finance-nav-item.active {
+        color: #1f497d;
+        background-color: #e2e8f0;
+        border-bottom: 3px solid #1f497d;
+        border-radius: 8px 8px 0 0;
+    }
+    .info-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+    }
+    .table-container {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+    }
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        border-right: 1px solid #e2e8f0;
+    }
+    .custom-table td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 13px;
+        color: #334155;
+        border-right: 1px solid #e2e8f0;
+    }
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .custom-table th, .custom-table td {
+        white-space: nowrap;
+    }
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .metric {
+        background: #f1f5f9;
+        padding: 16px;
+        border-radius: 12px;
+        width: 100%;
+    }
+    .metric-title { font-size: 12px; color: #64748b; text-transform: uppercase; }
+    .metric-value { font-size: 24px; font-weight: bold; color: #0f172a; margin-top: 4px; }
+    .btn-primary { background-color: #1f497d; color: white; padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+    .btn-primary:hover { opacity: 0.9; }
+    .badge-status { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
+    .badge-status.red { background-color: #fee2e2; color: #991b1b; }
+    .badge-status.yellow { background-color: #fef08a; color: #854d0e; }
+    .badge-status.green { background-color: #dcfce3; color: #166534; }
+    .forms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+    }
+    .form-card {
+        background: #f8fafc;
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+    .form-card input, .form-card select {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        box-sizing: border-box;
+        height: 38px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="finance-container">
+    <div class="finance-nav">
+        <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item">← Назад к списку</a>
+        <a href="javascript:void(0)" class="finance-nav-item active">Расчет: Договор №{{ agreement.contract_number }}</a>
+    </div>
+
+    <div class="info-card">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px;">Контрагент: {{ agreement.counteragent.short_name }}</h2>
+        <div class="metrics">
+            <div class="metric">
+                <div class="metric-title">Лимит овердрафта</div>
+                <div class="metric-value">{{ agreement.amount|floatformat:2 }} ₽</div>
+            </div>
+            <div class="metric">
+                <div class="metric-title">Ставка (маржа)</div>
+                <div class="metric-value">{{ agreement.interest_rate|floatformat:2 }}%</div>
+            </div>
+            <div class="metric" style="background-color: #fee2e2;">
+                <div class="metric-title">Текущий долг (ОД)</div>
+                <div class="metric-value" style="color: #991b1b;">{{ calc_result.total_principal|floatformat:2 }} ₽</div>
+            </div>
+            <div class="metric" style="background-color: #ffedd5;">
+                <div class="metric-title">Всего начислено %</div>
+                <div class="metric-value" style="color: #9a3412;">{{ calc_result.total_interest|floatformat:2 }} ₽</div>
+            </div>
+            <div class="metric" style="background-color: #fee2e2;">
+                <div class="metric-title">Остаток к уплате %</div>
+                <div class="metric-value" style="color: #991b1b;">{{ calc_result.unpaid_interest|floatformat:2 }} ₽</div>
+                <div style="font-size: 11px; color: #475569; margin-top: 4px;">*До 7-го рабочего дня месяца</div>
+            </div>
+        </div>
+        
+        <div class="forms-grid">
+            <div class="form-card">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #1f497d; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; font-size: 14px;">+</span>
+                    Добавить транш (Выдачу)
+                </h3>
+                <form method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
+                    {% csrf_token %}
+                    <input type="hidden" name="add_tranche" value="1">
+                    <div>
+                        <label style="font-size: 12px; color: #475569; margin-bottom: 4px; display: block;">Дата транша</label>
+                        {{ tranche_form.date }}
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #475569; margin-bottom: 4px; display: block;">Сумма (₽)</label>
+                        {{ tranche_form.amount }}
+                    </div>
+                    <div>
+                        <button type="submit" class="btn-primary" style="width: 100%;">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="form-card" style="border-color: #a7f3d0; background-color: #ecfdf5;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #065f46; display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #10b981; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; font-size: 14px;">+</span>
+                    Внести погашение
+                </h3>
+                <form method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
+                    {% csrf_token %}
+                    <input type="hidden" name="add_payment" value="1">
+                    <div>
+                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">Дата платежа</label>
+                        {{ payment_form.payment_date }}
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">Сумма (₽)</label>
+                        {{ payment_form.amount }}
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">Тип</label>
+                        {{ payment_form.payment_type }}
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #065f46; margin-bottom: 4px; display: block;">№ Документа</label>
+                        {{ payment_form.payment_doc_number }}
+                    </div>
+                    <div>
+                        <button type="submit" class="btn-primary" style="width: 100%; background-color: #10b981;">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">Сводная детализация по траншам</h2>
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Дата выдачи</th>
+                        <th>Сумма выдачи (ОД)</th>
+                        <th>Остаток (ОД)</th>
+                        <th>Накопленные проценты</th>
+                        <th>Дата погашения (до)</th>
+                        <th>Статус (дней)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in calc_result.active_tranches reversed %}
+                    <tr>
+                        <td><strong>{{ t.date|date:"d.m.Y" }}</strong></td>
+                        <td style="font-family: monospace;">{{ t.amount|default:t.principal|floatformat:2 }} ₽</td>
+                        <td style="font-family: monospace;">{{ t.principal|floatformat:2 }} ₽</td>
+                        <td style="font-family: monospace; color: #9a3412;">{{ t.accrued_interest|floatformat:2 }} ₽</td>
+                        <td>{{ t.maturity_date|date:"d.m.Y" }}</td>
+                        <td>
+                            {% if t.principal <= 0 %}
+                                <span class="badge-status green">Погашен</span>
+                            {% elif t.is_overdue %}
+                                <span class="badge-status red">Просрочка {{ t.days_left|default:"0"|stringformat:"+d"|slice:"1:" }} дн.</span>
+                            {% elif t.days_left < 4 %}
+                                <span class="badge-status red">Осталось {{ t.days_left }} дн.</span>
+                            {% elif t.days_left < 7 %}
+                                <span class="badge-status yellow">Осталось {{ t.days_left }} дн.</span>
+                            {% else %}
+                                <span class="badge-status green">Осталось {{ t.days_left }} дн.</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Нет активных траншей</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="font-size: 18px; font-weight: 700;">Детализация по дням</h2>
+            <form method="get" style="display: flex; gap: 8px; align-items: center;">
+                <label style="font-size: 14px;">Рассчитать на дату:</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}" style="width: 150px;">
+                <button type="submit" class="btn-primary" style="padding: 6px 12px;">Применить</button>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Дата</th>
+                        <th rowspan="2">Общий долг (ОД)</th>
+                        <th rowspan="2">Процент за день (общ)</th>
+                        {% for t in calc_result.active_tranches %}
+                            <th colspan="3" style="text-align: center; border-bottom: 1px solid #e2e8f0; {% if t.is_overdue %}background-color: #fee2e2; border-color: #fca5a5;{% endif %}">
+                                <div style="font-weight: 700;">Транш от {{ t.date|date:"d.m.Y" }}</div>
+                                <div style="font-size: 11px; font-weight: normal; color: {% if t.is_overdue %}#991b1b{% else %}#475569{% endif %}; margin-top: 4px;">
+                                    Погасить до: {{ t.maturity_date|date:"d.m.Y" }} 
+                                    ({% if t.principal <= 0 %}Погашен{% elif t.is_overdue %}Просрочка {{ t.days_left|default:"0"|stringformat:"+d"|slice:"1:" }} дн.{% else %}Осталось {{ t.days_left }} дн.{% endif %})
+                                </div>
+                                <div style="margin-top: 6px;">
+                                    <a href="{% url 'finance:tranche_update' t.id %}" style="font-size: 10px; color: #3b82f6; text-decoration: none; padding: 2px 4px; background: #fff; border-radius: 4px;">Изменить</a>
+                                    <a href="{% url 'finance:tranche_delete' t.id %}" style="font-size: 10px; color: #ef4444; text-decoration: none; padding: 2px 4px; background: #fff; border-radius: 4px;" onclick="return confirm('Удалить транш?');">Удалить</a>
+                                </div>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for t in calc_result.active_tranches %}
+                            <th>Остаток (ОД)</th>
+                            <th>Процент за день</th>
+                            <th>Накоплено %</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in calc_result.daily_stats reversed %}
+                    <tr>
+                        <td><strong>{{ stat.date|date:"d.m.Y" }}</strong></td>
+                        <td style="font-family: monospace;">{{ stat.total_principal|floatformat:2 }}</td>
+                        <td style="font-family: monospace;">{{ stat.total_daily_interest|floatformat:2 }}</td>
+                        {% for t_stat in stat.tranches %}
+                            <td style="font-family: monospace;">{{ t_stat.principal|floatformat:2 }}</td>
+                            <td style="font-family: monospace; color: #64748b;">{{ t_stat.daily_interest|floatformat:4 }}</td>
+                            <td style="font-family: monospace; color: #9a3412;">{{ t_stat.accrued_interest|floatformat:2 }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">Расчет невозможен (нет траншей)</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

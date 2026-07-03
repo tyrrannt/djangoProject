@@ -1,0 +1,185 @@
+{% extends "customers_app/main.html" %}
+{% load static %}
+
+{% block title %}Финансовые отчеты{% endblock %}
+
+{% block custom_css %}
+<style>
+    .finance-container {
+        padding: 24px;
+        background-color: #f8fafc;
+        min-height: 100vh;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Навигационные вкладки */
+    .finance-nav {
+        display: flex;
+        gap: 16px;
+        border-bottom: 2px solid #e2e8f0;
+        margin-bottom: 24px;
+        padding-bottom: 8px;
+    }
+
+    .finance-nav-item {
+        font-size: 16px;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .finance-nav-item:hover {
+        color: #1e293b;
+        background-color: #f1f5f9;
+        text-decoration: none;
+    }
+
+    .finance-nav-item.active {
+        color: #1f497d;
+        background-color: #e2e8f0;
+        border-bottom: 3px solid #1f497d;
+        border-radius: 8px 8px 0 0;
+    }
+
+    /* Сетка отчетов */
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+    }
+
+    .report-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .report-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .report-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+    }
+
+    .report-desc {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 20px;
+        line-height: 1.5;
+        flex-grow: 1;
+    }
+
+    .report-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        flex: 1;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-export.xlsx {
+        background-color: #e1f5fe;
+        color: #0288d1;
+    }
+
+    .btn-export.xlsx:hover {
+        background-color: #b3e5fc;
+        text-decoration: none;
+    }
+
+    .btn-export.pdf {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+
+    .btn-export.pdf:hover {
+        background-color: #ffcdd2;
+        text-decoration: none;
+    }
+
+    .btn-export i {
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="finance-container">
+    <!-- Навигационное меню -->
+    <div class="finance-nav" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'finance:dashboard' %}" class="finance-nav-item">Дашборд</a>
+            <a href="{% url 'finance:calendar' %}" class="finance-nav-item">Платежный календарь</a>
+            <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item">Овердрафты</a>
+            <a href="{% url 'finance:key_rates' %}" class="finance-nav-item">Ключевая ставка ЦБ</a>
+            <a href="{% url 'finance:reports_list' %}" class="finance-nav-item active">Отчеты</a>
+        </div>
+        <form method="get" style="display: flex; align-items: center; gap: 12px; margin: 0; padding-right: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="month_select" style="font-size: 14px; font-weight: 600; color: #475569; margin: 0;">Месяц:</label>
+                <select name="month" id="month_select" class="form-control" onchange="this.form.submit()" style="width: 140px; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; height: 36px;">
+                    <option value="">Все месяцы</option>
+                    {% for m_num, m_name in available_months %}
+                        <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="year_select" style="font-size: 14px; font-weight: 600; color: #475569; margin: 0;">Год:</label>
+                <select name="year" id="year_select" class="form-control" onchange="this.form.submit()" style="width: 100px; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; height: 36px;">
+                    {% for y in available_years %}
+                        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Раздел отчетов -->
+    <div class="reports-grid">
+        {% for r in reports %}
+        <div class="report-card">
+            <div>
+                <div class="report-title">{{ r.name }}</div>
+                <div class="report-desc">{{ r.desc }}</div>
+            </div>
+            <div class="report-actions">
+                <a href="{% url 'finance:export_report' r.type %}?format=xlsx&year={{ selected_year }}{% if selected_month %}&month={{ selected_month }}{% endif %}" class="btn-export xlsx">
+                    <i class="fas fa-file-excel"></i> XLSX
+                </a>
+                <a href="{% url 'finance:export_report' r.type %}?format=pdf&year={{ selected_year }}{% if selected_month %}&month={{ selected_month }}{% endif %}" class="btn-export pdf">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
