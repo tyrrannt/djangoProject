@@ -1,4 +1,5 @@
 # Project exclude paths
+*.md
 *.log
 *.pot
 *.pyc
