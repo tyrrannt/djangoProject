@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, Http404
@@ -274,6 +275,19 @@ class OverdraftListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["active_tab"] = "overdraft"
+        
+        total_debt = Decimal('0.00')
+        total_unused_limit = Decimal('0.00')
+        today = date.today()
+        
+        for agreement in context['agreements']:
+            service = OverdraftCalculationService(agreement)
+            result = service.calculate(today)
+            total_debt += result['total_principal']
+            total_unused_limit += result['current_unused_limit']
+            
+        context['total_debt'] = total_debt
+        context['total_unused_limit'] = total_unused_limit
         return context
 
 class OverdraftCreateView(LoginRequiredMixin, CreateView):

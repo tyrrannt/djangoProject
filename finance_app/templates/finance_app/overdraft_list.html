@@ -77,6 +77,21 @@
         color: white;
         text-decoration: none;
     }
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .metric {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .metric-title { font-size: 13px; color: #64748b; text-transform: uppercase; font-weight: 600; }
+    .metric-value { font-size: 28px; font-weight: bold; color: #0f172a; margin-top: 8px; }
 </style>
 {% endblock %}
 
@@ -88,6 +103,17 @@
         <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item active">Овердрафты</a>
         <a href="{% url 'finance:key_rates' %}" class="finance-nav-item">Ключевая ставка ЦБ</a>
         <a href="{% url 'finance:reports_list' %}" class="finance-nav-item">Отчеты</a>
+    </div>
+
+    <div class="metrics">
+        <div class="metric" style="border-left: 4px solid #ef4444;">
+            <div class="metric-title">Общая задолженность (ОД)</div>
+            <div class="metric-value" style="color: #991b1b;">{{ total_debt|floatformat:2 }} ₽</div>
+        </div>
+        <div class="metric" style="border-left: 4px solid #10b981;">
+            <div class="metric-title">Общие неиспользованные средства</div>
+            <div class="metric-value" style="color: #166534;">{{ total_unused_limit|floatformat:2 }} ₽</div>
+        </div>
     </div>
 
     <div class="table-container">

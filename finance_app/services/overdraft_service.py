@@ -173,5 +173,6 @@ class OverdraftCalculationService:
             'total_paid_interest': round(total_paid_interest, 2),
             'unpaid_interest': round(unpaid_interest, 2),
             'total_unused_commission': round(unpaid_unused_commission, 2),
+            'current_unused_limit': round(max(Decimal('0.00'), self.agreement.amount - total_principal), 2),
             'active_tranches': active_tranches
         }

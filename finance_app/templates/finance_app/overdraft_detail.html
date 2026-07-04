@@ -142,6 +142,10 @@
                 <div class="metric-title">Текущий долг (ОД)</div>
                 <div class="metric-value" style="color: #991b1b;">{{ calc_result.total_principal|floatformat:2 }} ₽</div>
             </div>
+            <div class="metric" style="background-color: #dcfce3;">
+                <div class="metric-title">Неиспользованный лимит</div>
+                <div class="metric-value" style="color: #166534;">{{ calc_result.current_unused_limit|floatformat:2 }} ₽</div>
+            </div>
             <div class="metric" style="background-color: #ffedd5;">
                 <div class="metric-title">Всего начислено %</div>
                 <div class="metric-value" style="color: #9a3412;">{{ calc_result.total_interest|floatformat:2 }} ₽</div>
