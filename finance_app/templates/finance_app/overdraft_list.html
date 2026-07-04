@@ -129,6 +129,8 @@
                         <th>Номер договора</th>
                         <th>Дата договора</th>
                         <th>Сумма (Лимит)</th>
+                        <th>Долг (ОД)</th>
+                        <th>Неисп. средства</th>
                         <th>Ставка (%)</th>
                         <th>Действие</th>
                     </tr>
@@ -136,10 +138,12 @@
                 <tbody>
                     {% for agreement in agreements %}
                     <tr>
-                        <td>{{ agreement.counteragent.short_name }}</td>
+                        <td>{{ agreement.bank.short_name }}</td>
                         <td>{{ agreement.contract_number }}</td>
                         <td>{{ agreement.contract_date|date:"d.m.Y" }}</td>
                         <td style="font-family: monospace; font-weight: bold;">{{ agreement.amount|floatformat:2 }} ₽</td>
+                        <td style="font-family: monospace; color: #991b1b;">{{ agreement.calculated_debt|default:"0"|floatformat:2 }} ₽</td>
+                        <td style="font-family: monospace; color: #166534;">{{ agreement.calculated_unused_limit|default:agreement.amount|floatformat:2 }} ₽</td>
                         <td>{{ agreement.interest_rate|floatformat:2 }}%</td>
                         <td>
                             <a href="{% url 'finance:overdraft_detail' agreement.pk %}" class="btn-primary" style="margin-right: 8px;">Калькулятор</a>
@@ -149,7 +153,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted">Нет кредитных договоров</td>
+                        <td colspan="8" class="text-center text-muted">Нет кредитных договоров</td>
                     </tr>
                     {% endfor %}
                 </tbody>

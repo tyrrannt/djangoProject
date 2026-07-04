@@ -286,6 +286,10 @@ class OverdraftListView(LoginRequiredMixin, ListView):
             total_debt += result['total_principal']
             total_unused_limit += result['current_unused_limit']
             
+            # Сохраняем расчетные данные для вывода в таблицу
+            agreement.calculated_debt = result['total_principal']
+            agreement.calculated_unused_limit = result['current_unused_limit']
+            
         context['total_debt'] = total_debt
         context['total_unused_limit'] = total_unused_limit
         return context
