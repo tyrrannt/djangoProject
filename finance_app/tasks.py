@@ -90,98 +90,98 @@ def sync_credits_task() -> str:
         return err_msg
 
 
-@shared_task(name="finance_app.tasks.send_upcoming_payment_notifications_task")
-def send_upcoming_payment_notifications_task() -> str:
-    """
-    Периодическая задача Celery для отправки уведомлений о предстоящих и просроченных платежах.
-
-    Отправляет уведомления за 30, 14, 7, 3, 1 день до платежа, а также
-    ежедневно в случае возникновения просрочки.
-
-    Returns:
-        Результат выполнения в виде строки.
-    """
-    logger.info("Celery task: Запуск рассылки уведомлений по платежам...")
-    today = date.today()
-    notif_count = 0
-
-    # 1. Предстоящие платежи (обычные обязательства)
-    intervals = [30, 14, 7, 3, 1]
-    for days in intervals:
-        target_date = today + timedelta(days=days)
-        schedules = PaymentSchedule.objects.filter(
-            payment_date=target_date,
-            status__in=["planned", "partially_paid"]
-        ).select_related("obligation__contract__employee", "obligation__contract__counteragent")
-
-        for s in schedules:
-            user = s.obligation.contract.employee
-            if user:
-                message = (
-                    f"Напоминание: Предстоит платеж по договору № {s.obligation.contract.contract_number} "
-                    f"с {s.obligation.contract.counteragent.short_name} на сумму {s.amount} руб. через {days} дн. "
-                    f"(Дата платежа: {s.payment_date:%d.%m.%Y})."
-                )
-                NotificationService.send_notification_to_user(user, message)
-                notif_count += 1
-
-    # 2. Предстоящие платежи по кредитам
-    for days in intervals:
-        target_date = today + timedelta(days=days)
-        credit_schedules = CreditPaymentSchedule.objects.filter(
-            payment_date=target_date,
-            status__in=["planned", "partially_paid"]
-        ).select_related("credit_agreement__employee", "credit_agreement__bank")
-
-        for cs in credit_schedules:
-            user = cs.credit_agreement.employee
-            if user:
-                message = (
-                    f"Напоминание: Предстоит платеж по кредиту № {cs.credit_agreement.contract_number} "
-                    f"в {cs.credit_agreement.bank.short_name} на сумму {cs.total_amount} руб. через {days} дн. "
-                    f"(Дата платежа: {cs.payment_date:%d.%m.%Y})."
-                )
-                NotificationService.send_notification_to_user(user, message)
-                notif_count += 1
-
-    # 3. Просроченные платежи (ежедневно до устранения)
-    overdue_schedules = PaymentSchedule.objects.filter(
-        status="overdue"
-    ).select_related("obligation__contract__employee", "obligation__contract__counteragent")
-
-    for s in overdue_schedules:
-        user = s.obligation.contract.employee
-        if user:
-            overdue_days = (today - s.payment_date).days
-            message = (
-                f"ВНИМАНИЕ: Просрочен платеж по договору № {s.obligation.contract.contract_number} "
-                f"с {s.obligation.contract.counteragent.short_name} на сумму {s.amount} руб. "
-                f"Количество дней просрочки: {overdue_days} дн. (Срок оплаты: {s.payment_date:%d.%m.%Y})."
-            )
-            NotificationService.send_notification_to_user(user, message)
-            notif_count += 1
-
-    # 4. Просроченные кредиты
-    overdue_credits = CreditPaymentSchedule.objects.filter(
-        status="overdue"
-    ).select_related("credit_agreement__employee", "credit_agreement__bank")
-
-    for cs in overdue_credits:
-        user = cs.credit_agreement.employee
-        if user:
-            overdue_days = (today - cs.payment_date).days
-            message = (
-                f"ВНИМАНИЕ: Просрочен платеж по кредиту № {cs.credit_agreement.contract_number} "
-                f"в {cs.credit_agreement.bank.short_name} на сумму {cs.total_amount} руб. "
-                f"Количество дней просрочки: {overdue_days} дн. (Срок оплаты: {cs.payment_date:%d.%m.%Y})."
-            )
-            NotificationService.send_notification_to_user(user, message)
-            notif_count += 1
-
-    msg = f"Успешно. Отправлено уведомлений: {notif_count}"
-    logger.info(msg)
-    return msg
-
+# @shared_task(name="finance_app.tasks.send_upcoming_payment_notifications_task")
+# def send_upcoming_payment_notifications_task() -> str:
+#     """
+#     Периодическая задача Celery для отправки уведомлений о предстоящих и просроченных платежах.
+#
+#     Отправляет уведомления за 30, 14, 7, 3, 1 день до платежа, а также
+#     ежедневно в случае возникновения просрочки.
+#
+#     Returns:
+#         Результат выполнения в виде строки.
+#     """
+#     logger.info("Celery task: Запуск рассылки уведомлений по платежам...")
+#     today = date.today()
+#     notif_count = 0
+#
+#     # 1. Предстоящие платежи (обычные обязательства)
+#     intervals = [30, 14, 7, 3, 1]
+#     for days in intervals:
+#         target_date = today + timedelta(days=days)
+#         schedules = PaymentSchedule.objects.filter(
+#             payment_date=target_date,
+#             status__in=["planned", "partially_paid"]
+#         ).select_related("obligation__contract__employee", "obligation__contract__counteragent")
+#
+#         for s in schedules:
+#             user = s.obligation.contract.employee
+#             if user:
+#                 message = (
+#                     f"Напоминание: Предстоит платеж по договору № {s.obligation.contract.contract_number} "
+#                     f"с {s.obligation.contract.counteragent.short_name} на сумму {s.amount} руб. через {days} дн. "
+#                     f"(Дата платежа: {s.payment_date:%d.%m.%Y})."
+#                 )
+#                 NotificationService.send_notification_to_user(user, message)
+#                 notif_count += 1
+#
+#     # 2. Предстоящие платежи по кредитам
+#     for days in intervals:
+#         target_date = today + timedelta(days=days)
+#         credit_schedules = CreditPaymentSchedule.objects.filter(
+#             payment_date=target_date,
+#             status__in=["planned", "partially_paid"]
+#         ).select_related("credit_agreement__employee", "credit_agreement__bank")
+#
+#         for cs in credit_schedules:
+#             user = cs.credit_agreement.employee
+#             if user:
+#                 message = (
+#                     f"Напоминание: Предстоит платеж по кредиту № {cs.credit_agreement.contract_number} "
+#                     f"в {cs.credit_agreement.bank.short_name} на сумму {cs.total_amount} руб. через {days} дн. "
+#                     f"(Дата платежа: {cs.payment_date:%d.%m.%Y})."
+#                 )
+#                 NotificationService.send_notification_to_user(user, message)
+#                 notif_count += 1
+#
+#     # 3. Просроченные платежи (ежедневно до устранения)
+#     overdue_schedules = PaymentSchedule.objects.filter(
+#         status="overdue"
+#     ).select_related("obligation__contract__employee", "obligation__contract__counteragent")
+#
+#     for s in overdue_schedules:
+#         user = s.obligation.contract.employee
+#         if user:
+#             overdue_days = (today - s.payment_date).days
+#             message = (
+#                 f"ВНИМАНИЕ: Просрочен платеж по договору № {s.obligation.contract.contract_number} "
+#                 f"с {s.obligation.contract.counteragent.short_name} на сумму {s.amount} руб. "
+#                 f"Количество дней просрочки: {overdue_days} дн. (Срок оплаты: {s.payment_date:%d.%m.%Y})."
+#             )
+#             NotificationService.send_notification_to_user(user, message)
+#             notif_count += 1
+#
+#     # 4. Просроченные кредиты
+#     overdue_credits = CreditPaymentSchedule.objects.filter(
+#         status="overdue"
+#     ).select_related("credit_agreement__employee", "credit_agreement__bank")
+#
+#     for cs in overdue_credits:
+#         user = cs.credit_agreement.employee
+#         if user:
+#             overdue_days = (today - cs.payment_date).days
+#             message = (
+#                 f"ВНИМАНИЕ: Просрочен платеж по кредиту № {cs.credit_agreement.contract_number} "
+#                 f"в {cs.credit_agreement.bank.short_name} на сумму {cs.total_amount} руб. "
+#                 f"Количество дней просрочки: {overdue_days} дн. (Срок оплаты: {cs.payment_date:%d.%m.%Y})."
+#             )
+#             NotificationService.send_notification_to_user(user, message)
+#             notif_count += 1
+#
+#     msg = f"Успешно. Отправлено уведомлений: {notif_count}"
+#     logger.info(msg)
+#     return msg
+#
 
 @shared_task(name="finance_app.tasks.check_overdraft_tranches_task")
 def check_overdraft_tranches_task() -> str:
@@ -200,7 +200,7 @@ def check_overdraft_tranches_task() -> str:
 
     # Находим все кредитные договоры (овердрафты)
     overdrafts = CreditAgreement.objects.all().select_related("employee", "bank")
-    
+
     # Группируем подходящие транши по ответственным сотрудникам
     employee_notifications = defaultdict(lambda: {'user': None, 'tranches': []})
 
@@ -233,27 +233,27 @@ def check_overdraft_tranches_task() -> str:
     for data in employee_notifications.values():
         user = data['user']
         tranches = data['tranches']
-        
+
         if not tranches:
             continue
-            
+
         message = "<b>УВЕДОМЛЕНИЕ О ПОГАШЕНИИ ТРАНШЕЙ ОВЕРДРАФТА</b><br><br>\n"
         message += "Через 7 дней наступает срок погашения по следующим траншам:<br><br>\n"
-        
+
         # Используем тег pre для создания моноширинной таблицы, которая поддерживается и в e-mail, и в Telegram
         message += "<pre>\n"
         header = f"{'Договор':<18} | {'Сумма (ОД)':>15} | {'Срок до':<11}\n"
         message += header
         message += "-" * (len(header.strip()) + 1) + "\n"
-        
+
         for t in tranches:
             c_num = str(t['contract'])[:18]
             amount_str = f"{t['amount']:,.2f}".replace(',', ' ')
             m_date = t['maturity'].strftime('%d.%m.%Y')
-            
+
             row = f"{c_num:<18} | {amount_str:>15} | {m_date:<11}\n"
             message += row
-            
+
         message += "</pre><br>\nПросьба принять необходимые меры."
 
         NotificationService.send_notification_to_user(user, message)
