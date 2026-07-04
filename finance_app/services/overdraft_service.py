@@ -40,6 +40,7 @@ class OverdraftCalculationService:
         
         current_date = start_date
         daily_stats = []
+        unpaid_unused_commission = Decimal('0.00')
         
         while current_date <= end_date:
             # 1. Add new tranches for the day
@@ -82,7 +83,17 @@ class OverdraftCalculationService:
                             
             if daily_interest_payment > Decimal('0'):
                 remaining_int_payment = daily_interest_payment
-                # FIFO - погашаем проценты старых траншей
+                
+                # Сначала погашаем накопившуюся комиссию за неиспользованный лимит
+                if unpaid_unused_commission > Decimal('0'):
+                    if unpaid_unused_commission >= remaining_int_payment:
+                        unpaid_unused_commission -= remaining_int_payment
+                        remaining_int_payment = Decimal('0')
+                    else:
+                        remaining_int_payment -= unpaid_unused_commission
+                        unpaid_unused_commission = Decimal('0')
+
+                # Затем FIFO - погашаем проценты старых траншей
                 for t in active_tranches:
                     if remaining_int_payment <= Decimal('0'):
                         break
@@ -105,10 +116,21 @@ class OverdraftCalculationService:
             total_rate_percent = applicable_cb_rate + self.margin
             days_in_year = self.get_days_in_year(current_date.year)
             
+            # Расчет комиссии за неиспользованный лимит (1% годовых)
+            current_total_principal = sum(t['principal'] for t in active_tranches)
+            unused_limit = max(Decimal('0.00'), self.agreement.amount - current_total_principal)
+            daily_unused_commission = Decimal('0.00')
+            if unused_limit > Decimal('0'):
+                daily_unused_commission = round(unused_limit * (Decimal('1') / Decimal('100')) / Decimal(days_in_year), 6)
+            
+            unpaid_unused_commission += daily_unused_commission
+            
             daily_stat = {
                 'date': current_date,
                 'total_principal': Decimal('0.00'),
                 'total_daily_interest': Decimal('0.00'),
+                'unused_limit': unused_limit,
+                'daily_unused_commission': daily_unused_commission,
                 'tranches': []
             }
             
@@ -150,5 +172,6 @@ class OverdraftCalculationService:
             'total_interest': round(total_interest, 2),
             'total_paid_interest': round(total_paid_interest, 2),
             'unpaid_interest': round(unpaid_interest, 2),
+            'total_unused_commission': round(unpaid_unused_commission, 2),
             'active_tranches': active_tranches
         }

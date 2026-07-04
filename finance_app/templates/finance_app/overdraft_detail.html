@@ -151,6 +151,11 @@
                 <div class="metric-value" style="color: #991b1b;">{{ calc_result.unpaid_interest|floatformat:2 }} ₽</div>
                 <div style="font-size: 11px; color: #475569; margin-top: 4px;">*До 7-го рабочего дня месяца</div>
             </div>
+            <div class="metric" style="background-color: #f1f5f9;">
+                <div class="metric-title">Комиссия за неисп. лимит</div>
+                <div class="metric-value" style="color: #475569;">{{ calc_result.total_unused_commission|floatformat:2 }} ₽</div>
+                <div style="font-size: 11px; color: #475569; margin-top: 4px;">*1% годовых</div>
+            </div>
         </div>
         
         <div class="forms-grid">
@@ -270,6 +275,8 @@
                         <th rowspan="2">Дата</th>
                         <th rowspan="2">Общий долг (ОД)</th>
                         <th rowspan="2">Процент за день (общ)</th>
+                        <th rowspan="2">Неисп. лимит</th>
+                        <th rowspan="2">Комиссия (1%)</th>
                         {% for t in calc_result.active_tranches %}
                             <th colspan="3" style="text-align: center; border-bottom: 1px solid #e2e8f0; {% if t.is_overdue %}background-color: #fee2e2; border-color: #fca5a5;{% endif %}">
                                 <div style="font-weight: 700;">Транш от {{ t.date|date:"d.m.Y" }}</div>
@@ -298,6 +305,8 @@
                         <td><strong>{{ stat.date|date:"d.m.Y" }}</strong></td>
                         <td style="font-family: monospace;">{{ stat.total_principal|floatformat:2 }}</td>
                         <td style="font-family: monospace;">{{ stat.total_daily_interest|floatformat:2 }}</td>
+                        <td style="font-family: monospace;">{{ stat.unused_limit|floatformat:2 }}</td>
+                        <td style="font-family: monospace; color: #64748b;">{{ stat.daily_unused_commission|floatformat:4 }}</td>
                         {% for t_stat in stat.tranches %}
                             <td style="font-family: monospace;">{{ t_stat.principal|floatformat:2 }}</td>
                             <td style="font-family: monospace; color: #64748b;">{{ t_stat.daily_interest|floatformat:4 }}</td>
@@ -306,7 +315,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="10" class="text-center text-muted">Расчет невозможен (нет траншей)</td>
+                        <td colspan="12" class="text-center text-muted">Расчет невозможен (нет траншей)</td>
                     </tr>
                     {% endfor %}
                 </tbody>
