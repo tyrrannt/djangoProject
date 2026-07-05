@@ -322,6 +322,8 @@ class CreditAgreement(models.Model):
     contract_date = models.DateField(verbose_name="Дата договора")
     amount = models.DecimalField(verbose_name="Сумма кредита", max_digits=15, decimal_places=2)
     interest_rate = models.DecimalField(verbose_name="Процентная ставка", max_digits=5, decimal_places=2)
+    has_unused_limit_commission = models.BooleanField(verbose_name="Есть комиссия за неиспользованный лимит", default=False)
+    unused_limit_commission_rate = models.DecimalField(verbose_name="Ставка комиссии за неиспользованный лимит (%)", max_digits=5, decimal_places=2, default=1.00)
     term_months = models.IntegerField(verbose_name="Срок кредита (в месяцах)")
     tranche_repayment_days = models.IntegerField(verbose_name="Дней на погашение транша", default=45)
     remaining_debt = models.DecimalField(verbose_name="Остаток долга", max_digits=15, decimal_places=2, default=0.00)

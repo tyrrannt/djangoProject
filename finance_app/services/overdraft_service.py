@@ -116,12 +116,13 @@ class OverdraftCalculationService:
             total_rate_percent = applicable_cb_rate + self.margin
             days_in_year = self.get_days_in_year(current_date.year)
             
-            # Расчет комиссии за неиспользованный лимит (1% годовых)
+            # Расчет комиссии за неиспользованный лимит
             current_total_principal = sum(t['principal'] for t in active_tranches)
             unused_limit = max(Decimal('0.00'), self.agreement.amount - current_total_principal)
             daily_unused_commission = Decimal('0.00')
-            if unused_limit > Decimal('0'):
-                daily_unused_commission = round(unused_limit * (Decimal('1') / Decimal('100')) / Decimal(days_in_year), 6)
+            if unused_limit > Decimal('0') and self.agreement.has_unused_limit_commission:
+                rate = self.agreement.unused_limit_commission_rate
+                daily_unused_commission = round(unused_limit * (rate / Decimal('100')) / Decimal(days_in_year), 6)
             
             unpaid_unused_commission += daily_unused_commission
             

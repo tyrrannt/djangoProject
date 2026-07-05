@@ -32,7 +32,7 @@ class CreditAgreementForm(forms.ModelForm):
 
     class Meta:
         model = CreditAgreement
-        fields = ['bank', 'contract_number', 'contract_date', 'amount', 'interest_rate', 'term_months', 'tranche_repayment_days', 'employee']
+        fields = ['bank', 'contract_number', 'contract_date', 'amount', 'interest_rate', 'has_unused_limit_commission', 'unused_limit_commission_rate', 'term_months', 'tranche_repayment_days', 'employee']
 
 
 class CreditPaymentFactForm(forms.ModelForm):
