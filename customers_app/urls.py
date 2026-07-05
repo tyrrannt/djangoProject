@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from . import views
+from . import api_views
 from .views import lock_screen, DataBaseUserViewSet, ApartmentsUsageReportView, BiometricConsentListView, \
     BiometricConsentDetailView, BiometricConsentCreateView, BiometricConsentUpdateView, BiometricConsentDeleteView, \
     BiometricConsentRevokeView, EmployeeBiometricConsentsListView, ApiGetEmployeeConsentStatusView, \
@@ -24,6 +25,8 @@ app_name = "customers_app"
 urlpatterns = [
     path("auth-check/", views.auth_check),
     path('api/', include(router.urls)),
+    path('api/v1/profile/', api_views.UserProfileAPIView.as_view(), name='api_profile'),
+    path('api/profile/payroll/', api_views.PayrollAPIView.as_view(), name='api_payroll'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("", views.index, name="index"),
