@@ -41,3 +41,39 @@ class ChatViewSet(viewsets.ModelViewSet):
             )
             serializer = MessageSerializer(msg, context={'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def web_auth_token(self, request):
+        from django.core.cache import cache
+        from django.utils.crypto import get_random_string
+        token = get_random_string(length=32)
+        cache.set(token, request.user.id, timeout=60)
+        return Response({'token': token})
+
+    @action(detail=True, methods=['get', 'post'])
+    def participants(self, request, pk=None):
+        chat = self.get_object()
+        
+        if request.method == 'GET':
+            participants = chat.participants.all()
+            data = [{
+                'id': p.id, 
+                'username': p.username, 
+                'first_name': getattr(p, 'first_name', ''), 
+                'last_name': getattr(p, 'last_name', '')
+            } for p in participants]
+            return Response(data)
+            
+        elif request.method == 'POST':
+            username = request.data.get('username')
+            if not username:
+                return Response({'error': 'username is required'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                user_to_add = User.objects.get(username=username)
+                chat.participants.add(user_to_add)
+                return Response({'status': 'success', 'user_id': user_to_add.id})
+            except User.DoesNotExist:
+                return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
