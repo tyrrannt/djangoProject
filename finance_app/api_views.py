@@ -19,7 +19,7 @@ class OverdraftListAPIView(APIView):
             end_date = a.contract_date + relativedelta(months=a.term_months)
             data.append({
                 "id": a.id,
-                "bank": a.bank.name if a.bank else "Неизвестный банк",
+                "bank": a.bank.short_name if a.bank else "Неизвестный банк",
                 "limit": float(a.amount),
                 "used_amount": float(used),
                 "available_amount": float(available),
