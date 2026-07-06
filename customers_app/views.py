@@ -180,6 +180,7 @@ def auth_with_token(request):
         if user_id:
             try:
                 user = DataBaseUser.objects.get(id=user_id)
+                user.backend = 'django.contrib.auth.backends.ModelBackend'
                 auth.login(request, user)
                 cache.delete(token)  # Удаляем токен после использования
                 return redirect(next_url)  # Перенаправляем на указанный URL
