@@ -143,6 +143,15 @@ class UserProfileAPIView(APIView):
                 if work_profile.divisions:
                     division_name = work_profile.divisions.name
 
+            # Check finance access
+            has_finance_access = False
+            if user.is_superuser:
+                has_finance_access = True
+            elif user.groups.filter(name__icontains='руковод').exists():
+                has_finance_access = True
+            elif work_profile and work_profile.divisions and work_profile.divisions.type_of_role == "3":
+                has_finance_access = True
+
             data = {
                 "id": user.id,
                 "username": user.username,
@@ -153,6 +162,7 @@ class UserProfileAPIView(APIView):
                 "avatar": avatar_url,
                 "job": job_name,
                 "division": division_name,
+                "has_finance_access": has_finance_access,
             }
             return Response(data)
         except Exception as e:
