@@ -42,3 +42,4 @@ class GroupedScheduleSerializer(serializers.Serializer):
     mpd_name = serializers.CharField()
     is_gap = serializers.BooleanField()
     days_count = serializers.IntegerField()
+    crew = serializers.ListField(child=serializers.CharField())
