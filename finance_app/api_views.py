@@ -11,10 +11,12 @@ class OverdraftListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        agreements = CreditAgreement.objects.select_related('bank').all()
+        agreements = CreditAgreement.objects.select_related('bank').prefetch_related('tranches', 'payment_facts').all()
         data = []
         for a in agreements:
-            used = a.remaining_debt
+            total_tranches = sum(t.amount for t in a.tranches.all())
+            total_payments = sum(p.amount for p in a.payment_facts.all() if p.payment_type == 'principal')
+            used = total_tranches - total_payments
             available = a.amount - used
             end_date = a.contract_date + relativedelta(months=a.term_months)
             data.append({
