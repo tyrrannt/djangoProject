@@ -14,6 +14,10 @@ class ChatViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return ChatRoom.objects.filter(participants=user).distinct()
 
+    def perform_create(self, serializer):
+        chat = serializer.save()
+        chat.participants.add(self.request.user)
+
     @action(detail=True, methods=['get', 'post'])
     def messages(self, request, pk=None):
         chat = self.get_object()
