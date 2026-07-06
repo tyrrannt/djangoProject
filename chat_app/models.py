@@ -4,21 +4,27 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class BaseEmojiField:
-    def to_python(self, value):
-        if isinstance(value, str) or value is None:
-            if value is None:
-                return value
-            else:
-                encoded_string = str(value).encode('unicode_escape')
-                return encoded_string
-        return str(value)
-
-    def from_db_value(self, value, *args, **kwargs):
-        if str(value).startswith("b'"):
-            value = bytes(str(value).replace("b'", "")[0:-1].replace('\\\\', '\\'), 'utf-8').decode('unicode_escape')
-        elif str(value).isascii():
-            value = bytes(str(value), 'utf-8').decode('unicode_escape')
+    def get_prep_value(self, value):
+        if value is None:
             return value
+        return str(str(value).encode('unicode_escape'))
+
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return value
+        val_str = str(value)
+        if val_str.startswith("b'") and val_str.endswith("'"):
+            try:
+                # Extract the bytes string from inside "b'....'"
+                inner = val_str[2:-1].replace('\\\\', '\\')
+                return bytes(inner, 'utf-8').decode('unicode_escape')
+            except Exception:
+                pass
+        elif val_str.isascii():
+            try:
+                return bytes(val_str, 'utf-8').decode('unicode_escape')
+            except Exception:
+                pass
         return value
 
 class CustomEmojiCharField(BaseEmojiField , models.CharField):
@@ -58,4 +64,3 @@ class Message(models.Model):
             room, _ = ChatRoom.objects.get_or_create(name=self.room_name)
             self.room = room
         super(Message, self).save(*args, **kwargs)
-        self.message = str(self.message.encode('unicode_escape'))
