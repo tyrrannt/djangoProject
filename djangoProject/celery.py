@@ -10,30 +10,30 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    # 'load_report_card': {
-    #     'task': 'hrdepartment_app.tasks.report_card_separator',
-    #     'schedule': crontab(minute='*/5'),
-    # },
-    # 'load_database_user': {
-    #     'task': 'hrdepartment_app.tasks.get_database_user',
-    #     'schedule': crontab(minute='*/30'),
-    # },
-    # 'birthday_gift': {
-    #     'task': 'hrdepartment_app.tasks.happy_birthday',
-    #     'schedule': crontab(minute='*/1'),
-    # },
-    # 'birthday_channel_telegram': {
-    #     'task': 'hrdepartment_app.tasks.birthday_telegram',
-    #     'schedule': crontab(hour='9', minute='30'),
-    # },
-    # 'send_telegram_notify': {
-    #     'task': 'hrdepartment_app.tasks.send_telegram_notify',
-    #     'schedule': crontab(minute='*/1'),
-    # },
-    # 'expire_old_bookings': {
-    #     'task': 'hrdepartment_app.tasks.expire_old_bookings',
-    #     'schedule': crontab(hour='0', minute='0'),
-    # },
+    'load_report_card': {
+        'task': 'hrdepartment_app.tasks.report_card_separator',
+        'schedule': crontab(minute='*/5'),
+    },
+    'load_database_user': {
+        'task': 'hrdepartment_app.tasks.get_database_user',
+        'schedule': crontab(minute='*/30'),
+    },
+    'birthday_gift': {
+        'task': 'hrdepartment_app.tasks.happy_birthday',
+        'schedule': crontab(minute='*/1'),
+    },
+    'birthday_channel_telegram': {
+        'task': 'hrdepartment_app.tasks.birthday_telegram',
+        'schedule': crontab(hour='9', minute='30'),
+    },
+    'send_telegram_notify': {
+        'task': 'hrdepartment_app.tasks.send_telegram_notify',
+        'schedule': crontab(minute='*/1'),
+    },
+    'expire_old_bookings': {
+        'task': 'hrdepartment_app.tasks.expire_old_bookings',
+        'schedule': crontab(hour='0', minute='0'),
+    },
     'sync_finance_directories': {
         'task': 'finance_app.tasks.sync_directories_task',
         'schedule': crontab(minute=0, hour='*/12'),
