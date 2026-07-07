@@ -102,13 +102,14 @@ class ChatViewSet(viewsets.ModelViewSet):
     def available_users(self, request):
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        users = User.objects.filter(is_active=True).exclude(id=request.user.id).order_by('last_name', 'first_name', 'username')
+        users = User.objects.filter(is_active=True).order_by('last_name', 'first_name', 'username')
         data = [{
             'id': u.id,
             'username': u.username,
             'first_name': getattr(u, 'first_name', ''),
             'last_name': getattr(u, 'last_name', ''),
             'title': getattr(u, 'title', u.username),
-            'email': getattr(u, 'work_email', getattr(u, 'email', ''))
+            'email': getattr(u, 'work_email', getattr(u, 'email', '')),
+            'is_me': u.id == request.user.id
         } for u in users]
         return Response(data)
