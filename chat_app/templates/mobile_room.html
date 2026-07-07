@@ -132,7 +132,7 @@
         
         // Encode roomName properly for WebSocket URL to prevent SyntaxError
         const encodedRoomName = encodeURIComponent(roomName);
-        const wsUrl = protocol + window.location.host + '/ws/chat/' + encodedRoomName + '/';
+        const wsUrl = protocol + window.location.host + '/wss/chat/' + encodedRoomName + '/';
         const chatSocket = new WebSocket(wsUrl);
 
         const localVideo = document.getElementById('localVideo');
