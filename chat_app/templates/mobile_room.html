@@ -4,56 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <title>Видеозвонок: {{ room_name }}</title>
-    <!-- Подключаем локальный Bootstrap CSS и font-awesome, чтобы избежать проблем во внутренних сетях -->
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/bootstrap/css/bootstrap.css' %}"/>
-    <link rel="stylesheet" href="{% static 'admin_templates/vendor/font-awesome/css/all.min.css' %}"/>
-    
+    <title>Видеозвонок</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #000;
+            background-color: #111;
             color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
         #video-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
-            gap: 8px;
-            height: calc(100vh - 80px); /* Место для кнопок внизу */
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 10px;
             padding: 10px;
-            box-sizing: border-box;
             overflow-y: auto;
-        }
-
-        #remote-videos-container {
-            display: contents;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            background-color: #212529;
-            border-radius: 12px;
-            object-fit: cover;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-
-        .local-video {
-            border: 2px solid #0d6efd;
-        }
-
-        .remote-video {
-            border: 2px solid #198754;
         }
 
         .video-wrapper {
             position: relative;
-            height: 100%;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 16 / 9;
+            background-color: #222;
+            border: 2px solid #0d6efd;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .video-wrapper label {
@@ -62,51 +47,81 @@
             left: 10px;
             background: rgba(0,0,0,0.6);
             color: #fff;
-            padding: 2px 8px;
+            padding: 4px 8px;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 12px;
             z-index: 5;
-            pointer-events: none;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .controls-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
             height: 80px;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 15px;
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            background-color: #000;
+            border-top: 1px solid #333;
         }
 
-        .controls-container .btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #555;
+            cursor: pointer;
             display: flex;
-            justify-content: center;
             align-items: center;
-            font-size: 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            gap: 8px;
+        }
+
+        .btn-success { background-color: #198754; }
+        .btn-info { background-color: #0dcaf0; color: #000; }
+        .btn-danger { background-color: #dc3545; }
+        .btn:disabled { opacity: 0.5; }
+        
+        #error-log {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: rgba(255,0,0,0.8);
+            color: white;
+            font-size: 12px;
+            padding: 10px;
+            display: none;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
+    <div id="error-log"></div>
+    <script>
+        window.onerror = function(msg, url, line) {
+            var el = document.getElementById('error-log');
+            el.style.display = 'block';
+            el.innerHTML += msg + ' (line ' + line + ')<br>';
+            return false;
+        };
+    </script>
+
     <div id="video-container">
-        <div class="video-wrapper">
+        <div class="video-wrapper" id="local-wrapper">
             <label>Вы</label>
-            <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+            <video id="localVideo" autoplay playsinline muted></video>
         </div>
-        <div id="remote-videos-container"></div>
     </div>
 
     <div class="controls-container">
-        <button id="start-video" class="btn btn-success" title="Включить видео"><i class="fas fa-video"></i></button>
-        <button id="start-audio" class="btn btn-info text-dark" title="Включить аудио"><i class="fas fa-microphone"></i></button>
-        <button id="stop-call" class="btn btn-danger" disabled title="Завершить вызов"><i class="fas fa-phone-slash"></i></button>
+        <button id="start-video" class="btn btn-success">Видео</button>
+        <button id="start-audio" class="btn btn-info">Аудио</button>
+        <button id="stop-call" class="btn btn-danger" disabled>Стоп</button>
     </div>
 
     <script>
@@ -114,12 +129,14 @@
         const currentUserId = parseInt("{{ request.user.pk }}");
         const currentUsername = "{{ request.user.username|escapejs }}";
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const chatSocket = new WebSocket(
-            protocol + window.location.host + '/ws/chat/' + roomName + '/'
-        );
+        
+        // Encode roomName properly for WebSocket URL to prevent SyntaxError
+        const encodedRoomName = encodeURIComponent(roomName);
+        const wsUrl = protocol + window.location.host + '/ws/chat/' + encodedRoomName + '/';
+        const chatSocket = new WebSocket(wsUrl);
 
         const localVideo = document.getElementById('localVideo');
-        const remoteVideosContainer = document.getElementById('remote-videos-container');
+        const videoContainer = document.getElementById('video-container');
         const startVideoButton = document.getElementById('start-video');
         const startAudioButton = document.getElementById('start-audio');
         const stopCallButton = document.getElementById('stop-call');
@@ -131,7 +148,6 @@
         chatSocket.onmessage = function (event) {
             const data = JSON.parse(event.data);
             if (data.type === 'signal') {
-                console.log(`DEBUG: Signal from ${data.username} (ID: ${data.user_id})`, data.signal);
                 handleSignal(data.user_id, data.username, data.signal);
             }
         };
@@ -156,7 +172,7 @@
 
             } catch (e) {
                 console.error('Error accessing media devices.', e);
-                alert('Не удалось получить доступ к камере или микрофону');
+                alert('Не удалось получить доступ к камере или микрофону. Разрешите доступ в настройках устройства.');
             }
         }
 
@@ -164,7 +180,6 @@
             const rId = parseInt(remoteUserId);
             if (peerConnections[rId]) return peerConnections[rId];
 
-            console.log(`Creating PeerConnection for ${remoteUsername} (ID: ${rId})`);
             const pc = new RTCPeerConnection(configuration);
             const polite = currentUserId < rId;
 
@@ -186,23 +201,26 @@
             };
 
             pc.ontrack = event => {
-                console.log(`Received track ${event.track.kind} from ${remoteUsername}`);
-                let remoteVideo = document.getElementById(`video-${rId}`);
-                if (!remoteVideo) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'video-wrapper';
+                let remoteWrapper = document.getElementById(`wrapper-${rId}`);
+                if (!remoteWrapper) {
+                    remoteWrapper = document.createElement('div');
+                    remoteWrapper.className = 'video-wrapper';
+                    remoteWrapper.id = `wrapper-${rId}`;
+                    
                     const label = document.createElement('label');
                     label.textContent = remoteUsername;
-                    remoteVideo = document.createElement('video');
+                    
+                    const remoteVideo = document.createElement('video');
                     remoteVideo.id = `video-${rId}`;
-                    remoteVideo.className = 'remote-video';
                     remoteVideo.autoplay = true;
                     remoteVideo.playsinline = true;
-                    wrapper.appendChild(label);
-                    wrapper.appendChild(remoteVideo);
-                    remoteVideosContainer.appendChild(wrapper);
+                    
+                    remoteWrapper.appendChild(label);
+                    remoteWrapper.appendChild(remoteVideo);
+                    videoContainer.appendChild(remoteWrapper);
                 }
                 
+                const remoteVideo = document.getElementById(`video-${rId}`);
                 if (remoteVideo.srcObject !== event.streams[0]) {
                     remoteVideo.srcObject = event.streams[0];
                 }
@@ -218,7 +236,7 @@
                         'target_id': rId
                     }));
                 } catch (err) {
-                    console.error(`Negotiation error with ${remoteUsername}:`, err);
+                    console.error(err);
                 } finally {
                     pcData.makingOffer = false;
                 }
@@ -240,7 +258,6 @@
                 let pcData = peerConnections[fId];
 
                 if (signal.type === 'new-peer') {
-                    console.log(`New peer event from ${fromUsername}`);
                     if (!pcData) pcData = createPeerConnection(fId, fromUsername);
                     return;
                 }
@@ -253,10 +270,7 @@
                         (pcData.makingOffer || pc.signalingState !== "stable");
 
                     pcData.ignoreOffer = !pcData.polite && offerCollision;
-                    if (pcData.ignoreOffer) {
-                        console.log(`Collision: ignoring offer from ${fromUsername}`);
-                        return;
-                    }
+                    if (pcData.ignoreOffer) return;
 
                     await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
                     if (signal.sdp.type === "offer") {
@@ -278,12 +292,12 @@
                     if (pcData) {
                         pcData.pc.close();
                         delete peerConnections[fId];
-                        const video = document.getElementById(`video-${fId}`);
-                        if (video) video.parentElement.remove();
+                        const wrapper = document.getElementById(`wrapper-${fId}`);
+                        if (wrapper) wrapper.remove();
                     }
                 }
             } catch (err) {
-                console.error(`Signal handling error from ${fromUsername}:`, err);
+                console.error(err);
             }
         }
 
@@ -301,17 +315,13 @@
             }));
             for (let user in peerConnections) {
                 peerConnections[user].pc.close();
-                const video = document.getElementById(`video-${user}`);
-                if (video) video.parentElement.remove();
+                const wrapper = document.getElementById(`wrapper-${user}`);
+                if (wrapper) wrapper.remove();
             }
             peerConnections = {};
             startVideoButton.disabled = false;
             startAudioButton.disabled = false;
             stopCallButton.disabled = true;
-        };
-
-        chatSocket.onclose = function (event) {
-            console.error('Chat socket closed unexpectedly');
         };
     </script>
 </body>
