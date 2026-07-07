@@ -19,7 +19,7 @@ class OverdraftListAPIView(APIView):
     """
     API endpoint that allows overdrafts to be viewed.
     """
-    permission_classes = [IsAuthenticated, IsSuperUser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         agreements = CreditAgreement.objects.select_related('bank').prefetch_related('tranches',
