@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Видеозвонок: {{ room_name }}</title>
+    <!-- Подключаем Bootstrap CSS, font-awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #video-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+            gap: 8px;
+            height: calc(100vh - 80px); /* Место для кнопок внизу */
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        #remote-videos-container {
+            display: contents;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            background-color: #212529;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .local-video {
+            border: 2px solid #0d6efd;
+        }
+
+        .remote-video {
+            border: 2px solid #198754;
+        }
+
+        .video-wrapper {
+            position: relative;
+            height: 100%;
+        }
+
+        .video-wrapper label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .controls-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        }
+
+        .controls-container .btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <div class="video-wrapper">
+            <label>Вы</label>
+            <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+        </div>
+        <div id="remote-videos-container"></div>
+    </div>
+
+    <div class="controls-container">
+        <button id="start-video" class="btn btn-success" title="Включить видео"><i class="fas fa-video"></i></button>
+        <button id="start-audio" class="btn btn-info text-dark" title="Включить аудио"><i class="fas fa-microphone"></i></button>
+        <button id="stop-call" class="btn btn-danger" disabled title="Завершить вызов"><i class="fas fa-phone-slash"></i></button>
+    </div>
+
+    <script>
+        const roomName = "{{ room_name|escapejs }}";
+        const currentUserId = parseInt("{{ request.user.pk }}");
+        const currentUsername = "{{ request.user.username|escapejs }}";
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const chatSocket = new WebSocket(
+            protocol + window.location.host + '/ws/chat/' + roomName + '/'
+        );
+
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideosContainer = document.getElementById('remote-videos-container');
+        const startVideoButton = document.getElementById('start-video');
+        const startAudioButton = document.getElementById('start-audio');
+        const stopCallButton = document.getElementById('stop-call');
+
+        let localStream;
+        let peerConnections = {}; 
+        const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
+
+        chatSocket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'signal') {
+                console.log(`DEBUG: Signal from ${data.username} (ID: ${data.user_id})`, data.signal);
+                handleSignal(data.user_id, data.username, data.signal);
+            }
+        };
+
+        async function startCall(video) {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({video: video, audio: true});
+                localVideo.srcObject = localStream;
+                startVideoButton.disabled = true;
+                startAudioButton.disabled = true;
+                stopCallButton.disabled = false;
+
+                for (let userId in peerConnections) {
+                    const pc = peerConnections[userId].pc;
+                    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+                }
+
+                chatSocket.send(JSON.stringify({
+                    'type': 'signal',
+                    'signal': {'type': 'new-peer'}
+                }));
+
+            } catch (e) {
+                console.error('Error accessing media devices.', e);
+                alert('Не удалось получить доступ к камере или микрофону');
+            }
+        }
+
+        function createPeerConnection(remoteUserId, remoteUsername) {
+            const rId = parseInt(remoteUserId);
+            if (peerConnections[rId]) return peerConnections[rId];
+
+            console.log(`Creating PeerConnection for ${remoteUsername} (ID: ${rId})`);
+            const pc = new RTCPeerConnection(configuration);
+            const polite = currentUserId < rId;
+
+            const pcData = {
+                pc: pc,
+                makingOffer: false,
+                ignoreOffer: false,
+                polite: polite
+            };
+
+            pc.onicecandidate = event => {
+                if (event.candidate) {
+                    chatSocket.send(JSON.stringify({
+                        'type': 'signal',
+                        'signal': {'candidate': event.candidate},
+                        'target_id': rId
+                    }));
+                }
+            };
+
+            pc.ontrack = event => {
+                console.log(`Received track ${event.track.kind} from ${remoteUsername}`);
+                let remoteVideo = document.getElementById(`video-${rId}`);
+                if (!remoteVideo) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'video-wrapper';
+                    const label = document.createElement('label');
+                    label.textContent = remoteUsername;
+                    remoteVideo = document.createElement('video');
+                    remoteVideo.id = `video-${rId}`;
+                    remoteVideo.className = 'remote-video';
+                    remoteVideo.autoplay = true;
+                    remoteVideo.playsinline = true;
+                    wrapper.appendChild(label);
+                    wrapper.appendChild(remoteVideo);
+                    remoteVideosContainer.appendChild(wrapper);
+                }
+                
+                if (remoteVideo.srcObject !== event.streams[0]) {
+                    remoteVideo.srcObject = event.streams[0];
+                }
+            };
+
+            pc.onnegotiationneeded = async () => {
+                try {
+                    pcData.makingOffer = true;
+                    await pc.setLocalDescription();
+                    chatSocket.send(JSON.stringify({
+                        'type': 'signal',
+                        'signal': {'sdp': pc.localDescription},
+                        'target_id': rId
+                    }));
+                } catch (err) {
+                    console.error(`Negotiation error with ${remoteUsername}:`, err);
+                } finally {
+                    pcData.makingOffer = false;
+                }
+            };
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            }
+
+            peerConnections[rId] = pcData;
+            return pcData;
+        }
+
+        async function handleSignal(fromUserId, fromUsername, signal) {
+            const fId = parseInt(fromUserId);
+            if (fId === currentUserId) return; 
+
+            try {
+                let pcData = peerConnections[fId];
+
+                if (signal.type === 'new-peer') {
+                    console.log(`New peer event from ${fromUsername}`);
+                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
+                    return;
+                }
+
+                if (signal.sdp) {
+                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
+                    const pc = pcData.pc;
+
+                    const offerCollision = (signal.sdp.type === "offer") &&
+                        (pcData.makingOffer || pc.signalingState !== "stable");
+
+                    pcData.ignoreOffer = !pcData.polite && offerCollision;
+                    if (pcData.ignoreOffer) {
+                        console.log(`Collision: ignoring offer from ${fromUsername}`);
+                        return;
+                    }
+
+                    await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                    if (signal.sdp.type === "offer") {
+                        await pc.setLocalDescription();
+                        chatSocket.send(JSON.stringify({
+                            'type': 'signal',
+                            'signal': {'sdp': pc.localDescription},
+                            'target_id': fId
+                        }));
+                    }
+                } else if (signal.candidate) {
+                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
+                    try {
+                        await pcData.pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                    } catch (err) {
+                        if (!pcData.ignoreOffer) throw err;
+                    }
+                } else if (signal.type === 'bye') {
+                    if (pcData) {
+                        pcData.pc.close();
+                        delete peerConnections[fId];
+                        const video = document.getElementById(`video-${fId}`);
+                        if (video) video.parentElement.remove();
+                    }
+                }
+            } catch (err) {
+                console.error(`Signal handling error from ${fromUsername}:`, err);
+            }
+        }
+
+        startVideoButton.onclick = () => startCall(true);
+        startAudioButton.onclick = () => startCall(false);
+
+        stopCallButton.onclick = () => {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localVideo.srcObject = null;
+            }
+            chatSocket.send(JSON.stringify({
+                'type': 'signal',
+                'signal': {'type': 'bye'}
+            }));
+            for (let user in peerConnections) {
+                peerConnections[user].pc.close();
+                const video = document.getElementById(`video-${user}`);
+                if (video) video.parentElement.remove();
+            }
+            peerConnections = {};
+            startVideoButton.disabled = false;
+            startAudioButton.disabled = false;
+            stopCallButton.disabled = true;
+        };
+
+        chatSocket.onclose = function (event) {
+            console.error('Chat socket closed unexpectedly');
+        };
+    </script>
+</body>
+</html>

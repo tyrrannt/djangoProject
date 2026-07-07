@@ -112,27 +112,12 @@
             max-width: 100%;
             height: 300px;
         }
-        {% if is_mobile %}
-        header, .sidebar, footer {
-            display: none !important;
-        }
-        .content-body {
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        body {
-            background-color: #fff !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        {% endif %}
     </style>
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid p-0 {% if not is_mobile %}p-md-3{% endif %}">
-        <div class="card {% if not is_mobile %}shadow-sm{% endif %} border-0 overflow-hidden mx-auto" style="{% if not is_mobile %}max-width: 1000px;{% else %}max-width: 100%; border-radius: 0; height: 100vh;{% endif %}">
-            {% if not is_mobile %}
+    <div class="container-fluid p-0 p-md-3">
+        <div class="card shadow-sm border-0 overflow-hidden mx-auto" style="max-width: 1000px;">
             <div class="card-header bg-white border-bottom-0 p-0">
                 <div class="d-flex align-items-center pr-3">
                     <ul class="nav nav-tabs nav-fill flex-grow-1" id="chatTabs" role="tablist">
@@ -152,7 +137,6 @@
                     </button>
                 </div>
             </div>
-            {% endif %}
             
             <div class="card-body p-0">
                 <div class="tab-content" id="chatTabsContent">
