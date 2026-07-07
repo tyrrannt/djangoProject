@@ -1,14 +1,25 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from .models import CreditAgreement
 from dateutil.relativedelta import relativedelta
+
+
+class IsSuperUser(BasePermission):
+    """
+    Разрешает доступ только суперадминистраторам.
+    """
+
+    def has_permission(self, request, view):
+        # Проверяем, что пользователь авторизован и является суперпользователем
+        return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
+
 
 class OverdraftListAPIView(APIView):
     """
     API endpoint that allows overdrafts to be viewed.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSuperUser]
 
     def get(self, request):
         agreements = CreditAgreement.objects.select_related('bank').prefetch_related('tranches', 'payment_facts').all()
