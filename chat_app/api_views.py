@@ -108,6 +108,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             'username': u.username,
             'first_name': getattr(u, 'first_name', ''),
             'last_name': getattr(u, 'last_name', ''),
-            'title': getattr(u, 'title', u.username)
+            'title': getattr(u, 'title', u.username),
+            'email': getattr(u, 'work_email', getattr(u, 'email', ''))
         } for u in users]
         return Response(data)
