@@ -74,6 +74,26 @@ class ChatViewSet(viewsets.ModelViewSet):
             try:
                 user_to_add = User.objects.get(username=username)
                 chat.participants.add(user_to_add)
+
+                # Send WebSocket notification (like in the web version)
+                from asgiref.sync import async_to_sync
+                from channels.layers import get_channel_layer
+                from django.urls import reverse
+                
+                channel_layer = get_channel_layer()
+                room_url = request.build_absolute_uri(reverse('chat_app:room', args=[chat.name]))
+                message_html = f'Вас приглашают присоединиться к чату: <strong>{chat.name}</strong>. <br><a href="{room_url}" class="btn btn-xs btn-primary mt-1">Присоединиться</a>'
+                
+                async_to_sync(channel_layer.group_send)(
+                    f"user_{user_to_add.id}",
+                    {
+                        "type": "private_message",
+                        "message": message_html,
+                        "from": request.user.pk,
+                        "from_name": getattr(request.user, 'title', request.user.username)
+                    }
+                )
+
                 return Response({'status': 'success', 'user_id': user_to_add.id})
             except User.DoesNotExist:
                 return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

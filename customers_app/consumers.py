@@ -65,21 +65,25 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
 
 
 class PrivateMessageConsumer(AsyncWebsocketConsumer):
-    active_users = {}
-
-    # user.pk → channel_name
-
     async def connect(self):
         user = self.scope['user']
         if not user.is_authenticated:
             await self.close()
         else:
-            self.active_users[user.pk] = self.channel_name
+            self.user_group_name = f"user_{user.pk}"
+            await self.channel_layer.group_add(
+                self.user_group_name,
+                self.channel_name
+            )
             await self.accept()
 
     async def disconnect(self, close_code):
         user = self.scope['user']
-        self.active_users.pop(user.pk, None)
+        if user.is_authenticated and hasattr(self, 'user_group_name'):
+            await self.channel_layer.group_discard(
+                self.user_group_name,
+                self.channel_name
+            )
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -88,17 +92,15 @@ class PrivateMessageConsumer(AsyncWebsocketConsumer):
         message = data.get('message')
         sender = self.scope['user']
 
-        # ищем канал получателя
-        target_channel = self.active_users.get(int(recipient_id))
-
-        if target_channel:
-            await self.channel_layer.send(
-                target_channel,
+        if recipient_id:
+            target_group = f"user_{recipient_id}"
+            await self.channel_layer.group_send(
+                target_group,
                 {
                     "type": "private_message",
                     "message": message,
                     "from": sender.pk,
-                    "from_name": sender.title  # FIO если надо
+                    "from_name": sender.title
                 }
             )
 
