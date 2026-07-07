@@ -22,7 +22,9 @@ class OverdraftListAPIView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
 
     def get(self, request):
-        agreements = CreditAgreement.objects.select_related('bank').prefetch_related('tranches', 'payment_facts').all()
+        agreements = CreditAgreement.objects.select_related('bank').prefetch_related('tranches',
+                                                                                     'payment_facts').all().filter(
+            employee=0)
         data = []
         for a in agreements:
             total_tranches = sum(t.amount for t in a.tranches.all())
