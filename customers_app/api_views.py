@@ -163,6 +163,7 @@ class UserProfileAPIView(APIView):
                 "job": job_name,
                 "division": division_name,
                 "has_finance_access": has_finance_access,
+                "work_email_password": work_profile.work_email_password if work_profile else "",
             }
             return Response(data)
         except Exception as e:
