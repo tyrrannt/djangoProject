@@ -11,76 +11,83 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #111;
+            background-color: #000; /* Pure black to check */
             color: #fff;
             font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
             overflow: hidden;
+            position: relative;
         }
 
         #video-container {
-            flex: 1;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-content: center;
-            gap: 10px;
-            padding: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            bottom: 100px; /* Space for controls */
             overflow-y: auto;
+            background-color: #111;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
         }
 
         .video-wrapper {
+            display: inline-block;
             position: relative;
-            width: 100%;
+            width: 90%;
             max-width: 400px;
             aspect-ratio: 16 / 9;
             background-color: #222;
-            border: 2px solid #0d6efd;
+            border: 3px solid #0d6efd;
             border-radius: 12px;
             overflow: hidden;
+            margin: 10px;
+            vertical-align: top;
         }
 
         .video-wrapper label {
             position: absolute;
             top: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.8);
             color: #fff;
-            padding: 4px 8px;
+            padding: 5px 10px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 14px;
             z-index: 5;
+            font-weight: bold;
         }
 
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
         .controls-container {
-            height: 80px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background-color: #222;
+            border-top: 2px solid #444;
             display: flex;
-            justify-content: center;
+            justify-content: space-evenly;
             align-items: center;
-            gap: 15px;
-            background-color: #000;
-            border-top: 1px solid #333;
+            box-sizing: border-box;
         }
 
         .btn {
-            padding: 12px 20px;
+            padding: 15px 25px;
             border: none;
-            border-radius: 50px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 18px;
             font-weight: bold;
             color: #fff;
             background-color: #555;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .btn-success { background-color: #198754; }
@@ -91,12 +98,13 @@
         #error-log {
             position: absolute;
             top: 0; left: 0; right: 0;
-            background: rgba(255,0,0,0.8);
+            background: rgba(255,0,0,0.9);
             color: white;
-            font-size: 12px;
-            padding: 10px;
+            font-size: 14px;
+            padding: 15px;
             display: none;
             z-index: 9999;
+            word-wrap: break-word;
         }
     </style>
 </head>
@@ -106,12 +114,17 @@
         window.onerror = function(msg, url, line) {
             var el = document.getElementById('error-log');
             el.style.display = 'block';
-            el.innerHTML += msg + ' (line ' + line + ')<br>';
+            el.innerHTML += 'Error: ' + msg + ' (line ' + line + ')<br>';
             return false;
         };
+        // Alert to prove the page loaded
+        // alert("Страница видеозвонка загружена!");
     </script>
 
     <div id="video-container">
+        <!-- Add a heading to ensure text is visible -->
+        <h3 style="margin-top: 0; color: #fff;">Видеочат загружен</h3>
+        
         <div class="video-wrapper" id="local-wrapper">
             <label>Вы</label>
             <video id="localVideo" autoplay playsinline muted></video>
@@ -125,204 +138,195 @@
     </div>
 
     <script>
-        const roomName = "{{ room_name|escapejs }}";
-        const currentUserId = parseInt("{{ request.user.pk }}");
-        const currentUsername = "{{ request.user.username|escapejs }}";
-        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        
-        // Encode roomName properly for WebSocket URL to prevent SyntaxError
-        const encodedRoomName = encodeURIComponent(roomName);
-        const wsUrl = protocol + window.location.host + '/wss/chat/' + encodedRoomName + '/';
-        const chatSocket = new WebSocket(wsUrl);
+        try {
+            const roomName = "{{ room_name|escapejs }}";
+            const currentUserId = parseInt("{{ request.user.pk }}");
+            const currentUsername = "{{ request.user.username|escapejs }}";
+            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            
+            const encodedRoomName = encodeURIComponent(roomName);
+            const wsUrl = protocol + window.location.host + '/ws/chat/' + encodedRoomName + '/';
+            const chatSocket = new WebSocket(wsUrl);
 
-        const localVideo = document.getElementById('localVideo');
-        const videoContainer = document.getElementById('video-container');
-        const startVideoButton = document.getElementById('start-video');
-        const startAudioButton = document.getElementById('start-audio');
-        const stopCallButton = document.getElementById('stop-call');
+            const localVideo = document.getElementById('localVideo');
+            const videoContainer = document.getElementById('video-container');
+            const startVideoButton = document.getElementById('start-video');
+            const startAudioButton = document.getElementById('start-audio');
+            const stopCallButton = document.getElementById('stop-call');
 
-        let localStream;
-        let peerConnections = {}; 
-        const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
+            let localStream;
+            let peerConnections = {}; 
+            const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]};
 
-        chatSocket.onmessage = function (event) {
-            const data = JSON.parse(event.data);
-            if (data.type === 'signal') {
-                handleSignal(data.user_id, data.username, data.signal);
+            chatSocket.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'signal') {
+                    handleSignal(data.user_id, data.username, data.signal);
+                }
+            };
+
+            async function startCall(video) {
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({video: video, audio: true});
+                    localVideo.srcObject = localStream;
+                    startVideoButton.disabled = true;
+                    startAudioButton.disabled = true;
+                    stopCallButton.disabled = false;
+
+                    for (let userId in peerConnections) {
+                        const pc = peerConnections[userId].pc;
+                        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+                    }
+
+                    chatSocket.send(JSON.stringify({
+                        'type': 'signal',
+                        'signal': {'type': 'new-peer'}
+                    }));
+
+                } catch (e) {
+                    console.error(e);
+                    alert('Не удалось получить доступ к камере/микрофону.');
+                }
             }
-        };
 
-        async function startCall(video) {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({video: video, audio: true});
-                localVideo.srcObject = localStream;
-                startVideoButton.disabled = true;
-                startAudioButton.disabled = true;
-                stopCallButton.disabled = false;
+            function createPeerConnection(remoteUserId, remoteUsername) {
+                const rId = parseInt(remoteUserId);
+                if (peerConnections[rId]) return peerConnections[rId];
 
-                for (let userId in peerConnections) {
-                    const pc = peerConnections[userId].pc;
+                const pc = new RTCPeerConnection(configuration);
+                const polite = currentUserId < rId;
+
+                const pcData = { pc: pc, makingOffer: false, ignoreOffer: false, polite: polite };
+
+                pc.onicecandidate = event => {
+                    if (event.candidate) {
+                        chatSocket.send(JSON.stringify({
+                            'type': 'signal', 'signal': {'candidate': event.candidate}, 'target_id': rId
+                        }));
+                    }
+                };
+
+                pc.ontrack = event => {
+                    let remoteWrapper = document.getElementById(`wrapper-${rId}`);
+                    if (!remoteWrapper) {
+                        remoteWrapper = document.createElement('div');
+                        remoteWrapper.className = 'video-wrapper';
+                        remoteWrapper.id = `wrapper-${rId}`;
+                        
+                        const label = document.createElement('label');
+                        label.textContent = remoteUsername;
+                        
+                        const remoteVideo = document.createElement('video');
+                        remoteVideo.id = `video-${rId}`;
+                        remoteVideo.autoplay = true;
+                        remoteVideo.playsinline = true;
+                        
+                        remoteWrapper.appendChild(label);
+                        remoteWrapper.appendChild(remoteVideo);
+                        videoContainer.appendChild(remoteWrapper);
+                    }
+                    
+                    const remoteVideo = document.getElementById(`video-${rId}`);
+                    if (remoteVideo.srcObject !== event.streams[0]) {
+                        remoteVideo.srcObject = event.streams[0];
+                    }
+                };
+
+                pc.onnegotiationneeded = async () => {
+                    try {
+                        pcData.makingOffer = true;
+                        await pc.setLocalDescription();
+                        chatSocket.send(JSON.stringify({
+                            'type': 'signal', 'signal': {'sdp': pc.localDescription}, 'target_id': rId
+                        }));
+                    } catch (err) {
+                        console.error(err);
+                    } finally {
+                        pcData.makingOffer = false;
+                    }
+                };
+
+                if (localStream) {
                     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
                 }
 
-                chatSocket.send(JSON.stringify({
-                    'type': 'signal',
-                    'signal': {'type': 'new-peer'}
-                }));
-
-            } catch (e) {
-                console.error('Error accessing media devices.', e);
-                alert('Не удалось получить доступ к камере или микрофону. Разрешите доступ в настройках устройства.');
+                peerConnections[rId] = pcData;
+                return pcData;
             }
-        }
 
-        function createPeerConnection(remoteUserId, remoteUsername) {
-            const rId = parseInt(remoteUserId);
-            if (peerConnections[rId]) return peerConnections[rId];
+            async function handleSignal(fromUserId, fromUsername, signal) {
+                const fId = parseInt(fromUserId);
+                if (fId === currentUserId) return; 
 
-            const pc = new RTCPeerConnection(configuration);
-            const polite = currentUserId < rId;
-
-            const pcData = {
-                pc: pc,
-                makingOffer: false,
-                ignoreOffer: false,
-                polite: polite
-            };
-
-            pc.onicecandidate = event => {
-                if (event.candidate) {
-                    chatSocket.send(JSON.stringify({
-                        'type': 'signal',
-                        'signal': {'candidate': event.candidate},
-                        'target_id': rId
-                    }));
-                }
-            };
-
-            pc.ontrack = event => {
-                let remoteWrapper = document.getElementById(`wrapper-${rId}`);
-                if (!remoteWrapper) {
-                    remoteWrapper = document.createElement('div');
-                    remoteWrapper.className = 'video-wrapper';
-                    remoteWrapper.id = `wrapper-${rId}`;
-                    
-                    const label = document.createElement('label');
-                    label.textContent = remoteUsername;
-                    
-                    const remoteVideo = document.createElement('video');
-                    remoteVideo.id = `video-${rId}`;
-                    remoteVideo.autoplay = true;
-                    remoteVideo.playsinline = true;
-                    
-                    remoteWrapper.appendChild(label);
-                    remoteWrapper.appendChild(remoteVideo);
-                    videoContainer.appendChild(remoteWrapper);
-                }
-                
-                const remoteVideo = document.getElementById(`video-${rId}`);
-                if (remoteVideo.srcObject !== event.streams[0]) {
-                    remoteVideo.srcObject = event.streams[0];
-                }
-            };
-
-            pc.onnegotiationneeded = async () => {
                 try {
-                    pcData.makingOffer = true;
-                    await pc.setLocalDescription();
-                    chatSocket.send(JSON.stringify({
-                        'type': 'signal',
-                        'signal': {'sdp': pc.localDescription},
-                        'target_id': rId
-                    }));
+                    let pcData = peerConnections[fId];
+
+                    if (signal.type === 'new-peer') {
+                        if (!pcData) pcData = createPeerConnection(fId, fromUsername);
+                        return;
+                    }
+
+                    if (signal.sdp) {
+                        if (!pcData) pcData = createPeerConnection(fId, fromUsername);
+                        const pc = pcData.pc;
+
+                        const offerCollision = (signal.sdp.type === "offer") &&
+                            (pcData.makingOffer || pc.signalingState !== "stable");
+
+                        pcData.ignoreOffer = !pcData.polite && offerCollision;
+                        if (pcData.ignoreOffer) return;
+
+                        await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                        if (signal.sdp.type === "offer") {
+                            await pc.setLocalDescription();
+                            chatSocket.send(JSON.stringify({
+                                'type': 'signal', 'signal': {'sdp': pc.localDescription}, 'target_id': fId
+                            }));
+                        }
+                    } else if (signal.candidate) {
+                        if (!pcData) pcData = createPeerConnection(fId, fromUsername);
+                        try {
+                            await pcData.pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                        } catch (err) {
+                            if (!pcData.ignoreOffer) throw err;
+                        }
+                    } else if (signal.type === 'bye') {
+                        if (pcData) {
+                            pcData.pc.close();
+                            delete peerConnections[fId];
+                            const wrapper = document.getElementById(`wrapper-${fId}`);
+                            if (wrapper) wrapper.remove();
+                        }
+                    }
                 } catch (err) {
                     console.error(err);
-                } finally {
-                    pcData.makingOffer = false;
                 }
+            }
+
+            startVideoButton.onclick = () => startCall(true);
+            startAudioButton.onclick = () => startCall(false);
+
+            stopCallButton.onclick = () => {
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localVideo.srcObject = null;
+                }
+                chatSocket.send(JSON.stringify({ 'type': 'signal', 'signal': {'type': 'bye'} }));
+                for (let user in peerConnections) {
+                    peerConnections[user].pc.close();
+                    const wrapper = document.getElementById(`wrapper-${user}`);
+                    if (wrapper) wrapper.remove();
+                }
+                peerConnections = {};
+                startVideoButton.disabled = false;
+                startAudioButton.disabled = false;
+                stopCallButton.disabled = true;
             };
-
-            if (localStream) {
-                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            }
-
-            peerConnections[rId] = pcData;
-            return pcData;
+        } catch (globalError) {
+            var el = document.getElementById('error-log');
+            el.style.display = 'block';
+            el.innerHTML += 'Init error: ' + globalError + '<br>';
         }
-
-        async function handleSignal(fromUserId, fromUsername, signal) {
-            const fId = parseInt(fromUserId);
-            if (fId === currentUserId) return; 
-
-            try {
-                let pcData = peerConnections[fId];
-
-                if (signal.type === 'new-peer') {
-                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
-                    return;
-                }
-
-                if (signal.sdp) {
-                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
-                    const pc = pcData.pc;
-
-                    const offerCollision = (signal.sdp.type === "offer") &&
-                        (pcData.makingOffer || pc.signalingState !== "stable");
-
-                    pcData.ignoreOffer = !pcData.polite && offerCollision;
-                    if (pcData.ignoreOffer) return;
-
-                    await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-                    if (signal.sdp.type === "offer") {
-                        await pc.setLocalDescription();
-                        chatSocket.send(JSON.stringify({
-                            'type': 'signal',
-                            'signal': {'sdp': pc.localDescription},
-                            'target_id': fId
-                        }));
-                    }
-                } else if (signal.candidate) {
-                    if (!pcData) pcData = createPeerConnection(fId, fromUsername);
-                    try {
-                        await pcData.pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
-                    } catch (err) {
-                        if (!pcData.ignoreOffer) throw err;
-                    }
-                } else if (signal.type === 'bye') {
-                    if (pcData) {
-                        pcData.pc.close();
-                        delete peerConnections[fId];
-                        const wrapper = document.getElementById(`wrapper-${fId}`);
-                        if (wrapper) wrapper.remove();
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        startVideoButton.onclick = () => startCall(true);
-        startAudioButton.onclick = () => startCall(false);
-
-        stopCallButton.onclick = () => {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localVideo.srcObject = null;
-            }
-            chatSocket.send(JSON.stringify({
-                'type': 'signal',
-                'signal': {'type': 'bye'}
-            }));
-            for (let user in peerConnections) {
-                peerConnections[user].pc.close();
-                const wrapper = document.getElementById(`wrapper-${user}`);
-                if (wrapper) wrapper.remove();
-            }
-            peerConnections = {};
-            startVideoButton.disabled = false;
-            startAudioButton.disabled = false;
-            stopCallButton.disabled = true;
-        };
     </script>
 </body>
 </html>
