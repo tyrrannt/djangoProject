@@ -22,6 +22,7 @@ class PortalProperty(models.Model):
                                    default='ООО Авиакомпания "БАРКОЛ"')
     portal_paginator = models.IntegerField(verbose_name='Пагинация по умолчанию', default=10)
     portal_session = models.BigIntegerField(verbose_name='Длительность сессии', default=3600)
+    mobile_app_version = models.CharField(verbose_name='Версия мобильного приложения', max_length=20, blank=True, default='1.0.0')
 
     def __str__(self):
         return str(self.pk)
@@ -31,6 +32,7 @@ class PortalProperty(models.Model):
             'portal_name': self.portal_name,
             'portal_paginator': self.portal_paginator,
             'portal_session': self.portal_session,
+            'mobile_app_version': self.mobile_app_version,
         }
 
 

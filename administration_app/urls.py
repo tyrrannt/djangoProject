@@ -13,5 +13,5 @@ urlpatterns = [
     path('generate-odata/', views.generate_1c_odata_request),
     path('test-odata/', test_1c_odata_request, name='test_1c_odata_request'),
     path('get-metadata/', get_1c_metadata, name='get_1c_metadata'),
-
+    path('api/app-version/', views.get_app_version, name='get_app_version'),
 ]

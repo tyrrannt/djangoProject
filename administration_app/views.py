@@ -717,3 +717,11 @@ def get_1c_metadata(request):
         return JsonResponse(data)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+from django.http import JsonResponse
+from administration_app.models import PortalProperty
+
+def get_app_version(request):
+    prop = PortalProperty.objects.first()
+    version = prop.mobile_app_version if prop else "1.0.0"
+    return JsonResponse({"version": version, "download_url": "https://corp.barkol.ru/media/app/android/app-release.apk"})
