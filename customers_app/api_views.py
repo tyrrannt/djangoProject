@@ -366,3 +366,100 @@ class ReportCardManualCreateAPIView(APIView):
         )
         
         return Response({'success': True, 'message': 'Запись успешно добавлена'})
+
+class ReportCardManualListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = datetime.date.today()
+        min_date = today - datetime.timedelta(days=21)
+        max_date = today + datetime.timedelta(days=7)
+        
+        cards = ReportCard.objects.filter(
+            employee=user,
+            manual_input=True,
+            report_card_day__range=(min_date, max_date)
+        ).order_by('-report_card_day')
+        
+        data = []
+        for c in cards:
+            data.append({
+                'id': c.pk,
+                'date': c.report_card_day.strftime('%Y-%m-%d') if c.report_card_day else None,
+                'start_time': c.start_time.strftime('%H:%M') if c.start_time else None,
+                'end_time': c.end_time.strftime('%H:%M') if c.end_time else None,
+                'reason': c.reason_adjustment
+            })
+            
+        return Response(data)
+
+class ReportCardManualDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk, user):
+        try:
+            return ReportCard.objects.get(pk=pk, employee=user, manual_input=True)
+        except ReportCard.DoesNotExist:
+            return None
+
+    def put(self, request, pk):
+        card = self.get_object(pk, request.user)
+        if not card:
+            return Response({'error': 'Запись не найдена'}, status=status.HTTP_404_NOT_FOUND)
+            
+        data = request.data
+        day_str = data.get('date')
+        start_str = data.get('start_time')
+        end_str = data.get('end_time')
+        reason = data.get('reason')
+        
+        if not all([day_str, start_str, end_str, reason]):
+            return Response({'error': 'Все поля обязательны'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            report_date = datetime.datetime.strptime(day_str, '%Y-%m-%d').date()
+            start_t = datetime.datetime.strptime(start_str, '%H:%M').time()
+            end_t = datetime.datetime.strptime(end_str, '%H:%M').time()
+        except ValueError:
+            return Response({'error': 'Неверный формат даты или времени'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        today = datetime.date.today()
+        min_date = today - datetime.timedelta(days=21)
+        max_date = today + datetime.timedelta(days=7)
+        
+        if not (min_date <= report_date <= max_date):
+            return Response({'error': 'Запись возможна только за последние 3 недели и на 1 неделю вперед'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if start_t < datetime.time(6, 0):
+            return Response({'error': 'Время прихода не может быть раньше 06:00'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if end_t > datetime.time(21, 0):
+            return Response({'error': 'Время ухода не может быть позже 21:00'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if start_t > end_t:
+            return Response({'error': 'Время прихода не может быть позже времени ухода'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        card.report_card_day = report_date
+        card.start_time = start_t
+        card.end_time = end_t
+        card.reason_adjustment = reason
+        card.save()
+        
+        return Response({'success': True, 'message': 'Запись успешно обновлена'})
+
+    def delete(self, request, pk):
+        card = self.get_object(pk, request.user)
+        if not card:
+            return Response({'error': 'Запись не найдена'}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Optional: check date constraint for deletion as well
+        today = datetime.date.today()
+        min_date = today - datetime.timedelta(days=21)
+        max_date = today + datetime.timedelta(days=7)
+        if not (min_date <= card.report_card_day <= max_date):
+            return Response({'error': 'Невозможно удалить запись за пределами допустимого интервала'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        card.delete()
+        return Response({'success': True, 'message': 'Запись успешно удалена'})
+
