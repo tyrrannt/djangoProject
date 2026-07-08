@@ -171,6 +171,35 @@ class UserProfileAPIView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 from hrdepartment_app.hrdepartment_util import get_working_hours
+import math
+
+def format_seconds_to_hhmm(seconds):
+    try:
+        sec = float(seconds)
+        if sec < 0:
+            sec = abs(sec)
+            sign = "-"
+        else:
+            sign = ""
+        hours = math.floor(sec / 3600)
+        minutes = math.floor((sec % 3600) / 60)
+        return f"{sign}{int(hours):02d}:{int(minutes):02d}"
+    except (ValueError, TypeError):
+        return "00:00"
+
+def get_status_full_name(code):
+    mapping = {
+        "Я": "Явка",
+        "СП": "Служебная поездка",
+        "К": "Командировка",
+        "О": "Отпуск",
+        "Б": "Больничный",
+        "М": "Мед осмотр",
+        "В": "Выходной",
+        "П": "Праздник",
+        "ГО": "Гос. обязанности"
+    }
+    return mapping.get(str(code), str(code))
 
 class WorkTimeAPIView(APIView):
     """
@@ -199,20 +228,20 @@ class WorkTimeAPIView(APIView):
                     
                     if r1 <= datetime.datetime.today().date():
                         days_list.append({
-                            'date': r1.strftime('%Y-%m-%d') if hasattr(r1, 'strftime') else str(r1),
+                            'date': r1.strftime('%d.%m.%Y') if hasattr(r1, 'strftime') else str(r1),
                             'fact_start': r2.strftime('%H:%M') if r2 and hasattr(r2, 'strftime') else str(r2) if r2 else None,
                             'fact_end': r3.strftime('%H:%M') if r3 and hasattr(r3, 'strftime') else str(r3) if r3 else None,
                             'sign': str(r4) if r4 else "",
-                            'status': str(r8) if r8 else "",
-                            'total_day_time': str(r11) if r11 else "0"
+                            'status': get_status_full_name(r8) if r8 else "",
+                            'total_day_time': format_seconds_to_hhmm(r11) if r11 else "00:00"
                         })
 
             response_data = {
-                'period_start': first_day.strftime('%Y-%m-%d') if hasattr(first_day, 'strftime') else str(first_day),
-                'period_end': last_day.strftime('%Y-%m-%d') if hasattr(last_day, 'strftime') else str(last_day),
+                'period_start': first_day.strftime('%d.%m.%Y') if hasattr(first_day, 'strftime') else str(first_day),
+                'period_end': last_day.strftime('%d.%m.%Y') if hasattr(last_day, 'strftime') else str(last_day),
                 'plan_start': user_start.strftime('%H:%M') if user_start and hasattr(user_start, 'strftime') else str(user_start) if user_start else None,
                 'plan_end': user_end.strftime('%H:%M') if user_end and hasattr(user_end, 'strftime') else str(user_end) if user_end else None,
-                'total_score': str(total_score) if total_score else "0",
+                'total_score': format_seconds_to_hhmm(total_score) if total_score else "00:00",
                 'days': days_list
             }
 
