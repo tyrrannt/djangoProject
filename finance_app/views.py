@@ -439,3 +439,26 @@ class CreditTrancheDeleteView(LoginRequiredMixin, DeleteView):
         
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)
+
+class CreditPaymentUpdateView(LoginRequiredMixin, UpdateView):
+    model = CreditPaymentFact
+    form_class = CreditPaymentFactForm
+    template_name = "finance_app/overdraft_form.html"
+    
+    def get_success_url(self):
+        return reverse_lazy("finance:overdraft_detail", kwargs={"pk": self.object.credit_agreement.pk})
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["active_tab"] = "overdraft"
+        context["title"] = "Редактирование платежа"
+        return context
+
+class CreditPaymentDeleteView(LoginRequiredMixin, DeleteView):
+    model = CreditPaymentFact
+    
+    def get_success_url(self):
+        return reverse_lazy("finance:overdraft_detail", kwargs={"pk": self.object.credit_agreement.pk})
+        
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
