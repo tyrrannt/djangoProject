@@ -253,11 +253,20 @@ class WorkTimeAPIView(APIView):
                 is_current_day = (d == datetime.datetime.today().date())
                 missing_time = not fact_start_str or not fact_end_str or fact_end_str == 'по н.в.' or fact_end_str == '00:00'
                 
+                is_vacation = 'О' in stats['statuses']
+                is_sick_or_trip = any(s in stats['statuses'] for s in ['Б', 'М', 'СП', 'К'])
+                
                 if is_current_day and missing_time:
                     total_day_time_str = "Актуализация итогов"
                     sign_str = ""
                 else:
-                    delta_time = stats['time_worked'] - norm_time
+                    if is_vacation:
+                        delta_time = stats['time_worked']
+                    elif is_sick_or_trip:
+                        delta_time = 0
+                    else:
+                        delta_time = stats['time_worked'] - norm_time
+                        
                     total_delta_score += delta_time
                     sign_str = "-" if delta_time < 0 else ""
                     total_day_time_str = format_seconds_to_hhmm(delta_time)
