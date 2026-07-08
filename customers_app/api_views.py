@@ -143,6 +143,14 @@ class UserProfileAPIView(APIView):
                 if work_profile.divisions:
                     division_name = work_profile.divisions.name
 
+            experience = ""
+            if work_profile and getattr(work_profile, 'date_of_employment', None):
+                try:
+                    from administration_app.utils import get_today_data_delta
+                    experience = get_today_data_delta(work_profile.date_of_employment, 0)
+                except Exception as e:
+                    pass
+
             # Check finance access
             has_finance_access = False
             if user.is_superuser:
@@ -164,6 +172,7 @@ class UserProfileAPIView(APIView):
                 "division": division_name,
                 "has_finance_access": has_finance_access,
                 "work_email_password": work_profile.work_email_password if work_profile else "",
+                "experience": experience,
             }
             return Response(data)
         except Exception as e:
