@@ -247,14 +247,20 @@ class WorkTimeAPIView(APIView):
                 stats = daily_stats[d]
                 norm_time = get_norm_time_at_custom_day(d)
                 
+                fact_start_str = stats['fact_start'].strftime('%H:%M') if stats['fact_start'] and hasattr(stats['fact_start'], 'strftime') else str(stats['fact_start']) if stats['fact_start'] else None
+                fact_end_str = stats['fact_end'].strftime('%H:%M') if stats['fact_end'] and hasattr(stats['fact_end'], 'strftime') else str(stats['fact_end']) if stats['fact_end'] else None
+                
                 is_current_day = (d == datetime.datetime.today().date())
-                missing_time = not stats['fact_start'] or not stats['fact_end'] or stats['fact_end'] == 'по н.в.'
+                missing_time = not fact_start_str or not fact_end_str or fact_end_str == 'по н.в.' or fact_end_str == '00:00'
                 
                 if is_current_day and missing_time:
-                    delta_time = 0
+                    total_day_time_str = "Актуализация итогов"
+                    sign_str = ""
                 else:
                     delta_time = stats['time_worked'] - norm_time
                     total_delta_score += delta_time
+                    sign_str = "-" if delta_time < 0 else ""
+                    total_day_time_str = format_seconds_to_hhmm(delta_time)
                 
                 # Format statuses
                 unique_statuses = []
@@ -263,15 +269,13 @@ class WorkTimeAPIView(APIView):
                         unique_statuses.append(st)
                 status_str = ", ".join([get_status_full_name(s) for s in unique_statuses])
                 
-                sign_str = "-" if delta_time < 0 else ""
-
                 days_list.append({
                     'date': d.strftime('%d.%m.%Y'),
-                    'fact_start': stats['fact_start'].strftime('%H:%M') if stats['fact_start'] and hasattr(stats['fact_start'], 'strftime') else str(stats['fact_start']) if stats['fact_start'] else None,
-                    'fact_end': stats['fact_end'].strftime('%H:%M') if stats['fact_end'] and hasattr(stats['fact_end'], 'strftime') else str(stats['fact_end']) if stats['fact_end'] else None,
+                    'fact_start': fact_start_str,
+                    'fact_end': fact_end_str,
                     'sign': sign_str,
                     'status': status_str,
-                    'total_day_time': format_seconds_to_hhmm(delta_time)
+                    'total_day_time': total_day_time_str
                 })
 
             response_data = {
