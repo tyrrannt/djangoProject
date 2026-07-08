@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/v1/profile/', api_views.UserProfileAPIView.as_view(), name='api_profile'),
     path('api/profile/payroll/', api_views.PayrollAPIView.as_view(), name='api_payroll'),
+    path('api/profile/work-time/', api_views.WorkTimeAPIView.as_view(), name='api_work_time'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("", views.index, name="index"),

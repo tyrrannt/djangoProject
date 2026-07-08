@@ -169,3 +169,53 @@ class UserProfileAPIView(APIView):
         except Exception as e:
             logger.error(f"Error in UserProfileAPIView: {e}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from hrdepartment_app.hrdepartment_util import get_working_hours
+
+class WorkTimeAPIView(APIView):
+    """
+    API View to get working hours data for a specific year and month.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        year = request.data.get('year')
+        month = request.data.get('month')
+
+        if not year or not month:
+            return Response({'error': 'Year and month are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            report_date = datetime.datetime(year=int(year), month=int(month), day=1)
+            data_dict, total_score, first_day, last_day, user_start, user_end = get_working_hours(
+                request.user.pk, report_date
+            )
+
+            days_list = []
+            for key, rows in data_dict.items():
+                for row in rows:
+                    if len(row) < 12: continue
+                    r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12 = row[:12]
+                    
+                    if r1 <= datetime.datetime.today().date():
+                        days_list.append({
+                            'date': r1.strftime('%Y-%m-%d') if hasattr(r1, 'strftime') else str(r1),
+                            'fact_start': r2.strftime('%H:%M') if r2 and hasattr(r2, 'strftime') else str(r2) if r2 else None,
+                            'fact_end': r3.strftime('%H:%M') if r3 and hasattr(r3, 'strftime') else str(r3) if r3 else None,
+                            'sign': str(r4) if r4 else "",
+                            'status': str(r8) if r8 else "",
+                            'total_day_time': str(r11) if r11 else "0"
+                        })
+
+            response_data = {
+                'period_start': first_day.strftime('%Y-%m-%d') if hasattr(first_day, 'strftime') else str(first_day),
+                'period_end': last_day.strftime('%Y-%m-%d') if hasattr(last_day, 'strftime') else str(last_day),
+                'plan_start': user_start.strftime('%H:%M') if user_start and hasattr(user_start, 'strftime') else str(user_start) if user_start else None,
+                'plan_end': user_end.strftime('%H:%M') if user_end and hasattr(user_end, 'strftime') else str(user_end) if user_end else None,
+                'total_score': str(total_score) if total_score else "0",
+                'days': days_list
+            }
+
+            return Response(response_data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
