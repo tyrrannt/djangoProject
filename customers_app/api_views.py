@@ -308,3 +308,61 @@ class WorkTimeAPIView(APIView):
             return Response(response_data)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from rest_framework.exceptions import ValidationError
+from hrdepartment_app.models import ReportCard
+from datetime import datetime, date, timedelta, time
+
+class ReportCardManualCreateAPIView(APIView):
+    """
+    API View to manually add a ReportCard entry.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        user = request.user
+        
+        day_str = data.get('date')
+        start_str = data.get('start_time')
+        end_str = data.get('end_time')
+        reason = data.get('reason')
+        
+        if not all([day_str, start_str, end_str, reason]):
+            return Response({'error': 'Все поля (дата, время прихода/ухода, причина) обязательны'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            report_date = datetime.strptime(day_str, '%Y-%m-%d').date()
+            start_t = datetime.strptime(start_str, '%H:%M').time()
+            end_t = datetime.strptime(end_str, '%H:%M').time()
+        except ValueError:
+            return Response({'error': 'Неверный формат даты или времени'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        today = date.today()
+        min_date = today - timedelta(days=21)
+        max_date = today + timedelta(days=7)
+        
+        if not (min_date <= report_date <= max_date):
+            return Response({'error': 'Запись возможна только за последние 3 недели и на 1 неделю вперед'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if start_t < time(6, 0):
+            return Response({'error': 'Время прихода не может быть раньше 06:00'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if end_t > time(21, 0):
+            return Response({'error': 'Время ухода не может быть позже 21:00'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if start_t > end_t:
+            return Response({'error': 'Время прихода не может быть позже времени ухода'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Create record
+        ReportCard.objects.create(
+            employee=user,
+            report_card_day=report_date,
+            start_time=start_t,
+            end_time=end_t,
+            reason_adjustment=reason,
+            record_type="13", # Ручной ввод
+            manual_input=True
+        )
+        
+        return Response({'success': True, 'message': 'Запись успешно добавлена'})
