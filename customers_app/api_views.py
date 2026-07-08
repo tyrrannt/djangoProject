@@ -171,6 +171,7 @@ class UserProfileAPIView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 from hrdepartment_app.hrdepartment_util import get_working_hours
+from hrdepartment_app.models import get_norm_time_at_custom_day
 import math
 
 def format_seconds_to_hhmm(seconds):
@@ -220,28 +221,58 @@ class WorkTimeAPIView(APIView):
                 request.user.pk, report_date
             )
 
-            days_list = []
+            daily_stats = {}
             for key, rows in data_dict.items():
                 for row in rows:
                     if len(row) < 12: continue
                     r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12 = row[:12]
                     
                     if r1 <= datetime.datetime.today().date():
-                        days_list.append({
-                            'date': r1.strftime('%d.%m.%Y') if hasattr(r1, 'strftime') else str(r1),
-                            'fact_start': r2.strftime('%H:%M') if r2 and hasattr(r2, 'strftime') else str(r2) if r2 else None,
-                            'fact_end': r3.strftime('%H:%M') if r3 and hasattr(r3, 'strftime') else str(r3) if r3 else None,
-                            'sign': str(r4) if r4 else "",
-                            'status': get_status_full_name(r8) if r8 else "",
-                            'total_day_time': format_seconds_to_hhmm(r11) if r11 else "00:00"
-                        })
+                        if r1 not in daily_stats:
+                            daily_stats[r1] = {
+                                'fact_start': r2,
+                                'fact_end': r3,
+                                'statuses': [r8] if r8 else [],
+                                'time_worked': float(r11) if r11 else 0.0,
+                            }
+                        else:
+                            daily_stats[r1]['time_worked'] += float(r11) if r11 else 0.0
+                            if r8:
+                                daily_stats[r1]['statuses'].append(r8)
+
+            days_list = []
+            total_delta_score = 0
+            
+            for d in sorted(daily_stats.keys()):
+                stats = daily_stats[d]
+                norm_time = get_norm_time_at_custom_day(d)
+                delta_time = stats['time_worked'] - norm_time
+                total_delta_score += delta_time
+                
+                # Format statuses
+                unique_statuses = []
+                for st in stats['statuses']:
+                    if st not in unique_statuses:
+                        unique_statuses.append(st)
+                status_str = ", ".join([get_status_full_name(s) for s in unique_statuses])
+                
+                sign_str = "-" if delta_time < 0 else ""
+
+                days_list.append({
+                    'date': d.strftime('%d.%m.%Y'),
+                    'fact_start': stats['fact_start'].strftime('%H:%M') if stats['fact_start'] and hasattr(stats['fact_start'], 'strftime') else str(stats['fact_start']) if stats['fact_start'] else None,
+                    'fact_end': stats['fact_end'].strftime('%H:%M') if stats['fact_end'] and hasattr(stats['fact_end'], 'strftime') else str(stats['fact_end']) if stats['fact_end'] else None,
+                    'sign': sign_str,
+                    'status': status_str,
+                    'total_day_time': format_seconds_to_hhmm(delta_time)
+                })
 
             response_data = {
                 'period_start': first_day.strftime('%d.%m.%Y') if hasattr(first_day, 'strftime') else str(first_day),
                 'period_end': last_day.strftime('%d.%m.%Y') if hasattr(last_day, 'strftime') else str(last_day),
                 'plan_start': user_start.strftime('%H:%M') if user_start and hasattr(user_start, 'strftime') else str(user_start) if user_start else None,
                 'plan_end': user_end.strftime('%H:%M') if user_end and hasattr(user_end, 'strftime') else str(user_end) if user_end else None,
-                'total_score': format_seconds_to_hhmm(total_score) if total_score else "00:00",
+                'total_score': format_seconds_to_hhmm(total_delta_score),
                 'days': days_list
             }
 
