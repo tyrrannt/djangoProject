@@ -246,8 +246,15 @@ class WorkTimeAPIView(APIView):
             for d in sorted(daily_stats.keys()):
                 stats = daily_stats[d]
                 norm_time = get_norm_time_at_custom_day(d)
-                delta_time = stats['time_worked'] - norm_time
-                total_delta_score += delta_time
+                
+                is_current_day = (d == datetime.datetime.today().date())
+                missing_time = not stats['fact_start'] or not stats['fact_end'] or stats['fact_end'] == 'по н.в.'
+                
+                if is_current_day and missing_time:
+                    delta_time = 0
+                else:
+                    delta_time = stats['time_worked'] - norm_time
+                    total_delta_score += delta_time
                 
                 # Format statuses
                 unique_statuses = []
