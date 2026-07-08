@@ -8,6 +8,9 @@ from django.utils import timezone
 from .models import DataBaseUser
 from .customers_util import get_settlement_sheet, get_jsons, camel_case_to_text, get_chart_of_calculation_types, get_worked_out_by_the_workers
 import datetime
+from core import logger
+from rest_framework.exceptions import ValidationError
+from hrdepartment_app.models import ReportCard
 
 class PayrollAPIView(APIView):
     """
@@ -309,9 +312,6 @@ class WorkTimeAPIView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from rest_framework.exceptions import ValidationError
-from hrdepartment_app.models import ReportCard
-from datetime import datetime, date, timedelta, time
 
 class ReportCardManualCreateAPIView(APIView):
     """
@@ -332,23 +332,23 @@ class ReportCardManualCreateAPIView(APIView):
             return Response({'error': 'Все поля (дата, время прихода/ухода, причина) обязательны'}, status=status.HTTP_400_BAD_REQUEST)
             
         try:
-            report_date = datetime.strptime(day_str, '%Y-%m-%d').date()
-            start_t = datetime.strptime(start_str, '%H:%M').time()
-            end_t = datetime.strptime(end_str, '%H:%M').time()
+            report_date = datetime.datetime.strptime(day_str, '%Y-%m-%d').date()
+            start_t = datetime.datetime.strptime(start_str, '%H:%M').time()
+            end_t = datetime.datetime.strptime(end_str, '%H:%M').time()
         except ValueError:
             return Response({'error': 'Неверный формат даты или времени'}, status=status.HTTP_400_BAD_REQUEST)
             
-        today = date.today()
-        min_date = today - timedelta(days=21)
-        max_date = today + timedelta(days=7)
+        today = datetime.date.today()
+        min_date = today - datetime.timedelta(days=21)
+        max_date = today + datetime.timedelta(days=7)
         
         if not (min_date <= report_date <= max_date):
             return Response({'error': 'Запись возможна только за последние 3 недели и на 1 неделю вперед'}, status=status.HTTP_400_BAD_REQUEST)
             
-        if start_t < time(6, 0):
+        if start_t < datetime.time(6, 0):
             return Response({'error': 'Время прихода не может быть раньше 06:00'}, status=status.HTTP_400_BAD_REQUEST)
             
-        if end_t > time(21, 0):
+        if end_t > datetime.time(21, 0):
             return Response({'error': 'Время ухода не может быть позже 21:00'}, status=status.HTTP_400_BAD_REQUEST)
             
         if start_t > end_t:
