@@ -21,16 +21,27 @@ class AttachmentSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
+    sender_position = serializers.SerializerMethodField()
 
     attachments = AttachmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Message
-        fields = ['id', 'text', 'sender', 'sender_name', 'is_internal', 'created_at', 'attachments']
+        fields = ['id', 'text', 'sender', 'sender_name', 'sender_position', 'is_internal', 'created_at', 'attachments']
         read_only_fields = ['sender', 'is_internal', 'created_at']
 
     def get_sender_name(self, obj):
-        return f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.username
+        try:
+            title = obj.sender.get_title()
+            return title if title else obj.sender.username
+        except Exception:
+            return obj.sender.username
+
+    def get_sender_position(self, obj):
+        try:
+            return str(obj.sender.user_work_profile.job) if obj.sender.user_work_profile and obj.sender.user_work_profile.job else ""
+        except Exception:
+            return ""
 
 
 class TicketSerializer(serializers.ModelSerializer):
