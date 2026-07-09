@@ -49,10 +49,11 @@ class TicketSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
     author_name = serializers.SerializerMethodField()
     author_position = serializers.SerializerMethodField()
+    can_change_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Ticket
-        fields = ['id', 'title', 'description', 'status', 'created_at', 'messages', 'parent_ticket', 'attachments', 'author_name', 'author_position']
+        fields = ['id', 'title', 'description', 'status', 'created_at', 'messages', 'parent_ticket', 'attachments', 'author_name', 'author_position', 'can_change_status']
         read_only_fields = ['status', 'created_at']
 
     def get_author_name(self, obj):
@@ -72,3 +73,10 @@ class TicketSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         validated_data['author'] = request.user
         return super().create(validated_data)
+
+    def get_can_change_status(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        user = request.user
+        return user.is_superuser or user.groups.filter(name='Руководство').exists() or obj.responsible == user

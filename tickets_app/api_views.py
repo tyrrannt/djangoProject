@@ -42,3 +42,29 @@ class TicketViewSet(viewsets.ModelViewSet):
         
         serializer = MessageSerializer(msg)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['patch'])
+    def change_status(self, request, pk=None):
+        ticket = self.get_object()
+        user = request.user
+        
+        if not (user.is_superuser or user.groups.filter(name='Руководство').exists() or ticket.responsible == user):
+            return Response({'error': 'Нет прав для изменения статуса'}, status=status.HTTP_403_FORBIDDEN)
+            
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({'error': 'Не указан новый статус'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from .models import TicketStatus
+        valid_statuses = [s[0] for s in TicketStatus.choices]
+        if new_status not in valid_statuses:
+            return Response({'error': 'Неверный статус'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        ticket.status = new_status
+        if new_status == TicketStatus.RESOLVED:
+            from django.utils import timezone
+            ticket.resolved_at = timezone.now()
+        ticket.save(update_fields=['status', 'resolved_at'] if new_status == TicketStatus.RESOLVED else ['status'])
+        
+        serializer = self.get_serializer(ticket)
+        return Response(serializer.data)
