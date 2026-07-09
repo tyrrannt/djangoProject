@@ -6,12 +6,21 @@ from django.shortcuts import get_object_or_404
 from .models import MapSource
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 
 @login_required(login_url='/users/login/')
 def map_index(request):
     maps = MapSource.objects.filter(is_active=True)
     return render(request, 'map_viewer/index.html', {'maps': maps})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_maps_api(request):
+    maps = MapSource.objects.filter(is_active=True)
+    return JsonResponse([{'id': m.id, 'name': m.name} for m in maps], safe=False)
 
 
 @login_required(login_url='/users/login/')

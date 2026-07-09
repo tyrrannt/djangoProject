@@ -49,6 +49,7 @@ urlpatterns = [
     path('pass/', include('password_manager.urls')),
     path('api/passwords/', include('password_manager.api_urls')),
     path('map/', include('map_viewer.urls')),
+    path('api/maps/', include('map_viewer.api_urls')),
     path('flight/', include('flight_planning.urls')),
     path('finance/', include('finance_app.urls')),
     path('api/finance/', include('finance_app.api_urls')),
