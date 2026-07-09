@@ -47,11 +47,26 @@ class MessageSerializer(serializers.ModelSerializer):
 class TicketSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
     attachments = AttachmentSerializer(many=True, read_only=True)
+    author_name = serializers.SerializerMethodField()
+    author_position = serializers.SerializerMethodField()
 
     class Meta:
         model = Ticket
-        fields = ['id', 'title', 'description', 'status', 'created_at', 'messages', 'parent_ticket', 'attachments']
+        fields = ['id', 'title', 'description', 'status', 'created_at', 'messages', 'parent_ticket', 'attachments', 'author_name', 'author_position']
         read_only_fields = ['status', 'created_at']
+
+    def get_author_name(self, obj):
+        try:
+            title = obj.author.get_title()
+            return title if title else obj.author.username
+        except Exception:
+            return obj.author.username if obj.author else ""
+
+    def get_author_position(self, obj):
+        try:
+            return str(obj.author.user_work_profile.job) if obj.author and obj.author.user_work_profile and obj.author.user_work_profile.job else ""
+        except Exception:
+            return ""
 
     def create(self, validated_data):
         request = self.context.get('request')
