@@ -17,6 +17,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction, OperationalError
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -914,6 +915,11 @@ def login(request):
                 request.session['portal_paginator'] = portal_paginator
                 request.session['current_month'] = int(datetime.datetime.today().month)
                 request.session['current_year'] = int(datetime.datetime.today().year)
+
+                next_url = request.POST.get('next')
+                if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
+                    return HttpResponseRedirect(next_url)
+
                 return HttpResponseRedirect(reverse_lazy('customers_app:profile', args=(user.pk,)))
             else:
                 content['errors'] = 'Неверный логин или пароль.'

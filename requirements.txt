@@ -37,7 +37,7 @@ dill==0.4.0
 Django==5.2.12
 django-bootstrap5==24.3
 django-ckeditor-5==0.2.12
-django-debug-toolbar==4.3.0
+django-debug-toolbar==7.0.0
 django-dynamic-formsets==0.0.8
 django-redis==5.4.0
 django-stubs==5.2.8

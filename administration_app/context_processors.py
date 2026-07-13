@@ -154,6 +154,12 @@ def get_approval_oficial_memo_process(request):
     if request.user.is_anonymous:
         return {"notifications": []}
 
+    # Пытаемся получить готовые уведомления из кэша
+    cache_key = f"memo_notif_{request.user.id}"
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+
     notifications = []
 
     def add_notification(qs, icon, title, url_name, view_all_url, color="red", large=False):
@@ -186,16 +192,29 @@ def get_approval_oficial_memo_process(request):
         division_name = job.division_affiliation.name
 
         # ===== Роли (1 запрос вместо 8) =====
-        routes = BusinessProcessRoutes.objects.filter(
-            business_process_type__in=["1", "2"]
-        ).values(
-            "business_process_type",
-            "person_agreement__pk",
-            "person_clerk__pk",
-            "person_hr__pk",
-            "person_sd__pk",
-            "person_accounting__pk",
-        )
+        # routes = BusinessProcessRoutes.objects.filter(
+        #     business_process_type__in=["1", "2"]
+        # ).values(
+        #     "business_process_type",
+        #     "person_agreement__pk",
+        #     "person_clerk__pk",
+        #     "person_hr__pk",
+        #     "person_sd__pk",
+        #     "person_accounting__pk",
+        # )
+        routes = cache.get("global_bp_routes")
+        if not routes:
+            routes = list(BusinessProcessRoutes.objects.filter(
+                business_process_type__in=["1", "2"]
+            ).values(
+                "business_process_type",
+                "person_agreement__pk",
+                "person_clerk__pk",
+                "person_hr__pk",
+                "person_sd__pk",
+                "person_accounting__pk",
+            ))
+            cache.set("global_bp_routes", routes, 60 * 60 * 24)
 
         person_agreement = set()
         person_clerk = set()
@@ -340,7 +359,9 @@ def get_approval_oficial_memo_process(request):
                 "hrdepartment_app:team", "hrdepartment_app:team_list"
             )
 
-        return {"notifications": notifications}
+        result = {"notifications": notifications}
+        cache.set(cache_key, result, 60 * 5)  # Кэшируем на 5 минут
+        return result
 
     except Exception as ex:
         logger.error(ex)

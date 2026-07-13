@@ -11,6 +11,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from dateutil.rrule import DAILY
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.core.validators import FileExtensionValidator
@@ -1881,6 +1882,16 @@ class BusinessProcessRoutes(models.Model):
 
     def get_absolute_url(self):
         return reverse("hrdepartment_app:business_process_routes_list")
+
+    def save(self, *args, **kwargs):
+        # Очищаем кэш перед или после сохранения
+        cache.delete("global_bp_routes")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Очищаем кэш при удалении маршрута
+        cache.delete("global_bp_routes")
+        super().delete(*args, **kwargs)
 
 
 class OrderDescription(models.Model):
