@@ -332,7 +332,7 @@ def get_approval_oficial_memo_process(request):
             )
 
         # ===== CTO =====
-        team_qs = CreatingTeam.objects.exclude(cancellation=True)
+        team_qs = CreatingTeam.objects.exclude(cancellation=True).select_related("senior_brigade")
 
         if user.pk in person_agreement_cto or user.is_superuser:
             add_notification(

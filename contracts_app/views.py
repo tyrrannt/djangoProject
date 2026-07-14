@@ -272,8 +272,11 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             if request.user.is_anonymous:
                 return redirect(reverse('customers_app:login'))
             contract_object = self.get_object()
-            if request.user.user_access.pk <= contract_object.access.pk or request.user.is_superuser:
-                return super(ContractDetail, self).dispatch(request, *args, **kwargs)
+            # if request.user.user_access.pk <= contract_object.access.pk or request.user.is_superuser:
+            #     return super(ContractDetail, self).dispatch(request, *args, **kwargs)
+            # Используем суффикс _id вместо .access.pk
+            if request.user.user_access_id <= contract_object.access_id or request.user.is_superuser:
+                return super().dispatch(request, *args, **kwargs)
             else:
                 logger.warning(f'Пользователь {request.user} хотел получить доступ к договору {contract_object}')
                 raise PermissionDenied
@@ -281,12 +284,13 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
             return render(request, "library_app/403.html")
 
     def get_context_data(self, **kwargs):
-        context = super(ContractDetail, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         # if context.get('contract').access.level < int(self.request.user.access_level.contracts_access_view):
         # print(context.get('contract').pk)
         # Выбираем из таблицы Posts все записи относящиеся к текущему договору
-        post = Posts.objects.filter(contract_number=self.object.pk)
-        slaves = Contract.objects.filter(Q(parent_category=self.object.pk))
+        # post = Posts.objects.filter(contract_number=self.object.pk)
+        # slaves = Contract.objects.filter(Q(parent_category=self.object.pk))
+        slaves = Contract.objects.filter(parent_category_id=self.object.pk)
         # Формируем заголовок страницы и передаем в контекст
         if self.object.contract_number:
             cn = self.object.contract_number
@@ -298,10 +302,29 @@ class ContractDetail(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
         # Передаем найденные записи в контекст
         if not self.object.parent_category:
             context['not_parent'] = True
-        context['posts'] = post
+        context['posts'] = Posts.objects.filter(contract_number=self.object).select_related('responsible_person')
         context['slaves'] = slaves
         context['counteragent_docs'] = CounteragentDocuments.objects.filter(package=self.object.contract_counteragent)
         return context
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'access',
+            'type_of_document',
+            'type_of_contract',
+            'contract_counteragent'
+        ).prefetch_related(
+            'type_property',
+            'divisions',
+            'employee__user_work_profile__job',  # предзагрузка сотрудников и их должностей
+            # 'slaves' # Если у вас есть related_name='slaves' для дочерних договоров, раскомментируйте это
+        )
+
+    def get_object(self, queryset=None):
+        # Кэшируем объект, чтобы не дергать базу дважды (в dispatch и get)
+        if not hasattr(self, '_cached_object'):
+            self._cached_object = super().get_object(queryset)
+        return self._cached_object
 
 
 class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
@@ -315,7 +338,7 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
             if request.user.is_anonymous:
                 return redirect(reverse('customers_app:login'))
             contract_object = self.get_object()
-            if request.user.user_access.pk <= contract_object.access.pk:  # or request.user.is_superuser:
+            if request.user.user_access_id <= contract_object.access_id:
                 return super(ContractUpdate, self).dispatch(request, *args, **kwargs)
             else:
                 logger.warning(f'Пользователь {request.user} хотел получить доступ к договору {contract_object}')
@@ -325,16 +348,6 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
-
-    # def get_form_kwargs(self):
-    #     """
-    #     Передаем в форму текущего пользователя. В форме переопределяем метод __init__
-    #     :return: PK текущего пользователя
-    #     """
-    #     kwargs = super().get_form_kwargs()
-    #     kwargs.update({"parent": self.object.parent_category})
-    #     kwargs.update({"contragent": self.object.contract_counteragent.pk})
-    #     return kwargs
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class=self.form_class)
@@ -356,30 +369,43 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
         if form.is_valid():
 
-            # в old_instance сохраняем старые значения записи
+            # 1. Достаем старое состояние из БД (оставляем как у вас, это нужно!)
             old_instance = Contract.objects.get(pk=self.object.pk).__dict__
+
+            # 2. Подготавливаем новые данные и сохраняем их
             refreshed_form = form.save(commit=False)
             if refreshed_form.official_information == '':
                 refreshed_form.official_information = refreshed_form.doc_file
             filename = str(refreshed_form.doc_file)
-            if refreshed_form.parent_category:
-                refreshed_form.comment = filename.split('/')[-1]
-            else:
-                if refreshed_form.comment == '':
-                    refreshed_form.comment = filename.split('/')[-1]
 
+            if refreshed_form.parent_category or refreshed_form.comment == '':
+                refreshed_form.comment = filename.split('/')[-1]
+
+            # Сохраняем в БД
             refreshed_form.save()
+
             # в new_instance сохраняем новые значения записи
-            new_instance = Contract.objects.get(pk=self.object.pk).__dict__
+            new_instance = refreshed_form.__dict__
+
             # создаем генератор списка
             diffkeys = [k for k in old_instance if old_instance[k] != new_instance[k]]
             message = '<b>Запись внесена автоматически!</b> <u>Внесены изменения</u>:\n'
             for k in diffkeys:
                 if k != '_state':
                     message += f'{Contract._meta.get_field(k).verbose_name}: <strike>{old_instance[k]}</strike> -> {new_instance[k]}\n'
-            post_record = Posts(contract_number=Contract.objects.get(pk=self.object.pk), post_description=message,
-                                responsible_person=DataBaseUser.objects.get(pk=self.request.user.pk))
+
+            # post_record = Posts(contract_number=Contract.objects.get(pk=self.object.pk), post_description=message,
+            #                     responsible_person=DataBaseUser.objects.get(pk=self.request.user.pk))
+
+            # 5. Сохраняем пост без дополнительных обращений к базе (через суффикс _id)
+            post_record = Posts(
+                contract_number_id=self.object.pk,  # Вместо contract_number=Contract.objects.get(...)
+                post_description=message,
+                responsible_person_id=self.request.user.pk
+                # Вместо responsible_person=DataBaseUser.objects.get(...)
+            )
             post_record.save()
+
             return HttpResponseRedirect(reverse('contracts_app:detail', args=[self.object.pk]))
         else:
             print(f'Что то не то')
@@ -423,6 +449,12 @@ class ContractUpdate(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+    def get_object(self, queryset=None):
+        # Кэшируем объект, чтобы не дергать базу дважды (в dispatch и get)
+        if not hasattr(self, '_cached_object'):
+            self._cached_object = super().get_object(queryset)
+        return self._cached_object
 
 
 class ContractDelete(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):

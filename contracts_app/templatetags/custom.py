@@ -236,7 +236,13 @@ def has_group(user, group_name):
         Убедитесь, что в шаблоне загружены кастомные теги:
         {% load custom %}
     """
-    return user.groups.filter(name=group_name).exists()
+    # return user.groups.filter(name=group_name).exists()
+    # Если групп еще нет в памяти объекта user — достаем их разом за 1 запрос
+    if not hasattr(user, '_group_names_cache'):
+        user._group_names_cache = [group.name for group in user.groups.all()]
+
+    # Теперь все последующие проверки в шаблоне работают мгновенно из оперативки
+    return group_name in user._group_names_cache
 
 
 @register.filter(name="change_key")

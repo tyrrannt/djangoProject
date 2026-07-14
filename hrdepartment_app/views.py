@@ -787,19 +787,35 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
     ordering = "-id"
 
     def get_queryset(self):
-        qs = super(ApprovalOficialMemoProcessList, self).get_queryset()
-        if not self.request.user.is_superuser:
-            user_division = DataBaseUser.objects.get(
-                pk=self.request.user.pk
-            ).user_work_profile.divisions
-
-            qs = ApprovalOficialMemoProcess.objects.filter(
-                Q(person_agreement__user_work_profile__divisions=user_division)
-                | Q(person_distributor__user_work_profile__divisions=user_division)
-                | Q(person_executor__user_work_profile__divisions=user_division)
-                | Q(person_department_staff__user_work_profile__divisions=user_division)
+        qs = super().get_queryset().select_related(
+            'document', 'person_agreement', 'person_distributor',
+            'person_executor', 'person_department_staff'
+        )
+        user = self.request.user
+        if not user.is_superuser:
+            div_id = user.user_work_profile.divisions_id
+            qs = qs.filter(
+                Q(person_agreement__user_work_profile__divisions_id=div_id)
+                | Q(person_distributor__user_work_profile__divisions_id=div_id)
+                | Q(person_executor__user_work_profile__divisions_id=div_id)
+                | Q(person_department_staff__user_work_profile__divisions_id=div_id)
             )
         return qs
+
+        # qs = super(ApprovalOficialMemoProcessList, self).get_queryset()
+        # print(self.request.user.user_work_profile.divisions_id)
+        # if not self.request.user.is_superuser:
+        #     user_division = DataBaseUser.objects.get(
+        #         pk=self.request.user.pk
+        #     ).user_work_profile.divisions
+        #
+        #     qs = ApprovalOficialMemoProcess.objects.filter(
+        #         Q(person_agreement__user_work_profile__divisions=user_division)
+        #         | Q(person_distributor__user_work_profile__divisions=user_division)
+        #         | Q(person_executor__user_work_profile__divisions=user_division)
+        #         | Q(person_department_staff__user_work_profile__divisions=user_division)
+        #     )
+        # return qs
 
     def get(self, request, *args, **kwargs):
         # # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
@@ -851,31 +867,53 @@ class ApprovalOficialMemoProcessList(PermissionRequiredMixin, LoginRequiredMixin
         #     response = {"data": data}
         #     return JsonResponse(response)
 
-        """ 
-            "document",
-            "submit_for_approval",
-            "document_not_agreed",
-            "location_selected",
-            "process_accepted",
-            "accepted_accounting",
-            "accommodation",
-            "order",
-            "comments",  
-        """
-        query = Q()
-        if not request.user.is_superuser:
-            if request.user.user_work_profile.job.division_affiliation.pk != 1:
-                query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
-                           request.user.user_work_profile.job.division_affiliation.pk)
-        # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        # измененный вариант
+        # """
+        #     "document",
+        #     "submit_for_approval",
+        #     "document_not_agreed",
+        #     "location_selected",
+        #     "process_accepted",
+        #     "accepted_accounting",
+        #     "accommodation",
+        #     "order",
+        #     "comments",
+        # """
+        # query = Q()
+        # if not request.user.is_superuser:
+        #     if request.user.user_work_profile.job.division_affiliation.pk != 1:
+        #         query &= Q(person_executor__user_work_profile__job__division_affiliation__pk=
+        #                    request.user.user_work_profile.job.division_affiliation.pk)
+        # # Определяем, пришел ли запрос как JSON? Если да, то возвращаем JSON ответ
+        # if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        #     search_list = ['document__type_trip', 'document__title', 'person_executor__title',
+        #                    'person_agreement__title', 'person_distributor__title',
+        #                    'person_department_staff__title', 'person_accounting__title',
+        #                    'accommodation', 'order__document_number', 'document__comments',
+        #                    ]
+        #     context = ajax_search(request, self, search_list, ApprovalOficialMemoProcess, query, triger=2)
+        #     return JsonResponse(context, safe=False)
+        # return super().get(request, *args, **kwargs)
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            search_list = ['document__type_trip', 'document__title', 'person_executor__title',
-                           'person_agreement__title', 'person_distributor__title',
-                           'person_department_staff__title', 'person_accounting__title',
-                           'accommodation', 'order__document_number', 'document__comments',
-                           ]
-            context = ajax_search(request, self, search_list, ApprovalOficialMemoProcess, query, triger=2)
+            # 1. Берем базовый QuerySet, в котором УЖЕ есть все select_related и права доступа (из get_queryset)
+            base_qs = self.get_queryset()
+
+            # 2. Пустой Q-объект, в который ajax_search допишет условия текстового поиска
+            query = Q()
+
+            search_list = [
+                'document__type_trip', 'document__title', 'person_executor__title',
+                'person_agreement__title', 'person_distributor__title',
+                'person_department_staff__title', 'person_accounting__title',
+                'accommodation', 'order__document_number', 'document__comments',
+            ]
+
+            # 3. Передаем base_qs вместо ApprovalOficialMemoProcess!
+            context = ajax_search(request, self, search_list, base_qs, query, triger=2)
+
             return JsonResponse(context, safe=False)
+
+            # Обычная загрузка HTML страницы
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, *, object_list=None, **kwargs):

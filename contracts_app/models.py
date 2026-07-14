@@ -242,7 +242,10 @@ class Contract(ContractModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def get_data(self):
+        # Безопасная проверка наличия расширения
         variable = str(self.doc_file.name).split('.')
+        is_file_exists = True if len(variable) > 1 and variable[1] != '' else False
+
         try:
             return {
                 'pk': self.pk,
@@ -252,8 +255,8 @@ class Contract(ContractModel):
                 'type_of_contract': str(self.type_of_contract),
                 'subject_contract': str(self.subject_contract),
                 'contract_counteragent': str(self.contract_counteragent),
-                'is_file': True if variable[1] != '' else False,
-                'actuality': self.is_past_due,
+                'is_file': is_file_exists,
+                'actuality': getattr(self, 'is_past_due', False),
             }
         except Exception as e:
             return {

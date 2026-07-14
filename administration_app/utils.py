@@ -1027,8 +1027,13 @@ def ajax_search(request, self, field_list, model_name, query, triger=None):
                 if search:
                     query &= build_query(field, search)
 
+    # Фильтрация данных - старый вариант
+    # order_list = model_name.objects.filter(query) if query else model_name.objects.all()
+
     # Фильтрация данных
-    order_list = model_name.objects.filter(query) if query else model_name.objects.all()
+    # Проверяем: передали нам класс модели (есть objects) или готовый QuerySet (уже отфильтрованный)
+    base_qs = model_name.objects.all() if hasattr(model_name, 'objects') else model_name
+    order_list = base_qs.filter(query) if query else base_qs
 
     # Пагинация и формирование контекста
     total = order_list.count()
