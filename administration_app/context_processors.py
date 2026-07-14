@@ -155,7 +155,9 @@ def get_approval_oficial_memo_process(request):
         return {"notifications": []}
 
     # Пытаемся получить готовые уведомления из кэша
-    cache_key = f"memo_notif_{request.user.id}"
+    # Читаем текущую версию кэша (по умолчанию 1)
+    version = cache.get("memo_notif_version", 1)
+    cache_key = f"memo_notif_{request.user.id}_v{version}"
     cached_data = cache.get(cache_key)
     if cached_data is not None:
         return cached_data
@@ -360,7 +362,7 @@ def get_approval_oficial_memo_process(request):
             )
 
         result = {"notifications": notifications}
-        cache.set(cache_key, result, 60 * 5)  # Кэшируем на 5 минут
+        cache.set(cache_key, result, 60 * 60)  # Кэшируем на 5 минут
         return result
 
     except Exception as ex:

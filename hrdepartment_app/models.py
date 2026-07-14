@@ -17,7 +17,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import Q, Max
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -4092,3 +4092,20 @@ class PowerOfAttorney(models.Model):
                 raise ValidationError({
                     'number': f"Доверенность с номером {self.number} уже существует в {self.issue_date.year} году."
                 })
+
+# Сигналы сработают при сохранении или удалении любой из этих моделей
+# Сигналы сработают при сохранении или удалении любой из этих моделей
+@receiver([post_save, post_delete], sender=ApprovalOficialMemoProcess)
+@receiver([post_save, post_delete], sender=CreatingTeam)
+def invalidate_memo_notifications(sender, instance, **kwargs):
+    """
+    При изменении приказов увеличиваем глобальную версию кэша уведомлений.
+    Это мгновенно сбросит кэш для всех пользователей.
+    """
+    try:
+        # Увеличиваем версию на 1
+        cache.incr("memo_notif_version")
+    except ValueError:
+        # Если ключа еще нет в кэше, cache.incr выдаст ошибку. Создаем его.
+        cache.set("memo_notif_version", 2, timeout=None)
+
