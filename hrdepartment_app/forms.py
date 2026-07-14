@@ -190,26 +190,26 @@ class OfficialMemoAddForm(forms.ModelForm):
             if period_for < period_from:
                 raise forms.ValidationError("Дата начала не может быть больше даты окончания!")
 
-        # 3. Проверка пересечения дат для сотрудника
-        if person and period_from and period_for and person.user_work_profile.job.type_of_job == "2":
-            # Ищем существующие активные поездки сотрудника, которые пересекаются по датам
-            overlapping_memos = OfficialMemo.objects.filter(
-                person=person,
-                cancellation=False,  # Исключаем отмененные служебные записки
-                period_from__lte=period_for,  # Существующая начинается раньше или в день окончания новой
-                period_for__gte=period_from  # Существующая заканчивается позже или в день начала новой
-            )
-
-            if overlapping_memos.exists():
-                conflict_memo = overlapping_memos.first()
-                conflict_start = conflict_memo.period_from.strftime("%d.%m.%Y")
-                conflict_end = conflict_memo.period_for.strftime("%d.%m.%Y")
-
-                raise forms.ValidationError(
-                    f"Сотрудник уже находится в служебной поездке в указанный период! "
-                    f"Обнаружено пересечение с документом от {conflict_start} по {conflict_end}. "
-                    f"Пожалуйста, сместите сроки новой поездки."
-                )
+        # # 3. Проверка пересечения дат для сотрудника
+        # if person and period_from and period_for and person.user_work_profile.job.type_of_job == "2":
+        #     # Ищем существующие активные поездки сотрудника, которые пересекаются по датам
+        #     overlapping_memos = OfficialMemo.objects.filter(
+        #         person=person,
+        #         cancellation=False,  # Исключаем отмененные служебные записки
+        #         period_from__lte=period_for,  # Существующая начинается раньше или в день окончания новой
+        #         period_for__gte=period_from  # Существующая заканчивается позже или в день начала новой
+        #     )
+        #
+        #     if overlapping_memos.exists():
+        #         conflict_memo = overlapping_memos.first()
+        #         conflict_start = conflict_memo.period_from.strftime("%d.%m.%Y")
+        #         conflict_end = conflict_memo.period_for.strftime("%d.%m.%Y")
+        #
+        #         raise forms.ValidationError(
+        #             f"Сотрудник уже находится в служебной поездке в указанный период! "
+        #             f"Обнаружено пересечение с документом от {conflict_start} по {conflict_end}. "
+        #             f"Пожалуйста, сместите сроки новой поездки."
+        #         )
 
         return cleaned_data
 
