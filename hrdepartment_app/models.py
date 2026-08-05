@@ -3819,7 +3819,11 @@ class StudentAgreement(models.Model):
         decimal_places=2
     )
     work_period_years = models.PositiveSmallIntegerField(
-        verbose_name="Срок отработки (года)"
+        verbose_name="Срок отработки (года)", default=0
+    )
+
+    work_period_month = models.PositiveSmallIntegerField(
+        verbose_name="Срок отработки (месяцы)", default=0
     )
 
     # Прочее
@@ -3838,7 +3842,7 @@ class StudentAgreement(models.Model):
             return "Не указано"
 
         # Дата окончания отработки = дата договора + количество лет отработки
-        end_work_date = self.training_end_date + relativedelta(years=self.work_period_years)
+        end_work_date = self.training_end_date + relativedelta(years=self.work_period_years, months=self.work_period_month)
 
         # Текущая дата
         current_date = datetime.datetime.now().date()
@@ -3931,7 +3935,7 @@ class StudentAgreement(models.Model):
         from decimal import Decimal, ROUND_HALF_UP
 
         work_off_end_date = self.training_end_date + relativedelta(
-            years=self.work_period_years
+            years=self.work_period_years, months=self.work_period_month
         )
         total_days = (work_off_end_date - self.training_end_date).days
 

@@ -54,7 +54,7 @@
                         <h4>Дата начала обучения:&nbsp;&nbsp;&nbsp;{{ object.training_start_date }}</h4>
                         <h4>Дата окончания обучения:&nbsp;&nbsp;&nbsp;{{ object.training_start_date }}</h4>
                         <h4>Сумма обучения:&nbsp;&nbsp;&nbsp;{{ object.training_cost }} руб.</h4>
-                        <h4>Срок отработки:&nbsp;&nbsp;&nbsp;{{ object.work_period_years }} (года)</h4>
+                        <h4>Срок отработки:&nbsp;&nbsp;&nbsp;{% if object.work_period_years %}{{ object.work_period_years }} г. {% endif %} {% if object.work_period_month %}{{ object.work_period_month }} мес. {% endif %}</h4>
                         <h4>Примечание:&nbsp;&nbsp;&nbsp;{{ object.note }}</h4>
                     </div>
                 </div>

@@ -6483,7 +6483,7 @@ def training_debt_report(request):
             for agreement in agreements:
                 # Дата окончания отработки
                 work_off_end_date = agreement.training_end_date + relativedelta(
-                    years=agreement.work_period_years
+                    years=agreement.work_period_years, months=agreement.work_period_month
                 )
 
                 # Пропускаем договоры с завершённой отработкой
@@ -6522,7 +6522,7 @@ def training_debt_report(request):
                 )
 
                 # Срок отработки в месяцах (для отображения)
-                total_work_off_months = agreement.work_period_years * 12
+                total_work_off_months = (agreement.work_period_years * 12) + agreement.work_period_month
 
                 # Оставшиеся месяцы (для отображения, приблизительно)
                 if remaining_days > 0:
@@ -6591,7 +6591,7 @@ def export_training_debt_excel(request):
     active_agreements = []
     for agreement in agreements:
         work_off_end_date = agreement.training_end_date + relativedelta(
-            years=agreement.work_period_years
+            years=agreement.work_period_years, months=agreement.work_period_month
         )
         # Оставляем только договоры, где отработка ещё не завершена
         if dismissal_date < work_off_end_date:
@@ -6687,12 +6687,12 @@ def export_training_debt_excel(request):
     for agreement in agreements:
         # Дата окончания отработки
         work_off_end_date = agreement.training_end_date + relativedelta(
-            years=agreement.work_period_years
+            years=agreement.work_period_years, months=agreement.work_period_month
         )
 
         # Общий срок в днях и месяцах
         total_work_off_days = (work_off_end_date - agreement.training_end_date).days
-        total_work_off_months = agreement.work_period_years * 12
+        total_work_off_months = (agreement.work_period_years * 12) + agreement.work_period_month
 
         # Стоимость за день
         if total_work_off_days > 0:
