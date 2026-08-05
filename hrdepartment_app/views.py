@@ -6366,7 +6366,10 @@ def generate_student_agreement(request, pk):
             else:
                 remotely = ' без отрыва от работы.'
                 terms = 'В течение всего срока обучения Работнику выплачивается заработная плата в полном объёме, согласно штатному расписанию и условиям трудового договора.'
-
+        if agreement.work_period_month > 0:
+            work_period_month_in_words = f"и {agreement.work_period_month} мес. "
+        else:
+            work_period_month_in_words = ""
         context = {
             # Реквизиты договора
             'student_agreement_number': agreement.student_agreement_number,
@@ -6415,6 +6418,7 @@ def generate_student_agreement(request, pk):
             # Обязательства
             'work_period_years': agreement.work_period_years,
             'work_period_years_in_words': number_to_words(agreement.work_period_years).split()[0],  # Упрощенно
+            'work_period_month_in_words': work_period_month_in_words,
 
             # Трудовой договор
             'employment_contract': passport_data.get('employment_contract', ''),
