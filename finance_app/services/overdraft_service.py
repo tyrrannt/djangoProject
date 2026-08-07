@@ -26,7 +26,16 @@ class OverdraftCalculationService:
         cb_rates: QuerySet[CentralBankKeyRate] = CentralBankKeyRate.objects.all().order_by('-date_from')
 
         if not tranches.exists():
-            return {"daily_stats": [], "total_principal": Decimal('0.00'), "total_interest": Decimal('0.00')}
+            return {
+                "daily_stats": [],
+                "total_principal": Decimal('0.00'),
+                "total_interest": Decimal('0.00'),
+                "total_paid_interest": Decimal('0.00'),
+                "unpaid_interest": Decimal('0.00'),
+                "total_unused_commission": Decimal('0.00'),
+                "current_unused_limit": self.agreement.amount,
+                "active_tranches": []
+            }
 
         start_date = tranches.first().date
         
