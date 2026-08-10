@@ -147,6 +147,7 @@
                         <td>{{ agreement.interest_rate|floatformat:2 }}%</td>
                         <td>
                             <a href="{% url 'finance:overdraft_detail' agreement.pk %}" class="btn-primary" style="margin-right: 8px;">Калькулятор</a>
+                            <a href="{% url 'finance:overdraft_analytics' agreement.pk %}" class="btn-primary" style="background-color: #8b5cf6; margin-right: 8px;" title="Сводный отчет по эффективности">📊 Аналитика</a>
                             <a href="{% url 'finance:overdraft_update' agreement.pk %}" class="btn-primary" style="background-color: #3b82f6; margin-right: 8px;">✎ Изменить</a>
                             <a href="{% url 'finance:overdraft_delete' agreement.pk %}" class="btn-primary" style="background-color: #ef4444;" onclick="return confirm('Вы уверены?');">🗑 Удалить</a>
                         </td>

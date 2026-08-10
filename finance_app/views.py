@@ -434,6 +434,85 @@ class KeyRateDeleteView(LoginRequiredMixin, DeleteView):
     def get(self, request, *args, **kwargs):
         return self.post(request, *args, **kwargs)
 
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView
+import json
+
+class OverdraftAnalyticsView(LoginRequiredMixin, DetailView):
+    model = CreditAgreement
+    template_name = "finance_app/overdraft_analytics.html"
+    context_object_name = "agreement"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        agreement = self.object
+        service = OverdraftCalculationService(agreement)
+        
+        end_calc_date = agreement.credit_end_date or date.today()
+        if end_calc_date > date.today():
+            end_calc_date = date.today()
+            
+        result = service.calculate(end_calc_date)
+        context["calc_result"] = result
+        
+        # 1. Executive summary
+        total_interest_paid = result.get('total_paid_interest', Decimal('0.00'))
+        total_unused_commission = result.get('total_unused_commission', Decimal('0.00'))
+        unpaid_interest = result.get('unpaid_interest', Decimal('0.00'))
+        total_cost = total_interest_paid + unpaid_interest + total_unused_commission
+        
+        daily_stats = result.get('daily_stats', [])
+        total_days = len(daily_stats)
+        
+        avg_utilized = Decimal('0.00')
+        avg_utilization_pct = Decimal('0.00')
+        if total_days > 0 and agreement.amount > 0:
+            avg_utilized = sum(d['total_principal'] for d in daily_stats) / Decimal(str(total_days))
+            avg_utilization_pct = (avg_utilized / agreement.amount) * Decimal('100')
+            
+        eps = Decimal('0.00')
+        if avg_utilized > 0 and total_days > 0:
+            eps = (total_cost / avg_utilized) * Decimal(str(365/total_days)) * Decimal('100')
+            
+        context['exec_summary'] = {
+            'total_cost': round(total_cost, 2),
+            'eps': round(eps, 2),
+            'avg_utilization_pct': round(avg_utilization_pct, 2),
+            'total_unused_commission': round(total_unused_commission, 2),
+        }
+        
+        # 2. Charts Data
+        labels = []
+        used_amounts = []
+        available_amounts = []
+        
+        for d in daily_stats:
+            labels.append(d['date'].strftime('%d.%m.%Y'))
+            used = float(d['total_principal'])
+            used_amounts.append(used)
+            available_amounts.append(float(agreement.amount) - used)
+            
+        context['chart_data'] = {
+            'labels': json.dumps(labels),
+            'used': json.dumps(used_amounts),
+            'available': json.dumps(available_amounts)
+        }
+        
+        # 3. Tranche Analytics
+        tranches = list(agreement.tranches.all())
+        tranche_analytics = []
+        for t in tranches:
+            # find corresponding payments if any, or just show amount
+            tranche_analytics.append({
+                'id': t.id,
+                'date': t.date,
+                'amount': t.amount
+            })
+        # sort by amount descending for "most expensive" proxy
+        tranche_analytics.sort(key=lambda x: x['amount'], reverse=True)
+        context['tranche_analytics'] = tranche_analytics
+        context['active_tab'] = "overdraft"
+        return context
+
 class CreditTrancheUpdateView(LoginRequiredMixin, UpdateView):
     model = CreditTranche
     form_class = CreditTrancheForm

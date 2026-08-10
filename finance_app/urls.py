@@ -5,7 +5,7 @@ from finance_app.views import (
     OverdraftCreateView, OverdraftUpdateView, OverdraftDeleteView,
     CreditTrancheUpdateView, CreditTrancheDeleteView,
     CreditPaymentUpdateView, CreditPaymentDeleteView,
-    KeyRateUpdateView, KeyRateDeleteView
+    KeyRateUpdateView, KeyRateDeleteView, OverdraftAnalyticsView
 )
 
 app_name = "finance"
@@ -18,6 +18,7 @@ urlpatterns = [
     path("overdrafts/", OverdraftListView.as_view(), name="overdraft_list"),
     path("overdrafts/create/", OverdraftCreateView.as_view(), name="overdraft_create"),
     path("overdrafts/<int:pk>/", OverdraftDetailView.as_view(), name="overdraft_detail"),
+    path("overdrafts/<int:pk>/analytics/", OverdraftAnalyticsView.as_view(), name="overdraft_analytics"),
     path("overdrafts/<int:pk>/update/", OverdraftUpdateView.as_view(), name="overdraft_update"),
     path("overdrafts/<int:pk>/delete/", OverdraftDeleteView.as_view(), name="overdraft_delete"),
     path("overdrafts/tranche/<int:pk>/update/", CreditTrancheUpdateView.as_view(), name="tranche_update"),
