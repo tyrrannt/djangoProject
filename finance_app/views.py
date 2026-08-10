@@ -284,11 +284,22 @@ class OverdraftListView(LoginRequiredMixin, ListView):
             service = OverdraftCalculationService(agreement)
             result = service.calculate(today)
             total_debt += result['total_principal']
-            total_unused_limit += result['current_unused_limit']
+            
+            # Проверка, активна ли еще кредитная линия для получения траншей
+            is_active = True
+            if agreement.availability_period_end and today > agreement.availability_period_end:
+                is_active = False
+            elif agreement.credit_end_date and today > agreement.credit_end_date:
+                is_active = False
+            
+            if is_active:
+                total_unused_limit += result['current_unused_limit']
+                agreement.calculated_unused_limit = result['current_unused_limit']
+            else:
+                agreement.calculated_unused_limit = Decimal('0.00')
             
             # Сохраняем расчетные данные для вывода в таблицу
             agreement.calculated_debt = result['total_principal']
-            agreement.calculated_unused_limit = result['current_unused_limit']
             
         context['total_debt'] = total_debt
         context['total_unused_limit'] = total_unused_limit
