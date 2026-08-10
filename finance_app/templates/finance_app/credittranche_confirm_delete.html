@@ -1,0 +1,34 @@
+{% extends "customers_app/main.html" %}
+{% load static %}
+
+{% block title %}Удаление транша{% endblock %}
+
+{% block custom_css %}
+<style>
+    .finance-container { padding: 24px; background-color: #f8fafc; min-height: 100vh; font-family: 'Inter', sans-serif; }
+    .table-container { background: #ffffff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; max-width: 600px; margin: 0 auto; text-align: center; }
+    .btn-danger { background-color: #ef4444; color: white; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; text-decoration: none; font-weight: 600; }
+    .btn-danger:hover { background-color: #dc2626; color: white; text-decoration: none; }
+    .btn-secondary { background-color: #e2e8f0; color: #475569; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+    .btn-secondary:hover { background-color: #cbd5e1; color: #334155; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="finance-container">
+    <div class="table-container">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #0f172a;">Подтверждение удаления</h2>
+        <p style="font-size: 14px; color: #475569; margin-bottom: 24px;">
+            Вы уверены, что хотите удалить транш на сумму <strong>{{ object.amount }} ₽</strong> от <strong>{{ object.date|date:'d.m.Y' }}</strong>?
+            Это действие нельзя отменить.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="submit" class="btn-danger">Да, удалить</button>
+                <a href="{% url 'finance:overdraft_detail' object.credit_agreement.pk %}" class="btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

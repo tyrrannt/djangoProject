@@ -365,7 +365,13 @@ class OverdraftDetailView(LoginRequiredMixin, DetailView):
             if form.is_valid():
                 tranche = form.save(commit=False)
                 tranche.credit_agreement = agreement
-                tranche.save()
+                from django.core.exceptions import ValidationError
+                from django.contrib import messages
+                try:
+                    tranche.clean()
+                    tranche.save()
+                except ValidationError as e:
+                    messages.error(request, e.messages[0] if hasattr(e, 'messages') else str(e))
         elif 'add_payment' in request.POST:
             form = CreditPaymentFactForm(request.POST)
             if form.is_valid():

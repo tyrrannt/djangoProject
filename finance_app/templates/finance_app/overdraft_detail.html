@@ -122,6 +122,16 @@
 
 {% block content %}
 <div class="finance-container">
+    {% if messages %}
+    <div style="margin-bottom: 24px;">
+        {% for message in messages %}
+        <div style="padding: 16px; border-radius: 8px; font-weight: 500; margin-bottom: 8px; {% if message.tags == 'error' %}background-color: #fee2e2; color: #991b1b; border: 1px solid #f87171;{% elif message.tags == 'success' %}background-color: #dcfce3; color: #166534; border: 1px solid #4ade80;{% else %}background-color: #e0f2fe; color: #075985; border: 1px solid #38bdf8;{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="finance-nav">
         <a href="{% url 'finance:overdraft_list' %}" class="finance-nav-item">← Назад к списку</a>
         <a href="javascript:void(0)" class="finance-nav-item active">Расчет: Договор №{{ agreement.contract_number }}</a>
@@ -170,7 +180,7 @@
                     <span style="background: #1f497d; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; font-size: 14px;">+</span>
                     Добавить транш (Выдачу)
                 </h3>
-                <form method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
+                <form method="post" autocomplete="off" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
                     {% csrf_token %}
                     <input type="hidden" name="add_tranche" value="1">
                     <div>
@@ -192,7 +202,7 @@
                     <span style="background: #10b981; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; font-size: 14px;">+</span>
                     Внести погашение
                 </h3>
-                <form method="post" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
+                <form method="post" autocomplete="off" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; align-items: end;">
                     {% csrf_token %}
                     <input type="hidden" name="add_payment" value="1">
                     <div>
@@ -310,9 +320,9 @@
     <div class="table-container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2 style="font-size: 18px; font-weight: 700;">Детализация по дням</h2>
-            <form method="get" style="display: flex; gap: 8px; align-items: center;">
+            <form method="get" autocomplete="off" style="display: flex; gap: 8px; align-items: center;">
                 <label style="font-size: 14px;">Рассчитать на дату:</label>
-                <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}" style="width: 150px;">
+                <input type="date" name="end_date" autocomplete="off" class="form-control" value="{{ end_date|date:'Y-m-d' }}" style="width: 150px;">
                 <button type="submit" class="btn-primary" style="padding: 6px 12px;">Применить</button>
             </form>
         </div>

@@ -529,6 +529,8 @@ class SyncService:
                     "amount": fc.cost,
                     "interest_rate": 15.50,  # Заглушка по умолчанию
                     "term_months": term if term > 0 else 12,
+                    "credit_end_date": fc.end_date,
+                    "availability_period_end": fc.end_date,
                     "remaining_debt": fc.cost,
                     "employee": fc.employee,
                 }

@@ -187,7 +187,8 @@ class CreditAgreementAdmin(ModelAdmin):
         "bank",
         "amount",
         "interest_rate",
-        "term_months",
+        "credit_end_date",
+        "availability_period_end",
         "tranche_repayment_days",
         "remaining_debt",
     )

@@ -91,7 +91,7 @@ class ReportService:
 
         elif report_type == "credits_registry":
             title = "Реестр кредитов и займов"
-            headers = ["Банк", "Номер договора", "Дата договора", "Сумма кредита", "Ставка (%)", "Срок (мес)", "Остаток долга", "Ответственный"]
+            headers = ["Банк", "Номер договора", "Дата договора", "Сумма кредита", "Ставка (%)", "Дата окончания", "Остаток долга", "Ответственный"]
             for cr in credits_qs.select_related("bank", "employee"):
                 rows.append([
                     cr.bank.short_name,
@@ -99,7 +99,7 @@ class ReportService:
                     cr.contract_date.strftime("%d.%m.%Y") if cr.contract_date else "",
                     float(cr.amount),
                     float(cr.interest_rate),
-                    cr.term_months,
+                    cr.credit_end_date.strftime("%d.%m.%Y") if cr.credit_end_date else (cr.term_months or ""),
                     float(cr.remaining_debt),
                     cr.employee.get_full_name() or cr.employee.username if cr.employee else ""
                 ])

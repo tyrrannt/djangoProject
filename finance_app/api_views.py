@@ -31,7 +31,7 @@ class OverdraftListAPIView(APIView):
             total_payments = sum(p.amount for p in a.payment_facts.all() if p.payment_type == 'principal')
             used = total_tranches - total_payments
             available = a.amount - used
-            end_date = a.contract_date + relativedelta(months=a.term_months)
+            end_date = a.credit_end_date if a.credit_end_date else (a.contract_date + relativedelta(months=a.term_months if a.term_months else 0))
             data.append({
                 "id": a.id,
                 "bank": a.bank.short_name if a.bank else "Неизвестный банк",

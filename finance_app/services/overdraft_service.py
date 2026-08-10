@@ -27,8 +27,8 @@ class OverdraftCalculationService:
 
         if not tranches.exists():
             return {
-                "daily_stats": [],
-                "total_principal": Decimal('0.00'),
+                "daily_stats": [], 
+                "total_principal": Decimal('0.00'), 
                 "total_interest": Decimal('0.00'),
                 "total_paid_interest": Decimal('0.00'),
                 "unpaid_interest": Decimal('0.00'),

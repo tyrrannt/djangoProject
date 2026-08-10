@@ -324,7 +324,17 @@ class CreditAgreement(models.Model):
     interest_rate = models.DecimalField(verbose_name="Процентная ставка", max_digits=5, decimal_places=2)
     has_unused_limit_commission = models.BooleanField(verbose_name="Есть комиссия за неиспользованный лимит", default=False)
     unused_limit_commission_rate = models.DecimalField(verbose_name="Ставка комиссии за неиспользованный лимит (%)", max_digits=5, decimal_places=2, default=1.00)
-    term_months = models.IntegerField(verbose_name="Срок кредита (в месяцах)")
+    term_months = models.IntegerField(verbose_name="Срок кредита (в месяцах)", blank=True, null=True)
+    credit_end_date = models.DateField(
+        verbose_name="Общий срок кредитования", 
+        blank=True, null=True, 
+        help_text="Дата включительно, по которую будет рассчитываться срок кредитования, после которой овердрафт считается закрытым."
+    )
+    availability_period_end = models.DateField(
+        verbose_name="Последний день периода обращения", 
+        blank=True, null=True, 
+        help_text="Дата, по которую можно получать транши. После неё остается только обязательство по погашению ранее выданных."
+    )
     tranche_repayment_days = models.IntegerField(verbose_name="Дней на погашение транша", default=45)
     remaining_debt = models.DecimalField(verbose_name="Остаток долга", max_digits=15, decimal_places=2, default=0.00)
     employee = models.ForeignKey(
@@ -341,6 +351,13 @@ class CreditAgreement(models.Model):
         verbose_name = "Кредитный договор"
         verbose_name_plural = "Кредитные договоры"
         ordering = ["-contract_date"]
+
+    def save(self, *args, **kwargs):
+        if self.contract_date and self.credit_end_date:
+            # Автоматический расчет срока кредита в месяцах
+            days = (self.credit_end_date - self.contract_date).days
+            self.term_months = max(round(days / 30.436875), 0) if days > 0 else 0
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"Кредит № {self.contract_number} в {self.bank.short_name}"
@@ -519,6 +536,14 @@ class CreditTranche(models.Model):
         verbose_name = "Транш кредита"
         verbose_name_plural = "Транши кредитов"
         ordering = ["date"]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        super().clean()
+        if self.date and self.credit_agreement_id and self.credit_agreement.availability_period_end:
+            if self.date > self.credit_agreement.availability_period_end:
+                formatted_date = self.credit_agreement.availability_period_end.strftime('%d.%m.%Y')
+                raise ValidationError({"date": f"Дата транша не может быть позже последнего дня периода обращения ({formatted_date})."})
 
     def __str__(self) -> str:
         return f"Транш на {self.amount} от {self.date} по {self.credit_agreement}"
