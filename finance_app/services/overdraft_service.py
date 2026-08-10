@@ -141,6 +141,7 @@ class OverdraftCalculationService:
                 'total_daily_interest': Decimal('0.00'),
                 'unused_limit': unused_limit,
                 'daily_unused_commission': daily_unused_commission,
+                'applicable_rate': total_rate_percent,
                 'tranches': []
             }
             

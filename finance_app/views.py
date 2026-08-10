@@ -473,11 +473,16 @@ class OverdraftAnalyticsView(LoginRequiredMixin, DetailView):
         if avg_utilized > 0 and total_days > 0:
             eps = (total_cost / avg_utilized) * Decimal(str(365/total_days)) * Decimal('100')
             
+        avg_base_rate = Decimal('0.00')
+        if total_days > 0:
+            avg_base_rate = sum(d.get('applicable_rate', agreement.interest_rate) for d in daily_stats) / Decimal(str(total_days))
+
         context['exec_summary'] = {
             'total_cost': round(total_cost, 2),
             'eps': round(eps, 2),
             'avg_utilization_pct': round(avg_utilization_pct, 2),
             'total_unused_commission': round(total_unused_commission, 2),
+            'avg_base_rate': round(avg_base_rate, 2),
         }
         
         # 2. Charts Data

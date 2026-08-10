@@ -151,26 +151,26 @@
     <!-- Вкладка 1: Executive Summary -->
     <div id="summary" class="tab-content active">
         <div class="metrics-grid">
-            <div class="metric-box red">
-                <div class="metric-label">Абсолютная стоимость</div>
+            <div class="metric-box red" title="Абсолютная стоимость — это общая сумма реальных переплат банку. Включает в себя все уплаченные проценты по выданным траншам и все комиссии за резервирование неиспользованного лимита за весь период действия кредитной линии.">
+                <div class="metric-label">Абсолютная стоимость 🛈</div>
                 <div class="metric-value">{{ exec_summary.total_cost|floatformat:2 }} ₽</div>
                 <div class="metric-sub">Сумма всех переплат (проценты + комиссии)</div>
             </div>
             
-            <div class="metric-box {% if exec_summary.eps > agreement.interest_rate|add:'2' %}red{% else %}green{% endif %}">
-                <div class="metric-label">Эффективная ставка (ЭПС)</div>
+            <div class="metric-box {% if exec_summary.eps > exec_summary.avg_base_rate|add:'2' %}red{% else %}green{% endif %}" title="Эффективная процентная ставка (ЭПС) — это реальная годовая ставка, рассчитанная с учетом того, какой объем средств фактически находился в обороте компании. Если компания берет большой лимит, но использует малую часть, ЭПС будет значительно выше номинальной ставки, так как проценты и комиссии распределяются на меньший объем 'работающих' денег.">
+                <div class="metric-label">Эффективная ставка (ЭПС) 🛈</div>
                 <div class="metric-value">{{ exec_summary.eps|floatformat:2 }}%</div>
                 <div class="metric-sub">Реальная стоимость % годовых с учетом утилизации</div>
             </div>
             
-            <div class="metric-box {% if exec_summary.avg_utilization_pct < 30 %}yellow{% else %}blue{% endif %}">
-                <div class="metric-label">Средняя утилизация</div>
+            <div class="metric-box {% if exec_summary.avg_utilization_pct < 30 %}yellow{% else %}blue{% endif %}" title="Средняя утилизация показывает, насколько эффективно бизнес использует выделенный банком кредитный лимит. Если этот показатель низкий (например, менее 50%), значит, компания зарезервировала избыточный кредитный лимит, который не работает на бизнес, но может облагаться комиссией.">
+                <div class="metric-label">Средняя утилизация 🛈</div>
                 <div class="metric-value">{{ exec_summary.avg_utilization_pct|floatformat:1 }}%</div>
                 <div class="metric-sub">Процент использования выделенного лимита</div>
             </div>
             
-            <div class="metric-box {% if exec_summary.total_unused_commission > 0 %}red{% else %}green{% endif %}">
-                <div class="metric-label">Цена "простоя"</div>
+            <div class="metric-box {% if exec_summary.total_unused_commission > 0 %}red{% else %}green{% endif %}" title="Цена 'простоя' — это прямые убытки компании, выплаченные банку в виде комиссии за неиспользованный кредитный лимит. Это плата исключительно за то, что деньги были забронированы за компанией, но так и не были взяты в работу.">
+                <div class="metric-label">Цена "простоя" 🛈</div>
                 <div class="metric-value">{{ exec_summary.total_unused_commission|floatformat:2 }} ₽</div>
                 <div class="metric-sub">Уплачено банку за неиспользованный лимит</div>
             </div>
@@ -178,14 +178,24 @@
         
         <div class="glass-card">
             <h3 style="margin-top: 0; color: #1e293b; font-size: 16px;">Резюме эффективности</h3>
-            <p style="color: #475569; line-height: 1.6; margin-bottom: 0;">
-                Кредитная линия была задействована в среднем на <strong>{{ exec_summary.avg_utilization_pct|floatformat:1 }}%</strong>. 
-                Базовая ставка по договору составляет <strong>{{ agreement.interest_rate|floatformat:2 }}%</strong>, однако с учетом эффективности использования средств 
-                фактическая стоимость этих денег для компании составила <strong>{{ exec_summary.eps|floatformat:2 }}%</strong> годовых.
+            <div style="color: #475569; line-height: 1.6; margin-bottom: 0;">
+                <p style="margin-top: 0;">
+                    Кредитная линия была задействована в среднем на <strong>{{ exec_summary.avg_utilization_pct|floatformat:1 }}%</strong>. 
+                    Номинальная ставка по данному договору состоит из плавающей ключевой ставки ЦБ и фиксированной маржи банка (<strong>{{ agreement.interest_rate|floatformat:2 }}%</strong>). 
+                    Средневзвешенная номинальная ставка за период составила <strong>{{ exec_summary.avg_base_rate|floatformat:2 }}%</strong>.
+                </p>
+                <p>
+                    Однако, с учетом эффективности использования средств (процента утилизации и дополнительных комиссий), 
+                    фактическая стоимость этих денег для компании (Эффективная ставка) составила <strong>{{ exec_summary.eps|floatformat:2 }}%</strong> годовых.
+                </p>
                 {% if exec_summary.total_unused_commission > 0 %}
-                Кроме того, компания понесла убыток в размере <strong>{{ exec_summary.total_unused_commission|floatformat:2 }} ₽</strong> исключительно из-за резерва средств.
+                <p style="margin-bottom: 0;">
+                    <span style="color: #dc2626; font-weight: 600;">Внимание:</span> Компания понесла прямой убыток в размере <strong>{{ exec_summary.total_unused_commission|floatformat:2 }} ₽</strong> 
+                    исключительно в качестве платы за резерв (комиссия за неиспользованный лимит). Высокий показатель цены "простоя" 
+                    вместе с низкой утилизацией свидетельствует о переизбытке запрошенного кредитного лимита.
+                </p>
                 {% endif %}
-            </p>
+            </div>
         </div>
     </div>
 
