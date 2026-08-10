@@ -536,6 +536,8 @@ class ApprovalOficialMemoProcessUpdateForm(forms.ModelForm):
             "travel_expense",
             "accommodation_expense",
             "other_expense",
+            "date_of_arrival",
+            "date_of_departure"
         )
 
     def __init__(self, *args, **kwargs):

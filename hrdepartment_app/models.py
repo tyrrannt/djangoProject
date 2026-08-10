@@ -643,6 +643,7 @@ class PlaceProductionActivity(models.Model):
         default="",
     )
     in_planning = models.BooleanField(verbose_name='Используется в планировании', default=False)
+    ticket_control = models.BooleanField(verbose_name='Вести контроль билетов', default=False)
 
     def __str__(self):
         return str(self.name)
@@ -1092,6 +1093,18 @@ class ApprovalOficialMemoProcess(ApprovalProcess):
         blank=True,
         null=True,
     )
+    date_of_arrival = models.DateField(
+        verbose_name="Дата приезда на МПД", null=True, blank=True
+    )
+    date_of_departure = models.DateField(
+        verbose_name="Дата отъезда с МПД", null=True, blank=True
+    )
+
+    @property
+    def needs_ticket_control(self):
+        if self.document:
+            return self.document.place_production_activity.filter(ticket_control=True).exists()
+        return False
 
     objects = ApprovalOficialMemoProcessManager()
 

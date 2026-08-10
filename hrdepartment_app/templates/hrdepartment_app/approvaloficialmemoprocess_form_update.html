@@ -268,7 +268,7 @@
                                     <div class="form-group row align-items-center pb-3"
                                          style="border:1px solid #a6b3ff;">
                                         <div class="row">
-                                            <div class="col-sm-12 col-lg-4">
+                                            <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
                                                        for="id_person_clerk">Делопроизводитель:</label>
                                                 <div class="col">
@@ -285,7 +285,7 @@
                                                     {% endif %}
                                                 </div>
                                             </div>
-                                            <div class="col-sm-12 col-lg-4">
+                                            <div class="col-sm-12 col-lg-2">
                                                 <label class="col"
                                                        for="id_originals_received">Получены оригиналы:</label>
                                                 {% if user not in list_clerk %}
@@ -310,7 +310,31 @@
                                                     {% endif %}
                                                 {% endif %}
                                             </div>
+
+                                            {% if object.needs_ticket_control %}
                                             <div class="col-sm-12 col-lg-4">
+                                                <div class="row align-items-center" style="border: 2px solid #a6b3ff; border-radius: 5px; padding: 10px; margin: 0;">
+                                                    <div class="col-sm-12 col-lg-6">
+                                                        <label class="col p-0"
+                                                               for="id_date_of_arrival">Дата приезда:</label>
+                                                        <input type="date" id="id_date_of_arrival"
+                                                               class="form-control form-control-modern"
+                                                               name="date_of_arrival"
+                                                               value="{{ object.date_of_arrival | date:'c' }}"/>
+                                                    </div>
+                                                    <div class="col-sm-12 col-lg-6">
+                                                        <label class="col p-0"
+                                                               for="id_date_of_departure">Дата отъезда:</label>
+                                                        <input type="date" id="id_date_of_departure"
+                                                               class="form-control form-control-modern"
+                                                               name="date_of_departure"
+                                                               value="{{ object.date_of_departure | date:'c' }}"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+
+                                            <div class="col-sm-12 col-lg-3">
                                                 <label class="col"
                                                        for="id_date_receipt_original">Дата получения
                                                     документов:</label>
