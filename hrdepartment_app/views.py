@@ -51,7 +51,7 @@ from administration_app.utils import (
     get_jsons_data,
     ending_day,
     get_history,
-    get_year_interval, ajax_search, send_notification,
+    get_year_interval, ajax_search, send_notification, get_year_suffix, get_month_suffix,
 )
 from contracts_app.models import Contract
 from contracts_app.templatetags.custom import FIO_format
@@ -6416,9 +6416,8 @@ def generate_student_agreement(request, pk):
             'cost_kopecks_suffix': kopecks_suffix,
 
             # Обязательства
-            'work_period_years': agreement.work_period_years,
-            'work_period_years_in_words': number_to_words(agreement.work_period_years).split()[0],  # Упрощенно
-            'work_period_month_in_words': work_period_month_in_words,
+            'work_period_years_in_words': f"{agreement.work_period_years} ({number_to_words(agreement.work_period_years).split()[0]}) {get_year_suffix(agreement.work_period_years)} ",  # Упрощенно
+            'work_period_month_in_words': f"{work_period_month_in_words} {get_month_suffix(work_period_month_in_words)}",
 
             # Трудовой договор
             'employment_contract': passport_data.get('employment_contract', ''),
