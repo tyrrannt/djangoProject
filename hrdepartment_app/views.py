@@ -6367,11 +6367,13 @@ def generate_student_agreement(request, pk):
                 remotely = ' без отрыва от работы.'
                 terms = 'В течение всего срока обучения Работнику выплачивается заработная плата в полном объёме, согласно штатному расписанию и условиям трудового договора.'
         if agreement.work_period_month > 0:
-            work_period_month_in_words = f"и {agreement.work_period_month} {get_month_suffix(agreement.work_period_month)} "
+            work_period_month_in_words = f"{agreement.work_period_month} {get_month_suffix(agreement.work_period_month)} "
         else:
             work_period_month_in_words = ""
         if agreement.work_period_years > 0:
             work_period_years_in_words = f"{agreement.work_period_years} ({number_to_words(agreement.work_period_years).split()[0]}) {get_year_suffix(agreement.work_period_years)}"
+            if work_period_month_in_words:
+                work_period_month_in_words = "и " + work_period_month_in_words
         else:
             work_period_years_in_words = ""
         context = {
