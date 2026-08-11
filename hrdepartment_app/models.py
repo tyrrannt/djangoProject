@@ -3851,7 +3851,7 @@ class StudentAgreement(models.Model):
         """
         Вычисляет оставшееся время отработки в формате "X лет Y месяцев"
         """
-        if not self.training_end_date or not self.work_period_years:
+        if not self.training_end_date or not self.work_period_years or not self.work_period_month:
             return "Не указано"
 
         # Дата окончания отработки = дата договора + количество лет отработки
