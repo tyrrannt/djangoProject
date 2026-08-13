@@ -7108,7 +7108,7 @@ class PSOMemoReportView(LoginRequiredMixin, View):
             # Если 0, то ставим 1.
             days_count = (departure - arrival).days
 
-            date_str = f"с {arrival.strftime('%d.%m.%Y')} по {departure.strftime('%d.%m.%Y')} на {pluralize_days(days_count)}"
+            date_str = f"с {arrival.strftime('%d.%m.%Y')} по {departure.strftime('%d.%m.%Y')} на {pluralize_days(days_count+1)}"
 
             emp = p.document.person
             f_initial = f"{emp.first_name[0]}." if emp.first_name else ""
