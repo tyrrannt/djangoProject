@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.generic import TemplateView
 from datetime import datetime, date, timedelta
-
+from django.utils.encoding import escape_uri_path
 import csv
 from calendar import monthrange
 from collections import defaultdict
@@ -7075,41 +7075,64 @@ class PSOMemoReportView(LoginRequiredMixin, View):
         except ValueError:
             return HttpResponse("Некорректный формат даты", status=400)
 
-        processes = ApprovalOficialMemoProcess.objects.select_related('document', 'document__person').filter(
+        # Выбираем процессы
+        processes = ApprovalOficialMemoProcess.objects.select_related('document', 'document__person').prefetch_related(
+            'document__place_production_activity'
+        ).filter(
             date_of_arrival__lte=end_date,
             date_of_departure__gte=start_date,
             document__place_production_activity__ticket_control=True,
             cancellation=False
         ).distinct().order_by('document__person__last_name', 'document__person__first_name')
 
-        emp_dict = {}
+        def pluralize_days(count):
+            if 11 <= count % 100 <= 19:
+                return f"{count} дней"
+            if count % 10 == 1:
+                return f"{count} день"
+            if 2 <= count % 10 <= 4:
+                return f"{count} дня"
+            return f"{count} дней"
+
+        # Группировка по МПД, затем по сотруднику
+        places_dict = {}
         for p in processes:
-            emp = p.document.person
-            # Используем ФИО в требуемом формате (Фамилия И.О.)
-            f_initial = f"{emp.first_name[0]}." if emp.first_name else ""
-            s_initial = f"{emp.surname[0]}." if emp.surname else ""
-            name = f"{emp.last_name} {f_initial}{s_initial}"
-
-            if name not in emp_dict:
-                emp_dict[name] = []
-
             if not p.date_of_arrival or not p.date_of_departure:
                 continue
 
             arrival = max(start_date, p.date_of_arrival)
             departure = min(end_date, p.date_of_departure)
 
-            if arrival.month == departure.month:
-                if arrival.day == departure.day:
-                    date_str = f"{arrival.day:02d}.{arrival.month:02d}.{arrival.year}"
-                else:
-                    date_str = f"{arrival.day:02d}-{departure.day:02d}.{arrival.month:02d}.{arrival.year}"
-            else:
-                date_str = f"{arrival.strftime('%d.%m.%Y')} - {departure.strftime('%d.%m.%Y')}"
+            # Подсчет количества дней. Если поездка внутри месяца, считаем дни.
+            # Если пользователь просил 7 дней для 13-20, значит это (departure - arrival).days
+            # Если 0, то ставим 1.
+            days_count = max(1, (departure - arrival).days)
+            if (departure - arrival).days == 7:  # Пользователь просил 7 для 13-20
+                pass
 
-            emp_dict[name].append(date_str)
+            date_str = f"{arrival.strftime('%d.%m.%Y')}-{departure.strftime('%d.%m.%Y')}  {pluralize_days(days_count)}"
 
-        employees = [{"name": k, "dates": ", ".join(v)} for k, v in emp_dict.items()]
+            emp = p.document.person
+            f_initial = f"{emp.first_name[0]}." if emp.first_name else ""
+            s_initial = f"{emp.surname[0]}." if emp.surname else ""
+            name = f"{emp.last_name} {f_initial}{s_initial}"
+
+            # Для каждого места назначения, где нужен контроль билетов
+            for place in p.document.place_production_activity.all():
+                if place.ticket_control:
+                    if place.name not in places_dict:
+                        places_dict[place.name] = {}
+                    if name not in places_dict[place.name]:
+                        places_dict[place.name][name] = []
+                    places_dict[place.name][name].append(date_str)
+
+        places_list = []
+        for place_name, emp_data in places_dict.items():
+            emp_list = [{"name": k, "dates": ", ".join(v)} for k, v in emp_data.items()]
+            places_list.append({
+                "name": place_name,
+                "employees": emp_list
+            })
 
         try:
             doc_path = pathlib.Path(settings.BASE_DIR) / "static/DocxTemplates/pso_memo.docx"
@@ -7117,7 +7140,7 @@ class PSOMemoReportView(LoginRequiredMixin, View):
             context = {
                 "start_date": start_date.strftime('%d.%m.%Y'),
                 "end_date": end_date.strftime('%d.%m.%Y'),
-                "employees": employees
+                "places": places_list
             }
             doc.render(context)
 
@@ -7129,7 +7152,8 @@ class PSOMemoReportView(LoginRequiredMixin, View):
                 file_stream.read(),
                 content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
-            response['Content-Disposition'] = f'attachment; filename="Служ.записка ПСО {month}-{year}.docx"'
+            filename = f"Служ.записка ПСО {month}-{year}.docx"
+            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
             return response
         except Exception as e:
             logger.exception("Ошибка формирования отчета ПСО")
