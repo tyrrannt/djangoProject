@@ -402,91 +402,186 @@ class MedicalOrganisation(models.Model):
             "address": self.address,
         }
 
+def Med(obj_model, filepath, filename_pmo, filename_po, request_user_id):
+    # Преобразуем в словарь для быстрого и безопасного поиска (O(1))
+    inspection_type = {
+        "1": "Предварительный",
+        "2": "Периодический",
+        "3": "Внеплановый",
+    }
 
-def Med(obj_model, filepath, filename_pmo, filename_po, request):
-    inspection_type = [
-        ("1", "Предварительный"),
-        ("2", "Периодический"),
-        ("3", "Внеплановый"),
-    ]
-
-    if obj_model.person.user_work_profile.job.division_affiliation.pk == 2:
-        doc = DocxTemplate(
-            pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/med.docx")
-        )
-    else:
-        doc = DocxTemplate(
-            pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/med2.docx")
-        )
-    doc2 = DocxTemplate(
-        pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/med3.docx")
-    )
-    if obj_model.person.gender == "male":
-        gender = "муж."
-    else:
-        gender = "жен."
     try:
-        harmful = list()
-        for items in obj_model.harmful.iterator():
-            harmful.append(f"{items.code}: {items.name}")
-        if obj_model.person.user_work_profile.divisions.address:
-            division = str(obj_model.person.user_work_profile.divisions)
-            div_address = (
-                f"Адрес обособленного подразделения места производственной деятельности {division[6:]} "
-                f"(далее – {obj_model.person.user_work_profile.divisions}): "
-                f"{obj_model.person.user_work_profile.divisions.address}."
-            )
+        # Проверяем цепочку связей до division_affiliation безопасно
+        work_profile = getattr(obj_model.person, 'user_work_profile', None)
+        job = getattr(work_profile, 'job', None)
+        division_affiliation = getattr(job, 'division_affiliation', None)
+
+        if division_affiliation and division_affiliation.pk == 2:
+            doc_path = "static/DocxTemplates/med.docx"
         else:
-            div_address = ""
+            doc_path = "static/DocxTemplates/med2.docx"
+
+        doc = DocxTemplate(pathlib.Path(BASE_DIR) / doc_path)
+        doc2 = DocxTemplate(pathlib.Path(BASE_DIR) / "static/DocxTemplates/med3.docx")
+
+        gender = "муж." if obj_model.person.gender == "male" else "жен."
+
+        # Безопасное формирование списка вредных факторов
+        harmful = [f"{item.code}: {item.name}" for item in obj_model.harmful.iterator()]
+
+        div_address = ""
+        divisions = getattr(work_profile, 'divisions', None)
+        if divisions and divisions.address:
+            division_str = str(divisions)
+            div_address = (
+                f"Адрес обособленного подразделения места производственной деятельности {division_str[6:]} "
+                f"(далее – {division_str}): {divisions.address}."
+            )
+
+        # Безопасное получение title (без риска StopIteration)
+        title_raw = inspection_type.get(obj_model.type_inspection, "неизвестный")
+
         context = {
             "gender": gender,
-            "title": next(
-                x[1] for x in inspection_type if x[0] == obj_model.type_inspection
-            ).lower(),
+            "title": title_raw.lower(),
             "number": obj_model.number,
-            "birthday": obj_model.person.birthday.strftime("%d.%m.%Y"),
-            "division": obj_model.person.user_work_profile.divisions,
-            "job": obj_model.person.user_work_profile.job,
+            "birthday": obj_model.person.birthday.strftime("%d.%m.%Y") if obj_model.person.birthday else "",
+            "division": divisions,
+            "job": job,
             "FIO": obj_model.person,
-            "snils": obj_model.person.user_profile.snils,
-            "oms": obj_model.person.user_profile.oms,
+            "snils": getattr(obj_model.person.user_profile, 'snils', ''),
+            "oms": getattr(obj_model.person.user_profile, 'oms', ''),
             "status": obj_model.get_working_status_display(),
             "harmful": ", ".join(harmful),
             "organisation": obj_model.organisation,
-            "ogrn": obj_model.organisation.ogrn,
-            "email": obj_model.organisation.email,
-            "tel": obj_model.organisation.phone,
-            "address": obj_model.organisation.address,
+            "ogrn": getattr(obj_model.organisation, 'ogrn', ''),
+            "email": getattr(obj_model.organisation, 'email', ''),
+            "tel": getattr(obj_model.organisation, 'phone', ''),
+            "address": getattr(obj_model.organisation, 'address', ''),
             "div_address": div_address,
         }
+
         context2 = {
             "gender": gender,
             "number": obj_model.number,
-            "birthday": obj_model.person.birthday.strftime("%d.%m.%Y"),
-            "division": obj_model.person.user_work_profile.divisions,
-            "job": obj_model.person.user_work_profile.job,
+            "birthday": obj_model.person.birthday.strftime("%d.%m.%Y") if obj_model.person.birthday else "",
+            "division": divisions,
+            "job": job,
             "FIO": obj_model.person,
-            "snils": obj_model.person.user_profile.snils,
-            "oms": obj_model.person.user_profile.oms,
+            "snils": getattr(obj_model.person.user_profile, 'snils', ''),
+            "oms": getattr(obj_model.person.user_profile, 'oms', ''),
             "div_address": div_address,
         }
-    except Exception as _ex:
-        DataBaseUser.objects.get(pk=request)
-        logger.debug(
-            f"Ошибка заполнения файла {filename_pmo}: {DataBaseUser.objects.get(pk=request)} {_ex}"
-        )
-        context = {}
-        context2 = {}
-    doc.render(context)
-    doc2.render(context2)
-    path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
-    if not path_obj.exists():
-        path_obj.mkdir(parents=True)
-    doc.save(pathlib.Path.joinpath(path_obj, filename_pmo))
-    doc2.save(pathlib.Path.joinpath(path_obj, filename_po))
-    # ToDo: Попытка конвертации docx в pdf в Linux. Не работает
-    # convert(filename, (filename[:-4]+'pdf'))
-    # convert(filepath)
+
+        # Рендеринг и сохранение происходят только если context собран без ошибок
+        doc.render(context)
+        doc2.render(context2)
+
+        path_obj = pathlib.Path(BASE_DIR) / filepath
+        path_obj.mkdir(parents=True, exist_ok=True)
+
+        doc.save(path_obj / filename_pmo)
+        doc2.save(path_obj / filename_po)
+
+        return True
+
+    except Exception as e:
+        # Используем .first() чтобы избежать падения DoesNotExist внутри обработчика ошибок
+        initiator = DataBaseUser.objects.filter(pk=request_user_id).first()
+
+        # logger.exception запишет в лог полный стек вызовов (traceback),
+        # вы точно будете знать на какой строке произошла проблема
+        logger.exception(f"Ошибка заполнения файла {filename_pmo}. Инициатор: {initiator}")
+
+        # Функция не должна создавать сломанные файлы при ошибке,
+        # возвращаем False чтобы вызывающий код понял что генерация не удалась
+        return False
+
+
+# def Med(obj_model, filepath, filename_pmo, filename_po, request):
+#     inspection_type = [
+#         ("1", "Предварительный"),
+#         ("2", "Периодический"),
+#         ("3", "Внеплановый"),
+#     ]
+#
+#     if obj_model.person.user_work_profile.job.division_affiliation.pk == 2:
+#         doc = DocxTemplate(
+#             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/med.docx")
+#         )
+#     else:
+#         doc = DocxTemplate(
+#             pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/med2.docx")
+#         )
+#     doc2 = DocxTemplate(
+#         pathlib.Path.joinpath(BASE_DIR, "static/DocxTemplates/med3.docx")
+#     )
+#     if obj_model.person.gender == "male":
+#         gender = "муж."
+#     else:
+#         gender = "жен."
+#     try:
+#         harmful = list()
+#         for items in obj_model.harmful.iterator():
+#             harmful.append(f"{items.code}: {items.name}")
+#         if obj_model.person.user_work_profile.divisions.address:
+#             division = str(obj_model.person.user_work_profile.divisions)
+#             div_address = (
+#                 f"Адрес обособленного подразделения места производственной деятельности {division[6:]} "
+#                 f"(далее – {obj_model.person.user_work_profile.divisions}): "
+#                 f"{obj_model.person.user_work_profile.divisions.address}."
+#             )
+#         else:
+#             div_address = ""
+#         context = {
+#             "gender": gender,
+#             "title": next(
+#                 x[1] for x in inspection_type if x[0] == obj_model.type_inspection
+#             ).lower(),
+#             "number": obj_model.number,
+#             "birthday": obj_model.person.birthday.strftime("%d.%m.%Y"),
+#             "division": obj_model.person.user_work_profile.divisions,
+#             "job": obj_model.person.user_work_profile.job,
+#             "FIO": obj_model.person,
+#             "snils": obj_model.person.user_profile.snils,
+#             "oms": obj_model.person.user_profile.oms,
+#             "status": obj_model.get_working_status_display(),
+#             "harmful": ", ".join(harmful),
+#             "organisation": obj_model.organisation,
+#             "ogrn": obj_model.organisation.ogrn,
+#             "email": obj_model.organisation.email,
+#             "tel": obj_model.organisation.phone,
+#             "address": obj_model.organisation.address,
+#             "div_address": div_address,
+#         }
+#         context2 = {
+#             "gender": gender,
+#             "number": obj_model.number,
+#             "birthday": obj_model.person.birthday.strftime("%d.%m.%Y"),
+#             "division": obj_model.person.user_work_profile.divisions,
+#             "job": obj_model.person.user_work_profile.job,
+#             "FIO": obj_model.person,
+#             "snils": obj_model.person.user_profile.snils,
+#             "oms": obj_model.person.user_profile.oms,
+#             "div_address": div_address,
+#         }
+#     except Exception as _ex:
+#         DataBaseUser.objects.get(pk=request)
+#         logger.debug(
+#             f"Ошибка заполнения файла {filename_pmo}: {DataBaseUser.objects.get(pk=request)} {_ex}"
+#         )
+#         context = {}
+#         context2 = {}
+#     doc.render(context)
+#     doc2.render(context2)
+#     path_obj = pathlib.Path.joinpath(pathlib.Path.joinpath(BASE_DIR, filepath))
+#     if not path_obj.exists():
+#         path_obj.mkdir(parents=True)
+#     doc.save(pathlib.Path.joinpath(path_obj, filename_pmo))
+#     doc2.save(pathlib.Path.joinpath(path_obj, filename_po))
+#     # ToDo: Попытка конвертации docx в pdf в Linux. Не работает
+#     # convert(filename, (filename[:-4]+'pdf'))
+#     # convert(filepath)
 
 
 class Medical(models.Model):
