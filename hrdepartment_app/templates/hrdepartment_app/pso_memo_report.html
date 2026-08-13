@@ -1,0 +1,53 @@
+{% extends 'customers_app/main.html' %}
+
+{% block title %}Служебная записка ПСО{% endblock %}
+
+{% block content %}
+<section role="main" class="content-body">
+    <header class="page-header">
+        <h2>Формирование Служебной записки ПСО</h2>
+    </header>
+    <div class="row">
+        <div class="col-md-12">
+            <section class="card">
+                <header class="card-header">
+                    <h2 class="card-title">Выберите период для выгрузки отчета</h2>
+                </header>
+                <div class="card-body">
+                    <form action="{% url 'hrdepartment_app:pso_memo_report' %}" method="get">
+                        <div class="form-group row">
+                            <label class="col-lg-3 control-label text-lg-right pt-2" for="id_month">Месяц</label>
+                            <div class="col-lg-3">
+                                <select name="month" id="id_month" class="form-control" required>
+                                    <option value="1">Январь</option>
+                                    <option value="2">Февраль</option>
+                                    <option value="3">Март</option>
+                                    <option value="4">Апрель</option>
+                                    <option value="5">Май</option>
+                                    <option value="6">Июнь</option>
+                                    <option value="7">Июль</option>
+                                    <option value="8">Август</option>
+                                    <option value="9">Сентябрь</option>
+                                    <option value="10">Октябрь</option>
+                                    <option value="11">Ноябрь</option>
+                                    <option value="12">Декабрь</option>
+                                </select>
+                            </div>
+                            <label class="col-lg-1 control-label text-lg-right pt-2" for="id_year">Год</label>
+                            <div class="col-lg-3">
+                                <input type="number" name="year" id="id_year" class="form-control" value="2026" required>
+                            </div>
+                        </div>
+                        <div class="form-group row mt-3">
+                            <div class="col-lg-3"></div>
+                            <div class="col-lg-6">
+                                <button type="submit" class="btn btn-primary">Сформировать и скачать</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}

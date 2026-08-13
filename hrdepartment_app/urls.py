@@ -28,7 +28,8 @@ from .views import MedicalExamination, MedicalExaminationAdd, MedicalExamination
     LaborProtectionInstructionsDetail, LaborProtectionInstructionsAdd, LaborProtectionInstructionsList, \
     ExpenseReportView, ExportExpenseReportView, StudentAgreementListView, StudentAgreementCreateView, \
     StudentAgreementDetailView, StudentAgreementUpdateView, StudentAgreementDeleteView, generate_student_agreement, \
-    PoaListView, PoaCreateView, PoaDetailView, PoaUpdateView, PoaMarkReceivedView, PoaMarkReceivedDeleteView
+    PoaListView, PoaCreateView, PoaDetailView, PoaUpdateView, PoaMarkReceivedView, PoaMarkReceivedDeleteView, \
+    PSOMemoReportView
 
 app_name = 'hrdepartment_app'
 
@@ -55,6 +56,7 @@ urlpatterns = [
     path('bpmemo/<int:pk>/cancel/', ApprovalOficialMemoProcessCancel.as_view(), name='bpmemo_cancel'),
     path('bpmemo/expense/', ExpenseReportView.as_view(), name='expense_report'),
     path('bpmemo/expense/export/', ExportExpenseReportView.as_view(), name='expense_report_export'),
+    path('bpmemo/pso-memo-report/', PSOMemoReportView.as_view(), name='pso_memo_report'),
     path('bptrip/', BusinessProcessDirectionList.as_view(), name='bptrip_list'),
     path('bptrip/add/', BusinessProcessDirectionAdd.as_view(), name='bptrip_add'),
     path('bptrip/<int:pk>/update/', BusinessProcessDirectionUpdate.as_view(), name='bptrip_update'),

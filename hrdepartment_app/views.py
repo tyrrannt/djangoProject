@@ -1,6 +1,7 @@
 # views.py
 import io
 import os
+import pathlib
 from time import strptime
 
 import openpyxl
@@ -7053,3 +7054,82 @@ class PoaMarkReceivedDeleteView(PermissionRequiredMixin, LoginRequiredMixin, Del
             business_process_type=3,
             person_executor=self.request.user
         ).exists()
+
+
+class PSOMemoReportView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        month = request.GET.get('month')
+        year = request.GET.get('year')
+
+        if not month or not year:
+            return render(request, "hrdepartment_app/pso_memo_report.html")
+
+        try:
+            month = int(month)
+            year = int(year)
+
+            start_date = datetime.date(year, month, 1)
+            last_day = calendar.monthrange(year, month)[1]
+            end_date = datetime.date(year, month, last_day)
+        except ValueError:
+            return HttpResponse("Некорректный формат даты", status=400)
+
+        processes = ApprovalOficialMemoProcess.objects.select_related('document', 'document__person').filter(
+            date_of_arrival__lte=end_date,
+            date_of_departure__gte=start_date,
+            document__place_production_activity__ticket_control=True,
+            cancellation=False
+        ).distinct().order_by('document__person__last_name', 'document__person__first_name')
+
+        emp_dict = {}
+        for p in processes:
+            emp = p.document.person
+            # Используем ФИО в требуемом формате (Фамилия И.О.)
+            f_initial = f"{emp.first_name[0]}." if emp.first_name else ""
+            s_initial = f"{emp.surname[0]}." if emp.surname else ""
+            name = f"{emp.last_name} {f_initial}{s_initial}"
+
+            if name not in emp_dict:
+                emp_dict[name] = []
+
+            if not p.date_of_arrival or not p.date_of_departure:
+                continue
+
+            arrival = max(start_date, p.date_of_arrival)
+            departure = min(end_date, p.date_of_departure)
+
+            if arrival.month == departure.month:
+                if arrival.day == departure.day:
+                    date_str = f"{arrival.day:02d}.{arrival.month:02d}.{arrival.year}"
+                else:
+                    date_str = f"{arrival.day:02d}-{departure.day:02d}.{arrival.month:02d}.{arrival.year}"
+            else:
+                date_str = f"{arrival.strftime('%d.%m.%Y')} - {departure.strftime('%d.%m.%Y')}"
+
+            emp_dict[name].append(date_str)
+
+        employees = [{"name": k, "dates": ", ".join(v)} for k, v in emp_dict.items()]
+
+        try:
+            doc_path = pathlib.Path(settings.BASE_DIR) / "static/DocxTemplates/pso_memo.docx"
+            doc = DocxTemplate(doc_path)
+            context = {
+                "start_date": start_date.strftime('%d.%m.%Y'),
+                "end_date": end_date.strftime('%d.%m.%Y'),
+                "employees": employees
+            }
+            doc.render(context)
+
+            file_stream = io.BytesIO()
+            doc.save(file_stream)
+            file_stream.seek(0)
+
+            response = HttpResponse(
+                file_stream.read(),
+                content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
+            response['Content-Disposition'] = f'attachment; filename="Служ.записка ПСО {month}-{year}.docx"'
+            return response
+        except Exception as e:
+            logger.exception("Ошибка формирования отчета ПСО")
+            return HttpResponse(f"Ошибка при формировании отчета: {e}", status=500)
