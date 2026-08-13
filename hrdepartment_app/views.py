@@ -7106,11 +7106,9 @@ class PSOMemoReportView(LoginRequiredMixin, View):
             # Подсчет количества дней. Если поездка внутри месяца, считаем дни.
             # Если пользователь просил 7 дней для 13-20, значит это (departure - arrival).days
             # Если 0, то ставим 1.
-            days_count = max(1, (departure - arrival).days)
-            if (departure - arrival).days == 7:  # Пользователь просил 7 для 13-20
-                pass
+            days_count = (departure - arrival).days
 
-            date_str = f"{arrival.strftime('%d.%m.%Y')}-{departure.strftime('%d.%m.%Y')}  {pluralize_days(days_count)}"
+            date_str = f"с {arrival.strftime('%d.%m.%Y')} по {departure.strftime('%d.%m.%Y')} на {pluralize_days(days_count)}"
 
             emp = p.document.person
             f_initial = f"{emp.first_name[0]}." if emp.first_name else ""
