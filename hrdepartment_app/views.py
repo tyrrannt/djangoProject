@@ -1,4 +1,5 @@
 # views.py
+import calendar
 import io
 import os
 import pathlib
@@ -7068,9 +7069,9 @@ class PSOMemoReportView(LoginRequiredMixin, View):
             month = int(month)
             year = int(year)
 
-            start_date = datetime.date(year, month, 1)
+            start_date = date(year, month, 1)
             last_day = calendar.monthrange(year, month)[1]
-            end_date = datetime.date(year, month, last_day)
+            end_date = date(year, month, last_day)
         except ValueError:
             return HttpResponse("Некорректный формат даты", status=400)
 
