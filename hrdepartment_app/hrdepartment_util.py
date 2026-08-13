@@ -47,73 +47,167 @@ def get_mpd_statistics(queryset):
 # Пример использования:
 # mpd_stats = get_mpd_statistics(queryset)
 # Результат: {'Москва': 5, 'Санкт-Петербург': 3, 'Казань': 2}
-
 def get_medical_documents():
     """
-        Функция для получения документов по медицинскому осмотру
-    :return:
+    Функция для получения документов по медицинскому осмотру
     """
-    type_inspection = [
-        ("1", "Предварительный"),
-        ("2", "Периодический"),
-        ("3", "Внеплановый"),
-    ]
+    type_inspection = {
+        "Предварительный": 1,
+        "Периодический": 2,
+        "Внеплановый": 3,
+    }
+
     year = datetime.datetime.now().year
     todos = get_jsons_data("Document", "НаправлениеНаМедицинскийОсмотр", 0, year=year)
-    db_users = DataBaseUser.objects.all().exclude(is_active=False)
-    harmfuls = HarmfulWorkingConditions.objects.all()
-    # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
+
+    if not todos or "value" not in todos:
+        return "Не удалось получить данные из 1С"
+
+    # Предзагрузка справочников для O(1) поиска (избавление от N+1)
+    users_dict = {
+        u.person_ref_key: u
+        for u in DataBaseUser.objects.filter(is_active=True).only('id', 'person_ref_key')
+    }
+    orgs_dict = {
+        o.ref_key: o
+        for o in MedicalOrganisation.objects.all().only('id', 'ref_key')
+    }
+    harmfuls_dict = {
+        h.ref_key: h
+        for h in HarmfulWorkingConditions.objects.all().only('id', 'ref_key')
+    }
+
+    errors = []
+
     for item in todos["value"]:
-        if item["Posted"]:
-            db_user = db_users.filter(person_ref_key=item["ФизическоеЛицо_Key"], is_active=True)
-            db_med_org = item["МедицинскаяОрганизация_Key"]
-            if (
-                    db_user.count() > 0
-                    and db_med_org != "00000000-0000-0000-0000-000000000000"
-            ):
-                qs = list()
-                for items in item["ВредныеФакторыИВидыРабот"]:
-                    qs.append(harmfuls.get(ref_key=items["ВредныйФактор_Key"]))
-                try:
-                    divisions_kwargs = {
-                        "ref_key": item["Ref_Key"],
-                        "number": item["Number"],
-                        "person": db_users.get(
-                            person_ref_key=item["ФизическоеЛицо_Key"]
-                        ),
-                        "date_entry": datetime.datetime.strptime(
-                            item["Date"][:10], "%Y-%m-%d"
-                        ),
-                        "date_of_inspection": datetime.datetime.strptime(
-                            item["ДатаОсмотра"][:10], "%Y-%m-%d"
-                        ),
-                        "organisation": MedicalOrganisation.objects.get(
-                            ref_key=item["МедицинскаяОрганизация_Key"]
-                        ),
-                        "working_status": 1
-                        if next(
-                            x[0] for x in type_inspection if x[1] == item["ТипОсмотра"]
-                        )
-                           == 1
-                        else 2,
-                        "view_inspection": 1
-                        if item["ВидОсмотра"] == "МедицинскийОсмотр"
-                        else 2,
-                        "type_inspection": next(
-                            x[0] for x in type_inspection if x[1] == item["ТипОсмотра"]
-                        ),
-                        # 'harmful': qs,
-                    }
-                    db_instance, created = Medical.objects.update_or_create(
-                        ref_key=item["Ref_Key"], defaults=divisions_kwargs
-                    )
-                    db_instance.harmful.set(qs)
-                except Exception as _ex:
-                    logger.error(
-                        f"Не найдена медицинская организация. Физическое лицо: {db_user}: {divisions_kwargs}"
-                    )
-                    return f"{_ex}: Необходимо обновить список медицинских организаций."
+        if not item.get("Posted"):
+            continue
+
+        person_key = item.get("ФизическоеЛицо_Key")
+        med_org_key = item.get("МедицинскаяОрганизация_Key")
+
+        if med_org_key == "00000000-0000-0000-0000-000000000000":
+            continue
+
+        db_user = users_dict.get(person_key)
+        db_med_org = orgs_dict.get(med_org_key)
+
+        if not db_user:
+            continue
+
+        if not db_med_org:
+            error_msg = f"Не найдена медицинская организация {med_org_key} для сотрудника {db_user}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+            continue
+
+        try:
+            # Собираем вредные факторы без запросов в цикле
+            qs = [
+                harmfuls_dict[factor["ВредныйФактор_Key"]]
+                for factor in item.get("ВредныеФакторыИВидыРабот", [])
+                if factor["ВредныйФактор_Key"] in harmfuls_dict
+            ]
+
+            # Безопасное определение типа осмотра (без next, который бросает StopIteration)
+            inspection_type_val = type_inspection.get(item.get("ТипОсмотра"), 2)
+
+            divisions_kwargs = {
+                "number": item.get("Number"),
+                "person": db_user,
+                "date_entry": datetime.datetime.strptime(item["Date"][:10], "%Y-%m-%d"),
+                "date_of_inspection": datetime.datetime.strptime(item["ДатаОсмотра"][:10], "%Y-%m-%d"),
+                "organisation": db_med_org,
+                "working_status": 1 if inspection_type_val == 1 else 2,
+                "view_inspection": 1 if item.get("ВидОсмотра") == "МедицинскийОсмотр" else 2,
+                "type_inspection": inspection_type_val,
+            }
+
+            db_instance, created = Medical.objects.update_or_create(
+                ref_key=item["Ref_Key"],
+                defaults=divisions_kwargs
+            )
+            db_instance.harmful.set(qs)
+
+        except KeyError as e:
+            logger.error(f"Отсутствует обязательный ключ {e} в JSON для {item.get('Ref_Key')}")
+        except ValueError as e:
+            logger.error(f"Ошибка парсинга даты для {item.get('Ref_Key')}: {e}")
+        except Exception as e:
+            logger.exception(f"Неожиданная ошибка при сохранении медосмотра {item.get('Ref_Key')}")
+
+    if errors:
+        return f"Завершено с ошибками ({len(errors)}). Необходимо обновить список мед. организаций."
+
     return ""
+
+
+# def get_medical_documents():
+#     """
+#         Функция для получения документов по медицинскому осмотру
+#     :return:
+#     """
+#     type_inspection = [
+#         ("1", "Предварительный"),
+#         ("2", "Периодический"),
+#         ("3", "Внеплановый"),
+#     ]
+#     year = datetime.datetime.now().year
+#     todos = get_jsons_data("Document", "НаправлениеНаМедицинскийОсмотр", 0, year=year)
+#     db_users = DataBaseUser.objects.all().exclude(is_active=False)
+#     harmfuls = HarmfulWorkingConditions.objects.all()
+#     # ToDo: Счетчик добавленных контрагентов из 1С. Подумать как передать его значение
+#     for item in todos["value"]:
+#         if item["Posted"]:
+#             db_user = db_users.filter(person_ref_key=item["ФизическоеЛицо_Key"], is_active=True)
+#             db_med_org = item["МедицинскаяОрганизация_Key"]
+#             if (
+#                     db_user.count() > 0
+#                     and db_med_org != "00000000-0000-0000-0000-000000000000"
+#             ):
+#                 qs = list()
+#                 for items in item["ВредныеФакторыИВидыРабот"]:
+#                     qs.append(harmfuls.get(ref_key=items["ВредныйФактор_Key"]))
+#                 try:
+#                     divisions_kwargs = {
+#                         "ref_key": item["Ref_Key"],
+#                         "number": item["Number"],
+#                         "person": db_users.get(
+#                             person_ref_key=item["ФизическоеЛицо_Key"]
+#                         ),
+#                         "date_entry": datetime.datetime.strptime(
+#                             item["Date"][:10], "%Y-%m-%d"
+#                         ),
+#                         "date_of_inspection": datetime.datetime.strptime(
+#                             item["ДатаОсмотра"][:10], "%Y-%m-%d"
+#                         ),
+#                         "organisation": MedicalOrganisation.objects.get(
+#                             ref_key=item["МедицинскаяОрганизация_Key"]
+#                         ),
+#                         "working_status": 1
+#                         if next(
+#                             x[0] for x in type_inspection if x[1] == item["ТипОсмотра"]
+#                         )
+#                            == 1
+#                         else 2,
+#                         "view_inspection": 1
+#                         if item["ВидОсмотра"] == "МедицинскийОсмотр"
+#                         else 2,
+#                         "type_inspection": next(
+#                             x[0] for x in type_inspection if x[1] == item["ТипОсмотра"]
+#                         ),
+#                         # 'harmful': qs,
+#                     }
+#                     db_instance, created = Medical.objects.update_or_create(
+#                         ref_key=item["Ref_Key"], defaults=divisions_kwargs
+#                     )
+#                     db_instance.harmful.set(qs)
+#                 except Exception as _ex:
+#                     logger.error(
+#                         f"Не найдена медицинская организация. Физическое лицо: {db_user}: {divisions_kwargs}"
+#                     )
+#                     return f"{_ex}: Необходимо обновить список медицинских организаций."
+#     return ""
 
 
 def check_email(obj):
