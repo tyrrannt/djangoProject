@@ -220,7 +220,7 @@ class ApartmentBookingAdmin(ModelAdmin):
     list_display = ['id', 'apartment', 'date_start', 'date_end', 'is_active', 'process_info']
     list_display_links = ['id', 'apartment']
     list_filter = ['is_active', 'apartment', 'date_start']
-    search_fields = ['apartment__address', 'apartment__name']  # Замените на реальные поля
+    search_fields = ['apartment__address', 'apartment__title']  # Замените на реальные поля
     list_per_page = 25
     date_hierarchy = 'date_start'
 
