@@ -6348,14 +6348,12 @@ def generate_student_agreement(request, pk):
 
         # 4. Получаем модули (НОВОЕ)
         modules = agreement.training_unit.all()
+
         if modules:
-            # Формируем список названий модулей
             modules_list = [str(module.full_unit_name) for module in modules]
-            # Объединяем с переносом строки для отображения в Word
-            modules_text = '\n'.join(modules_list)
             show_modules = True
         else:
-            modules_text = ''
+            modules_list = []
             show_modules = False
 
         # 5. Формируем контекст для шаблона (ключи должны совпадать с {{ }} в doc файле)
@@ -6413,7 +6411,7 @@ def generate_student_agreement(request, pk):
             'terms': terms,
 
             # Модули
-            'modules_text': modules_text,
+            'modules_text': modules_list,
             'show_modules': show_modules,
 
             # Финансы
